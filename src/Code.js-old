@@ -1,0 +1,548 @@
+// ==========================================
+// COMPHONE SUPER APP V5.0 - CLOUD NATIVE (DUAL ENGINE + BOT API)
+// ==========================================
+
+const CONFIG = {
+  DRIVE_ROOT_ID: '1YRZRG9r1Y_jMHg2XFFKYjK4Hx-sW0Eq0', // ID โฟลเดอร์ Drive
+  SHEET_JOBS: 'DBJOBS',
+  SHEET_INVENTORY: 'DB_INVENTORY',
+  SHEET_CUSTOMERS: 'DB_CUSTOMERS'
+};
+
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzTkNPqp6RBzz3FyEQROheFGxsKdTteHb9FLwJh4b2JnxrYqXQxrgoABz6QmS8kBtBOWQ/exec";
+
+
+function apiSuccess(action, data) {
+  return { success: true, action: action, ...data };
+}
+
+function apiError(action, code, message, details) {
+  return {
+    success: false,
+    action: action || 'unknown',
+    errorCode: code || 'UNKNOWN_ERROR',
+    message: message || 'เกิดข้อผิดพลาด',
+    details: details || {}
+  };
+}
+
+// --- 1. แสดงหน้าเว็บ Web App และรองรับ Deep Link ---
+function doGet(e) {
+  let template = HtmlService.createTemplateFromFile('Dashboard'); 
+  
+  if (e.parameter && e.parameter.job) {
+    template.defaultJobId = e.parameter.job; 
+  } else {
+    template.defaultJobId = "";
+  }
+  
+  return template.evaluate()
+    .setTitle('Comphone Super App V5.0')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+// --- 2. ฟิลเตอร์ตรวจสอบความปลอดภัย LINE ---
+function validateRequest(e) {
+  if (!e) return false;
+  const props = PropertiesService.getScriptProperties();
+  if (e.headers && e.headers['x-line-signature']) {
+    const channelSecret = props.getProperty('LINE_CHANNEL_SECRET');
+    if (!channelSecret) return true;
+    const hash = Utilities.computeHmacSha256Signature(e.postData.contents, channelSecret);
+    return e.headers['x-line-signature'] === Utilities.base64Encode(hash);
+  }
+  const validApiKey = props.getProperty('API_KEY');
+  let requestKey = e.parameter.api_key;
+  if (!requestKey && e.postData && e.postData.contents) {
+    try { requestKey = JSON.parse(e.postData.contents).api_key; } catch (err) { }
+  }
+  return requestKey === validApiKey;
+}
+
+// --- 3. รับ Webhook และ API Router (Dual Engine + Bot API) ---
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+
+    // 🌟 ส่วนที่ 1: เปิดประตู API ให้บอท (MiMo) ยิงคำสั่งเข้ามาจัดการชีทโดยตรง
+    if (data.action) {
+      if (data.action === "createJob") {
+        let res = createNewJobExt(data.payload || data);
+        if (!res || res.success === false) {
+          const msg = (res && (res.message || res.error)) || 'สร้างงานไม่สำเร็จ';
+          return ContentService.createTextOutput(JSON.stringify(apiError('createJob', 'JOB_CREATE_FAILED', msg, res || {}))).setMimeType(ContentService.MimeType.JSON);
+        }
+        return ContentService.createTextOutput(JSON.stringify(apiSuccess('createJob', res))).setMimeType(ContentService.MimeType.JSON);
+      }
+      if (data.action === "getJobs") {
+        let res = getPendingJobs(); 
+        if (!res || res.success === false) {
+          const msg = (res && (res.message || res.error)) || 'ดึงรายการงานไม่สำเร็จ';
+          return ContentService.createTextOutput(JSON.stringify(apiError('getJobs', 'GET_JOBS_FAILED', msg, res || {}))).setMimeType(ContentService.MimeType.JSON);
+        }
+        return ContentService.createTextOutput(JSON.stringify(apiSuccess('getJobs', { jobs: res.jobs || [] }))).setMimeType(ContentService.MimeType.JSON);
+      }
+      if (data.action === "checkDuplicate" || data.action === "detectDuplicate") {
+        let res = detectDuplicateJobExt(data.payload || data);
+        if (!res || res.success === false) {
+          const msg = (res && (res.message || res.error)) || 'ตรวจงานซ้ำไม่สำเร็จ';
+          return ContentService.createTextOutput(JSON.stringify(apiError('detectDuplicate', 'DUPLICATE_CHECK_FAILED', msg, res || {}))).setMimeType(ContentService.MimeType.JSON);
+        }
+        return ContentService.createTextOutput(JSON.stringify(apiSuccess('detectDuplicate', { isDuplicate: !!res.isDuplicate, jobs: res.jobs || [] }))).setMimeType(ContentService.MimeType.JSON);
+      }
+      if (data.action === "getDashboardData") {
+        let res = getAIPanelData();
+        if (!res || res.success === false) {
+          const msg = (res && (res.message || res.error)) || 'ดึงข้อมูลแดชบอร์ดไม่สำเร็จ';
+          return ContentService.createTextOutput(JSON.stringify(apiError('getDashboardData', 'GET_DASHBOARD_FAILED', msg, res || {}))).setMimeType(ContentService.MimeType.JSON);
+        }
+        return ContentService.createTextOutput(JSON.stringify(apiSuccess('getDashboardData', res))).setMimeType(ContentService.MimeType.JSON);
+      }
+      return ContentService.createTextOutput(JSON.stringify(apiError(data.action, 'UNKNOWN_ACTION', 'ไม่รู้จัก action นี้', { receivedAction: data.action }))).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 🔵 ส่วนที่ 2: ตรวจจับว่าเป็นแชทจาก TELEGRAM (Webhook)
+    if (data.update_id && data.message) {
+      processTelegramUpdate(data.message);
+      return ContentService.createTextOutput("OK Telegram");
+    }
+
+    // 🟢 ส่วนที่ 3: ตรวจจับและยืนยันความปลอดภัยของ LINE (Webhook)
+    if (!validateRequest(e)) {
+      return ContentService.createTextOutput("Unauthorized: Signature failed");
+    }
+    if (data.events && data.events.length > 0) {
+      // เรียกฟังก์ชันจัดการ LINE ของคุณนรินทร์ตรงนี้
+      // data.events.forEach(event => processLineEvent(event));
+    }
+
+    return ContentService.createTextOutput("OK Line");
+
+  } catch (err) {
+    console.error("Router error:", err.message);
+    return ContentService.createTextOutput(JSON.stringify(apiError('router', 'ROUTER_ERROR', err.message, { stack: err.stack || '' }))).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// --- 4. TELEGRAM BOT HANDLER ---
+function processTelegramUpdate(msg) {
+  const chatId = msg.chat.id;
+
+  // รับ Location
+  if (msg.location) {
+    const txt = "📍 Telegram AI รับพิกัดมาแล้ว:\nLat: " + msg.location.latitude + "\nLng: " + msg.location.longitude;
+    sendTelegramMessageLocal(chatId, txt);
+    return;
+  }
+
+  // รับรูปภาพรัวๆ (ให้ช่างไปใช้ Web App แทน)
+  if (msg.photo && msg.photo.length > 0) {
+    sendTelegramMessageLocal(chatId, "📸 รับรูปภาพแล้วครับ!\n👉 เพื่อไม่ให้ภาพหล่นหายและเปลืองโควต้า AI กรุณากดลิงก์ E-Ticket ของใบงานนั้น แล้วอัปโหลดรูปผ่าน Web App แทนนะครับ (อัปได้ไม่อั้น!)");
+    return;
+  }
+
+  // รับข้อความแชทปกติ
+  if (msg.text) {
+    const text = msg.text.trim();
+
+    if (text.startsWith('ค้นหา') || text.startsWith('หางาน') || text.startsWith('?')) {
+      let keyword = text.replace(/ค้นหา|หางาน|\?/g, '').trim();
+      if (!keyword) return sendTelegramMessageLocal(chatId, "พิมพ์คำค้นหาต่อท้ายด้วยครับ เช่น '? แม่นาง'");
+      // ค้นหาแบบด่วน โยนลิงก์ Web App ไปให้เปิดดูง่ายกว่า
+      sendTelegramMessageLocal(chatId, `🔍 กำลังค้นหา: ${keyword}\nกดลิงก์นี้เพื่อดูคิวงานและค้นหาแบบเต็มจอ: ${WEB_APP_URL}`);
+    }
+    else if (text.startsWith('#ปิดงาน')) {
+      const args = text.split(' ');
+      if (args.length < 2) return sendTelegramMessageLocal(chatId, "ระบุรหัสด้วยค้าบ เช่น '#ปิดงาน JOB-0321-1234'");
+      let res = updateJobFields(args[1], {"สถานะ": "Completed"});
+      if (res.success) sendTelegramMessageLocal(chatId, "✅ Telegram: สั่งปิดจ๊อบงาน *" + args[1] + "* ลง Google Sheets เรียบร้อย!");
+      else sendTelegramMessageLocal(chatId, "❌ หารหัสงานนี้ไม่เจอฮะ (" + args[1] + ")");
+    }
+    else if (text === 'สถานะ' || text.toLowerCase() === 'status') {
+      let aiReport = getAIPanelData();
+      if (aiReport.success) {
+        sendTelegramMessageLocal(chatId, "🤖 ตัวแทน AI จาก Comphone!\n" + aiReport.alertMsg + "\nมีคิวรอทำอยู่ " + aiReport.pending + " งานครับผม");
+      }
+    }
+    else if (text.startsWith('เปิดงาน') || text === 'เพิ่มงาน') {
+      sendTelegramMessageLocal(chatId, `✅ เปิดหน้าฟอร์มรับงานใหม่ คลิกที่ลิงก์นี้เลยครับ:\n${WEB_APP_URL}`);
+    }
+  }
+}
+
+function sendTelegramMessageLocal(chatId, text) {
+  const props = PropertiesService.getScriptProperties();
+  const botToken = props.getProperty('TELEGRAM_BOT_TOKEN');
+  if (!botToken) return;
+  const url = "https://api.telegram.org/bot" + botToken + "/sendMessage";
+  const payload = { chat_id: String(chatId), text: text };
+  const opt = { method: "post", contentType: "application/json", muteHttpExceptions: true, payload: JSON.stringify(payload) };
+  try { UrlFetchApp.fetch(url, opt); } catch (e) { }
+}
+
+// --- 5. ระบบความปลอดภัย LockService & Dynamic Headers (ลง Sheet ไม่พลาดช่อง) ---
+
+function createNewJobExt(j) {
+  let lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000); // รอคิว 10 วินาที
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEET_JOBS);
+    const headers = sheet.getDataRange().getValues()[0]; // ดึงหัวคอลัมน์
+    
+    const rd = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
+    const newId = 'JOB-' + Utilities.formatDate(new Date(), 'GMT+7', 'MMdd') + '-' + rd;
+
+    let combinedLocation = j.location || "";
+    if (j.lat && j.lng) {
+      combinedLocation += (combinedLocation ? "\n" : "") + "🌍 GPS: " + j.lat + "," + j.lng + " | http://googleusercontent.com/maps.google.com/maps?q=" + j.lat + "," + j.lng;
+    }
+
+    // เตรียม Array ว่างขนาดเท่ากับจำนวนคอลัมน์
+    let newRow = new Array(headers.length).fill('');
+    
+    // หยอดข้อมูลลงตามชื่อคอลัมน์เป๊ะๆ
+    let mapData = {
+      'JobID': newId, 'วันที่รับ': j.date || Utilities.formatDate(new Date(), 'GMT+7', 'yyyy-MM-dd'), 
+      'นัดหมาย': j.time || '', 'ชื่อลูกค้า': j.customer || 'ไม่ได้ระบุ',
+      'เบอร์โทร': j.phone || '', 'รุ่น/อุปกรณ์': j.device || '', 'อาการเสีย': j.symptom || '-', 
+      'สถานะ': j.status || 'Pending', 'ช่างที่ดูแล': j.tech || '', 'พิกัด/ที่อยู่': combinedLocation
+    };
+
+    for(let key in mapData) {
+       let idx = headers.indexOf(key);
+       if(idx !== -1) newRow[idx] = mapData[key];
+    }
+
+    sheet.appendRow(newRow);
+    const baseUrl = WEB_APP_URL;
+    const jobUrl = baseUrl + '?job=' + encodeURIComponent(newId);
+    const uploadUrl = baseUrl + '?job=' + encodeURIComponent(newId) + '&tab=upload';
+    return {
+      success: true,
+      jobId: newId,
+      status: j.status || 'Pending',
+      customer: j.customer || 'ไม่ได้ระบุ',
+      appointment: j.time || '',
+      jobUrl: jobUrl,
+      uploadUrl: uploadUrl,
+      message: "สร้างงานสำเร็จ"
+    };
+  } catch (e) { 
+    return { success: false, error: e.message }; 
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function updateJobFields(jobId, fieldObj) {
+  let lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEET_JOBS);
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const cId = headers.indexOf('JobID');
+    
+    if (cId === -1) return { success: false, error: "หาคอลัมน์ 'JobID' ไม่เจอในชีท DBJOBS" };
+
+    for(let i=1; i<data.length; i++) {
+       if(data[i][cId] === jobId) {
+          for(let key in fieldObj) {
+             let cIndex = headers.indexOf(key);
+             if(cIndex !== -1) {
+               sheet.getRange(i+1, cIndex+1).setValue(fieldObj[key]);
+             }
+          }
+          return { success: true };
+       }
+    }
+    return { success: false, error: "หาแถวรหัสงานนี้ไม่เจอในชีท" };
+  } catch(e) { 
+    return { success: false, error: e.message }; 
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function uploadFilesToDrive(base64DataArray, fileNameArray, jobId) {
+  let lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(15000); 
+    let targetFolder = getOrCreateJobFolder(jobId);
+    let uploadedUrls = [];
+    
+    for (let i = 0; i < base64DataArray.length; i++) {
+      let blob = convertBase64ToBlob(base64DataArray[i], fileNameArray[i]);
+      let file = targetFolder.createFile(blob);
+      uploadedUrls.push(file.getUrl());
+    }
+    
+    let folderUrl = targetFolder.getUrl();
+    // แปะลิงก์กลับไปที่คอลัมน์ "รูประบบ" (ถ้าในชีทตั้งชื่อคอลัมน์นี้ไว้)
+    updateJobFields(jobId, { "รูประบบ": folderUrl });
+
+    return { success: true, count: uploadedUrls.length, folderUrl: folderUrl };
+  } catch (e) { 
+    return { success: false, error: e.toString() }; 
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// --- 6. ดึงข้อมูลแสดงบน Dashboard & E-Ticket ---
+function getAIPanelData() {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEET_JOBS);
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const cStat = headers.indexOf('สถานะ');
+    const cSymp = headers.indexOf('อาการเสีย');
+    const cDate = headers.indexOf('วันที่รับ');
+
+    let pendingCount = 0;
+    let urgentCount = 0;
+    let todayTotal = 0;
+    const today = Utilities.formatDate(new Date(), 'GMT+7', 'yyyy-MM-dd');
+
+    for (let i = 1; i < data.length; i++) {
+      const status = cStat !== -1 ? String(data[i][cStat] || '').trim() : '';
+      const symptom = cSymp !== -1 ? String(data[i][cSymp] || '') : '';
+      const rowDate = cDate !== -1 ? data[i][cDate] : '';
+      const normalizedDate = (rowDate instanceof Date)
+        ? Utilities.formatDate(rowDate, 'GMT+7', 'yyyy-MM-dd')
+        : String(rowDate || '').trim();
+
+      if (normalizedDate === today && status !== 'Cancelled') {
+        todayTotal++;
+      }
+
+      if (status === 'Pending') {
+        pendingCount++;
+      }
+
+      if (status === 'Urgent' || symptom.includes('ด่วน')) {
+        if (status !== 'Cancelled' && status !== 'Completed') {
+          urgentCount++;
+        }
+      }
+    }
+
+    return {
+      success: true,
+      pending: pendingCount,
+      todayTotal: todayTotal,
+      alertMsg: urgentCount > 0 ? `🚨 ระวัง! มีงานด่วนรออยู่ ${urgentCount} งาน!` : "✅ เยี่ยมมาก! ไม่มีงานด่วนค้างครับ"
+    };
+  } catch (e) { return { success: false, error: e.message }; }
+}
+
+function detectDuplicateJobExt(input) {
+  try {
+    const payload = input && input.payload ? input.payload : input || {};
+    const phoneQuery = String(payload.phone || payload.customer_phone || '').trim();
+    const customerQuery = String(payload.customer || payload.customer_name || '').trim();
+    const symptomQuery = String(payload.symptom || '').trim();
+    const locationQuery = String(payload.location || '').trim();
+
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEET_JOBS);
+    if (!sheet) return { success: false, error: 'ไม่พบชีท DBJOBS' };
+
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const cId = headers.indexOf('JobID');
+    const cCust = headers.indexOf('ชื่อลูกค้า');
+    const cPhone = headers.indexOf('เบอร์โทร');
+    const cDate = headers.indexOf('วันที่รับ');
+    const cSymp = headers.indexOf('อาการเสีย');
+    const cStat = headers.indexOf('สถานะ');
+    const cLoc = headers.indexOf('พิกัด/ที่อยู่');
+
+    const norm = (s) => String(s || '').toLowerCase().replace(/s+/g,'').trim();
+    const normPhone = (s) => String(s || '').replace(/D/g,'');
+    const qPhone = normPhone(phoneQuery);
+    const qCust = norm(customerQuery);
+    const qSymp = norm(symptomQuery);
+    const qLoc = norm(locationQuery);
+
+    let matches = [];
+    for (let i = data.length - 1; i > 0; i--) {
+      const rowId = cId !== -1 ? data[i][cId] : '';
+      const rowCust = cCust !== -1 ? String(data[i][cCust] || '') : '';
+      const rowPhone = cPhone !== -1 ? String(data[i][cPhone] || '') : '';
+      const rowSymp = cSymp !== -1 ? String(data[i][cSymp] || '') : '';
+      const rowStat = cStat !== -1 ? String(data[i][cStat] || '') : '';
+      const rowLoc = cLoc !== -1 ? String(data[i][cLoc] || '') : '';
+      const rowDate = cDate !== -1 ? data[i][cDate] : '';
+
+      let score = 0;
+      if (qPhone && normPhone(rowPhone).includes(qPhone)) score += 3;
+      if (qCust && norm(rowCust).includes(qCust)) score += 2;
+      if (qSymp && norm(rowSymp).includes(qSymp)) score += 1;
+      if (qLoc && norm(rowLoc).includes(qLoc)) score += 1;
+
+      if (score >= 3) {
+        let formattedDate = (rowDate instanceof Date) ? Utilities.formatDate(rowDate, 'GMT+7', 'dd/MM/yyyy') : String(rowDate);
+        matches.push({
+          id: rowId || 'ไม่มีรหัส',
+          date: formattedDate,
+          customer: rowCust || 'ไม่ระบุชื่อ',
+          phone: rowPhone || '',
+          symptom: rowSymp || '-',
+          status: rowStat || 'Pending',
+          location: rowLoc || '',
+          score: score
+        });
+      }
+    }
+
+    return { success: true, isDuplicate: matches.length > 0, jobs: matches.slice(0, 10) };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+function getPendingJobs() {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEET_JOBS);
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    
+    const cId = headers.indexOf('JobID');
+    const cCust = headers.indexOf('ชื่อลูกค้า');
+    const cPhone = headers.indexOf('เบอร์โทร');
+    const cDate = headers.indexOf('วันที่รับ');
+    const cSymp = headers.indexOf('อาการเสีย');
+    const cStat = headers.indexOf('สถานะ');
+
+    let jobs = [];
+    for (let i = data.length - 1; i > 0; i--) { // ดึงจากล่างขึ้นบน (งานใหม่สุด)
+      if (jobs.length >= 40) break;
+      let dDate = cDate !== -1 ? data[i][cDate] : '';
+      let formattedDate = (dDate instanceof Date) ? Utilities.formatDate(dDate, 'GMT+7', 'dd/MM/yyyy') : String(dDate);
+      jobs.push({
+        id: cId !== -1 ? data[i][cId] : "ไม่มีรหัส",
+        date: formattedDate,
+        customer: cCust !== -1 ? data[i][cCust] : "ไม่ระบุชื่อ",
+        phone: cPhone !== -1 ? data[i][cPhone] : "",
+        symptom: cSymp !== -1 ? data[i][cSymp] : "-",
+        status: cStat !== -1 ? data[i][cStat] : "Pending"
+      });
+    }
+    return { success: true, jobs: jobs };
+  } catch (e) { return { success: false, error: e.message }; }
+}
+
+function getJobDetailById(jobId) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEET_JOBS);
+    if (!sheet) return { success: false, error: "ไม่พบฐานข้อมูล DBJOBS" };
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    
+    const cId = headers.indexOf('JobID');
+    const cCust = headers.indexOf('ชื่อลูกค้า');
+    const cPhone = headers.indexOf('เบอร์โทร');
+    const cDate = headers.indexOf('วันที่รับ');
+    const cSymp = headers.indexOf('อาการเสีย');
+    const cStat = headers.indexOf('สถานะ');
+    const cLoc = headers.indexOf('พิกัด/ที่อยู่');
+    
+    if(cId === -1) return { success: false, error: "ไม่พบคอลัมน์ JobID" };
+
+    for(let i=1; i<data.length; i++) {
+       if(data[i][cId] === jobId) {
+          let dDate = cDate !== -1 ? data[i][cDate] : '';
+          let formattedDate = (dDate instanceof Date) ? Utilities.formatDate(dDate, 'GMT+7', 'dd/MM/yyyy') : String(dDate);
+          return { 
+            success: true, 
+            data: {
+              id: jobId, 
+              customer: cCust !== -1 ? data[i][cCust] : "", 
+              phone: cPhone !== -1 ? data[i][cPhone] : "",
+              date: formattedDate, 
+              symptom: cSymp !== -1 ? data[i][cSymp] : "-", 
+              status: cStat !== -1 ? data[i][cStat] : "Pending",
+              location: cLoc !== -1 ? data[i][cLoc] : ""
+            }
+          };
+       }
+    }
+    return { success: false, error: "ไม่พบรหัสงาน: " + jobId };
+  } catch(e) { return { success: false, error: e.message }; }
+}
+
+// --- 7. AUTO-COMPLETE & หักสต๊อก ---
+function getCustomersList() {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB_CUSTOMERS');
+    const data = sheet.getDataRange().getValues();
+    const cName = data[0].indexOf('ชื่อลูกค้า/บริษัท');
+    if (cName === -1) return [];
+    let list = [];
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][cName]) list.push({ name: String(data[i][cName]).trim() });
+      if (list.length >= 100) break;
+    }
+    return list;
+  } catch (e) { return []; }
+}
+
+function getInventoryList() {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB_INVENTORY');
+    const data = sheet.getDataRange().getValues();
+    const cName = data[0].indexOf('ชื่อสินค้า');
+    const cSN = data[0].indexOf('S/N สินค้า');
+    if (cName === -1) return [];
+    let list = [];
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][cName]) list.push({ name: String(data[i][cName]).trim(), sn: String(cSN !== -1 ? data[i][cSN] : "") });
+    }
+    return list;
+  } catch (e) { return []; }
+}
+
+function processJobClosingAndInventory(payload) {
+  try {
+    updateJobFields(payload.jobId, {"สถานะ": "Completed"});
+    
+    // หักสต๊อกอัตโนมัติ (ถ้ามีการกรอก snText เข้ามา)
+    if (payload.snText) {
+      const sheetInv = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB_INVENTORY');
+      if (sheetInv) {
+        let lock = LockService.getScriptLock();
+        lock.waitLock(10000);
+        try {
+          const data = sheetInv.getDataRange().getValues();
+          const colName = data[0].indexOf('ชื่อสินค้า');
+          const colSN = data[0].indexOf('S/N สินค้า');
+          const colStock = data[0].indexOf('จำนวนคงเหลือ');
+          if (colStock !== -1 && colName !== -1) {
+            for (let i = 1; i < data.length; i++) {
+              if (payload.snText.includes(String(data[i][colName])) || (colSN !== -1 && data[i][colSN] && payload.snText.includes(String(data[i][colSN])))) {
+                let curStock = Number(data[i][colStock]);
+                if (!isNaN(curStock) && curStock > 0) sheetInv.getRange(i + 1, colStock + 1).setValue(curStock - 1); 
+              }
+            }
+          }
+        } finally { lock.releaseLock(); }
+      }
+    }
+    return { success: true };
+  } catch (err) { return { success: false, error: err.message }; }
+}
+
+// --- 8. ฟังก์ชันผู้ช่วย ---
+function getOrCreateJobFolder(jobId) {
+  let rootFolder = DriveApp.getFolderById(CONFIG.DRIVE_ROOT_ID);
+  let folders = rootFolder.getFoldersByName(jobId);
+  if (folders.hasNext()) return folders.next();
+  return rootFolder.createFolder(jobId); 
+}
+
+function convertBase64ToBlob(base64Image, fileName) {
+  let contentType = base64Image.substring(5, base64Image.indexOf(';'));
+  let bytes = Utilities.base64Decode(base64Image.split(',')[1]);
+  return Utilities.newBlob(bytes, contentType, fileName);
+}
