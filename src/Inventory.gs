@@ -109,6 +109,88 @@ function getInventorySummary() {
 }
 
 /**
+ * สร้างข้อมูล low stock dashboard พร้อมรายการสินค้าที่ควรเฝ้าระวัง
+ * @returns {Object}
+ */
+function getLowStockDashboardData() {
+  try {
+    const itemsResult = getInventoryItems({ activeOnly: true });
+    if (itemsResult.success === false) return itemsResult;
+
+    const allItems = itemsResult.items || [];
+    const lowStockItems = allItems.filter(function(item) {
+      const qty = toNumber(item['จำนวนคงเหลือ']);
+      const min = toNumber(item['MinStock']);
+      return min > 0 && qty <= min;
+    }).map(function(item) {
+      const qty = toNumber(item['จำนวนคงเหลือ']);
+      const min = toNumber(item['MinStock']);
+      return {
+        itemId: safeTrim(item['ItemID']),
+        sku: safeTrim(item['SKU']),
+        name: safeTrim(item['ชื่อสินค้า']),
+        category: safeTrim(item['หมวดหมู่']),
+        unit: safeTrim(item['หน่วย']),
+        qty: qty,
+        minStock: min,
+        shortage: Math.max(0, min - qty),
+        status: qty <= 0 ? 'OUT' : 'LOW'
+      };
+    }).sort(function(a, b) {
+      return b.shortage - a.shortage;
+    });
+
+    return apiSuccess('getLowStockDashboardData', {
+      generatedAt: formatDateBkk(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+      totalLowStock: lowStockItems.length,
+      items: lowStockItems
+    });
+  } catch (err) {
+    logSystemError('getLowStockDashboardData', err, {});
+    return apiError('getLowStockDashboardData', 'LOW_STOCK_DASHBOARD_FAILED', err.message, {});
+  }
+}
+
+/**
+ * แนะนำการสั่งซื้อเมื่อสต๊อกต่ำ โดยใช้ min stock เป็น baseline
+ * @param {{multiplier?:number}=} options
+ * @returns {Object}
+ */
+function getReorderRecommendations(options) {
+  try {
+    const config = options || {};
+    const multiplier = Math.max(1, toNumber(config.multiplier) || 1.5);
+    const dashboard = getLowStockDashboardData();
+    if (dashboard.success === false) return dashboard;
+
+    const recommendations = (dashboard.items || []).map(function(item) {
+      const suggestedQty = Math.max(item.shortage, Math.ceil(item.minStock * multiplier) - item.qty);
+      return {
+        itemId: item.itemId,
+        sku: item.sku,
+        name: item.name,
+        category: item.category,
+        currentQty: item.qty,
+        minStock: item.minStock,
+        reorderQty: suggestedQty,
+        reorderPoint: item.minStock,
+        priority: item.qty <= 0 ? 'CRITICAL' : 'NORMAL',
+        unit: item.unit
+      };
+    });
+
+    return apiSuccess('getReorderRecommendations', {
+      generatedAt: formatDateBkk(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+      count: recommendations.length,
+      items: recommendations
+    });
+  } catch (err) {
+    logSystemError('getReorderRecommendations', err, { options: options || {} });
+    return apiError('getReorderRecommendations', 'REORDER_RECOMMENDATION_FAILED', err.message, {});
+  }
+}
+
+/**
  * ตัวกลางสำหรับทำ transaction inventory ทั้ง OUT และ RETURN
  * @param {Object} payload
  * @returns {Object}
@@ -117,7 +199,7 @@ function processInventoryTransaction(payload) {
   try {
     const data = payload || {};
     const mode = String(data.mode || 'OUT').trim().toUpperCase();
-    if (mode === 'RETURN') return returnInventoryFromJob(data);
+    if (mode === 'RETURN' || mode === 'PARTIAL_RETURN') return returnInventoryFromJob(data);
     return commitStockOutForJob(data);
   } catch (err) {
     logSystemError('processInventoryTransaction', err, { payload: payload || {} });
@@ -193,7 +275,7 @@ function commitStockOutForJob(data) {
         'SKU': item.sku,
         'ชื่อสินค้า': item.name,
         'จำนวน': qty,
-        'หน่วย': line.unit,
+        'หน่วย': line.unit || item.unit,
         'SerialNumber': line.serialNumber,
         'ประเภท': 'OUT',
         'หมายเหตุ': line.remark,
@@ -211,7 +293,7 @@ function commitStockOutForJob(data) {
         'ชื่อสินค้า': item.name,
         'ประเภท': 'OUT',
         'จำนวน': qty,
-        'หน่วย': line.unit,
+        'หน่วย': line.unit || item.unit,
         'SerialNumber': line.serialNumber,
         'หมายเหตุ': line.remark,
         'ผู้ทำรายการ': tech,
@@ -224,7 +306,7 @@ function commitStockOutForJob(data) {
         itemId: item.itemId,
         name: item.name,
         qty: qty,
-        unit: line.unit,
+        unit: line.unit || item.unit,
         serialNumber: line.serialNumber || ''
       });
     });
@@ -246,7 +328,8 @@ function commitStockOutForJob(data) {
 
 /**
  * คืนสต๊อกจากงานกลับเข้า inventory และบันทึก movement = RETURN
- * @param {{jobId:string,tech?:string,items:Array<Object>,reference?:string}} data
+ * รองรับ partial return และอัปเดตสถานะใน DB_JOB_ITEMS
+ * @param {{jobId:string,tech?:string,items:Array<Object>,reference?:string,mode?:string}} data
  * @returns {Object}
  */
 function returnInventoryFromJob(data) {
@@ -259,6 +342,7 @@ function returnInventoryFromJob(data) {
     const jobId = safeTrim(data.jobId);
     const tech = safeTrim(data.tech);
     const lines = normalizeInventoryLines(data.items);
+    const mode = safeTrim(data.mode || 'RETURN').toUpperCase();
 
     if (!jobId) {
       return apiError('returnInventoryFromJob', 'INVALID_JOB_ID', 'ไม่พบ jobId', {});
@@ -272,6 +356,7 @@ function returnInventoryFromJob(data) {
     const validation = _validateInventoryLines(lines, stockMap, 'RETURN');
     if (!validation.success) return validation;
 
+    const jobItemsSheet = ensureSheetWithHeaders(CONFIG.SHEET_JOB_ITEMS, INVENTORY_SCHEMA.DB_JOB_ITEMS);
     const movementSheet = ensureSheetWithHeaders(CONFIG.SHEET_STOCK_MOVEMENTS, INVENTORY_SCHEMA.DB_STOCK_MOVEMENTS);
     const inventorySheet = getSheet(CONFIG.SHEET_INVENTORY);
     const invData = inventorySheet.getDataRange().getValues();
@@ -280,9 +365,18 @@ function returnInventoryFromJob(data) {
 
     lines.forEach(function(line) {
       const item = stockMap[line.itemId];
+      const qty = toNumber(line.qty);
       const moveId = _generateMoveId();
       const now = formatDateBkk(new Date(), 'yyyy-MM-dd HH:mm:ss');
-      const qty = toNumber(line.qty);
+
+      const linkedJobItem = _findActiveJobItem(jobItemsSheet, jobId, line.itemId, line.serialNumber);
+      if (!linkedJobItem) {
+        throw new Error('ไม่พบรายการเบิกเดิมใน DB_JOB_ITEMS สำหรับการคืนของ: ' + line.itemId);
+      }
+
+      if (linkedJobItem.remainingQty < qty) {
+        throw new Error('จำนวนคืนมากกว่าจำนวนที่ยังค้างอยู่ของ itemId: ' + line.itemId);
+      }
 
       _appendRowByHeaders(movementSheet, INVENTORY_SCHEMA.DB_STOCK_MOVEMENTS, {
         'MoveID': moveId,
@@ -293,7 +387,7 @@ function returnInventoryFromJob(data) {
         'ชื่อสินค้า': item.name,
         'ประเภท': 'RETURN',
         'จำนวน': qty,
-        'หน่วย': line.unit,
+        'หน่วย': line.unit || item.unit,
         'SerialNumber': line.serialNumber,
         'หมายเหตุ': line.remark,
         'ผู้ทำรายการ': tech,
@@ -301,21 +395,24 @@ function returnInventoryFromJob(data) {
       });
 
       _updateInventoryBalance(inventorySheet, invHeaders, item.itemId, qty);
+      _markJobItemReturned(jobItemsSheet, linkedJobItem, qty, mode);
 
       processed.push({
         itemId: item.itemId,
         name: item.name,
         qty: qty,
-        unit: line.unit,
-        serialNumber: line.serialNumber || ''
+        unit: line.unit || item.unit,
+        serialNumber: line.serialNumber || '',
+        jobItemId: linkedJobItem.jobItemId
       });
     });
 
     return apiSuccess('returnInventoryFromJob', {
       jobId: jobId,
       processedCount: processed.length,
+      mode: mode,
       items: processed,
-      message: 'คืนสต๊อกสำเร็จ'
+      message: mode === 'PARTIAL_RETURN' ? 'คืนอะไหล่บางส่วนสำเร็จ' : 'คืนสต๊อกสำเร็จ'
     });
 
   } catch (err) {
@@ -323,6 +420,21 @@ function returnInventoryFromJob(data) {
     return apiError('returnInventoryFromJob', 'RETURN_STOCK_FAILED', err.message, { stack: err.stack || '' });
   } finally {
     lock.releaseLock();
+  }
+}
+
+/**
+ * alias สำหรับ partial return ให้ route เรียกตรงได้
+ * @param {Object} data
+ * @returns {Object}
+ */
+function partialReturnInventoryFromJob(data) {
+  try {
+    const payload = Object.assign({}, data || {}, { mode: 'PARTIAL_RETURN' });
+    return returnInventoryFromJob(payload);
+  } catch (err) {
+    logSystemError('partialReturnInventoryFromJob', err, { data: data || {} });
+    return apiError('partialReturnInventoryFromJob', 'PARTIAL_RETURN_FAILED', err.message, {});
   }
 }
 
@@ -618,6 +730,98 @@ function _getUsedSerialMap(sheet) {
     return used;
   } catch (err) {
     logSystemError('_getUsedSerialMap', err, {});
+    throw err;
+  }
+}
+
+/**
+ * หา job item แถวล่าสุดที่ยัง active และยังคืนได้อยู่
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet
+ * @param {string} jobId
+ * @param {string} itemId
+ * @param {string} serialNumber
+ * @returns {Object|null}
+ */
+function _findActiveJobItem(sheet, jobId, itemId, serialNumber) {
+  try {
+    const values = sheet.getDataRange().getValues();
+    if (values.length < 2) return null;
+    const headers = values[0];
+    const idxJobItemId = headers.indexOf('JobItemID');
+    const idxJobId = headers.indexOf('JobID');
+    const idxItemId = headers.indexOf('ItemID');
+    const idxQty = headers.indexOf('จำนวน');
+    const idxSerial = headers.indexOf('SerialNumber');
+    const idxStatus = headers.indexOf('สถานะรายการ');
+
+    for (let i = values.length - 1; i >= 1; i--) {
+      const rowJobId = safeTrim(values[i][idxJobId]);
+      const rowItemId = safeTrim(values[i][idxItemId]);
+      const rowSerial = safeTrim(values[i][idxSerial]);
+      const rowStatus = safeTrim(values[i][idxStatus]) || 'Active';
+      if (rowJobId !== jobId || rowItemId !== itemId) continue;
+      if (serialNumber && rowSerial && serialNumber !== rowSerial) continue;
+      if (rowStatus === 'Returned') continue;
+
+      return {
+        rowNumber: i + 1,
+        jobItemId: safeTrim(values[i][idxJobItemId]),
+        qty: toNumber(values[i][idxQty]),
+        remainingQty: _extractRemainingQty(rowStatus, toNumber(values[i][idxQty])),
+        status: rowStatus
+      };
+    }
+    return null;
+  } catch (err) {
+    logSystemError('_findActiveJobItem', err, { jobId: jobId || '', itemId: itemId || '', serialNumber: serialNumber || '' });
+    throw err;
+  }
+}
+
+/**
+ * อ่าน remaining qty จากข้อความสถานะ เช่น PartialReturned(1/3)
+ * @param {string} statusText
+ * @param {number} defaultQty
+ * @returns {number}
+ */
+function _extractRemainingQty(statusText, defaultQty) {
+  const text = safeTrim(statusText);
+  if (!text || text === 'Active') return defaultQty;
+  if (text === 'Returned') return 0;
+  const matched = text.match(/PartialReturned\((\d+)\/(\d+)\)/i);
+  if (matched) {
+    const returnedQty = toNumber(matched[1]);
+    const totalQty = toNumber(matched[2]);
+    return Math.max(0, totalQty - returnedQty);
+  }
+  return defaultQty;
+}
+
+/**
+ * อัปเดตสถานะ job item หลังคืนของ
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet
+ * @param {Object} linkedJobItem
+ * @param {number} returnQty
+ * @param {string} mode
+ */
+function _markJobItemReturned(sheet, linkedJobItem, returnQty, mode) {
+  try {
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const idxStatus = headers.indexOf('สถานะรายการ');
+    if (idxStatus === -1) throw new Error('DB_JOB_ITEMS ต้องมีคอลัมน์ สถานะรายการ');
+
+    const totalQty = linkedJobItem.qty;
+    const previousRemaining = linkedJobItem.remainingQty;
+    const returnedTotal = totalQty - previousRemaining + returnQty;
+    let newStatus = 'Returned';
+    if (returnedTotal < totalQty || mode === 'PARTIAL_RETURN') {
+      newStatus = 'PartialReturned(' + returnedTotal + '/' + totalQty + ')';
+      if (returnedTotal >= totalQty) newStatus = 'Returned';
+    }
+
+    sheet.getRange(linkedJobItem.rowNumber, idxStatus + 1).setValue(newStatus);
+  } catch (err) {
+    logSystemError('_markJobItemReturned', err, { linkedJobItem: linkedJobItem || {}, returnQty: returnQty || 0, mode: mode || '' });
     throw err;
   }
 }
