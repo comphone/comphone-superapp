@@ -46,6 +46,14 @@ const INVENTORY_SCHEMA = {
     'ผู้ทำรายการ',
     'วันที่เวลา',
     'สถานะรายการ'
+  ],
+  DB_SYSTEM_LOGS: [
+    'LogID',
+    'วันที่เวลา',
+    'โมดูล',
+    'ข้อความ',
+    'รายละเอียด',
+    'StackTrace'
   ]
 };
 
@@ -96,6 +104,27 @@ function ensureSheetWithHeaders(sheetName, headers) {
   }
 
   return sheet;
+}
+
+function ensureSystemLogSheetReady() {
+  return ensureSheetWithHeaders('DB_SYSTEM_LOGS', INVENTORY_SCHEMA.DB_SYSTEM_LOGS);
+}
+
+function logSystemError(moduleName, err, details) {
+  try {
+    const sheet = ensureSystemLogSheetReady();
+    const row = [
+      'LOG-' + formatDateBkk(new Date(), 'yyyyMMdd-HHmmss') + '-' + Math.floor(Math.random() * 9000 + 1000),
+      formatDateBkk(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+      safeTrim(moduleName),
+      safeTrim(err && err.message ? err.message : err),
+      JSON.stringify(details || {}),
+      err && err.stack ? String(err.stack) : ''
+    ];
+    sheet.appendRow(row);
+  } catch (loggingError) {
+    console.error('logSystemError failed: ' + loggingError.message);
+  }
 }
 
 function mapRowByHeaders(headers, row, rowNumber) {
