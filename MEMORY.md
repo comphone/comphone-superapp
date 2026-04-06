@@ -5,8 +5,8 @@
 ### Comphone Super App VNext (V366 — Active Production)
 - **สถานะ:** ✅ Multi-File Architecture (17 ไฟล์ GAS, Pro-Hybrid UI)
 - **Script ID:** `1-aoCd5gXoo1dX4FjW62l8JknR3ZPiaf1W7YEmEdtq8gnRzSp4Hwj6043`
-- **Deployment ID:** `AKfycbwWOHiumCTT9vGmUT4PKU4XoPFgVnXYPMoNX21Am4kHLQIr5vU76FLSacJdA5IWCgNt3w` (@366)
-- **Web App URL:** `https://script.google.com/macros/s/AKfycbwWOHiumCTT9vGmUT4PKU4XoPFgVnXYPMoNX21Am4kHLQIr5vU76FLSacJdA5IWCgNt3w/exec`
+- **Deployment ID:** `AKfycbz-rVhk1pClkDCkhkM9JvEAEo1JbVJlB16KOTo5mbF-INW_GQcSneeCPU_02pbLKwNoeQ` (@393)
+- **Web App URL:** `https://script.google.com/macros/s/AKfycbz-rVhk1pClkDCkhkM9JvEAEo1JbVJlB16KOTo5mbF-INW_GQcSneeCPU_02pbLKwNoeQ/exec`
 - **LINE Webhook:** `https://openclaw.comphones101.win/line/webhook`
 
 #### โครงสร้างไฟล์ (V366)

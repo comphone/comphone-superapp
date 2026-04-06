@@ -380,7 +380,7 @@ function createBilling(jobId, parts, labor) {
         var qty = parseInt(psplit[1]) || 1;
         for (var qi = 1; qi < invAll.length; qi++) {
           if (String(invAll[qi][0]) === itemName || String(invAll[qi][1]) === itemName) {
-            partsCost += Number(invAll[qi][3] || 0) * qty; // ราคาทุน
+            partsCost += Number(invAll[qi][4] || 0) * qty; // ราคาขาย
             break;
           }
         }

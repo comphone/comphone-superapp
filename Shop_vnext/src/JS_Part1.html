@@ -22,7 +22,8 @@ function renderDashboard(d){try{var sm=(d&&d.summary)||{},jb=(d&&d.jobs)||[],iv=
 
 function filterJobs(){try{var si=document.getElementById('fs'),ftE=document.getElementById('ft'),fst=document.getElementById('fst');if(!si||!ftE||!fst)return;var q=(si.value||'').toLowerCase(),t=(ftE.value||'').toLowerCase(),s=fst.value||'';var f=ALL_JOBS.filter(function(j){if(!j||!j.id)return false;if(q){var cc=String(j.customer||'').toLowerCase(),cj=String(j.id||'').toLowerCase(),cs=String(j.symptom||'').toLowerCase();if(cc.indexOf(q)===-1&&cj.indexOf(q)===-1&&cs.indexOf(q)===-1)return false}if(t&&String(j.tech||'').toLowerCase()!==t)return false;if(s&&String(j.status||'')!==s)return false;return true});renderSwiper(f.length>0?f:ALL_JOBS);if(f.length===0&&(q||t||s)){var em=document.getElementById('emptyJobs');if(em)em.style.display='block'}}catch(x){}}
 
-function loadData(){try{if(typeof google==='undefined'){showError('Google Script ไม่พร้อม','เปิดผ่าน Web App URL เท่านั้น');return}showLoading();google.script.run.withSuccessHandler(function(d){try{DATA=d;JOBS=(d&&d.jobs)||[];INVENTORY=(d&&d.inventory)||[];renderDashboard(d)}catch(x){showError('Render',x.message)}}).withFailureHandler(function(e){showError('Fail',e.message||e)}).getDashboardData()}catch(x){showError('Load',x.message||x)}}
+function loadData(){hideLoading();try{if(typeof google==='undefined'){showError('Google Script ไม่พร้อม','เปิดผ่าน Web App URL เท่านั้น');return}showLoading();google.script.run.withSuccessHandler(function(d){hideLoading();try{DATA=d;JOBS=(d&&d.jobs)||[];INVENTORY=(d&&d.inventory)||[];renderDashboard(d)}catch(x){hideLoading();showError('Render',x.message)}}).withFailureHandler(function(e){hideLoading();showError('Fail',e.message||e)}).getDashboardData()}catch(x){hideLoading();showError('Load',x.message||x)}}
 function switchTab(t){loadData();window.scrollTo({top:0,behavior:'smooth'})}
-console.log('✅ V366 Part1 loaded');
+document.addEventListener('DOMContentLoaded',function(){setTimeout(loadData,100)});
+console.log('✅ V374 Part1 loaded');
 </script>
