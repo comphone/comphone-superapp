@@ -1,25 +1,142 @@
 <script>
-/* V366 JS_Part2 — Core UI Actions (Status, Edit, Note, Open Job) */
 var CURRENT_JOB_ID=null;
-function viewJob(id){var j=findJob(id);if(!j){toast('\u274c\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e07\u0e32\u0e19 '+id,'er');return}CURRENT_JOB_ID=id;var h='<h2>\ud83d\udccb '+esc(j.id)+'</h2><div class="modal-subtitle">'+esc(j.customer)+'</div><div style="font-size:16px;color:var(--t2);line-height:2;margin-bottom:18px">\ud83d\udccc '+esc(j.symptom||'-')+'<br>\ud83d\udcdd '+sBadge(j.status)+' '+esc(j.status)+'<br>\ud83d\udd27 '+esc(j.tech||'-')+'<br>\ud83d\udd50 '+(j.created||'-')+'</div>';h+='<div class="d-flex flex-wrap gap-2 mb-3">';h+='<button onclick="showStatusModal()" class="btn btn-blue btn-lg" style="padding:12px 20px;font-size:15px">\ud83d\udcdd \u0e40\u0e1b\u0e25\u0e35\u0e48\u0e22\u0e19\u0e2a\u0e16\u0e32\u0e19\u0e30</button>';h+='<button onclick="showPhotoUploadModal()" class="btn btn-success btn-lg" style="padding:12px 20px;font-size:15px">\ud83d\udcf7 \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e</button>';var fu=j.folder?j.folder:'https://drive.google.com/drive/folders/1YRZRG9r1Y_jMHg2XFFKYjK4Hx-sW0Eq0';h+='<button onclick="window.open('+JSON.stringify(fu)+",'_blank')"+' class="btn btn-lg" style="background:rgba(6,182,212,.15);color:var(--cyan);padding:12px 20px;font-size:15px">\ud83d\udcc1 \u0e2d\u0e31\u0e25\u0e1a\u0e49\u0e21\u0e23\u0e39\u0e1b</button></div>';h+='<div class="mb-3"><label class="form-label-lg">\ud83d\udcdd \u0e2b\u0e21\u0e32\u0e22\u0e40\u0e2b\u0e15\u0e38\u0e14\u0e48\u0e27\u0e19</label><textarea id="qnote" class="form-control dark-input" rows="3" placeholder="\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e2b\u0e21\u0e32\u0e22\u0e40\u0e2b\u0e15\u0e38..." style="min-height:100px"></textarea><button onclick="addQuickNote()" class="btn btn-green w-100 mt-2 btn-lg">\ud83d\udcbe \u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01</button></div>';h+='<div class="mb-3"><label class="form-label-lg">\ud83d\udcdc \u0e1b\u0e23\u0e30\u0e27\u0e31\u0e15\u0e34</label><div id="jtl"></div></div>';h+='<button onclick="showEditJobModal()" class="btn btn-outline-dark w-100 btn-lg mb-2">\u270f\ufe0f \u0e41\u0e01\u0e49\u0e44\u0e02\u0e07\u0e32\u0e19</button>';h+='<button onclick="closeModal()" class="btn btn-outline-dark w-100 btn-lg">\u2715 \u0e1b\u0e34\u0e14</button>';openModal(h);google.script.run.withSuccessHandler(function(r){var el=document.getElementById('jtl');if(!el)return;if(r&&r.timeline&&r.timeline.length>0){var x='';for(var i=0;i<Math.min(r.timeline.length,20);i++){var e=r.timeline[i];x+='<div class="timeline-item"><div class="ts">'+esc(e.ts)+'</div><div class="ta">'+esc(e.action)+'</div>'+(e.detail?'<div class="td">'+esc(e.detail)+'</div>':'')+'</div>'}el.innerHTML=x}else{el.innerHTML='<div class="empty-state" style="padding:16px">\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01</div>'}}).getJobTimeline(id)}
 
-function showStatusModal(){var j=findJob(CURRENT_JOB_ID);if(!j)return;var h='<h2>\ud83d\udcdd \u0e40\u0e1b\u0e25\u0e35\u0e48\u0e22\u0e19\u0e2a\u0e16\u0e32\u0e19\u0e30</h2><div class="modal-subtitle">'+esc(CURRENT_JOB_ID)+' \u2014 '+esc(j.customer)+'</div><div style="font-size:16px;color:var(--t2);margin-bottom:16px">\u0e1b\u0e31\u0e08\u0e08\u0e38\u0e1a\u0e31\u0e19: <b>'+esc(j.status)+'</b></div><div class="status-btn-grid"><button onclick="chgStat(\'\u0e23\u0e2d\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23\')" class="btn btn-warn btn-lg">\u23f3 \u0e23\u0e2d\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23</button><button onclick="chgStat(\'InProgress\')" class="btn btn-blue btn-lg">\ud83d\udd04 \u0e01\u0e33\u0e25\u0e31\u0e07\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23</button><button onclick="chgStat(\'Completed\')" class="btn btn-green btn-lg">\u2705 \u0e40\u0e2a\u0e23\u0e47\u0e08\u0e41\u0e25\u0e49\u0e27</button><button onclick="chgStat(\'\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01\')" class="btn btn-err btn-lg">\u274c \u0e22\u0e01\u0e40\u0e25\u0e34\u0e01</button></div><button onclick="closeModal()" class="btn btn-outline-dark w-100 btn-lg">\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01</button>';openModal(h)}
+function viewJob(id){
+var j=findJob(id);
+if(!j){toast('\u274c \u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e07\u0e32\u0e19 '+id,'er');return}
+CURRENT_JOB_ID=id;
+var fu=j.folder?j.folder:'https://drive.google.com/drive/folders/1YRZRG9r1Y_jMHg2XFFKYjK4Hx-sW0Eq0';
+var h='';
+h+='<h2>\ud83d\udccb '+esc(j.id)+'</h2>';
+h+='<div class="modal-subtitle">'+esc(j.customer)+'</div>';
+h+='<div style="font-size:16px;color:var(--t2);line-height:2;margin-bottom:18px">';
+h+='\ud83d\udccc '+esc(j.symptom||'-')+'<br>';
+h+='\ud83d\udcdd '+sBadge(j.status)+' '+esc(j.status)+'<br>';
+h+='\ud83d\udd27 '+esc(j.tech||'-')+'<br>';
+h+='\ud83d\udd50 '+(j.created||'-');
+h+='</div>';
+h+='<div class="d-flex flex-wrap gap-2 mb-3">';
+h+='<button onclick="showStatusModal()" class="btn btn-blue btn-lg" style="padding:12px 20px;font-size:15px">\ud83d\udcdd \u0e40\u0e1b\u0e25\u0e35\u0e48\u0e22\u0e19\u0e2a\u0e16\u0e32\u0e19\u0e30</button>';
+h+='<button onclick="showPhotoUploadModal()" class="btn btn-success btn-lg" style="padding:12px 20px;font-size:15px">\ud83d\udcf7 \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e</button>';
+h+='<button data-open="'+fu+'" class="btn btn-lg btn-folder-x">\ud83d\udcc1 \u0e2d\u0e31\u0e25\u0e1a\u0e49\u0e21\u0e23\u0e39\u0e1b</button>';
+h+='</div>';
+h+='<div class="mb-3">';
+h+='<label class="form-label-lg">\ud83d\udcdd \u0e2b\u0e21\u0e32\u0e22\u0e40\u0e2b\u0e15\u0e38\u0e14\u0e48\u0e27\u0e19</label>';
+h+='<textarea id="qnote" class="form-control dark-input" rows="3" placeholder="\u0e1e\u0e34\u0e21\u0e1e\u0e4c..." style="min-height:100px"></textarea>';
+h+='<button onclick="addQuickNote()" class="btn btn-green w-100 mt-2 btn-lg">\ud83d\udcbe \u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01</button>';
+h+='</div>';
+h+='<div class="mb-3">';
+h+='<label class="form-label-lg">\ud83d\udcdc \u0e1b\u0e23\u0e30\u0e27\u0e31\u0e15\u0e34</label>';
+h+='<div id="jtl"></div>';
+h+='</div>';
+h+='<button onclick="showEditJobModal()" class="btn btn-outline-dark w-100 btn-lg mb-2">\u270f\ufe0f \u0e41\u0e01\u0e49\u0e44\u0e02</button>';
+h+='<button onclick="closeModal()" class="btn btn-outline-dark w-100 btn-lg">\u2715 \u0e1b\u0e34\u0e14</button>';
+openModal(h);
+document.querySelectorAll('.btn-folder-x').forEach(function(btn){btn.addEventListener('click',function(){window.open(btn.getAttribute('data-open'),'_blank')})});
+try{google.script.run.withSuccessHandler(function(r){
+var el=document.getElementById('jtl');if(!el)return;
+if(r&&r.timeline&&r.timeline.length>0){
+var x='';
+for(var i=0;i<Math.min(r.timeline.length,20);i++){var e=r.timeline[i];x+='<div class="timeline-item"><div class="ts">'+esc(e.ts)+'</div><div class="ta">'+esc(e.action)+'</div>'+(e.detail?'<div class="td">'+esc(e.detail)+'</div>':'')+'</div>'}
+el.innerHTML=x;
+}else{el.innerHTML='<div class="empty-state" style="padding:16px">\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01</div>'}
+}).getJobTimeline(id)}catch(x){}
+}
 
-function chgStat(s){if(!CURRENT_JOB_ID||!s)return;var bs=document.querySelectorAll('.status-btn-grid .btn');for(var i=0;i<bs.length;i++)bs[i].disabled=true;google.script.run.withSuccessHandler(function(){toast('\u2705 \u0e40\u0e1b\u0e25\u0e35\u0e48\u0e22\u0e19\u0e2a\u0e16\u0e32\u0e19\u0e30: '+s,'ok');closeModal();loadData()}).withFailureHandler(function(e){var b2=document.querySelectorAll('.status-btn-grid .btn');for(var i=0;i<b2.length;i++)b2[i].disabled=false;toast('\u274c '+(e.message||e),'er')}).updateJobStatus({job_id:CURRENT_JOB_ID,status:s,note:'Dashboard'})}
+function showStatusModal(){
+var j=findJob(CURRENT_JOB_ID);if(!j)return;
+var h='<h2>\ud83d\udcdd \u0e40\u0e1b\u0e25\u0e35\u0e48\u0e22\u0e19\u0e2a\u0e16\u0e32\u0e19\u0e30</h2>';
+h+='<div class="modal-subtitle">'+esc(CURRENT_JOB_ID)+' \u2014 '+esc(j.customer)+'</div>';
+h+='<div style="font-size:16px;color:var(--t2);margin-bottom:16px">\u0e1b\u0e31\u0e08\u0e08\u0e38\u0e1a\u0e31\u0e19: <b>'+esc(j.status)+'</b></div>';
+h+='<div class="status-btn-grid">';
+h+='<button onclick="chgStat(\'\u0e23\u0e2d\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23\')" class="btn btn-warn btn-lg">\u23f3 \u0e23\u0e2d\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23</button>';
+h+='<button onclick="chgStat(\'InProgress\')" class="btn btn-blue btn-lg">\ud83d\udd04 \u0e01\u0e33\u0e25\u0e31\u0e07\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23</button>';
+h+='<button onclick="chgStat(\'Completed\')" class="btn btn-green btn-lg">\u2705 \u0e40\u0e2a\u0e23\u0e47\u0e08\u0e41\u0e25\u0e49\u0e27</button>';
+h+='<button onclick="chgStat(\'\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01\')" class="btn btn-err btn-lg">\u274c \u0e22\u0e01\u0e40\u0e25\u0e34\u0e01</button>';
+h+='</div>';
+h+='<button onclick="closeModal()" class="btn btn-outline-dark w-100 btn-lg">\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01</button>';
+openModal(h);
+}
 
-function showEditJobModal(){var j=findJob(CURRENT_JOB_ID);if(!j)return;var h='<h2>\u270f\ufe0f \u0e41\u0e01\u0e49\u0e44\u0e02: '+esc(j.id)+'</h2><div class="modal-subtitle">'+esc(j.customer)+'</div><div class="form-group-lg"><label class="form-label-lg">\u0e0a\u0e37\u0e48\u0e2d\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32</label><input type="text" class="form-control dark-input" id="eName" value="'+esc(j.customer)+'"></div><div class="form-group-lg"><label class="form-label-lg">\u0e2d\u0e32\u0e01\u0e32\u0e23</label><textarea class="form-control dark-input" id="eSymp" rows="3" style="min-height:100px">'+esc(j.symptom||'')+'</textarea></div><div class="form-group-lg"><label class="form-label-lg">\u0e0a\u0e48\u0e32\u0e07</label><input type="text" class="form-control dark-input" id="eTech" value="'+esc(j.tech||'')+'"></div><button onclick="saveEdit()" class="btn btn-green w-100 btn-lg">\ud83d\udcbe \u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01</button><button onclick="closeModal()" class="btn btn-outline-dark w-100 btn-lg mt-2">\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01</button>';openModal(h)}
+function chgStat(s){
+if(!CURRENT_JOB_ID||!s)return;
+var bs=document.querySelectorAll('.status-btn-grid .btn');
+for(var i=0;i<bs.length;i++)bs[i].disabled=true;
+google.script.run.withSuccessHandler(function(){toast('\u2705 \u0e40\u0e1b\u0e25\u0e35\u0e48\u0e22\u0e19: '+s,'ok');closeModal();loadData()})
+.withFailureHandler(function(e){var b2=document.querySelectorAll('.status-btn-grid .btn');for(var i=0;i<b2.length;i++)b2[i].disabled=false;toast('\u274c '+(e.message||e),'er')})
+.updateJobStatus({job_id:CURRENT_JOB_ID,status:s,note:'Dashboard'});
+}
 
-function saveEdit(){var n=(document.getElementById('eName').value||'').trim(),s=(document.getElementById('eSymp').value||'').trim(),t=(document.getElementById('eTech').value||'').trim();if(!n){toast('\u274c \u0e0a\u0e37\u0e48\u0e2d\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32\u0e2b\u0e49\u0e32\u0e21\u0e27\u0e48\u0e32\u0e07','er');return}var b=document.querySelector('#modalContent .btn-green');setBtnLoading(b,true,'...\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01');google.script.run.withSuccessHandler(function(){toast('\u2705 \u0e41\u0e01\u0e49\u0e44\u0e02\u0e41\u0e25\u0e49\u0e27','ok');closeModal();loadData()}).withFailureHandler(function(e){setBtnLoading(b,false);toast('\u274c '+(e.message||e),'er')}).updateJobById(CURRENT_JOB_ID,{name:n,symptom:s,tech:t})}
+function showEditJobModal(){
+var j=findJob(CURRENT_JOB_ID);if(!j)return;
+var h='<h2>\u270f\ufe0f \u0e41\u0e01\u0e49\u0e44\u0e02: '+esc(j.id)+'</h2>';
+h+='<div class="modal-subtitle">'+esc(j.customer)+'</div>';
+h+='<div class="form-group-lg"><label class="form-label-lg">\u0e0a\u0e37\u0e48\u0e2d\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32</label><input type="text" class="form-control dark-input" id="eName" value="'+esc(j.customer)+'"></div>';
+h+='<div class="form-group-lg"><label class="form-label-lg">\u0e2d\u0e32\u0e01\u0e32\u0e23</label><textarea class="form-control dark-input" id="eSymp" rows="3" style="min-height:100px">'+esc(j.symptom||'')+'</textarea></div>';
+h+='<div class="form-group-lg"><label class="form-label-lg">\u0e0a\u0e48\u0e32\u0e07</label><input type="text" class="form-control dark-input" id="eTech" value="'+esc(j.tech||'')+'"></div>';
+h+='<button onclick="saveEdit()" class="btn btn-green w-100 btn-lg">\ud83d\udcbe \u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01</button>';
+h+='<button onclick="closeModal()" class="btn btn-outline-dark w-100 btn-lg mt-2">\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01</button>';
+openModal(h);
+}
 
-function addQuickNote(){var n=document.getElementById('qnote');if(!n||!n.value.trim()){toast('\u274c \u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e2b\u0e21\u0e32\u0e22\u0e40\u0e2b\u0e15\u0e38\u0e01\u0e48\u0e2d\u0e19','er');return}var b=document.querySelector('#modalContent .btn-green');setBtnLoading(b,true,'...\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01');google.script.run.withSuccessHandler(function(){toast('\u2705 \u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e2b\u0e21\u0e32\u0e22\u0e40\u0e2b\u0e15\u0e38\u0e41\u0e25\u0e49\u0e27','ok');closeModal();loadData()}).withFailureHandler(function(e){setBtnLoading(b,false);toast('\u274c '+e.message,'er')}).addQuickNote(CURRENT_JOB_ID,n.value.trim(),'\u0e42\u0e2b\u0e19\u0e48\u0e07')}
+function saveEdit(){
+var n=(document.getElementById('eName').value||'').trim(),s=(document.getElementById('eSymp').value||'').trim(),t=(document.getElementById('eTech').value||'').trim();
+if(!n){toast('\u274c \u0e0a\u0e37\u0e48\u0e2d\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32\u0e2b\u0e49\u0e32\u0e21\u0e27\u0e48\u0e32\u0e07','er');return}
+var b=document.querySelector('#modalContent .btn-green');setBtnLoading(b,true,'...\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01');
+google.script.run.withSuccessHandler(function(){toast('\u2705 \u0e41\u0e01\u0e49\u0e44\u0e02\u0e41\u0e25\u0e49\u0e27','ok');closeModal();loadData()})
+.withFailureHandler(function(e){setBtnLoading(b,false);toast('\u274c '+(e.message||e),'er')}).updateJobById(CURRENT_JOB_ID,{name:n,symptom:s,tech:t});
+}
 
-function openNewJobModal(){var h='<h2>\u2795 \u0e40\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19\u0e43\u0e2b\u0e21\u0e48</h2><div class="form-group-lg" style="margin-top:18px"><label class="form-label-lg">\u0e0a\u0e37\u0e48\u0e2d\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32 *</label><input type="text" class="form-control dark-input" id="oName" placeholder="\u0e0a\u0e37\u0e48\u0e2d\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32" style="font-size:18px"></div><div class="form-group-lg"><label class="form-label-lg">\u0e40\u0e1a\u0e2d\u0e23\u0e4c\u0e42\u0e17\u0e23</label><input type="tel" class="form-control dark-input" id="oPhone" placeholder="08x-xxx-xxxx" style="font-size:18px"></div><div class="form-group-lg"><label class="form-label-lg">\u0e2d\u0e32\u0e01\u0e32\u0e23 / \u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14 *</label><textarea class="form-control dark-input" id="oSyp" rows="3" placeholder="\u0e2d\u0e32\u0e01\u0e32\u0e23\u0e40\u0e2a\u0e35\u0e22..." style="min-height:120px;font-size:17px"></textarea></div><div class="form-group-lg"><label class="form-label-lg">\u0e0a\u0e48\u0e32\u0e07\u0e17\u0e35\u0e48\u0e23\u0e31\u0e1a\u0e07\u0e32\u0e19</label><input type="text" class="form-control dark-input" id="oTech" placeholder="\u0e0a\u0e48\u0e32\u0e07" style="font-size:18px"></div><button onclick="doOpen()" class="btn btn-green w-100 btn-lg" style="font-size:18px;padding:16px">\ud83d\ude80 \u0e40\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19</button><button onclick="closeModal()" class="btn btn-outline-dark w-100 btn-lg mt-2">\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01</button>';openModal(h)}
+function addQuickNote(){
+var n=document.getElementById('qnote');if(!n||!n.value.trim()){toast('\u274c \u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e01\u0e48\u0e2d\u0e19','er');return}
+var b=document.querySelector('#modalContent .btn-green');setBtnLoading(b,true,'...\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01');
+google.script.run.withSuccessHandler(function(){toast('\u2705 \u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e41\u0e25\u0e49\u0e27','ok');closeModal();loadData()})
+.withFailureHandler(function(e){setBtnLoading(b,false);toast('\u274c '+e.message,'er')}).addQuickNote(CURRENT_JOB_ID,n.value.trim(),'\u0e42\u0e2b\u0e19\u0e48\u0e07');
+}
 
-function doOpen(){var n=(document.getElementById('oName').value||'').trim(),p=(document.getElementById('oPhone').value||'').trim(),s=(document.getElementById('oSyp').value||'').trim(),t=(document.getElementById('oTech').value||'').trim();if(!n){toast('\u274c \u0e43\u0e2a\u0e48\u0e0a\u0e37\u0e48\u0e2d\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32','er');return}if(!s){toast('\u274c \u0e43\u0e2a\u0e48\u0e2d\u0e32\u0e01\u0e32\u0e23','er');return}var b=document.querySelector('#modalContent .btn-green');setBtnLoading(b,true,'...\u0e40\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19');google.script.run.withSuccessHandler(function(r){toast('\ud83c\udf89 \u0e40\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19 '+((r&&r.job_id)?r.job_id:'?')+' \u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','ok');closeModal();loadData()}).withFailureHandler(function(e){setBtnLoading(b,false);toast('\u274c '+(e.message||e),'er')}).openJob({name:n,phone:p,symptom:s,tech:t})}
+function openNewJobModal(){
+var h='<h2>\u2795 \u0e40\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19\u0e43\u0e2b\u0e21\u0e48</h2>';
+h+='<div class="form-group-lg" style="margin-top:18px"><label class="form-label-lg">\u0e0a\u0e37\u0e48\u0e2d\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32 *</label><input type="text" class="form-control dark-input" id="oName" placeholder="\u0e0a\u0e37\u0e48\u0e2d\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32" style="font-size:18px"></div>';
+h+='<div class="form-group-lg"><label class="form-label-lg">\u0e40\u0e1a\u0e2d\u0e23\u0e4c\u0e42\u0e17\u0e23</label><input type="tel" class="form-control dark-input" id="oPhone" placeholder="08x-xxx-xxxx" style="font-size:18px"></div>';
+h+='<div class="form-group-lg"><label class="form-label-lg">\u0e2d\u0e32\u0e01\u0e32\u0e23 * *</label><textarea class="form-control dark-input" id="oSyp" rows="3" placeholder="\u0e2d\u0e32\u0e01\u0e32\u0e23\u0e40\u0e2a\u0e35\u0e22..." style="min-height:120px;font-size:17px"></textarea></div>';
+h+='<div class="form-group-lg"><label class="form-label-lg">\u0e0a\u0e48\u0e32\u0e07\u0e17\u0e35\u0e48\u0e23\u0e31\u0e1a\u0e07\u0e32\u0e19</label><input type="text" class="form-control dark-input" id="oTech" placeholder="\u0e0a\u0e48\u0e32\u0e07" style="font-size:18px"></div>';
+h+='<button onclick="doOpen()" class="btn btn-green w-100 btn-lg" style="font-size:18px;padding:16px">\ud83d\ude80 \u0e40\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19</button>';
+h+='<button onclick="closeModal()" class="btn btn-outline-dark w-100 btn-lg mt-2">\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01</button>';
+openModal(h);
+}
 
-function showNoteModal(){var h='<h2>\ud83d\udcdd \u0e2b\u0e21\u0e32\u0e22\u0e40\u0e2b\u0e15\u0e38</h2><div class="form-group-lg" style="margin-top:18px"><label class="form-label-lg">Job ID</label><input type="text" class="form-control dark-input" id="gNid" placeholder="\u0e40\u0e0a\u0e48\u0e19 J0001" style="font-size:18px"></div><div class="form-group-lg"><label class="form-label-lg">\u0e02\u0e49\u0e2d\u0e04\u0e27\u0e32\u0e21</label><textarea class="form-control dark-input" id="gNtx" rows="4" placeholder="\u0e1e\u0e34\u0e21\u0e1e\u0e4c..." style="min-height:140px;font-size:17px"></textarea></div><button onclick="saveGNote()" class="btn btn-green w-100 btn-lg">\ud83d\udcbe \u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01</button><button onclick="closeModal()" class="btn btn-outline-dark w-100 btn-lg mt-2">\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01</button>';openModal(h)}
+function doOpen(){
+var n=(document.getElementById('oName').value||'').trim(),p=(document.getElementById('oPhone').value||'').trim(),s=(document.getElementById('oSyp').value||'').trim(),t=(document.getElementById('oTech').value||'').trim();
+if(!n){toast('\u274c \u0e43\u0e2a\u0e48\u0e0a\u0e37\u0e48\u0e2d\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32','er');return}if(!s){toast('\u274c \u0e43\u0e2a\u0e48\u0e2d\u0e32\u0e01\u0e32\u0e23','er');return}
+var b=document.querySelector('#modalContent .btn-green');setBtnLoading(b,true,'...\u0e40\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19');
+google.script.run.withSuccessHandler(function(r){var jid=(r&&r.job_id)?r.job_id:'?';toast('\ud83c\udf89 \u0e40\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19 '+jid+' \u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','ok');closeModal();loadData()})
+.withFailureHandler(function(e){setBtnLoading(b,false);toast('\u274c '+(e.message||e),'er')}).openJob({name:n,phone:p,symptom:s,tech:t});
+}
 
-function saveGNote(){var id=(document.getElementById('gNid').value||'').trim(),n=(document.getElementById('gNtx').value||'').trim();if(!id){toast('\u274c \u0e43\u0e2a\u0e48 Job ID','er');return}if(!n){toast('\u274c \u0e43\u0e2a\u0e48\u0e2b\u0e21\u0e32\u0e22\u0e40\u0e2b\u0e15\u0e38','er');return}var b=document.querySelector('#modalContent .btn-green');setBtnLoading(b,true,'...\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01');google.script.run.withSuccessHandler(function(){toast('\u2705 \u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e41\u0e25\u0e49\u0e27','ok');closeModal();loadData()}).withFailureHandler(function(e){setBtnLoading(b,false);toast('\u274c '+(e.message||e),'er')}).addQuickNote(id,n,'\u0e42\u0e2b\u0e19\u0e48\u0e07')}
+function showNoteModal(){
+var h='<h2>\ud83d\udcdd \u0e2b\u0e21\u0e32\u0e22\u0e40\u0e2b\u0e15\u0e38</h2>';
+h+='<div class="form-group-lg" style="margin-top:18px"><label class="form-label-lg">Job ID</label><input type="text" class="form-control dark-input" id="gNid" placeholder="\u0e40\u0e0a\u0e48\u0e19 J0001" style="font-size:18px"></div>';
+h+='<div class="form-group-lg"><label class="form-label-lg">\u0e02\u0e49\u0e2d\u0e04\u0e27\u0e32\u0e21</label><textarea class="form-control dark-input" id="gNtx" rows="4" placeholder="\u0e1e\u0e34\u0e21\u0e1e\u0e4c..." style="min-height:140px;font-size:17px"></textarea></div>';
+h+='<button onclick="saveGNote()" class="btn btn-green w-100 btn-lg">\ud83d\udcbe \u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01</button>';
+h+='<button onclick="closeModal()" class="btn btn-outline-dark w-100 btn-lg mt-2">\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01</button>';
+openModal(h);
+}
 
-function processPhotos(){if(!confirm('\u0e40\u0e23\u0e34\u0e48\u0e21\u0e08\u0e31\u0e14\u0e23\u0e39\u0e1b\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14?'))return;showLoading();google.script.run.withSuccessHandler(function(r){hideLoading();if(r)toast('\u2705 \u0e08\u0e31\u0e14\u0e23\u0e39\u0e1b \u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 '+(r.successful||0)+' | \u0e1c\u0e34\u0e14 '+(r.failed||0),'ok');else toast('\u2705 \u0e08\u0e31\u0e14\u0e23\u0e39\u0e1b\u0e40\u0e23\u0e35\u0e22\u0e1a\u0e23\u0e49\u0e2d\u0e22','ok');loadData()}).withFailureHandler(function(e){hideLoading();toast('\u274c '+(e.message||e),'er')}).processImageSorting()}
+function saveGNote(){
+var id=(document.getElementById('gNid').value||'').trim(),n=(document.getElementById('gNtx').value||'').trim();
+if(!id){toast('\u274c \u0e43\u0e2a\u0e48 Job ID','er');return}if(!n){toast('\u274c \u0e43\u0e2a\u0e48\u0e02\u0e49\u0e2d\u0e04\u0e27\u0e32\u0e21','er');return}
+var b=document.querySelector('#modalContent .btn-green');setBtnLoading(b,true,'...\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01');
+google.script.run.withSuccessHandler(function(){toast('\u2705 \u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e41\u0e25\u0e49\u0e27','ok');closeModal();loadData()})
+.withFailureHandler(function(e){setBtnLoading(b,false);toast('\u274c '+(e.message||e),'er')}).addQuickNote(id,n,'\u0e42\u0e2b\u0e19\u0e48\u0e07');
+}
+
+function sendSummary(){
+try{showLoading();google.script.run.withSuccessHandler(function(r){hideLoading();if(r&&r.success)toast('\u2705 \u0e2a\u0e48\u0e07 LINE \u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','ok');else toast('\u274c '+JSON.stringify(r),'er');loadData()}).withFailureHandler(function(e){hideLoading();toast('\u274c '+(e.message||e),'er')}).sendDashboardSummary()}catch(x){toast('Error: '+x.message,'er')}
+}
+
+function processPhotos(){
+if(!confirm('\u0e40\u0e23\u0e34\u0e48\u0e21\u0e08\u0e31\u0e14\u0e23\u0e39\u0e1b\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14?'))return;showLoading();
+google.script.run.withSuccessHandler(function(r){hideLoading();if(r)toast('\u2705 \u0e08\u0e31\u0e14\u0e23\u0e39\u0e1b \u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 '+(r.successful||0)+' | \u0e1c\u0e34\u0e14 '+(r.failed||0),'ok');else toast('\u2705 \u0e40\u0e23\u0e35\u0e22\u0e1a\u0e23\u0e49\u0e2d\u0e22','ok');loadData()})
+.withFailureHandler(function(e){hideLoading();toast('\u274c '+(e.message||e),'er')}).processImageSorting();
+}
 </script>
