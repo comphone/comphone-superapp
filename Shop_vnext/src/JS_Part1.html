@@ -171,9 +171,7 @@ function renderSwiper(jobs) {
     inner += '<span class="job-swiper-id">'+esc(j.id)+'</span>';
     inner += statusBadge(j.status);
     inner += '</div>';
-    if(j.folder) {
-      inner += '<button class="btn btn-sm btn-outline-dark" style="padding:6px 12px;font-size:12px" onclick="event.stopPropagation();window.open('+JSON.stringify(j.folder)+',\'_blank\')">📁</button>';
-    }
+    inner += '<button class="btn btn-success btn-sm" style="padding:6px 12px;font-size:13px" onclick="event.stopPropagation();viewJob('+JSON.stringify(j.id)+');setTimeout(function(){showPhotoUploadModal()},300)" title="เพิ่มรูปภาพ">📷</button>';
     inner += '</div>';
     inner += '<div class="job-swiper-name">'+esc(j.customer)+'</div>';
     if(j.symptom) inner += '<div class="job-swiper-symp">'+esc(j.symptom)+'</div>';
