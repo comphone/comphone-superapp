@@ -1,0 +1,42 @@
+<script>
+/* V366 JS_Scanner — Barcode/QR Scanner */
+var HQR=null;
+
+function showScanner(){
+var h='<h2>\ud83d\udcf7 \u0e2a\u0e41\u0e01\u0e19\u0e40\u0e1a\u0e34\u0e01\u0e02\u0e2d\u0e07</h2><div class="modal-subtitle">\u0e2a\u0e41\u0e01\u0e19 Barcode/QR \u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e1a\u0e34\u0e01\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32\u0e08\u0e32\u0e01\u0e04\u0e25\u0e31\u0e07</div>';
+h+='<div id="sArea" class="scanner-area"><div style="color:var(--t3);font-size:16px">\u23d9 \u0e01\u0e33\u0e25\u0e31\u0e07\u0e40\u0e1b\u0e34\u0e14\u0e01\u0e25\u0e49\u0e2d\u0e07...</div></div>';
+h+='<div class="form-group-lg mt-3"><label class="form-label-lg">\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e23\u0e2b\u0e31\u0e2a</label><div class="input-group"><input type="text" class="form-control dark-input" id="sMan" placeholder="Barcode / \u0e0a\u0e37\u0e48\u0e2d\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32..."><button class="btn btn-blue btn-lg" onclick="mLookup()" style="width:auto;padding:12px 20px">\ud83d\udd0d</button></div></div>';
+h+='<div id="sRes"></div><button onclick="closeModal();stopScan()" class="btn btn-outline-dark w-100 btn-lg mt-3">\u2715 \u0e1b\u0e34\u0e14</button>';
+openModal(h);startCam()}
+
+function startCam(){
+try{if(typeof Html5Qrcode==='undefined'){var s=document.getElementById('sArea');if(s)s.innerHTML='<div style="color:var(--red);font-size:15px;text-align:center;padding:20px">\u26a0\ufe0f \u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e25\u0e34\u0e1a\u0e23\u0e32\u0e23\u0e35 \u0e43\u0e0a\u0e49\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e23\u0e2b\u0e31\u0e2a\u0e41\u0e17\u0e19</div>';return}
+HQR=new Html5Qrcode('sArea',{verbose:false});
+HQR.start({facingMode:'environment'},{fps:10,qrbox:{width:250,height:140}},function(c){stopScan();lookupBC(c)},function(){}).catch(function(){var s=document.getElementById('sArea');if(s)s.innerHTML='<div style="color:var(--orange);font-size:15px;text-align:center;padding:20px">\u26a0\ufe0f \u0e40\u0e1b\u0e34\u0e14\u0e01\u0e25\u0e49\u0e2d\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49 \u0e43\u0e0a\u0e49\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e17\u0e14\u0e41\u0e17\u0e19</div>'})}
+catch(e){var s=document.getElementById('sArea');if(s)s.innerHTML='<div style="color:var(--red);font-size:15px;text-align:center;padding:20px">\u274c '+e.message+'</div>'}}
+
+function stopScan(){try{if(HQR){HQR.stop().catch(function(){});HQR=null}}catch(e){}}
+function mLookup(){var i=document.getElementById('sMan');if(!i||!i.value.trim()){toast('\u274c \u0e43\u0e2a\u0e23\u0e2b\u0e31\u0e2a','er');return}lookupBC(i.value.trim())}
+
+function lookupBC(code){
+try{var el=document.getElementById('sRes');if(el)el.innerHTML='<div style="color:var(--t2);font-size:16px;text-align:center;padding:12px">\u23d9 \u0e04\u0e49\u0e19 '+esc(code)+'...</div>';
+google.script.run.withSuccessHandler(function(r){
+var e2=document.getElementById('sRes');if(!e2)return;
+if(r&&r.found){var sc=r.alert?'var(--red)':'var(--green)',qc=JSON.stringify(r.code),qn=JSON.stringify(r.name);
+e2.innerHTML='<div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:16px;padding:18px;margin:14px 0"><div style="font-size:20px;font-weight:900;color:var(--green)">\u2705 '+esc(r.name)+'</div><div style="font-size:15px;color:var(--t2);margin-top:8px">\u0e23\u0e2b\u0e31\u0e2a: <b>'+esc(r.code)+'</b></div><div style="font-size:16px;color:var(--t2)">\u0e04\u0e07\u0e40\u0e2b\u0e25\u0e37\u0e2d: <b style="color:'+sc+'">'+r.effective+' \u0e0a\u0e34\u0e49\u0e19</b>'+(r.reserved>0?' <span style="color:var(--orange);font-size:14px">(\u0e08\u0e2d\u0e07 '+r.reserved+')</span>':'')+'</div>'+(r.cost?'<div style="font-size:14px;color:var(--t3);margin-top:4px">\u0e15\u0e49\u0e19\u0e17\u0e38\u0e19:'+r.cost+' \u0e1a. | \u0e02\u0e32\u0e22:'+r.price+' \u0e1a.</div>':'')+'</div>'+'<div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:16px;padding:18px;margin:14px 0"><div style="font-size:14px;font-weight:700;color:var(--orange);margin-bottom:12px">\ud83d\udce6 \u0e40\u0e1a\u0e34\u0e01</div><div class="form-group-lg"><label class="form-label-lg">\u0e08\u0e33\u0e19\u0e27\u0e19</label><input type="number" id="wQty" value="1" min="1" max="'+r.effective+'" class="form-control dark-input" style="text-align:center;width:100px"></div><div class="form-group-lg"><label class="form-label-lg">Job ID (\u0e16\u0e49\u0e32\u0e21\u0e35)</label><input type="text" id="wJob" placeholder="\u0e40\u0e0a\u0e48\u0e19 J0001" class="form-control dark-input"></div><button onclick="wScan('+qc+','+qn+')" class="btn btn-green w-100 btn-lg">\u2705 \u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e40\u0e1a\u0e34\u0e01</button></div>'}
+else{e2.innerHTML='<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:16px;padding:18px;margin:14px 0"><div style="color:var(--red);font-size:17px;font-weight:700">\u274c \u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32: '+esc(code)+'</div>'+(r.message?'<div style="color:var(--t3);font-size:14px;margin-top:6px">'+esc(r.message)+'</div>':'')+'</div>'}})
+.withFailureHandler(function(e){var e2=document.getElementById('sRes');if(e2)e2.innerHTML='<div style="color:var(--red);font-size:15px;text-align:center;padding:10px">\u274c '+(e.message||e)+'</div>'}).barcodeLookup({barcode:code})}
+catch(x){toast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+x.message,'er')}}
+
+function wScan(code,name){
+try{var qEl=document.getElementById('wQty'),jEl=document.getElementById('wJob'),qty=parseInt(qEl?qEl.value:1)||1,jId=jEl?jEl.value.trim:'';
+if(qty<1){toast('\u274c \u0e08\u0e33\u0e19\u0e27\u0e19\u0e15\u0e49\u0e2d\u0e07\u0e21\u0e35\u0e04\u0e48\u0e32','er');return}
+var el=document.getElementById('sRes');if(el)el.innerHTML='<div style="color:var(--t2);font-size:16px;text-align:center;padding:12px">\u23d9 \u0e40\u0e1a\u0e34\u0e01 '+esc(name)+' \xd7'+qty+'...</div>';
+google.script.run.withSuccessHandler(function(r){
+var e2=document.getElementById('sRes');if(!e2)return;
+if(r&&r.success){var ac=r.alert?'var(--red)':'var(--green)';
+e2.innerHTML='<div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:16px;padding:24px;margin:14px 0"><div style="font-size:22px;font-weight:900;color:var(--green)">\u2705 \u0e40\u0e1a\u0e34\u0e01\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08!</div><div style="font-size:17px;margin-top:10px">'+esc(r.name||name)+' \xd7'+(r.withdrawn||qty)+'</div>'+(r.jobId?'<div style="font-size:15px;color:var(--t2);margin-top:6px">\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e43\u0e19\u0e07\u0e32\u0e19: '+esc(r.jobId)+'</div>':'')+'<div style="font-size:16px;color:var(--t2);margin-top:8px">\u0e04\u0e07\u0e40\u0e2b\u0e25\u0e37\u0e2d: <b style="color:'+ac+'">'+r.remaining+' \u0e0a\u0e34\u0e49\u0e19</b></div>'+(r.alert?'<div style="color:var(--red);font-size:15px;font-weight:700;margin-top:10px">\u26a0\ufe0f \u0e2a\u0e15\u0e47\u0e2d\u0e01\u0e15\u0e48\u0e33!</div>':'')+'<button onclick="closeModal();stopScan();loadData()" class="btn btn-blue w-100 btn-lg mt-3">\ud83d\udd04 \u0e01\u0e25\u0e31\u0e1a</button></div>'}
+else{e2.innerHTML='<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:16px;padding:16px;margin:14px 0"><div style="color:var(--red);font-size:16px">\u274c '+(r?(r.error||JSON.stringify(r)):'\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14')+'</div></div>'}})
+.withFailureHandler(function(e){var e2=document.getElementById('sRes');if(e2)e2.innerHTML='<div style="color:var(--red);font-size:10px;text-align:center;padding:10px">\u274c '+(e.message||e)+'</div>'}).scanWithdrawStock({barcode:code,qty:qty,job_id:jId})}
+catch(x){toast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+x.message,'er')}}
+</script>

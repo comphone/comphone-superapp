@@ -1,0 +1,43 @@
+<script>
+/* V366 JS_Photo — Photo Upload + Camera Capture */
+function showPhotoUploadModal(){
+var h='<h2>\ud83d\udcf7 \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e</h2><div class="modal-subtitle">\u0e2d\u0e31\u0e1b\u0e42\u0e2b\u0e25\u0e14\u0e23\u0e39\u0e1b\u0e07\u0e32\u0e19 \u2014 \u0e16\u0e48\u0e32\u0e22\u0e08\u0e32\u0e01\u0e01\u0e25\u0e49\u0e2d\u0e07\u0e21\u0e37\u0e2d\u0e16\u0e37\u0e2d\u0e44\u0e14\u0e49</div>';
+h+='<div class="form-group-lg"><label class="form-label-lg">\ud83d\udcf8 \u0e16\u0e48\u0e32\u0e22\u0e08\u0e32\u0e01\u0e01\u0e25\u0e49\u0e2d\u0e07</label>';
+h+='<input type="file" id="pcam" accept="image/*" capture="environment" class="form-control dark-input" onchange="hPhoto(this)" style="padding:10px 12px;font-size:14px;min-height:auto"></div>';
+h+='<div style="text-align:center;color:var(--t3);margin:8px 0">\u2014 or \u2014</div>';
+h+='<div class="form-group-lg"><label class="form-label-lg">\ud83d\udcc1 \u0e40\u0e25\u0e37\u0e2d\u0e01\u0e08\u0e32\u0e01\u0e41\u0e1f\u0e49\u0e21</label>';
+h+='<input type="file" id="pfile" accept="image/*" multiple class="form-control dark-input" onchange="hPhoto(this)" style="padding:10px 12px;font-size:14px;min-height:auto"></div>';
+h+='<div id="pprev" class="mb-3"></div>';
+h+='<button id="upbtn" onclick="doUpload()" class="btn btn-green w-100 btn-lg" disabled>\ud83d\ude80 \u0e2d\u0e31\u0e1b\u0e42\u0e2b\u0e25\u0e14\u0e23\u0e39\u0e1b</button>';
+h+='<button onclick="closeModal()" class="btn btn-outline-dark w-100 btn-lg mt-2">\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01</button>';
+openModal(h)}
+
+function hPhoto(inp){
+try{var pv=document.getElementById('pprev');if(!pv)return;var f=inp.files;if(!f||f.length===0)return;
+var h='<div class="row g-2">';for(var i=0;i<f.length;i++){
+h+='<div class="col-4"><div style="background:var(--bg);border-radius:10px;overflow:hidden;aspect-ratio:1"><img src="'+URL.createObjectURL(f[i])+'" style="width:100%;height:100%;object-fit:cover"></div><div style="text-align:center;font-size:10px;color:var(--t3);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f[i].name)+'</div></div>'}
+h+='</div>';pv.innerHTML=h;var b=document.getElementById('upbtn');if(b)b.disabled=false}catch(x){toast('\u274c '+x.message,'er')}}
+
+function doUpload(){
+var inp=document.getElementById('pcam');
+if(!inp||!inp.files||inp.files.length===0){inp=document.getElementById('pfile')}
+if(!inp||!inp.files||inp.files.length===0){toast('\u274c \u0e40\u0e25\u0e37\u0e2d\u0e01\u0e23\u0e39\u0e1b\u0e01\u0e48\u0e2d\u0e19','er');return}
+var files=inp.files,jid=CURRENT_JOB_ID;
+if(!jid){toast('\u274c \u0e44\u0e21\u0e48\u0e1e\u0e1a Job ID','er');return}
+var btn=document.getElementById('upbtn');setBtnLoading(btn,true,'...\u0e2d\u0e31\u0e1b\u0e42\u0e2b\u0e25\u0e14');
+var up=0,errs=[];
+function next(i){
+if(i>=files.length){setBtnLoading(btn,false);
+if(errs.length===0)toast('\u2705 \u0e2d\u0e31\u0e1b '+up+' \u0e23\u0e39\u0e1b\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08!','ok');
+else toast('\u26a0\ufe0f \u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 '+up+' | \u0e1c\u0e34\u0e14 '+errs.length,'wa');
+closeModal();loadData();return}
+var f=files[i],rd=new FileReader();
+rd.onload=function(ev){var b64=ev.target.result.split(',')[1];
+try{google.script.run.withSuccessHandler(function(r){up++;if(r&&r.error)errs.push(f.name+': '+r.error);next(i+1)})
+.withFailureHandler(function(e){errs.push(f.name+': '+(e.message||e));next(i+1)})
+.saveJobPhoto({job_id:jid,customer:findJob(jid)?findJob(jid).customer:'',file_name:f.name,image_base64:b64,mime_type:f.type||'image/jpeg'})}
+catch(e2){errs.push(f.name+': '+e2.message);next(i+1)}};
+rd.onerror=function(){errs.push(f.name+': read error');next(i+1)};
+rd.readAsDataURL(f)}
+next(0)}
+</script>
