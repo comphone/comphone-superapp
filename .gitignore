@@ -13,12 +13,3 @@ agents/
 scripts/
 shop/
 _backup_*/
-*.py
-*.js
-*.mjs
-*.ps1
-*.txt
-*.md
-*.json
-.clasp.json
-.claspignore
