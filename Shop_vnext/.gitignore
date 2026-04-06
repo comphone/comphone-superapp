@@ -1,0 +1,17 @@
+node_modules/
+*.lock
+.DS_Store
+*.msi
+*.exe
+clouddflared.*
+package-lock.json
+.DS_Store
+.openclaw/
+memory/
+agents/
+scripts/
+shop/
+shop/backup/
+*.pyc
+__pycache__/
+.cache/
