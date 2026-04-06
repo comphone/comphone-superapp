@@ -1,15 +1,77 @@
 // ============================================================
-// Dashboard.gs - Dashboard Data APIs (V366)
-// doGet + include moved to Router.gs (single entry point)
+// Dashboard.gs - Dashboard Data APIs (V366 — Single Read)
+// doGet + include moved to Router.gs
+// V366-Perf: Single spreadsheet read, no DriveApp in loops
 // ============================================================
 
 function getDashboardData() {
-  return {
-    success: true,
-    jobs: getDashboardJobs(),
-    inventory: getDashboardInventory(),
-    summary: getDashboardSummary()
-  };
+  try {
+    var ss = getComphoneSheet();
+    var jsh = findSheetByName(ss, 'DBJOBS');
+    var ish = findSheetByName(ss, 'DB_INVENTORY');
+
+    // Read jobs
+    var p = 0, c = 0, ip = 0, cx = 0;
+    var jobs = [];
+    var tj = 0;
+    if (jsh) {
+      var all = jsh.getDataRange().getValues();
+      var headers = all[0];
+      var sc = 3, cc = 9, fc = 12;
+      for (var hi = 0; hi < headers.length; hi++) {
+        var h = String(headers[hi]);
+        if (h.indexOf('สถานะ') > -1 || h.indexOf('สถาน') > -1) sc = hi;
+        if (h.indexOf('เวลาสร้าง') > -1) cc = hi;
+        if (h.indexOf('folder') > -1 || h.indexOf('ลิงก์โฟลเดอร์') > -1 || h.indexOf('folder_url') > -1) fc = hi;
+      }
+      tj = all.length - 1;
+      for (var i = all.length - 1; i >= 1 && i >= all.length - 50; i++) {
+        var dateStr = '-';
+        try { if (all[i][cc] && all[i][cc] instanceof Date) dateStr = Utilities.formatDate(all[i][cc], 'Asia/Bangkok', 'dd/MM HH:mm'); } catch(e) {}
+        var st = String(all[i][sc] || '');
+        jobs.push({
+          id: String(all[i][0] || ''), customer: String(all[i][1] || ''),
+          symptom: String(all[i][2] || ''), status: st,
+          tech: String(all[i][4] || '-'), created: dateStr,
+          folder: String(all[i][fc] || '')
+        });
+        if (st === 'Completed') c++;
+        else if (st === 'InProgress' || st.charAt(0) === '\u0e01') ip++;
+        else if (st.indexOf('\u0e22\u0e01') > -1) cx++;
+        else p++;
+      }
+    }
+
+    // Read inventory
+    var items = [], ls = 0, ti = 0;
+    if (ish) {
+      var ia = ish.getDataRange().getValues();
+      for (var j = 1; j < ia.length; j++) {
+        var q = Number(ia[j][2] || 0);
+        ti++;
+        if (q < 5) ls++;
+        items.push({
+          code: String(ia[j][0] || ''), name: String(ia[j][1] || ''),
+          qty: q, price: Number(ia[j][4] || 0), alert: q < 5
+        });
+      }
+    }
+
+    // Photo queue count
+    var pp = 0;
+    try { pp = getPhotoQueueCount() || 0; } catch(e) {}
+    var dateStr = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'dd/MM HH:mm');
+
+    return {
+      success: true,
+      summary: { pending: p, inProgress: ip, completed: c, cancelled: cx, lowStock: ls, pendingPhotos: pp, totalJobs: tj, totalItems: ti, date: dateStr },
+      jobs: jobs,
+      inventory: items
+    };
+  } catch(e) {
+    Logger.log('getDashboardData error: ' + e);
+    return { success: false, error: e.toString(), summary: {}, jobs: [], inventory: [] };
+  }
 }
 
 // ============================================================
