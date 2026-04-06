@@ -159,6 +159,75 @@ function cronMorningAlert() {
 }
 
 // ============================================================
+// 📊 Daily Job Status Summary — Cron trigger
+// ============================================================
+function sendJobStatusSummary() {
+  try {
+    var ss = getComphoneSheet();
+    var jsh = findSheetByName(ss, 'DBJOBS');
+    if (!jsh) return { error: 'DBJOBS not found' };
+    var jobs = jsh.getDataRange().getValues();
+    if (jobs.length < 2) return { success: true, message: 'No jobs' };
+
+    var headers = jobs[0];
+    var ci = 1, si = 3, ti = 4, di = 9; // customer, status, tech, created col indices
+    for (var h = 0; h < headers.length; h++) {
+      var hn = String(headers[h]);
+      if (hn.indexOf('ชื่อ') > -1 || hn.indexOf('ชื่อลูกค้า') > -1) ci = h;
+      if (hn.indexOf('สถานะ') > -1 || hn.indexOf('สถาน') > -1) si = h;
+      if (hn.indexOf('ช่าง') > -1 || hn.indexOf('ช่างที่') > -1) ti = h;
+      if (hn.indexOf('เวลาสร้าง') > -1 || hn.indexOf('สร้าง') > -1 || hn.indexOf('created') > -1) di = h;
+    }
+
+    var pending = 0, inprog = 0, completed = 0, canceled = 0, todayJobs = [];
+    var todayStr = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd');
+
+    for (var i = 1; i < jobs.length; i++) {
+      var s = String(jobs[i][si] || '');
+      if (s.indexOf('รอดำ') === 0) pending++;
+      else if (s === 'InProgress' || s.indexOf('กำลัง') === 0) inprog++;
+      else if (s === 'Completed') completed++;
+      else if (s.indexOf('ยกเลิก') > -1) canceled++;
+
+      // Check if created today from DB_JOBS col (index 9)
+      var d = '';
+      if (jobs[i][di] instanceof Date) {
+        d = Utilities.formatDate(jobs[i][di], 'Asia/Bangkok', 'yyyy-MM-dd');
+      } else {
+        d = String(jobs[i][di] || '').substring(0, 10);
+      }
+      if (d === todayStr || d.indexOf(todayStr) === 0) {
+        todayJobs.push({ id: String(jobs[i][0] || ''), customer: String(jobs[i][ci] || ''), status: s, tech: String(jobs[i][ti] || '') });
+      }
+    }
+
+    var total = (pending + inprog + completed + canceled) || (jobs.length - 1);
+    var msg = '📊 สรุปงานรายวัน ' + Utilities.formatDate(new Date(), 'Asia/Bangkok', 'd MMM yyyy') + '\n';
+    msg += '═══════════════════════\n';
+    msg += '✅ เสร็จแล้ว: ' + completed + ' งาน\n';
+    msg += '🔄 กำลังทำ: ' + inprog + ' งาน\n';
+    msg += '⏳ รอดำเนินการ: ' + pending + ' งาน\n';
+    msg += '❌ ยกเลิก: ' + canceled + ' งาน\n';
+    msg += '📋 รวมทั้งหมด: ' + total + ' งาน\n';
+
+    if (todayJobs.length > 0) {
+      msg += '\n📝 งานวันนี้ (' + todayJobs.length + ' งาน)\n';
+      for (var j = 0; j < todayJobs.length; j++) {
+        msg += '  ' + todayJobs[j].id + ' | ' + todayJobs[j].customer + ' | ' + (todayJobs[j].tech || '-');
+      }
+    }
+
+    sendLineNotify({ message: msg, room: 'TECHNICIAN' });
+    sendLineNotify({ message: '💰 สรุปการเงินวันนี้\n✅ ปิดแล้ว: ' + completed + ' งาน\nรวม: ' + total + ' งาน', room: 'ACCOUNTING' });
+
+    return { success: true, pending: pending, inprog: inprog, completed: completed, canceled: canceled };
+  } catch (e) {
+    Logger.log('sendJobStatusSummary error: ' + e);
+    return { success: false, error: e.toString() };
+  }
+}
+
+// ============================================================
 // 📋 CRM Notification — บันทึก Log
 // ============================================================
 function sendCRMNotification(data) {

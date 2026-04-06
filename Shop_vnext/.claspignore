@@ -1,0 +1,13 @@
+# Ignore non-GAS files
+gps-pipeline.js
+openclaw-line-hook.js
+vision-analysis.js
+test-e2e-final.js
+test-e2e.ps1
+test-classify.js
+
+# Don't push these
+package*.json
+*.lock
+node_modules/
+.DS_Store
