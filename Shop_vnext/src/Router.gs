@@ -133,7 +133,8 @@ function doPost(e) {
       'reserveItems': 'reserveItems', 'จองของ': 'reserveItems',
       'releaseReservation': 'releaseReservation', 'คืนจอง': 'releaseReservation',
       'cutStockAuto': 'cutStockAuto', 'ตัดสต็อก': 'cutStockAuto',
-      'reorderSuggestion': 'reorderSuggestion', 'สั่งซื้อแนะนำ': 'reorderSuggestion'
+      'reorderSuggestion': 'reorderSuggestion', 'สั่งซื้อแนะนำ': 'reorderSuggestion',
+      'getTechnicianKPI': 'getTechnicianKPI', 'KPIช่าง': 'getTechnicianKPI'
     };
     var norm = actionMap[action] || action;
     var result = { action: norm };
@@ -243,6 +244,9 @@ function doPost(e) {
         break;
       case 'generateWarranty':
         result.success = true; result.data = generateWarrantyPDF(data.job_id || '');
+        break;
+      case 'getTechnicianKPI':
+        result.success = true; result.data = getTechnicianKPI(data.techName || null);
         break;
       default:
         result.success = false;

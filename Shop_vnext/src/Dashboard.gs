@@ -535,3 +535,84 @@ function getCRMSchedule() {
     return { error: e.toString() };
   }
 }
+
+// ============================================================
+// 📊 Technician KPI Dashboard
+// ============================================================
+function getTechnicianKPI(techName) {
+  try {
+    var ss = getComphoneSheet();
+    var jsh = findSheetByName(ss, 'DBJOBS');
+    if (!jsh) return { error: 'DBJOBS not found' };
+
+    var jobs = jsh.getDataRange().getValues();
+    var sc = 3, cc = 9, tc = 4;
+    var headers = jobs[0];
+    for (var hi = 0; hi < headers.length; hi++) {
+      var h = String(headers[hi]);
+      if (h.indexOf('สถานะ') > -1 || h.indexOf('สถาน') > -1) sc = hi;
+      if (h.indexOf('เวลาสร้าง') > -1) cc = hi;
+      if (h.indexOf('ช่าง') > -1 || h.indexOf('tech') > -1) tc = hi;
+    }
+
+    // Aggregate by tech
+    var kpis = {};
+    var techNames = {};
+
+    for (var i = 1; i < jobs.length; i++) {
+      var row = jobs[i];
+      var tech = String(row[tc] || '-').trim();
+      if (!tech || tech === '-' || tech === 'null') continue;
+
+      if (techName && tech.indexOf(techName) === -1) continue;
+
+      var status = String(row[sc] || '');
+      var created = row[cc];
+
+      if (!kpis[tech]) {
+        kpis[tech] = { name: tech, total: 0, pending: 0, inProgress: 0, completed: 0, canceled: 0, revenue: 0 };
+      }
+      kpis[tech].total++;
+      if (status === 'Completed') kpis[tech].completed++;
+      else if (status === 'InProgress' || status.indexOf('กำลัง') === 0) kpis[tech].inProgress++;
+      else if (status.indexOf('ยก') > -1) kpis[tech].canceled++;
+      else if (status.indexOf('รอ') === 0 || status.indexOf('รอดำ') === 0) kpis[tech].pending++;
+    }
+
+    // Get revenue from DB_BILLING
+    var billSh = findSheetByName(ss, 'DB_BILLING');
+    if (billSh) {
+      var bills = billSh.getDataRange().getValues();
+      for (var bi = 1; bi < bills.length; bi++) {
+        var jobId = String(bills[bi][0] || '');
+        if (!jobId) continue;
+        // Find the job's tech
+        for (var ji = 1; ji < jobs.length; ji++) {
+          if (String(jobs[ji][0]) === jobId) {
+            var tech = String(jobs[ji][tc] || '-').trim();
+            if (kpis[tech]) {
+              kpis[tech].revenue += Number(bills[bi][3] || 0);
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    var result = Object.keys(kpis).map(function(k) { return kpis[k]; });
+    result.sort(function(a, b) { return b.total - a.total; });
+
+    return {
+      success: true,
+      kpis: result,
+      summary: {
+        totalTechs: result.length,
+        totalJobs: result.reduce(function(s, r) { return s + r.total; }, 0),
+        totalCompleted: result.reduce(function(s, r) { return s + r.completed; }, 0),
+        totalRevenue: result.reduce(function(s, r) { return s + r.revenue; }, 0)
+      }
+    };
+  } catch(e) {
+    return { error: e.toString() };
+  }
+}

@@ -5,8 +5,8 @@
 ### Comphone Super App VNext (V366 — Active Production)
 - **สถานะ:** ✅ Multi-File Architecture (17 ไฟล์ GAS, Pro-Hybrid UI)
 - **Script ID:** `1-aoCd5gXoo1dX4FjW62l8JknR3ZPiaf1W7YEmEdtq8gnRzSp4Hwj6043`
-- **Deployment ID:** `AKfycbz-rVhk1pClkDCkhkM9JvEAEo1JbVJlB16KOTo5mbF-INW_GQcSneeCPU_02pbLKwNoeQ` (@393)
-- **Web App URL:** `https://script.google.com/macros/s/AKfycbz-rVhk1pClkDCkhkM9JvEAEo1JbVJlB16KOTo5mbF-INW_GQcSneeCPU_02pbLKwNoeQ/exec`
+- **Deployment ID:** `AKfycbwMt4GPhghGAcqAOK-QrMXjNl08I0LaUoLYQw5pzwVr1_ShAg-vvRsNKQ8Uv_e1Z36d` (@398)
+- **Web App URL:** `https://script.google.com/macros/s/AKfycbwMt4GPhghGAcqAOK-QrMXjNl08I0LaUoLYQw5pzwVr1_ShAg-vvRsNKQ8Uv_e1Z36d/exec`
 - **LINE Webhook:** `https://openclaw.comphones101.win/line/webhook`
 
 #### โครงสร้างไฟล์ (V366)
@@ -31,20 +31,20 @@
 - **V366** — Pro-Hybrid: Pure CSS (no CDN), Slate-900, 16px font, 50px inputs, 95vh modal
 
 #### ฟีเจอร์เสริม (Local files, ยังไม่ได้ push ขึ้น GAS)
-- SmartAssignment.gs — GPS Route Optimization (pushed but legacy)
-- VisionAnalysis.gs — Vision AI (pushed)
-- GpsPipeline.gs — GPS Pipeline + อำเภอ (pushed)
-- PhotoQueue.gs — Photo queue + auto sorting (pushed)
-- LineBot.gs — LINE Bot pipeline (pushed)
-- AutoBackup.gs — Auto backup (pushed)
+- SmartAssignment.gs — GPS Route Optimization ✅ pushed
+- VisionAnalysis.gs — Vision AI ✅ pushed
+- GpsPipeline.gs — GPS Pipeline + อำเภอ ✅ pushed
+- PhotoQueue.gs — Photo queue + auto sorting ✅ pushed
+- LineBot.gs — LINE Bot pipeline ✅ pushed
+- AutoBackup.gs — Auto backup ✅ pushed
 
 #### ฟีเจอร์เสริม (Local .js files, ยังไม่ได้ push ขึ้น GAS)
-- SmartAssignment.js — GPS Route Optimization
-- vision-analysis.js — Vision AI (Qwen-VL)
-- gps-pipeline.js — GPS Pipeline + อำเภอ
-- line-gas-bridge.js — LINE Bot pipeline
-- openclaw-line-hook.js — OpenClaw hook
-- responses.js — LINE Flex Messages
+- SmartAssignment.js — GPS Route Optimization ✅ ลบแล้ว (gs เดียวพอ)
+- vision-analysis.js — Vision AI ✅ ลบแล้ว
+- gps-pipeline.js — GPS Pipeline + อำเภอ ✅ ลบแล้ว
+- line-gas-bridge.js — LINE Bot pipeline ✅ ลบแล้ว
+- openclaw-line-hook.js — OpenClaw hook ✅ ลบแล้ว
+- responses.js — LINE Flex Messages ✅ ลบแล้ว
 
 ### Comphone Super App V5.0 (Legacy)
 - **Script ID:** `1_Rq0DmjwHZ0Z14K1zhXxilbgD6TNyu8DDvS4xPoT25xo8oWcsRPby6sq`
@@ -101,7 +101,7 @@
 - ถ้าไม่มีหลักฐาน → reject + regenerate
 
 ## Enhancement Roadmap (ยังไม่ได้ทำ)
-- **GPS Tracking & Route Optimization** — SmartAssignment.js พร้อมแล้ว (local)
-- **Technician KPI Dashboard**
-- **OpenAI Memory Sync** — API Key 401
-- **Push ฟีเจอร์เสริมขึ้น GAS** — vision-analysis, GPS pipeline, LINE bot pipeline
+- **GPS Tracking & Route Optimization** — SmartAssignment.gs ✅ pushed V378
+- **Technician KPI Dashboard** — ✅ getTechnicianKPI() added V378
+- **OpenAI Memory Sync** — API Key 401 (memory search unavailable)
+- **Push ฟีเจอร์เสริมขึ้น GAS** — ✅ ทำเสร็จหมดแล้ว
