@@ -1,5 +1,5 @@
 // ============================================================
-// Router.gs - Main API Router (V362 — doGet + doPost single entry point)
+// Router.gs - Main API Router (V367 — doGet + doPost single entry point)
 // ============================================================
 
 // ============================================================
@@ -58,7 +58,7 @@ function doGet(e) {
     template.redirect = p.redirect || '';
 
     return template.evaluate()
-      .setTitle('Comphone Dashboard V362')
+      .setTitle('Comphone Dashboard V367')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
       .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
 
@@ -76,6 +76,26 @@ function doGet(e) {
 function doPost(e) {
   try {
     var data = JSON.parse(e.postData.contents);
+
+    // ── LINE Webhook Detection ──
+    // LINE sends { events: [...] } with no action field
+    if (data.events && Array.isArray(data.events)) {
+      for (var ei = 0; ei < data.events.length; ei++) {
+        var evt = data.events[ei];
+        if (evt.type === 'message' && evt.message && evt.message.type === 'text') {
+          try {
+            var userId = (evt.source && evt.source.userId) || '';
+            var userName = (evt.source && evt.source.displayName) || '';
+            processLineMessage(evt.message.text, userId, userName);
+          } catch (lineErr) {
+            Logger.log('LINE event error: ' + lineErr);
+          }
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({ success: true, source: 'line_webhook' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     var action = data.action || '';
     var actionMap = {
       'เปิดงาน': 'openjob', 'เช็คงาน': 'checkjobs', 'เช็คสต็อก': 'checkstock',
@@ -95,7 +115,25 @@ function doPost(e) {
       'saveJobPhoto': 'saveJobPhoto',
       'updatePhotoLink': 'updatePhotoLink',
       'updateJobById': 'updateJobById',
-      'barcodeLookup': 'barcodeLookup'
+      'barcodeLookup': 'barcodeLookup',
+      'scanWithdrawStock': 'scanWithdrawStock', 'สแกนเบิก': 'scanWithdrawStock',
+      'getDashboardJobs': 'getDashboardJobs',
+      'getDashboardInventory': 'getDashboardInventory',
+      'getDashboardSummary': 'getDashboardSummary',
+      'sendCRMNotification': 'sendCRMNotification',
+      'dailyReport': 'dailyReport',
+      'sendDashboardSummary': 'sendDashboardSummary',
+      'sendJobStatusSummary': 'sendJobStatusSummary',
+      'backup': 'backup', 'สำรอง': 'backup',
+      'logs': 'logs', 'ดูlog': 'logs',
+      'stockAlert': 'stockAlert', 'เช็คสต็อกเตือน': 'stockAlert',
+      'getProfitReport': 'getProfitReport',
+      'getCalendar': 'getCalendar',
+      'getCRMSchedule': 'getCRMSchedule',
+      'reserveItems': 'reserveItems', 'จองของ': 'reserveItems',
+      'releaseReservation': 'releaseReservation', 'คืนจอง': 'releaseReservation',
+      'cutStockAuto': 'cutStockAuto', 'ตัดสต็อก': 'cutStockAuto',
+      'reorderSuggestion': 'reorderSuggestion', 'สั่งซื้อแนะนำ': 'reorderSuggestion'
     };
     var norm = actionMap[action] || action;
     var result = { action: norm };
@@ -200,57 +238,25 @@ function doPost(e) {
       case 'reorderSuggestion': case 'สั่งซื้อแนะนำ':
         result.success = true; result.data = geminiReorderSuggestion();
         break;
-      case 'setupTriggers': case 'ตั้งtrigger':
-        result.success = true; result.data = setupAllTriggers();
+      case 'sendJobStatusSummary':
+        result.success = true; result.data = sendJobStatusSummary();
         break;
-      case 'listTriggers': case 'ดูtrigger':
-        result.success = true; result.data = listTriggers();
-        break;
-      case 'deleteTriggers': case 'ลบtrigger':
-        result.success = true; result.data = deleteAllTriggers();
-        break;
-      case 'getJobTimeline': case 'ดูไทม์ไลน์':
-        result.success = true; result.data = getJobTimeline(data.job_id || '');
-        break;
-      case 'addQuickNote': case 'เพิ่มหมายเหตุด่วน':
-        result.success = true; result.data = addQuickNote(data.job_id || '', data.note, data.user || '');
-        break;
-      case 'generateWarranty': case 'สร้างใบรับประกัน':
+      case 'generateWarranty':
         result.success = true; result.data = generateWarrantyPDF(data.job_id || '');
-        break;
-      case 'processImageQueue': case 'จัดรูป':
-        result.success = true; result.data = processImageSorting();
-        break;
-      case 'photoQueueCount': case 'คิวรูป':
-        result.success = true; result.data = getPhotoQueueCount();
-        break;
-      case 'queuePhoto': case 'ฝากรูป':
-        result.success = true; result.data = queuePhotoFromLINE(data.image_id || '', data.job_id || '', data.tech_name || '');
         break;
       default:
         result.success = false;
-        result.error = 'Unknown action: ' + action;
+        result.error = 'Unknown action: ' + String(action || '(empty)');
+        break;
     }
-    return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ success: false, error: 'Server error: ' + err.toString() })).setMimeType(ContentService.MimeType.JSON);
+    Logger.log('doPost error: ' + err);
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: err.toString(),
+      stack: err.stack || ''
+    })).setMimeType(ContentService.MimeType.JSON);
   }
-}
-
-function summarizeJobs() {
-  try {
-    var ss = getComphoneSheet();
-    var sh = findSheetByName(ss, 'DBJOBS');
-    if (!sh) return { error: 'DBJOBS not found' };
-    var d = sh.getDataRange().getValues();
-    if (d.length < 2) return { message: 'ไม่มีงานในระบบ' };
-    var p = 0, c = 0, ip = 0;
-    for (var i = 1; i < d.length; i++) {
-      var s = String(d[i][3]);
-      if (s === 'Completed') c++;
-      else if (s === 'InProgress' || s.indexOf('กำลัง') === 0) ip++;
-      else p++;
-    }
-    return { total: d.length - 1, pending: p, inProgress: ip, completed: c, date: new Date().toLocaleDateString('th-TH') };
-  } catch (e) { return { error: e.toString() }; }
 }

@@ -25,7 +25,7 @@ function getDashboardData() {
         if (h.indexOf('folder') > -1 || h.indexOf('ลิงก์โฟลเดอร์') > -1 || h.indexOf('folder_url') > -1) fc = hi;
       }
       tj = all.length - 1;
-      for (var i = all.length - 1; i >= 1 && i >= all.length - 50; i++) {
+      for (var i = all.length - 1; i >= 1 && i >= all.length - 50; i--) {
         var dateStr = '-';
         try { if (all[i][cc] && all[i][cc] instanceof Date) dateStr = Utilities.formatDate(all[i][cc], 'Asia/Bangkok', 'dd/MM HH:mm'); } catch(e) {}
         var st = String(all[i][sc] || '');
@@ -36,8 +36,8 @@ function getDashboardData() {
           folder: String(all[i][fc] || '')
         });
         if (st === 'Completed') c++;
-        else if (st === 'InProgress' || st.charAt(0) === '\u0e01') ip++;
-        else if (st.indexOf('\u0e22\u0e01') > -1) cx++;
+        else if (st === 'InProgress' || st.charAt(0) === 'ก') ip++;
+        else if (st.indexOf('ยก') > -1) cx++;
         else p++;
       }
     }
@@ -57,17 +57,9 @@ function getDashboardData() {
       }
     }
 
-    // Photo queue — skip DriveApp (slow), count from sheet instead
+    // Photo queue count
     var pp = 0;
-    try {
-      var pqsh = findSheetByName(ss, 'DB_PHOTO_QUEUE');
-      if (pqsh) {
-        var pq = pqsh.getDataRange().getValues();
-        for (var qi = 1; qi < pq.length; qi++) {
-          if (String(pq[qi][7] || '') === 'Pending') pp++;
-        }
-      }
-    } catch(e) {}
+    try { var pqc = getPhotoQueueCount(); pp = (pqc && pqc.pending) || 0; } catch(e) {}
     var dateStr = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'dd/MM HH:mm');
 
     return {
