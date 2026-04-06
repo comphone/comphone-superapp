@@ -59,7 +59,7 @@ function getDashboardData() {
 
     // Photo queue count
     var pp = 0;
-    try { pp = getPhotoQueueCount() || 0; } catch(e) {}
+    try { var pqc = getPhotoQueueCount(); pp = (pqc && pqc.pending) || 0; } catch(e) {}
     var dateStr = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'dd/MM HH:mm');
 
     return {
