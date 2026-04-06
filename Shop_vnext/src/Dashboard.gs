@@ -1,31 +1,7 @@
 // ============================================================
-// Dashboard.gs - Dashboard UI & Data APIs (V352)
+// Dashboard.gs - Dashboard Data APIs (V366)
+// doGet + include moved to Router.gs (single entry point)
 // ============================================================
-
-// ============================================================
-// 🔧 Template Include Helper — for modular HTML files
-// ============================================================
-function include(filename) {
-  return HtmlService.createHtmlOutputFromFile(filename).getContent();
-}
-
-function doGet(e) {
-  var action = (e && e.parameter && e.parameter.action) || '';
-  if (action === 'json') {
-    var result = {
-      success: true,
-      jobs: getDashboardJobs(),
-      inventory: getDashboardInventory(),
-      summary: getDashboardSummary()
-    };
-    return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
-  }
-  return HtmlService.createTemplateFromFile('Index')
-    .evaluate()
-    .setTitle('Comphone Dashboard V352')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
-}
 
 function getDashboardData() {
   return {

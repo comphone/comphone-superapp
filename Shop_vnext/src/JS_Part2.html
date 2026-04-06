@@ -21,9 +21,9 @@ function viewJob(id) {
 
   html += '<div class="d-flex flex-wrap gap-2 mb-3">';
   html += '<button onclick="showStatusModal()" class="btn btn-blue btn-lg" style="padding:12px 20px;font-size:15px">📝 เปลี่ยนสถานะ</button>';
-  html += '<button onclick="showEditJobModal()" class="btn btn-outline-dark btn-lg" style="padding:12px 20px;font-size:15px">✏️ แก้ไข</button>';
+  html += '<button onclick="showPhotoUploadModal()" class="btn btn-success btn-lg" style="padding:12px 20px;font-size:15px">📷 เพิ่มรูปภาพ</button>';
   if(j.folder) {
-    html += '<button onclick="window.open('+JSON.stringify(j.folder)+',\'_blank\')" class="btn btn-lg" style="background:rgba(245,158,11,.15);color:var(--orange);padding:12px 20px;font-size:15px">📁 โฟลเดอร์</button>';
+    html += '<button onclick="window.open('+JSON.stringify(j.folder)+',\'_blank\')" class="btn btn-lg" style="background:rgba(6,182,212,.15);color:var(--cyan);padding:12px 20px;font-size:15px">📁 อัลบั้มรูป</button>';
   }
   html += '</div>';
 
@@ -40,6 +40,7 @@ function viewJob(id) {
   html += '<div id="jobTimeline"></div>';
   html += '</div>';
 
+  html += '<button onclick="showEditJobModal()" class="btn btn-outline-dark w-100 btn-lg mb-2">✏️ แก้ไขงาน</button>';
   html += '<button onclick="closeModal()" class="btn btn-outline-dark w-100 btn-lg">✕ ปิด</button>';
 
   openModal(html);
@@ -65,6 +66,133 @@ function viewJob(id) {
       }
     }).getJobTimeline(id);
   } catch(e){ console.log('timeline error:', e); }
+}
+
+// ═══════════ PHOTO UPLOAD ═══════════
+function showPhotoUploadModal() {
+  var html = '<h2>📷 เพิ่มรูปภาพ</h2>';
+  html += '<div class="modal-subtitle">อัปโหลดรูปงาน — ถ่ายจากกล้องมือถือได้</div>';
+
+  // Camera capture — accept image/* + capture environment
+  html += '<div class="form-group-lg">';
+  html += '<label class="form-label-lg">📸 ถ่ายรูปจากกล้อง</label>';
+  html += '<input type="file" id="photoCameraInput" accept="image/*" capture="environment" class="form-control dark-input" onchange="handlePhotoSelect(this)"';
+  html += ' style="padding:10px 12px;font-size:14px;min-height:auto">';
+  html += '</div>';
+
+  html += '<div style="text-align:center;color:var(--t3);margin:8px 0">— หรือ —</div>';
+
+  html += '<div class="form-group-lg">';
+  html += '<label class="form-label-lg">📁 เลือกรูปจากแฟ้ม</label>';
+  html += '<input type="file" id="photoFileInput" accept="image/*" multiple class="form-control dark-input" onchange="handlePhotoSelect(this)"';
+  html += ' style="padding:10px 12px;font-size:14px;min-height:auto">';
+  html += '</div>';
+
+  html += '<div id="photoPreview" class="mb-3"></div>';
+  html += '<button id="uploadPhotoBtn" onclick="doUploadPhoto()" class="btn btn-green w-100 btn-lg" disabled>🚀 อัปโหลดรูป</button>';
+  html += '<button onclick="closeModal()" class="btn btn-outline-dark w-100 btn-lg mt-2">ยกิก</button>';
+
+  openModal(html);
+}
+
+function handlePhotoSelect(input) {
+  try {
+    var preview = document.getElementById('photoPreview');
+    if (!preview) return;
+    var files = input.files;
+    if (!files || files.length === 0) return;
+
+    var html = '<div class="row g-2">';
+    for (var i = 0; i < files.length; i++) {
+      html += '<div class="col-4">';
+      html += '<div style="background:var(--bg);border-radius:10px;overflow:hidden;aspect-ratio:1;display:flex;align-items:center;justify-content:center">';
+      html += '<img src="'+URL.createObjectURL(files[i])+'" style="max-width:100%;max-height:100%;object-fit:cover">';
+      html += '</div>';
+      html += '<div class="text-center text-xs mt-1" style="color:var(--t3)">'+esc(files[i].name)+'</div>';
+      html += '</div>';
+    }
+    html += '</div>';
+    preview.innerHTML = html;
+
+    var btn = document.getElementById('uploadPhotoBtn');
+    if (btn) btn.disabled = false;
+  } catch(e) { toast('❌ '+e.message, 'er'); }
+}
+
+function doUploadPhoto() {
+  var input = document.getElementById('photoCameraInput');
+  if (!input || !input.files || input.files.length === 0) {
+    input = document.getElementById('photoFileInput');
+  }
+  if (!input || !input.files || input.files.length === 0) {
+    toast('❌ เลือกรูปก่อน', 'er');
+    return;
+  }
+
+  var files = input.files;
+  var jobId = CURRENT_JOB_ID;
+
+  if (!jobId) { toast('❌ ไม่พบ Job ID', 'er'); return; }
+
+  var btn = document.getElementById('uploadPhotoBtn');
+  setBtnLoading(btn, true, '⏳ กำลังอัปโหลด ' + files.length + ' รูป...');
+
+  // Upload files one by one
+  var uploaded = 0;
+  var errors = [];
+
+  function uploadNext(index) {
+    if (index >= files.length) {
+      setBtnLoading(btn, false);
+      if (errors.length === 0) {
+        toast('✅ อัปโหลด ' + uploaded + ' รูปสำเร็จ!', 'ok');
+      } else {
+        toast('⚠️ สำเร็จ ' + uploaded + ' | ผิด ' + errors.length, 'wa');
+      }
+      closeModal();
+      loadData();
+      return;
+    }
+
+    var file = files[index];
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var base64 = e.target.result.split(',')[1];
+      try {
+        google.script.run
+          .withSuccessHandler(function(r) {
+            uploaded++;
+            if (r && r.success && r.photoUrl) {
+              // Success — can also show photo URL
+            } else if (r && r.error) {
+              errors.push(file.name + ': ' + r.error);
+            }
+            uploadNext(index + 1);
+          })
+          .withFailureHandler(function(err) {
+            errors.push(file.name + ': ' + (err.message || err));
+            uploadNext(index + 1);
+          })
+          .saveJobPhoto({
+            job_id: jobId,
+            customer: findJob(jobId) ? findJob(jobId).customer : '',
+            file_name: file.name,
+            image_base64: base64,
+            mime_type: file.type || 'image/jpeg'
+          });
+      } catch(uploadErr) {
+        errors.push(file.name + ': ' + uploadErr.message);
+        uploadNext(index + 1);
+      }
+    };
+    reader.onerror = function() {
+      errors.push(file.name + ': read error');
+      uploadNext(index + 1);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  uploadNext(0);
 }
 
 // ═══════════ STATUS MODAL ═══════════

@@ -33,10 +33,23 @@ function openJob(data) {
       reservationInfo = reserveItemsForJob(id, data.parts);
     }
 
+    // V366+: Auto-create Drive Folder + save URL to DB
+    var folderUrl = '';
+    var folderId = '';
+    try {
+      var fr = getOrCreateJobFolder({ job_id: id, customer: name, phase: '00_สำรวจ' });
+      if (fr && fr.success) {
+        folderUrl = fr.folder_url;
+        folderId = fr.folder_id;
+      }
+    } catch(e) { Logger.log('AUTO_FOLDER error: ' + e); }
+
     // V320: Log activity
     try { logActivity('JOB_OPEN', 'SYSTEM||LINE', id + ' — ' + name); } catch(e) {}
 
     var result = { success: true, job_id: id, customer: name, status: status };
+    if (folderUrl) result.folder_url = folderUrl;
+    if (folderId) result.folder_id = folderId;
     if (reservationInfo) result.reservation = reservationInfo;
     return result;
   } catch (e) { return { error: e.toString() }; }
