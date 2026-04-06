@@ -57,9 +57,17 @@ function getDashboardData() {
       }
     }
 
-    // Photo queue count
+    // Photo queue — skip DriveApp (slow), count from sheet instead
     var pp = 0;
-    try { var pqc = getPhotoQueueCount(); pp = (pqc && pqc.pending) || 0; } catch(e) {}
+    try {
+      var pqsh = findSheetByName(ss, 'DB_PHOTO_QUEUE');
+      if (pqsh) {
+        var pq = pqsh.getDataRange().getValues();
+        for (var qi = 1; qi < pq.length; qi++) {
+          if (String(pq[qi][7] || '') === 'Pending') pp++;
+        }
+      }
+    } catch(e) {}
     var dateStr = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'dd/MM HH:mm');
 
     return {
