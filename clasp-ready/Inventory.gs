@@ -1,5 +1,7 @@
 // ============================================================
-// Inventory.gs - ระบบสต็อกสัมพันธ์ครบวงจร (V320 → V350 Hotfix)
+// COMPHONE SUPER APP V5.5
+// ============================================================
+// Inventory.gs - ระบบสต็อกสัมพันธ์ครบวงจร
 // จองของเมื่อเปิดงาน / ตัดสต็อกเมื่อปิดงาน / แจ้งเตือน reorder
 // ============================================================
 
@@ -445,7 +447,7 @@ function scanWithdrawStock(data) {
 }
 
 // ============================================================
-// V350: checkLowStockAlert — Fixed with reservation support & _notifyLowStock
+// checkLowStockAlert — reservation-aware low stock alert
 // ============================================================
 function checkLowStockAlert() {
   try {

@@ -1,7 +1,8 @@
 // ============================================================
-// GpsPipeline.gs — GPS Location Pipeline (V313)
+// COMPHONE SUPER APP V5.5
+// ============================================================
+// GpsPipeline.gs - GPS Location Pipeline
 // รับพิกัดจากช่าง → บันทึก DB → หาช่างใกล้สุด
-// GAS-compatible: no Node.js syntax
 // ============================================================
 
 /**
@@ -22,7 +23,7 @@ function haversineDistance(lat1, lng1, lat2, lng2) {
  * บันทึกพิกัดช่างจาก LINE Location message
  */
 // ============================================================
-// V350: CacheService helpers — instead of global variables (prevents reset)
+// CacheService helpers — instead of global variables (prevents reset)
 // ============================================================
 function _getTechLocations() {
   try {

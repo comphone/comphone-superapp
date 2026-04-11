@@ -1,5 +1,7 @@
 // ============================================================
-// Utils.gs - Database Access Helpers (V352)
+// COMPHONE SUPER APP V5.5
+// ============================================================
+// Utils.gs - Database Access Helpers
 // ============================================================
 
 var DB_SS_ID = '19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA';
@@ -68,7 +70,7 @@ function createInvoicePDF(data) {
 }
 
 // ============================================================
-// 📄 Auto Warranty PDF — สร้างใบรับประกันอัตโนมัติ (V352)
+// 📄 Auto Warranty PDF — สร้างใบรับประกันอัตโนมัติ
 // ============================================================
 function generateWarrantyPDF(jobId) {
   try {
@@ -78,7 +80,7 @@ function generateWarrantyPDF(jobId) {
 
     var jobs = jsh.getDataRange().getValues();
 
-    // V352: Dynamic header lookup — ไม่ใช้ hardcoded column indices
+    // Dynamic header lookup — ไม่ใช้ hardcoded column indices
     var hdrs = jobs[0];
     var colId = 0, colCustomer = 1, colSymptom = 2, colStatus = 3;
     var colTech = 4, colCreated = 10, colFolder = 12, colWarranty = 13;
@@ -112,7 +114,7 @@ function generateWarrantyPDF(jobId) {
     }
     if (!job) return { error: 'ไม่พบ JobID: ' + jobId };
     
-    // V352: ดึงข้อมูล billing พร้อม dynamic header lookup
+    // ดึงข้อมูล billing พร้อม dynamic header lookup
     var partsUsed = '-';
     var totalAmount = 0;
     var bsh = findSheetByName(ss, 'DB_BILLING');
@@ -173,7 +175,7 @@ function generateWarrantyPDF(jobId) {
     
     // Footer
     html += '<div style="text-align:center;margin-top:16px;font-size:10px;color:#999">';
-    html += '<p>ใบรับประกันนี้ออกโดยระบบอัตโนมัติ Comphone Super App V352</p>';
+    html += '<p>ใบรับประกันนี้ออกโดยระบบอัตโนมัติ COMPHONE SUPER APP V5.5</p>';
     html += '<p>วันที่ออกใบรับประกัน: ' + today + '</p>';
     html += '</div>';
     
@@ -195,7 +197,7 @@ function generateWarrantyPDF(jobId) {
     var pdfFile = folder.createFile(pdfBlob.setName('WARRANTY_' + jobId + '.pdf'));
     pdfFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
     
-    // V352: บันทึก warranty_url ลง DB (dynamic colWarranty)
+    // บันทึก warranty_url ลง DB (dynamic colWarranty)
     try {
       for (var wi = 1; wi < jobs.length; wi++) {
         if (String(jobs[wi][colId]) === jobId) {

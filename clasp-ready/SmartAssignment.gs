@@ -1,11 +1,13 @@
 // ============================================================
-// SmartAssignment.gs — GPS Route Optimization (V309)
+// COMPHONE SUPER APP V5.5
+// ============================================================
+// SmartAssignment.gs - GPS Route Optimization
 // ============================================================
 
 /**
  * คำนวณระยะทางระหว่าง 2 จุด (Haversine) — return km
  */
-// V350: Uses haversineDistance() from GpsPipeline.gs (removed duplicate)
+// Uses haversineDistance() from GpsPipeline.gs
 
 
 /**

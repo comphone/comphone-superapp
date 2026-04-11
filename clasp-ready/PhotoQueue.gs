@@ -1,3 +1,4 @@
+// COMPHONE SUPER APP V5.5
 // ============================================================
 // PhotoQueue.gs — Drive-First Photo Queue & Auto Sorting (V5.5)
 // Auto Sorting by AI Label + Geofencing + Collage + Gallery Data

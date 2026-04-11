@@ -1,3 +1,4 @@
+// COMPHONE SUPER APP V5.5
 // VisionAnalysis.gs - AI วิเคราะห์รูปงานด้วย Gemini 2.0 Flash (V5.5)
 // Auto-Labeling, Photo Category, Quality Check, Job Completion QC
 // ============================================================
@@ -15,7 +16,7 @@ function analyzeWorkImage(imageUrl, context) {
 function analyzeWorkImageFromBase64(base64, context) {
   var apiKey = getConfig('GEMINI_API_KEY') || getConfig('GOOGLE_AI_API_KEY') || '';
   if (!apiKey) {
-    return { error: 'GEMINI_API_KEY not configured', note: 'ใช้ setConfig("GEMINI_API_KEY", "AIza...") ใน Config sheet' };
+    return { error: 'GEMINI_API_KEY not configured', note: 'กรุณาตั้งค่า GEMINI_API_KEY ผ่าน Script Properties ก่อนใช้งาน' };
   }
 
   var prompt = 'คุณคือผู้ช่วย AI ของร้าน Comphone & Electronics เชี่ยวชาญด้าน CCTV, ระบบเครือข่าย, WiFi, ซ่อมอุปกรณ์ และงานติดตั้งภาคสนาม\n\n' +

@@ -1,434 +1,546 @@
+<!-- COMPHONE SUPER APP V5.5 -->
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Comphone Dashboard V366</title>
-<!-- Bootstrap 5.3 -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<!-- Swiper 11 -->
-<link href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" rel="stylesheet">
-<!-- Google Font: Inter Thai -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<style>
-/* ═══════════════════════════════════════════
-   V366 Pro-Hybrid — Bootstrap 5 + ApexCharts + Swiper
-   Clean | Bright | Touch-Friendly
-   ═══════════════════════════════════════════ */
-* { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>COMPHONE SUPER APP V5.5</title>
+  <style>
+    :root {
+      --bg: #08111f;
+      --bg-soft: #0f1b2d;
+      --panel: rgba(15, 27, 45, 0.92);
+      --line: rgba(148, 163, 184, 0.18);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-2: #22c55e;
+      --danger: #f87171;
+      --warning: #fbbf24;
+      --shadow: 0 18px 40px rgba(2, 8, 23, 0.32);
+      --radius: 20px;
+      --radius-sm: 14px;
+      --font: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
 
-:root {
-  --bg: #0f172a;          /* Slate-900 */
-  --card: #1e293b;        /* Slate-800 */
-  --card-border: #334155; /* Slate-700 */
-  --t1: #f1f5f9;          /* Slate-100 */
-  --t2: #94a3b8;          /* Slate-400 */
-  --t3: #475569;          /* Slate-600 */
-  --green: #10b981;
-  --orange: #f59e0b;
-  --red: #ef4444;
-  --blue: #3b82f6;
-  --purple: #8b5cf6;
-  --cyan: #06b6d4;
-}
+    * { box-sizing: border-box; }
 
-body {
-  background: var(--bg);
-  color: var(--t1);
-  font-size: 17px;        /* Base font 17px */
-  line-height: 1.6;
-  padding-bottom: 84px;
-  -webkit-tap-highlight-color: transparent;
-}
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), transparent 24%),
+        radial-gradient(circle at top right, rgba(34, 197, 94, 0.14), transparent 20%),
+        linear-gradient(180deg, #030712 0%, #08111f 100%);
+      color: var(--text);
+      font-family: var(--font);
+    }
 
-/* ══ Navbar ══ */
-.navbar-custom {
-  background: linear-gradient(135deg, #1e3a5f, #152a4a);
-  padding: 14px 18px 12px;
-  position: sticky;
-  top: 0;
-  z-index: 1050;
-  border-bottom: 1px solid rgba(255,255,255,.08);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 2px 12px rgba(0,0,0,.3);
-}
-.navbar-brand-custom {
-  font-size: 20px;
-  font-weight: 900;
-  background: linear-gradient(135deg, #10b981, #06b6d4);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.navbar-brand-custom .emoji { font-size: 24px; }
-.navbar-ver { font-size: 11px; color: var(--green); background: rgba(16,185,129,.15); padding: 3px 10px; border-radius: 20px; font-weight: 700; }
-.navbar-clock { font-size: 14px; color: var(--t2); }
+    .app-shell {
+      width: min(1440px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 48px;
+    }
 
-/* ══ Loading ══ */
-.spinner-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; }
-.spinner-ring { width: 52px; height: 52px; border: 5px solid var(--card-border); border-top-color: var(--green); border-radius: 50%; animation: spin .7s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.spinner-wrap p { margin-top: 18px; color: var(--t2); font-size: 16px; }
+    .hero,
+    .toolbar,
+    .summary-grid,
+    .revenue-grid,
+    .status-grid,
+    .details-grid,
+    .section-head,
+    .hero-actions,
+    .table-tools {
+      display: grid;
+      gap: 16px;
+    }
 
-.loading-bar { height: 3px; background: linear-gradient(90deg, var(--bg), var(--green), var(--bg)); background-size: 200% 100%; animation: pulse 1.5s infinite; display: none; }
-@keyframes pulse { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
+    .hero {
+      grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.9fr);
+      align-items: stretch;
+      margin-bottom: 20px;
+    }
 
-/* ══ Error Block ══ */
-.error-block { display: none; background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); border-radius: 16px; padding: 24px; margin: 16px; }
-.error-block h3 { color: var(--red); font-size: 18px; margin-bottom: 10px; }
-.error-block pre { font-size: 14px; color: var(--t2); white-space: pre-wrap; word-break: break-word; }
+    .hero-card,
+    .panel,
+    .metric-card,
+    .revenue-card,
+    .status-card,
+    .alert-item,
+    .table-wrap,
+    .empty-state,
+    .loading-state,
+    .error-state {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      backdrop-filter: blur(16px);
+    }
 
-/* ══ ApexCharts Container ══ */
-#chartBox {
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: 16px;
-  padding: 16px 12px 8px;
-  margin: 14px 14px 0;
-  box-shadow: 0 4px 24px rgba(0,0,0,.3);
-}
-#jobStatusChart { min-height: 200px; }
+    .hero-card {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 220px;
+    }
 
-/* ══ Swiper ══ */
-.swiper-container-wrap { margin: 14px 0; }
-.swiper-container-wrap .swiper-slide { width: 85%; max-width: 340px; }
-.swiper { border-radius: 16px; padding-bottom: 32px !important; }
-.swiper-pagination-bullet { background: var(--t3) !important; opacity: 1 !important; }
-.swiper-pagination-bullet-active { background: var(--green) !important; }
+    .hero-top,
+    .meta-item,
+    .alert-item-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+    }
 
-/* ══ Job Swiper Card ══ */
-.job-swiper-card {
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: 16px;
-  padding: 20px;
-  height: auto;
-  box-shadow: 0 4px 24px rgba(0,0,0,.3);
-  cursor: pointer;
-  transition: transform .12s, box-shadow .15s;
-}
-.job-swiper-card:active { transform: scale(.98); box-shadow: 0 2px 12px rgba(0,0,0,.4); }
-.job-swiper-card.st-pending { border-top: 4px solid var(--orange); }
-.job-swiper-card.st-progress { border-top: 4px solid var(--blue); }
-.job-swiper-card.st-completed { border-top: 4px solid var(--green); }
-.job-swiper-card.st-canceled { border-top: 4px solid var(--red); }
+    .brand-tag,
+    .mini-badge,
+    .pill,
+    .alert-tag,
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
 
-.job-swiper-id { font-size: 14px; font-weight: 800; color: var(--green); }
-.job-swiper-name { font-size: 17px; font-weight: 600; margin-top: 6px; }
-.job-swiper-symp { font-size: 15px; color: var(--t2); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.job-swiper-meta { font-size: 13px; color: var(--t3); margin-top: 10px; display: flex; gap: 14px; }
+    .brand-tag {
+      background: rgba(56, 189, 248, 0.14);
+      color: #7dd3fc;
+      border: 1px solid rgba(56, 189, 248, 0.18);
+    }
 
-/* Status Badges */
-.badge-status { display: inline-block; padding: 4px 12px; border-radius: 8px; font-size: 13px; font-weight: 700; }
-.badge-pending { background: rgba(245,158,11,.15); color: var(--orange); }
-.badge-progress { background: rgba(59,130,246,.15); color: var(--blue); }
-.badge-completed { background: rgba(16,185,129,.15); color: var(--green); }
-.badge-canceled { background: rgba(239,68,68,.15); color: var(--red); }
+    .mini-badge {
+      background: rgba(34, 197, 94, 0.14);
+      color: #86efac;
+      border: 1px solid rgba(34, 197, 94, 0.18);
+    }
 
-/* ══ Section Card ══ */
-.section-card {
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: 16px;
-  padding: 20px 18px;
-  margin: 14px;
-  box-shadow: 0 4px 24px rgba(0,0,0,.3);
-}
-.section-card h3 { font-size: 18px; font-weight: 700; color: var(--t2); margin-bottom: 14px; }
+    .hero h1 {
+      margin: 16px 0 10px;
+      font-size: clamp(28px, 4vw, 42px);
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+    }
 
-/* ══ Bootstrap Overrides for Dark Theme ══ */
-.dark-input {
-  background-color: var(--bg) !important;
-  border: 2px solid var(--card-border) !important;
-  color: var(--t1) !important;
-  font-size: 17px !important;
-  min-height: 54px !important;
-  border-radius: 12px !important;
-  padding: 14px 16px !important;
-}
-.dark-input:focus {
-  border-color: var(--blue) !important;
-  box-shadow: 0 0 0 3px rgba(59,130,246,.15) !important;
-}
-.dark-input::placeholder { color: var(--t3) !important; font-size: 15px !important; }
-.input-group-text { background: var(--card) !important; border-color: var(--card-border) !important; color: var(--t3) !important; }
-textarea.dark-input { min-height: 110px !important; }
-.form-floating > label { color: var(--t3) !important; }
-.form-floating > .dark-input { padding: 16px !important; }
-.form-select.dark-input { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important; }
+    .hero p,
+    .section-head p,
+    .alert-detail,
+    .metric-subtext,
+    .footer-note,
+    .muted {
+      color: var(--muted);
+      line-height: 1.65;
+    }
 
-/* Bootstrap dark btn overrides */
-.btn-green { background: linear-gradient(135deg, var(--green), #059669) !important; border: none !important; color: #fff !important; font-size: 16px !important; font-weight: 700 !important; padding: 14px 24px !important; border-radius: 12px !important; }
-.btn-blue { background: linear-gradient(135deg, var(--blue), #2563eb) !important; border: none !important; color: #fff !important; font-size: 16px !important; font-weight: 700 !important; padding: 14px 24px !important; border-radius: 12px !important; }
-.btn-purple { background: linear-gradient(135deg, var(--purple), #7c3aed) !important; border: none !important; color: #fff !important; font-size: 16px !important; font-weight: 700 !important; padding: 14px 24px !important; border-radius: 12px !important; }
-.btn-cyan { background: linear-gradient(135deg, var(--cyan), #0891b2) !important; border: none !important; color: #fff !important; font-size: 16px !important; font-weight: 700 !important; padding: 14px 24px !important; border-radius: 12px !important; }
-.btn-line { background: linear-gradient(135deg, #06C755, #05a848) !important; border: none !important; color: #fff !important; font-size: 16px !important; font-weight: 700 !important; padding: 14px 24px !important; border-radius: 12px !important; }
-.btn-outline-dark { background: transparent !important; border: 2px solid var(--card-border) !important; color: var(--t2) !important; font-size: 16px !important; font-weight: 700 !important; padding: 14px 24px !important; border-radius: 12px !important; }
-.btn-warn { background: linear-gradient(135deg, var(--orange), #d97706) !important; border: none !important; color: #fff !important; font-size: 16px !important; font-weight: 700 !important; padding: 14px 24px !important; border-radius: 12px !important; }
-.btn-err { background: linear-gradient(135deg, var(--red), #dc2626) !important; border: none !important; color: #fff !important; font-size: 16px !important; font-weight: 700 !important; padding: 14px 24px !important; border-radius: 12px !important; }
+    .hero-actions {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      margin-top: 24px;
+    }
 
-/* Photo Card */
-.photo-card {
-  background: linear-gradient(135deg, rgba(139,92,246,.08), rgba(6,182,212,.06));
-  border: 1px solid rgba(139,92,246,.2);
-  border-radius: 16px;
-  padding: 18px;
-  margin: 14px;
-}
+    .hero-action-box,
+    .meta-item {
+      padding: 16px 18px;
+      border-radius: var(--radius-sm);
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+    }
 
-/* ══ Toast ══ */
-.toast-custom {
-  position: fixed;
-  bottom: 92px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(15,23,42,.95);
-  border: 1px solid var(--card-border);
-  border-radius: 12px;
-  padding: 14px 22px;
-  font-size: 16px;
-  font-weight: 600;
-  z-index: 9999;
-  pointer-events: none;
-  max-width: 92vw;
-  text-align: center;
-  opacity: 0;
-  transition: opacity .25s, bottom .2s;
-  backdrop-filter: blur(14px);
-  box-shadow: 0 8px 32px rgba(0,0,0,.4);
-}
-.toast-custom.show { opacity: 1; bottom: 98px; }
-.toast-custom.ok { border-color: rgba(16,185,129,.4); color: var(--green); }
-.toast-custom.er { border-color: rgba(239,68,68,.4); color: var(--red); }
-.toast-custom.wa { border-color: rgba(245,158,11,.4); color: var(--orange); }
+    .hero-action-box .label,
+    .metric-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
 
-/* ══ Modal ══ */
-.modal-custom-overlay {
-  display: none;
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,.75);
-  z-index: 5000;
-  justify-content: center;
-  align-items: flex-end;
-  backdrop-filter: blur(6px);
-}
-.modal-custom-overlay.open { display: flex; }
-.modal-custom-body {
-  background: linear-gradient(145deg, var(--card), #0f172a);
-  border: 1px solid var(--card-border);
-  border-radius: 20px 20px 0 0;
-  width: 100%;
-  min-height: 60vh;
-  max-height: 95vh;
-  overflow-y: auto;
-  padding: 24px 18px 40px;
-  animation: slideUp .25s cubic-bezier(.25,.46,.45,.94);
-  position: relative;
-}
-@keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-@media (min-width: 500px) {
-  .modal-custom-overlay { align-items: center; padding: 16px; }
-  .modal-custom-body { border-radius: 20px; max-height: 82vh; min-height: auto; }
-}
-.modal-close-btn {
-  position: absolute; top: 12px; right: 16px;
-  background: none; border: none; font-size: 26px;
-  cursor: pointer; color: var(--t3);
-  width: 44px; height: 44px;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 50%;
-  transition: background .15s;
-}
-.modal-close-btn:active { background: rgba(255,255,255,.1); }
-.modal-custom-body h2 { font-size: 22px; font-weight: 900; margin-bottom: 4px; }
-.modal-subtitle { font-size: 16px; color: var(--t2); margin-bottom: 18px; }
+    .hero-action-box strong,
+    .meta-item .value,
+    .status-card .status-count,
+    .metric-value,
+    .revenue-card strong {
+      letter-spacing: -0.04em;
+      font-weight: 800;
+    }
 
-/* Status Buttons Grid */
-.status-btn-grid { display: flex; flex-direction: column; gap: 12px; margin: 18px 0; }
-.status-btn-grid .btn { width: 100%; }
+    .hero-action-box strong { font-size: 22px; }
+    .meta-item .value { text-align: right; }
+    .meta-item .key { color: var(--muted); font-size: 13px; }
 
-/* Timeline */
-.timeline-item { padding: 12px 0 12px 18px; border-left: 3px solid var(--card-border); position: relative; }
-.timeline-item:before { content: ''; position: absolute; left: -6px; top: 16px; width: 9px; height: 9px; border-radius: 50%; background: var(--green); }
-.timeline-item .ts { font-size: 11px; color: var(--t3); }
-.timeline-item .ta { font-size: 14px; font-weight: 700; }
-.timeline-item .td { font-size: 14px; color: var(--t2); margin-top: 3px; }
+    .toolbar {
+      grid-template-columns: minmax(0, 1fr) auto auto auto;
+      align-items: center;
+      margin-bottom: 20px;
+    }
 
-/* Inventory */
-.inv-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.05); }
-.inv-item:last-child { border: none; }
-.inv-item .name { font-size: 16px; font-weight: 600; }
-.inv-item .code { font-size: 13px; color: var(--t3); margin-top: 2px; }
-.inv-item .qty { font-size: 17px; font-weight: 800; padding: 5px 14px; border-radius: 8px; }
-.inv-item .qty.lo { background: rgba(239,68,68,.15); color: var(--red); }
-.inv-item .qty.ok { background: rgba(16,185,129,.15); color: var(--green); }
+    .input,
+    .select,
+    .button {
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      background: rgba(15, 23, 42, 0.82);
+      color: var(--text);
+      padding: 14px 16px;
+      font: inherit;
+      outline: none;
+      transition: all 0.2s ease;
+      width: 100%;
+    }
 
-/* Scanner */
-.scanner-area { border: 2px dashed var(--card-border); border-radius: 16px; min-height: 220px; display: flex; align-items: center; justify-content: center; background: var(--bg); margin: 14px 0; overflow: hidden; }
+    .button {
+      cursor: pointer;
+      font-weight: 700;
+      min-width: 140px;
+      width: auto;
+    }
 
-/* Empty State */
-.empty-state { text-align: center; padding: 44px 20px; color: var(--t3); font-size: 16px; }
+    .button-primary {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.92), rgba(14, 165, 233, 0.92));
+      color: #08111f;
+      border-color: transparent;
+    }
 
-/* Divider */
-.custom-divider { border: none; border-top: 1px solid rgba(255,255,255,.06); margin: 18px 0; }
+    .button-secondary {
+      background: rgba(15, 23, 42, 0.9);
+    }
 
-/* ─ Bottom Nav ─ */
-.bnav {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 2000;
-  background: rgba(15,23,42,.97);
-  backdrop-filter: blur(16px);
-  border-top: 1px solid rgba(255,255,255,.06);
-  padding: 8px 8px;
-  padding-bottom: max(8px, env(safe-area-inset-bottom));
-  display: flex; gap: 4px;
-}
-.bnav button {
-  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
-  padding: 10px 4px; border: none; border-radius: 12px;
-  background: transparent; cursor: pointer; transition: background .1s;
-  font-family: inherit; color: var(--t3);
-}
-.bnav button:active { background: rgba(255,255,255,.08); }
-.bnav .icon { font-size: 24px; }
-.bnav .bt { font-size: 10px; font-weight: 700; }
+    .summary-grid {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      margin-bottom: 20px;
+    }
 
-/* Form Section Labels */
-.form-label-lg { font-size: 13px; font-weight: 700; color: var(--t2); margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: .5px; }
-.form-group-lg { margin-bottom: 16px; }
+    .metric-card,
+    .revenue-card,
+    .status-card,
+    .panel {
+      padding: 22px;
+      position: relative;
+      overflow: hidden;
+    }
 
-/* Button active state */
-.btn:active:not(:disabled) { transform: scale(.97); opacity: .85; }
-.btn:disabled { opacity: .45 !important; }
-</style>
+    .metric-card::after {
+      content: '';
+      position: absolute;
+      inset: auto -16px -16px auto;
+      width: 96px;
+      height: 96px;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.22), transparent 70%);
+      pointer-events: none;
+    }
 
-<!-- Bootstrap 5 JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Swiper 11 -->
-<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-<!-- ApexCharts -->
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-<!-- html5-qrcode -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    .metric-value {
+      margin-top: 14px;
+      font-size: clamp(26px, 4vw, 38px);
+    }
+
+    .revenue-grid {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      margin-bottom: 20px;
+    }
+
+    .revenue-card {
+      background: linear-gradient(180deg, rgba(8, 17, 31, 0.96), rgba(12, 26, 44, 0.92));
+    }
+
+    .revenue-card strong {
+      display: block;
+      font-size: 30px;
+      margin-top: 10px;
+    }
+
+    .section-head {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .section-head h2,
+    .table-title,
+    .panel-side .heading {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .pill {
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--muted);
+      border: 1px solid rgba(148, 163, 184, 0.14);
+    }
+
+    .status-grid {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+
+    .status-card {
+      min-height: 132px;
+      display: grid;
+      gap: 8px;
+      background: linear-gradient(180deg, rgba(8, 17, 31, 0.9), rgba(15, 27, 45, 0.95));
+    }
+
+    .status-card .status-name {
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 42px;
+    }
+
+    .status-card .status-count { font-size: 32px; }
+    .status-card .status-meta { font-size: 13px; color: var(--muted); }
+
+    .details-grid {
+      grid-template-columns: minmax(320px, 0.95fr) minmax(0, 1.45fr);
+      align-items: start;
+    }
+
+    .alerts-stack { display: grid; gap: 12px; }
+    .alert-item { padding: 16px 18px; display: grid; gap: 10px; }
+    .alert-title { font-weight: 700; line-height: 1.5; }
+    .alert-tag.priority-high { background: rgba(248, 113, 113, 0.14); color: #fca5a5; border: 1px solid rgba(248, 113, 113, 0.2); }
+    .alert-tag.priority-medium { background: rgba(251, 191, 36, 0.14); color: #fcd34d; border: 1px solid rgba(251, 191, 36, 0.2); }
+    .alert-tag.priority-info { background: rgba(56, 189, 248, 0.14); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.2); }
+
+    .table-wrap { overflow: hidden; }
+    .table-tools { grid-template-columns: auto; justify-content: end; padding-bottom: 14px; }
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th,
+    .data-table td {
+      padding: 14px 16px;
+      text-align: left;
+      border-top: 1px solid rgba(148, 163, 184, 0.12);
+      vertical-align: top;
+    }
+
+    .data-table th {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: rgba(2, 8, 23, 0.45);
+      border-top: none;
+    }
+
+    .status-badge {
+      padding: 6px 12px;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      color: var(--text);
+      text-transform: none;
+    }
+
+    .empty-state,
+    .loading-state,
+    .error-state {
+      padding: 24px;
+      text-align: center;
+    }
+
+    .hidden { display: none !important; }
+    .footer-note { margin-top: 20px; font-size: 13px; text-align: right; }
+
+    @media (max-width: 1080px) {
+      .hero,
+      .details-grid,
+      .toolbar,
+      .section-head {
+        grid-template-columns: 1fr;
+      }
+      .button { width: 100%; }
+    }
+
+    @media (max-width: 720px) {
+      .app-shell { width: min(100% - 20px, 1440px); padding-top: 18px; }
+      .hero-card,
+      .panel,
+      .metric-card,
+      .revenue-card,
+      .status-card { padding: 18px; }
+      .data-table th:nth-child(3),
+      .data-table td:nth-child(3),
+      .data-table th:nth-child(4),
+      .data-table td:nth-child(4) { display: none; }
+    }
+  </style>
 </head>
 <body>
+  <div class="app-shell">
+    <section class="hero">
+      <article class="hero-card">
+        <div>
+          <div class="hero-top">
+            <span class="brand-tag">COMPHONE SUPER APP V5.5</span>
+            <span class="mini-badge" id="systemStatusBadge">Dashboard Online</span>
+          </div>
+          <h1>Dashboard V5.5 สำหรับงานบริการ, รายได้, สต็อก และการติดตามงาน 12 สถานะ</h1>
+          <p>หน้านี้เชื่อมกับข้อมูลจากระบบ V5.5 โดยตรง เพื่อสรุปภาพรวมงานทั้งหมด, รายได้ตามช่วงเวลา, งานค้าง, สต็อกต่ำ, PM และรายการงานล่าสุดในจุดเดียว พร้อมเครื่องมือค้นหาและกรองสำหรับใช้งานจริง.</p>
+        </div>
+        <div class="hero-actions">
+          <div class="hero-action-box">
+            <span class="label">เวอร์ชันระบบ</span>
+            <strong>V5.5 Production</strong>
+          </div>
+          <div class="hero-action-box">
+            <span class="label">API Base</span>
+            <strong id="apiBasePreview">Auto Detect</strong>
+          </div>
+          <div class="hero-action-box">
+            <span class="label">อัปเดตล่าสุด</span>
+            <strong id="lastRefreshText">กำลังโหลด...</strong>
+          </div>
+        </div>
+      </article>
 
-<!-- Loading Bar -->
-<div id="loadingBar" class="loading-bar"></div>
+      <aside class="hero-card">
+        <div>
+          <h2 class="heading">Operational Snapshot</h2>
+          <p class="muted">ภาพรวมที่ผู้ดูแลต้องเห็นทันทีเมื่อเปิดระบบ</p>
+        </div>
+        <div style="display:grid;gap:12px;">
+          <div class="meta-item"><span class="key">Top Technician</span><span class="value" id="topTechnicianText">-</span></div>
+          <div class="meta-item"><span class="key">Pending Photo Queue</span><span class="value" id="pendingPhotosText">0</span></div>
+          <div class="meta-item"><span class="key">Open Alerts</span><span class="value" id="openAlertsText">0</span></div>
+          <div class="meta-item"><span class="key">API Mode</span><span class="value">Router.gs V5.5</span></div>
+        </div>
+      </aside>
+    </section>
 
-<!-- Navbar -->
-<nav class="navbar-custom">
-  <div class="navbar-brand-custom">
-    <span class="emoji">📱</span>
-    <span>Comphone</span>
-    <span class="navbar-ver">V366</span>
-  </div>
-  <div class="navbar-clock" id="clock">--:--</div>
-</nav>
+    <section class="toolbar">
+      <input class="input" type="search" id="jobSearchInput" placeholder="ค้นหา Job ID, ลูกค้า, อาการ, ช่าง">
+      <select class="select" id="statusFilterSelect"><option value="ALL">ทุกสถานะ</option></select>
+      <button class="button button-secondary" id="clearFilterBtn" type="button">ล้างตัวกรอง</button>
+      <button class="button button-primary" id="refreshDashboardBtn" type="button">รีเฟรชข้อมูล</button>
+    </section>
 
-<!-- Loading Screen -->
-<div id="ld" class="spinner-wrap">
-  <div class="spinner-ring"></div>
-  <p>ระบบกำลังดึงข้อมูล...</p>
-</div>
+    <section class="summary-grid">
+      <article class="metric-card">
+        <div class="metric-label">งานทั้งหมด</div>
+        <div class="metric-value" id="metricTotalJobs">0</div>
+        <div class="metric-subtext">จำนวนงานในระบบจาก DBJOBS</div>
+      </article>
+      <article class="metric-card">
+        <div class="metric-label">สต็อกต่ำ</div>
+        <div class="metric-value" id="metricLowStock">0</div>
+        <div class="metric-subtext">รายการที่ต่ำกว่า reorder point</div>
+      </article>
+      <article class="metric-card">
+        <div class="metric-label">งานค้างเกินกำหนด</div>
+        <div class="metric-value" id="metricOverdueJobs">0</div>
+        <div class="metric-subtext">งานที่ยังไม่จบและค้างเกิน 3 วัน</div>
+      </article>
+      <article class="metric-card">
+        <div class="metric-label">ลูกค้าถึงรอบ PM</div>
+        <div class="metric-value" id="metricPmDue">0</div>
+        <div class="metric-subtext">ลูกค้าที่ควรติดตามในรอบถัดไป</div>
+      </article>
+    </section>
 
-<!-- Error Block -->
-<div id="eb" class="error-block">
-  <h3>⚠️ เกิดข้อผิดพลาด</h3>
-  <pre id="ed"></pre>
-  <button class="btn btn-green mt-3" onclick="location.reload()">🔄 ลองใหม่</button>
-</div>
+    <section class="revenue-grid">
+      <article class="revenue-card">
+        <div class="metric-label">รายได้วันนี้</div>
+        <strong id="revenueToday">฿0</strong>
+        <div class="metric-subtext" id="revenueTodayMeta">0 บิล</div>
+      </article>
+      <article class="revenue-card">
+        <div class="metric-label">รายได้สัปดาห์นี้</div>
+        <strong id="revenueWeek">฿0</strong>
+        <div class="metric-subtext" id="revenueWeekMeta">0 บิล</div>
+      </article>
+      <article class="revenue-card">
+        <div class="metric-label">รายได้เดือนนี้</div>
+        <strong id="revenueMonth">฿0</strong>
+        <div class="metric-subtext" id="revenueMonthMeta">0 บิล</div>
+      </article>
+    </section>
 
-<!-- Main Content -->
-<div id="rb" style="display:none">
-
-  <!-- ApexCharts Donut Chart -->
-  <div id="chartBox" class="mb-2">
-    <div id="jobStatusChart"></div>
-  </div>
-
-  <!-- Photo Queue Card -->
-  <div id="photoCard" class="photo-card" style="display:none"></div>
-
-  <!-- Search & Filter -->
-  <div class="section-card">
-    <h3 class="mb-3">🔍 ค้นหา &amp; กรอง</h3>
-    <div class="form-group-lg">
-      <input type="text" class="form-control dark-input" id="fs" placeholder="ชื่อลูกค้า, JobID, อาการ..." oninput="filterJobs()">
-    </div>
-    <div class="row g-2">
-      <div class="col-6">
-        <select class="form-select dark-input" id="ft" onchange="filterJobs()"><option value="">ช่างทั้งหมด</option></select>
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <h2>สรุปงาน 12 สถานะ</h2>
+          <p>แสดงผลตาม JobStateMachine V5.5 และรองรับการกรองรายการงานล่าสุดจากสถานะที่เลือก</p>
+        </div>
+        <span class="pill" id="statusTotalText">0 สถานะพร้อมใช้งาน</span>
       </div>
-      <div class="col-6">
-        <select class="form-select dark-input" id="fst" onchange="filterJobs()">
-          <option value="">ทุกสถานะ</option>
-          <option value="รอดำเนินการ">⏳ รอ</option>
-          <option value="InProgress">🔄 กำลังทำ</option>
-          <option value="Completed">✅ เสร็จ</option>
-          <option value="ยกเลิก">❌ ยกเลิก</option>
-        </select>
+      <div class="loading-state" id="statusBoardLoading">กำลังโหลดข้อมูลสถานะ...</div>
+      <div class="error-state hidden" id="statusBoardError"></div>
+      <div class="status-grid hidden" id="statusBoard"></div>
+    </section>
+
+    <section class="details-grid">
+      <div>
+        <section class="panel">
+          <div class="section-head">
+            <div>
+              <h2>Alerts และประเด็นเร่งด่วน</h2>
+              <p>ดึงข้อมูลจาก getAlerts เพื่อช่วยติดตาม low stock, งานค้าง, PM และภาระงานช่าง</p>
+            </div>
+            <span class="pill" id="alertsCounterPill">0 รายการ</span>
+          </div>
+          <div class="alerts-stack" id="alertsList"></div>
+          <div class="empty-state hidden" id="alertsEmpty">ยังไม่มี alert สำคัญในขณะนี้</div>
+        </section>
       </div>
-    </div>
-  </div>
 
-  <!-- Job Cards via Swiper -->
-  <div class="section-card" style="background:transparent;border:none;padding:0;box-shadow:none;">
-    <div class="d-flex align-items-center justify-content-between px-3 mb-2">
-      <h3 class="mb-0 fs-5">📋 งานล่าสุด</h3>
-      <button class="btn btn-sm btn-outline-dark" onclick="loadData()" style="font-size:12px;padding:8px 14px">🔄 รีเฟรช</button>
-    </div>
-    <div class="swiper-container-wrap">
-      <div class="swiper jobSwiper">
-        <div class="swiper-wrapper" id="swiperWrapper"></div>
-        <div class="swiper-pagination"></div>
+      <div>
+        <section class="panel table-wrap">
+          <div class="section-head">
+            <div>
+              <h2 class="table-title">รายการงานล่าสุด</h2>
+              <p>ค้นหาและกรองข้อมูลตามสถานะ 12 ขั้นตอนของระบบ V5.5</p>
+            </div>
+            <span class="pill" id="recentJobsCounter">0 รายการ</span>
+          </div>
+          <div class="table-tools">
+            <select class="select" id="recentJobsLimitSelect">
+              <option value="10">แสดง 10 รายการ</option>
+              <option value="20" selected>แสดง 20 รายการ</option>
+              <option value="50">แสดง 50 รายการ</option>
+            </select>
+          </div>
+          <div class="loading-state" id="recentJobsLoading">กำลังโหลดรายการงาน...</div>
+          <div class="error-state hidden" id="recentJobsError"></div>
+          <div class="empty-state hidden" id="recentJobsEmpty">ไม่พบรายการงานที่ตรงกับเงื่อนไข</div>
+          <table class="data-table hidden" id="recentJobsTable">
+            <thead>
+              <tr>
+                <th>Job ID</th>
+                <th>ลูกค้า</th>
+                <th>อาการ / รายละเอียด</th>
+                <th>ช่าง</th>
+                <th>สถานะ</th>
+                <th>สร้างเมื่อ</th>
+              </tr>
+            </thead>
+            <tbody id="recentJobsTableBody"></tbody>
+          </table>
+        </section>
       </div>
-    </div>
-    <div id="emptyJobs" class="empty-state" style="display:none">
-      📭 ไม่มีงานในระบบ<br>
-      <span style="color:var(--t3);font-size:14px">กดปุ่ม ➕ เปิดงาน เพื่อเริ่มงานใหม่</span>
-    </div>
+    </section>
+
+    <div class="footer-note">COMPHONE SUPER APP V5.5 Dashboard ใช้งานผ่าน Router.gs V5.5 และ Script Properties ตามมาตรฐานใหม่</div>
   </div>
 
-  <!-- Inventory -->
-  <div class="section-card">
-    <h3>📦 คลังสินค้า</h3>
-    <div id="inventoryList"></div>
-  </div>
-
-  <!-- Action Buttons -->
-  <div style="padding:0 14px;margin-bottom:14px">
-    <button class="btn btn-line w-100 mb-2" onclick="sendSummary()">💚 ส่งสรุป LINE</button>
-    <button class="btn btn-purple w-100" onclick="openNewJobModal()">➕ เปิดงานใหม่</button>
-  </div>
-</div>
-
-<!-- Toast -->
-<div id="toast" class="toast-custom"></div>
-
-<!-- Modal -->
-<div id="modalOverlay" class="modal-custom-overlay" onclick="if(event.target===this)closeModal()">
-  <div id="modalBody" class="modal-custom-body">
-    <button class="modal-close-btn" onclick="closeModal()">✕</button>
-    <div id="modalContent"></div>
-  </div>
-</div>
-
-<!-- Bottom Navigation -->
-<nav class="bnav">
-  <button onclick="switchTab('home')"><span class="icon">🏠</span><span class="bt">หน้าหลัก</span></button>
-  <button onclick="openNewJobModal()"><span class="icon">➕</span><span class="bt">เปิดงาน</span></button>
-  <button onclick="showScanner()"><span class="icon">📷</span><span class="bt">สแกน</span></button>
-  <button onclick="showNoteModal()"><span class="icon">📝</span><span class="bt">หมายเหตุ</span></button>
-  <button onclick="sendSummary()"><span class="icon">💚</span><span class="bt">สรุป</span></button>
-</nav>
-
-<?!= include('JS_Part1'); ?>
-<?!= include('JS_Part2'); ?>
+  <script>
+    window.COMPHONE_V55 = {
+      version: 'COMPHONE SUPER APP V5.5',
+      apiBaseUrl: <?!= JSON.stringify(apiBaseUrl || '') ?>,
+      initialAction: <?!= JSON.stringify(action || '') ?>,
+      initialView: <?!= JSON.stringify(view || '') ?>,
+      defaultLimit: 20
+    };
+  </script>
+  <?!= include('JS_Part1'); ?>
+  <?!= include('JS_Dashboard'); ?>
+  <?!= include('JS_Part2'); ?>
 </body>
 </html>

@@ -1,626 +1,408 @@
-﻿// ============================================================
-// LineBot.gs โ€” Complete Integration (V313)
-// LINE Bot โ” Super App GAS API
-// GAS-compatible: no Node.js syntax, no async/await
+// COMPHONE SUPER APP V5.5
+// ============================================================
+// LineBot.gs - LINE Messaging Integration
 // ============================================================
 
-var LINE_GAS_URL = 'https://script.google.com/macros/s/AKfycbxO23P_kz2uUXsHbtUhn6gflOjE0ZZNV6bf3K8JDy7IK0PGdEJe_UtyYiqO_oY_WXqnvg/exec';
+var LINE_GAS_URL = (typeof getWebAppBaseUrl_ === 'function' ? getWebAppBaseUrl_() : '') || '';
 
-// ============================================================================
-// SMART FILTER
-// ============================================================================
-
-var WORK_KEYWORDS = [
-  'เธ•เธดเธ”เธ•เธฑเนเธ', 'เธเนเธญเธก', 'เน€เธเธฅเธตเนเธขเธ', 'เธ•เธฑเนเธเธเนเธฒ', 'เน€เธ”เธดเธเธชเธฒเธข', 'เน€เธเธฒเธฐ', 'เธขเธถเธ”', 'เธเธฃเธฐเธเธญเธ',
-  'เธเธฅเนเธญเธ', 'cctv', 'wifi', 'เน€เธฃเธฒเน€เธ•เธญเธฃเน', 'extender', 'เธชเธฒเธขlan', 'poe', 'nvr', 'dvr',
-  'switch', 'access point', 'fiber', 'sfp',
-  'เน€เธชเธฃเนเธ', 'เน€เธฃเธตเธขเธเธฃเนเธญเธข', 'เธเธณเธฅเธฑเธเธ—เธณ', 'เธ–เธถเธ', 'เน€เธฃเธดเนเธกเธเธฒเธ',
-  'เน€เธเธดเธ”เธเธฒเธ', 'เธเธดเธ”เธเธฒเธ', 'เน€เธเนเธเธเธฒเธ', 'เน€เธเนเธเธชเธ•เนเธญเธ', 'เธชเธฃเธธเธ', 'เธฃเธฑเธเธเธฒเธ', 'เธกเธญเธเธซเธกเธฒเธข',
-  'เธเธดเธเธฑเธ”', 'location', 'gps', 'เธฃเธนเธ', 'เธ เธฒเธ',
-  'เธฅเธนเธเธเนเธฒ', 'เน€เธเธญเธฃเน', 'เธ—เธตเนเธญเธขเธนเน', 'เธญเธณเน€เธ เธญ', 'เธเธฑเธเธซเธงเธฑเธ”',
-  'เน€เธเธดเธ”เนเธกเนเธ•เธดเธ”', 'เธ เธฒเธเนเธกเนเธเธถเนเธ', 'เธชเธฑเธเธเธฒเธ“เธเธฒเธ”', 'เน€เธเนเธ•เธซเธฅเธธเธ”',
-  'เธเนเธญเธกเธเธณเธฃเธธเธ', 'ma', 'preventive', 'เธชเธณเธฃเธงเธ'
+var LINE_WORK_KEYWORDS_V55 = [
+  'เปิดงาน', 'ปิดงาน', 'เช็คงาน', 'เช็คสต็อก', 'สรุป', 'งาน', 'job', 'ซ่อม', 'ติดตั้ง',
+  'เดินทาง', 'ถึงหน้างาน', 'เริ่มงาน', 'รอชิ้นส่วน', 'งานเสร็จ', 'เก็บเงิน', 'ลูกค้า',
+  'cctv', 'wifi', 'router', 'network', 'gps', 'location', 'รูป', 'ภาพ'
 ];
 
-var CASUAL_KEYWORDS = [
-  '555', '5555', '55555', 'เธฎเนเธฒ', 'เธญเธดเธญเธด', 'ok', 'เนเธญเน€เธ', 'เธฃเธฑเธเธ—เธฃเธฒเธ',
-  'เธเธดเธ', 'เธเนเธฒเธง', 'เน€เธ—เธตเนเธขเธ', 'เน€เธขเนเธ', 'เธเธฑเธ',
-  'เธเธเธ•เธ', 'เธฃเนเธญเธ', 'เธซเธเธฒเธง', 'เธญเธฒเธเธฒเธจ',
-  'เธเธฑเธเธฃเธ–', 'เธฃเธ–เธ•เธดเธ”', 'เธ–เธถเธเธขเธฑเธ', 'เนเธซเธเนเธฅเนเธง'
+var LINE_CASUAL_KEYWORDS_V55 = [
+  '555', 'ok', 'โอเค', 'รับทราบ', 'ครับ', 'ค่ะ', 'เดี๋ยว', 'ขอบคุณ', 'ฝนตก', 'รถติด'
 ];
 
-function classifyMessage(text, hasImage, hasLocation) {
-  if (!text) text = '';
-  var t = text.toLowerCase().trim();
-  var jobIdMatch = t.match(/j\d{3,4}/i);
-  var jobId = jobIdMatch ? jobIdMatch[0].toUpperCase() : null;
+function handleLineWebhook(e) {
+  try {
+    var body = parseLineWebhookBodyV55_(e);
+    var events = body.events || [];
+    var handled = [];
 
-  // 1. Commands
-  var cmds = {
-    'เน€เธเธดเธ”เธเธฒเธ': /^(เน€เธเธดเธ”เธเธฒเธ|#เน€เธเธดเธ”เธเธฒเธ)/,
-    'เธเธดเธ”เธเธฒเธ': /^(เธเธดเธ”เธเธฒเธ|#เธเธดเธ”เธเธฒเธ)/,
-    'เน€เธเนเธเธเธฒเธ': /^(เน€เธเนเธเธเธฒเธ|#เน€เธเนเธเธเธฒเธ)/,
-    'เน€เธเนเธเธชเธ•เนเธญเธ': /^(เน€เธเนเธเธชเธ•เนเธญเธ|#เน€เธเนเธเธชเธ•เนเธญเธ)/,
-    'เธชเธฃเธธเธ': /^เธชเธฃเธธเธ/
-  };
-  var cmdKeys = Object.keys(cmds);
-  for (var ci = 0; ci < cmdKeys.length; ci++) {
-    if (cmds[cmdKeys[ci]].test(t)) return { type: 'command', command: cmdKeys[ci], jobId: jobId };
+    for (var i = 0; i < events.length; i++) {
+      var eventResult = processLineEventV55_(events[i]);
+      if (eventResult) handled.push(eventResult);
+    }
+
+    return { success: true, handled: handled.length, results: handled };
+  } catch (error) {
+    return { success: false, error: error.toString() };
+  }
+}
+
+function processLineEventV55_(event) {
+  event = event || {};
+  var message = event.message || {};
+  var source = event.source || {};
+  var replyToken = event.replyToken || '';
+  var userId = source.userId || source.groupId || source.roomId || '';
+  var userName = getLineDisplayNameV55_(userId) || 'LINE_USER';
+
+  if (event.type !== 'message') {
+    return { success: true, skipped: true, reason: 'unsupported_event_type', type: event.type || '' };
   }
 
-  // 2. Location message โ’ GPS update
-  if (hasLocation) return { type: 'location_share', jobId: jobId };
+  var responseMessage = processLineMessage(message, userId, userName);
+  if (responseMessage && replyToken) {
+    replyLineMessage(replyToken, normalizeLineMessagesV55_(responseMessage));
+  }
 
-  // 3. Image โ’ always work report
+  return {
+    success: true,
+    user_id: userId,
+    message_type: message.type || '',
+    replied: !!(responseMessage && replyToken)
+  };
+}
+
+function processLineMessage(message, userId, userName) {
+  message = message || {};
+  var text = message.text || '';
+  var hasImage = message.type === 'image';
+  var hasLocation = message.type === 'location';
+  var classification = classifyMessage(text, hasImage, hasLocation);
+
+  if (classification.type === 'casual') return null;
+
+  switch (classification.type) {
+    case 'command':
+      return handleCommand(classification, text, userId, userName);
+    case 'location_share':
+      return handleLocation(message, classification, userId, userName);
+    case 'work_report':
+      return handlePhotoReport(message, classification, userId, userName);
+    case 'status_update':
+      return handleStatus(classification, text, userId, userName);
+    case 'work_note':
+      return handleWorkNote(classification, text, userId, userName);
+    default:
+      return null;
+  }
+}
+
+function classifyMessage(text, hasImage, hasLocation) {
+  text = String(text || '').trim();
+  var normalized = text.toLowerCase();
+  var jobIdMatch = text.match(/j\d{3,6}/i);
+  var jobId = jobIdMatch ? String(jobIdMatch[0]).toUpperCase() : '';
+
+  if (/^(#?เปิดงาน|create job)/i.test(text)) return { type: 'command', command: 'open_job', jobId: jobId };
+  if (/^(#?ปิดงาน|close job)/i.test(text)) return { type: 'command', command: 'close_job', jobId: jobId };
+  if (/^(#?เช็คงาน|check job)/i.test(text)) return { type: 'command', command: 'check_job', jobId: jobId };
+  if (/^(#?เช็คสต็อก|check stock)/i.test(text)) return { type: 'command', command: 'check_stock', jobId: jobId };
+  if (/^(#?สรุป|summary)/i.test(text)) return { type: 'command', command: 'summary', jobId: jobId };
+
+  if (hasLocation) return { type: 'location_share', jobId: jobId };
   if (hasImage) return { type: 'work_report', subType: 'photo', jobId: jobId };
 
-  // 4. Status updates
-  if (t.match(/เน€เธชเธฃเนเธ|เน€เธฃเธตเธขเธเธฃเนเธญเธข|done/i)) return { type: 'status_update', status: 'Completed', jobId: jobId };
-  if (t.match(/เธ–เธถเธ|เนเธเธ–เธถเธ|เธญเธขเธนเนเธซเธเนเธฒเธเธฒเธ/i)) return { type: 'status_update', status: 'เธ–เธถเธเธชเธ–เธฒเธเธ—เธตเน', jobId: jobId };
-  if (t.match(/เธเธณเธฅเธฑเธเน€เธ”เธดเธเธ—เธฒเธ|on the way/i)) return { type: 'status_update', status: 'เธเธณเธฅเธฑเธเน€เธ”เธดเธเธ—เธฒเธ', jobId: jobId };
-  if (t.match(/เน€เธฃเธดเนเธก|start|เธเธณเธฅเธฑเธเธ—เธณ/i)) return { type: 'status_update', status: 'InProgress', jobId: jobId };
+  if (/(เดินทาง|on the way)/i.test(text)) return { type: 'status_update', status_code: 4, jobId: jobId };
+  if (/(ถึงหน้างาน|ถึงแล้ว|arrived)/i.test(text)) return { type: 'status_update', status_code: 5, jobId: jobId };
+  if (/(เริ่มงาน|start work|เริ่ม)/i.test(text)) return { type: 'status_update', status_code: 6, jobId: jobId };
+  if (/(รอชิ้นส่วน|รออะไหล่)/i.test(text)) return { type: 'status_update', status_code: 7, jobId: jobId };
+  if (/(งานเสร็จ|เสร็จแล้ว|done)/i.test(text)) return { type: 'status_update', status_code: 8, jobId: jobId };
+  if (/(ลูกค้าตรวจรับ|ตรวจรับ)/i.test(text)) return { type: 'status_update', status_code: 9, jobId: jobId };
+  if (/(รอเก็บเงิน|รอชำระเงิน)/i.test(text)) return { type: 'status_update', status_code: 10, jobId: jobId };
+  if (/(เก็บเงินแล้ว|ชำระแล้ว)/i.test(text)) return { type: 'status_update', status_code: 11, jobId: jobId };
+  if (/(ปิดงานสมบูรณ์|complete)/i.test(text)) return { type: 'status_update', status_code: 12, jobId: jobId };
 
-  // 5. Count keywords
-  var ws = 0, cs = 0;
-  for (var wi = 0; wi < WORK_KEYWORDS.length; wi++) if (t.indexOf(WORK_KEYWORDS[wi]) > -1) ws++;
-  for (var wj = 0; wj < CASUAL_KEYWORDS.length; wj++) if (t.indexOf(CASUAL_KEYWORDS[wj]) > -1) cs++;
+  var workScore = countKeywordMatchesV55_(normalized, LINE_WORK_KEYWORDS_V55);
+  var casualScore = countKeywordMatchesV55_(normalized, LINE_CASUAL_KEYWORDS_V55);
 
-  if (ws >= 1 && cs < ws) return { type: 'work_note', jobId: jobId };
-  if (cs >= 2 && cs > ws) return { type: 'casual' };
-  if (ws >= 1) return { type: 'work_note', jobId: jobId };
-
-  if (t.length < 15) return { type: 'casual' };
+  if (jobId || workScore > 0) return { type: 'work_note', jobId: jobId };
+  if (casualScore > 0 || normalized.length < 10) return { type: 'casual' };
   return { type: 'work_note', jobId: jobId };
 }
 
-// ============================================================================
-// MAIN PROCESSOR (sync โ€” GAS เนเธกเนเธฃเธญเธเธฃเธฑเธ async/await)
-// ============================================================================
-
-/**
- * เธเธฃเธฐเธกเธงเธฅเธเธฅเธเนเธญเธเธงเธฒเธกเธเธฒเธ LINE
- * @param {object} message - LINE message object
- * @param {string} userId - LINE user ID
- * @param {string} userName - display name
- * @return {object|null} - LINE response (text/flex) เธซเธฃเธทเธญ null (silent)
- */
-function processLineMessage(message, userId, userName) {
-  var type = message.type;
-  var text = message.text || '';
-  var hasImage = type === 'image';
-  var hasLocation = type === 'location';
-
-  // 1. Classify
-  var cls = classifyMessage(text, hasImage, hasLocation);
-
-  // 2. SILENT for casual
-  if (cls.type === 'casual') return null;
-
-  // 3. Route
-  switch (cls.type) {
-    case 'command':
-      return handleCommand(cls, text, userId, userName);
-    case 'location_share':
-      return handleLocation(message, cls, userId, userName);
-    case 'work_report':
-      return handlePhotoReport(message, cls, userId, userName);
-    case 'status_update':
-      return handleStatus(cls, text, userId, userName);
-    case 'work_note':
-      return handleWorkNote(cls, text, userId, userName);
+function handleCommand(classification, text, userId, userName) {
+  switch (classification.command) {
+    case 'open_job':
+      return handleOpenJob(text, userId, userName);
+    case 'close_job':
+      return handleCloseJob(text, userId, userName);
+    case 'check_job':
+      return formatCheckJobsV55_(text);
+    case 'check_stock':
+      return formatCheckStockV55_(text);
+    case 'summary':
+      return formatSummaryV55_();
     default:
-      return null;
+      return createTextMessage('ไม่พบคำสั่งที่รองรับ');
   }
 }
 
-// ============================================================================
-// COMMAND HANDLER
-// ============================================================================
+function handleOpenJob(text, userId, userName) {
+  var payload = parseOpenJobTextV55_(text);
+  payload.changed_by = userName || userId || 'LINE';
+  payload.user = payload.changed_by;
+  var result = callRouterActionV55_('createJob', payload);
 
-function handleCommand(cls, text, userId, userName) {
-  switch (cls.command) {
-    case 'เน€เธเธดเธ”เธเธฒเธ':
-      return handleOpenJob(text, userId);
-    case 'เธเธดเธ”เธเธฒเธ':
-      return handleCloseJob(text);
-    case 'เน€เธเนเธเธเธฒเธ':
-      var search = text.replace(/เน€เธเนเธเธเธฒเธ|#เน€เธเนเธเธเธฒเธ/g, '').trim() || '';
-      return callAndFormat('เน€เธเนเธเธเธฒเธ', { search: search }, formatJobList);
-    case 'เน€เธเนเธเธชเธ•เนเธญเธ':
-      var item = text.replace(/เน€เธเนเธเธชเธ•เนเธญเธ|#เน€เธเนเธเธชเธ•เนเธญเธ/g, '').trim() || '';
-      return callAndFormat('เน€เธเนเธเธชเธ•เนเธญเธ', { search: item }, formatStock);
-    case 'เธชเธฃเธธเธ':
-      return callAndFormat('เธชเธฃเธธเธเธเธฒเธ', {}, formatSummary);
-    default:
-      return null;
+  if (!result || result.success === false || result.error) {
+    return createTextMessage('เปิดงานไม่สำเร็จ: ' + (result && (result.error || result.message) || 'unknown'));
   }
+
+  var lines = [
+    'เปิดงานสำเร็จ',
+    'JobID: ' + (result.job_id || '-'),
+    'สถานะ: ' + (result.status_label || '-'),
+    'ลูกค้า: ' + (payload.customer_name || payload.customer || '-'),
+    LINE_GAS_URL ? ('Dashboard: ' + LINE_GAS_URL) : ''
+  ];
+  return createTextMessage(lines.filter(Boolean).join('\n'));
 }
 
-// ============================================================================
-// PHOTO + VISION + DRIVE PIPELINE
-// ============================================================================
+function handleCloseJob(text, userId, userName) {
+  var jobId = extractJobIdV55_(text);
+  if (!jobId) return createTextMessage('กรุณาระบุ JobID เช่น #ปิดงาน J0001');
 
-function handlePhotoReport(message, cls, userId, userName) {
-  // V324: Drive-First Photo Queue โ€” เธเธฒเธเธฃเธนเธเน€เธเนเธฒเธฃเธฐเธเธ โ’ เธเธฑเธ”เธซเธกเธงเธ”เธซเธกเธนเนเธ—เธตเธซเธฅเธฑเธ
-  var jobId = cls.jobId || '';
-  var imageId = message.id || ''
+  var result = callRouterActionV55_('transitionJob', {
+    job_id: jobId,
+    status_code: 12,
+    note: 'ปิดงานผ่าน LINE',
+    changed_by: userName || userId || 'LINE'
+  });
 
-  // เนเธกเนเธเธ jobId โ’ เนเธเนเธเธเนเธฒเธเธฃเธฐเธเธธ
+  if (!result || result.success === false || result.error) {
+    return createTextMessage('ปิดงานไม่สำเร็จ: ' + (result && (result.error || result.message) || 'unknown'));
+  }
+
+  return createTextMessage('ปิดงานสำเร็จ\nJobID: ' + jobId + '\nสถานะ: ' + (result.to_status_label || 'ปิดงาน'));
+}
+
+function handleLocation(message, classification, userId, userName) {
+  var jobId = classification.jobId || extractJobIdV55_(message.title || message.address || '');
   if (!jobId) {
-    return createTextMessage(
-      '๐“ธ เธฃเธฑเธเธ เธฒเธเนเธฅเนเธงเธเธฃเธฑเธ!\n\n' +
-      'โ ๏ธ เนเธ•เนเนเธกเนเธเธ JobID โ€” เธเธฃเธธเธ“เธฒเธฃเธฐเธเธธเธ”เนเธงเธข\n' +
-      'เน€เธเนเธ เธชเนเธเธฃเธนเธเธเธฃเนเธญเธกเธเนเธญเธเธงเธฒเธก "J0001 เธ–เธถเธเธซเธเนเธฒเธเธฒเธเนเธฅเนเธง"\n\n' +
-      'เธซเธฃเธทเธญเธเธดเธกเธเน #เน€เธเธดเธ”เธเธฒเธ เธเนเธญเธเธชเนเธเธฃเธนเธ'
-    );
+    return createTextMessage('รับพิกัดแล้ว แต่ยังไม่พบ JobID กรุณาส่งข้อความ เช่น J0001 ถึงหน้างาน พร้อมแชร์ตำแหน่งอีกครั้ง');
   }
 
-  // เธเธฑเนเธเธ•เธญเธเธ—เธตเน 1: เธ”เธฒเธงเธเนเนเธซเธฅเธ” โ’ Upload Drive Temp โ’ Queue
-  var queueResult = queuePhotoFromLINE(imageId, jobId, userName || '');
-
-  if (!queueResult || queueResult.error) {
-    return createTextMessage('โ เธเธฒเธเธฃเธนเธเนเธกเนเธชเธณเน€เธฃเนเธ: ' + (queueResult ? queueResult.error : 'unknown'));
-  }
-
-  // เธเธฑเนเธเธ•เธญเธเธ—เธตเน 2: เธ•เธญเธเธเธฅเธฑเธเธเนเธฒเธ
-  var reply = '๐“ธ ' + queueResult.message + '\n\n';
-  reply += '๐“ JobID: ' + jobId + '\n';
-  if (userName) reply += '๐‘ท ' + userName + '\n';
-  reply += '๐ท๏ธ Queue: ' + queueResult.queueId + '\n\n';
-  reply += 'โณ AI เธเธฐเธเธฑเธ”เธซเธกเธงเธ”เธซเธกเธนเนเธญเธฑเธ•เนเธเธกเธฑเธ•เธดเธ เธฒเธขเนเธ 1 เธเธฑเนเธงเนเธกเธ\n';
-  reply += 'เธซเธฃเธทเธญเธเธธเธ“เนเธซเธเนเธเธเธ” "เธเธฑเธ”เธเธฒเธฃเธฃเธนเธเธ เธฒเธ" เธ—เธตเน Dashboard เนเธ”เนเน€เธฅเธข';
-
-  return createTextMessage(reply);
-}
-
-/**
- * เธ”เธฒเธงเธเนเนเธซเธฅเธ”เธฃเธนเธเธเธฒเธ LINE โ’ เนเธเธฅเธ base64
- */
-function _downloadLineImage(imageId, imageUrl) {
-  try {
-    var channelToken = getConfig('LINE_CHANNEL_ACCESS_TOKEN') || '';
-    
-    // เธงเธดเธเธตเธ—เธตเน 1: เธ–เนเธฒเธกเธต channel token โ’ เธ”เธฒเธงเธเนเนเธซเธฅเธ”เธเนเธฒเธ LINE API
-    if (channelToken && imageId) {
-      var options = {
-        method: 'get',
-        headers: { 'Authorization': 'Bearer ' + channelToken },
-        muteHttpExceptions: true
-      };
-      var resp = UrlFetchApp.fetch('https://api-data.line.me/v2/bot/message/' + imageId + '/content', options);
-      var blob = resp.getBlob();
-      if (blob && blob.getBytes().length > 100) {
-        return Utilities.base64Encode(blob.getBytes());
-      }
-    }
-    
-    // เธงเธดเธเธตเธ—เธตเน 2: เธ–เนเธฒเนเธกเนเธกเธต token เนเธ•เนเธกเธต URL โ’ เธฅเธญเธเนเธซเธฅเธ”เธ•เธฃเธ
-    if (imageUrl && imageUrl.indexOf('http') === 0) {
-      var resp2 = UrlFetchApp.fetch(imageUrl, { muteHttpExceptions: true });
-      var blob2 = resp2.getBlob();
-      if (blob2 && blob2.getBytes().length > 100) {
-        return Utilities.base64Encode(blob2.getBytes());
-      }
-    }
-    
-    return '';
-  } catch(e) {
-    Logger.log('Download image failed: ' + e);
-    return '';
-  }
-}
-
-/**
- * เธงเธดเน€เธเธฃเธฒเธฐเธซเนเธฃเธนเธเธเธฒเธ base64 เนเธ”เธขเธ•เธฃเธ (เนเธกเนเธ•เนเธญเธเธเนเธฒเธ URL)
- */
-function analyzeWorkImageFromBase64(base64, context) {
-  var apiKey = getConfig('GEMINI_API_KEY') || getConfig('GOOGLE_AI_API_KEY') || '';
-  if (!apiKey) {
-    return { error: 'GEMINI_API_KEY not configured' };
-  }
-
-  var prompt = 'เธเธธเธ“เธเธทเธญเธเธนเนเธเนเธงเธข AI เธเธญเธเธฃเนเธฒเธ Comphone & Electronics เน€เธเธตเนเธขเธงเธเธฒเธเธ”เนเธฒเธ CCTV, เธฃเธฐเธเธเน€เธเธฃเธทเธญเธเนเธฒเธข, WiFi\n\n' +
-    'เธเธฃเธดเธเธ—เธเธฒเธ: ' + (context || 'เนเธกเนเธฃเธฐเธเธธ') + '\n\n' +
-    'เธงเธดเน€เธเธฃเธฒเธฐเธซเนเธฃเธนเธเธ เธฒเธเธเธฒเธเนเธฅเธฐเธ•เธญเธเธเธฅเธฑเธเน€เธเนเธ JSON เน€เธ—เนเธฒเธเธฑเนเธ:\n' +
-    '{\n' +
-    '  "auto_label": "เธชเธฃเธธเธเธชเธฑเนเธเน เธงเนเธฒเธฃเธนเธเธเธตเนเนเธชเธ”เธเธญเธฐเนเธฃ เน€เธเนเธ เธ เธฒเธเธเธฅเนเธญเธเธงเธเธเธฃเธเธดเธ” 2 เธ•เธฑเธงเธ•เธดเธ”เธ•เธฑเนเธเธเธเน€เธชเธฒเธเธญเธเธเธฃเธตเธ•",\n' +
-    '  "detected_equipment": ["เธเธฅเนเธญเธเธงเธเธเธฃเธเธดเธ” 2 เธ•เธฑเธง", "เธชเธฒเธข LAN 1 เธกเนเธงเธ"],\n' +
-    '  "location_type": "เธเธฃเธฐเน€เธ เธ—เธชเธ–เธฒเธเธ—เธตเน",\n' +
-    '  "installation_quality": "เธ”เธต/เธเธญเนเธเน/เธ•เนเธญเธเธเธฃเธฑเธเธเธฃเธธเธ",\n' +
-    '  "quality_issues": ["เธเธฑเธเธซเธฒเธ—เธตเนเธเธ"],\n' +
-    '  "is_ready_to_close": true,\n' +
-    '  "suggestions": ["เธเธณเนเธเธฐเธเธณ"],\n' +
-    '  "estimated_effort": "เธเนเธฒเธข/เธเธฒเธเธเธฅเธฒเธ/เธขเธฒเธ",\n' +
-    '  "confidence": 0.85\n' +
-    '}\n\n' +
-    'เธ•เธญเธ JSON เธญเธขเนเธฒเธเน€เธ”เธตเธขเธง เนเธกเนเธกเธตเธเนเธญเธเธงเธฒเธกเธญเธทเนเธ เนเธกเนเธกเธต markdown:';
-
-  try {
-    var bodyObj = {
-      contents: [{
-        parts: [
-          { text: prompt },
-          { inline_data: { mime_type: 'image/jpeg', data: base64 } }
-        ]
-      }],
-      generationConfig: { temperature: 0.2, maxOutputTokens: 1024 }
-    };
-
-    var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
-    var options = {
-      method: 'post', contentType: 'application/json',
-      payload: JSON.stringify(bodyObj), muteHttpExceptions: true
-    };
-
-    var response = UrlFetchApp.fetch(url, options);
-    var result = JSON.parse(response.getContentText());
-
-    if (result.error) return { error: 'Gemini API Error: ' + JSON.stringify(result.error) };
-
-    var content = '';
-    if (result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts) {
-      content = result.candidates[0].content.parts[0].text || '';
-    }
-
-    var jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      var parsed = JSON.parse(jsonMatch[0]);
-      parsed.provider = 'gemini-2.0-flash';
-      return parsed;
-    }
-    return { error: 'Invalid response', raw: content };
-  } catch(e) {
-    return { error: 'Vision analysis failed: ' + e.toString() };
-  }
-}
-
-/**
- * Phase auto-detect เธเธฒเธเธเธฅเธเธฒเธฃเธงเธดเน€เธเธฃเธฒเธฐเธซเนเธ เธฒเธ
- */
-function detectPhase(analysis) {
-  if (!analysis || typeof analysis !== 'string') return '00_เธชเธณเธฃเธงเธ';
-  var t = analysis.toLowerCase();
-
-  if (t.indexOf('เธ•เธดเธ”เธ•เธฑเน') > -1 || t.indexOf('install') > -1 || t.indexOf('mount') > -1 || t.indexOf('เธงเธฒเธ') > -1) {
-    return '01_เธ•เธดเธ”เธ•เธฑเนเธ';
-  }
-  if (t.indexOf('เน€เธชเธฃเนเธ') > -1 || t.indexOf('complete') > -1 || t.indexOf('done') > -1 || t.indexOf('เน€เธฃเธตเธขเธเธฃเนเธญเธข') > -1) {
-    return '02_เน€เธชเธฃเนเธเธชเธกเธเธนเธฃเธ“เน';
-  }
-  if (t.indexOf('เธเนเธญเธก') > -1 || t.indexOf('repair') > -1 || t.indexOf('ma') > -1 || t.indexOf('เธเธณเธฃเธธเธ') > -1) {
-    return '03_MA_เธเนเธญเธกเธเธณเธฃเธธเธ';
-  }
-  return '00_เธชเธณเธฃเธงเธ';
-}
-
-// ============================================================================
-// LOCATION HANDLER
-// ============================================================================
-
-function handleLocation(message, cls, userId, userName) {
-  var lat = message.latitude;
-  var lng = message.longitude;
-
-  if (!lat || !lng) {
-    return createTextMessage('โ เนเธกเนเนเธ”เนเธฃเธฑเธเธเธดเธเธฑเธ” โ€” เธเธฃเธธเธ“เธฒเธฅเธญเธเธชเนเธ Location เนเธซเธกเนเธญเธตเธเธเธฃเธฑเนเธ');
-  }
-
-  // 1. เธเธฑเธเธ—เธถเธเธเธดเธเธฑเธ”เธเนเธฒเธ
-  callGAS({
-    action: 'เธญเธฑเธเน€เธ”เธ—เธชเธ–เธฒเธเธฐ',
-    job_id: cls.jobId || '',
-    status: '',
-    technician: userName || '',
-    lat: lat,
-    lng: lng,
-    note: '๐“ เธเธดเธเธฑเธ”: ' + lat.toFixed(6) + ', ' + lng.toFixed(6)
-  });
-
-  // 2. เธ•เธฃเธงเธเธชเธญเธเธงเนเธฒเธเนเธฒเธเธญเธขเธนเนเนเธเธฅเนเธเธฑเธเธเธฒเธเนเธซเธ
-  var area = getAreaFromLocation(lat, lng);
-  var nearestJob = findNearestPendingJobs(lat, lng);
-
-  var msg = '๐“ เธเธฑเธเธ—เธถเธเธเธดเธเธฑเธ”เนเธฅเนเธง!\n\n';
-  msg += '๐‘ท ' + (userName || 'เธเนเธฒเธ') + '\n';
-  msg += '๐“ ' + area.area + '\n';
-  msg += '๐—บ๏ธ เธเธดเธเธฑเธ”: ' + lat.toFixed(4) + ', ' + lng.toFixed(4) + '\n';
-
-  if (nearestJob && nearestJob.job) {
-    var dist = haversineDistance(lat, lng, parseFloat(nearestJob.lat || 0), parseFloat(nearestJob.lng || 0));
-    msg += '\n๐“ เนเธเธฅเนเธเธฑเธเธเธฒเธ: ' + nearestJob.job.job_id + ' โ€” ' + nearestJob.job.customer + '\n';
-    msg += '๐“ เธฃเธฐเธขเธฐเธ—เธฒเธ: ' + dist.toFixed(1) + ' km\n';
-    msg += '\nเธ•เนเธญเธเธเธฒเธฃเธฃเธฑเธเธเธฒเธเธเธตเนเนเธซเธกเธเธฃเธฑเธ?';
-  }
-
-  return createTextMessage(msg);
-}
-
-/**
- * เธซเธฒเธเธฒเธ pending เธ—เธตเนเนเธเธฅเนเธเธดเธเธฑเธ”เธกเธฒเธเธ—เธตเนเธชเธธเธ”
- */
-function findNearestPendingJobs(lat, lng) {
-  try {
-    var result = callGAS({ action: 'เน€เธเนเธเธเธฒเธ', search: '' });
-    if (!result || !result.success || !result.data || !result.data.jobs) return null;
-
-    var jobs = result.data.jobs;
-    var pending = [];
-    for (var i = 0; i < jobs.length; i++) {
-      if (jobs[i].status === 'เธฃเธญเธ”เธณเน€เธเธดเธเธเธฒเธฃ' || jobs[i].status === 'InProgress') {
-        pending.push(jobs[i]);
-      }
-    }
-    if (pending.length === 0) return null;
-
-    return { job: pending[0], distance: 'N/A' };
-  } catch (e) {
-    return null;
-  }
-}
-
-// ============================================================================
-// STATUS UPDATE HANDLER
-// ============================================================================
-
-function handleStatus(cls, text, userId, userName) {
-  var jobId = cls.jobId || extractJobId(text);
-  var activeJob = findActiveJob(userId, jobId);
-
-  if (!activeJob) {
-    return createTextMessage('โ เนเธกเนเธเธเธเธฒเธ โ€” เธเธฃเธธเธ“เธฒเธฃเธฐเธเธธ JobID เธซเธฃเธทเธญ #เน€เธเธดเธ”เธเธฒเธ เธเนเธญเธ');
-  }
-
-  callGAS({
-    action: 'เธญเธฑเธเน€เธ”เธ—เธชเธ–เธฒเธเธฐ',
-    job_id: activeJob.job_id,
-    status: cls.status || activeJob.status,
-    technician: userName || activeJob.technician,
-    note: text
-  });
-
-  return createTextMessage(
-    'โ… เธญเธฑเธเน€เธ”เธ•เธเธฒเธ ' + activeJob.job_id + '\n' +
-    '๐“ เธชเธ–เธฒเธเธฐ: ' + cls.status + '\n' +
-    '๐“ "' + text + '"\n\n' +
-    '๐“ เนเธเธฅเน€เธ”เธญเธฃเน: ' + (activeJob.folder_url || 'เธขเธฑเธเนเธกเนเธชเธฃเนเธฒเธ') + '\n' +
-    'โ• [๐“ธ เธชเนเธเธฃเธนเธ] [โ… เธเธดเธ”เธเธฒเธ] [๐“ เธเธดเธเธฑเธ”]'
-  );
-}
-
-// ============================================================================
-// WORK NOTE HANDLER
-// ============================================================================
-
-function handleWorkNote(cls, text, userId, userName) {
-  var jobId = cls.jobId || extractJobId(text);
-  var activeJob = findActiveJob(userId, jobId);
-
-  if (!activeJob) {
-    if (text.length > 20) return handleOpenJob(text, userId);
-    return null;
-  }
-
-  callGAS({
-    action: 'เธญเธฑเธเน€เธ”เธ—เธชเธ–เธฒเธเธฐ',
-    job_id: activeJob.job_id,
-    status: activeJob.status,
-    technician: userName || activeJob.technician,
-    note: text
-  });
-
-  return createTextMessage(
-    '๐“ เธเธฑเธเธ—เธถเธเธซเธกเธฒเธขเน€เธซเธ•เธธเธเธฒเธ ' + activeJob.job_id + '\n"' + text + '"\n๐“ ' + (activeJob.folder_url || '')
-  );
-}
-
-// ============================================================================
-// OPEN/CLOSE JOB
-// ============================================================================
-
-function handleOpenJob(text, userId) {
-  var parts = text.replace(/เน€เธเธดเธ”เธเธฒเธ|#เน€เธเธดเธ”เธเธฒเธ/g, '').trim().split(/\s+/);
-  if (parts.length < 2) {
-    return createTextMessage(
-      'โ เนเธเนเธเธณเธชเธฑเนเธ: #เน€เธเธดเธ”เธเธฒเธ [เธเธทเนเธญ] [เน€เธเธญเธฃเน] [เธญเธฒเธเธฒเธฃ]\nเธ•เธฑเธงเธญเธขเนเธฒเธ: #เน€เธเธดเธ”เธเธฒเธ เธฃเธฃ.เธชเธงเนเธฒเธ 081xxx เธ•เธดเธ”เธ•เธฑเนเธเธเธฅเนเธญเธ 3 เธเธธเธ”'
-    );
-  }
-
-  var name = parts[0];
-  var phone = parts[1];
-  var symptom = parts.slice(2).join(' ') || 'เนเธกเนเธฃเธฐเธเธธ';
-
-  var result = callGAS({
-    action: 'เน€เธเธดเธ”เธเธฒเธ',
-    name: name,
-    phone: phone,
-    symptom: symptom
-  });
-
-  if (!result || !result.success) return createTextMessage('โ เน€เธเธดเธ”เธเธฒเธเธฅเนเธกเน€เธซเธฅเธง: ' + (result ? result.error : 'unknown'));
-
-  var jd = result.data;
-  return createTextMessage(
-    'โ… เน€เธเธดเธ”เธเธฒเธเธชเธณเน€เธฃเนเธ!\n\n' +
-    '๐“ ' + jd.job_id + ' โ€” ' + jd.customer + '\n' +
-    '๐”ง เธญเธฒเธเธฒเธฃ: ' + symptom + '\n' +
-    '๐“ เธชเธ–เธฒเธเธฐ: ' + jd.status + '\n\n' +
-    '๐“ธ เธชเนเธเธฃเธนเธเธชเธณเธฃเธงเธเนเธ”เนเธ—เธฑเธเธ—เธต\n' +
-    '๐“ เธเธ”เนเธเธฃเน Location เน€เธเธทเนเธญเธฃเธฐเธเธธเธ•เธณเนเธซเธเนเธ\n' +
-    '๐“ #เน€เธเนเธเธเธฒเธ ' + jd.job_id + ' เน€เธเธทเนเธญเธ”เธนเธชเธ–เธฒเธเธฐ'
-  );
-}
-
-function handleCloseJob(text) {
-  var parts = text.replace(/เธเธดเธ”เธเธฒเธ|#เธเธดเธ”เธเธฒเธ/g, '').trim().split(/\s+/);
-  if (parts.length < 2) {
-    return createTextMessage(
-      'โ เนเธเนเธเธณเธชเธฑเนเธ: #เธเธดเธ”เธเธฒเธ [JobID] [เธญเธฐเนเธซเธฅเน:เธเธณเธเธงเธ] [เธเนเธฒเนเธฃเธ]\nเธ•เธฑเธงเธญเธขเนเธฒเธ: #เธเธดเธ”เธเธฒเธ J0018 เธชเธฒเธขLAN:5,CCTV:3 500'
-    );
-  }
-
-  var jobId = parts[0];
-  var partsUsed = parts[1];
-  var labor = parseInt(parts[2]) || 0;
-
-  var result = callGAS({
-    action: 'เธเธดเธ”เธเธฒเธ',
+  var update = callRouterActionV55_('updateJobStatus', {
     job_id: jobId,
-    parts: partsUsed,
-    labor_cost: labor
+    lat: message.latitude,
+    lng: message.longitude,
+    note: 'อัปเดตพิกัดจาก LINE',
+    changed_by: userName || userId || 'LINE'
   });
 
-  if (!result || !result.success) return createTextMessage('โ เธเธดเธ”เธเธฒเธเธฅเนเธกเน€เธซเธฅเธง: ' + (result ? result.error : 'unknown'));
+  if (!update || update.error || update.success === false) {
+    return createTextMessage('อัปเดตพิกัดไม่สำเร็จ: ' + (update && update.error || 'unknown'));
+  }
 
-  return createTextMessage(
-    'โ… เธเธดเธ”เธเธฒเธ ' + jobId + ' เธชเธณเน€เธฃเนเธ!\n\n' +
-    '๐”ง เธญเธฐเนเธซเธฅเน: ' + partsUsed + '\n' +
-    '๐‘ท เธเนเธฒเนเธฃเธ: ' + labor.toLocaleString() + ' เธเธฒเธ—\n' +
-    '๐’ฐ เธ•เธฑเธ”เธชเธ•เนเธญเธ + เธชเธฃเนเธฒเธเธเธดเธฅเนเธฅเนเธง'
-  );
+  return createTextMessage('บันทึกพิกัดเรียบร้อย\nJobID: ' + jobId);
 }
 
-function handleAcceptJob(jobId, userName) {
-  if (!jobId) return createTextMessage('โ เธฃเธฐเธเธธ JobID เธ”เนเธงเธข เน€เธเนเธ J0018');
+function handleStatus(classification, text, userId, userName) {
+  var jobId = classification.jobId || extractJobIdV55_(text);
+  if (!jobId) return createTextMessage('กรุณาระบุ JobID เช่น J0001 ถึงหน้างาน');
 
-  callGAS({
-    action: 'เธญเธฑเธเน€เธ”เธ—เธชเธ–เธฒเธเธฐ',
+  var result = callRouterActionV55_('transitionJob', {
     job_id: jobId,
-    status: 'InProgress',
-    technician: userName || 'เธเนเธฒเธ',
-    note: 'เธฃเธฑเธเธเธฒเธเนเธฅเนเธง เธเธณเธฅเธฑเธเนเธเธชเธ–เธฒเธเธ—เธตเน'
+    status_code: classification.status_code,
+    note: text || 'อัปเดตสถานะผ่าน LINE',
+    changed_by: userName || userId || 'LINE'
   });
 
-  return createTextMessage('๐‘ท เธฃเธฑเธเธเธฒเธ ' + jobId + ' เนเธฅเนเธง! เธเธณเธฅเธฑเธเนเธเธชเธ–เธฒเธเธ—เธตเนเธเธฃเธฑเธ\n\n๐“ เธชเนเธ Location เน€เธเธทเนเธญเธญเธฑเธเน€เธ”เธ•เธ•เธณเนเธซเธเนเธ');
-}
-
-// ============================================================================
-// HELPERS
-// ============================================================================
-
-function extractJobId(text) {
-  var match = text ? text.match(/j\d{3,4}/i) : null;
-  return match ? match[0].toUpperCase() : null;
-}
-
-function findActiveJob(userId, jobId) {
-  if (jobId) {
-    var result = callGAS({ action: 'เน€เธเนเธเธเธฒเธ', search: jobId });
-    if (result && result.success && result.data && result.data.jobs && result.data.jobs.length > 0) return result.data.jobs[0];
+  if (!result || result.success === false || result.error) {
+    return createTextMessage('อัปเดตสถานะไม่สำเร็จ: ' + (result && (result.error || result.message) || 'unknown'));
   }
-  var byUser = callGAS({ action: 'เน€เธเนเธเธเธฒเธ', search: userId });
-  if (byUser && byUser.success && byUser.data && byUser.data.jobs && byUser.data.jobs.length > 0) {
-    var jobs = byUser.data.jobs;
-    for (var i = 0; i < jobs.length; i++) {
-      if (jobs[i].status !== 'Completed' && jobs[i].status !== 'Archived') return jobs[i];
+
+  return createTextMessage('อัปเดตสถานะเรียบร้อย\nJobID: ' + jobId + '\nสถานะ: ' + (result.to_status_label || '-'));
+}
+
+function handleWorkNote(classification, text, userId, userName) {
+  var jobId = classification.jobId || extractJobIdV55_(text);
+  if (!jobId) return null;
+
+  var result = callRouterActionV55_('addQuickNote', {
+    job_id: jobId,
+    note: text,
+    user: userName || userId || 'LINE'
+  });
+
+  if (!result || result.success === false || result.error) {
+    return createTextMessage('บันทึกหมายเหตุไม่สำเร็จ: ' + (result && result.error || 'unknown'));
+  }
+
+  return createTextMessage('บันทึกหมายเหตุแล้ว\nJobID: ' + jobId);
+}
+
+function handlePhotoReport(message, classification, userId, userName) {
+  var jobId = classification.jobId || '';
+  if (!jobId) {
+    return createTextMessage('รับรูปแล้ว แต่ยังไม่พบ JobID กรุณาส่งรูปพร้อมข้อความ เช่น J0001 ถึงหน้างาน');
+  }
+
+  if (typeof queuePhotoFromLINE === 'function') {
+    var queueResult = queuePhotoFromLINE(message.id || '', jobId, userName || userId || 'LINE');
+    if (queueResult && !queueResult.error) {
+      return createTextMessage('รับรูปเข้าคิวเรียบร้อย\nJobID: ' + jobId + '\nQueueID: ' + (queueResult.queueId || '-') + '\n' + (queueResult.message || 'รอประมวลผลอัตโนมัติ'));
     }
-    return jobs[0];
+    return createTextMessage('รับรูปแล้ว แต่เข้าคิวไม่สำเร็จ: ' + (queueResult && queueResult.error || 'unknown'));
   }
-  var all = callGAS({ action: 'เน€เธเนเธเธเธฒเธ', search: '' });
-  if (all && all.success && all.data && all.data.jobs && all.data.jobs.length > 0) {
-    var allJobs = all.data.jobs;
-    for (var j = 0; j < allJobs.length; j++) {
-      if (allJobs[j].status === 'เธฃเธญเธ”เธณเน€เธเธดเธเธเธฒเธฃ') return allJobs[j];
-    }
-    return allJobs[0];
-  }
-  return null;
+
+  return createTextMessage('รับรูปเรียบร้อย\nJobID: ' + jobId + '\nหมายเหตุ: ยังไม่เปิดใช้งานคิวรูปภาพอัตโนมัติในสคริปต์นี้');
 }
 
-/**
- * เน€เธฃเธตเธขเธ GAS API (เนเธเน UrlFetchApp เนเธ—เธ https module)
- */
-function callGAS(body) {
-  try {
-    var payload = JSON.stringify(body);
-    var options = {
-      method: 'post',
-      contentType: 'application/json',
-      payload: payload,
-      muteHttpExceptions: true
-    };
-    var response = UrlFetchApp.fetch(LINE_GAS_URL, options);
-    return JSON.parse(response.getContentText());
-  } catch (e) {
-    return { success: false, error: e.toString() };
-  }
+function replyLineMessage(replyToken, messages) {
+  var channelToken = getConfig('LINE_CHANNEL_ACCESS_TOKEN') || '';
+  if (!channelToken || !replyToken) return { success: false, error: 'LINE reply configuration missing' };
+  return callLineMessagingApiV55_('https://api.line.me/v2/bot/message/reply', {
+    replyToken: replyToken,
+    messages: normalizeLineMessagesV55_(messages)
+  }, channelToken);
 }
 
-function callAndFormat(action, params, formatter) {
-  try {
-    var body = { action: action };
-    var keys = Object.keys(params);
-    for (var i = 0; i < keys.length; i++) {
-      body[keys[i]] = params[keys[i]];
-    }
-    var result = callGAS(body);
-    if (result && result.success && result.data) return formatter(result.data);
-    return createTextMessage('โ เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธ”เธถเธเธเนเธญเธกเธนเธฅเนเธ”เน');
-  } catch (e) {
-    return createTextMessage('โ ๏ธ Error: ' + e.toString());
+function pushLineMessage(to, messages) {
+  var channelToken = getConfig('LINE_CHANNEL_ACCESS_TOKEN') || '';
+  if (!channelToken || !to) return { success: false, error: 'LINE push configuration missing' };
+  return callLineMessagingApiV55_('https://api.line.me/v2/bot/message/push', {
+    to: to,
+    messages: normalizeLineMessagesV55_(messages)
+  }, channelToken);
+}
+
+function sendLineNotify(payload) {
+  payload = payload || {};
+  var targetUserId = payload.userId || payload.to || getConfig('LINE_DEFAULT_PUSH_USER_ID') || '';
+  if (!targetUserId) {
+    return { success: false, error: 'LINE_DEFAULT_PUSH_USER_ID not configured' };
   }
+  return pushLineMessage(targetUserId, createTextMessage(payload.message || ''));
 }
 
 function createTextMessage(text) {
-  return { type: 'text', text: text };
-}
-
-function createQuickReply(jobId) {
   return {
-    type: 'quick',
-    items: [
-      { type: 'action', action: { type: 'location', label: '๐“ เธชเนเธเธเธดเธเธฑเธ”' } },
-      { type: 'action', action: { type: 'message', label: '๐“ธ เธชเนเธเธฃเธนเธ', text: 'เธชเนเธเธฃเธนเธเธเธฒเธ ' + jobId } },
-      { type: 'action', action: { type: 'message', label: 'โ… เธเธดเธ”เธเธฒเธ', text: '#เธเธดเธ”เธเธฒเธ ' + jobId } }
-    ]
+    type: 'text',
+    text: String(text || '').substring(0, 5000)
   };
 }
 
-function getStatusEmoji(s) {
-  if (!s) return '๐“';
-  if (s === 'เธฃเธญเธ”เธณเน€เธเธดเธเธเธฒเธฃ') return 'โณ';
-  if (s === 'InProgress' || s === 'เธเธณเธฅเธฑเธเธ—เธณ') return '๐”';
-  if (s === 'Completed' || s === 'เน€เธชเธฃเนเธเนเธฅเนเธง') return 'โ…';
-  if (s === 'เธขเธเน€เธฅเธดเธ') return 'โ';
-  return '๐“';
-}
+function formatCheckJobsV55_(text) {
+  var searchText = String(text || '').replace(/^(#?เช็คงาน|check job)/i, '').trim();
+  var dashboard = callRouterActionV55_('getDashboardData', {});
+  var jobs = (dashboard && dashboard.jobs) || [];
+  var filtered = [];
 
-function formatJobList(data) {
-  if (!data.jobs || data.jobs.length === 0) return createTextMessage('๐“ เนเธกเนเธกเธตเธเธฒเธ');
-  var lines = [];
-  var max = Math.min(data.jobs.length, 10);
-  for (var i = 0; i < max; i++) {
-    var j = data.jobs[i];
-    lines.push(j.job_id + ' | ' + j.customer + ' | ' + getStatusEmoji(j.status) + ' ' + j.status);
+  for (var i = 0; i < jobs.length; i++) {
+    var job = jobs[i] || {};
+    if (!searchText || String(job.id).indexOf(searchText) > -1 || String(job.customer).indexOf(searchText) > -1) {
+      filtered.push(job);
+    }
+    if (filtered.length >= 5) break;
   }
-  return createTextMessage('๐“ เธเธฒเธ ' + data.count + ' เธฃเธฒเธขเธเธฒเธฃ:\n\n' + lines.join('\n'));
-}
 
-function formatSummary(data) {
-  return createTextMessage(
-    '๐“ เธชเธฃเธธเธเธเธฒเธเธงเธฑเธเธเธตเน\n\n' +
-    '๐“ เธ—เธฑเนเธเธซเธกเธ”: ' + (data.total || 0) + '\nโณ เธฃเธญเธ”เธณเน€เธเธดเธเธเธฒเธฃ: ' + (data.pending || 0) + '\n๐” เธเธณเธฅเธฑเธเธ—เธณ: ' + (data.inProgress || 0) + '\nโ… เน€เธชเธฃเนเธเนเธฅเนเธง: ' + (data.completed || 0)
-  );
-}
+  if (!filtered.length) return createTextMessage('ไม่พบงานที่ค้นหา');
 
-function formatStock(data) {
-  if (!data.items || data.items.length === 0) return createTextMessage('๐“ฆ เนเธกเนเธกเธตเธเนเธญเธกเธนเธฅ');
-  var lines = [];
-  var max = Math.min(data.items.length, 10);
-  for (var i = 0; i < max; i++) {
-    var it = data.items[i];
-    lines.push((it.qty < 5 ? '๐”ด' : 'โ…') + ' ' + it.name + ' โ€” ' + it.qty + ' เธเธดเนเธ');
+  var lines = ['รายการงานล่าสุด'];
+  for (var j = 0; j < filtered.length; j++) {
+    lines.push((j + 1) + '. ' + filtered[j].id + ' | ' + filtered[j].customer + ' | ' + filtered[j].status);
   }
-  return createTextMessage('๐“ฆ เธชเธ•เนเธญเธ:\n\n' + lines.join('\n'));
+  return createTextMessage(lines.join('\n'));
 }
 
-function createJobReportCard(jobData, photoUrl, analysis) {
-  return createTextMessage(
-    '๐“ ' + jobData.job_id + ' โ€” ' + jobData.customer + '\n' +
-    '๐”ง ' + (jobData.symptom || '-') + '\n' +
-    '๐“ ' + getStatusEmoji(jobData.status) + ' ' + jobData.status + '\n' +
-    '๐‘ท ' + (jobData.technician || '-') + '\n' +
-    '๐“ธ ' + (photoUrl || 'เนเธกเนเธกเธตเธฃเธนเธเธ เธฒเธ') + '\n' +
-    '๐“ ' + (jobData.folder_url || '-') + '\n' +
-    (analysis ? '\n๐ค– ' + analysis : '')
-  );
+function formatCheckStockV55_(text) {
+  var keyword = String(text || '').replace(/^(#?เช็คสต็อก|check stock)/i, '').trim().toLowerCase();
+  var dashboard = callRouterActionV55_('getDashboardData', {});
+  var items = (dashboard && dashboard.inventory) || [];
+  var filtered = [];
+
+  for (var i = 0; i < items.length; i++) {
+    var item = items[i] || {};
+    var haystack = (String(item.code || '') + ' ' + String(item.name || '')).toLowerCase();
+    if (!keyword || haystack.indexOf(keyword) > -1) filtered.push(item);
+    if (filtered.length >= 5) break;
+  }
+
+  if (!filtered.length) return createTextMessage('ไม่พบรายการสต็อก');
+
+  var lines = ['สต็อกที่ค้นหา'];
+  for (var j = 0; j < filtered.length; j++) {
+    lines.push((j + 1) + '. ' + filtered[j].code + ' | ' + filtered[j].name + ' | คงเหลือ ' + Number(filtered[j].qty || 0));
+  }
+  return createTextMessage(lines.join('\n'));
+}
+
+function formatSummaryV55_() {
+  var dashboard = callRouterActionV55_('getDashboardData', {});
+  var summary = dashboard && dashboard.summary ? dashboard.summary : {};
+  var revenue = summary.revenue || {};
+  return createTextMessage([
+    'สรุป COMPHONE SUPER APP V5.5',
+    'งานทั้งหมด: ' + Number(summary.totalJobs || 0),
+    'สต็อกต่ำ: ' + Number(summary.lowStock || 0),
+    'งานค้าง: ' + Number(summary.overdueJobs || 0),
+    'รายได้วันนี้: ' + Number(revenue.today || 0),
+    'รายได้สัปดาห์: ' + Number(revenue.week || 0),
+    'รายได้เดือน: ' + Number(revenue.month || 0)
+  ].join('\n'));
+}
+
+function callRouterActionV55_(action, payload) {
+  if (typeof routeActionV55 === 'function') {
+    return routeActionV55(action, payload || {});
+  }
+  var globalScope = typeof globalThis !== 'undefined' ? globalThis : this;
+  var fn = globalScope[action];
+  if (typeof fn !== 'function') return { success: false, error: 'Action not available: ' + action };
+  return fn(payload || {});
+}
+
+function parseLineWebhookBodyV55_(e) {
+  if (!e || !e.postData || !e.postData.contents) return {};
+  return JSON.parse(e.postData.contents || '{}');
+}
+
+function normalizeLineMessagesV55_(messages) {
+  if (!messages) return [];
+  return Array.isArray(messages) ? messages : [messages];
+}
+
+function callLineMessagingApiV55_(url, payload, channelToken) {
+  try {
+    var response = UrlFetchApp.fetch(url, {
+      method: 'post',
+      contentType: 'application/json',
+      headers: { Authorization: 'Bearer ' + channelToken },
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+    var text = response.getContentText() || '{}';
+    return { success: response.getResponseCode() >= 200 && response.getResponseCode() < 300, status: response.getResponseCode(), body: text };
+  } catch (error) {
+    return { success: false, error: error.toString() };
+  }
+}
+
+function parseOpenJobTextV55_(text) {
+  text = String(text || '').replace(/^(#?เปิดงาน|create job)/i, '').trim();
+  var parts = text.split('|');
+  return {
+    customer_name: String(parts[0] || 'ลูกค้าใหม่').trim(),
+    symptom: String(parts[1] || 'รับงานจาก LINE').trim(),
+    note: String(parts[2] || '').trim(),
+    source: 'LINE'
+  };
+}
+
+function extractJobIdV55_(text) {
+  var match = String(text || '').match(/j\d{3,6}/i);
+  return match ? String(match[0]).toUpperCase() : '';
+}
+
+function countKeywordMatchesV55_(text, keywords) {
+  var count = 0;
+  for (var i = 0; i < keywords.length; i++) {
+    if (text.indexOf(String(keywords[i]).toLowerCase()) > -1) count++;
+  }
+  return count;
+}
+
+function getLineDisplayNameV55_(userId) {
+  var mapJson = getConfig('LINE_USER_MAP_JSON') || '{}';
+  try {
+    var map = JSON.parse(mapJson);
+    return map[userId] || '';
+  } catch (error) {
+    return '';
+  }
 }

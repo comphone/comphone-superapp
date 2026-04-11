@@ -1,7 +1,7 @@
 // ============================================================
-// JobsHandler.gs - Job CRUD, Photos, Folders (V352)
-// V350: Dynamic header lookup + labor/total outside loop
-// V352: Auto Warranty PDF after completeJob
+// COMPHONE SUPER APP V5.5
+// ============================================================
+// JobsHandler.gs - Job CRUD, Photos, Folders
 // ============================================================
 
 function openJob(data) {
@@ -51,7 +51,7 @@ function completeJob(data) {
     if (!sh) return { error: 'DBJOBS not found' };
     var all = sh.getDataRange().getValues();
 
-    // V350: Dynamic Header Lookup (instead of hardcoded column indices)
+    // Dynamic header lookup (instead of hardcoded column indices)
     var headers = all[0];
     var statusCol = 3, updateCol = 10;
     for (var hi = 0; hi < headers.length; hi++) {
@@ -62,7 +62,7 @@ function completeJob(data) {
 
     var jobId = data.job_id || '';
 
-    // V350: Move labor/total calculation to outer scope so it's accessible everywhere
+    // Move labor/total calculation to outer scope so it remains accessible
     var labor = Number(data.labor_cost || 0);
     var total = labor + Number(data.parts_cost || 0);
 
@@ -75,7 +75,7 @@ function completeJob(data) {
           all[i][updateCol] = new Date();
           sh.getDataRange().setValues(all);
 
-          // V320: Auto-cut reserved stock OR manual parts
+          // Auto-cut reserved stock or manual parts
           var cutResult = cutStockAuto(jobId);
 
           // If no reservations, use manual parts from data
@@ -102,10 +102,10 @@ function completeJob(data) {
             }
           }
 
-          // V350: Create billing via createBilling() — proper price lookup from DB_INVENTORY
+          // Create billing via createBilling() with price lookup from DB_INVENTORY
           var billingResult = createBilling(jobId, data.parts || '', labor);
 
-          // V352: Auto Warranty PDF + send LINE push
+          // Auto Warranty PDF + send LINE push
           try {
             var warrantyResult = generateWarrantyPDF(jobId);
             if (warrantyResult && warrantyResult.success && warrantyResult.warrantyUrl) {
@@ -122,7 +122,7 @@ function completeJob(data) {
             Logger.log('WARRANTY_PDF auto error: ' + wErr);
           }
 
-          // V320: Log
+          // Log
           try {
             logActivity('JOB_CLOSE', 'SYSTEM||LINE', jobId + ' \u2014 รายได้: ' + (total || '0') + ' บาท');
           } catch(e) {
@@ -165,7 +165,7 @@ function updateJobStatus(data) {
     if (!sh) return { error: 'DBJOBS not found' };
     var all = sh.getDataRange().getValues();
 
-    // V350: Dynamic Header Lookup
+    // Dynamic header lookup
     var headers = all[0];
     var statusCol = 3, techCol = 4, gpsCol = 5, noteCol = 11, updateCol = 10;
     for (var hi = 0; hi < headers.length; hi++) {

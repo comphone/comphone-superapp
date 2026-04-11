@@ -1,15 +1,17 @@
 // ============================================================
-// Dashboard.gs - Dashboard UI & Data APIs (V352)
+// COMPHONE SUPER APP V5.5
+// ============================================================
+// Dashboard.gs - Dashboard UI & Data APIs
 // ============================================================
 
 // ============================================================
 // 🔧 Template Include Helper — for modular HTML files
 // ============================================================
-function includeDashboardLegacy_(filename) {
+function includeDashboardV55_(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
-function dashboardLegacyDoGet_(e) {
+function dashboardDoGetV55_(e) {
   var action = (e && e.parameter && e.parameter.action) || '';
   if (action === 'json') {
     var result = {
@@ -22,7 +24,7 @@ function dashboardLegacyDoGet_(e) {
   }
   return HtmlService.createTemplateFromFile('Index')
     .evaluate()
-    .setTitle('Comphone Dashboard V352')
+    .setTitle('COMPHONE SUPER APP V5.5')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
 }

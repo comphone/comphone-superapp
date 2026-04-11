@@ -1,106 +1,90 @@
+// COMPHONE SUPER APP V5.5
 // ============================================================
-// Router.gs - Main API Router (V362 — doGet + doPost single entry point)
+// Router.gs - Main Router and API Dispatcher
 // ============================================================
 
-// ============================================================
-// 🔧 Template Include Helper — for modular HTML files
-// ============================================================
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
-// ============================================================
-// 🌐 doGet — Dashboard HTML Entry Point (V362)
-// ============================================================
 function doGet(e) {
   try {
-    var p = (e && e.parameter) || {};
-    var action = p.action || '';
+    var params = (e && e.parameter) || {};
+    var action = normalizeActionV55_(params.action || '');
+    var jobId = params.jobId || params.job_id || '';
 
-    // JSON API endpoint
-    if (action === 'json') {
-      var result = {
-        success: true,
-        jobs: getDashboardJobs(),
-        inventory: getDashboardInventory(),
-        summary: getDashboardSummary()
-      };
-      return ContentService.createTextOutput(JSON.stringify(result))
-        .setMimeType(ContentService.MimeType.JSON);
+    if (action === 'json' || action === 'getDashboardData') {
+      return jsonOutputV55_(getDashboardData());
     }
 
-    if (action === 'jobqrdata' || action === 'getJobQRData') {
-      return ContentService.createTextOutput(JSON.stringify(getJobWebAppPayload(p.jobId || p.job_id || '')))
-        .setMimeType(ContentService.MimeType.JSON);
+    if (action === 'getJobStateConfig') {
+      return jsonOutputV55_(getJobStateConfig());
     }
 
-    if (p.view === 'jobqr' || action === 'jobqr') {
-      var jobTemplate = HtmlService.createTemplateFromFile('JobQRView');
-      jobTemplate.jobId = p.jobId || p.job_id || '';
-      jobTemplate.apiBaseUrl = getWebAppBaseUrl_() || '';
-      return jobTemplate.evaluate()
-        .setTitle('COMPHONE Job QR')
+    if (action === 'getJobQRData' || action === 'jobqrdata') {
+      return jsonOutputV55_(getJobWebAppPayload(jobId));
+    }
+
+    if (action === 'getPhotoGalleryData' || action === 'photogallerydata') {
+      return jsonOutputV55_(getPhotoGalleryData(jobId));
+    }
+
+    if (params.view === 'jobqr' || action === 'jobqr') {
+      var qrTemplate = HtmlService.createTemplateFromFile('JobQRView');
+      qrTemplate.jobId = jobId;
+      qrTemplate.apiBaseUrl = getWebAppBaseUrl_() || '';
+      return qrTemplate.evaluate()
+        .setTitle('COMPHONE SUPER APP V5.5 - Job QR')
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
         .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
     }
 
-    if (action === 'photoGalleryData' || action === 'getPhotoGalleryData') {
-      return ContentService.createTextOutput(JSON.stringify(getPhotoGalleryData(p.jobId || p.job_id || '')))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-
-    if (p.view === 'photogallery' || action === 'photogallery') {
+    if (params.view === 'photogallery' || action === 'photogallery') {
       var galleryTemplate = HtmlService.createTemplateFromFile('PhotoGallery');
-      galleryTemplate.jobId = p.jobId || p.job_id || '';
+      galleryTemplate.jobId = jobId;
       galleryTemplate.apiBaseUrl = getWebAppBaseUrl_() || '';
       return galleryTemplate.evaluate()
-        .setTitle('COMPHONE Photo Gallery')
+        .setTitle('COMPHONE SUPER APP V5.5 - Photo Gallery')
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
         .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
     }
 
-    // HTML Dashboard — Null Fallback Variables
     var template = HtmlService.createTemplateFromFile('Index');
     template.apiBaseUrl = getWebAppBaseUrl_() || '';
-    template.jobQrWebAppUrl = buildWebAppUrl_(getWebAppBaseUrl_() || '', { view: 'jobqr', jobId: p.jobId || '' });
-    
-
-    // Send all possible template variables with null fallback
-    template.mode = p.mode || '';
-    template.jobId = p.jobId || '';
-    template.status = p.status || '';
-    template.customerName = p.customerName || '';
-    template.action = action;
-    template.view = p.view || '';
-    template.filter = p.filter || '';
-    template.search = p.search || '';
-    template.techName = p.techName || '';
-    template.date = p.date || '';
-    template.dateFrom = p.dateFrom || '';
-    template.dateTo = p.dateTo || '';
-    template.reportType = p.reportType || '';
-    template.editMode = p.editMode || '';
-    template.tab = p.tab || '';
-    template.page = p.page || '';
-    template.query = p.query || '';
-    template.type = p.type || '';
-    template.id = p.id || '';
-    template.name = p.name || '';
-    template.description = p.description || '';
-    template.callback = p.callback || '';
-    template.redirect = p.redirect || '';
+    template.jobQrWebAppUrl = buildWebAppUrl_(getWebAppBaseUrl_() || '', { view: 'jobqr', jobId: jobId });
+    template.mode = params.mode || '';
+    template.jobId = jobId;
+    template.status = params.status || '';
+    template.customerName = params.customerName || '';
+    template.action = params.action || '';
+    template.view = params.view || '';
+    template.filter = params.filter || '';
+    template.search = params.search || '';
+    template.techName = params.techName || '';
+    template.date = params.date || '';
+    template.dateFrom = params.dateFrom || '';
+    template.dateTo = params.dateTo || '';
+    template.reportType = params.reportType || '';
+    template.editMode = params.editMode || '';
+    template.tab = params.tab || '';
+    template.page = params.page || '';
+    template.query = params.query || '';
+    template.type = params.type || '';
+    template.id = params.id || '';
+    template.name = params.name || '';
+    template.description = params.description || '';
+    template.callback = params.callback || '';
+    template.redirect = params.redirect || '';
 
     return template.evaluate()
-      .setTitle('Comphone Dashboard V362')
+      .setTitle('COMPHONE SUPER APP V5.5')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
       .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
-
-  } catch (e) {
-    // Emergency fallback — plain text error page
+  } catch (error) {
     return HtmlService.createHtmlOutput(
-      '<html><head><meta charset="UTF-8"></head><body>' +
-      '<h2>⚠️ doGet Error</h2><pre>' +
-      String(e.toString()) + ' ' + String(e.stack || '') +
+      '<html><head><meta charset="UTF-8"><title>COMPHONE SUPER APP V5.5</title></head><body>' +
+      '<h2>COMPHONE SUPER APP V5.5 - Router Error</h2><pre>' +
+      sanitizeHtmlTextV55_(String(error)) + '\n' + sanitizeHtmlTextV55_(String(error && error.stack || '')) +
       '</pre></body></html>'
     );
   }
@@ -108,299 +92,151 @@ function doGet(e) {
 
 function doPost(e) {
   try {
-    var data = JSON.parse(e.postData.contents);
-    var action = data.action || '';
-    var actionMap = {
-      'เปิดงาน': 'openjob', 'เช็คงาน': 'checkjobs', 'เช็คสต็อก': 'checkstock',
-      'ปิดงาน': 'closejob', 'อัพเดทสถานะ': 'updatestatus',
-      'openjob': 'openjob', 'open_job': 'openjob',
-      'checkjobs': 'checkjobs', 'check_jobs': 'checkjobs',
-      'checkstock': 'checkstock', 'check_stock': 'checkstock',
-      'closejob': 'closejob', 'close_job': 'closejob',
-      'updatestatus': 'updatestatus', 'update_status': 'updatestatus',
-      'สรุปงาน': 'summary', 'summary': 'summary',
-      'getDashboardData': 'getDashboardData',
-      'barcode': 'barcode', 'บาร์โค้ด': 'barcode',
-      'sendNotify': 'sendNotify', 'แจ้งไลน์': 'sendNotify',
-      'cronMorning': 'cronMorning',
-      'createInvoice': 'createInvoice', 'สร้างบิล': 'createInvoice',
-      'getJobFolder': 'getJobFolder',
-      'saveJobPhoto': 'saveJobPhoto',
-      'updatePhotoLink': 'updatePhotoLink',
-      'updateJobById': 'updateJobById',
-      'barcodeLookup': 'barcodeLookup',
-      'createJob': 'createJob', 'create_job': 'createJob', 'สร้างงาน': 'createJob',
-      'transitionJob': 'transitionJob', 'transition_job': 'transitionJob', 'เปลี่ยนสถานะงาน': 'transitionJob',
-      'generateJobQR': 'generateJobQR', 'generate_job_qr': 'generateJobQR', 'สร้างคิวอาร์งาน': 'generateJobQR',
-      'getJobStateConfig': 'getJobStateConfig', 'jobStateConfig': 'getJobStateConfig',
-      'getJobQRData': 'getJobQRData', 'jobqrdata': 'getJobQRData',
-      'photoGalleryData': 'photoGalleryData', 'getPhotoGalleryData': 'photoGalleryData', 'ดูรูปงาน': 'photoGalleryData',
-      'createBeforeAfterCollage': 'createBeforeAfterCollage', 'photoCollage': 'createBeforeAfterCollage',
-      'createCustomer': 'createCustomer', 'updateCustomer': 'updateCustomer', 'getCustomer': 'getCustomer', 'listCustomers': 'listCustomers',
-      'getCustomerHistory': 'getCustomerHistory', 'syncCustomerFromJob': 'syncCustomerFromJob',
-      'predictiveMaintenance': 'predictiveMaintenance', 'runPredictiveMaintenance': 'runPredictiveMaintenance',
-      'transferStock': 'transferStock', 'getVanStock': 'getVanStock', 'inventoryOverview': 'inventoryOverview',
-      'predictiveStocking': 'predictiveStocking', 'createWeeklyToolAuditChecklist': 'createWeeklyToolAuditChecklist',
-      'getWeeklyToolAuditChecklist': 'getWeeklyToolAuditChecklist', 'submitToolAudit': 'submitToolAudit',
-      'createBilling': 'createBilling', 'getBilling': 'getBilling', 'generatePromptPayQR': 'generatePromptPayQR',
-      'verifyPaymentSlip': 'verifyPaymentSlip', 'markBillingPaid': 'markBillingPaid', 'generateReceiptPDF': 'generateReceiptPDF',
-      'notifyBillingReady': 'notifyBillingReady', 'notifyPaymentReceived': 'notifyPaymentReceived', 'sendCriticalDashboardAlerts': 'sendCriticalDashboardAlerts',
-      'getRevenueReport': 'getRevenueReport', 'getJobStatusDistribution': 'getJobStatusDistribution', 'getAlerts': 'getAlerts'
-    };
-    var norm = actionMap[action] || action;
-    var result = { action: norm };
-    switch (norm) {
-      case 'help':
-        result.success = true;
-        result.message = 'Actions: createJob, transitionJob, generateJobQR, getJobStateConfig, getJobQRData, photoGalleryData, createBeforeAfterCollage, createCustomer, updateCustomer, getCustomer, listCustomers, getCustomerHistory, syncCustomerFromJob, predictiveMaintenance, runPredictiveMaintenance, transferStock, getVanStock, inventoryOverview, predictiveStocking, createWeeklyToolAuditChecklist, getWeeklyToolAuditChecklist, submitToolAudit, openjob, checkjobs, checkstock, closejob, updatestatus, summary, getDashboardData';
-        break;
-      case 'summary':
-        result.success = true; result.data = summarizeJobs();
-        break;
-      case 'createJob':
-        result.success = true; result.data = createJob(data);
-        break;
-      case 'transitionJob':
-        result.success = true; result.data = transitionJob(data.job_id || data.jobId || '', data.new_status || data.to_status || data.status_code || data.status, data);
-        break;
-      case 'generateJobQR':
-        result.success = true; result.data = generateJobQR(data.job_id || data.jobId || '');
-        break;
-      case 'getJobStateConfig':
-        result.success = true; result.data = getJobStateConfig();
-        break;
-      case 'getJobQRData':
-        result.success = true; result.data = getJobWebAppPayload(data.job_id || data.jobId || '');
-        break;
-      case 'photoGalleryData':
-        result.success = true; result.data = getPhotoGalleryData(data.job_id || data.jobId || '');
-        break;
-      case 'createBeforeAfterCollage':
-        result.success = true; result.data = createBeforeAfterCollage(data.job_id || data.jobId || '', data);
-        break;
-      case 'createCustomer':
-        result.success = true; result.data = createCustomer(data);
-        break;
-      case 'updateCustomer':
-        result.success = true; result.data = updateCustomer(data);
-        break;
-      case 'getCustomer':
-        result.success = true; result.data = getCustomer(data);
-        break;
-      case 'listCustomers':
-        result.success = true; result.data = listCustomers(data);
-        break;
-      case 'getCustomerHistory':
-        result.success = true; result.data = getCustomerHistory(data);
-        break;
-      case 'syncCustomerFromJob':
-        result.success = true; result.data = syncCustomerFromJob(data.job_id || data.jobId || '');
-        break;
-      case 'predictiveMaintenance':
-      case 'runPredictiveMaintenance':
-        result.success = true; result.data = runPredictiveMaintenance(data);
-        break;
-      case 'openjob':
-        result.success = true; result.data = openJob(data);
-        break;
-      case 'checkjobs':
-        result.success = true; result.data = checkJobs(data);
-        break;
-      case 'checkstock':
-        result.success = true; result.data = checkStock(data);
-        break;
-      case 'inventoryOverview':
-        result.success = true; result.data = getInventoryOverview(data);
-        break;
-      case 'transferStock':
-        result.success = true; result.data = transferStock(data.from_location || data.from, data.to_location || data.to, data.item_id || data.item_code || data.code || data.itemId, data.qty, data);
-        break;
-      case 'getVanStock':
-        result.success = true; result.data = getVanStock(data.tech_id || data.tech || data.technician || '');
-        break;
-      case 'predictiveStocking':
-        result.success = true; result.data = predictiveStocking(data);
-        break;
-      case 'createWeeklyToolAuditChecklist':
-        result.success = true; result.data = createWeeklyToolAuditChecklist(data);
-        break;
-      case 'getWeeklyToolAuditChecklist':
-        result.success = true; result.data = getWeeklyToolAuditChecklist(data);
-        break;
-      case 'submitToolAudit':
-        result.success = true; result.data = submitToolAudit(data);
-        break;
-      case 'closejob':
-        result.success = true; result.data = completeJob(data);
-        break;
-      case 'updatestatus':
-        result.success = true; result.data = updateJobStatus(data);
-        break;
-      case 'updateJobById':
-        result.success = true; result.data = updateJobById(data.job_id || '', data);
-        break;
-      case 'getDashboardData':
-        result.success = true; result.data = getDashboardData();
-        break;
-      case 'barcode': case 'barcodeLookup':
-        result.success = true; result.data = barcodeLookup(data);
-        break;
-      case 'scanWithdrawStock':
-        result.success = true; result.data = scanWithdrawStock(data);
-        break;
-      case 'getJobFolder':
-        result.success = true; result.data = getOrCreateJobFolder(data);
-        break;
-      case 'saveJobPhoto':
-        result.success = true; result.data = saveJobPhoto(data);
-        break;
-      case 'updatePhotoLink':
-        result.success = true; result.data = updatePhotoLink(data);
-        break;
-      case 'createInvoice':
-        result.success = true; result.data = createInvoicePDF(data);
-        break;
-      case 'createBilling':
-        result.success = true; result.data = createBilling(data.job_id || data.jobId || '', data.parts, data.labor);
-        break;
-      case 'getBilling':
-        result.success = true; result.data = getBilling(data);
-        break;
-      case 'generatePromptPayQR':
-        result.success = true; result.data = generatePromptPayQR(data);
-        break;
-      case 'verifyPaymentSlip':
-        result.success = true; result.data = verifyPaymentSlip(data);
-        break;
-      case 'markBillingPaid':
-        result.success = true; result.data = markBillingPaid(data);
-        break;
-      case 'generateReceiptPDF':
-        result.success = true; result.data = generateReceiptPDF(data);
-        break;
-      case 'sendNotify':
-        result.success = true; result.data = sendLineNotify(data);
-        break;
-      case 'notifyBillingReady':
-        result.success = true; result.data = notifyBillingReady(data);
-        break;
-      case 'notifyPaymentReceived':
-        result.success = true; result.data = notifyPaymentReceived(data);
-        break;
-      case 'sendCriticalDashboardAlerts':
-        result.success = true; result.data = sendCriticalDashboardAlerts();
-        break;
-      case 'cronMorning':
-        result.success = true; result.data = cronMorningAlert();
-        break;
-      case 'getDashboardJobs':
-        result.success = true; result.data = getDashboardJobs();
-        break;
-      case 'getDashboardInventory':
-        result.success = true; result.data = getDashboardInventory();
-        break;
-      case 'getDashboardSummary':
-        result.success = true; result.data = getDashboardSummary();
-        break;
-      case 'getRevenueReport':
-        result.success = true; result.data = getRevenueReport(data.period || 'today');
-        break;
-      case 'getJobStatusDistribution':
-        result.success = true; result.data = getJobStatusDistribution();
-        break;
-      case 'getAlerts':
-        result.success = true; result.data = getAlerts();
-        break;
-      case 'sendCRMNotification':
-        result.success = true; result.data = sendCRMNotification(data);
-        break;
-      case 'dailyReport':
-        result.success = true; result.data = getDailyReport();
-        break;
-      case 'sendDashboardSummary':
-        result.success = true; result.data = sendDashboardSummary();
-        break;
-      case 'backup': case 'สำรอง':
-        result.success = true; result.data = autoBackup();
-        break;
-      case 'logs': case 'ดูlog':
-        result.success = true; result.data = { logs: getLastLogs(data.limit || 50) };
-        break;
-      case 'stockAlert': case 'เช็คสต็อกเตือน':
-        result.success = true; result.data = checkLowStockAlert();
-        break;
-      case 'getProfitReport':
-        result.success = true; result.data = getProfitReport(data);
-        break;
-      case 'getCalendar':
-        result.success = true; result.data = getCalendarJobs(data.days || 7);
-        break;
-      case 'getCRMSchedule':
-        result.success = true; result.data = getCRMSchedule();
-        break;
-      case 'reserveItems': case 'จองของ':
-        result.success = true; result.data = reserveItemsForJob(data.job_id || '', data.items || []);
-        break;
-      case 'releaseReservation': case 'คืนจอง':
-        result.success = true; result.data = releaseReservation(data.job_id || '');
-        break;
-      case 'cutStockAuto': case 'ตัดสต็อก':
-        result.success = true; result.data = cutStockAuto(data.job_id || '');
-        break;
-      case 'reorderSuggestion': case 'สั่งซื้อแนะนำ':
-        result.success = true; result.data = geminiReorderSuggestion();
-        break;
-      case 'setupTriggers': case 'ตั้งtrigger':
-        result.success = true; result.data = setupAllTriggers();
-        break;
-      case 'listTriggers': case 'ดูtrigger':
-        result.success = true; result.data = listTriggers();
-        break;
-      case 'deleteTriggers': case 'ลบtrigger':
-        result.success = true; result.data = deleteAllTriggers();
-        break;
-      case 'getJobTimeline': case 'ดูไทม์ไลน์':
-        result.success = true; result.data = getJobTimeline(data.job_id || '');
-        break;
-      case 'addQuickNote': case 'เพิ่มหมายเหตุด่วน':
-        result.success = true; result.data = addQuickNote(data.job_id || '', data.note, data.user || '');
-        break;
-      case 'generateWarranty': case 'สร้างใบรับประกัน':
-        result.success = true; result.data = generateWarrantyPDF(data.job_id || '');
-        break;
-      case 'processImageQueue': case 'จัดรูป':
-        result.success = true; result.data = processImageSorting();
-        break;
-      case 'photoQueueCount': case 'คิวรูป':
-        result.success = true; result.data = getPhotoQueueCount();
-        break;
-      case 'queuePhoto': case 'ฝากรูป':
-        result.success = true; result.data = queuePhotoFromLINE(data.image_id || '', data.job_id || '', data.tech_name || '');
-        break;
-      default:
-        result.success = false;
-        result.error = 'Unknown action: ' + action;
-    }
-    return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ success: false, error: 'Server error: ' + err.toString() })).setMimeType(ContentService.MimeType.JSON);
+    var payload = parsePostPayloadV55_(e);
+    var action = payload.action || payload.route || payload.fn || payload.method || 'help';
+    return jsonOutputV55_(routeActionV55(action, payload));
+  } catch (error) {
+    return jsonOutputV55_({ success: false, error: error.toString() });
   }
 }
 
-function summarizeJobs() {
+function routeActionV55(action, payload) {
+  var normalizedAction = normalizeActionV55_(action || '');
+  var args = Array.isArray(payload) ? payload : [payload || {}];
+  return dispatchActionV55_(normalizedAction, payload || {}, args);
+}
+
+function dispatchActionV55_(action, payload, args) {
+  payload = payload || {};
+  args = Array.isArray(args) ? args : [payload];
+
   try {
-    var ss = getComphoneSheet();
-    var sh = findSheetByName(ss, 'DBJOBS');
-    if (!sh) return { error: 'DBJOBS not found' };
-    var d = sh.getDataRange().getValues();
-    if (d.length < 2) return { message: 'ไม่มีงานในระบบ' };
-    var p = 0, c = 0, ip = 0;
-    for (var i = 1; i < d.length; i++) {
-      var s = String(d[i][3]);
-      if (s === 'Completed') c++;
-      else if (s === 'InProgress' || s.indexOf('กำลัง') === 0) ip++;
-      else p++;
+    switch (action) {
+      case 'help':
+        return {
+          success: true,
+          app: 'COMPHONE SUPER APP V5.5',
+          actions: [
+            'getDashboardData', 'getJobStateConfig', 'getJobTimeline', 'transitionJob', 'updateJobById',
+            'addQuickNote', 'openJob', 'updateJobStatus', 'getPhotoGalleryData', 'generateJobQR',
+            'getJobQRData', 'handleProcessPhotos', 'sendDashboardSummary', 'inventoryOverview',
+            'transferStock', 'createCustomer', 'updateCustomer', 'getCustomer', 'listCustomers'
+          ]
+        };
+
+      case 'getDashboardData':
+        return getDashboardData();
+      case 'getJobStateConfig':
+        return getJobStateConfig();
+      case 'getJobTimeline':
+        return invokeFunctionByNameV55_('getJobTimeline', args);
+      case 'transitionJob':
+        if (args.length >= 2) return invokeFunctionByNameV55_('transitionJob', args);
+        return transitionJob(payload.job_id || payload.jobId || '', payload.new_status || payload.to_status || payload.status_code || payload.status, payload);
+      case 'updateJobById':
+        if (args.length >= 2) return invokeFunctionByNameV55_('updateJobById', args);
+        return updateJobById(payload.job_id || payload.jobId || '', payload);
+      case 'addQuickNote':
+        if (args.length >= 3) return invokeFunctionByNameV55_('addQuickNote', args);
+        return addQuickNote(payload.job_id || payload.jobId || '', payload.note || '', payload.user || payload.changed_by || 'SYSTEM');
+      case 'openJob':
+      case 'createJob':
+        return openJob(payload);
+      case 'updateJobStatus':
+        return updateJobStatus(payload);
+      case 'getJobQRData':
+        return getJobWebAppPayload(payload.job_id || payload.jobId || '');
+      case 'generateJobQR':
+        return generateJobQR(payload.job_id || payload.jobId || '');
+      case 'getPhotoGalleryData':
+      case 'photoGalleryData':
+        return getPhotoGalleryData(payload.job_id || payload.jobId || '');
+      case 'handleProcessPhotos':
+        return handleProcessPhotos();
+      case 'sendDashboardSummary':
+        return sendDashboardSummary();
+      case 'inventoryOverview':
+        return getInventoryOverview(payload);
+      case 'transferStock':
+        return transferStock(payload.from_location || payload.from, payload.to_location || payload.to, payload.item_id || payload.item_code || payload.code || payload.itemId, payload.qty, payload);
+      case 'createCustomer':
+        return createCustomer(payload);
+      case 'updateCustomer':
+        return updateCustomer(payload);
+      case 'getCustomer':
+        return getCustomer(payload);
+      case 'listCustomers':
+        return listCustomers(payload);
+      default:
+        return invokeFunctionByNameV55_(action, args);
     }
-    return { total: d.length - 1, pending: p, inProgress: ip, completed: c, date: new Date().toLocaleDateString('th-TH') };
-  } catch (e) { return { error: e.toString() }; }
+  } catch (error) {
+    return { success: false, action: action, error: error.toString() };
+  }
+}
+
+function normalizeActionV55_(action) {
+  action = String(action || '').trim();
+  var map = {
+    'เปิดงาน': 'openJob',
+    'create_job': 'createJob',
+    'openjob': 'openJob',
+    'open_job': 'openJob',
+    'createjob': 'createJob',
+    'เช็คงาน': 'checkJobs',
+    'checkjobs': 'checkJobs',
+    'check_jobs': 'checkJobs',
+    'เช็คสต็อก': 'checkStock',
+    'checkstock': 'checkStock',
+    'check_stock': 'checkStock',
+    'ปิดงาน': 'completeJob',
+    'closejob': 'completeJob',
+    'close_job': 'completeJob',
+    'อัพเดทสถานะ': 'updateJobStatus',
+    'updatestatus': 'updateJobStatus',
+    'update_status': 'updateJobStatus',
+    'transition_job': 'transitionJob',
+    'เปลี่ยนสถานะงาน': 'transitionJob',
+    'jobStateConfig': 'getJobStateConfig',
+    'jobqrdata': 'getJobQRData',
+    'getPhotoGallery': 'getPhotoGalleryData',
+    'photoGallery': 'getPhotoGalleryData',
+    'ดูรูปงาน': 'getPhotoGalleryData',
+    'บาร์โค้ด': 'barcodeLookup',
+    'summary': 'sendDashboardSummary'
+  };
+  return map[action] || action;
+}
+
+function invokeFunctionByNameV55_(functionName, args) {
+  functionName = String(functionName || '').trim();
+  if (!functionName) return { success: false, error: 'Function name is required' };
+  var globalScope = typeof globalThis !== 'undefined' ? globalThis : this;
+  var fn = globalScope[functionName];
+  if (typeof fn !== 'function') {
+    return { success: false, error: 'Function not found: ' + functionName, action: functionName };
+  }
+  return fn.apply(globalScope, Array.isArray(args) ? args : []);
+}
+
+function parsePostPayloadV55_(e) {
+  if (!e || !e.postData || !e.postData.contents) return {};
+  try {
+    return JSON.parse(e.postData.contents || '{}');
+  } catch (error) {
+    throw new Error('Invalid JSON payload');
+  }
+}
+
+function jsonOutputV55_(data) {
+  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function sanitizeHtmlTextV55_(text) {
+  return String(text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }

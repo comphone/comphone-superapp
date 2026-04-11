@@ -1,3 +1,4 @@
+// COMPHONE SUPER APP V5.5
 // ============================================================
 // CustomerManager.gs - Customer Management & CRM V5.5
 // CRUD ลูกค้า / Auto-fill ตอนเปิดงาน / Customer History / Predictive Maintenance

@@ -1,5 +1,7 @@
 // ============================================================
-// BillingManager.gs - Billing & Payment Automation V5.5 Phase 2
+// COMPHONE SUPER APP V5.5
+// ============================================================
+// BillingManager.gs - Billing & Payment Automation
 // ============================================================
 
 var BILLING_SHEET_NAME = 'DB_BILLING';
