@@ -171,3 +171,179 @@ function sendCRMNotification(data) {
     return { success: true, message: 'CRM notification logged' };
   } catch (e) { return { error: e.toString() }; }
 }
+
+
+// ============================================================
+// Phase 2 — Multi-channel Notification Helpers
+// ============================================================
+function sendTelegramMessage(message, chatId) {
+  try {
+    var token = getConfig('TELEGRAM_BOT_TOKEN') || '';
+    if (!token) {
+      _logNotifyFallback('TG_NO_TOKEN', chatId || '', message || '');
+      return { success: false, error: 'TELEGRAM_BOT_TOKEN not configured' };
+    }
+    if (!chatId) {
+      return { success: false, error: 'Telegram chat id is required' };
+    }
+
+    var payload = {
+      chat_id: chatId,
+      text: String(message || '').substring(0, 4000),
+      parse_mode: 'HTML',
+      disable_web_page_preview: false
+    };
+
+    var resp = UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+    var code = resp.getResponseCode();
+    var body = resp.getContentText();
+    if (code >= 200 && code < 300) return { success: true, chat_id: chatId };
+
+    _logNotifyFallback('TG_HTTP_' + code, chatId, message);
+    return { success: false, error: 'HTTP ' + code, detail: body };
+  } catch (e) {
+    _logNotifyFallback('TG_ERROR', chatId || '', message || '');
+    return { success: false, error: e.toString() };
+  }
+}
+
+function sendMultiChannelNotification(data) {
+  try {
+    data = data || {};
+    var message = data.message || 'แจ้งเตือนจากระบบ';
+    var room = data.room || 'TECHNICIAN';
+    var channels = data.channels || ['line'];
+    if (typeof channels === 'string') channels = channels.split(',');
+
+    var result = { success: true, line: null, telegram: null, customer_line: null };
+
+    for (var i = 0; i < channels.length; i++) {
+      var channel = String(channels[i] || '').trim().toLowerCase();
+      if (!channel) continue;
+
+      if (channel === 'line') {
+        result.line = data.to_line_id ? sendLinePush(message, data.to_line_id) : sendLineNotify({ message: message, room: room });
+      } else if (channel === 'telegram') {
+        var chatId = data.telegram_chat_id || getConfig('TELEGRAM_CHAT_' + room) || '';
+        result.telegram = sendTelegramMessage(message, chatId);
+      } else if (channel === 'customer_line' && data.customer_line_user_id) {
+        result.customer_line = sendLinePush(message, data.customer_line_user_id);
+      }
+    }
+
+    return result;
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+function notifyBillingReady(data) {
+  try {
+    data = data || {};
+    var billingResult = typeof getBilling === 'function' ? getBilling({ job_id: data.job_id }) : null;
+    if (!billingResult || !billingResult.success) return { success: false, error: 'Billing not found' };
+    var billing = billingResult.billing;
+
+    var financeMessage =
+      'แจ้งเตือนการเรียกเก็บเงิน\n' +
+      'งาน: ' + billing.job_id + '\n' +
+      'ลูกค้า: ' + (billing.customer_name || '-') + '\n' +
+      'ยอดชำระ: ' + Number(billing.balance_due || billing.total_amount || 0).toLocaleString() + ' บาท\n' +
+      'QR: ' + (billing.promptpay_qr_url || '-') + '\n' +
+      'สถานะ: ' + (billing.payment_status || 'UNPAID');
+
+    var customerMessage =
+      'ใบแจ้งชำระเงิน COMPHONE\n' +
+      'เลขที่งาน: ' + billing.job_id + '\n' +
+      'ยอดชำระ: ' + Number(billing.balance_due || billing.total_amount || 0).toLocaleString() + ' บาท\n' +
+      'สแกนชำระ: ' + (billing.promptpay_qr_url || '-') + '\n' +
+      'กรุณาแจ้งสลิปหลังชำระเงิน';
+
+    return {
+      success: true,
+      accounting: sendMultiChannelNotification({
+        room: 'ACCOUNTING',
+        message: financeMessage,
+        channels: ['line', 'telegram']
+      }),
+      customer: billing.customer_line_user_id ? sendMultiChannelNotification({
+        message: customerMessage,
+        channels: ['customer_line'],
+        customer_line_user_id: billing.customer_line_user_id
+      }) : { success: true, skipped: true, reason: 'No customer LINE user id' }
+    };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+function notifyPaymentReceived(data) {
+  try {
+    data = data || {};
+    var billingResult = typeof getBilling === 'function' ? getBilling({ job_id: data.job_id }) : null;
+    if (!billingResult || !billingResult.success) return { success: false, error: 'Billing not found' };
+    var billing = billingResult.billing;
+
+    var opsMessage =
+      'ยืนยันการรับชำระเงินแล้ว\n' +
+      'งาน: ' + billing.job_id + '\n' +
+      'ลูกค้า: ' + (billing.customer_name || '-') + '\n' +
+      'ยอดรับ: ' + Number(billing.amount_paid || billing.total_amount || 0).toLocaleString() + ' บาท\n' +
+      'Receipt: ' + (billing.receipt_url || '-') + '\n' +
+      'Ref: ' + (billing.transaction_ref || '-');
+
+    var customerMessage =
+      'ระบบได้รับชำระเงินแล้ว\n' +
+      'เลขที่งาน: ' + billing.job_id + '\n' +
+      'ยอดชำระ: ' + Number(billing.amount_paid || billing.total_amount || 0).toLocaleString() + ' บาท\n' +
+      'ใบเสร็จ: ' + (billing.receipt_url || '-');
+
+    return {
+      success: true,
+      accounting: sendMultiChannelNotification({
+        room: 'ACCOUNTING',
+        message: opsMessage,
+        channels: ['line', 'telegram']
+      }),
+      executive: sendMultiChannelNotification({
+        room: 'EXECUTIVE',
+        message: opsMessage,
+        channels: ['line']
+      }),
+      customer: billing.customer_line_user_id ? sendMultiChannelNotification({
+        message: customerMessage,
+        channels: ['customer_line'],
+        customer_line_user_id: billing.customer_line_user_id
+      }) : { success: true, skipped: true, reason: 'No customer LINE user id' }
+    };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+function sendCriticalDashboardAlerts() {
+  try {
+    if (typeof getAlerts !== 'function') return { success: false, error: 'getAlerts not available' };
+    var alerts = getAlerts();
+    if (!alerts.success) return alerts;
+    if (!alerts.items || alerts.items.length === 0) return { success: true, message: 'No critical alerts' };
+
+    var lines = [];
+    for (var i = 0; i < alerts.items.length && i < 10; i++) {
+      lines.push((i + 1) + '. [' + alerts.items[i].type + '] ' + alerts.items[i].message);
+    }
+
+    return sendMultiChannelNotification({
+      room: 'EXECUTIVE',
+      message: 'Dashboard Alerts\n' + lines.join('\n'),
+      channels: ['line', 'telegram']
+    });
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}

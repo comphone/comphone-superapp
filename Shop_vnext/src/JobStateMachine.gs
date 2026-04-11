@@ -431,13 +431,17 @@ function runJobTransitionAutomation_(jobId, fromStatusCode, toStatusCode, option
   var result = {
     triggered: false,
     qc: null,
-    customer_sync: null
+    customer_sync: null,
+    billing: null,
+    payment: null,
+    notifications: []
   };
 
   try {
     if ((Number(toStatusCode) === 8 || Number(toStatusCode) === 12) && typeof syncCustomerFromJob === 'function') {
       result.customer_sync = syncCustomerFromJob(jobId);
     }
+
     if (Number(toStatusCode) === 8 && typeof runJobCompletionQC === 'function') {
       result.triggered = true;
       result.qc = runJobCompletionQC(jobId, {
@@ -447,8 +451,38 @@ function runJobTransitionAutomation_(jobId, fromStatusCode, toStatusCode, option
         changed_by: options && (options.changed_by || options.user || 'SYSTEM')
       });
     }
+
+    if (Number(toStatusCode) === 10 && typeof autoGenerateBillingForJob === 'function') {
+      result.triggered = true;
+      result.billing = autoGenerateBillingForJob(jobId, options || {});
+      if (typeof notifyBillingReady === 'function') {
+        result.notifications.push(notifyBillingReady({
+          job_id: jobId,
+          changed_by: options && (options.changed_by || options.user || 'SYSTEM')
+        }));
+      }
+    }
+
+    if (Number(toStatusCode) === 11 && options && options.source !== 'BillingManager' && typeof markBillingPaid === 'function') {
+      result.triggered = true;
+      result.payment = markBillingPaid({
+        job_id: jobId,
+        amount_paid: options.amount_paid || options.amount || '',
+        transaction_ref: options.transaction_ref || options.ref || '',
+        slip_image_url: options.slip_image_url || options.slip_url || '',
+        changed_by: options.changed_by || options.user || 'SYSTEM',
+        skip_job_transition: true,
+        generate_receipt: options.generate_receipt !== false
+      });
+      if (typeof notifyPaymentReceived === 'function') {
+        result.notifications.push(notifyPaymentReceived({
+          job_id: jobId,
+          changed_by: options.changed_by || options.user || 'SYSTEM'
+        }));
+      }
+    }
   } catch (e) {
-    result.qc = { success: false, error: e.toString() };
+    result.qc = result.qc || { success: false, error: e.toString() };
   }
 
   return result;

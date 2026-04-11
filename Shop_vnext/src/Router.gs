@@ -141,7 +141,11 @@ function doPost(e) {
       'predictiveMaintenance': 'predictiveMaintenance', 'runPredictiveMaintenance': 'runPredictiveMaintenance',
       'transferStock': 'transferStock', 'getVanStock': 'getVanStock', 'inventoryOverview': 'inventoryOverview',
       'predictiveStocking': 'predictiveStocking', 'createWeeklyToolAuditChecklist': 'createWeeklyToolAuditChecklist',
-      'getWeeklyToolAuditChecklist': 'getWeeklyToolAuditChecklist', 'submitToolAudit': 'submitToolAudit'
+      'getWeeklyToolAuditChecklist': 'getWeeklyToolAuditChecklist', 'submitToolAudit': 'submitToolAudit',
+      'createBilling': 'createBilling', 'getBilling': 'getBilling', 'generatePromptPayQR': 'generatePromptPayQR',
+      'verifyPaymentSlip': 'verifyPaymentSlip', 'markBillingPaid': 'markBillingPaid', 'generateReceiptPDF': 'generateReceiptPDF',
+      'notifyBillingReady': 'notifyBillingReady', 'notifyPaymentReceived': 'notifyPaymentReceived', 'sendCriticalDashboardAlerts': 'sendCriticalDashboardAlerts',
+      'getRevenueReport': 'getRevenueReport', 'getJobStatusDistribution': 'getJobStatusDistribution', 'getAlerts': 'getAlerts'
     };
     var norm = actionMap[action] || action;
     var result = { action: norm };
@@ -256,8 +260,35 @@ function doPost(e) {
       case 'createInvoice':
         result.success = true; result.data = createInvoicePDF(data);
         break;
+      case 'createBilling':
+        result.success = true; result.data = createBilling(data.job_id || data.jobId || '', data.parts, data.labor);
+        break;
+      case 'getBilling':
+        result.success = true; result.data = getBilling(data);
+        break;
+      case 'generatePromptPayQR':
+        result.success = true; result.data = generatePromptPayQR(data);
+        break;
+      case 'verifyPaymentSlip':
+        result.success = true; result.data = verifyPaymentSlip(data);
+        break;
+      case 'markBillingPaid':
+        result.success = true; result.data = markBillingPaid(data);
+        break;
+      case 'generateReceiptPDF':
+        result.success = true; result.data = generateReceiptPDF(data);
+        break;
       case 'sendNotify':
         result.success = true; result.data = sendLineNotify(data);
+        break;
+      case 'notifyBillingReady':
+        result.success = true; result.data = notifyBillingReady(data);
+        break;
+      case 'notifyPaymentReceived':
+        result.success = true; result.data = notifyPaymentReceived(data);
+        break;
+      case 'sendCriticalDashboardAlerts':
+        result.success = true; result.data = sendCriticalDashboardAlerts();
         break;
       case 'cronMorning':
         result.success = true; result.data = cronMorningAlert();
@@ -270,6 +301,15 @@ function doPost(e) {
         break;
       case 'getDashboardSummary':
         result.success = true; result.data = getDashboardSummary();
+        break;
+      case 'getRevenueReport':
+        result.success = true; result.data = getRevenueReport(data.period || 'today');
+        break;
+      case 'getJobStatusDistribution':
+        result.success = true; result.data = getJobStatusDistribution();
+        break;
+      case 'getAlerts':
+        result.success = true; result.data = getAlerts();
         break;
       case 'sendCRMNotification':
         result.success = true; result.data = sendCRMNotification(data);

@@ -328,33 +328,8 @@ function cutStock(partsStr) {
 }
 
 function createBilling(jobId, parts, labor) {
-  var ss = getComphoneSheet();
-  var billSheet = findSheetByName(ss, 'DB_BILLING');
-  if (!billSheet) return;
-
-  // V350: Look up actual prices from DB_INVENTORY
-  var partsCost = 0;
-  if (parts) {
-    var invSheet = findSheetByName(ss, 'DB_INVENTORY');
-    if (invSheet) {
-      var invAll = invSheet.getDataRange().getValues();
-      var partsArr = parts.split(',');
-      for (var pi = 0; pi < partsArr.length; pi++) {
-        var psplit = partsArr[pi].split(':');
-        var itemName = (psplit[0] || '').trim();
-        var qty = parseInt(psplit[1]) || 1;
-        for (var qi = 1; qi < invAll.length; qi++) {
-          if (String(invAll[qi][0]) === itemName || String(invAll[qi][1]) === itemName) {
-            partsCost += Number(invAll[qi][3] || 0) * qty; // ราคาทุน
-            break;
-          }
-        }
-      }
-    }
+  if (typeof createBillingPhase2_ === 'function') {
+    return createBillingPhase2_(jobId, parts, labor);
   }
-
-  var laborCost = Number(labor || 0);
-  var total = partsCost + laborCost;
-  billSheet.appendRow([jobId, parts || '-', laborCost, total, 'Unpaid', new Date()]);
-  return { success: true, parts_cost: partsCost, labor_cost: laborCost, total: total };
+  return { success: false, error: 'BillingManager not available' };
 }

@@ -5,11 +5,11 @@
 // ============================================================
 // 🔧 Template Include Helper — for modular HTML files
 // ============================================================
-function include(filename) {
+function includeDashboardLegacy_(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
-function doGet(e) {
+function dashboardLegacyDoGet_(e) {
   var action = (e && e.parameter && e.parameter.action) || '';
   if (action === 'json') {
     var result = {
@@ -32,7 +32,9 @@ function getDashboardData() {
     success: true,
     jobs: getDashboardJobs(),
     inventory: getDashboardInventory(),
-    summary: getDashboardSummary()
+    summary: getDashboardSummary(),
+    status_distribution: getJobStatusDistribution(),
+    alerts: getAlerts()
   };
 }
 
@@ -104,48 +106,53 @@ function getDashboardInventory() {
 
 function getDashboardSummary() {
   try {
-    var ss = getComphoneSheet();
-    var jsh = findSheetByName(ss, 'DBJOBS');
-    var ish = findSheetByName(ss, 'DB_INVENTORY');
-    var p = 0, c = 0, ip = 0, ls = 0, ti = 0;
-    if (jsh) {
-      var j = jsh.getDataRange().getValues();
-      var sc = 3;
-      var headers = j[0];
-      for (var hi = 0; hi < headers.length; hi++) {
-        var h = String(headers[hi]);
-        if (h.indexOf('สถานะ') > -1 || h.indexOf('สถาน') > -1) { sc = hi; break; }
-      }
-      for (var i = 1; i < j.length; i++) {
-        var s = String(j[i][sc]);
-        if (s.indexOf('รอดำ') === 0) p++;
-        else if (s === 'InProgress' || s.indexOf('กำลัง') === 0) ip++;
-        else if (s === 'Completed') c++;
-      }
-    }
-    if (ish) {
-      var it = ish.getDataRange().getValues();
-      ti = it.length - 1;
-      for (var k = 1; k < it.length; k++) {
-        if (Number(it[k][2] || 0) < 5) ls++;
-      }
-    }
-    // นับรูปที่ Pending
-    var pendingPhotos = 0;
-    var pqsh = findSheetByName(ss, 'DB_PHOTO_QUEUE');
-    if (pqsh) {
-      var pq = pqsh.getDataRange().getValues();
-      for (var qi = 1; qi < pq.length; qi++) {
-        if (String(pq[qi][7] || '') === 'Pending') pendingPhotos++;
-      }
-    }
+    var statusDistribution = getJobStatusDistribution();
+    var revenueToday = getRevenueReport('today');
+    var revenueWeek = getRevenueReport('week');
+    var revenueMonth = getRevenueReport('month');
+    var alerts = getAlerts();
+    var jobs = getDashboardJobs();
+    var inventory = getDashboardInventory();
+    var pendingPhotos = getPendingPhotoQueueCount_();
+    var topTechnician = getTopTechnician_();
+    var pmSummary = getPmDueSummary_();
+
     return {
-      totalJobs: p + ip + c, pending: p, inProgress: ip, completed: c,
-      totalItems: ti, lowStock: ls, pendingPhotos: pendingPhotos,
+      success: true,
+      totalJobs: statusDistribution.total_jobs || 0,
+      status_distribution: statusDistribution.statuses || [],
+      status_map: statusDistribution.status_map || JOB_STATUS_MAP || {},
+      totalItems: inventory.length,
+      lowStock: alerts.low_stock_count || 0,
+      pendingPhotos: pendingPhotos,
+      overdueJobs: alerts.overdue_jobs_count || 0,
+      topTechnician: topTechnician,
+      pmDueCount: pmSummary.total || 0,
+      revenue: {
+        today: revenueToday.total_revenue || 0,
+        week: revenueWeek.total_revenue || 0,
+        month: revenueMonth.total_revenue || 0
+      },
+      recentJobs: jobs,
+      alerts: alerts.items || [],
       date: Utilities.formatDate(new Date(), 'Asia/Bangkok', 'dd/MM/yyyy HH:mm')
     };
   } catch(e) {
-    return { totalJobs:0, pending:0, inProgress:0, completed:0, totalItems:0, lowStock:0, pendingPhotos:0, date:'error' };
+    return {
+      success: false,
+      totalJobs: 0,
+      status_distribution: [],
+      totalItems: 0,
+      lowStock: 0,
+      pendingPhotos: 0,
+      overdueJobs: 0,
+      topTechnician: null,
+      pmDueCount: 0,
+      revenue: { today: 0, week: 0, month: 0 },
+      alerts: [],
+      date: 'error',
+      error: e.toString()
+    };
   }
 }
 
@@ -496,4 +503,334 @@ function getCRMSchedule() {
   } catch(e) {
     return { error: e.toString() };
   }
+}
+
+
+// ============================================================
+// Phase 2 — Dashboard APIs
+// ============================================================
+function getRevenueReport(period) {
+  try {
+    var normalizedPeriod = normalizeReportPeriod_(period || 'today');
+    var ss = getComphoneSheet();
+    var sh = findSheetByName(ss, 'DB_BILLING');
+    var result = {
+      success: true,
+      period: normalizedPeriod,
+      total_revenue: 0,
+      paid_revenue: 0,
+      unpaid_revenue: 0,
+      bill_count: 0,
+      paid_count: 0,
+      unpaid_count: 0,
+      items: []
+    };
+    if (!sh || sh.getLastRow() < 2) return result;
+
+    var rows = sh.getDataRange().getValues();
+    var headers = rows[0];
+    var idxJob = findHeaderIndex_(headers, ['Job_ID', 'job_id', 'JobID']);
+    var idxCustomer = findHeaderIndex_(headers, ['Customer_Name', 'customer_name', 'ชื่อลูกค้า']);
+    var idxTotal = findHeaderIndex_(headers, ['Total_Amount', 'total_amount', 'รวม', 'ยอดรวม']);
+    var idxPaid = findHeaderIndex_(headers, ['Amount_Paid', 'amount_paid']);
+    var idxStatus = findHeaderIndex_(headers, ['Payment_Status', 'payment_status', 'สถานะการชำระ']);
+    var idxDate = findHeaderIndex_(headers, ['Paid_At', 'paid_at', 'Invoice_Date', 'invoice_date', 'Created_At', 'created_at']);
+
+    for (var i = 1; i < rows.length; i++) {
+      var row = rows[i];
+      var rowDate = safeDateValue_(idxDate > -1 ? row[idxDate] : '');
+      if (!isDateInPeriod_(rowDate, normalizedPeriod)) continue;
+
+      var total = Number(row[idxTotal] || 0);
+      var paid = Number(idxPaid > -1 ? row[idxPaid] || 0 : 0);
+      var status = String(idxStatus > -1 ? row[idxStatus] || '' : '').toUpperCase();
+      result.bill_count++;
+      result.total_revenue += total;
+      if (status === 'PAID') {
+        result.paid_count++;
+        result.paid_revenue += paid || total;
+      } else {
+        result.unpaid_count++;
+        result.unpaid_revenue += total - paid;
+      }
+      result.items.push({
+        job_id: String(idxJob > -1 ? row[idxJob] || '' : ''),
+        customer_name: String(idxCustomer > -1 ? row[idxCustomer] || '' : ''),
+        total_amount: total,
+        amount_paid: paid,
+        payment_status: status || 'UNPAID',
+        date: rowDate ? Utilities.formatDate(rowDate, 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss') : ''
+      });
+    }
+
+    result.total_revenue = Math.round(result.total_revenue * 100) / 100;
+    result.paid_revenue = Math.round(result.paid_revenue * 100) / 100;
+    result.unpaid_revenue = Math.round(result.unpaid_revenue * 100) / 100;
+    return result;
+  } catch (e) {
+    return { success: false, period: period || 'today', error: e.toString(), items: [] };
+  }
+}
+
+function getJobStatusDistribution() {
+  try {
+    var ss = getComphoneSheet();
+    var sh = findSheetByName(ss, 'DBJOBS');
+    var counters = {};
+    for (var code = 1; code <= 12; code++) counters[code] = 0;
+    if (!sh || sh.getLastRow() < 2) {
+      return { success: true, total_jobs: 0, statuses: buildStatusDistributionArray_(counters), status_map: JOB_STATUS_MAP };
+    }
+
+    var ctx = getJobSheetContext_(sh);
+    var rows = sh.getRange(2, 1, sh.getLastRow() - 1, ctx.headers.length).getValues();
+    for (var i = 0; i < rows.length; i++) {
+      var codeVal = inferCurrentStatusCodeFromRow_(rows[i], ctx.indices);
+      if (!counters[codeVal]) counters[codeVal] = 0;
+      counters[codeVal]++;
+    }
+
+    return {
+      success: true,
+      total_jobs: rows.length,
+      statuses: buildStatusDistributionArray_(counters),
+      status_map: JOB_STATUS_MAP
+    };
+  } catch (e) {
+    return { success: false, total_jobs: 0, statuses: [], status_map: JOB_STATUS_MAP || {}, error: e.toString() };
+  }
+}
+
+function getAlerts() {
+  try {
+    var items = [];
+    var lowStockItems = getLowStockItems_();
+    var overdueJobs = getOverdueJobs_();
+    var pmSummary = getPmDueSummary_();
+    var topTechnician = getTopTechnician_();
+
+    for (var i = 0; i < lowStockItems.length; i++) {
+      items.push({
+        type: 'LOW_STOCK',
+        priority: 'high',
+        id: lowStockItems[i].code || lowStockItems[i].name,
+        message: lowStockItems[i].name + ' คงเหลือ ' + lowStockItems[i].qty + ' ต่ำกว่า reorder point ' + lowStockItems[i].reorder_point,
+        data: lowStockItems[i]
+      });
+    }
+
+    for (var j = 0; j < overdueJobs.length; j++) {
+      items.push({
+        type: 'OVERDUE_JOB',
+        priority: 'high',
+        id: overdueJobs[j].job_id,
+        message: 'งาน ' + overdueJobs[j].job_id + ' ค้าง ' + overdueJobs[j].age_days + ' วัน',
+        data: overdueJobs[j]
+      });
+    }
+
+    if (pmSummary.total > 0) {
+      items.push({
+        type: 'PM_DUE',
+        priority: 'medium',
+        id: 'PM-' + pmSummary.total,
+        message: 'มีลูกค้าถึงรอบ PM จำนวน ' + pmSummary.total + ' ราย',
+        data: pmSummary.customers.slice(0, 10)
+      });
+    }
+
+    if (topTechnician && topTechnician.job_count > 0) {
+      items.push({
+        type: 'TOP_TECHNICIAN',
+        priority: 'info',
+        id: topTechnician.name,
+        message: 'ช่างที่รับงานมากที่สุด: ' + topTechnician.name + ' (' + topTechnician.job_count + ' งาน)',
+        data: topTechnician
+      });
+    }
+
+    return {
+      success: true,
+      total: items.length,
+      low_stock_count: lowStockItems.length,
+      overdue_jobs_count: overdueJobs.length,
+      pm_due_count: pmSummary.total,
+      items: items
+    };
+  } catch (e) {
+    return { success: false, total: 0, items: [], error: e.toString() };
+  }
+}
+
+function getPendingPhotoQueueCount_() {
+  try {
+    var ss = getComphoneSheet();
+    var sh = findSheetByName(ss, 'DB_PHOTO_QUEUE');
+    if (!sh || sh.getLastRow() < 2) return 0;
+    var rows = sh.getDataRange().getValues();
+    var count = 0;
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][7] || '') === 'Pending') count++;
+    }
+    return count;
+  } catch (e) {
+    return 0;
+  }
+}
+
+function getLowStockItems_() {
+  try {
+    var ss = getComphoneSheet();
+    var sh = findSheetByName(ss, 'DB_INVENTORY');
+    if (!sh || sh.getLastRow() < 2) return [];
+    var rows = sh.getDataRange().getValues();
+    var headers = rows[0];
+    var idxCode = findHeaderIndex_(headers, ['Item_ID', 'Item_Code', 'Code', 'code', 'รหัส']);
+    var idxName = findHeaderIndex_(headers, ['Item_Name', 'Name', 'name', 'ชื่อ', 'ชื่อสินค้า']);
+    var idxQty = findHeaderIndex_(headers, ['Qty', 'qty', 'Quantity', 'จำนวน']);
+    var idxReorder = findHeaderIndex_(headers, ['Reorder_Point', 'reorder_point', 'Min_Qty', 'ขั้นต่ำ', 'จุดสั่งซื้อ']);
+    if (idxCode < 0) idxCode = 0;
+    if (idxName < 0) idxName = 1;
+    if (idxQty < 0) idxQty = 2;
+
+    var items = [];
+    for (var i = 1; i < rows.length; i++) {
+      var qty = Number(rows[i][idxQty] || 0);
+      var reorder = idxReorder > -1 ? Number(rows[i][idxReorder] || 0) : 5;
+      if (qty < reorder) {
+        items.push({
+          code: String(rows[i][idxCode] || ''),
+          name: String(rows[i][idxName] || ''),
+          qty: qty,
+          reorder_point: reorder
+        });
+      }
+    }
+    return items;
+  } catch (e) {
+    return [];
+  }
+}
+
+function getOverdueJobs_() {
+  try {
+    var ss = getComphoneSheet();
+    var sh = findSheetByName(ss, 'DBJOBS');
+    if (!sh || sh.getLastRow() < 2) return [];
+    var ctx = getJobSheetContext_(sh);
+    var rows = sh.getRange(2, 1, sh.getLastRow() - 1, ctx.headers.length).getValues();
+    var overdue = [];
+    var now = new Date().getTime();
+    for (var i = 0; i < rows.length; i++) {
+      var code = inferCurrentStatusCodeFromRow_(rows[i], ctx.indices);
+      if (code >= 11) continue;
+      var updatedAt = safeDateValue_(safeCellRaw_(rows[i], ctx.indices.updatedAt)) || safeDateValue_(safeCellRaw_(rows[i], ctx.indices.createdAt));
+      if (!updatedAt) continue;
+      var ageDays = Math.floor((now - updatedAt.getTime()) / 86400000);
+      if (ageDays > 3) {
+        overdue.push({
+          job_id: safeCellValue_(rows[i], ctx.indices.jobId),
+          customer_name: safeCellValue_(rows[i], ctx.indices.customer),
+          status_code: code,
+          status_label: JOB_STATUS_MAP[code] || safeCellValue_(rows[i], ctx.indices.statusText),
+          technician: safeCellValue_(rows[i], ctx.indices.tech),
+          age_days: ageDays,
+          updated_at: Utilities.formatDate(updatedAt, 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss')
+        });
+      }
+    }
+    overdue.sort(function(a, b) { return b.age_days - a.age_days; });
+    return overdue;
+  } catch (e) {
+    return [];
+  }
+}
+
+function getTopTechnician_() {
+  try {
+    var ss = getComphoneSheet();
+    var sh = findSheetByName(ss, 'DBJOBS');
+    if (!sh || sh.getLastRow() < 2) return null;
+    var ctx = getJobSheetContext_(sh);
+    var rows = sh.getRange(2, 1, sh.getLastRow() - 1, ctx.headers.length).getValues();
+    var stats = {};
+    for (var i = 0; i < rows.length; i++) {
+      var tech = safeCellValue_(rows[i], ctx.indices.tech) || '-';
+      if (!stats[tech]) stats[tech] = 0;
+      stats[tech]++;
+    }
+
+    var topName = '';
+    var topCount = 0;
+    for (var name in stats) {
+      if (stats.hasOwnProperty(name) && stats[name] > topCount) {
+        topName = name;
+        topCount = stats[name];
+      }
+    }
+    return topName ? { name: topName, job_count: topCount } : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function getPmDueSummary_() {
+  try {
+    if (typeof getPredictiveMaintenanceQueue !== 'function') return { total: 0, customers: [] };
+    var queue = getPredictiveMaintenanceQueue({ days: 30, include_rainy_season: true });
+    if (!queue || !queue.success) return { total: 0, customers: [] };
+    return {
+      total: Number(queue.total || (queue.customers ? queue.customers.length : 0) || 0),
+      customers: queue.customers || []
+    };
+  } catch (e) {
+    return { total: 0, customers: [] };
+  }
+}
+
+function buildStatusDistributionArray_(counters) {
+  var items = [];
+  for (var code = 1; code <= 12; code++) {
+    items.push({
+      status_code: code,
+      status_label: JOB_STATUS_MAP[code] || '',
+      job_count: Number(counters[code] || 0)
+    });
+  }
+  return items;
+}
+
+function normalizeReportPeriod_(period) {
+  var text = String(period || 'today').toLowerCase();
+  if (text === 'today' || text === 'day') return 'today';
+  if (text === 'week' || text === 'weekly') return 'week';
+  if (text === 'month' || text === 'monthly') return 'month';
+  return 'today';
+}
+
+function isDateInPeriod_(date, period) {
+  if (!date) return false;
+  var now = new Date();
+  var todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (period === 'today') return date >= todayStart;
+
+  if (period === 'week') {
+    var day = todayStart.getDay();
+    var diff = day === 0 ? 6 : day - 1;
+    var weekStart = new Date(todayStart.getTime() - diff * 86400000);
+    return date >= weekStart;
+  }
+
+  if (period === 'month') {
+    var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    return date >= monthStart;
+  }
+  return false;
+}
+
+function safeDateValue_(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  var date = new Date(value);
+  return isNaN(date.getTime()) ? null : date;
 }
