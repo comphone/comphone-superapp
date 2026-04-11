@@ -1,4 +1,5 @@
 <!-- COMPHONE SUPER APP V5.5 -->
+<!-- Design note: Rendering layer for a compact executive dashboard; prioritize above-the-fold KPIs, touch-friendly status cards, and mobile job cards. -->
 <script>
 (function (window, document, api) {
   'use strict';
@@ -19,15 +20,23 @@
     return Number(report.bill_count || report.count || report.total_bills || 0) || 0;
   }
 
+  function getRefreshLabel(summary) {
+    var candidate = summary && (summary.lastUpdated || summary.updated_at || summary.generatedAt || summary.date);
+    if (!candidate) return 'พร้อมใช้งาน';
+    return String(candidate);
+  }
+
   function renderTopSummary(summary, alertsPayload) {
     summary = summary || {};
     var revenue = summary.revenue || {};
     var topTech = summary.topTechnician || {};
+
     api.setText(APP.ui.apiBasePreview, APP.config.apiBaseUrl || 'google.script.run / Router.gs V5.5');
-    api.setText(APP.ui.lastRefreshText, summary.date || 'พร้อมใช้งาน');
+    api.setText(APP.ui.lastRefreshText, getRefreshLabel(summary));
     api.setText(APP.ui.topTechnicianText, topTech.name ? topTech.name + ' (' + api.formatNumber(topTech.jobs || topTech.count || 0) + ')' : '-');
     api.setText(APP.ui.pendingPhotosText, api.formatNumber(summary.pendingPhotos || 0));
     api.setText(APP.ui.openAlertsText, api.formatNumber(resolveAlertCount(alertsPayload || summary.alerts || [])));
+
     api.setText(APP.ui.metricTotalJobs, api.formatNumber(summary.totalJobs || 0));
     api.setText(APP.ui.metricLowStock, api.formatNumber(summary.lowStock || 0));
     api.setText(APP.ui.metricOverdueJobs, api.formatNumber(summary.overdueJobs || 0));
@@ -45,14 +54,26 @@
   function renderStatusFilter() {
     var select = APP.ui.statusFilterSelect;
     if (!select) return;
+
     var currentValue = APP.filters.status || 'ALL';
     var html = '<option value="ALL">ทุกสถานะ</option>';
-    APP.statusConfig.forEach(function (item) {
-      html += '<option value="' + api.escapeHtml(String(item.label || '')) + '">' +
-        api.escapeHtml(String(item.label || '')) + '</option>';
+    (APP.statusConfig || []).forEach(function (item) {
+      var label = String(item.label || '');
+      html += '<option value="' + api.escapeHtml(label) + '">' + api.escapeHtml(label) + '</option>';
     });
     select.innerHTML = html;
-    select.value = currentValue;
+
+    var hasCurrent = currentValue === 'ALL' || (APP.statusConfig || []).some(function (item) {
+      return String(item.label || '') === currentValue;
+    });
+    select.value = hasCurrent ? currentValue : 'ALL';
+  }
+
+  function formatAllowedNext(items) {
+    if (!items || !items.length) return 'สิ้นสุดกระบวนการ';
+    return items.map(function (item) {
+      return item && item.label ? item.label : '-';
+    }).join(' / ');
   }
 
   function renderStatusBoard() {
@@ -74,27 +95,28 @@
       return;
     }
 
+    var activeStatus = String(APP.filters.status || 'ALL');
     var html = '';
     items.forEach(function (state) {
-      var count = Number(lookup[String(state.code)] || lookup[state.label] || 0) || 0;
-      html += '<article class="status-card" data-status-code="' + api.escapeHtml(String(state.code)) + '" data-status-label="' + api.escapeHtml(String(state.label)) + '">';
-      html += '<div class="status-badge">Step ' + api.escapeHtml(String(state.code)) + '</div>';
-      html += '<div class="status-name">' + api.escapeHtml(String(state.label || '-')) + '</div>';
+      var label = String(state.label || '-');
+      var count = Number(lookup[String(state.code)] || lookup[label] || 0) || 0;
+      var isActive = activeStatus !== 'ALL' && activeStatus === label;
+      var style = isActive ? ' style="border-color:rgba(88,208,255,0.34);background:linear-gradient(180deg, rgba(18,38,62,0.98), rgba(10,21,36,0.98));box-shadow:0 20px 36px rgba(2,12,24,.26);"' : '';
+
+      html += '<article class="status-card"' + style + ' data-status-code="' + api.escapeHtml(String(state.code)) + '" data-status-label="' + api.escapeHtml(label) + '">';
+      html += '<div class="status-chip-row">';
+      html += '<span class="status-badge">Step ' + api.escapeHtml(String(state.code)) + '</span>';
+      if (isActive) html += '<span class="status-badge" style="color:#86ddff;border-color:rgba(88,208,255,0.18);">กำลังกรอง</span>';
+      html += '</div>';
+      html += '<div class="status-name">' + api.escapeHtml(label) + '</div>';
       html += '<div class="status-count">' + api.formatNumber(count) + '</div>';
-      html += '<div class="status-meta">ขั้นตอนถัดไป: ' + api.escapeHtml(formatAllowedNext(state.allowed_next)) + '</div>';
+      html += '<div class="status-meta">ถัดไป: ' + api.escapeHtml(formatAllowedNext(state.allowed_next)) + '</div>';
       html += '</article>';
     });
 
     board.innerHTML = html;
     api.show(board);
     api.setText(APP.ui.statusTotalText, api.formatNumber(items.length) + ' สถานะพร้อมใช้งาน');
-  }
-
-  function formatAllowedNext(items) {
-    if (!items || !items.length) return 'สิ้นสุดกระบวนการ';
-    return items.map(function (item) {
-      return item && item.label ? item.label : '-';
-    }).join(' / ');
   }
 
   function normalizeAlertItems(payload) {
@@ -105,7 +127,7 @@
   }
 
   function renderAlerts() {
-    var items = normalizeAlertItems((APP.dashboard && APP.dashboard.alerts) || APP.summary && APP.summary.alerts || []);
+    var items = normalizeAlertItems((APP.dashboard && APP.dashboard.alerts) || (APP.summary && APP.summary.alerts) || []);
     var wrap = APP.ui.alertsList;
     if (!wrap) return;
 
@@ -123,7 +145,7 @@
       var toneClass = tone === 'high' ? 'priority-high' : tone === 'medium' ? 'priority-medium' : 'priority-info';
       html += '<article class="alert-item">';
       html += '<div class="alert-item-header">';
-      html += '<div class="alert-title">' + api.escapeHtml(String(item.title || item.name || 'Alert')) + '</div>';
+      html += '<h3 class="alert-title">' + api.escapeHtml(String(item.title || item.name || 'Alert')) + '</h3>';
       html += '<span class="alert-tag ' + toneClass + '">' + api.escapeHtml(String(item.category || tone || 'info')) + '</span>';
       html += '</div>';
       html += '<div class="alert-detail">' + api.escapeHtml(String(item.detail || item.message || item.description || '-')) + '</div>';
@@ -143,7 +165,8 @@
       symptom: String(job.symptom || job.issue || job.description || '-'),
       tech: String(job.tech || job.technician || '-'),
       status: api.getStatusLabel(job.status || job.status_label || job.current_status || job.current_status_code || '-'),
-      created: String(job.created || job.created_at || job.date || '-'),
+      created: api.formatDateTime(job.created || job.created_at || job.date || '-'),
+      folder: String(job.folder || job.folder_url || ''),
       raw: job
     };
   }
@@ -164,7 +187,8 @@
   function renderRecentJobs() {
     var jobs = getFilteredJobs();
     var tbody = APP.ui.recentJobsTableBody;
-    if (!tbody) return;
+    var mobileList = APP.ui.recentJobsMobileList;
+    if (!tbody || !mobileList) return;
 
     api.hide(APP.ui.recentJobsLoading);
     api.hide(APP.ui.recentJobsError);
@@ -172,26 +196,52 @@
 
     if (!jobs.length) {
       tbody.innerHTML = '';
+      mobileList.innerHTML = '';
+      api.hide(APP.ui.recentJobsTableWrap);
       api.hide(APP.ui.recentJobsTable);
+      api.hide(APP.ui.recentJobsMobileList);
       api.show(APP.ui.recentJobsEmpty);
       return;
     }
 
     api.hide(APP.ui.recentJobsEmpty);
+    api.show(APP.ui.recentJobsTableWrap);
     api.show(APP.ui.recentJobsTable);
+    api.show(APP.ui.recentJobsMobileList);
 
-    var html = '';
+    var tableHtml = '';
+    var mobileHtml = '';
+
     jobs.forEach(function (job) {
-      html += '<tr data-job-id="' + api.escapeHtml(job.id) + '" class="job-row">';
-      html += '<td><strong>' + api.escapeHtml(job.id) + '</strong></td>';
-      html += '<td>' + api.escapeHtml(job.customer) + '</td>';
-      html += '<td>' + api.escapeHtml(job.symptom) + '</td>';
-      html += '<td>' + api.escapeHtml(job.tech) + '</td>';
-      html += '<td><span class="status-badge">' + api.escapeHtml(job.status) + '</span></td>';
-      html += '<td>' + api.escapeHtml(job.created) + '</td>';
-      html += '</tr>';
+      var badgeClass = api.getStatusAppearance(job.status);
+
+      tableHtml += '<tr data-job-id="' + api.escapeHtml(job.id) + '" class="job-row">';
+      tableHtml += '<td><strong>' + api.escapeHtml(job.id) + '</strong></td>';
+      tableHtml += '<td>' + api.escapeHtml(job.customer) + '</td>';
+      tableHtml += '<td>' + api.escapeHtml(job.symptom) + '</td>';
+      tableHtml += '<td>' + api.escapeHtml(job.tech) + '</td>';
+      tableHtml += '<td><span class="alert-tag ' + badgeClass + '">' + api.escapeHtml(job.status) + '</span></td>';
+      tableHtml += '<td>' + api.escapeHtml(job.created) + '</td>';
+      tableHtml += '</tr>';
+
+      mobileHtml += '<article class="mobile-job-card" data-job-id="' + api.escapeHtml(job.id) + '">';
+      mobileHtml += '<div class="job-card-header">';
+      mobileHtml += '<div>';
+      mobileHtml += '<h3 class="job-card-title">' + api.escapeHtml(job.id) + '</h3>';
+      mobileHtml += '<div class="job-card-customer">' + api.escapeHtml(job.customer) + '</div>';
+      mobileHtml += '</div>';
+      mobileHtml += '<span class="alert-tag ' + badgeClass + '">' + api.escapeHtml(job.status) + '</span>';
+      mobileHtml += '</div>';
+      mobileHtml += '<div class="job-card-text">' + api.escapeHtml(job.symptom) + '</div>';
+      mobileHtml += '<div class="job-card-meta">';
+      mobileHtml += '<span class="soft-chip">ช่าง: ' + api.escapeHtml(job.tech) + '</span>';
+      mobileHtml += '<span class="soft-chip">สร้าง: ' + api.escapeHtml(job.created) + '</span>';
+      mobileHtml += '</div>';
+      mobileHtml += '</article>';
     });
-    tbody.innerHTML = html;
+
+    tbody.innerHTML = tableHtml;
+    mobileList.innerHTML = mobileHtml;
   }
 
   function setLoadingState(isLoading) {
@@ -199,6 +249,7 @@
       APP.ui.systemStatusBadge.textContent = isLoading ? 'กำลังซิงก์ข้อมูล...' : 'Dashboard Online';
     }
     if (APP.ui.refreshDashboardBtn) APP.ui.refreshDashboardBtn.disabled = !!isLoading;
+    if (APP.ui.refreshDashboardBtnBottom) APP.ui.refreshDashboardBtnBottom.disabled = !!isLoading;
     if (APP.ui.recentJobsLoading) {
       if (isLoading) api.show(APP.ui.recentJobsLoading); else api.hide(APP.ui.recentJobsLoading);
     }
@@ -224,7 +275,7 @@
 
     APP.dashboard = result;
     APP.summary = result.summary || {};
-    APP.jobs = result.jobs || APP.summary.recentJobs || [];
+    APP.jobs = result.jobs || APP.summary.recentJobs || APP.summary.jobs || [];
     APP.inventory = result.inventory || [];
 
     renderTopSummary(APP.summary, result.alerts);
@@ -261,7 +312,8 @@
     renderRecentJobs: renderRecentJobs,
     getFilteredJobs: getFilteredJobs,
     fetchDashboardData: fetchDashboardData,
-    fetchStatusConfig: fetchStatusConfig
+    fetchStatusConfig: fetchStatusConfig,
+    renderStatusBoard: renderStatusBoard
   };
 })(window, document, window.comphoneV55);
 </script>

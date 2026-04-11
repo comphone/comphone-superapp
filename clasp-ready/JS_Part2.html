@@ -1,4 +1,5 @@
 <!-- COMPHONE SUPER APP V5.5 -->
+<!-- Design note: Interaction layer for mobile-first operations; touch targets must remain large, fast, and safe while preserving existing GAS APIs. -->
 <script>
 (function (window, document, api, dashboardApi) {
   'use strict';
@@ -42,33 +43,33 @@
     ];
 
     return detail.map(function (row) {
-      return '<tr><th style="width:160px;padding:10px 12px;text-align:left;color:#94a3b8;border-top:1px solid rgba(148,163,184,.12);">' + api.escapeHtml(row[0]) + '</th><td style="padding:10px 12px;border-top:1px solid rgba(148,163,184,.12);">' + api.escapeHtml(row[1]) + '</td></tr>';
+      return '<tr><th style="width:140px;padding:10px 12px;text-align:left;color:#8fa4ba;border-top:1px solid rgba(148,163,184,.12);font-size:12px;">' + api.escapeHtml(row[0]) + '</th><td style="padding:10px 12px;border-top:1px solid rgba(148,163,184,.12);line-height:1.6;">' + api.escapeHtml(row[1]) + '</td></tr>';
     }).join('');
   }
 
   async function loadTimeline(jobId) {
     var target = document.getElementById('jobTimelineWrap');
     if (!target) return;
-    target.innerHTML = '<div style="padding:14px 0;color:#94a3b8;">กำลังโหลด timeline...</div>';
+    target.innerHTML = '<div style="padding:10px 0;color:#8fa4ba;font-size:13px;">กำลังโหลด timeline...</div>';
     try {
       var response = await api.callServer('getJobTimeline', [jobId]);
       var items = response && response.timeline ? response.timeline : [];
       if (!items.length) {
-        target.innerHTML = '<div style="padding:14px 0;color:#94a3b8;">ยังไม่มีประวัติของงานนี้</div>';
+        target.innerHTML = '<div style="padding:10px 0;color:#8fa4ba;font-size:13px;">ยังไม่มีประวัติของงานนี้</div>';
         return;
       }
       var html = '<div style="display:grid;gap:10px;margin-top:10px;">';
       items.slice(0, 20).forEach(function (item) {
-        html += '<div style="padding:14px;border-radius:14px;background:rgba(15,23,42,.58);border:1px solid rgba(148,163,184,.12);">';
-        html += '<div style="font-size:12px;color:#94a3b8;">' + api.escapeHtml(String(item.ts || '-')) + '</div>';
+        html += '<div style="padding:12px;border-radius:14px;background:rgba(14,27,46,.9);border:1px solid rgba(148,163,184,.12);">';
+        html += '<div style="font-size:11px;color:#8fa4ba;">' + api.escapeHtml(String(item.ts || '-')) + '</div>';
         html += '<div style="font-weight:700;margin-top:6px;">' + api.escapeHtml(String(item.action || '-')) + '</div>';
-        if (item.detail) html += '<div style="margin-top:6px;color:#cbd5e1;line-height:1.6;">' + api.escapeHtml(String(item.detail)) + '</div>';
+        if (item.detail) html += '<div style="margin-top:6px;color:#dbe7f3;line-height:1.6;font-size:13px;">' + api.escapeHtml(String(item.detail)) + '</div>';
         html += '</div>';
       });
       html += '</div>';
       target.innerHTML = html;
     } catch (error) {
-      target.innerHTML = '<div style="padding:14px 0;color:#fca5a5;">โหลด timeline ไม่สำเร็จ: ' + api.escapeHtml(error.message || String(error)) + '</div>';
+      target.innerHTML = '<div style="padding:10px 0;color:#ffb4ad;font-size:13px;">โหลด timeline ไม่สำเร็จ: ' + api.escapeHtml(error.message || String(error)) + '</div>';
     }
   }
 
@@ -120,38 +121,42 @@
 
     if (nextStates.length) {
       nextStates.forEach(function (state) {
-        actionsHtml += '<button type="button" data-next-status="' + api.escapeHtml(String(state.code)) + '" style="padding:12px 14px;border-radius:12px;border:1px solid rgba(56,189,248,.28);background:rgba(56,189,248,.14);color:#e2e8f0;cursor:pointer;font-weight:700;">ไปสถานะ: ' + api.escapeHtml(String(state.label || state.code)) + '</button>';
+        actionsHtml += '<button type="button" data-next-status="' + api.escapeHtml(String(state.code)) + '" style="padding:12px 14px;border-radius:12px;border:1px solid rgba(88,208,255,.24);background:rgba(88,208,255,.12);color:#ecf3fb;cursor:pointer;font-weight:700;min-height:44px;">ไปสถานะ: ' + api.escapeHtml(String(state.label || state.code)) + '</button>';
       });
     } else {
-      actionsHtml = '<div style="color:#94a3b8;">สถานะนี้ไม่มีขั้นตอนถัดไป</div>';
+      actionsHtml = '<div style="color:#8fa4ba;font-size:13px;">สถานะนี้ไม่มีขั้นตอนถัดไป</div>';
     }
 
     var folderUrl = String(job.folder || job.folder_url || '');
-    var folderLinkHtml = folderUrl && folderUrl !== '-' ? '<a href="' + api.escapeHtml(folderUrl) + '" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;color:#7dd3fc;">เปิดโฟลเดอร์งาน</a>' : '';
+    var folderLinkHtml = folderUrl && folderUrl !== '-' ? '<a href="' + api.escapeHtml(folderUrl) + '" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;color:#86ddff;">เปิดโฟลเดอร์งาน</a>' : '';
 
     var html = '';
-    html += '<div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px;">';
-    html += '<div><div style="display:inline-flex;padding:8px 12px;border-radius:999px;background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.18);font-size:12px;font-weight:700;">COMPHONE SUPER APP V5.5</div>';
-    html += '<h2 style="margin:14px 0 8px;font-size:28px;">รายละเอียดงาน ' + api.escapeHtml(String(job.id || job.job_id || '-')) + '</h2>';
-    html += '<div style="color:#94a3b8;">' + api.escapeHtml(api.getStatusLabel(job.status || job.status_label || job.current_status || job.current_status_code || '-')) + '</div></div>';
-    html += '<button type="button" id="closeDialogBtn" style="padding:10px 14px;border-radius:12px;border:1px solid rgba(148,163,184,.18);background:rgba(15,23,42,.82);color:#e2e8f0;cursor:pointer;">ปิด</button>';
+    html += '<div style="display:grid;gap:16px;">';
+    html += '<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">';
+    html += '<div>'; 
+    html += '<div style="display:inline-flex;padding:7px 11px;border-radius:999px;background:rgba(88,208,255,.12);border:1px solid rgba(88,208,255,.18);font-size:11px;font-weight:700;">COMPHONE SUPER APP V5.5</div>';
+    html += '<h2 style="margin:12px 0 6px;font-size:24px;line-height:1.1;">รายละเอียดงาน ' + api.escapeHtml(String(job.id || job.job_id || '-')) + '</h2>';
+    html += '<div style="color:#8fa4ba;font-size:13px;">' + api.escapeHtml(api.getStatusLabel(job.status || job.status_label || job.current_status || job.current_status_code || '-')) + '</div>';
     html += '</div>';
-    html += '<table style="width:100%;border-collapse:collapse;margin-bottom:18px;">' + buildDetailRows(job) + '</table>';
+    html += '<button type="button" id="closeDialogBtn" style="padding:10px 14px;border-radius:12px;border:1px solid rgba(148,163,184,.18);background:rgba(14,27,46,.9);color:#ecf3fb;cursor:pointer;min-height:42px;">ปิด</button>';
+    html += '</div>';
+    html += '<table style="width:100%;border-collapse:collapse;">' + buildDetailRows(job) + '</table>';
     html += folderLinkHtml;
-    html += '<div style="display:grid;gap:10px;margin:22px 0;">';
-    html += '<h3 style="margin:0;">เปลี่ยนสถานะงาน</h3>';
+    html += '<div style="display:grid;gap:10px;">';
+    html += '<h3 style="margin:0;font-size:16px;">เปลี่ยนสถานะงาน</h3>';
     html += '<div id="jobTransitionActions" style="display:flex;flex-wrap:wrap;gap:10px;">' + actionsHtml + '</div>';
     html += '</div>';
-    html += '<div style="display:grid;gap:10px;margin:22px 0;">';
-    html += '<h3 style="margin:0;">บันทึกหมายเหตุด่วน</h3>';
-    html += '<textarea id="jobQuickNoteInput" rows="3" style="width:100%;padding:14px 16px;border-radius:14px;border:1px solid rgba(148,163,184,.18);background:rgba(15,23,42,.82);color:#e2e8f0;resize:vertical;" placeholder="พิมพ์หมายเหตุหรือผลการติดตาม"></textarea>';
+    html += '<div style="display:grid;gap:10px;">';
+    html += '<h3 style="margin:0;font-size:16px;">บันทึกหมายเหตุด่วน</h3>';
+    html += '<textarea id="jobQuickNoteInput" rows="3" style="width:100%;padding:14px 16px;border-radius:14px;border:1px solid rgba(148,163,184,.18);background:rgba(14,27,46,.9);color:#ecf3fb;resize:vertical;" placeholder="พิมพ์หมายเหตุหรือผลการติดตาม"></textarea>';
     html += '<div style="display:flex;gap:10px;flex-wrap:wrap;">';
-    html += '<button type="button" id="saveQuickNoteBtn" style="padding:12px 14px;border-radius:12px;border:none;background:linear-gradient(135deg, rgba(34,197,94,.92), rgba(22,163,74,.92));color:#08111f;cursor:pointer;font-weight:700;">บันทึกหมายเหตุ</button>';
-    html += '<button type="button" id="refreshDialogDashboardBtn" style="padding:12px 14px;border-radius:12px;border:1px solid rgba(148,163,184,.18);background:rgba(15,23,42,.82);color:#e2e8f0;cursor:pointer;font-weight:700;">รีโหลดข้อมูล</button>';
+    html += '<button type="button" id="saveQuickNoteBtn" style="padding:12px 14px;border-radius:12px;border:none;background:linear-gradient(135deg, rgba(65,217,143,.92), rgba(22,163,74,.92));color:#041018;cursor:pointer;font-weight:700;min-height:44px;">บันทึกหมายเหตุ</button>';
+    html += '<button type="button" id="refreshDialogDashboardBtn" style="padding:12px 14px;border-radius:12px;border:1px solid rgba(148,163,184,.18);background:rgba(14,27,46,.9);color:#ecf3fb;cursor:pointer;font-weight:700;min-height:44px;">รีโหลดข้อมูล</button>';
     html += '</div></div>';
     html += '<div style="display:grid;gap:10px;">';
-    html += '<h3 style="margin:0;">Timeline</h3>';
+    html += '<h3 style="margin:0;font-size:16px;">Timeline</h3>';
     html += '<div id="jobTimelineWrap"></div>';
+    html += '</div>';
     html += '</div>';
 
     api.openDialog(html);
@@ -195,6 +200,7 @@
     if (APP.ui.statusFilterSelect) APP.ui.statusFilterSelect.value = 'ALL';
     if (APP.ui.recentJobsLimitSelect) APP.ui.recentJobsLimitSelect.value = String((APP.config && APP.config.defaultLimit) || 20);
     syncFiltersFromUi();
+    dashboardApi.renderStatusBoard();
     dashboardApi.renderRecentJobs();
   }
 
@@ -204,37 +210,49 @@
     api.toast('รีเฟรชข้อมูลสำเร็จ', 'success');
   }
 
+  function bindJobsOpenAction(node) {
+    if (!node) return;
+    node.addEventListener('click', function (event) {
+      var target = event.target;
+      while (target && target !== node && !target.getAttribute('data-job-id')) target = target.parentNode;
+      if (!target) return;
+      var jobId = target.getAttribute('data-job-id');
+      if (jobId) openJobDetail(jobId);
+    });
+  }
+
   function bindEvents() {
     api.ensureUiRefs();
+
     if (APP.ui.jobSearchInput) {
       APP.ui.jobSearchInput.addEventListener('input', function () {
         syncFiltersFromUi();
         dashboardApi.renderRecentJobs();
       });
     }
+
     if (APP.ui.statusFilterSelect) {
       APP.ui.statusFilterSelect.addEventListener('change', function () {
         syncFiltersFromUi();
+        dashboardApi.renderStatusBoard();
         dashboardApi.renderRecentJobs();
       });
     }
+
     if (APP.ui.recentJobsLimitSelect) {
       APP.ui.recentJobsLimitSelect.addEventListener('change', function () {
         syncFiltersFromUi();
         dashboardApi.renderRecentJobs();
       });
     }
+
     if (APP.ui.clearFilterBtn) APP.ui.clearFilterBtn.addEventListener('click', clearFilters);
     if (APP.ui.refreshDashboardBtn) APP.ui.refreshDashboardBtn.addEventListener('click', function () { handleRefresh(); });
-    if (APP.ui.recentJobsTableBody) {
-      APP.ui.recentJobsTableBody.addEventListener('click', function (event) {
-        var row = event.target;
-        while (row && row.tagName !== 'TR') row = row.parentNode;
-        if (!row) return;
-        var jobId = row.getAttribute('data-job-id');
-        if (jobId) openJobDetail(jobId);
-      });
-    }
+    if (APP.ui.refreshDashboardBtnBottom) APP.ui.refreshDashboardBtnBottom.addEventListener('click', function () { handleRefresh(); });
+
+    bindJobsOpenAction(APP.ui.recentJobsTableBody);
+    bindJobsOpenAction(APP.ui.recentJobsMobileList);
+
     if (APP.ui.statusBoard) {
       APP.ui.statusBoard.addEventListener('click', function (event) {
         var card = event.target;
@@ -243,6 +261,7 @@
         var statusLabel = card.getAttribute('data-status-label') || 'ALL';
         if (APP.ui.statusFilterSelect) APP.ui.statusFilterSelect.value = statusLabel;
         syncFiltersFromUi();
+        dashboardApi.renderStatusBoard();
         dashboardApi.renderRecentJobs();
       });
     }
