@@ -58,52 +58,7 @@ function getLastLogs(n) {
 // Job Timeline — ดึงประวัติของงานเฉพาะ
 // ============================================================
 function getJobTimeline(jobId) {
-  try {
-    var ss = getComphoneSheet();
-    var jsh = findSheetByName(ss, 'DBJOBS');
-    var lsh = findSheetByName(ss, LOG_SHEET);
-    
-    // ข้อมูลงาน
-    var jobInfo = {};
-    if (jsh) {
-      var jobs = jsh.getDataRange().getValues();
-      for (var ji = 1; ji < jobs.length; ji++) {
-        if (String(jobs[ji][0]) === jobId) {
-          jobInfo = {
-            id: String(jobs[ji][0] || ''),
-            customer: String(jobs[ji][1] || ''),
-            symptom: String(jobs[ji][2] || ''),
-            status: String(jobs[ji][3] || ''),
-            tech: String(jobs[ji][4] || '-'),
-            folder: jobs[ji].length > 12 ? String(jobs[ji][12] || '') : ''
-          };
-          break;
-        }
-      }
-    }
-    
-    // Activity log เฉพาะ job นี้
-    var timeline = [];
-    if (lsh) {
-      var logs = lsh.getDataRange().getValues();
-      for (var i = 1; i < logs.length; i++) {
-        var detail = String(logs[i][3] || '');
-        if (detail.indexOf(jobId) > -1) {
-          timeline.push({
-            ts: String(logs[i][0] || ''),
-            action: String(logs[i][1] || ''),
-            user: String(logs[i][2] || ''),
-            detail: detail
-          });
-        }
-      }
-    }
-    
-    // เรียงจากใหม่ไปเก่า
-    timeline.reverse();
-    
-    return { job: jobInfo, timeline: timeline };
-  } catch(e) { return { error: e.toString() }; }
+  return getJobTimelineV55_(jobId);
 }
 
 // ============================================================

@@ -5,41 +5,13 @@
 // ============================================================
 
 function openJob(data) {
-  try {
-    var ss = getComphoneSheet();
-    var sh = findSheetByName(ss, 'DBJOBS');
-    if (!sh) return { error: 'DBJOBS not found' };
-    var name = data.name || 'ลูกค้าใหม่';
-    var phone = data.phone || '';
-    var symptom = data.symptom || 'อาการไม่ระบุ';
-    var status = data.status || 'รอดำเนินการ';
-    var tech = data.tech || '';
-    var gps = data.gps || '';
-    var num = sh.getLastRow();
-    var id = 'J' + String(Math.max(num, 1)).padStart(4, '0');
-
-    // Find header row to get correct column count
-    var headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-    var cols = headers.length;
-    if (cols < 13) cols = 13;
-    var row = [id, name, symptom, phone, status, tech, gps, '', '', '', new Date(), '', '', ''];
-    while (row.length < cols) row.push('');
-
-    sh.appendRow(row);
-
-    // V320: Auto-reserve items ถ้าระบุ parts
-    var reservationInfo = null;
-    if (data.parts && Array.isArray(data.parts) && data.parts.length > 0) {
-      reservationInfo = reserveItemsForJob(id, data.parts);
-    }
-
-    // V320: Log activity
-    try { logActivity('JOB_OPEN', 'SYSTEM||LINE', id + ' — ' + name); } catch(e) {}
-
-    var result = { success: true, job_id: id, customer: name, status: status };
-    if (reservationInfo) result.reservation = reservationInfo;
-    return result;
-  } catch (e) { return { error: e.toString() }; }
+  data = data || {};
+  if (!data.customer_name && data.name) data.customer_name = data.name;
+  if (!data.changed_by) data.changed_by = data.user || data.technician || 'SYSTEM||LINE';
+  if (!data.current_status_code && !data.status_code) {
+    data.current_status_code = normalizeStatusCode_(data.status) || 1;
+  }
+  return createJob(data);
 }
 
 function checkJobs(data) {
@@ -179,6 +151,12 @@ function completeJob(data) {
 }
 
 function updateJobStatus(data) {
+  data = data || {};
+  var inferredTransition = normalizeStatusCode_(data.new_status || data.status_code || data.status);
+  if (inferredTransition && JOB_STATUS_MAP[inferredTransition]) {
+    return transitionJob(data.job_id || data.jobId || '', inferredTransition, data);
+  }
+
   var lock = LockService.getScriptLock();
   try { lock.waitLock(10000); } catch(e) { return { error: 'Lock timeout' }; }
   try {

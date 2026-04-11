@@ -29,8 +29,26 @@ function doGet(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
+    if (action === 'jobqrdata' || action === 'getJobQRData') {
+      return ContentService.createTextOutput(JSON.stringify(getJobWebAppPayload(p.jobId || p.job_id || '')))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (p.view === 'jobqr' || action === 'jobqr') {
+      var jobTemplate = HtmlService.createTemplateFromFile('JobQRView');
+      jobTemplate.jobId = p.jobId || p.job_id || '';
+      jobTemplate.apiBaseUrl = getWebAppBaseUrl_() || '';
+      return jobTemplate.evaluate()
+        .setTitle('COMPHONE Job QR')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+        .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
+    }
+
     // HTML Dashboard — Null Fallback Variables
     var template = HtmlService.createTemplateFromFile('Index');
+    template.apiBaseUrl = getWebAppBaseUrl_() || '';
+    template.jobQrWebAppUrl = buildWebAppUrl_(getWebAppBaseUrl_() || '', { view: 'jobqr', jobId: p.jobId || '' });
+    
 
     // Send all possible template variables with null fallback
     template.mode = p.mode || '';
@@ -95,17 +113,37 @@ function doPost(e) {
       'saveJobPhoto': 'saveJobPhoto',
       'updatePhotoLink': 'updatePhotoLink',
       'updateJobById': 'updateJobById',
-      'barcodeLookup': 'barcodeLookup'
+      'barcodeLookup': 'barcodeLookup',
+      'createJob': 'createJob', 'create_job': 'createJob', 'สร้างงาน': 'createJob',
+      'transitionJob': 'transitionJob', 'transition_job': 'transitionJob', 'เปลี่ยนสถานะงาน': 'transitionJob',
+      'generateJobQR': 'generateJobQR', 'generate_job_qr': 'generateJobQR', 'สร้างคิวอาร์งาน': 'generateJobQR',
+      'getJobStateConfig': 'getJobStateConfig', 'jobStateConfig': 'getJobStateConfig',
+      'getJobQRData': 'getJobQRData', 'jobqrdata': 'getJobQRData'
     };
     var norm = actionMap[action] || action;
     var result = { action: norm };
     switch (norm) {
       case 'help':
         result.success = true;
-        result.message = 'Actions: openjob, checkjobs, checkstock, closejob, updatestatus, summary, getDashboardData';
+        result.message = 'Actions: createJob, transitionJob, generateJobQR, getJobStateConfig, getJobQRData, openjob, checkjobs, checkstock, closejob, updatestatus, summary, getDashboardData';
         break;
       case 'summary':
         result.success = true; result.data = summarizeJobs();
+        break;
+      case 'createJob':
+        result.success = true; result.data = createJob(data);
+        break;
+      case 'transitionJob':
+        result.success = true; result.data = transitionJob(data.job_id || data.jobId || '', data.new_status || data.to_status || data.status_code || data.status, data);
+        break;
+      case 'generateJobQR':
+        result.success = true; result.data = generateJobQR(data.job_id || data.jobId || '');
+        break;
+      case 'getJobStateConfig':
+        result.success = true; result.data = getJobStateConfig();
+        break;
+      case 'getJobQRData':
+        result.success = true; result.data = getJobWebAppPayload(data.job_id || data.jobId || '');
         break;
       case 'openjob':
         result.success = true; result.data = openJob(data);
