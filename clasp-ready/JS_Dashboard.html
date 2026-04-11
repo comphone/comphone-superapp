@@ -1,5 +1,4 @@
 <!-- COMPHONE SUPER APP V5.5 -->
-<!-- Design note: Rendering layer for a compact executive dashboard; prioritize above-the-fold KPIs, touch-friendly status cards, and mobile job cards. -->
 <script>
 (function (window, document, api) {
   'use strict';
@@ -8,312 +7,399 @@
 
   var APP = api.APP;
 
-  function resolveAlertCount(alertsPayload) {
-    if (!alertsPayload) return 0;
-    if (Array.isArray(alertsPayload)) return alertsPayload.length;
-    if (Array.isArray(alertsPayload.items)) return alertsPayload.items.length;
-    return Number(alertsPayload.total || 0) || 0;
-  }
-
-  function getInvoiceCount(report) {
-    report = report || {};
-    return Number(report.bill_count || report.count || report.total_bills || 0) || 0;
-  }
-
-  function getRefreshLabel(summary) {
-    var candidate = summary && (summary.lastUpdated || summary.updated_at || summary.generatedAt || summary.date);
-    if (!candidate) return 'พร้อมใช้งาน';
-    return String(candidate);
-  }
-
-  function renderTopSummary(summary, alertsPayload) {
-    summary = summary || {};
-    var revenue = summary.revenue || {};
-    var topTech = summary.topTechnician || {};
-
-    api.setText(APP.ui.apiBasePreview, APP.config.apiBaseUrl || 'google.script.run / Router.gs V5.5');
-    api.setText(APP.ui.lastRefreshText, getRefreshLabel(summary));
-    api.setText(APP.ui.topTechnicianText, topTech.name ? topTech.name + ' (' + api.formatNumber(topTech.jobs || topTech.count || 0) + ')' : '-');
-    api.setText(APP.ui.pendingPhotosText, api.formatNumber(summary.pendingPhotos || 0));
-    api.setText(APP.ui.openAlertsText, api.formatNumber(resolveAlertCount(alertsPayload || summary.alerts || [])));
-
-    api.setText(APP.ui.metricTotalJobs, api.formatNumber(summary.totalJobs || 0));
-    api.setText(APP.ui.metricLowStock, api.formatNumber(summary.lowStock || 0));
-    api.setText(APP.ui.metricOverdueJobs, api.formatNumber(summary.overdueJobs || 0));
-    api.setText(APP.ui.metricPmDue, api.formatNumber(summary.pmDueCount || 0));
-
-    api.setText(APP.ui.revenueToday, api.formatCurrency(revenue.today || 0));
-    api.setText(APP.ui.revenueWeek, api.formatCurrency(revenue.week || 0));
-    api.setText(APP.ui.revenueMonth, api.formatCurrency(revenue.month || 0));
-
-    api.setText(APP.ui.revenueTodayMeta, api.formatNumber(getInvoiceCount(APP.dashboard && APP.dashboard.revenue_today)) + ' บิล');
-    api.setText(APP.ui.revenueWeekMeta, api.formatNumber(getInvoiceCount(APP.dashboard && APP.dashboard.revenue_week)) + ' บิล');
-    api.setText(APP.ui.revenueMonthMeta, api.formatNumber(getInvoiceCount(APP.dashboard && APP.dashboard.revenue_month)) + ' บิล');
-  }
-
-  function renderStatusFilter() {
-    var select = APP.ui.statusFilterSelect;
-    if (!select) return;
-
-    var currentValue = APP.filters.status || 'ALL';
-    var html = '<option value="ALL">ทุกสถานะ</option>';
-    (APP.statusConfig || []).forEach(function (item) {
-      var label = String(item.label || '');
-      html += '<option value="' + api.escapeHtml(label) + '">' + api.escapeHtml(label) + '</option>';
-    });
-    select.innerHTML = html;
-
-    var hasCurrent = currentValue === 'ALL' || (APP.statusConfig || []).some(function (item) {
-      return String(item.label || '') === currentValue;
-    });
-    select.value = hasCurrent ? currentValue : 'ALL';
-  }
-
-  function formatAllowedNext(items) {
-    if (!items || !items.length) return 'สิ้นสุดกระบวนการ';
-    return items.map(function (item) {
-      return item && item.label ? item.label : '-';
-    }).join(' / ');
-  }
-
-  function renderStatusBoard() {
-    var summary = APP.summary || {};
-    var board = APP.ui.statusBoard;
-    var loading = APP.ui.statusBoardLoading;
-    var errorBox = APP.ui.statusBoardError;
-    if (!board) return;
-
-    api.hide(errorBox);
-    api.hide(loading);
-
-    var lookup = api.toStatusCodeLookup(summary.status_distribution || []);
-    var items = APP.statusConfig || [];
-    if (!items.length) {
-      api.setText(errorBox, 'ไม่พบข้อมูลสถานะจาก JobStateMachine V5.5');
-      api.show(errorBox);
-      api.hide(board);
-      return;
-    }
-
-    var activeStatus = String(APP.filters.status || 'ALL');
-    var html = '';
-    items.forEach(function (state) {
-      var label = String(state.label || '-');
-      var count = Number(lookup[String(state.code)] || lookup[label] || 0) || 0;
-      var isActive = activeStatus !== 'ALL' && activeStatus === label;
-      var style = isActive ? ' style="border-color:rgba(88,208,255,0.34);background:linear-gradient(180deg, rgba(18,38,62,0.98), rgba(10,21,36,0.98));box-shadow:0 20px 36px rgba(2,12,24,.26);"' : '';
-
-      html += '<article class="status-card"' + style + ' data-status-code="' + api.escapeHtml(String(state.code)) + '" data-status-label="' + api.escapeHtml(label) + '">';
-      html += '<div class="status-chip-row">';
-      html += '<span class="status-badge">Step ' + api.escapeHtml(String(state.code)) + '</span>';
-      if (isActive) html += '<span class="status-badge" style="color:#86ddff;border-color:rgba(88,208,255,0.18);">กำลังกรอง</span>';
-      html += '</div>';
-      html += '<div class="status-name">' + api.escapeHtml(label) + '</div>';
-      html += '<div class="status-count">' + api.formatNumber(count) + '</div>';
-      html += '<div class="status-meta">ถัดไป: ' + api.escapeHtml(formatAllowedNext(state.allowed_next)) + '</div>';
-      html += '</article>';
-    });
-
-    board.innerHTML = html;
-    api.show(board);
-    api.setText(APP.ui.statusTotalText, api.formatNumber(items.length) + ' สถานะพร้อมใช้งาน');
-  }
-
   function normalizeAlertItems(payload) {
     if (!payload) return [];
     if (Array.isArray(payload)) return payload;
     if (Array.isArray(payload.items)) return payload.items;
+    if (Array.isArray(payload.alerts)) return payload.alerts;
     return [];
-  }
-
-  function renderAlerts() {
-    var items = normalizeAlertItems((APP.dashboard && APP.dashboard.alerts) || (APP.summary && APP.summary.alerts) || []);
-    var wrap = APP.ui.alertsList;
-    if (!wrap) return;
-
-    api.setText(APP.ui.alertsCounterPill, api.formatNumber(items.length) + ' รายการ');
-    if (!items.length) {
-      wrap.innerHTML = '';
-      api.show(APP.ui.alertsEmpty);
-      return;
-    }
-
-    api.hide(APP.ui.alertsEmpty);
-    var html = '';
-    items.forEach(function (item) {
-      var tone = item.priority || item.level || 'info';
-      var toneClass = tone === 'high' ? 'priority-high' : tone === 'medium' ? 'priority-medium' : 'priority-info';
-      html += '<article class="alert-item">';
-      html += '<div class="alert-item-header">';
-      html += '<h3 class="alert-title">' + api.escapeHtml(String(item.title || item.name || 'Alert')) + '</h3>';
-      html += '<span class="alert-tag ' + toneClass + '">' + api.escapeHtml(String(item.category || tone || 'info')) + '</span>';
-      html += '</div>';
-      html += '<div class="alert-detail">' + api.escapeHtml(String(item.detail || item.message || item.description || '-')) + '</div>';
-      if (item.value !== undefined && item.value !== null && item.value !== '') {
-        html += '<div class="muted">ค่าปัจจุบัน: ' + api.escapeHtml(String(item.value)) + '</div>';
-      }
-      html += '</article>';
-    });
-    wrap.innerHTML = html;
   }
 
   function normalizeJob(job) {
     job = job || {};
+    var photos = api.normalizePhotoList(job.photo_urls || job.photos || job.gallery || job.photoLinks);
     return {
       id: String(job.id || job.job_id || ''),
       customer: String(job.customer || job.customer_name || job.name || '-'),
+      customerId: String(job.customer_id || ''),
       symptom: String(job.symptom || job.issue || job.description || '-'),
       tech: String(job.tech || job.technician || '-'),
-      status: api.getStatusLabel(job.status || job.status_label || job.current_status || job.current_status_code || '-'),
-      created: api.formatDateTime(job.created || job.created_at || job.date || '-'),
-      folder: String(job.folder || job.folder_url || ''),
+      statusLabel: api.getStatusLabel(job.status || job.status_label || job.current_status || job.current_status_code || '-'),
+      statusCode: String(job.current_status_code || job.status_code || ''),
+      createdAt: job.created_at || job.created || job.date || '',
+      updatedAt: job.updated_at || job.updated || '',
+      appointmentAt: job.appointment_at || job.appointment || job.due_at || '',
+      folderUrl: String(job.folder || job.folder_url || ''),
+      note: String(job.note || ''),
+      photos: photos,
+      photoCount: Number(job.photo_count || photos.length || 0),
       raw: job
     };
+  }
+
+  function dedupeJobs(items) {
+    var seen = {};
+    var out = [];
+    (items || []).forEach(function (item) {
+      var normalized = normalizeJob(item);
+      if (!normalized.id || seen[normalized.id]) return;
+      seen[normalized.id] = true;
+      out.push(normalized);
+    });
+    return out;
+  }
+
+  function collectTechnicians() {
+    var bucket = {};
+    (APP.jobs || []).forEach(function (job) {
+      var name = String(job.tech || '').trim();
+      if (!name || name === '-') return;
+      bucket[name] = true;
+    });
+    APP.technicians = Object.keys(bucket).sort(function (a, b) { return a.localeCompare(b, 'th'); });
+    if (APP.ui.newJobTech) {
+      var html = '<option value="">ยังไม่กำหนด</option>';
+      APP.technicians.forEach(function (name) {
+        html += '<option value="' + api.escapeHtml(name) + '">' + api.escapeHtml(name) + '</option>';
+      });
+      APP.ui.newJobTech.innerHTML = html;
+    }
+  }
+
+  function renderSummary() {
+    var summary = APP.summary || {};
+    var revenue = summary.revenue || {};
+    var topTech = summary.topTechnician || summary.top_technician || {};
+    var alerts = normalizeAlertItems(APP.alerts || summary.alerts || []);
+
+    api.setText(APP.ui.apiMode, APP.config.apiBaseUrl ? 'GAS Web App Ready' : 'google.script.run');
+    api.setText(APP.ui.lastSync, summary.lastUpdated || summary.updated_at || summary.generatedAt || summary.generated_at || 'พร้อมใช้งาน');
+    api.setText(APP.ui.topTech, topTech.name ? topTech.name + ' (' + api.formatNumber(topTech.jobs || topTech.count || 0) + ')' : '-');
+    api.setText(APP.ui.pendingPhotos, api.formatNumber(summary.pendingPhotos || summary.pending_photos || 0));
+    api.setText(APP.ui.openAlerts, api.formatNumber(alerts.length));
+    api.setText(APP.ui.totalJobs, api.formatNumber(summary.totalJobs || summary.total_jobs || APP.jobs.length || 0));
+    api.setText(APP.ui.lowStock, api.formatNumber(summary.lowStock || summary.low_stock || 0));
+    api.setText(APP.ui.overdueJobs, api.formatNumber(summary.overdueJobs || summary.overdue_jobs || 0));
+    api.setText(APP.ui.pmCustomers, api.formatNumber(summary.pmDueCount || summary.pm_due_count || summary.pmCustomers || 0));
+    api.setText(APP.ui.revToday, api.formatCurrency(revenue.today || summary.revToday || 0));
+    api.setText(APP.ui.revWeek, api.formatCurrency(revenue.week || summary.revWeek || 0));
+    api.setText(APP.ui.revMonth, api.formatCurrency(revenue.month || summary.revMonth || 0));
+  }
+
+  function buildStatusDistributionLookup() {
+    var lookup = {};
+    (APP.summary.status_distribution || APP.summary.statusDistribution || []).forEach(function (item) {
+      if (!item) return;
+      if (item.code !== undefined && item.code !== null) lookup[String(item.code)] = Number(item.count || 0);
+      if (item.label) lookup[String(item.label)] = Number(item.count || 0);
+      if (item.status) lookup[String(item.status)] = Number(item.count || 0);
+    });
+    return lookup;
+  }
+
+  function renderStatusGrid() {
+    if (!APP.ui.statusGrid) return;
+    var lookup = buildStatusDistributionLookup();
+    var activeStatus = APP.filters.status || 'ALL';
+    var html = '';
+    (APP.statusConfig || []).forEach(function (state) {
+      var label = String(state.label || '-');
+      var count = Number(lookup[String(state.code)] || lookup[label] || 0);
+      var activeClass = activeStatus === label ? ' is-active' : '';
+      var tone = api.getStatusAppearance(label);
+      html += '<button type="button" class="status-chip ' + tone + activeClass + '" data-status-label="' + api.escapeHtml(label) + '">';
+      html += '<span>' + api.escapeHtml(label) + '</span>';
+      html += '<small>' + api.formatNumber(count) + '</small>';
+      html += '</button>';
+    });
+    APP.ui.statusGrid.innerHTML = html;
+  }
+
+  function renderAlerts() {
+    if (!APP.ui.alertsList) return;
+    var items = normalizeAlertItems(APP.alerts || APP.summary.alerts || []).slice(0, 3);
+    if (!items.length) {
+      APP.ui.alertsList.innerHTML = '<li class="alert-item"><div><div class="job-id">ไม่มีแจ้งเตือนสำคัญ</div><div class="job-meta">ระบบพร้อมใช้งาน</div></div></li>';
+      return;
+    }
+
+    var html = '';
+    items.forEach(function (item) {
+      html += '<li class="alert-item">';
+      html += '<div class="alert-top">';
+      html += '<div class="job-id">' + api.escapeHtml(String(item.title || item.name || item.category || 'Alert')) + '</div>';
+      html += '<div class="status-pill">' + api.escapeHtml(String(item.priority || item.level || 'info')) + '</div>';
+      html += '</div>';
+      html += '<div class="job-meta">' + api.escapeHtml(String(item.detail || item.message || item.description || '-')) + '</div>';
+      if (item.value !== undefined && item.value !== null && item.value !== '') {
+        html += '<div class="muted-text">ค่าปัจจุบัน: ' + api.escapeHtml(String(item.value)) + '</div>';
+      }
+      html += '</li>';
+    });
+    APP.ui.alertsList.innerHTML = html;
   }
 
   function getFilteredJobs() {
     var query = String(APP.filters.query || '').trim().toLowerCase();
     var status = String(APP.filters.status || 'ALL');
-    var limit = Number(APP.filters.limit || 20) || 20;
-    var list = (APP.jobs || []).map(normalizeJob).filter(function (job) {
-      if (status !== 'ALL' && job.status !== status) return false;
-      if (!query) return true;
-      var haystack = [job.id, job.customer, job.symptom, job.tech, job.status].join(' ').toLowerCase();
-      return haystack.indexOf(query) > -1;
+    var mode = String(APP.filters.mode || 'ALL');
+    return (APP.jobs || []).filter(function (job) {
+      if (status !== 'ALL' && job.statusLabel !== status) return false;
+      if (mode === 'OVERDUE' && !job.raw.is_overdue && !job.raw.overdue) return false;
+      if (mode === 'PM_DUE' && !job.raw.is_pm_due && !job.raw.pm_due) return false;
+      if (query) {
+        var haystack = [job.id, job.customer, job.symptom, job.tech, job.statusLabel].join(' ').toLowerCase();
+        if (haystack.indexOf(query) === -1) return false;
+      }
+      return true;
     });
-    return list.slice(0, limit);
+  }
+
+  function buildJobCard(job) {
+    var thumb = job.photos && job.photos[0]
+      ? '<div class="job-card-thumb"><img src="' + api.escapeHtml(job.photos[0]) + '" alt="' + api.escapeHtml(job.id) + '"></div>'
+      : '<div class="job-card-thumb">NO PHOTO</div>';
+    var appointment = job.appointmentAt ? api.formatDateTime(job.appointmentAt) : 'ยังไม่กำหนดวันนัด';
+    return '' +
+      '<button type="button" class="job-card" data-job-id="' + api.escapeHtml(job.id) + '">' +
+        '<div class="job-card-top">' +
+          '<div style="display:flex; gap:12px; min-width:0;">' + thumb +
+            '<div class="job-card-main">' +
+              '<div class="job-id">' + api.escapeHtml(job.id) + '</div>' +
+              '<div class="job-customer">' + api.escapeHtml(job.customer) + '</div>' +
+              '<div class="job-desc">' + api.escapeHtml(job.symptom) + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="status-pill">' + api.escapeHtml(job.statusLabel) + '</div>' +
+        '</div>' +
+        '<div class="job-status-row">' +
+          '<span class="meta-pill">ช่าง: ' + api.escapeHtml(job.tech || '-') + '</span>' +
+          '<span class="meta-pill">วันนัด: ' + api.escapeHtml(appointment) + '</span>' +
+          '<span class="meta-pill">รูป: ' + api.formatNumber(job.photoCount || 0) + '</span>' +
+        '</div>' +
+      '</button>';
   }
 
   function renderRecentJobs() {
+    if (!APP.ui.recentJobs) return;
     var jobs = getFilteredJobs();
-    var tbody = APP.ui.recentJobsTableBody;
-    var mobileList = APP.ui.recentJobsMobileList;
-    if (!tbody || !mobileList) return;
-
-    api.hide(APP.ui.recentJobsLoading);
-    api.hide(APP.ui.recentJobsError);
-    api.setText(APP.ui.recentJobsCounter, api.formatNumber(jobs.length) + ' รายการ');
-
+    if (APP.ui.jobResultMeta) {
+      APP.ui.jobResultMeta.textContent = 'พบ ' + api.formatNumber(jobs.length) + ' งาน';
+    }
     if (!jobs.length) {
-      tbody.innerHTML = '';
-      mobileList.innerHTML = '';
-      api.hide(APP.ui.recentJobsTableWrap);
-      api.hide(APP.ui.recentJobsTable);
-      api.hide(APP.ui.recentJobsMobileList);
-      api.show(APP.ui.recentJobsEmpty);
+      APP.ui.recentJobs.innerHTML = '<div class="empty-state">ไม่พบงานตามตัวกรองปัจจุบัน</div>';
+      return;
+    }
+    APP.ui.recentJobs.innerHTML = jobs.map(buildJobCard).join('');
+  }
+
+  function buildCalendarEvents() {
+    return (APP.jobs || []).filter(function (job) {
+      return !!api.toDate(job.appointmentAt);
+    }).map(function (job) {
+      var statusClass = api.getStatusAppearance(job.statusLabel);
+      var colorMap = {
+        'priority-good': '#22c55e',
+        'priority-medium': '#f59e0b',
+        'priority-danger': '#ef4444',
+        'priority-info': '#38bdf8',
+        'priority-muted': '#94a3b8'
+      };
+      return {
+        id: job.id,
+        title: job.id + ' • ' + job.customer,
+        start: api.toDate(job.appointmentAt),
+        allDay: false,
+        backgroundColor: colorMap[statusClass] || '#38bdf8',
+        borderColor: colorMap[statusClass] || '#38bdf8',
+        extendedProps: {
+          jobId: job.id,
+          customer: job.customer,
+          symptom: job.symptom,
+          technician: job.tech,
+          statusLabel: job.statusLabel
+        }
+      };
+    });
+  }
+
+  function renderCalendarPool() {
+    if (!APP.ui.calendarJobsPool) return;
+    var poolJobs = (APP.jobs || []).filter(function (job) {
+      return !api.toDate(job.appointmentAt);
+    }).slice(0, 18);
+
+    if (!poolJobs.length) {
+      APP.ui.calendarJobsPool.innerHTML = '<div class="empty-state">ไม่มีงานที่รอลงวันนัด</div>';
       return;
     }
 
-    api.hide(APP.ui.recentJobsEmpty);
-    api.show(APP.ui.recentJobsTableWrap);
-    api.show(APP.ui.recentJobsTable);
-    api.show(APP.ui.recentJobsMobileList);
-
-    var tableHtml = '';
-    var mobileHtml = '';
-
-    jobs.forEach(function (job) {
-      var badgeClass = api.getStatusAppearance(job.status);
-
-      tableHtml += '<tr data-job-id="' + api.escapeHtml(job.id) + '" class="job-row">';
-      tableHtml += '<td><strong>' + api.escapeHtml(job.id) + '</strong></td>';
-      tableHtml += '<td>' + api.escapeHtml(job.customer) + '</td>';
-      tableHtml += '<td>' + api.escapeHtml(job.symptom) + '</td>';
-      tableHtml += '<td>' + api.escapeHtml(job.tech) + '</td>';
-      tableHtml += '<td><span class="alert-tag ' + badgeClass + '">' + api.escapeHtml(job.status) + '</span></td>';
-      tableHtml += '<td>' + api.escapeHtml(job.created) + '</td>';
-      tableHtml += '</tr>';
-
-      mobileHtml += '<article class="mobile-job-card" data-job-id="' + api.escapeHtml(job.id) + '">';
-      mobileHtml += '<div class="job-card-header">';
-      mobileHtml += '<div>';
-      mobileHtml += '<h3 class="job-card-title">' + api.escapeHtml(job.id) + '</h3>';
-      mobileHtml += '<div class="job-card-customer">' + api.escapeHtml(job.customer) + '</div>';
-      mobileHtml += '</div>';
-      mobileHtml += '<span class="alert-tag ' + badgeClass + '">' + api.escapeHtml(job.status) + '</span>';
-      mobileHtml += '</div>';
-      mobileHtml += '<div class="job-card-text">' + api.escapeHtml(job.symptom) + '</div>';
-      mobileHtml += '<div class="job-card-meta">';
-      mobileHtml += '<span class="soft-chip">ช่าง: ' + api.escapeHtml(job.tech) + '</span>';
-      mobileHtml += '<span class="soft-chip">สร้าง: ' + api.escapeHtml(job.created) + '</span>';
-      mobileHtml += '</div>';
-      mobileHtml += '</article>';
+    var html = '';
+    poolJobs.forEach(function (job) {
+      html += '<div class="pool-job" data-job-id="' + api.escapeHtml(job.id) + '" data-event="{&quot;title&quot;:&quot;' + api.escapeHtml(job.id + ' • ' + job.customer).replace(/&quot;/g, '\\&quot;') + '&quot;,&quot;duration&quot;:&quot;01:00&quot;}">';
+      html += '<div class="job-id">' + api.escapeHtml(job.id) + '</div>';
+      html += '<div class="job-meta">' + api.escapeHtml(job.customer) + '</div>';
+      html += '<div class="job-meta">' + api.escapeHtml(job.tech || 'ยังไม่กำหนดช่าง') + '</div>';
+      html += '</div>';
     });
+    APP.ui.calendarJobsPool.innerHTML = html;
 
-    tbody.innerHTML = tableHtml;
-    mobileList.innerHTML = mobileHtml;
+    if (window.FullCalendar && window.FullCalendar.Draggable) {
+      new window.FullCalendar.Draggable(APP.ui.calendarJobsPool, {
+        itemSelector: '.pool-job',
+        eventData: function (eventEl) {
+          var jobId = eventEl.getAttribute('data-job-id') || '';
+          var found = (APP.jobs || []).filter(function (job) { return job.id === jobId; })[0];
+          return {
+            id: jobId,
+            title: (found ? found.id + ' • ' + found.customer : jobId),
+            duration: '01:00',
+            extendedProps: {
+              jobId: jobId
+            }
+          };
+        }
+      });
+    }
   }
 
-  function setLoadingState(isLoading) {
-    if (APP.ui.systemStatusBadge) {
-      APP.ui.systemStatusBadge.textContent = isLoading ? 'กำลังซิงก์ข้อมูล...' : 'Dashboard Online';
+  async function saveJobSchedule(jobId, date) {
+    if (!jobId || !date) return;
+    var payload = {
+      job_id: jobId,
+      appointment_at: date instanceof Date ? date.toISOString() : String(date)
+    };
+    var result = await api.callServer('updateJobScheduleV55', [payload]);
+    if (result && result.success === false) throw new Error(result.error || 'บันทึกวันนัดไม่สำเร็จ');
+  }
+
+  function ensureCalendar() {
+    if (!APP.ui.calendarView || !window.FullCalendar) return;
+    APP.calendarEvents = buildCalendarEvents();
+    if (APP.calendar) {
+      APP.calendar.removeAllEvents();
+      APP.calendar.addEventSource(APP.calendarEvents);
+      APP.calendar.updateSize();
+      return;
     }
-    if (APP.ui.refreshDashboardBtn) APP.ui.refreshDashboardBtn.disabled = !!isLoading;
-    if (APP.ui.refreshDashboardBtnBottom) APP.ui.refreshDashboardBtnBottom.disabled = !!isLoading;
-    if (APP.ui.recentJobsLoading) {
-      if (isLoading) api.show(APP.ui.recentJobsLoading); else api.hide(APP.ui.recentJobsLoading);
-    }
-    if (APP.ui.statusBoardLoading) {
-      if (isLoading) api.show(APP.ui.statusBoardLoading); else api.hide(APP.ui.statusBoardLoading);
-    }
+
+    APP.calendar = new window.FullCalendar.Calendar(APP.ui.calendarView, {
+      locale: 'th',
+      initialView: 'listWeek',
+      height: 'auto',
+      editable: true,
+      droppable: true,
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'listWeek,dayGridMonth,timeGridWeek'
+      },
+      views: {
+        listWeek: { buttonText: 'List' },
+        dayGridMonth: { buttonText: 'Month' },
+        timeGridWeek: { buttonText: 'Week' }
+      },
+      eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+      events: APP.calendarEvents,
+      eventClick: function (info) {
+        info.jsEvent.preventDefault();
+        if (window.COMPHONE_V55_INTERACTIONS && typeof window.COMPHONE_V55_INTERACTIONS.openJobDetail === 'function') {
+          window.COMPHONE_V55_INTERACTIONS.openJobDetail(info.event.id || info.event.extendedProps.jobId || '');
+        }
+      },
+      eventDrop: async function (info) {
+        try {
+          await saveJobSchedule(info.event.id || info.event.extendedProps.jobId || '', info.event.start);
+          api.toast('อัปเดตวันนัดแล้ว', 'success');
+          await fetchDashboardData({ silent: true });
+        } catch (error) {
+          info.revert();
+          api.toast('เปลี่ยนวันนัดไม่สำเร็จ: ' + (error.message || error), 'error');
+        }
+      },
+      eventReceive: async function (info) {
+        try {
+          await saveJobSchedule(info.event.id || info.event.extendedProps.jobId || '', info.event.start);
+          api.toast('เพิ่มงานลงปฏิทินแล้ว', 'success');
+          await fetchDashboardData({ silent: true });
+        } catch (error) {
+          info.revert();
+          api.toast('เพิ่มวันนัดไม่สำเร็จ: ' + (error.message || error), 'error');
+        }
+      }
+    });
+
+    APP.calendar.render();
+  }
+
+  function renderStatusFilter() {
+    if (!APP.ui.statusFilter) return;
+    var value = APP.filters.status || 'ALL';
+    var html = '<option value="ALL">ทุกสถานะ</option>';
+    (APP.statusConfig || []).forEach(function (state) {
+      var label = String(state.label || '');
+      html += '<option value="' + api.escapeHtml(label) + '">' + api.escapeHtml(label) + '</option>';
+    });
+    APP.ui.statusFilter.innerHTML = html;
+    APP.ui.statusFilter.value = value;
   }
 
   async function fetchStatusConfig() {
     var result = await api.callServer('getJobStateConfig');
-    if (!result || result.success === false) {
-      throw new Error(result && result.error ? result.error : 'ไม่สามารถโหลด JobStateMachine ได้');
-    }
+    if (!result || result.success === false) throw new Error(result && result.error ? result.error : 'โหลดสถานะงานไม่สำเร็จ');
     APP.statusConfig = result.states || [];
     renderStatusFilter();
   }
 
-  async function fetchDashboardData() {
-    var result = await api.callServer('getDashboardData');
-    if (!result || result.success === false) {
-      throw new Error(result && result.error ? result.error : 'ไม่สามารถโหลดข้อมูล dashboard ได้');
+  async function fetchDashboardData(options) {
+    options = options || {};
+    try {
+      api.setText(APP.ui.apiMode, options.silent ? 'กำลังซิงก์...' : 'กำลังโหลด...');
+      var result;
+      try {
+        result = await api.callServer('getDashboardPayloadV55');
+      } catch (customError) {
+        result = await api.callServer('getDashboardData');
+      }
+
+      if (!result || result.success === false) throw new Error(result && result.error ? result.error : 'โหลดข้อมูล dashboard ไม่สำเร็จ');
+
+      APP.dashboard = result;
+      APP.summary = result.summary || result.dashboard || {};
+      APP.alerts = normalizeAlertItems(result.alerts || APP.summary.alerts || []);
+      APP.jobs = dedupeJobs(result.jobs || APP.summary.recentJobs || APP.summary.jobs || []);
+      collectTechnicians();
+      renderSummary();
+      renderStatusGrid();
+      renderAlerts();
+      renderRecentJobs();
+      renderCalendarPool();
+      ensureCalendar();
+      api.setText(APP.ui.apiMode, 'Dashboard Online');
+      if (!options.silent) api.toast('โหลด Dashboard V5.5 สำเร็จ', 'success');
+      return result;
+    } catch (error) {
+      api.setText(APP.ui.apiMode, 'โหลดข้อมูลไม่สำเร็จ');
+      if (!options.silent) api.toast('โหลดข้อมูลไม่สำเร็จ: ' + (error.message || error), 'error');
+      throw error;
     }
-
-    APP.dashboard = result;
-    APP.summary = result.summary || {};
-    APP.jobs = result.jobs || APP.summary.recentJobs || APP.summary.jobs || [];
-    APP.inventory = result.inventory || [];
-
-    renderTopSummary(APP.summary, result.alerts);
-    renderStatusBoard();
-    renderAlerts();
-    renderRecentJobs();
   }
 
   async function initializeDashboard() {
     api.ensureUiRefs();
-    setLoadingState(true);
-    try {
-      await fetchStatusConfig();
-      await fetchDashboardData();
-      api.toast('โหลดข้อมูล V5.5 สำเร็จ', 'success');
-    } catch (error) {
-      var message = error && error.message ? error.message : String(error);
-      if (APP.ui.statusBoardError) {
-        api.setText(APP.ui.statusBoardError, message);
-        api.show(APP.ui.statusBoardError);
-      }
-      if (APP.ui.recentJobsError) {
-        api.setText(APP.ui.recentJobsError, message);
-        api.show(APP.ui.recentJobsError);
-      }
-      api.toast('โหลดข้อมูลไม่สำเร็จ: ' + message, 'error');
-    } finally {
-      setLoadingState(false);
-    }
+    await fetchStatusConfig();
+    await fetchDashboardData();
   }
 
   window.COMPHONE_V55_DASHBOARD = {
     initializeDashboard: initializeDashboard,
-    renderRecentJobs: renderRecentJobs,
-    getFilteredJobs: getFilteredJobs,
     fetchDashboardData: fetchDashboardData,
     fetchStatusConfig: fetchStatusConfig,
-    renderStatusBoard: renderStatusBoard
+    renderRecentJobs: renderRecentJobs,
+    renderStatusGrid: renderStatusGrid,
+    ensureCalendar: ensureCalendar,
+    getFilteredJobs: getFilteredJobs,
+    normalizeJob: normalizeJob
   };
 })(window, document, window.comphoneV55);
 </script>

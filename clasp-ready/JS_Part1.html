@@ -1,5 +1,4 @@
 <!-- COMPHONE SUPER APP V5.5 -->
-<!-- Design note: Utility layer for executive mobile-first dashboard; keep refs explicit, interactions fast, and dialogs touch-friendly. -->
 <script>
 (function (window, document) {
   'use strict';
@@ -8,16 +7,22 @@
     version: 'COMPHONE SUPER APP V5.5',
     config: window.COMPHONE_V55 || {},
     dashboard: null,
-    summary: null,
+    summary: {},
     jobs: [],
-    inventory: [],
+    alerts: [],
     statusConfig: [],
+    calendar: null,
+    calendarEvents: [],
+    selectedJobId: '',
+    selectedJob: null,
+    selectedPhotos: [],
+    technicians: [],
+    customerSuggestions: [],
     filters: {
       query: '',
       status: 'ALL',
-      limit: Number((window.COMPHONE_V55 && window.COMPHONE_V55.defaultLimit) || 20) || 20
+      mode: 'ALL'
     },
-    selectedJobId: '',
     ui: {}
   };
 
@@ -27,43 +32,59 @@
 
   function ensureUiRefs() {
     APP.ui = {
-      systemStatusBadge: el('systemStatusBadge'),
-      apiBasePreview: el('apiBasePreview'),
-      lastRefreshText: el('lastRefreshText'),
-      topTechnicianText: el('topTechnicianText'),
-      pendingPhotosText: el('pendingPhotosText'),
-      openAlertsText: el('openAlertsText'),
-      jobSearchInput: el('jobSearchInput'),
-      statusFilterSelect: el('statusFilterSelect'),
-      clearFilterBtn: el('clearFilterBtn'),
-      refreshDashboardBtn: el('refreshDashboardBtn'),
-      refreshDashboardBtnBottom: el('refreshDashboardBtnBottom'),
-      recentJobsLimitSelect: el('recentJobsLimitSelect'),
-      metricTotalJobs: el('metricTotalJobs'),
-      metricLowStock: el('metricLowStock'),
-      metricOverdueJobs: el('metricOverdueJobs'),
-      metricPmDue: el('metricPmDue'),
-      revenueToday: el('revenueToday'),
-      revenueWeek: el('revenueWeek'),
-      revenueMonth: el('revenueMonth'),
-      revenueTodayMeta: el('revenueTodayMeta'),
-      revenueWeekMeta: el('revenueWeekMeta'),
-      revenueMonthMeta: el('revenueMonthMeta'),
-      statusTotalText: el('statusTotalText'),
-      statusBoardLoading: el('statusBoardLoading'),
-      statusBoardError: el('statusBoardError'),
-      statusBoard: el('statusBoard'),
-      alertsCounterPill: el('alertsCounterPill'),
+      apiMode: el('apiMode'),
+      lastSync: el('lastSync'),
+      topTech: el('topTech'),
+      pendingPhotos: el('pendingPhotos'),
+      openAlerts: el('openAlerts'),
+      totalJobs: el('totalJobs'),
+      lowStock: el('lowStock'),
+      overdueJobs: el('overdueJobs'),
+      pmCustomers: el('pmCustomers'),
+      revToday: el('revToday'),
+      revWeek: el('revWeek'),
+      revMonth: el('revMonth'),
+      statusGrid: el('statusGrid'),
       alertsList: el('alertsList'),
-      alertsEmpty: el('alertsEmpty'),
-      recentJobsCounter: el('recentJobsCounter'),
-      recentJobsLoading: el('recentJobsLoading'),
-      recentJobsError: el('recentJobsError'),
-      recentJobsEmpty: el('recentJobsEmpty'),
-      recentJobsMobileList: el('recentJobsMobileList'),
-      recentJobsTableWrap: el('recentJobsTableWrap'),
-      recentJobsTable: el('recentJobsTable'),
-      recentJobsTableBody: el('recentJobsTableBody')
+      recentJobs: el('recentJobs'),
+      searchInput: el('searchInput'),
+      statusFilter: el('statusFilter'),
+      jobResultMeta: el('jobResultMeta'),
+      refreshAllBtn: el('refreshAllBtn'),
+      refreshJobsBtn: el('refreshJobsBtn'),
+      clearFiltersBtn: el('clearFiltersBtn'),
+      goJobsFromOverview: el('goJobsFromOverview'),
+      calendarView: el('calendarView'),
+      calendarJobsPool: el('calendarJobsPool'),
+      calendarTodayBtn: el('calendarTodayBtn'),
+      refreshCalendarBtn: el('refreshCalendarBtn'),
+      newJobForm: el('newJobForm'),
+      newJobCustomer: el('newJobCustomer'),
+      newJobCustomerId: el('newJobCustomerId'),
+      newJobTech: el('newJobTech'),
+      newJobAppointment: el('newJobAppointment'),
+      newJobSymptom: el('newJobSymptom'),
+      newJobNote: el('newJobNote'),
+      newJobFormMeta: el('newJobFormMeta'),
+      resetNewJobBtn: el('resetNewJobBtn'),
+      customerSuggestions: el('customerSuggestions'),
+      jobDrawerBackdrop: el('jobDrawerBackdrop'),
+      closeJobDrawerBtn: el('closeJobDrawerBtn'),
+      jobDrawerTitle: el('jobDrawerTitle'),
+      jobDrawerStatus: el('jobDrawerStatus'),
+      jobDetailTableBody: el('jobDetailTableBody'),
+      jobFolderLinkWrap: el('jobFolderLinkWrap'),
+      jobActionButtons: el('jobActionButtons'),
+      jobQuickNoteInput: el('jobQuickNoteInput'),
+      saveQuickNoteBtn: el('saveQuickNoteBtn'),
+      shareJobPhotosBtn: el('shareJobPhotosBtn'),
+      refreshJobDetailBtn: el('refreshJobDetailBtn'),
+      jobThumbGrid: el('jobThumbGrid'),
+      jobTimelineWrap: el('jobTimelineWrap'),
+      imageLightbox: el('imageLightbox'),
+      lightboxImage: el('lightboxImage'),
+      lightboxTitle: el('lightboxTitle'),
+      closeLightboxBtn: el('closeLightboxBtn')
     };
   }
 
@@ -75,6 +96,24 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  function show(node) {
+    if (node) node.classList.remove('hidden');
+  }
+
+  function hide(node) {
+    if (node) node.classList.add('hidden');
+  }
+
+  function setText(nodeOrId, value) {
+    var node = typeof nodeOrId === 'string' ? el(nodeOrId) : nodeOrId;
+    if (node) node.textContent = value;
+  }
+
+  function setHtml(nodeOrId, html) {
+    var node = typeof nodeOrId === 'string' ? el(nodeOrId) : nodeOrId;
+    if (node) node.innerHTML = html;
   }
 
   function formatNumber(value) {
@@ -92,152 +131,77 @@
     });
   }
 
+  function toDate(value) {
+    if (!value) return null;
+    if (value instanceof Date) return isNaN(value.getTime()) ? null : value;
+    if (typeof value === 'number') {
+      var direct = new Date(value);
+      return isNaN(direct.getTime()) ? null : direct;
+    }
+    var text = String(value).trim();
+    if (!text) return null;
+
+    var normalized = text.replace(/\./g, '/').replace(/-/g, '/');
+    var match = normalized.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:\s+(\d{1,2}):(\d{2}))?$/);
+    if (match) {
+      var dd = Number(match[1]);
+      var mm = Number(match[2]) - 1;
+      var yy = Number(match[3]);
+      if (yy < 100) yy += 2000;
+      var hh = Number(match[4] || 0);
+      var mi = Number(match[5] || 0);
+      var parsed = new Date(yy, mm, dd, hh, mi, 0, 0);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    var iso = new Date(text);
+    return isNaN(iso.getTime()) ? null : iso;
+  }
+
   function formatDateTime(value) {
-    if (!value) return '-';
-    if (typeof value === 'string') return value;
-    try {
-      return new Date(value).toLocaleString('th-TH');
-    } catch (error) {
-      return String(value || '-');
-    }
-  }
-
-  function setText(idOrNode, value) {
-    var node = typeof idOrNode === 'string' ? el(idOrNode) : idOrNode;
-    if (node) node.textContent = value;
-  }
-
-  function setHtml(idOrNode, html) {
-    var node = typeof idOrNode === 'string' ? el(idOrNode) : idOrNode;
-    if (node) node.innerHTML = html;
-  }
-
-  function show(node) {
-    if (node) node.classList.remove('hidden');
-  }
-
-  function hide(node) {
-    if (node) node.classList.add('hidden');
-  }
-
-  function upsertToastRoot() {
-    var root = el('comphoneToastRoot');
-    if (!root) {
-      root = document.createElement('div');
-      root.id = 'comphoneToastRoot';
-      root.style.position = 'fixed';
-      root.style.left = '12px';
-      root.style.right = '12px';
-      root.style.bottom = '14px';
-      root.style.zIndex = '9999';
-      root.style.display = 'grid';
-      root.style.gap = '8px';
-      root.style.maxWidth = '420px';
-      root.style.margin = '0 auto';
-      document.body.appendChild(root);
-    }
-    return root;
-  }
-
-  function toast(message, type) {
-    var root = upsertToastRoot();
-    var item = document.createElement('div');
-    var colors = {
-      success: 'linear-gradient(180deg, rgba(65,217,143,0.22), rgba(10,28,20,0.92))',
-      error: 'linear-gradient(180deg, rgba(251,126,120,0.22), rgba(40,13,14,0.92))',
-      warning: 'linear-gradient(180deg, rgba(243,198,89,0.22), rgba(40,28,10,0.92))',
-      info: 'linear-gradient(180deg, rgba(88,208,255,0.22), rgba(9,23,40,0.92))'
-    };
-    var borders = {
-      success: '#41d98f',
-      error: '#fb7e78',
-      warning: '#f3c659',
-      info: '#58d0ff'
-    };
-    var tone = type || 'info';
-    item.style.padding = '12px 14px';
-    item.style.borderRadius = '14px';
-    item.style.background = colors[tone] || colors.info;
-    item.style.border = '1px solid ' + (borders[tone] || borders.info);
-    item.style.color = '#ecf3fb';
-    item.style.backdropFilter = 'blur(16px)';
-    item.style.boxShadow = '0 16px 30px rgba(0,0,0,0.24)';
-    item.style.fontSize = '13px';
-    item.style.lineHeight = '1.5';
-    item.textContent = message;
-    root.appendChild(item);
-    window.setTimeout(function () {
-      if (item && item.parentNode) item.parentNode.removeChild(item);
-    }, 3200);
-  }
-
-  function ensureDialogRoot() {
-    var overlay = el('comphoneDialogOverlay');
-    if (overlay) return overlay;
-
-    overlay = document.createElement('div');
-    overlay.id = 'comphoneDialogOverlay';
-    overlay.style.position = 'fixed';
-    overlay.style.inset = '0';
-    overlay.style.background = 'rgba(2,8,23,0.78)';
-    overlay.style.backdropFilter = 'blur(10px)';
-    overlay.style.zIndex = '9998';
-    overlay.style.display = 'none';
-    overlay.style.alignItems = 'flex-end';
-    overlay.style.justifyContent = 'center';
-    overlay.style.padding = '12px';
-
-    var dialog = document.createElement('div');
-    dialog.id = 'comphoneDialog';
-    dialog.style.width = 'min(860px, 100%)';
-    dialog.style.maxHeight = '92vh';
-    dialog.style.overflow = 'auto';
-    dialog.style.background = 'linear-gradient(180deg, rgba(8,17,31,0.98), rgba(11,23,40,0.98))';
-    dialog.style.border = '1px solid rgba(148,163,184,0.18)';
-    dialog.style.borderRadius = '22px 22px 18px 18px';
-    dialog.style.boxShadow = '0 24px 60px rgba(0,0,0,0.36)';
-    dialog.style.padding = '18px';
-    dialog.style.color = '#ecf3fb';
-
-    var content = document.createElement('div');
-    content.id = 'comphoneDialogContent';
-    dialog.appendChild(content);
-    overlay.appendChild(dialog);
-    overlay.addEventListener('click', function (event) {
-      if (event.target === overlay) closeDialog();
+    var date = toDate(value);
+    if (!date) return value ? String(value) : '-';
+    return date.toLocaleString('th-TH', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
     });
-    document.body.appendChild(overlay);
-
-    if (window.matchMedia && window.matchMedia('(min-width: 768px)').matches) {
-      overlay.style.alignItems = 'center';
-      dialog.style.borderRadius = '22px';
-      dialog.style.padding = '22px';
-    }
-
-    return overlay;
   }
 
-  function openDialog(html) {
-    var overlay = ensureDialogRoot();
-    var content = el('comphoneDialogContent');
-    if (content) content.innerHTML = html;
-    overlay.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+  function formatDate(value) {
+    var date = toDate(value);
+    if (!date) return value ? String(value) : '-';
+    return date.toLocaleDateString('th-TH', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
   }
 
-  function closeDialog() {
-    var overlay = el('comphoneDialogOverlay');
-    if (overlay) overlay.style.display = 'none';
-    document.body.style.overflow = '';
+  function toInputDateTimeLocal(value) {
+    var date = toDate(value);
+    if (!date) return '';
+    var local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  }
+
+  function debounce(fn, delay) {
+    var timer = null;
+    return function () {
+      var context = this;
+      var args = arguments;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(function () {
+        fn.apply(context, args);
+      }, delay || 250);
+    };
   }
 
   function normalizeServerResponse(functionName, response) {
-    if (functionName === 'getDashboardData' || functionName === 'getJobStateConfig' || functionName === 'getJobTimeline' || functionName === 'sendDashboardSummary' || functionName === 'handleProcessPhotos' || functionName === 'openJob' || functionName === 'updateJobById' || functionName === 'addQuickNote' || functionName === 'transitionJob') {
-      return response;
-    }
-    if (response && typeof response === 'object' && Object.prototype.hasOwnProperty.call(response, 'data')) {
-      return response.data;
-    }
+    if (!response) return response;
+    if (response && typeof response === 'object' && Object.prototype.hasOwnProperty.call(response, 'data')) return response.data;
     return response;
   }
 
@@ -258,14 +222,14 @@
         });
 
       try {
-        if (runner[functionName] && typeof runner[functionName] === 'function') {
+        if (typeof runner[functionName] === 'function') {
           runner[functionName].apply(runner, args);
           return;
         }
       } catch (directError) {}
 
       try {
-        if (runner.routeActionV55 && typeof runner.routeActionV55 === 'function') {
+        if (typeof runner.routeActionV55 === 'function') {
           runner.routeActionV55(functionName, args[0] || {});
           return;
         }
@@ -275,44 +239,140 @@
     });
   }
 
+  function buildToastRoot() {
+    var root = el('comphoneToastRoot');
+    if (root) return root;
+    root = document.createElement('div');
+    root.id = 'comphoneToastRoot';
+    root.style.position = 'fixed';
+    root.style.left = '12px';
+    root.style.right = '12px';
+    root.style.bottom = '14px';
+    root.style.zIndex = '200';
+    root.style.display = 'grid';
+    root.style.gap = '8px';
+    root.style.maxWidth = '440px';
+    root.style.margin = '0 auto';
+    document.body.appendChild(root);
+    return root;
+  }
+
+  function toast(message, type) {
+    var root = buildToastRoot();
+    var tone = type || 'info';
+    var card = document.createElement('div');
+    var gradients = {
+      success: 'linear-gradient(180deg, rgba(82,213,155,0.24), rgba(9,24,18,0.96))',
+      error: 'linear-gradient(180deg, rgba(251,122,128,0.24), rgba(31,10,13,0.96))',
+      warning: 'linear-gradient(180deg, rgba(248,197,109,0.24), rgba(39,23,7,0.96))',
+      info: 'linear-gradient(180deg, rgba(88,208,255,0.24), rgba(9,18,35,0.96))'
+    };
+    var borders = {
+      success: '#52d59b',
+      error: '#fb7a80',
+      warning: '#f8c56d',
+      info: '#58d0ff'
+    };
+    card.style.padding = '12px 14px';
+    card.style.borderRadius = '16px';
+    card.style.background = gradients[tone] || gradients.info;
+    card.style.border = '1px solid ' + (borders[tone] || borders.info);
+    card.style.boxShadow = '0 16px 40px rgba(0,0,0,.28)';
+    card.style.fontSize = '13px';
+    card.style.lineHeight = '1.5';
+    card.textContent = message;
+    root.appendChild(card);
+    window.setTimeout(function () {
+      if (card && card.parentNode) card.parentNode.removeChild(card);
+    }, 3200);
+  }
+
   function getStatusLabel(statusValue) {
     if (statusValue === null || statusValue === undefined || statusValue === '') return '-';
-    if (typeof statusValue === 'number') {
+    var raw = String(statusValue);
+    if (/^\d+$/.test(raw)) {
       for (var i = 0; i < APP.statusConfig.length; i++) {
-        if (Number(APP.statusConfig[i].code) === Number(statusValue)) return APP.statusConfig[i].label;
+        if (String(APP.statusConfig[i].code) === raw) return APP.statusConfig[i].label;
       }
     }
-    return String(statusValue);
+    return raw;
   }
 
   function getStatusAppearance(statusValue) {
-    var text = getStatusLabel(statusValue);
-    var map = {
+    var label = getStatusLabel(statusValue);
+    var lookup = {
       'รอมอบหมาย': 'priority-medium',
       'มอบหมายแล้ว': 'priority-info',
       'รับงานแล้ว': 'priority-info',
       'เดินทาง': 'priority-info',
       'ถึงหน้างาน': 'priority-info',
-      'เริ่มงาน': 'priority-info',
+      'เริ่มงาน': 'priority-good',
+      'กำลังซ่อม': 'priority-good',
       'รอชิ้นส่วน': 'priority-medium',
-      'งานเสร็จ': 'priority-info',
+      'รอชิ้นส่วนเพิ่ม': 'priority-medium',
+      'ซ่อมเสร็จ': 'priority-good',
+      'QC ผ่าน': 'priority-good',
       'ลูกค้าตรวจรับ': 'priority-info',
       'รอเก็บเงิน': 'priority-medium',
-      'เก็บเงินแล้ว': 'priority-info',
-      'ปิดงาน': 'priority-info'
+      'เก็บเงินแล้ว': 'priority-good',
+      'ปิดงาน': 'priority-good',
+      'ยกเลิก': 'priority-danger'
     };
-    return map[text] || 'priority-info';
+    return lookup[label] || 'priority-muted';
   }
 
-  function toStatusCodeLookup(distribution) {
-    var lookup = {};
-    (distribution || []).forEach(function (item) {
-      if (!item) return;
-      var label = String(item.label || item.status || item.status_label || '');
-      lookup[label] = Number(item.count || 0);
-      if (item.code !== undefined && item.code !== null) lookup[String(item.code)] = Number(item.count || 0);
+  function normalizePhotoList(value) {
+    if (!value) return [];
+    if (Array.isArray(value)) return value.filter(Boolean);
+    return String(value)
+      .split(/[,\n|]/)
+      .map(function (item) { return String(item || '').trim(); })
+      .filter(function (item) { return /^https?:\/\//i.test(item); });
+  }
+
+  function switchTab(name) {
+    var tabs = document.querySelectorAll('[data-tab-target]');
+    var panels = document.querySelectorAll('[data-tab-panel]');
+    tabs.forEach(function (button) {
+      button.classList.toggle('is-active', button.getAttribute('data-tab-target') === name);
     });
-    return lookup;
+    panels.forEach(function (panel) {
+      panel.classList.toggle('is-active', panel.getAttribute('data-tab-panel') === name);
+    });
+  }
+
+  function openJobDrawer() {
+    if (!APP.ui.jobDrawerBackdrop) return;
+    APP.ui.jobDrawerBackdrop.classList.add('is-open');
+    APP.ui.jobDrawerBackdrop.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeJobDrawer() {
+    if (!APP.ui.jobDrawerBackdrop) return;
+    APP.ui.jobDrawerBackdrop.classList.remove('is-open');
+    APP.ui.jobDrawerBackdrop.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  function openLightbox(src, title) {
+    if (!APP.ui.imageLightbox || !APP.ui.lightboxImage) return;
+    APP.ui.lightboxImage.src = src || '';
+    APP.ui.lightboxImage.alt = title || 'Job photo';
+    setText(APP.ui.lightboxTitle, title || 'รูปงาน');
+    APP.ui.imageLightbox.classList.add('is-open');
+    APP.ui.imageLightbox.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeLightbox() {
+    if (!APP.ui.imageLightbox) return;
+    APP.ui.imageLightbox.classList.remove('is-open');
+    APP.ui.imageLightbox.setAttribute('aria-hidden', 'true');
+    if (APP.ui.lightboxImage) APP.ui.lightboxImage.src = '';
+  }
+
+  function canWebShareFiles() {
+    return !!(navigator.share && navigator.canShare);
   }
 
   window.comphoneV55 = {
@@ -320,20 +380,28 @@
     el: el,
     ensureUiRefs: ensureUiRefs,
     escapeHtml: escapeHtml,
-    formatNumber: formatNumber,
-    formatCurrency: formatCurrency,
-    formatDateTime: formatDateTime,
-    setText: setText,
-    setHtml: setHtml,
     show: show,
     hide: hide,
-    toast: toast,
-    openDialog: openDialog,
-    closeDialog: closeDialog,
+    setText: setText,
+    setHtml: setHtml,
+    formatNumber: formatNumber,
+    formatCurrency: formatCurrency,
+    toDate: toDate,
+    formatDateTime: formatDateTime,
+    formatDate: formatDate,
+    toInputDateTimeLocal: toInputDateTimeLocal,
+    debounce: debounce,
     callServer: callServer,
+    toast: toast,
     getStatusLabel: getStatusLabel,
     getStatusAppearance: getStatusAppearance,
-    toStatusCodeLookup: toStatusCodeLookup
+    normalizePhotoList: normalizePhotoList,
+    switchTab: switchTab,
+    openJobDrawer: openJobDrawer,
+    closeJobDrawer: closeJobDrawer,
+    openLightbox: openLightbox,
+    closeLightbox: closeLightbox,
+    canWebShareFiles: canWebShareFiles
   };
 })(window, document);
 </script>
