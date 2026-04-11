@@ -44,6 +44,21 @@ function doGet(e) {
         .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
     }
 
+    if (action === 'photoGalleryData' || action === 'getPhotoGalleryData') {
+      return ContentService.createTextOutput(JSON.stringify(getPhotoGalleryData(p.jobId || p.job_id || '')))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (p.view === 'photogallery' || action === 'photogallery') {
+      var galleryTemplate = HtmlService.createTemplateFromFile('PhotoGallery');
+      galleryTemplate.jobId = p.jobId || p.job_id || '';
+      galleryTemplate.apiBaseUrl = getWebAppBaseUrl_() || '';
+      return galleryTemplate.evaluate()
+        .setTitle('COMPHONE Photo Gallery')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+        .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
+    }
+
     // HTML Dashboard — Null Fallback Variables
     var template = HtmlService.createTemplateFromFile('Index');
     template.apiBaseUrl = getWebAppBaseUrl_() || '';
@@ -118,14 +133,22 @@ function doPost(e) {
       'transitionJob': 'transitionJob', 'transition_job': 'transitionJob', 'เปลี่ยนสถานะงาน': 'transitionJob',
       'generateJobQR': 'generateJobQR', 'generate_job_qr': 'generateJobQR', 'สร้างคิวอาร์งาน': 'generateJobQR',
       'getJobStateConfig': 'getJobStateConfig', 'jobStateConfig': 'getJobStateConfig',
-      'getJobQRData': 'getJobQRData', 'jobqrdata': 'getJobQRData'
+      'getJobQRData': 'getJobQRData', 'jobqrdata': 'getJobQRData',
+      'photoGalleryData': 'photoGalleryData', 'getPhotoGalleryData': 'photoGalleryData', 'ดูรูปงาน': 'photoGalleryData',
+      'createBeforeAfterCollage': 'createBeforeAfterCollage', 'photoCollage': 'createBeforeAfterCollage',
+      'createCustomer': 'createCustomer', 'updateCustomer': 'updateCustomer', 'getCustomer': 'getCustomer', 'listCustomers': 'listCustomers',
+      'getCustomerHistory': 'getCustomerHistory', 'syncCustomerFromJob': 'syncCustomerFromJob',
+      'predictiveMaintenance': 'predictiveMaintenance', 'runPredictiveMaintenance': 'runPredictiveMaintenance',
+      'transferStock': 'transferStock', 'getVanStock': 'getVanStock', 'inventoryOverview': 'inventoryOverview',
+      'predictiveStocking': 'predictiveStocking', 'createWeeklyToolAuditChecklist': 'createWeeklyToolAuditChecklist',
+      'getWeeklyToolAuditChecklist': 'getWeeklyToolAuditChecklist', 'submitToolAudit': 'submitToolAudit'
     };
     var norm = actionMap[action] || action;
     var result = { action: norm };
     switch (norm) {
       case 'help':
         result.success = true;
-        result.message = 'Actions: createJob, transitionJob, generateJobQR, getJobStateConfig, getJobQRData, openjob, checkjobs, checkstock, closejob, updatestatus, summary, getDashboardData';
+        result.message = 'Actions: createJob, transitionJob, generateJobQR, getJobStateConfig, getJobQRData, photoGalleryData, createBeforeAfterCollage, createCustomer, updateCustomer, getCustomer, listCustomers, getCustomerHistory, syncCustomerFromJob, predictiveMaintenance, runPredictiveMaintenance, transferStock, getVanStock, inventoryOverview, predictiveStocking, createWeeklyToolAuditChecklist, getWeeklyToolAuditChecklist, submitToolAudit, openjob, checkjobs, checkstock, closejob, updatestatus, summary, getDashboardData';
         break;
       case 'summary':
         result.success = true; result.data = summarizeJobs();
@@ -145,6 +168,34 @@ function doPost(e) {
       case 'getJobQRData':
         result.success = true; result.data = getJobWebAppPayload(data.job_id || data.jobId || '');
         break;
+      case 'photoGalleryData':
+        result.success = true; result.data = getPhotoGalleryData(data.job_id || data.jobId || '');
+        break;
+      case 'createBeforeAfterCollage':
+        result.success = true; result.data = createBeforeAfterCollage(data.job_id || data.jobId || '', data);
+        break;
+      case 'createCustomer':
+        result.success = true; result.data = createCustomer(data);
+        break;
+      case 'updateCustomer':
+        result.success = true; result.data = updateCustomer(data);
+        break;
+      case 'getCustomer':
+        result.success = true; result.data = getCustomer(data);
+        break;
+      case 'listCustomers':
+        result.success = true; result.data = listCustomers(data);
+        break;
+      case 'getCustomerHistory':
+        result.success = true; result.data = getCustomerHistory(data);
+        break;
+      case 'syncCustomerFromJob':
+        result.success = true; result.data = syncCustomerFromJob(data.job_id || data.jobId || '');
+        break;
+      case 'predictiveMaintenance':
+      case 'runPredictiveMaintenance':
+        result.success = true; result.data = runPredictiveMaintenance(data);
+        break;
       case 'openjob':
         result.success = true; result.data = openJob(data);
         break;
@@ -153,6 +204,27 @@ function doPost(e) {
         break;
       case 'checkstock':
         result.success = true; result.data = checkStock(data);
+        break;
+      case 'inventoryOverview':
+        result.success = true; result.data = getInventoryOverview(data);
+        break;
+      case 'transferStock':
+        result.success = true; result.data = transferStock(data.from_location || data.from, data.to_location || data.to, data.item_id || data.item_code || data.code || data.itemId, data.qty, data);
+        break;
+      case 'getVanStock':
+        result.success = true; result.data = getVanStock(data.tech_id || data.tech || data.technician || '');
+        break;
+      case 'predictiveStocking':
+        result.success = true; result.data = predictiveStocking(data);
+        break;
+      case 'createWeeklyToolAuditChecklist':
+        result.success = true; result.data = createWeeklyToolAuditChecklist(data);
+        break;
+      case 'getWeeklyToolAuditChecklist':
+        result.success = true; result.data = getWeeklyToolAuditChecklist(data);
+        break;
+      case 'submitToolAudit':
+        result.success = true; result.data = submitToolAudit(data);
         break;
       case 'closejob':
         result.success = true; result.data = completeJob(data);

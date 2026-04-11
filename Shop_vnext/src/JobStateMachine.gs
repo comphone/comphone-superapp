@@ -79,6 +79,9 @@ function createJob(data) {
   try { lock.waitLock(10000); } catch (e) { return { success: false, error: 'Lock timeout' }; }
   try {
     data = data || {};
+    if (typeof enrichJobDataWithCustomer_ === 'function') {
+      data = enrichJobDataWithCustomer_(data);
+    }
     var ss = getComphoneSheet();
     if (!ss) return { success: false, error: 'Spreadsheet not found' };
 
@@ -116,6 +119,11 @@ function createJob(data) {
       reservationInfo = reserveItemsForJob(jobId, data.parts);
     }
 
+    var customerSync = null;
+    if (typeof syncCustomerFromJob === 'function') {
+      customerSync = syncCustomerFromJob(jobId);
+    }
+
     appendJobStatusLog_(jobId, '', JOB_STATUS_MAP[statusCode], data.changed_by || data.user || 'SYSTEM', data.note || 'สร้างใบงานใหม่');
 
     try { if (typeof logActivity === 'function') logActivity('JOB_CREATE', data.changed_by || data.user || 'SYSTEM', jobId + ' — ' + (data.customer_name || data.customer || data.name || 'ลูกค้าใหม่')); } catch (logErr) {}
@@ -127,6 +135,7 @@ function createJob(data) {
       status_code: statusCode,
       status_label: JOB_STATUS_MAP[statusCode],
       reservation: reservationInfo,
+      customer_sync: customerSync,
       qr: qr
     };
   } catch (e) {
@@ -204,6 +213,8 @@ function transitionJob(jobId, newStatus, options) {
     sh.getRange(rowIndex, 1, 1, ctx.headers.length).setValues([rowValues]);
     appendJobStatusLog_(jobId, currentLabel, targetLabel, options.changed_by || options.user || 'SYSTEM', options.note || '');
 
+    var automation = runJobTransitionAutomation_(jobId, currentStatus, targetStatus, options);
+
     try { if (typeof logActivity === 'function') logActivity('JOB_STATUS_TRANSITION', options.changed_by || options.user || 'SYSTEM', jobId + ' ' + currentLabel + ' -> ' + targetLabel); } catch (logErr) {}
 
     return {
@@ -214,7 +225,8 @@ function transitionJob(jobId, newStatus, options) {
       from_status_label: currentLabel,
       to_status_label: targetLabel,
       allowed_next: getAllowedTransitionObjects_(targetStatus),
-      job: buildJobObjectFromRow_(rowValues, ctx.indices)
+      job: buildJobObjectFromRow_(rowValues, ctx.indices),
+      automation: automation
     };
   } catch (e) {
     return { success: false, error: e.toString() };
@@ -413,6 +425,33 @@ function appendJobStatusLog_(jobId, fromStatus, toStatus, changedBy, note) {
   } catch (e) {
     Logger.log('appendJobStatusLog_ error: ' + e);
   }
+}
+
+function runJobTransitionAutomation_(jobId, fromStatusCode, toStatusCode, options) {
+  var result = {
+    triggered: false,
+    qc: null,
+    customer_sync: null
+  };
+
+  try {
+    if ((Number(toStatusCode) === 8 || Number(toStatusCode) === 12) && typeof syncCustomerFromJob === 'function') {
+      result.customer_sync = syncCustomerFromJob(jobId);
+    }
+    if (Number(toStatusCode) === 8 && typeof runJobCompletionQC === 'function') {
+      result.triggered = true;
+      result.qc = runJobCompletionQC(jobId, {
+        source: 'JobStateMachine',
+        transition_from: fromStatusCode,
+        transition_to: toStatusCode,
+        changed_by: options && (options.changed_by || options.user || 'SYSTEM')
+      });
+    }
+  } catch (e) {
+    result.qc = { success: false, error: e.toString() };
+  }
+
+  return result;
 }
 
 function ensureJobLogSheet_(ss) {
