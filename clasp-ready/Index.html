@@ -1,5 +1,5 @@
 <!-- COMPHONE SUPER APP V5.5 -->
-<!-- Design note: Executive fintech dashboard + dark editorial UI; compact hierarchy, touch-first controls, dense-but-readable metrics, restrained cyan/emerald accents. -->
+<!-- Design note: Mobile-first executive service dashboard; dense, touch-friendly, compact 2x2 KPI grid, 3-column revenue strip, 2-column status board, restrained dark UI. -->
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -11,31 +11,35 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #07111d;
-      --bg-2: #0b1728;
-      --panel: rgba(11, 23, 40, 0.92);
-      --panel-strong: rgba(9, 18, 31, 0.96);
-      --panel-soft: rgba(16, 31, 53, 0.9);
+      --bg: #06101b;
+      --bg-2: #0a1626;
+      --panel: rgba(10, 20, 34, 0.96);
+      --panel-soft: rgba(12, 25, 42, 0.94);
       --line: rgba(148, 163, 184, 0.14);
       --line-strong: rgba(148, 163, 184, 0.22);
-      --text: #ecf3fb;
-      --muted: #8fa4ba;
-      --accent: #58d0ff;
-      --accent-strong: #1da8f0;
-      --good: #41d98f;
-      --warn: #f3c659;
+      --text: #eef5fc;
+      --muted: #8ea2b7;
+      --accent: #56d0ff;
+      --accent-strong: #24a8f4;
+      --good: #43d58f;
+      --warn: #f2c85e;
       --danger: #fb7e78;
-      --shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
-      --radius: 20px;
-      --radius-md: 16px;
-      --radius-sm: 12px;
+      --shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+      --radius: 16px;
+      --radius-md: 12px;
+      --radius-sm: 10px;
+      --gap: 6px;
       --font-body: "Noto Sans Thai", system-ui, sans-serif;
       --font-display: "Sora", "Noto Sans Thai", system-ui, sans-serif;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
-    html { color-scheme: dark; }
+    html {
+      color-scheme: dark;
+    }
 
     body {
       margin: 0;
@@ -43,9 +47,9 @@
       font-family: var(--font-body);
       color: var(--text);
       background:
-        radial-gradient(circle at top left, rgba(88, 208, 255, 0.14), transparent 28%),
-        radial-gradient(circle at top right, rgba(65, 217, 143, 0.09), transparent 20%),
-        linear-gradient(180deg, #030814 0%, #07111d 42%, #091423 100%);
+        radial-gradient(circle at top left, rgba(86, 208, 255, 0.1), transparent 30%),
+        radial-gradient(circle at top right, rgba(67, 213, 143, 0.08), transparent 22%),
+        linear-gradient(180deg, #030915 0%, #06101b 45%, #091423 100%);
     }
 
     button,
@@ -55,9 +59,9 @@
     }
 
     .app-shell {
-      width: min(100%, 1320px);
+      width: min(100%, 1280px);
       margin: 0 auto;
-      padding: 14px 12px 28px;
+      padding: 6px 6px 16px;
     }
 
     .app-stack,
@@ -65,15 +69,17 @@
     .revenue-grid,
     .status-grid,
     .insight-grid,
-    .jobs-shell,
-    .toolbar,
-    .header-main,
     .snapshot-grid,
+    .toolbar,
     .toolbar-actions,
+    .jobs-shell,
     .job-mobile-list,
-    .alerts-stack {
+    .alerts-stack,
+    .header-main,
+    .table-tools,
+    .header-actions {
       display: grid;
-      gap: 12px;
+      gap: var(--gap);
     }
 
     .surface,
@@ -87,11 +93,11 @@
     .loading-state,
     .error-state,
     .empty-state {
-      background: linear-gradient(180deg, rgba(11, 23, 40, 0.96), rgba(8, 18, 32, 0.95));
+      background: linear-gradient(180deg, rgba(10, 20, 34, 0.96), rgba(8, 17, 30, 0.96));
       border: 1px solid var(--line);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      backdrop-filter: blur(16px);
+      backdrop-filter: blur(14px);
     }
 
     .surface,
@@ -99,14 +105,14 @@
     .loading-state,
     .error-state,
     .empty-state {
-      padding: 16px;
+      padding: 8px;
     }
 
     .app-header {
       position: sticky;
       top: 0;
       z-index: 20;
-      margin-bottom: 12px;
+      margin-bottom: 6px;
       padding-top: 2px;
       backdrop-filter: blur(14px);
     }
@@ -114,11 +120,11 @@
     .header-main {
       grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
-      padding: 14px 16px;
-      background: rgba(6, 14, 25, 0.82);
+      padding: 8px;
+      background: rgba(6, 14, 25, 0.84);
       border: 1px solid rgba(148, 163, 184, 0.12);
-      border-radius: 18px;
-      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22);
+      border-radius: 16px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
     }
 
     .header-copy {
@@ -129,11 +135,16 @@
     .inline-meta,
     .status-chip-row,
     .job-card-meta,
-    .table-inline {
+    .table-inline,
+    .alert-item-header {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
       align-items: center;
+      gap: 6px;
+    }
+
+    .brand-row {
+      gap: 4px;
     }
 
     .brand-tag,
@@ -145,72 +156,58 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 28px;
-      padding: 6px 10px;
+      min-height: 22px;
+      padding: 3px 8px;
       border-radius: 999px;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
       letter-spacing: 0.02em;
       white-space: nowrap;
-      border: 1px solid rgba(148, 163, 184, 0.12);
+      border: 1px solid rgba(148, 163, 184, 0.14);
     }
 
     .brand-tag {
-      background: rgba(88, 208, 255, 0.13);
-      color: #86ddff;
-      border-color: rgba(88, 208, 255, 0.18);
+      background: rgba(86, 208, 255, 0.13);
+      color: #90defa;
+      border-color: rgba(86, 208, 255, 0.2);
     }
 
     .mini-badge {
-      background: rgba(65, 217, 143, 0.12);
-      color: #86e8b2;
-      border-color: rgba(65, 217, 143, 0.18);
+      background: rgba(67, 213, 143, 0.12);
+      color: #9ae5bc;
+      border-color: rgba(67, 213, 143, 0.18);
     }
 
     .soft-chip,
     .pill,
     .status-badge {
-      background: rgba(17, 31, 53, 0.92);
-      color: var(--text);
-    }
-
-    .pill,
-    .status-badge {
+      background: rgba(14, 29, 48, 0.95);
       color: var(--muted);
     }
 
     .header-title {
-      margin: 8px 0 4px;
+      margin: 4px 0 0;
       font-family: var(--font-display);
-      font-size: clamp(20px, 5.4vw, 28px);
+      font-size: 18px;
       line-height: 1.08;
       letter-spacing: -0.04em;
     }
 
-    .header-subtitle {
-      margin: 0;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
     .header-actions {
-      display: grid;
-      gap: 10px;
+      width: min(104px, 100%);
       justify-items: stretch;
-      width: min(160px, 100%);
     }
 
     .button,
     .input,
     .select {
       width: 100%;
-      border-radius: 14px;
+      min-height: 40px;
+      padding: 9px 10px;
+      border-radius: 12px;
       border: 1px solid rgba(148, 163, 184, 0.16);
-      background: rgba(14, 27, 46, 0.9);
+      background: rgba(12, 24, 41, 0.92);
       color: var(--text);
-      min-height: 48px;
-      padding: 12px 14px;
       outline: none;
       transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
     }
@@ -225,35 +222,35 @@
       transform: translateY(1px) scale(0.995);
     }
 
+    .button:hover,
+    .input:focus,
+    .select:focus {
+      border-color: rgba(86, 208, 255, 0.34);
+    }
+
     .button-primary {
-      border-color: rgba(88, 208, 255, 0.18);
-      background: linear-gradient(135deg, rgba(88, 208, 255, 0.96), rgba(29, 168, 240, 0.96));
-      color: #03111d;
+      border-color: rgba(86, 208, 255, 0.2);
+      background: linear-gradient(135deg, rgba(86, 208, 255, 0.96), rgba(36, 168, 244, 0.96));
+      color: #03101a;
     }
 
     .button-secondary {
       background: rgba(13, 25, 43, 0.96);
     }
 
-    .button:hover,
-    .input:focus,
-    .select:focus {
-      border-color: rgba(88, 208, 255, 0.36);
-    }
-
     .section-head {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       align-items: start;
-      gap: 10px;
-      margin-bottom: 12px;
+      gap: 6px;
+      margin-bottom: 6px;
     }
 
     .section-title,
     .table-title,
     .panel-heading {
       margin: 0;
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 800;
       letter-spacing: -0.02em;
     }
@@ -265,8 +262,13 @@
     .job-card-text,
     .alert-detail {
       color: var(--muted);
-      font-size: 12px;
-      line-height: 1.55;
+      font-size: 10px;
+      line-height: 1.4;
+    }
+
+    .section-note {
+      display: none;
+      margin: 0;
     }
 
     .summary-grid {
@@ -282,8 +284,19 @@
     }
 
     .metric-card,
-    .revenue-card {
-      padding: 14px;
+    .revenue-card,
+    .mini-stat,
+    .status-card,
+    .alert-item,
+    .mobile-job-card {
+      border-radius: var(--radius-md);
+    }
+
+    .metric-card,
+    .revenue-card,
+    .mini-stat,
+    .status-card {
+      padding: 8px;
     }
 
     .metric-card::before,
@@ -295,14 +308,15 @@
       top: 0;
       width: 100%;
       height: 2px;
-      background: linear-gradient(90deg, rgba(88, 208, 255, 0.94), rgba(65, 217, 143, 0.32), transparent 88%);
+      background: linear-gradient(90deg, rgba(86, 208, 255, 0.94), rgba(67, 213, 143, 0.3), transparent 88%);
       pointer-events: none;
     }
 
-    .metric-label {
+    .metric-label,
+    .mini-stat-label {
       display: block;
       color: var(--muted);
-      font-size: 11px;
+      font-size: 10px;
       letter-spacing: 0.04em;
       text-transform: uppercase;
     }
@@ -317,32 +331,39 @@
     }
 
     .metric-value {
-      margin: 10px 0 4px;
-      font-size: clamp(24px, 7vw, 34px);
+      margin: 4px 0 2px;
+      font-size: 24px;
       line-height: 1;
     }
 
-    .insight-grid {
+    .metric-subtext {
+      min-height: 28px;
+    }
+
+    .revenue-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .revenue-card strong {
+      display: block;
+      margin: 4px 0 2px;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .insight-grid,
+    .snapshot-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .mini-stat {
-      padding: 14px;
-      border-radius: var(--radius-md);
-      background: linear-gradient(180deg, rgba(12, 25, 43, 0.92), rgba(9, 18, 31, 0.92));
-    }
-
-    .mini-stat-label {
-      color: var(--muted);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
+      background: linear-gradient(180deg, rgba(12, 24, 41, 0.94), rgba(9, 18, 31, 0.94));
     }
 
     .mini-stat-value {
-      margin-top: 8px;
-      font-size: 18px;
-      line-height: 1.15;
+      margin-top: 4px;
+      font-size: 14px;
+      line-height: 1.2;
       word-break: break-word;
     }
 
@@ -354,46 +375,79 @@
       grid-template-columns: 1fr 1fr;
     }
 
-    .revenue-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .revenue-card strong {
-      display: block;
-      margin: 8px 0 4px;
-      font-size: clamp(24px, 7vw, 32px);
-      line-height: 1;
-    }
-
     .status-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .status-card {
-      padding: 14px;
-      min-height: 112px;
-      border-radius: var(--radius-md);
-      background: linear-gradient(180deg, rgba(10, 21, 36, 0.95), rgba(14, 28, 47, 0.95));
+      min-height: 60px;
       display: grid;
-      gap: 8px;
+      gap: 4px;
       align-content: start;
+      background: linear-gradient(180deg, rgba(10, 21, 36, 0.96), rgba(13, 26, 44, 0.96));
+    }
+
+    .status-chip-row {
+      gap: 4px;
+      margin: 0;
+    }
+
+    .status-badge {
+      min-height: 18px;
+      padding: 1px 6px;
+      font-size: 9px;
     }
 
     .status-name {
-      font-size: 13px;
-      line-height: 1.45;
-      min-height: 38px;
+      font-size: 11px;
+      line-height: 1.28;
+      min-height: 28px;
       color: var(--text);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     .status-count {
-      font-size: 26px;
+      font-size: 18px;
       line-height: 1;
     }
 
     .status-meta {
-      font-size: 11px;
+      font-size: 9px;
       color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .alerts-stack {
+      gap: 6px;
+      max-height: 252px;
+      overflow: hidden;
+    }
+
+    .alerts-stack > .alert-item:nth-child(n + 4) {
+      display: none !important;
+    }
+
+    .alert-item {
+      padding: 8px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .alert-item-header {
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .alert-title {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.35;
     }
 
     .alert-tag.priority-high {
@@ -403,40 +457,15 @@
     }
 
     .alert-tag.priority-medium {
-      background: rgba(243, 198, 89, 0.12);
-      color: #f6d98d;
-      border-color: rgba(243, 198, 89, 0.18);
+      background: rgba(242, 200, 94, 0.12);
+      color: #f6dd97;
+      border-color: rgba(242, 200, 94, 0.18);
     }
 
     .alert-tag.priority-info {
-      background: rgba(88, 208, 255, 0.12);
-      color: #86ddff;
-      border-color: rgba(88, 208, 255, 0.18);
-    }
-
-    .alerts-stack {
-      gap: 10px;
-    }
-
-    .alert-item {
-      padding: 14px;
-      border-radius: var(--radius-md);
-      display: grid;
-      gap: 10px;
-    }
-
-    .alert-item-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 10px;
-    }
-
-    .alert-title {
-      margin: 0;
-      font-size: 14px;
-      font-weight: 700;
-      line-height: 1.45;
+      background: rgba(86, 208, 255, 0.12);
+      color: #90defa;
+      border-color: rgba(86, 208, 255, 0.18);
     }
 
     .jobs-shell {
@@ -444,39 +473,36 @@
     }
 
     .table-tools {
-      display: grid;
-      gap: 10px;
-      margin-bottom: 12px;
+      margin-bottom: 6px;
     }
 
     .job-mobile-list {
-      gap: 10px;
+      gap: 6px;
     }
 
     .mobile-job-card {
-      padding: 14px;
-      border-radius: var(--radius-md);
+      padding: 8px;
       display: grid;
-      gap: 10px;
+      gap: 6px;
     }
 
     .job-card-header {
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
-      gap: 10px;
+      gap: 8px;
     }
 
     .job-card-title {
       margin: 0;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 800;
-      line-height: 1.35;
+      line-height: 1.3;
     }
 
     .job-card-customer {
       margin: 2px 0 0;
-      font-size: 12px;
+      font-size: 11px;
       color: var(--muted);
     }
 
@@ -495,10 +521,9 @@
 
     .data-table th,
     .data-table td {
-      padding: 14px 16px;
+      padding: 12px 14px;
       text-align: left;
       border-top: 1px solid rgba(148, 163, 184, 0.1);
-      vertical-align: top;
     }
 
     .data-table thead th {
@@ -514,59 +539,72 @@
     .error-state,
     .empty-state {
       text-align: center;
-      font-size: 13px;
+      font-size: 12px;
       color: var(--muted);
       border-radius: var(--radius-md);
     }
 
     .footer-note {
-      margin-top: 14px;
+      margin-top: 8px;
       text-align: center;
     }
 
-    .hidden { display: none !important; }
+    .hidden {
+      display: none !important;
+    }
 
     @media (min-width: 640px) {
       .app-shell {
-        padding: 18px 18px 34px;
+        padding: 12px 12px 24px;
+      }
+
+      .header-actions {
+        width: 132px;
       }
 
       .summary-grid,
-      .revenue-grid,
-      .jobs-shell {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+      .insight-grid,
+      .snapshot-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .toolbar {
+        grid-template-columns: minmax(0, 1fr) 180px;
+        align-items: center;
+      }
+
+      .toolbar-actions {
+        grid-column: 1 / -1;
       }
 
       .status-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
 
-      .header-actions {
-        width: 170px;
+      .section-note {
+        display: block;
       }
     }
 
     @media (min-width: 900px) {
       .app-shell {
-        padding: 24px 22px 40px;
+        padding: 18px 18px 32px;
       }
 
-      .summary-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+      .header-main {
+        padding: 10px 12px;
       }
 
-      .revenue-grid,
-      .insight-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+      .header-title {
+        font-size: 22px;
       }
 
       .toolbar {
-        grid-template-columns: minmax(0, 1.3fr) 220px 220px;
-        align-items: center;
+        grid-template-columns: minmax(0, 1.2fr) 220px 220px;
       }
 
       .toolbar-actions {
-        grid-template-columns: 1fr 1fr;
+        grid-column: auto;
       }
 
       .status-grid {
@@ -574,12 +612,16 @@
       }
 
       .jobs-shell {
-        grid-template-columns: minmax(320px, 0.86fr) minmax(0, 1.54fr);
+        grid-template-columns: minmax(300px, 0.82fr) minmax(0, 1.48fr);
         align-items: start;
       }
 
-      .header-main {
-        padding: 16px 18px;
+      .metric-value {
+        font-size: 28px;
+      }
+
+      .revenue-card strong {
+        font-size: 22px;
       }
     }
 
@@ -613,11 +655,10 @@
             <span class="mini-badge" id="systemStatusBadge">Dashboard Online</span>
           </div>
           <h1 class="header-title">Service Dashboard</h1>
-          <p class="header-subtitle">ภาพรวมงาน รายได้ สต็อก และ 12 สถานะ สำหรับใช้งานจริงบนมือถือ</p>
         </div>
         <div class="header-actions">
           <span class="soft-chip" id="lastRefreshText">กำลังโหลด...</span>
-          <button class="button button-primary" id="refreshDashboardBtn" type="button">รีเฟรชข้อมูล</button>
+          <button class="button button-primary" id="refreshDashboardBtn" type="button">รีเฟรช</button>
         </div>
       </div>
     </header>
@@ -626,30 +667,61 @@
       <article class="metric-card">
         <span class="metric-label">งานทั้งหมด</span>
         <div class="metric-value" id="metricTotalJobs">0</div>
-        <div class="metric-subtext">จำนวนงานในระบบ</div>
+        <div class="metric-subtext">รายการทั้งหมด</div>
       </article>
       <article class="metric-card">
         <span class="metric-label">สต็อกต่ำ</span>
         <div class="metric-value" id="metricLowStock">0</div>
-        <div class="metric-subtext">ต่ำกว่า reorder point</div>
+        <div class="metric-subtext">ต่ำกว่าจุดสั่งซื้อ</div>
       </article>
       <article class="metric-card">
         <span class="metric-label">งานค้าง</span>
         <div class="metric-value" id="metricOverdueJobs">0</div>
-        <div class="metric-subtext">ยังไม่จบและเกิน 3 วัน</div>
+        <div class="metric-subtext">เกิน 3 วัน</div>
       </article>
       <article class="metric-card">
         <span class="metric-label">ถึงรอบ PM</span>
         <div class="metric-value" id="metricPmDue">0</div>
-        <div class="metric-subtext">ลูกค้าที่ควรติดตาม</div>
+        <div class="metric-subtext">ควรติดตาม</div>
+      </article>
+    </section>
+
+    <section class="revenue-grid">
+      <article class="revenue-card">
+        <span class="metric-label">วันนี้</span>
+        <strong id="revenueToday">฿0</strong>
+        <div class="metric-subtext" id="revenueTodayMeta">0 บิล</div>
+      </article>
+      <article class="revenue-card">
+        <span class="metric-label">สัปดาห์</span>
+        <strong id="revenueWeek">฿0</strong>
+        <div class="metric-subtext" id="revenueWeekMeta">0 บิล</div>
+      </article>
+      <article class="revenue-card">
+        <span class="metric-label">เดือน</span>
+        <strong id="revenueMonth">฿0</strong>
+        <div class="metric-subtext" id="revenueMonthMeta">0 บิล</div>
       </article>
     </section>
 
     <section class="surface">
       <div class="section-head">
         <div>
+          <h2 class="section-title">สถานะงาน 12 ขั้นตอน</h2>
+          <p class="section-note">บอร์ดสถานะงานแบบกระชับสำหรับมือถือ</p>
+        </div>
+        <span class="pill" id="statusTotalText">0 สถานะพร้อมใช้งาน</span>
+      </div>
+      <div class="loading-state" id="statusBoardLoading">กำลังโหลดข้อมูลสถานะ...</div>
+      <div class="error-state hidden" id="statusBoardError"></div>
+      <div class="status-grid hidden" id="statusBoard"></div>
+    </section>
+
+    <section class="surface">
+      <div class="section-head">
+        <div>
           <h2 class="section-title">Operational Snapshot</h2>
-          <p class="section-note">ข้อมูลที่ต้องเห็นทันทีเมื่อเปิดระบบ</p>
+          <p class="section-note">สรุปภาพรวมที่ต้องเห็นทันที</p>
         </div>
         <span class="pill" id="apiBasePreview">Auto Detect</span>
       </div>
@@ -659,7 +731,7 @@
           <div class="mini-stat-value" id="topTechnicianText">-</div>
         </article>
         <article class="mini-stat">
-          <div class="mini-stat-label">Pending Photo Queue</div>
+          <div class="mini-stat-label">Pending Photos</div>
           <div class="mini-stat-value" id="pendingPhotosText">0</div>
         </article>
         <article class="mini-stat">
@@ -681,40 +753,9 @@
         </select>
         <div class="toolbar-actions">
           <button class="button button-secondary" id="clearFilterBtn" type="button">ล้างตัวกรอง</button>
-          <button class="button button-primary" id="refreshDashboardBtnBottom" type="button">รีเฟรช</button>
+          <button class="button button-primary" id="refreshDashboardBtnBottom" type="button">รีเฟรชข้อมูล</button>
         </div>
       </div>
-    </section>
-
-    <section class="revenue-grid">
-      <article class="revenue-card">
-        <span class="metric-label">รายได้วันนี้</span>
-        <strong id="revenueToday">฿0</strong>
-        <div class="metric-subtext" id="revenueTodayMeta">0 บิล</div>
-      </article>
-      <article class="revenue-card">
-        <span class="metric-label">รายได้สัปดาห์นี้</span>
-        <strong id="revenueWeek">฿0</strong>
-        <div class="metric-subtext" id="revenueWeekMeta">0 บิล</div>
-      </article>
-      <article class="revenue-card">
-        <span class="metric-label">รายได้เดือนนี้</span>
-        <strong id="revenueMonth">฿0</strong>
-        <div class="metric-subtext" id="revenueMonthMeta">0 บิล</div>
-      </article>
-    </section>
-
-    <section class="surface">
-      <div class="section-head">
-        <div>
-          <h2 class="section-title">สถานะงาน 12 ขั้นตอน</h2>
-          <p class="section-note">แสดงแบบ compact grid เพื่อดูคิวงานและกดกรองได้เร็ว</p>
-        </div>
-        <span class="pill" id="statusTotalText">0 สถานะพร้อมใช้งาน</span>
-      </div>
-      <div class="loading-state" id="statusBoardLoading">กำลังโหลดข้อมูลสถานะ...</div>
-      <div class="error-state hidden" id="statusBoardError"></div>
-      <div class="status-grid hidden" id="statusBoard"></div>
     </section>
 
     <section class="jobs-shell">
@@ -722,7 +763,7 @@
         <div class="section-head">
           <div>
             <h2 class="section-title">Alerts และประเด็นเร่งด่วน</h2>
-            <p class="section-note">ติดตาม low stock, งานค้าง, PM และภาระงานช่าง</p>
+            <p class="section-note">แสดงเฉพาะรายการสำคัญที่สุดในจอแรก</p>
           </div>
           <span class="pill" id="alertsCounterPill">0 รายการ</span>
         </div>
@@ -734,7 +775,7 @@
         <div class="section-head">
           <div>
             <h2 class="table-title">รายการงานล่าสุด</h2>
-            <p class="section-note">mobile-first card list และขยายเป็น table บนจอใหญ่</p>
+            <p class="section-note">รายการงานล่าสุดแบบ mobile-first</p>
           </div>
           <span class="pill" id="recentJobsCounter">0 รายการ</span>
         </div>
@@ -774,6 +815,36 @@
     <div class="footer-note">COMPHONE SUPER APP V5.5 Dashboard ใช้งานผ่าน Router.gs V5.5 และ API เดิมผ่าน google.script.run</div>
   </div>
 
+  <script>
+    (function () {
+      function compactStatusMeta() {
+        var nodes = document.querySelectorAll('.status-meta');
+        nodes.forEach(function (node) {
+          var text = (node.textContent || '').replace(/^\s*ถัดไป:\s*/u, '').trim();
+          node.textContent = text;
+          if (text) {
+            node.setAttribute('title', text);
+          }
+        });
+      }
+
+      function setupObservers() {
+        var statusBoard = document.getElementById('statusBoard');
+        if (statusBoard && typeof MutationObserver !== 'undefined') {
+          new MutationObserver(function () {
+            compactStatusMeta();
+          }).observe(statusBoard, { childList: true, subtree: true, characterData: true });
+        }
+        compactStatusMeta();
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupObservers);
+      } else {
+        setupObservers();
+      }
+    })();
+  </script>
   <script>
     window.COMPHONE_V55 = {
       version: 'COMPHONE SUPER APP V5.5',
