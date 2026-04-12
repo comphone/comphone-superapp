@@ -160,6 +160,18 @@ function setupAllTriggers() {
   } catch(e) {
     triggers.push({ fn: 'cronMorningAlert', schedule: 'ทุกวัน 06:00-07:00', status: '❌ ' + e });
   }
+
+  // 6. sendAfterSalesAlerts — ทุกวัน 08:00-09:00 (แจ้งเตือน After-Sales)
+  try {
+    ScriptApp.newTrigger('sendAfterSalesAlerts')
+      .timeBased()
+      .atHour(8)
+      .everyDays(1)
+      .create();
+    triggers.push({ fn: 'sendAfterSalesAlerts', schedule: 'ทุกวัน 08:00-09:00', status: '✅' });
+  } catch(e) {
+    triggers.push({ fn: 'sendAfterSalesAlerts', schedule: 'ทุกวัน 08:00-09:00', status: '❌ ' + e });
+  }
   
   return { success: true, triggers: triggers, total: triggers.length };
 }

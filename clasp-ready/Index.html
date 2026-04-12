@@ -2,982 +2,671 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>COMPHONE SUPER APP V5.5</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <style>
     :root {
-      --bg: #040b16;
-      --bg-soft: #081324;
-      --panel: rgba(9, 18, 34, 0.96);
-      --panel-soft: rgba(12, 24, 44, 0.92);
-      --panel-2: rgba(16, 30, 54, 0.9);
-      --line: rgba(148, 163, 184, 0.14);
-      --line-strong: rgba(148, 163, 184, 0.24);
-      --text: #ecf5ff;
-      --muted: #8fa6c0;
-      --muted-2: #b7c7d8;
-      --accent: #58d0ff;
-      --accent-2: #0ea5e9;
-      --good: #52d59b;
-      --warn: #f8c56d;
-      --danger: #fb7a80;
-      --shadow: 0 24px 50px rgba(0, 0, 0, 0.28);
-      --radius-xl: 28px;
-      --radius-lg: 22px;
-      --radius-md: 18px;
-      --radius-sm: 14px;
-      --font-body: "Noto Sans Thai", system-ui, sans-serif;
-      --font-display: "Sora", "Noto Sans Thai", system-ui, sans-serif;
+      --primary: #0f62fe;
+      --success: #198754;
+      --warning: #ffc107;
+      --danger: #dc3545;
+      --info: #0dcaf0;
+      --dark: #212529;
+      --muted: #6c757d;
+      --bg: #f8f9fa;
+      --card-shadow: 0 2px 12px rgba(0,0,0,0.08);
     }
-
-    * { box-sizing: border-box; }
-    html { color-scheme: dark; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: var(--font-body);
-      color: var(--text);
-      background:
-        radial-gradient(circle at top left, rgba(56, 189, 248, 0.14), transparent 32%),
-        radial-gradient(circle at top right, rgba(52, 211, 153, 0.10), transparent 22%),
-        linear-gradient(180deg, #020713 0%, #06101d 38%, #091524 100%);
-    }
-
-    a { color: inherit; }
-    button, input, select, textarea { font: inherit; }
-    button { cursor: pointer; }
-
-    .app-shell {
-      width: min(100%, 1180px);
-      margin: 0 auto;
-      padding: 12px 12px 36px;
-    }
-
-    .app-stack {
-      display: grid;
-      gap: 14px;
-    }
-
-    .header-card,
-    .panel,
-    .calendar-shell,
-    .form-shell,
-    .jobs-shell {
-      background: linear-gradient(180deg, rgba(10, 19, 36, 0.98), rgba(9, 19, 34, 0.94));
-      border: 1px solid var(--line);
-      box-shadow: var(--shadow);
-      border-radius: var(--radius-xl);
-    }
-
-    .header-card {
-      padding: 14px;
-      display: grid;
-      gap: 12px;
-      position: sticky;
-      top: 0;
-      z-index: 90;
-      backdrop-filter: blur(18px);
-    }
-
-    .header-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-
-    .brand-overline,
-    .section-overline,
-    .chip-label {
-      font-size: 10px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--muted);
-      font-weight: 700;
-    }
-
-    .brand-title {
-      margin: 4px 0 0;
-      font-family: var(--font-display);
-      font-size: 26px;
-      line-height: 0.98;
-      letter-spacing: -0.03em;
-    }
-
-    .brand-subtitle {
-      margin-top: 8px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .mode-pill,
-    .meta-pill,
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 9px 12px;
-      border-radius: 999px;
-      min-height: 38px;
-      border: 1px solid var(--line);
-      background: rgba(11, 24, 44, 0.88);
-      color: var(--muted-2);
-      font-size: 12px;
-      white-space: nowrap;
-    }
-
-    .mode-pill::before,
-    .meta-pill::before,
-    .status-pill::before,
-    .status-chip::before,
-    .alert-item::before,
-    .pool-job::before {
-      content: "";
-      width: 9px;
-      height: 9px;
-      border-radius: 999px;
-      background: rgba(88, 208, 255, 0.92);
-      box-shadow: 0 0 0 4px rgba(88, 208, 255, 0.14);
-      flex: 0 0 auto;
-    }
-
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
-
-    .primary-btn,
-    .ghost-btn,
-    .filter-chip,
-    .tab-btn,
-    .mini-action {
+    body { background: var(--bg); font-family: 'Segoe UI', system-ui, sans-serif; }
+    
+    /* ===== NAVBAR ===== */
+    .navbar-brand img { height: 32px; }
+    .navbar-dark { background-color: #1a1a2e !important; }
+    
+    /* ===== SUMMARY CARDS ===== */
+    .summary-card {
       border: none;
-      min-height: 44px;
+      border-radius: 16px;
+      padding: 18px 20px;
+      color: white;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+    }
+    .summary-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); color: white; }
+    .summary-card .icon { font-size: 2rem; opacity: 0.9; }
+    .summary-card .info .label { font-size: 0.8rem; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.05em; }
+    .summary-card .info .value { font-size: 2rem; font-weight: 800; line-height: 1.1; }
+    
+    /* ===== REVENUE CARDS ===== */
+    .revenue-card {
+      background: white;
+      border: none;
+      border-radius: 16px;
+      padding: 18px 20px;
+      box-shadow: var(--card-shadow);
+    }
+    .revenue-card .label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .revenue-card .value { font-size: 1.6rem; font-weight: 800; color: var(--dark); }
+    .revenue-card .meta { font-size: 0.8rem; color: var(--muted); }
+    .revenue-card .icon { font-size: 1.5rem; }
+    
+    /* ===== STATUS BOARD ===== */
+    .status-card {
+      background: white;
+      border: none;
       border-radius: 14px;
-      transition: transform .18s ease, opacity .18s ease, border-color .18s ease, background .18s ease;
+      padding: 14px 16px;
+      box-shadow: var(--card-shadow);
+      cursor: pointer;
+      transition: all 0.2s;
+      border-left: 4px solid transparent;
     }
-
-    .primary-btn:hover,
-    .ghost-btn:hover,
-    .filter-chip:hover,
-    .tab-btn:hover,
-    .mini-action:hover { transform: translateY(-1px); }
-
-    .primary-btn {
-      padding: 0 16px;
-      font-weight: 800;
-      color: #03101f;
-      background: linear-gradient(135deg, #67e8f9 0%, #3b82f6 48%, #34d399 100%);
-    }
-
-    .ghost-btn,
-    .mini-action,
-    .filter-chip {
-      padding: 0 14px;
-      border: 1px solid var(--line);
-      background: rgba(12, 24, 44, 0.92);
-      color: var(--text);
-      font-weight: 700;
-    }
-
-    .mini-action { min-height: 38px; border-radius: 12px; font-size: 12px; }
-
-    .tabbar {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 8px;
-      padding: 6px;
-      border-radius: 20px;
-      background: rgba(8, 18, 34, 0.78);
-      border: 1px solid var(--line);
-    }
-
-    .tab-btn {
-      background: transparent;
-      color: var(--muted);
-      font-weight: 700;
-      font-size: 13px;
-      min-height: 42px;
-      padding: 0 12px;
-    }
-
-    .tab-btn.is-active {
-      background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(14, 165, 233, 0.12));
-      color: var(--text);
-      border: 1px solid rgba(88, 208, 255, 0.18);
-      box-shadow: inset 0 0 0 1px rgba(88, 208, 255, 0.05);
-    }
-
-    .tab-panel { display: none; }
-    .tab-panel.is-active { display: block; }
-
-    .section-grid { display: grid; gap: 14px; }
-
-    .hero-strip,
-    .meta-grid,
-    .kpi-grid,
-    .revenue-grid,
-    .compact-grid,
-    .detail-grid,
-    .jobs-list,
-    .calendar-layout,
-    .form-grid,
-    .form-actions,
-    .job-cards,
-    .customer-suggest,
-    .drawer-grid,
-    .thumb-grid {
-      display: grid;
-      gap: 12px;
-    }
-
-    .panel { padding: 16px; }
-
-    .panel-head {
+    .status-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+    .status-card.active { border-left-color: var(--primary); background: #f0f6ff; }
+    .status-card .status-count { font-size: 1.8rem; font-weight: 800; }
+    .status-card .status-name { font-size: 0.8rem; color: var(--muted); line-height: 1.4; }
+    
+    /* ===== JOB TABLE ===== */
+    .job-row { cursor: pointer; }
+    .job-row:hover { background: #f0f6ff !important; }
+    .job-row.row-completed { background: #d1e7dd; border-left: 4px solid var(--success); }
+    .job-row.row-overdue { background: #f8d7da; border-left: 4px solid var(--danger); }
+    .job-row.row-today { background: #cff4fc; border-left: 4px solid var(--info); }
+    .job-row.row-inprogress { background: #fff3cd; border-left: 4px solid var(--warning); }
+    
+    /* ===== ALERT ITEMS ===== */
+    .alert-item {
+      background: white;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
       display: flex;
       align-items: flex-start;
-      justify-content: space-between;
       gap: 12px;
-      margin-bottom: 14px;
     }
-
-    .panel-title {
-      margin: 4px 0 0;
-      font-size: 18px;
-      font-weight: 800;
-      line-height: 1.15;
-    }
-
-    .panel-note {
-      margin-top: 5px;
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-
-    .meta-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-
-    .meta-box {
-      padding: 14px;
-      border-radius: var(--radius-md);
-      border: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(12, 25, 46, 0.96), rgba(10, 20, 36, 0.94));
-    }
-
-    .meta-value {
-      margin-top: 8px;
-      font-size: 18px;
-      font-weight: 800;
-      line-height: 1.1;
-    }
-
-    .meta-sub {
-      margin-top: 4px;
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-
-    .kpi-card {
-      text-align: left;
-      padding: 16px;
-      border-radius: 24px;
+    .alert-item .alert-icon { font-size: 1.2rem; margin-top: 2px; }
+    .alert-item .alert-body .title { font-weight: 600; font-size: 0.9rem; }
+    .alert-item .alert-body .detail { font-size: 0.8rem; color: var(--muted); }
+    
+    /* ===== PANEL ===== */
+    .panel {
+      background: white;
       border: none;
-      color: white;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 14px 30px rgba(0, 0, 0, 0.16);
-    }
-
-    .kpi-card .label,
-    .revenue-mini .label {
-      font-size: 12px;
-      color: rgba(255,255,255,0.80);
-      font-weight: 600;
-    }
-
-    .kpi-card .value {
-      margin-top: 10px;
-      font-size: 38px;
-      line-height: 1;
-      font-weight: 800;
-      letter-spacing: -0.04em;
-    }
-
-    .kpi-card .hint {
-      margin-top: 8px;
-      font-size: 12px;
-      color: rgba(255,255,255,0.82);
-    }
-
-    .gradient-blue { background: linear-gradient(135deg, #5db0ff 0%, #3478f6 100%); }
-    .gradient-green { background: linear-gradient(135deg, #3ddba8 0%, #1dbf72 100%); }
-    .gradient-orange { background: linear-gradient(135deg, #ffbc66 0%, #ff8f2e 100%); }
-    .gradient-red { background: linear-gradient(135deg, #ff7f92 0%, #f14556 100%); }
-
-    .revenue-card {
-      background: linear-gradient(135deg, rgba(19, 112, 255, 0.96), rgba(10, 196, 221, 0.94) 52%, rgba(52, 211, 153, 0.94));
-      border: 1px solid rgba(255,255,255,0.10);
-      color: white;
-    }
-
-    .revenue-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-
-    .revenue-mini {
-      padding: 14px;
-      border-radius: 18px;
-      background: rgba(255,255,255,0.12);
-      border: 1px solid rgba(255,255,255,0.12);
-      min-height: 96px;
-    }
-
-    .revenue-mini .value {
-      margin-top: 14px;
-      font-size: 26px;
-      line-height: 1;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-    }
-
-    .compact-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-
-    .status-chip {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      min-height: 42px;
-      padding: 10px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.06);
-      background: rgba(12, 24, 43, 0.94);
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text);
-      text-align: left;
-    }
-
-    .status-chip small {
-      margin-left: auto;
-      color: rgba(255,255,255,0.78);
-      font-size: 12px;
-    }
-
-    .status-chip.is-active { border-color: rgba(88, 208, 255, 0.4); }
-    .status-chip.priority-medium::before { background: #f6c55b; box-shadow: 0 0 0 4px rgba(246, 197, 91, 0.18); }
-    .status-chip.priority-info::before { background: #58d0ff; box-shadow: 0 0 0 4px rgba(88, 208, 255, 0.18); }
-    .status-chip.priority-danger::before { background: #fb7a80; box-shadow: 0 0 0 4px rgba(251, 122, 128, 0.18); }
-    .status-chip.priority-good::before { background: #52d59b; box-shadow: 0 0 0 4px rgba(82, 213, 155, 0.18); }
-    .status-chip.priority-muted::before { background: #94a3b8; box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.16); }
-
-    .alert-list,
-    .job-cards,
-    .thumb-grid,
-    .timeline-list { list-style: none; padding: 0; margin: 0; }
-
-    .alert-item,
-    .job-card,
-    .timeline-item,
-    .pool-job {
-      display: grid;
-      gap: 8px;
-      padding: 14px;
-      border-radius: 18px;
-      border: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(13, 23, 42, 0.98), rgba(11, 20, 37, 0.95));
-    }
-
-    .alert-item::before { background: var(--danger); box-shadow: 0 0 0 4px rgba(251,122,128,0.16); }
-    .alert-top,
-    .job-card-top,
-    .drawer-head,
-    .timeline-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
-
-    .job-card {
-      text-align: left;
-      width: 100%;
-    }
-
-    .job-card-thumb {
-      width: 58px;
-      height: 58px;
       border-radius: 16px;
-      background: linear-gradient(135deg, rgba(88,208,255,.18), rgba(52,211,153,.14));
-      border: 1px solid rgba(88, 208, 255, 0.18);
-      overflow: hidden;
-      flex: 0 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 700;
+      padding: 20px;
+      box-shadow: var(--card-shadow);
+      margin-bottom: 20px;
     }
-
-    .job-card-thumb img,
-    .thumb-item img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .job-card-main {
-      display: grid;
-      gap: 6px;
-      min-width: 0;
-    }
-
-    .job-id { font-weight: 800; font-size: 14px; }
-    .job-customer { font-size: 13px; font-weight: 700; }
-    .job-meta,
-    .job-desc,
-    .empty-state,
-    .muted-text,
-    .drawer-note,
-    .thumb-empty,
-    .error-text { font-size: 12px; color: var(--muted); line-height: 1.55; }
-
-    .job-status-row,
-    .drawer-tags,
-    .toolbar-row,
-    .calendar-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .jobs-shell,
-    .calendar-shell,
-    .form-shell { padding: 16px; }
-
-    .toolbar-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-
-    .field,
-    .select,
-    .textarea {
-      width: 100%;
-      min-height: 46px;
-      padding: 0 14px;
-      border-radius: 15px;
-      border: 1px solid var(--line);
-      background: rgba(9, 18, 35, 0.92);
-      color: var(--text);
-      outline: none;
-    }
-
-    .field:focus,
-    .select:focus,
-    .textarea:focus {
-      border-color: rgba(88, 208, 255, 0.44);
-      box-shadow: 0 0 0 4px rgba(88, 208, 255, 0.10);
-    }
-
-    .textarea {
-      min-height: 128px;
-      padding: 14px;
-      resize: vertical;
-    }
-
-    .jobs-meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    .jobs-list { margin-top: 10px; }
-
-    .calendar-layout { grid-template-columns: minmax(0, 1fr); }
-
-    .calendar-pool {
-      padding: 14px;
-      border-radius: 18px;
-      border: 1px solid var(--line);
-      background: rgba(9, 18, 35, 0.78);
-    }
-
-    .pool-job {
-      cursor: grab;
-      min-height: 56px;
-    }
-
-    .pool-job::before { background: var(--warn); box-shadow: 0 0 0 4px rgba(248,197,109,0.18); }
-
-    .calendar-canvas {
-      padding: 12px;
-      border-radius: 20px;
-      border: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(7, 16, 30, 0.95), rgba(10, 18, 34, 0.92));
-      overflow: hidden;
-    }
-
-    #calendarView {
-      min-height: 660px;
-    }
-
-    .fc .fc-toolbar-title {
-      font-size: 1rem;
-      font-weight: 800;
-    }
-
-    .fc .fc-button {
-      background: rgba(12, 24, 44, 0.92);
-      border: 1px solid rgba(88, 208, 255, 0.18);
-      color: var(--text);
-      box-shadow: none;
-    }
-
-    .fc .fc-button-primary:not(:disabled).fc-button-active,
-    .fc .fc-button-primary:not(:disabled):active {
-      background: rgba(88, 208, 255, 0.18);
-      border-color: rgba(88, 208, 255, 0.34);
-    }
-
-    .fc .fc-daygrid-event,
-    .fc .fc-timegrid-event {
-      border-radius: 10px;
-      padding: 2px 4px;
-      border: none;
-    }
-
-    .form-grid { grid-template-columns: minmax(0, 1fr); }
-    .form-field { display: grid; gap: 8px; position: relative; }
-    .form-label { font-size: 13px; font-weight: 700; color: var(--muted-2); }
-    .customer-suggest {
-      position: absolute;
-      top: calc(100% + 8px);
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .panel-header h2 { font-size: 1.1rem; font-weight: 700; margin: 0; }
+    .panel-header .counter { font-size: 0.8rem; background: #f0f0f0; padding: 4px 10px; border-radius: 999px; color: var(--muted); }
+    
+    /* ===== SEARCH BAR ===== */
+    .search-bar { position: relative; }
+    .search-bar .form-control { padding-left: 40px; border-radius: 12px; border: 1px solid #dee2e6; }
+    .search-bar .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+    
+    /* ===== LOADING / EMPTY ===== */
+    .loading-box, .empty-box { text-align: center; padding: 40px; color: var(--muted); }
+    .loading-box .spinner-border { width: 2.5rem; height: 2.5rem; }
+    
+    /* ===== BOTTOM NAV (Mobile) ===== */
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
       left: 0;
       right: 0;
-      z-index: 30;
-      padding: 8px;
-      border-radius: 18px;
-      border: 1px solid var(--line);
-      background: rgba(8, 18, 35, 0.98);
-      box-shadow: var(--shadow);
-      max-height: 260px;
-      overflow: auto;
+      background: white;
+      border-top: 1px solid #dee2e6;
+      z-index: 1000;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
     }
-
-    .customer-option {
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 14px;
-      text-align: left;
-      background: transparent;
-      color: var(--text);
-    }
-
-    .customer-option:hover { background: rgba(88, 208, 255, 0.08); }
-    .customer-option small { display: block; margin-top: 4px; color: var(--muted); }
-
-    .drawer-backdrop,
-    .lightbox-backdrop {
-      position: fixed;
-      inset: 0;
-      z-index: 120;
-      background: rgba(2, 8, 23, 0.82);
-      backdrop-filter: blur(14px);
-      display: none;
-      align-items: flex-end;
-      justify-content: center;
-      padding: 12px;
-    }
-
-    .drawer-backdrop.is-open,
-    .lightbox-backdrop.is-open { display: flex; }
-
-    .drawer-sheet,
-    .lightbox-sheet {
-      width: min(900px, 100%);
-      max-height: 92vh;
-      overflow: auto;
-      border-radius: 26px 26px 18px 18px;
-      border: 1px solid var(--line-strong);
-      background: linear-gradient(180deg, rgba(8, 17, 31, 0.99), rgba(10, 20, 36, 0.98));
-      box-shadow: 0 30px 80px rgba(0,0,0,0.44);
-      padding: 18px;
-    }
-
-    .drawer-grid { margin-top: 14px; }
-
-    .drawer-info {
-      padding: 14px;
-      border-radius: 18px;
-      border: 1px solid var(--line);
-      background: rgba(9, 18, 35, 0.86);
-    }
-
-    .drawer-info table { width: 100%; border-collapse: collapse; }
-    .drawer-info th,
-    .drawer-info td {
-      padding: 10px 0;
-      border-top: 1px solid rgba(148,163,184,0.10);
-      text-align: left;
-      vertical-align: top;
-      font-size: 13px;
-    }
-
-    .drawer-info th {
+    .bottom-nav .nav-item {
+      flex: 1;
+      text-align: center;
+      padding: 8px 4px;
+      font-size: 0.7rem;
       color: var(--muted);
-      font-weight: 600;
-      width: 118px;
-      padding-right: 12px;
+      cursor: pointer;
+      text-decoration: none;
     }
-
-    .thumb-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .thumb-item {
-      height: 94px;
-      border: none;
-      padding: 0;
-      overflow: hidden;
-      border-radius: 16px;
-      background: rgba(12, 24, 44, 0.86);
-      border: 1px solid var(--line);
+    .bottom-nav .nav-item.active { color: var(--primary); }
+    .bottom-nav .nav-item i { display: block; font-size: 1.2rem; margin-bottom: 2px; }
+    
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .bottom-nav { display: flex; }
+      .desktop-nav { display: none !important; }
+      body { padding-bottom: 70px; }
+      .summary-card .value { font-size: 1.5rem; }
+      .status-card .status-count { font-size: 1.4rem; }
     }
-
-    .timeline-list { display: grid; gap: 10px; }
-    .timeline-item { padding: 12px; }
-    .timeline-item::before { display: none; }
-
+    @media (min-width: 769px) {
+      .bottom-nav { display: none; }
+    }
+    
+    /* ===== BADGE COLORS ===== */
+    .badge-status { font-size: 0.75rem; padding: 4px 10px; border-radius: 999px; font-weight: 600; }
+    
+    /* ===== MODAL ===== */
+    .modal-job-detail .modal-header { background: #1a1a2e; color: white; }
+    .modal-job-detail .modal-header .btn-close { filter: invert(1); }
+    .timeline-item { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+    .timeline-item:last-child { border-bottom: none; }
+    .timeline-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--primary); margin-top: 5px; flex-shrink: 0; }
+    
+    /* ===== HIDDEN ===== */
     .hidden { display: none !important; }
-
-    @media (min-width: 720px) {
-      .app-shell { padding: 18px 18px 36px; }
-      .header-card { padding: 18px; }
-      .brand-title { font-size: 38px; }
-      .meta-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-      .compact-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .toolbar-row { grid-template-columns: minmax(0, 1fr) 190px auto; align-items: center; }
-      .calendar-layout { grid-template-columns: 320px minmax(0, 1fr); }
-      .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .form-field.form-field-full { grid-column: 1 / -1; }
-      .drawer-sheet { border-radius: 26px; }
-      .drawer-grid { grid-template-columns: 1.05fr 0.95fr; }
-      .thumb-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    }
-
-    @media (min-width: 980px) {
-      .section-grid { grid-template-columns: 1.18fr 0.82fr; align-items: start; }
-      .compact-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-      .job-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
+    
+    /* ===== SECTION TABS ===== */
+    .nav-tabs .nav-link { color: #495057; font-size: 0.9rem; }
+    .nav-tabs .nav-link.active { color: var(--primary); font-weight: 600; }
   </style>
-  <script>
-    window.COMPHONE_V55 = {
-      apiBaseUrl: '<?= typeof apiBaseUrl !== "undefined" ? apiBaseUrl : "" ?>',
-      mode: '<?= typeof mode !== "undefined" ? mode : "dashboard" ?>',
-      jobQrWebAppUrl: '<?= typeof jobQrWebAppUrl !== "undefined" ? jobQrWebAppUrl : "" ?>',
-      defaultLimit: 24
-    };
-  </script>
 </head>
 <body>
-  <div class="app-shell">
-    <div class="app-stack">
-      <header class="header-card">
-        <div class="header-row">
-          <div>
-            <div class="brand-overline">COMPHONE CONTROL CENTER</div>
-            <h1 class="brand-title">COMPHONE SUPER APP<br>V5.5</h1>
-            <div class="brand-subtitle">Card Grid Dashboard สำหรับงานบริการ, สต็อก, PM และตารางนัด</div>
-          </div>
-          <div class="header-actions">
-            <div class="mode-pill"><span id="apiMode">กำลังเชื่อมต่อ</span></div>
-            <button type="button" class="primary-btn" id="refreshAllBtn">รีเฟรช</button>
-          </div>
+
+  <!-- ===== TOP NAVBAR ===== -->
+  <nav class="navbar navbar-expand-lg navbar-dark sticky-top" style="background-color: #1a1a2e;">
+    <div class="container-fluid px-3">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+        <div style="width:32px;height:32px;background:linear-gradient(135deg,#0f62fe,#00b4d8);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+          <i class="fas fa-camera text-white" style="font-size:14px;"></i>
         </div>
-        <div class="meta-grid">
-          <div class="meta-box">
-            <div class="chip-label">Last Sync</div>
-            <div class="meta-value" id="lastSync">-</div>
-            <div class="meta-sub">ข้อมูลล่าสุดจาก GAS Web App</div>
-          </div>
-          <div class="meta-box">
-            <div class="chip-label">Top Technician</div>
-            <div class="meta-value" id="topTech">-</div>
-            <div class="meta-sub">ผู้รับงานสูงสุดในรอบล่าสุด</div>
-          </div>
-          <div class="meta-box">
-            <div class="chip-label">Pending Photos</div>
-            <div class="meta-value" id="pendingPhotos">0</div>
-            <div class="meta-sub">รูปงานที่ยังรอประมวลผล</div>
-          </div>
-          <div class="meta-box">
-            <div class="chip-label">Open Alerts</div>
-            <div class="meta-value" id="openAlerts">0</div>
-            <div class="meta-sub">แจ้งเตือนสำคัญที่ยังไม่ปิด</div>
-          </div>
+        <span class="fw-bold">COMPHONE</span>
+        <span class="badge bg-primary ms-1" style="font-size:0.65rem;">V5.5</span>
+      </a>
+      
+      <!-- Desktop Nav -->
+      <div class="collapse navbar-collapse desktop-nav" id="navbarNav">
+        <ul class="navbar-nav ms-auto align-items-center gap-1">
+          <li class="nav-item">
+            <a class="nav-link active" href="#" onclick="showSection('dashboard')">
+              <i class="fas fa-th-large me-1"></i>Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showSection('jobs')">
+              <i class="fas fa-list-check me-1"></i>รายการงาน
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showSection('inventory')">
+              <i class="fas fa-warehouse me-1"></i>คลังสินค้า
+            </a>
+          </li>
+          <li class="nav-item ms-2">
+            <button class="btn btn-success btn-sm" id="newJobBtn">
+              <i class="fas fa-plus me-1"></i>งานใหม่
+            </button>
+          </li>
+        </ul>
+      </div>
+      
+      <!-- Mobile Hamburger -->
+      <div class="d-flex align-items-center gap-2 d-lg-none">
+        <span class="text-white-50 small" id="lastRefreshTextMobile">-</span>
+        <button class="btn btn-outline-light btn-sm" id="refreshBtnMobile">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <div class="container-fluid px-3 py-3" style="max-width: 1400px; margin: 0 auto;">
+    
+    <!-- ===== SECTION: DASHBOARD ===== -->
+    <div id="section-dashboard">
+      
+      <!-- Header Row -->
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h1 class="h4 fw-bold mb-0">ภาพรวมระบบ</h1>
+          <small class="text-muted" id="lastRefreshText">กำลังโหลด...</small>
         </div>
-      </header>
-
-      <nav class="tabbar" aria-label="Dashboard sections">
-        <button type="button" class="tab-btn is-active" data-tab-target="overview">Dashboard</button>
-        <button type="button" class="tab-btn" data-tab-target="jobs">รายการงาน</button>
-        <button type="button" class="tab-btn" data-tab-target="calendar">Calendar</button>
-        <button type="button" class="tab-btn" data-tab-target="newjob">เปิดงานใหม่</button>
-      </nav>
-
-      <section class="tab-panel is-active" data-tab-panel="overview">
-        <div class="section-grid">
-          <div class="section-stack">
-            <section class="panel">
-              <div class="panel-head">
-                <div>
-                  <div class="section-overline">Dashboard หลัก</div>
-                  <h2 class="panel-title">Color Card Grid</h2>
-                  <div class="panel-note">กดที่ KPI เพื่อกรองงานแบบเร็ว และใช้งานได้สะดวกบนมือถือ</div>
-                </div>
-                <button type="button" class="ghost-btn" id="goJobsFromOverview">ดูรายการงาน</button>
-              </div>
-              <div class="kpi-grid">
-                <button type="button" class="kpi-card gradient-blue" data-kpi-filter="ALL">
-                  <div class="label">งานทั้งหมด</div>
-                  <div class="value" id="totalJobs">0</div>
-                  <div class="hint">แตะเพื่อดูทุกงาน</div>
-                </button>
-                <button type="button" class="kpi-card gradient-green" data-kpi-filter="LOW_STOCK">
-                  <div class="label">สต็อกต่ำ</div>
-                  <div class="value" id="lowStock">0</div>
-                  <div class="hint">แตะเพื่อดูรายการเตือน</div>
-                </button>
-                <button type="button" class="kpi-card gradient-orange" data-kpi-filter="OVERDUE">
-                  <div class="label">งานค้าง</div>
-                  <div class="value" id="overdueJobs">0</div>
-                  <div class="hint">แตะเพื่อดูงานเกิน SLA</div>
-                </button>
-                <button type="button" class="kpi-card gradient-red" data-kpi-filter="PM_DUE">
-                  <div class="label">ลูกค้าครบรอบ PM</div>
-                  <div class="value" id="pmCustomers">0</div>
-                  <div class="hint">แตะเพื่อดูงาน PM</div>
-                </button>
-              </div>
-            </section>
-
-            <section class="panel revenue-card">
-              <div class="panel-head">
-                <div>
-                  <div class="section-overline" style="color: rgba(255,255,255,0.84);">Revenue</div>
-                  <h2 class="panel-title">สรุปรายรับแบบ Gradient</h2>
-                </div>
-                <div class="panel-note" style="color: rgba(255,255,255,0.84);">วันนี้ / สัปดาห์ / เดือน</div>
-              </div>
-              <div class="revenue-grid">
-                <div class="revenue-mini">
-                  <div class="label">วันนี้</div>
-                  <div class="value" id="revToday">฿0</div>
-                </div>
-                <div class="revenue-mini">
-                  <div class="label">สัปดาห์นี้</div>
-                  <div class="value" id="revWeek">฿0</div>
-                </div>
-                <div class="revenue-mini">
-                  <div class="label">เดือนนี้</div>
-                  <div class="value" id="revMonth">฿0</div>
-                </div>
-              </div>
-            </section>
-          </div>
-
-          <div class="section-stack">
-            <section class="panel">
-              <div class="panel-head">
-                <div>
-                  <div class="section-overline">Step 1-12</div>
-                  <h2 class="panel-title">Colored Chips</h2>
-                </div>
-                <div class="panel-note">12 สถานะแบบ compact กดเพื่อกรองทันที</div>
-              </div>
-              <div class="compact-grid" id="statusGrid"></div>
-            </section>
-
-            <section class="panel">
-              <div class="panel-head">
-                <div>
-                  <div class="section-overline">Alerts</div>
-                  <h2 class="panel-title">แจ้งเตือนสำคัญ</h2>
-                </div>
-                <div class="panel-note">แสดงสูงสุด 3 รายการ</div>
-              </div>
-              <ul class="alert-list" id="alertsList"></ul>
-            </section>
-          </div>
+        <div class="d-none d-md-flex gap-2">
+          <button class="btn btn-outline-secondary btn-sm" id="refreshDashboardBtn">
+            <i class="fas fa-sync-alt me-1"></i>รีเฟรช
+          </button>
+          <button class="btn btn-success btn-sm" id="newJobBtnDesktop">
+            <i class="fas fa-plus me-1"></i>สร้างงานใหม่
+          </button>
         </div>
-      </section>
+      </div>
 
-      <section class="tab-panel" data-tab-panel="jobs">
-        <section class="jobs-shell">
-          <div class="panel-head">
-            <div>
-              <div class="section-overline">Tab 2</div>
-              <h2 class="panel-title">รายการงานล่าสุด</h2>
-              <div class="panel-note">ค้นหาแบบทันที และแตะการ์ดเพื่อดูรายละเอียด / เปลี่ยนสถานะ</div>
+      <!-- Summary Cards Row -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="summary-card bg-primary h-100" onclick="filterByStatus('ALL')">
+            <div class="icon"><i class="fas fa-briefcase"></i></div>
+            <div class="info">
+              <div class="label">งานทั้งหมด</div>
+              <div class="value" id="metricTotalJobs">0</div>
             </div>
-            <button type="button" class="ghost-btn" id="clearFiltersBtn">ล้างตัวกรอง</button>
           </div>
-          <div class="toolbar-row">
-            <input id="searchInput" class="field" type="search" placeholder="ค้นหา Job ID / ลูกค้า / อาการ / ช่าง">
-            <select id="statusFilter" class="select">
-              <option value="ALL">ทุกสถานะ</option>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="summary-card h-100" style="background: linear-gradient(135deg,#f59e0b,#d97706);" onclick="filterByStatus('inprogress')">
+            <div class="icon"><i class="fas fa-spinner"></i></div>
+            <div class="info">
+              <div class="label">กำลังดำเนินการ</div>
+              <div class="value" id="metricInProgress">0</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="summary-card h-100" style="background: linear-gradient(135deg,#dc3545,#c82333);" onclick="filterByStatus('overdue')">
+            <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="info">
+              <div class="label">งานค้างเกินกำหนด</div>
+              <div class="value" id="metricOverdueJobs">0</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="summary-card h-100" style="background: linear-gradient(135deg,#198754,#157347);" onclick="filterByStatus('completed')">
+            <div class="icon"><i class="fas fa-check-circle"></i></div>
+            <div class="info">
+              <div class="label">เสร็จแล้ว</div>
+              <div class="value" id="metricCompletedJobs">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Revenue Row -->
+      <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+          <div class="revenue-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="label">รายได้วันนี้</div>
+                <div class="value mt-1" id="revenueToday">฿0</div>
+                <div class="meta mt-1" id="revenueTodayMeta">0 บิล</div>
+              </div>
+              <div class="icon text-success"><i class="fas fa-coins"></i></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-4">
+          <div class="revenue-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="label">รายได้สัปดาห์นี้</div>
+                <div class="value mt-1" id="revenueWeek">฿0</div>
+                <div class="meta mt-1" id="revenueWeekMeta">0 บิล</div>
+              </div>
+              <div class="icon text-primary"><i class="fas fa-chart-line"></i></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-4">
+          <div class="revenue-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="label">รายได้เดือนนี้</div>
+                <div class="value mt-1" id="revenueMonth">฿0</div>
+                <div class="meta mt-1" id="revenueMonthMeta">0 บิล</div>
+              </div>
+              <div class="icon text-warning"><i class="fas fa-chart-bar"></i></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Stats Row (Inventory + PM) -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="revenue-card text-center">
+            <div class="icon text-danger mb-1"><i class="fas fa-box-open"></i></div>
+            <div class="label">สต็อกต่ำ</div>
+            <div class="value" id="metricLowStock">0</div>
+            <div class="meta">รายการ</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="revenue-card text-center">
+            <div class="icon text-info mb-1"><i class="fas fa-tools"></i></div>
+            <div class="label">ลูกค้าถึงรอบ PM</div>
+            <div class="value" id="metricPmDue">0</div>
+            <div class="meta">ราย</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="revenue-card text-center">
+            <div class="icon text-warning mb-1"><i class="fas fa-images"></i></div>
+            <div class="label">รูปรอประมวลผล</div>
+            <div class="value" id="pendingPhotosText">0</div>
+            <div class="meta">รูป</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="revenue-card text-center">
+            <div class="icon text-success mb-1"><i class="fas fa-user-cog"></i></div>
+            <div class="label">ช่างดีเด่น</div>
+            <div class="value" style="font-size:1rem;" id="topTechnicianText">-</div>
+            <div class="meta">ประจำวัน</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Board -->
+      <div class="panel mb-4">
+        <div class="panel-header">
+          <h2><i class="fas fa-tasks me-2 text-primary"></i>สถานะงาน 12 ขั้นตอน</h2>
+          <span class="counter" id="statusTotalText">0 สถานะ</span>
+        </div>
+        <div class="loading-box" id="statusBoardLoading">
+          <div class="spinner-border text-primary mb-2"></div>
+          <div>กำลังโหลดข้อมูลสถานะ...</div>
+        </div>
+        <div class="error-state hidden text-danger p-3" id="statusBoardError"></div>
+        <div class="row g-2 hidden" id="statusBoard"></div>
+      </div>
+
+      <!-- Alerts + Recent Jobs -->
+      <div class="row g-3">
+        <!-- Alerts -->
+        <div class="col-12 col-lg-4">
+          <div class="panel h-100">
+            <div class="panel-header">
+              <h2><i class="fas fa-bell me-2 text-danger"></i>แจ้งเตือนด่วน</h2>
+              <span class="counter" id="alertsCounterPill">0</span>
+            </div>
+            <div id="alertsList"></div>
+            <div class="empty-box hidden" id="alertsEmpty">
+              <i class="fas fa-check-circle text-success fa-2x mb-2"></i>
+              <div>ไม่มีแจ้งเตือนในขณะนี้</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Recent Jobs -->
+        <div class="col-12 col-lg-8">
+          <div class="panel h-100">
+            <div class="panel-header">
+              <h2><i class="fas fa-list me-2 text-primary"></i>รายการงานล่าสุด</h2>
+              <span class="counter" id="recentJobsCounter">0 รายการ</span>
+            </div>
+            
+            <!-- Search + Filter -->
+            <div class="row g-2 mb-3">
+              <div class="col-12 col-md-6">
+                <div class="search-bar">
+                  <i class="fas fa-search search-icon"></i>
+                  <input type="search" class="form-control" id="jobSearchInput" placeholder="ค้นหา Job ID, ลูกค้า, อาการ...">
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <select class="form-select" id="statusFilterSelect">
+                  <option value="ALL">ทุกสถานะ</option>
+                </select>
+              </div>
+              <div class="col-6 col-md-3">
+                <select class="form-select" id="recentJobsLimitSelect">
+                  <option value="10">10 รายการ</option>
+                  <option value="20" selected>20 รายการ</option>
+                  <option value="50">50 รายการ</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="loading-box" id="recentJobsLoading">
+              <div class="spinner-border text-primary mb-2"></div>
+              <div>กำลังโหลดรายการงาน...</div>
+            </div>
+            <div class="empty-box hidden" id="recentJobsEmpty">
+              <i class="fas fa-inbox fa-2x mb-2"></i>
+              <div>ไม่พบรายการงาน</div>
+            </div>
+            <div class="error-state hidden text-danger p-3" id="recentJobsError"></div>
+            
+            <div class="table-responsive hidden" id="recentJobsTableWrap">
+              <table class="table table-hover align-middle mb-0" id="recentJobsTable">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width:15%">Job ID</th>
+                    <th style="width:25%">ลูกค้า</th>
+                    <th class="d-none d-md-table-cell" style="width:25%">อาการ</th>
+                    <th class="d-none d-md-table-cell" style="width:15%">ช่าง</th>
+                    <th style="width:20%">สถานะ</th>
+                  </tr>
+                </thead>
+                <tbody id="recentJobsTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- END SECTION: DASHBOARD -->
+    
+    <!-- ===== SECTION: INVENTORY ===== -->
+    <div id="section-inventory" class="hidden">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h1 class="h4 fw-bold mb-0">คลังสินค้า</h1>
+          <small class="text-muted">ระบบสต็อก 3 ชั้น: คลังหลัก / หน้าร้าน / รถช่าง</small>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary btn-sm" onclick="openReceiveModal()">
+            <i class="fas fa-plus me-1"></i>รับของเข้า
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="openTransferModal()">
+            <i class="fas fa-exchange-alt me-1"></i>โอนย้าย
+          </button>
+        </div>
+      </div>
+      
+      <!-- Inventory Summary Cards -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="revenue-card text-center">
+            <div class="icon text-primary mb-1"><i class="fas fa-warehouse fa-lg"></i></div>
+            <div class="label">คลังหลัก</div>
+            <div class="value" id="invMainTotal">0</div>
+            <div class="meta">รายการ</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="revenue-card text-center">
+            <div class="icon text-success mb-1"><i class="fas fa-store fa-lg"></i></div>
+            <div class="label">หน้าร้าน</div>
+            <div class="value" id="invStoreTotal">0</div>
+            <div class="meta">รายการ</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="revenue-card text-center">
+            <div class="icon text-warning mb-1"><i class="fas fa-truck fa-lg"></i></div>
+            <div class="label">รถช่าง</div>
+            <div class="value" id="invVanTotal">0</div>
+            <div class="meta">รายการ</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="revenue-card text-center">
+            <div class="icon text-danger mb-1"><i class="fas fa-exclamation-circle fa-lg"></i></div>
+            <div class="label">สต็อกต่ำ</div>
+            <div class="value" id="invLowStockTotal">0</div>
+            <div class="meta">รายการ</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Inventory Table -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2><i class="fas fa-boxes me-2 text-primary"></i>ภาพรวมสต็อกสินค้า</h2>
+          <div class="d-flex gap-2">
+            <div class="search-bar">
+              <i class="fas fa-search search-icon"></i>
+              <input type="search" class="form-control form-control-sm" id="invSearchInput" placeholder="ค้นหาสินค้า..." style="padding-left:32px;">
+            </div>
+          </div>
+        </div>
+        
+        <!-- Location Tabs -->
+        <ul class="nav nav-tabs mb-3" id="invTabs">
+          <li class="nav-item">
+            <a class="nav-link active" href="#" onclick="filterInventory('ALL')">ทั้งหมด</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="filterInventory('MAIN')">
+              <i class="fas fa-warehouse me-1"></i>คลังหลัก
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="filterInventory('SITE')">
+              <i class="fas fa-store me-1"></i>หน้าร้าน
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="filterInventory('VAN')">
+              <i class="fas fa-truck me-1"></i>รถช่าง
+            </a>
+          </li>
+        </ul>
+        
+        <div class="loading-box" id="invLoading">
+          <div class="spinner-border text-primary mb-2"></div>
+          <div>กำลังโหลดข้อมูลสต็อก...</div>
+        </div>
+        <div class="empty-box hidden" id="invEmpty">
+          <i class="fas fa-box-open fa-2x mb-2"></i>
+          <div>ยังไม่มีข้อมูลสินค้าในระบบ</div>
+        </div>
+        
+        <div class="table-responsive hidden" id="invTableWrap">
+          <table class="table table-hover align-middle mb-0" id="invTable">
+            <thead class="table-light">
+              <tr>
+                <th>รหัสสินค้า</th>
+                <th>ชื่อสินค้า</th>
+                <th class="text-center">คลังหลัก</th>
+                <th class="text-center">หน้าร้าน</th>
+                <th class="text-center">รถช่าง</th>
+                <th class="text-center">รวม</th>
+                <th class="text-center">สถานะ</th>
+              </tr>
+            </thead>
+            <tbody id="invTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- END SECTION: INVENTORY -->
+    
+  </div>
+  <!-- END MAIN CONTENT -->
+
+  <!-- ===== BOTTOM NAV (Mobile) ===== -->
+  <div class="bottom-nav">
+    <a class="nav-item active" href="#" onclick="showSection('dashboard')" id="bnav-dashboard">
+      <i class="fas fa-th-large"></i>
+      Dashboard
+    </a>
+    <a class="nav-item" href="#" onclick="showSection('jobs')" id="bnav-jobs">
+      <i class="fas fa-list-check"></i>
+      งาน
+    </a>
+    <a class="nav-item" href="#" onclick="showSection('inventory')" id="bnav-inventory">
+      <i class="fas fa-warehouse"></i>
+      คลัง
+    </a>
+    <a class="nav-item" href="#" id="bnav-newjob">
+      <i class="fas fa-plus-circle"></i>
+      งานใหม่
+    </a>
+  </div>
+
+  <!-- ===== JOB DETAIL MODAL ===== -->
+  <div class="modal fade modal-job-detail" id="jobDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="jobDetailTitle">รายละเอียดงาน</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="jobDetailBody">
+          <div class="loading-box">
+            <div class="spinner-border text-primary mb-2"></div>
+            <div>กำลังโหลด...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- ===== TRANSFER MODAL ===== -->
+  <div class="modal fade" id="transferModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">โอนย้ายสินค้าระหว่างคลัง</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">สินค้า</label>
+            <select class="form-select" id="transferItemSelect">
+              <option value="">-- เลือกสินค้า --</option>
             </select>
-            <div class="calendar-actions">
-              <button type="button" class="ghost-btn" id="refreshJobsBtn">รีโหลดรายการ</button>
-            </div>
           </div>
-          <div class="jobs-meta">
-            <div class="muted-text" id="jobResultMeta">กำลังโหลดข้อมูล...</div>
-            <div class="muted-text" id="jobViewMeta">รองรับรูปย่อ 0–2 รูป / Timeline / แชร์รูป</div>
-          </div>
-          <div class="job-cards" id="recentJobs"></div>
-        </section>
-      </section>
-
-      <section class="tab-panel" data-tab-panel="calendar">
-        <section class="calendar-shell">
-          <div class="panel-head">
-            <div>
-              <div class="section-overline">Tab 3</div>
-              <h2 class="panel-title">Calendar นัดหมาย</h2>
-              <div class="panel-note">List / Month / Week พร้อมลากวางเปลี่ยนวันนัด และกด event เพื่อดูรายละเอียด</div>
-            </div>
-            <div class="calendar-actions">
-              <button type="button" class="ghost-btn" id="calendarTodayBtn">วันนี้</button>
-              <button type="button" class="ghost-btn" id="refreshCalendarBtn">รีโหลดปฏิทิน</button>
-            </div>
-          </div>
-          <div class="calendar-layout">
-            <div class="calendar-pool">
-              <div class="chip-label">Jobs ready to schedule</div>
-              <div class="panel-note" style="margin-bottom: 10px;">ลากงานจากรายการนี้ไปวางบนวันนัดได้</div>
-              <div id="calendarJobsPool" class="jobs-list"></div>
-            </div>
-            <div class="calendar-canvas">
-              <div id="calendarView"></div>
-            </div>
-          </div>
-        </section>
-      </section>
-
-      <section class="tab-panel" data-tab-panel="newjob">
-        <section class="form-shell">
-          <div class="panel-head">
-            <div>
-              <div class="section-overline">Tab 4</div>
-              <h2 class="panel-title">ฟอร์มเปิดงานใหม่</h2>
-              <div class="panel-note">รองรับค้นหาลูกค้าแบบ autocomplete, มอบหมายช่าง และกำหนดวันนัดได้ทันที</div>
-            </div>
-          </div>
-          <form id="newJobForm" class="form-grid" autocomplete="off">
-            <div class="form-field form-field-full">
-              <label class="form-label" for="newJobCustomer">ชื่อลูกค้า</label>
-              <input id="newJobCustomer" name="customer_name" class="field" type="text" placeholder="พิมพ์ชื่อ / เบอร์ / รหัสลูกค้า">
-              <input id="newJobCustomerId" name="customer_id" type="hidden">
-              <div id="customerSuggestions" class="customer-suggest hidden"></div>
-            </div>
-            <div class="form-field">
-              <label class="form-label" for="newJobTech">ช่างที่มอบหมาย</label>
-              <select id="newJobTech" name="technician" class="select">
-                <option value="">ยังไม่กำหนด</option>
+          <div class="row g-3">
+            <div class="col-6">
+              <label class="form-label fw-semibold">จาก</label>
+              <select class="form-select" id="transferFromSelect">
+                <option value="MAIN">คลังหลัก</option>
+                <option value="SITE">หน้าร้าน</option>
+                <option value="VAN">รถช่าง</option>
               </select>
             </div>
-            <div class="form-field">
-              <label class="form-label" for="newJobAppointment">วันนัด</label>
-              <input id="newJobAppointment" name="appointment_at" class="field" type="datetime-local">
+            <div class="col-6">
+              <label class="form-label fw-semibold">ไปยัง</label>
+              <select class="form-select" id="transferToSelect">
+                <option value="SITE">หน้าร้าน</option>
+                <option value="VAN">รถช่าง</option>
+                <option value="MAIN">คลังหลัก</option>
+              </select>
             </div>
-            <div class="form-field form-field-full">
-              <label class="form-label" for="newJobSymptom">อาการ / รายละเอียด</label>
-              <textarea id="newJobSymptom" name="symptom" class="textarea" placeholder="เช่น เครื่องเปิดไม่ติด / ต้องการเข้าตรวจ PM / ขอประเมินอุปกรณ์"></textarea>
-            </div>
-            <div class="form-field form-field-full">
-              <label class="form-label" for="newJobNote">หมายเหตุเพิ่มเติม</label>
-              <textarea id="newJobNote" name="note" class="textarea" placeholder="รายละเอียดเพิ่มเติมสำหรับทีมช่างหรือฝ่ายบริการ"></textarea>
-            </div>
-            <div class="form-field form-field-full">
-              <div class="form-actions">
-                <button type="submit" class="primary-btn">เปิดงานใหม่</button>
-                <button type="button" class="ghost-btn" id="resetNewJobBtn">ล้างฟอร์ม</button>
-              </div>
-              <div class="muted-text" id="newJobFormMeta">ระบบจะสร้างงานผ่าน backend เดิม และบันทึกวันนัดเพิ่มในแดชบอร์ด V5.5</div>
-            </div>
-          </form>
-        </section>
-      </section>
-    </div>
-  </div>
-
-  <div id="jobDrawerBackdrop" class="drawer-backdrop" aria-hidden="true">
-    <div class="drawer-sheet" role="dialog" aria-modal="true" aria-labelledby="jobDrawerTitle">
-      <div class="drawer-head">
-        <div>
-          <div class="section-overline">Job Detail</div>
-          <h2 id="jobDrawerTitle" class="panel-title">รายละเอียดงาน</h2>
-          <div id="jobDrawerStatus" class="panel-note">-</div>
-        </div>
-        <button type="button" class="ghost-btn" id="closeJobDrawerBtn">ปิด</button>
-      </div>
-      <div class="drawer-grid">
-        <div class="drawer-info">
-          <table>
-            <tbody id="jobDetailTableBody"></tbody>
-          </table>
-          <div class="drawer-note" id="jobFolderLinkWrap" style="margin-top: 10px;"></div>
-        </div>
-        <div class="drawer-info">
-          <div class="section-overline">Action</div>
-          <div class="drawer-tags" id="jobActionButtons" style="margin-top: 12px;"></div>
-          <div class="section-overline" style="margin-top: 18px;">Quick Note</div>
-          <textarea id="jobQuickNoteInput" class="textarea" placeholder="พิมพ์หมายเหตุหรือติดตามงาน"></textarea>
-          <div class="drawer-tags" style="margin-top: 12px;">
-            <button type="button" class="primary-btn" id="saveQuickNoteBtn">บันทึกหมายเหตุ</button>
-            <button type="button" class="ghost-btn" id="shareJobPhotosBtn">แชร์รูป</button>
-            <button type="button" class="ghost-btn" id="refreshJobDetailBtn">รีโหลด</button>
+          </div>
+          <div class="mt-3">
+            <label class="form-label fw-semibold">จำนวน</label>
+            <input type="number" class="form-control" id="transferQtyInput" min="1" value="1">
           </div>
         </div>
-      </div>
-      <div class="drawer-grid">
-        <div class="drawer-info">
-          <div class="section-overline">Photos</div>
-          <div class="thumb-grid" id="jobThumbGrid" style="margin-top: 12px;"></div>
-        </div>
-        <div class="drawer-info">
-          <div class="section-overline">Timeline</div>
-          <div id="jobTimelineWrap" style="margin-top: 12px;"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="button" class="btn btn-primary" id="confirmTransferBtn">
+            <i class="fas fa-exchange-alt me-1"></i>โอนย้าย
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <div id="imageLightbox" class="lightbox-backdrop" aria-hidden="true">
-    <div class="lightbox-sheet">
-      <div class="drawer-head">
-        <div>
-          <div class="section-overline">Preview</div>
-          <h3 id="lightboxTitle" class="panel-title">รูปงาน</h3>
-        </div>
-        <button type="button" class="ghost-btn" id="closeLightboxBtn">ปิด</button>
-      </div>
-      <div style="margin-top: 16px; border-radius: 20px; overflow: hidden; border: 1px solid var(--line); background: rgba(8,18,35,0.92);">
-        <img id="lightboxImage" alt="Job photo preview" style="width:100%; max-height:72vh; object-fit: contain; display:block; background:#050b16;">
-      </div>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js"></script>
-  <?!= HtmlService.createHtmlOutputFromFile('JS_Part1').getContent(); ?>
-  <?!= HtmlService.createHtmlOutputFromFile('JS_Dashboard').getContent(); ?>
-  <?!= HtmlService.createHtmlOutputFromFile('JS_Part2').getContent(); ?>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    window.COMPHONE_V55 = {
+      version: 'COMPHONE SUPER APP V5.5',
+      apiBaseUrl: <?!= JSON.stringify(apiBaseUrl || '') ?>,
+      initialAction: <?!= JSON.stringify(action || '') ?>,
+      initialView: <?!= JSON.stringify(view || '') ?>,
+      defaultLimit: 20
+    };
+  </script>
+  <?!= include('JS_Part1'); ?>
+  <?!= include('JS_Dashboard'); ?>
+  <?!= include('JS_Part2'); ?>
 </body>
 </html>

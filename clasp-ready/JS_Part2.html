@@ -1,4 +1,3 @@
-<!-- COMPHONE SUPER APP V5.5 -->
 <script>
 (function (window, document, api, dashboardApi) {
   'use strict';
@@ -6,525 +5,496 @@
   if (!api || !dashboardApi) return;
 
   var APP = api.APP;
+  var currentSection = 'dashboard';
+  var inventoryData = [];
+  var inventoryFilter = 'ALL';
 
-  function findJobById(jobId) {
-    return (APP.jobs || []).filter(function (job) { return job.id === jobId; })[0] || null;
-  }
+  // ===== SECTION SWITCHING =====
+  window.showSection = function(section) {
+    var sections = ['dashboard', 'inventory', 'jobs'];
+    sections.forEach(function(s) {
+      var el = document.getElementById('section-' + s);
+      if (el) el.classList.toggle('hidden', s !== section);
+    });
+    currentSection = section;
 
-  function renderDetailTable(job) {
-    var rows = [
-      ['Job ID', job.id || '-'],
-      ['ลูกค้า', job.customer || '-'],
-      ['อาการ', job.symptom || '-'],
-      ['ช่าง', job.tech || '-'],
-      ['สถานะ', job.statusLabel || '-'],
-      ['สร้างเมื่อ', api.formatDateTime(job.createdAt)],
-      ['อัปเดต', api.formatDateTime(job.updatedAt)],
-      ['วันนัด', job.appointmentAt ? api.formatDateTime(job.appointmentAt) : 'ยังไม่กำหนด'],
-      ['หมายเหตุ', job.note || '-']
-    ];
-    APP.ui.jobDetailTableBody.innerHTML = rows.map(function (row) {
-      return '<tr><th>' + api.escapeHtml(row[0]) + '</th><td>' + api.escapeHtml(row[1]) + '</td></tr>';
-    }).join('');
-    APP.ui.jobFolderLinkWrap.innerHTML = job.folderUrl
-      ? '<a href="' + api.escapeHtml(job.folderUrl) + '" target="_blank" rel="noopener noreferrer">เปิดโฟลเดอร์รูปงาน</a>'
-      : '<span class="muted-text">ยังไม่มีโฟลเดอร์รูปงาน</span>';
-  }
+    // Update bottom nav
+    sections.forEach(function(s) {
+      var nav = document.getElementById('bnav-' + s);
+      if (nav) nav.classList.toggle('active', s === section);
+    });
 
-  function renderActionButtons(job) {
-    var state = null;
-    var statusCode = String(job.statusCode || '');
-    (APP.statusConfig || []).some(function (item) {
-      var byCode = statusCode && String(item.code) === statusCode;
-      var byLabel = String(item.label || '') === String(job.statusLabel || '');
-      if (byCode || byLabel) {
-        state = item;
-        return true;
+    // Update desktop nav
+    var navLinks = document.querySelectorAll('.navbar-nav .nav-link');
+    navLinks.forEach(function(link) {
+      link.classList.remove('active');
+    });
+
+    if (section === 'inventory') {
+      loadInventoryData();
+    }
+  };
+
+  // ===== STATUS FILTER =====
+  window.filterByStatus = function(status) {
+    if (APP.ui.statusFilterSelect) {
+      APP.ui.statusFilterSelect.value = status;
+    }
+    APP.filters.status = status;
+    dashboardApi.renderRecentJobs();
+    // Scroll to jobs section on mobile
+    var jobsSection = document.getElementById('recentJobsTableWrap') || document.getElementById('recentJobsLoading');
+    if (jobsSection) jobsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  // ===== INVENTORY FUNCTIONS =====
+  window.filterInventory = function(locationType) {
+    inventoryFilter = locationType;
+    
+    // Update tabs
+    var tabs = document.querySelectorAll('#invTabs .nav-link');
+    tabs.forEach(function(tab) {
+      tab.classList.remove('active');
+      if (tab.getAttribute('onclick') && tab.getAttribute('onclick').indexOf("'" + locationType + "'") > -1) {
+        tab.classList.add('active');
       }
-      return false;
     });
+    
+    renderInventoryTable();
+  };
 
-    var html = '<button type="button" class="mini-action" data-job-action="refresh">รีโหลดข้อมูล</button>';
-    (state && state.allowed_next || []).forEach(function (next) {
-      html += '<button type="button" class="mini-action" data-next-status="' + api.escapeHtml(String(next.code)) + '">' + api.escapeHtml(String(next.label || next.code)) + '</button>';
-    });
-    APP.ui.jobActionButtons.innerHTML = html;
+  function loadInventoryData() {
+    var loading = document.getElementById('invLoading');
+    var empty = document.getElementById('invEmpty');
+    var tableWrap = document.getElementById('invTableWrap');
+    
+    if (loading) loading.classList.remove('hidden');
+    if (empty) empty.classList.add('hidden');
+    if (tableWrap) tableWrap.classList.add('hidden');
+
+    api.callServer('getInventoryOverview', [{}])
+      .then(function(result) {
+        if (loading) loading.classList.add('hidden');
+        if (result && result.success && result.items && result.items.length > 0) {
+          inventoryData = result.items;
+          updateInventorySummaryCards(result.items);
+          renderInventoryTable();
+        } else {
+          if (empty) empty.classList.remove('hidden');
+          inventoryData = [];
+        }
+      })
+      .catch(function(err) {
+        if (loading) loading.classList.add('hidden');
+        if (empty) empty.classList.remove('hidden');
+        api.toast('โหลดข้อมูลสต็อกไม่สำเร็จ: ' + (err.message || err), 'error');
+      });
   }
 
-  function normalizeGalleryPayload(payload) {
-    if (!payload) return [];
-    if (Array.isArray(payload)) return payload;
-    if (Array.isArray(payload.photos)) return payload.photos;
-    if (Array.isArray(payload.items)) return payload.items;
-    if (Array.isArray(payload.images)) return payload.images;
+  function updateInventorySummaryCards(items) {
+    var mainCount = 0, storeCount = 0, vanCount = 0, lowCount = 0;
+    items.forEach(function(item) {
+      if (item.main_qty > 0) mainCount++;
+      if (item.site_qty > 0) storeCount++;
+      if (item.van_qty > 0) vanCount++;
+      if (item.total_qty <= 5) lowCount++;
+    });
+    var invMainTotal = document.getElementById('invMainTotal');
+    var invStoreTotal = document.getElementById('invStoreTotal');
+    var invVanTotal = document.getElementById('invVanTotal');
+    var invLowStockTotal = document.getElementById('invLowStockTotal');
+    if (invMainTotal) invMainTotal.textContent = mainCount;
+    if (invStoreTotal) invStoreTotal.textContent = storeCount;
+    if (invVanTotal) invVanTotal.textContent = vanCount;
+    if (invLowStockTotal) invLowStockTotal.textContent = lowCount;
+  }
+
+  function renderInventoryTable() {
+    var tableWrap = document.getElementById('invTableWrap');
+    var tbody = document.getElementById('invTableBody');
+    var empty = document.getElementById('invEmpty');
+    
+    if (!tbody) return;
+
+    var searchQuery = '';
+    var searchInput = document.getElementById('invSearchInput');
+    if (searchInput) searchQuery = searchInput.value.toLowerCase();
+
+    var filtered = inventoryData.filter(function(item) {
+      if (inventoryFilter !== 'ALL') {
+        if (inventoryFilter === 'MAIN' && item.main_qty <= 0) return false;
+        if (inventoryFilter === 'SITE' && item.site_qty <= 0) return false;
+        if (inventoryFilter === 'VAN' && item.van_qty <= 0) return false;
+      }
+      if (searchQuery) {
+        var haystack = (item.item_code + ' ' + item.item_name).toLowerCase();
+        if (haystack.indexOf(searchQuery) === -1) return false;
+      }
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      if (tableWrap) tableWrap.classList.add('hidden');
+      if (empty) empty.classList.remove('hidden');
+      return;
+    }
+
+    if (empty) empty.classList.add('hidden');
+    if (tableWrap) tableWrap.classList.remove('hidden');
+
+    var html = '';
+    filtered.forEach(function(item) {
+      var isLow = item.total_qty <= 5;
+      var statusBadge = isLow
+        ? '<span class="badge bg-danger">สต็อกต่ำ</span>'
+        : '<span class="badge bg-success">ปกติ</span>';
+      
+      html += '<tr>';
+      html += '<td><code class="text-primary">' + api.escapeHtml(item.item_code || '-') + '</code></td>';
+      html += '<td><strong>' + api.escapeHtml(item.item_name || '-') + '</strong></td>';
+      html += '<td class="text-center">' + (item.main_qty || 0) + '</td>';
+      html += '<td class="text-center">' + (item.site_qty || 0) + '</td>';
+      html += '<td class="text-center">' + (item.van_qty || 0) + '</td>';
+      html += '<td class="text-center fw-bold ' + (isLow ? 'text-danger' : '') + '">' + (item.total_qty || 0) + '</td>';
+      html += '<td class="text-center">' + statusBadge + '</td>';
+      html += '</tr>';
+    });
+    tbody.innerHTML = html;
+  }
+
+  // ===== TRANSFER MODAL =====
+  window.openTransferModal = function() {
+    // Populate item select
+    var select = document.getElementById('transferItemSelect');
+    if (select && inventoryData.length > 0) {
+      var opts = '<option value="">-- เลือกสินค้า --</option>';
+      inventoryData.forEach(function(item) {
+        opts += '<option value="' + api.escapeHtml(item.item_code) + '">' + api.escapeHtml(item.item_name) + ' (รวม: ' + item.total_qty + ')</option>';
+      });
+      select.innerHTML = opts;
+    }
+    var modal = new bootstrap.Modal(document.getElementById('transferModal'));
+    modal.show();
+  };
+
+  window.openReceiveModal = function() {
+    api.toast('ฟีเจอร์รับของเข้า — กำลังพัฒนา', 'info');
+  };
+
+  // ===== JOB DETAIL (Bootstrap Modal version) =====
+  function getJobById(jobId) {
+    var jobs = APP.jobs || [];
+    for (var i = 0; i < jobs.length; i++) {
+      var candidate = jobs[i] || {};
+      var id = String(candidate.id || candidate.job_id || '');
+      if (id === String(jobId || '')) return candidate;
+    }
+    return null;
+  }
+
+  function collectNextStates(currentJob) {
+    var currentStatus = api.getStatusLabel(
+      currentJob && (currentJob.status || currentJob.status_label || currentJob.current_status || currentJob.current_status_code)
+    );
+    for (var i = 0; i < APP.statusConfig.length; i++) {
+      var state = APP.statusConfig[i];
+      if (String(state.label || '') === currentStatus) {
+        return state.allowed_next || [];
+      }
+    }
     return [];
   }
 
-  function normalizePhotoItem(item, index) {
-    if (typeof item === 'string') {
-      return { url: item, thumb: item, title: 'Photo ' + (index + 1) };
-    }
-    item = item || {};
-    var url = item.download_url || item.photo_url || item.file_url || item.url || item.thumbnail_url || item.thumb || '';
-    var thumb = item.thumbnail_url || item.thumb || item.download_url || item.photo_url || item.file_url || item.url || '';
-    return {
-      url: url,
-      thumb: thumb,
-      title: item.file_name || item.name || ('Photo ' + (index + 1))
-    };
-  }
-
-  function renderPhotos(items) {
-    var photos = (items || []).map(normalizePhotoItem).filter(function (item) { return !!item.url; });
-    APP.selectedPhotos = photos;
-    if (!photos.length) {
-      APP.ui.jobThumbGrid.innerHTML = '<div class="thumb-empty">ไม่พบรูปงาน</div>';
-      return;
-    }
-
-    APP.ui.jobThumbGrid.innerHTML = photos.slice(0, 12).map(function (photo, index) {
-      return '<button type="button" class="thumb-item" data-photo-index="' + index + '"><img src="' + api.escapeHtml(photo.thumb || photo.url) + '" alt="' + api.escapeHtml(photo.title) + '"></button>';
-    }).join('');
-  }
-
-  function renderTimeline(payload) {
-    var items = [];
-    if (payload && Array.isArray(payload.timeline)) items = payload.timeline;
-    else if (Array.isArray(payload)) items = payload;
-    else if (payload && Array.isArray(payload.items)) items = payload.items;
-
-    if (!items.length) {
-      APP.ui.jobTimelineWrap.innerHTML = '<div class="empty-state">ไม่พบ timeline ของงานนี้</div>';
-      return;
-    }
-
-    APP.ui.jobTimelineWrap.innerHTML = '<ul class="timeline-list">' + items.map(function (item) {
-      var title = item.title || item.action || item.status || 'Activity';
-      var detail = item.detail || item.message || item.note || '-';
-      var actor = item.user || item.actor || item.by || '-';
-      var when = api.formatDateTime(item.created_at || item.timestamp || item.date || item.time || item.ts || '');
-      return '<li class="timeline-item">' +
-        '<div class="timeline-top"><strong>' + api.escapeHtml(String(title)) + '</strong><span class="muted-text">' + api.escapeHtml(String(when)) + '</span></div>' +
-        '<div class="job-meta">' + api.escapeHtml(String(detail)) + '</div>' +
-        '<div class="muted-text">โดย: ' + api.escapeHtml(String(actor)) + '</div>' +
-      '</li>';
-    }).join('') + '</ul>';
-  }
-
-  async function openJobDetail(jobId) {
-    var job = findJobById(jobId);
-    if (!job) {
-      api.toast('ไม่พบข้อมูลงาน ' + jobId, 'error');
-      return;
-    }
-
-    APP.selectedJobId = jobId;
-    APP.selectedJob = job;
-    api.setText(APP.ui.jobDrawerTitle, job.id + ' • ' + job.customer);
-    api.setText(APP.ui.jobDrawerStatus, job.statusLabel + ' • ' + (job.tech || 'ยังไม่กำหนดช่าง'));
-    APP.ui.jobQuickNoteInput.value = '';
-    renderDetailTable(job);
-    renderActionButtons(job);
-    renderPhotos(job.photos || []);
-    renderTimeline([]);
-    api.openJobDrawer();
-
+  async function loadTimeline(jobId) {
+    var target = document.getElementById('jobTimelineBody');
+    if (!target) return;
+    target.innerHTML = '<div class="text-muted py-2">กำลังโหลด timeline...</div>';
     try {
-      var timelinePayload = await api.callServer('getJobTimeline', [jobId]);
-      renderTimeline(timelinePayload);
-    } catch (timelineError) {
-      APP.ui.jobTimelineWrap.innerHTML = '<div class="error-text">โหลด timeline ไม่สำเร็จ</div>';
-    }
-
-    try {
-      var galleryPayload = await api.callServer('getPhotoGalleryData', [{ job_id: jobId }]);
-      renderPhotos(normalizeGalleryPayload(galleryPayload));
-    } catch (galleryError) {
-      renderPhotos(job.photos || []);
+      var response = await api.callServer('getJobTimeline', [jobId]);
+      var items = response && response.timeline ? response.timeline : [];
+      if (!items.length) {
+        target.innerHTML = '<div class="text-muted py-2">ยังไม่มีประวัติของงานนี้</div>';
+        return;
+      }
+      var html = '';
+      items.slice(0, 20).forEach(function(item) {
+        html += '<div class="timeline-item">';
+        html += '<div class="timeline-dot"></div>';
+        html += '<div>';
+        html += '<div class="text-muted" style="font-size:0.75rem;">' + api.escapeHtml(String(item.ts || '-')) + '</div>';
+        html += '<div class="fw-semibold">' + api.escapeHtml(String(item.action || '-')) + '</div>';
+        if (item.detail) html += '<div class="text-muted small">' + api.escapeHtml(String(item.detail)) + '</div>';
+        html += '</div>';
+        html += '</div>';
+      });
+      target.innerHTML = html;
+    } catch (error) {
+      target.innerHTML = '<div class="text-danger small">โหลด timeline ไม่สำเร็จ</div>';
     }
   }
 
-  async function changeJobStatus(jobId, nextStatusCode) {
-    var note = String(APP.ui.jobQuickNoteInput.value || '').trim();
-    var payload = {
-      job_id: jobId,
-      new_status: nextStatusCode,
-      note: note,
-      user: 'WEB_DASHBOARD_V55'
-    };
-    var result = await api.callServer('updateJobStatus', [payload]);
-    if (!result || result.success === false || result.error) {
-      throw new Error((result && (result.error || result.message)) || 'เปลี่ยนสถานะไม่สำเร็จ');
+  async function applyStatusTransition(nextStatusCode) {
+    var jobId = APP.selectedJobId;
+    if (!jobId) return;
+    try {
+      var result = await api.callServer('transitionJob', [jobId, Number(nextStatusCode), { changed_by: 'V5.5 Dashboard', note: 'เปลี่ยนสถานะผ่าน Dashboard V5.5' }]);
+      if (result && result.success === false) {
+        throw new Error(result.error || 'เปลี่ยนสถานะไม่สำเร็จ');
+      }
+      api.toast('อัปเดตสถานะงานสำเร็จ', 'success');
+      var modal = bootstrap.Modal.getInstance(document.getElementById('jobDetailModal'));
+      if (modal) modal.hide();
+      await dashboardApi.fetchDashboardData();
+    } catch (error) {
+      api.toast('เปลี่ยนสถานะไม่สำเร็จ: ' + (error.message || error), 'error');
     }
   }
 
   async function saveQuickNote() {
     var jobId = APP.selectedJobId;
-    var note = String(APP.ui.jobQuickNoteInput.value || '').trim();
+    var textarea = document.getElementById('jobQuickNoteInput');
+    var note = textarea ? String(textarea.value || '').trim() : '';
     if (!jobId || !note) {
-      api.toast('กรุณากรอกหมายเหตุก่อนบันทึก', 'warning');
-      return;
-    }
-    var result = await api.callServer('addQuickNote', [jobId, note, 'WEB_DASHBOARD_V55']);
-    if (!result || result.success === false || result.error) {
-      throw new Error((result && (result.error || result.message)) || 'บันทึกหมายเหตุไม่สำเร็จ');
-    }
-    APP.ui.jobQuickNoteInput.value = '';
-    api.toast('บันทึกหมายเหตุแล้ว', 'success');
-    await dashboardApi.fetchDashboardData({ silent: true });
-    await openJobDetail(jobId);
-  }
-
-  async function fetchPhotoFile(photo, index) {
-    var response = await fetch(photo.url, { mode: 'cors' });
-    var blob = await response.blob();
-    var extension = blob.type === 'image/png' ? 'png' : 'jpg';
-    return new File([blob], 'job-photo-' + (index + 1) + '.' + extension, { type: blob.type || 'image/jpeg' });
-  }
-
-  async function shareSelectedPhotos() {
-    var photos = APP.selectedPhotos || [];
-    if (!photos.length) {
-      api.toast('ไม่มีรูปสำหรับแชร์', 'warning');
-      return;
-    }
-
-    if (navigator.share) {
-      try {
-        if (api.canWebShareFiles()) {
-          var files = [];
-          for (var i = 0; i < Math.min(photos.length, 2); i++) {
-            files.push(await fetchPhotoFile(photos[i], i));
-          }
-          if (navigator.canShare({ files: files })) {
-            await navigator.share({
-              title: APP.selectedJobId || 'COMPHONE Job',
-              text: 'แชร์รูปงานจาก COMPHONE SUPER APP V5.5',
-              files: files
-            });
-            return;
-          }
-        }
-        await navigator.share({
-          title: APP.selectedJobId || 'COMPHONE Job',
-          text: 'รูปงาน: ' + photos.map(function (item) { return item.url; }).join('\n')
-        });
-        return;
-      } catch (shareError) {}
-    }
-
-    try {
-      await navigator.clipboard.writeText(photos.map(function (item) { return item.url; }).join('\n'));
-      api.toast('คัดลอกลิงก์รูปแล้ว', 'success');
-    } catch (copyError) {
-      api.toast('แชร์รูปไม่สำเร็จ', 'error');
-    }
-  }
-
-  function renderCustomerSuggestions(items) {
-    if (!APP.ui.customerSuggestions) return;
-    if (!items.length) {
-      APP.ui.customerSuggestions.innerHTML = '';
-      api.hide(APP.ui.customerSuggestions);
-      return;
-    }
-
-    APP.ui.customerSuggestions.innerHTML = items.slice(0, 8).map(function (customer, index) {
-      var phone = customer.phone || customer.line_user_id || customer.customer_type || '-';
-      return '<button type="button" class="customer-option" data-customer-index="' + index + '">' +
-        api.escapeHtml(String(customer.customer_name || '-')) +
-        '<small>' + api.escapeHtml(String(customer.customer_id || '-')) + ' • ' + api.escapeHtml(String(phone)) + '</small>' +
-      '</button>';
-    }).join('');
-    api.show(APP.ui.customerSuggestions);
-  }
-
-  var searchCustomersDebounced = api.debounce(async function () {
-    var term = String(APP.ui.newJobCustomer.value || '').trim();
-    APP.ui.newJobCustomerId.value = '';
-    if (term.length < 2) {
-      renderCustomerSuggestions([]);
+      api.toast('กรอกหมายเหตุก่อนบันทึก', 'warning');
       return;
     }
     try {
-      var result = await api.callServer('listCustomers', [{ search: term }]);
-      if (!result || result.success === false) throw new Error(result && result.error ? result.error : 'ค้นหาลูกค้าไม่สำเร็จ');
-      APP.customerSuggestions = result.customers || [];
-      renderCustomerSuggestions(APP.customerSuggestions);
+      var result = await api.callServer('addQuickNote', [jobId, note, 'V5.5 Dashboard']);
+      if (result && result.success === false) throw new Error(result.error || 'บันทึกหมายเหตุไม่สำเร็จ');
+      api.toast('บันทึกหมายเหตุแล้ว', 'success');
+      await loadTimeline(jobId);
+      if (textarea) textarea.value = '';
     } catch (error) {
-      renderCustomerSuggestions([]);
+      api.toast('บันทึกหมายเหตุไม่สำเร็จ: ' + (error.message || error), 'error');
     }
-  }, 280);
-
-  function applyCustomerSelection(customer) {
-    customer = customer || {};
-    APP.ui.newJobCustomer.value = customer.customer_name || '';
-    APP.ui.newJobCustomerId.value = customer.customer_id || '';
-    renderCustomerSuggestions([]);
   }
 
-  async function submitNewJobForm(event) {
-    event.preventDefault();
-    var payload = {
-      customer_id: String(APP.ui.newJobCustomerId.value || '').trim(),
-      customer_name: String(APP.ui.newJobCustomer.value || '').trim(),
-      symptom: String(APP.ui.newJobSymptom.value || '').trim(),
-      technician: String(APP.ui.newJobTech.value || '').trim(),
-      note: String(APP.ui.newJobNote.value || '').trim(),
-      current_status_code: 1,
-      user: 'WEB_DASHBOARD_V55'
-    };
-
-    if (!payload.customer_name) {
-      api.toast('กรุณาระบุชื่อลูกค้า', 'warning');
-      APP.ui.newJobCustomer.focus();
+  function openJobDetail(jobId) {
+    var job = getJobById(jobId);
+    if (!job) {
+      api.toast('ไม่พบข้อมูลงาน ' + jobId, 'error');
       return;
     }
-    if (!payload.symptom) {
-      api.toast('กรุณาระบุอาการ / รายละเอียด', 'warning');
-      APP.ui.newJobSymptom.focus();
+
+    APP.selectedJobId = String(jobId);
+    var nextStates = collectNextStates(job);
+    var statusLabel = api.getStatusLabel(job.status || job.status_label || job.current_status || job.current_status_code || '-');
+    var folderUrl = String(job.folder || job.folder_url || '');
+
+    // Build modal body
+    var actionsHtml = '';
+    if (nextStates.length) {
+      nextStates.forEach(function(state) {
+        actionsHtml += '<button type="button" class="btn btn-outline-primary btn-sm" data-next-status="' + api.escapeHtml(String(state.code)) + '">→ ' + api.escapeHtml(String(state.label || state.code)) + '</button>';
+      });
+    } else {
+      actionsHtml = '<span class="text-muted small">ไม่มีขั้นตอนถัดไป</span>';
+    }
+
+    var bodyHtml = '';
+    bodyHtml += '<div class="row g-3 mb-3">';
+    bodyHtml += '<div class="col-6"><div class="bg-light rounded p-2"><div class="text-muted small">Job ID</div><div class="fw-bold">' + api.escapeHtml(String(job.id || job.job_id || '-')) + '</div></div></div>';
+    bodyHtml += '<div class="col-6"><div class="bg-light rounded p-2"><div class="text-muted small">สถานะ</div><div class="fw-bold">' + api.escapeHtml(statusLabel) + '</div></div></div>';
+    bodyHtml += '<div class="col-6"><div class="bg-light rounded p-2"><div class="text-muted small">ลูกค้า</div><div class="fw-bold">' + api.escapeHtml(String(job.customer || job.customer_name || '-')) + '</div></div></div>';
+    bodyHtml += '<div class="col-6"><div class="bg-light rounded p-2"><div class="text-muted small">ช่าง</div><div class="fw-bold">' + api.escapeHtml(String(job.tech || job.technician || '-')) + '</div></div></div>';
+    bodyHtml += '<div class="col-12"><div class="bg-light rounded p-2"><div class="text-muted small">อาการ / รายละเอียด</div><div>' + api.escapeHtml(String(job.symptom || job.issue || job.description || '-')) + '</div></div></div>';
+    bodyHtml += '</div>';
+    
+    if (folderUrl && folderUrl !== '-') {
+      bodyHtml += '<a href="' + api.escapeHtml(folderUrl) + '" target="_blank" class="btn btn-outline-secondary btn-sm mb-3"><i class="fas fa-folder-open me-1"></i>เปิดโฟลเดอร์งาน</a>';
+    }
+
+    bodyHtml += '<div class="mb-3">';
+    bodyHtml += '<h6 class="fw-bold mb-2">เปลี่ยนสถานะงาน</h6>';
+    bodyHtml += '<div id="jobTransitionActions" class="d-flex flex-wrap gap-2">' + actionsHtml + '</div>';
+    bodyHtml += '</div>';
+
+    bodyHtml += '<div class="mb-3">';
+    bodyHtml += '<h6 class="fw-bold mb-2">บันทึกหมายเหตุด่วน</h6>';
+    bodyHtml += '<textarea id="jobQuickNoteInput" class="form-control mb-2" rows="2" placeholder="พิมพ์หมายเหตุหรือผลการติดตาม"></textarea>';
+    bodyHtml += '<button type="button" id="saveQuickNoteBtn" class="btn btn-success btn-sm"><i class="fas fa-save me-1"></i>บันทึก</button>';
+    bodyHtml += '</div>';
+
+    bodyHtml += '<div>';
+    bodyHtml += '<h6 class="fw-bold mb-2">Timeline</h6>';
+    bodyHtml += '<div id="jobTimelineBody"></div>';
+    bodyHtml += '</div>';
+
+    // Set modal title and body
+    var titleEl = document.getElementById('jobDetailTitle');
+    var bodyEl = document.getElementById('jobDetailBody');
+    if (titleEl) titleEl.textContent = 'งาน ' + String(job.id || job.job_id || '-') + ' — ' + statusLabel;
+    if (bodyEl) bodyEl.innerHTML = bodyHtml;
+
+    // Show modal
+    var modal = new bootstrap.Modal(document.getElementById('jobDetailModal'));
+    modal.show();
+
+    // Bind events
+    var transitionWrap = document.getElementById('jobTransitionActions');
+    if (transitionWrap) {
+      transitionWrap.addEventListener('click', function(event) {
+        var target = event.target;
+        if (!target || !target.getAttribute) return;
+        var nextStatus = target.getAttribute('data-next-status');
+        if (nextStatus) applyStatusTransition(nextStatus);
+      });
+    }
+
+    var noteBtn = document.getElementById('saveQuickNoteBtn');
+    if (noteBtn) noteBtn.addEventListener('click', saveQuickNote);
+
+    // Load timeline
+    loadTimeline(jobId);
+  }
+
+  // ===== FILTER SYNC =====
+  function syncFiltersFromUi() {
+    APP.filters.query = APP.ui.jobSearchInput ? String(APP.ui.jobSearchInput.value || '') : '';
+    APP.filters.status = APP.ui.statusFilterSelect ? String(APP.ui.statusFilterSelect.value || 'ALL') : 'ALL';
+    APP.filters.limit = APP.ui.recentJobsLimitSelect ? Number(APP.ui.recentJobsLimitSelect.value || 20) : 20;
+  }
+
+  function clearFilters() {
+    if (APP.ui.jobSearchInput) APP.ui.jobSearchInput.value = '';
+    if (APP.ui.statusFilterSelect) APP.ui.statusFilterSelect.value = 'ALL';
+    if (APP.ui.recentJobsLimitSelect) APP.ui.recentJobsLimitSelect.value = String((APP.config && APP.config.defaultLimit) || 20);
+    syncFiltersFromUi();
+    dashboardApi.renderRecentJobs();
+  }
+
+  async function handleRefresh() {
+    syncFiltersFromUi();
+    await dashboardApi.fetchDashboardData();
+    api.toast('รีเฟรชข้อมูลสำเร็จ', 'success');
+  }
+
+  // ===== TRANSFER CONFIRM =====
+  async function handleTransferConfirm() {
+    var itemCode = document.getElementById('transferItemSelect') ? document.getElementById('transferItemSelect').value : '';
+    var fromLoc = document.getElementById('transferFromSelect') ? document.getElementById('transferFromSelect').value : '';
+    var toLoc = document.getElementById('transferToSelect') ? document.getElementById('transferToSelect').value : '';
+    var qty = document.getElementById('transferQtyInput') ? Number(document.getElementById('transferQtyInput').value) : 0;
+
+    if (!itemCode || !fromLoc || !toLoc || !qty) {
+      api.toast('กรุณากรอกข้อมูลให้ครบ', 'warning');
+      return;
+    }
+    if (fromLoc === toLoc) {
+      api.toast('ต้นทางและปลายทางต้องไม่เหมือนกัน', 'warning');
       return;
     }
 
     try {
-      api.setText(APP.ui.newJobFormMeta, 'กำลังสร้างงานใหม่...');
-      var createResult = await api.callServer('createJob', [payload]);
-      if (!createResult || createResult.success === false) {
-        throw new Error(createResult && createResult.error ? createResult.error : 'สร้างงานไม่สำเร็จ');
+      var result = await api.callServer('transferStock', [fromLoc, toLoc, itemCode, qty, {}]);
+      if (result && result.success) {
+        api.toast('โอนย้ายสำเร็จ: ' + (result.item_name || itemCode) + ' จำนวน ' + qty, 'success');
+        var modal = bootstrap.Modal.getInstance(document.getElementById('transferModal'));
+        if (modal) modal.hide();
+        loadInventoryData();
+      } else {
+        api.toast('โอนย้ายไม่สำเร็จ: ' + (result && result.error ? result.error : 'ไม่ทราบสาเหตุ'), 'error');
       }
-
-      var appointmentAt = String(APP.ui.newJobAppointment.value || '').trim();
-      if (appointmentAt) {
-        await api.callServer('updateJobScheduleV55', [{ job_id: createResult.job_id, appointment_at: appointmentAt }]);
-      }
-
-      api.toast('สร้างงานใหม่แล้ว: ' + createResult.job_id, 'success');
-      APP.ui.newJobForm.reset();
-      APP.ui.newJobCustomerId.value = '';
-      renderCustomerSuggestions([]);
-      api.setText(APP.ui.newJobFormMeta, 'สร้างงานใหม่สำเร็จ');
-      await dashboardApi.fetchDashboardData({ silent: true });
-      api.switchTab('jobs');
-      await openJobDetail(createResult.job_id);
-    } catch (error) {
-      api.setText(APP.ui.newJobFormMeta, 'สร้างงานไม่สำเร็จ');
-      api.toast('สร้างงานไม่สำเร็จ: ' + (error.message || error), 'error');
+    } catch (err) {
+      api.toast('เกิดข้อผิดพลาด: ' + (err.message || err), 'error');
     }
   }
 
-  function bindOverviewFilters() {
-    document.querySelectorAll('[data-kpi-filter]').forEach(function (button) {
-      button.addEventListener('click', function () {
-        var mode = button.getAttribute('data-kpi-filter') || 'ALL';
-        APP.filters.mode = mode;
-        if (mode === 'LOW_STOCK') {
-          api.switchTab('overview');
-          var alertsSection = APP.ui.alertsList;
-          if (alertsSection && typeof alertsSection.scrollIntoView === 'function') alertsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          api.toast('โหมดสต็อกต่ำ: ดูรายการแจ้งเตือนด้านล่าง', 'info');
-          return;
-        }
-        APP.filters.status = 'ALL';
-        if (APP.ui.statusFilter) APP.ui.statusFilter.value = 'ALL';
-        api.switchTab('jobs');
-        dashboardApi.renderStatusGrid();
-        dashboardApi.renderRecentJobs();
-      });
-    });
-  }
-
-  function bindTabs() {
-    document.querySelectorAll('[data-tab-target]').forEach(function (button) {
-      button.addEventListener('click', function () {
-        var name = button.getAttribute('data-tab-target');
-        api.switchTab(name);
-        if (name === 'calendar' && APP.calendar) {
-          window.setTimeout(function () { APP.calendar.updateSize(); }, 40);
-        }
-      });
-    });
-  }
-
-  function bindJobInteractions() {
-    if (APP.ui.recentJobs) {
-      APP.ui.recentJobs.addEventListener('click', function (event) {
-        var card = event.target.closest('[data-job-id]');
-        if (!card) return;
-        openJobDetail(card.getAttribute('data-job-id'));
-      });
-    }
-
-    if (APP.ui.statusGrid) {
-      APP.ui.statusGrid.addEventListener('click', function (event) {
-        var chip = event.target.closest('[data-status-label]');
-        if (!chip) return;
-        var label = chip.getAttribute('data-status-label') || 'ALL';
-        APP.filters.mode = 'ALL';
-        APP.filters.status = APP.filters.status === label ? 'ALL' : label;
-        if (APP.ui.statusFilter) APP.ui.statusFilter.value = APP.filters.status;
-        dashboardApi.renderStatusGrid();
-        dashboardApi.renderRecentJobs();
-        api.switchTab('jobs');
-      });
-    }
-
-    if (APP.ui.searchInput) {
-      APP.ui.searchInput.addEventListener('input', api.debounce(function () {
-        APP.filters.query = APP.ui.searchInput.value || '';
-        dashboardApi.renderRecentJobs();
-      }, 180));
-    }
-
-    if (APP.ui.statusFilter) {
-      APP.ui.statusFilter.addEventListener('change', function () {
-        APP.filters.mode = 'ALL';
-        APP.filters.status = APP.ui.statusFilter.value || 'ALL';
-        dashboardApi.renderStatusGrid();
-        dashboardApi.renderRecentJobs();
-      });
-    }
-  }
-
-  function bindHeaderActions() {
-    if (APP.ui.refreshAllBtn) APP.ui.refreshAllBtn.addEventListener('click', function () { dashboardApi.fetchDashboardData(); });
-    if (APP.ui.refreshJobsBtn) APP.ui.refreshJobsBtn.addEventListener('click', function () { dashboardApi.fetchDashboardData({ silent: true }); });
-    if (APP.ui.clearFiltersBtn) APP.ui.clearFiltersBtn.addEventListener('click', function () {
-      APP.filters.query = '';
-      APP.filters.status = 'ALL';
-      APP.filters.mode = 'ALL';
-      if (APP.ui.searchInput) APP.ui.searchInput.value = '';
-      if (APP.ui.statusFilter) APP.ui.statusFilter.value = 'ALL';
-      dashboardApi.renderStatusGrid();
-      dashboardApi.renderRecentJobs();
-    });
-    if (APP.ui.goJobsFromOverview) APP.ui.goJobsFromOverview.addEventListener('click', function () { api.switchTab('jobs'); });
-    if (APP.ui.refreshCalendarBtn) APP.ui.refreshCalendarBtn.addEventListener('click', function () { dashboardApi.fetchDashboardData({ silent: true }); });
-    if (APP.ui.calendarTodayBtn) APP.ui.calendarTodayBtn.addEventListener('click', function () { if (APP.calendar) APP.calendar.today(); });
-  }
-
-  function bindDrawerActions() {
-    if (APP.ui.closeJobDrawerBtn) APP.ui.closeJobDrawerBtn.addEventListener('click', api.closeJobDrawer);
-    if (APP.ui.jobDrawerBackdrop) APP.ui.jobDrawerBackdrop.addEventListener('click', function (event) {
-      if (event.target === APP.ui.jobDrawerBackdrop) api.closeJobDrawer();
-    });
-    if (APP.ui.jobActionButtons) APP.ui.jobActionButtons.addEventListener('click', async function (event) {
-      var actionBtn = event.target.closest('button');
-      if (!actionBtn) return;
-      if (actionBtn.getAttribute('data-job-action') === 'refresh') {
-        await openJobDetail(APP.selectedJobId);
-        return;
-      }
-      var nextStatus = actionBtn.getAttribute('data-next-status');
-      if (!nextStatus) return;
-      try {
-        await changeJobStatus(APP.selectedJobId, nextStatus);
-        api.toast('เปลี่ยนสถานะแล้ว', 'success');
-        await dashboardApi.fetchDashboardData({ silent: true });
-        await openJobDetail(APP.selectedJobId);
-      } catch (error) {
-        api.toast('เปลี่ยนสถานะไม่สำเร็จ: ' + (error.message || error), 'error');
-      }
-    });
-
-    if (APP.ui.saveQuickNoteBtn) APP.ui.saveQuickNoteBtn.addEventListener('click', function () {
-      saveQuickNote().catch(function (error) {
-        api.toast('บันทึกหมายเหตุไม่สำเร็จ: ' + (error.message || error), 'error');
-      });
-    });
-
-    if (APP.ui.refreshJobDetailBtn) APP.ui.refreshJobDetailBtn.addEventListener('click', function () {
-      if (APP.selectedJobId) openJobDetail(APP.selectedJobId);
-    });
-
-    if (APP.ui.shareJobPhotosBtn) APP.ui.shareJobPhotosBtn.addEventListener('click', function () {
-      shareSelectedPhotos().catch(function (error) {
-        api.toast('แชร์รูปไม่สำเร็จ: ' + (error.message || error), 'error');
-      });
-    });
-
-    if (APP.ui.jobThumbGrid) APP.ui.jobThumbGrid.addEventListener('click', function (event) {
-      var button = event.target.closest('[data-photo-index]');
-      if (!button) return;
-      var index = Number(button.getAttribute('data-photo-index') || 0);
-      var photo = (APP.selectedPhotos || [])[index];
-      if (!photo) return;
-      api.openLightbox(photo.url, photo.title || APP.selectedJobId || 'รูปงาน');
-    });
-  }
-
-  function bindLightbox() {
-    if (APP.ui.closeLightboxBtn) APP.ui.closeLightboxBtn.addEventListener('click', api.closeLightbox);
-    if (APP.ui.imageLightbox) APP.ui.imageLightbox.addEventListener('click', function (event) {
-      if (event.target === APP.ui.imageLightbox) api.closeLightbox();
-    });
-  }
-
-  function bindCustomerAutocomplete() {
-    if (!APP.ui.newJobCustomer) return;
-    APP.ui.newJobCustomer.addEventListener('input', searchCustomersDebounced);
-    APP.ui.newJobCustomer.addEventListener('focus', function () {
-      if ((APP.customerSuggestions || []).length) renderCustomerSuggestions(APP.customerSuggestions);
-    });
-
-    if (APP.ui.customerSuggestions) {
-      APP.ui.customerSuggestions.addEventListener('click', function (event) {
-        var option = event.target.closest('[data-customer-index]');
-        if (!option) return;
-        var index = Number(option.getAttribute('data-customer-index') || -1);
-        if (index < 0) return;
-        applyCustomerSelection(APP.customerSuggestions[index]);
-      });
-    }
-
-    document.addEventListener('click', function (event) {
-      if (!APP.ui.customerSuggestions) return;
-      if (event.target === APP.ui.newJobCustomer || APP.ui.customerSuggestions.contains(event.target)) return;
-      renderCustomerSuggestions([]);
-    });
-  }
-
-  function bindNewJobForm() {
-    if (APP.ui.newJobForm) APP.ui.newJobForm.addEventListener('submit', submitNewJobForm);
-    if (APP.ui.resetNewJobBtn) APP.ui.resetNewJobBtn.addEventListener('click', function () {
-      APP.ui.newJobForm.reset();
-      APP.ui.newJobCustomerId.value = '';
-      renderCustomerSuggestions([]);
-      api.setText(APP.ui.newJobFormMeta, 'พร้อมเปิดงานใหม่');
-    });
-  }
-
-  function bindEscapeKey() {
-    document.addEventListener('keydown', function (event) {
-      if (event.key !== 'Escape') return;
-      api.closeLightbox();
-      api.closeJobDrawer();
-    });
-  }
-
-  async function bootstrap() {
+  // ===== EVENT BINDING =====
+  function bindEvents() {
     api.ensureUiRefs();
-    bindTabs();
-    bindOverviewFilters();
-    bindJobInteractions();
-    bindHeaderActions();
-    bindDrawerActions();
-    bindLightbox();
-    bindCustomerAutocomplete();
-    bindNewJobForm();
-    bindEscapeKey();
-    await dashboardApi.initializeDashboard();
+
+    // Search input
+    if (APP.ui.jobSearchInput) {
+      APP.ui.jobSearchInput.addEventListener('input', function() {
+        syncFiltersFromUi();
+        dashboardApi.renderRecentJobs();
+      });
+    }
+
+    // Status filter
+    if (APP.ui.statusFilterSelect) {
+      APP.ui.statusFilterSelect.addEventListener('change', function() {
+        syncFiltersFromUi();
+        dashboardApi.renderRecentJobs();
+      });
+    }
+
+    // Limit select
+    if (APP.ui.recentJobsLimitSelect) {
+      APP.ui.recentJobsLimitSelect.addEventListener('change', function() {
+        syncFiltersFromUi();
+        dashboardApi.renderRecentJobs();
+      });
+    }
+
+    // Refresh button
+    if (APP.ui.refreshDashboardBtn) {
+      APP.ui.refreshDashboardBtn.addEventListener('click', function() { handleRefresh(); });
+    }
+    var refreshBtnMobile = document.getElementById('refreshBtnMobile');
+    if (refreshBtnMobile) {
+      refreshBtnMobile.addEventListener('click', function() { handleRefresh(); });
+    }
+
+    // Job table click
+    if (APP.ui.recentJobsTableBody) {
+      APP.ui.recentJobsTableBody.addEventListener('click', function(event) {
+        var row = event.target;
+        while (row && row.tagName !== 'TR') row = row.parentNode;
+        if (!row) return;
+        var jobId = row.getAttribute('data-job-id');
+        if (jobId) openJobDetail(jobId);
+      });
+    }
+
+    // Status board click
+    if (APP.ui.statusBoard) {
+      APP.ui.statusBoard.addEventListener('click', function(event) {
+        var card = event.target;
+        while (card && !card.getAttribute('data-status-label')) card = card.parentNode;
+        if (!card) return;
+        var statusLabel = card.getAttribute('data-status-label') || 'ALL';
+        if (APP.ui.statusFilterSelect) APP.ui.statusFilterSelect.value = statusLabel;
+        syncFiltersFromUi();
+        dashboardApi.renderRecentJobs();
+        // Scroll to recent jobs
+        var tableSection = document.getElementById('recentJobsLoading') || document.getElementById('recentJobsTableWrap');
+        if (tableSection) tableSection.scrollIntoView({ behavior: 'smooth' });
+      });
+    }
+
+    // Inventory search
+    var invSearch = document.getElementById('invSearchInput');
+    if (invSearch) {
+      invSearch.addEventListener('input', function() { renderInventoryTable(); });
+    }
+
+    // Transfer confirm
+    var confirmTransferBtn = document.getElementById('confirmTransferBtn');
+    if (confirmTransferBtn) {
+      confirmTransferBtn.addEventListener('click', handleTransferConfirm);
+    }
+
+    // New job buttons
+    var newJobBtn = document.getElementById('newJobBtn');
+    var newJobBtnDesktop = document.getElementById('newJobBtnDesktop');
+    var bnavNewjob = document.getElementById('bnav-newjob');
+    var handleNewJob = function(e) {
+      e.preventDefault();
+      api.toast('ฟีเจอร์สร้างงานใหม่ — กำลังพัฒนา', 'info');
+    };
+    if (newJobBtn) newJobBtn.addEventListener('click', handleNewJob);
+    if (newJobBtnDesktop) newJobBtnDesktop.addEventListener('click', handleNewJob);
+    if (bnavNewjob) bnavNewjob.addEventListener('click', handleNewJob);
   }
 
-  document.addEventListener('DOMContentLoaded', function () {
-    bootstrap().catch(function (error) {
-      api.toast('เริ่มต้น Dashboard ไม่สำเร็จ: ' + (error.message || error), 'error');
-    });
+  // ===== INIT =====
+  document.addEventListener('DOMContentLoaded', function() {
+    bindEvents();
+    syncFiltersFromUi();
+    dashboardApi.initializeDashboard();
   });
 
-  window.COMPHONE_V55_INTERACTIONS = {
-    openJobDetail: openJobDetail,
-    shareSelectedPhotos: shareSelectedPhotos,
-    saveQuickNote: saveQuickNote
-  };
 })(window, document, window.comphoneV55, window.COMPHONE_V55_DASHBOARD);
 </script>

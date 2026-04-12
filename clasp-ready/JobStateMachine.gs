@@ -464,6 +464,12 @@ function runJobTransitionAutomation_(jobId, fromStatusCode, toStatusCode, option
       }
     }
 
+    // เมื่อปิดงาน (status 12) สร้าง After-Sales record อัตโนมัติ
+    if (Number(toStatusCode) === 12 && typeof createAfterSalesRecord === 'function') {
+      result.triggered = true;
+      try { result.after_sales = createAfterSalesRecord(jobId); } catch(asErr) { result.after_sales = { success: false, error: asErr.toString() }; }
+    }
+
     if (Number(toStatusCode) === 11 && options && options.source !== 'BillingManager' && typeof markBillingPaid === 'function') {
       result.triggered = true;
       result.payment = markBillingPaid({

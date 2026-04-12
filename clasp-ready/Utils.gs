@@ -4,11 +4,15 @@
 // Utils.gs - Database Access Helpers
 // ============================================================
 
-var DB_SS_ID = '19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA';
-var ROOT_FOLDER_ID = '1YRZRG9r1Y_jMHg2XFFKYjK4Hx-sW0Eq0';
+// DB_SS_ID และ ROOT_FOLDER_ID ถูกนิยามใน Config.gs (พร้อม fallback hardcoded)
+// ไม่นิยามซ้ำที่นี่เพื่อป้องกัน global redeclaration error
 
 function getComphoneSheet() {
-  try { return SpreadsheetApp.openById(DB_SS_ID); }
+  try {
+    var ssId = (typeof DB_SS_ID !== 'undefined' && DB_SS_ID)
+              || '19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA';
+    return SpreadsheetApp.openById(ssId);
+  }
   catch (e) { Logger.log('DB error: ' + e); return null; }
 }
 
@@ -27,15 +31,7 @@ function getThaiTimestamp() {
   return Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss');
 }
 
-function getConfig(key) {
-  try { var p = PropertiesService.getScriptProperties(); return p.getProperty(key) || null; }
-  catch (e) { return null; }
-}
-
-function setConfig(key, value) {
-  try { PropertiesService.getScriptProperties().setProperty(key, value); return { success: true }; }
-  catch (e) { return { success: false, error: e.toString() }; }
-}
+// getConfig และ setConfig ถูกนิยามใน Config.gs แล้ว ไม่นิยามซ้ำที่นี่
 
 function getHeaders(sheet) {
   var h = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];

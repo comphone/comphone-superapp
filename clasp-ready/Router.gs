@@ -120,7 +120,10 @@ function dispatchActionV55_(action, payload, args) {
             'getDashboardData', 'getJobStateConfig', 'getJobTimeline', 'transitionJob', 'updateJobById',
             'addQuickNote', 'openJob', 'updateJobStatus', 'getPhotoGalleryData', 'generateJobQR',
             'getJobQRData', 'handleProcessPhotos', 'sendDashboardSummary', 'inventoryOverview',
-            'transferStock', 'createCustomer', 'updateCustomer', 'getCustomer', 'listCustomers'
+            'transferStock', 'createCustomer', 'updateCustomer', 'getCustomer', 'listCustomers',
+            'loginUser', 'logoutUser', 'verifySession', 'listUsers', 'createUser', 'updateUserRole', 'setUserActive', 'setupUserSheet',
+            'clockIn', 'clockOut', 'getAttendanceReport', 'getTechHistory', 'getAllTechsSummary',
+            'getAfterSalesDue', 'logAfterSalesFollowUp', 'sendAfterSalesAlerts', 'getAfterSalesSummary'
           ]
         };
 
@@ -167,6 +170,55 @@ function dispatchActionV55_(action, payload, args) {
         return getCustomer(payload);
       case 'listCustomers':
         return listCustomers(payload);
+
+      // ============================================================
+      // Auth & RBAC
+      // ============================================================
+      case 'loginUser':
+        return loginUser(payload.username || '', payload.password || '');
+      case 'logoutUser':
+        return logoutUser(payload.token || '');
+      case 'verifySession':
+        return verifySession(payload.token || '');
+      case 'listUsers':
+        return listUsers(payload.token || '');
+      case 'createUser':
+        return createUser(payload.token || '', payload);
+      case 'updateUserRole':
+        return updateUserRole(payload.token || '', payload.username || '', payload.role || '');
+      case 'setUserActive':
+        return setUserActive(payload.token || '', payload.username || '', payload.active !== false);
+      case 'setupUserSheet':
+        return setupUserSheet();
+
+      // ============================================================
+      // Attendance & Tech History
+      // ============================================================
+      case 'clockIn':
+        return clockIn(payload.tech || payload.tech_name || '', payload.note || '');
+      case 'clockOut':
+        return clockOut(payload.tech || payload.tech_name || '', payload.note || '');
+      case 'getAttendanceReport':
+        return getAttendanceReport(payload);
+      case 'getTechHistory':
+        return getTechHistory(payload.tech || payload.tech_name || '', payload);
+      case 'getAllTechsSummary':
+        return getAllTechsSummary();
+
+      // ============================================================
+      // After-Sales Service
+      // ============================================================
+      case 'createAfterSalesRecord':
+        return createAfterSalesRecord(payload.job_id || payload.jobId || '');
+      case 'getAfterSalesDue':
+        return getAfterSalesDue(payload.days || 30);
+      case 'logAfterSalesFollowUp':
+        return logAfterSalesFollowUp(payload.record_id || '', payload.note || '', payload.followup_by || '', payload.next_action || '');
+      case 'sendAfterSalesAlerts':
+        return sendAfterSalesAlerts();
+      case 'getAfterSalesSummary':
+        return getAfterSalesSummary();
+
       default:
         return invokeFunctionByNameV55_(action, args);
     }

@@ -136,6 +136,10 @@ function buildWebAppUrl_(baseUrl, params) {
   return baseUrl + (baseUrl.indexOf('?') > -1 ? '&' : '?') + query.join('&');
 }
 
-var DB_SS_ID = getSpreadsheetId_();
-var ROOT_FOLDER_ID = getRootFolderId_();
-var WEB_APP_URL = getWebAppBaseUrl_();
+// Hardcoded fallbacks — ใช้เมื่อ Script Properties ยังไม่ได้ตั้งค่า
+var _FALLBACK_SS_ID = '19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA';
+var _FALLBACK_FOLDER_ID = '1YRZRG9r1Y_jMHg2XFFKYjK4Hx-sW0Eq0';
+
+var DB_SS_ID = getSpreadsheetId_() || _FALLBACK_SS_ID;
+var ROOT_FOLDER_ID = getRootFolderId_() || _FALLBACK_FOLDER_ID;
+var WEB_APP_URL = getWebAppBaseUrl_() || '';

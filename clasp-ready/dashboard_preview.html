@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>COMPHONE SUPER APP V5.5 — Dashboard Preview</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    :root {
+      --primary: #0f62fe;
+      --success: #198754;
+      --warning: #ffc107;
+      --danger: #dc3545;
+      --info: #0dcaf0;
+      --dark: #212529;
+      --muted: #6c757d;
+      --bg: #f8f9fa;
+      --card-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    body { background: var(--bg); font-family: 'Segoe UI', system-ui, sans-serif; }
+    
+    /* ===== SUMMARY CARDS ===== */
+    .summary-card {
+      border: none;
+      border-radius: 16px;
+      padding: 18px 20px;
+      color: white;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+    }
+    .summary-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); color: white; }
+    .summary-card .icon { font-size: 2rem; opacity: 0.9; }
+    .summary-card .info .label { font-size: 0.8rem; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.05em; }
+    .summary-card .info .value { font-size: 2rem; font-weight: 800; line-height: 1.1; }
+    
+    /* ===== REVENUE CARDS ===== */
+    .revenue-card {
+      background: white;
+      border: none;
+      border-radius: 16px;
+      padding: 18px 20px;
+      box-shadow: var(--card-shadow);
+    }
+    .revenue-card .label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .revenue-card .value { font-size: 1.6rem; font-weight: 800; color: var(--dark); }
+    .revenue-card .meta { font-size: 0.8rem; color: var(--muted); }
+    .revenue-card .icon { font-size: 1.5rem; }
+    
+    /* ===== STATUS BOARD ===== */
+    .status-group {
+      background: white;
+      border-radius: 16px;
+      padding: 14px 18px;
+      box-shadow: var(--card-shadow);
+      border-top: 4px solid;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .status-group:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+    .status-group .group-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+    .status-group .group-total { font-size: 2.2rem; font-weight: 900; line-height: 1; }
+    .status-group .group-sub { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .status-group .sub-item { font-size: 0.72rem; background: rgba(0,0,0,0.05); border-radius: 8px; padding: 3px 8px; white-space: nowrap; }
+    .status-group .sub-item .sub-count { font-weight: 700; }
+    /* old status-card kept for JS compat */
+    .status-card { display: none; }
+    
+    /* ===== JOB TABLE ===== */
+    .job-row { cursor: pointer; }
+    .job-row:hover { background: #f0f6ff !important; }
+    .row-completed { background: #d1e7dd; border-left: 4px solid var(--success); }
+    .row-overdue { background: #f8d7da; border-left: 4px solid var(--danger); }
+    .row-inprogress { background: #fff3cd; border-left: 4px solid var(--warning); }
+    
+    /* ===== ALERT ITEMS ===== */
+    .alert-item {
+      background: white;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .alert-item .alert-icon { font-size: 1.2rem; margin-top: 2px; }
+    .alert-item .alert-body .title { font-weight: 600; font-size: 0.9rem; }
+    .alert-item .alert-body .detail { font-size: 0.8rem; color: var(--muted); }
+    
+    /* ===== PANEL ===== */
+    .panel {
+      background: white;
+      border: none;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: var(--card-shadow);
+      margin-bottom: 20px;
+    }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .panel-header h2 { font-size: 1.1rem; font-weight: 700; margin: 0; }
+    .panel-header .counter { font-size: 0.8rem; background: #f0f0f0; padding: 4px 10px; border-radius: 999px; color: var(--muted); }
+    
+    /* ===== SEARCH BAR ===== */
+    .search-bar { position: relative; }
+    .search-bar .form-control { padding-left: 40px; border-radius: 12px; border: 1px solid #dee2e6; }
+    .search-bar .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+    
+    /* ===== BOTTOM NAV (Mobile) ===== */
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1px solid #dee2e6;
+      z-index: 1000;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
+    }
+    .bottom-nav .nav-item {
+      flex: 1;
+      text-align: center;
+      padding: 8px 4px;
+      font-size: 0.7rem;
+      color: var(--muted);
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .bottom-nav .nav-item.active { color: var(--primary); }
+    .bottom-nav .nav-item i { display: block; font-size: 1.2rem; margin-bottom: 2px; }
+    
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .bottom-nav { display: flex; }
+      .desktop-nav { display: none !important; }
+      body { padding-bottom: 70px; }
+      .summary-card .value { font-size: 1.5rem; }
+      .status-card .status-count { font-size: 1.4rem; }
+    }
+    
+    /* ===== BADGE ===== */
+    .badge-status { font-size: 0.75rem; padding: 4px 10px; border-radius: 999px; font-weight: 600; }
+    
+    /* ===== MODAL ===== */
+    .modal-job-detail .modal-header { background: #1a1a2e; color: white; }
+    .modal-job-detail .modal-header .btn-close { filter: invert(1); }
+    .timeline-item { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+    .timeline-item:last-child { border-bottom: none; }
+    .timeline-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--primary); margin-top: 5px; flex-shrink: 0; }
+    
+    /* ===== HIDDEN ===== */
+    .hidden { display: none !important; }
+    
+    /* ===== INVENTORY ===== */
+    .nav-tabs .nav-link { color: #495057; font-size: 0.9rem; }
+    .nav-tabs .nav-link.active { color: var(--primary); font-weight: 600; }
+    
+    /* ===== SECTION INDICATOR ===== */
+    .section-indicator {
+      position: fixed;
+      top: 70px;
+      right: 16px;
+      background: rgba(15,98,254,0.9);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      z-index: 999;
+    }
+
+    /* ===== SMART SEARCH ===== */
+    .smart-search-wrap { position: relative; }
+    .smart-search-wrap .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); z-index: 2; }
+    .smart-search-wrap .voice-btn {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--muted); font-size: 1rem; cursor: pointer; z-index: 2;
+      width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .smart-search-wrap .voice-btn:hover { background: #f0f6ff; color: var(--primary); }
+    .smart-search-wrap .voice-btn.listening { background: #fee2e2; color: #dc3545; animation: pulse-mic 1s infinite; }
+    @keyframes pulse-mic { 0%,100%{transform:translateY(-50%) scale(1);} 50%{transform:translateY(-50%) scale(1.2);} }
+    .smart-search-wrap .form-control { padding-left: 40px; padding-right: 44px; border-radius: 12px; }
+    .search-dropdown {
+      position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+      background: white; border-radius: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+      z-index: 1050; overflow: hidden; display: none;
+    }
+    .search-dropdown.show { display: block; }
+    .search-section-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: var(--muted); padding: 10px 14px 4px; letter-spacing: 0.06em; }
+    .search-result-item {
+      display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .search-result-item:hover { background: #f0f6ff; }
+    .search-result-item .sri-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; flex-shrink: 0; }
+    .search-result-item .sri-title { font-size: 0.88rem; font-weight: 600; }
+    .search-result-item .sri-sub { font-size: 0.75rem; color: var(--muted); }
+    .search-result-item .sri-badge { margin-left: auto; font-size: 0.7rem; }
+    .search-voice-status { padding: 14px; text-align: center; color: var(--muted); font-size: 0.85rem; }
+    .search-voice-status i { font-size: 1.5rem; display: block; margin-bottom: 6px; }
+
+    /* ===== PHOTO GALLERY ===== */
+    .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }
+    .photo-thumb {
+      aspect-ratio: 1; border-radius: 10px; overflow: hidden; cursor: pointer;
+      position: relative; background: #f0f0f0;
+    }
+    .photo-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s; }
+    .photo-thumb:hover img { transform: scale(1.05); }
+    .photo-thumb .photo-overlay {
+      position: absolute; inset: 0; background: rgba(0,0,0,0); display: flex;
+      align-items: center; justify-content: center; transition: background 0.2s;
+    }
+    .photo-thumb:hover .photo-overlay { background: rgba(0,0,0,0.3); }
+    .photo-thumb:hover .photo-overlay i { opacity: 1; }
+    .photo-thumb .photo-overlay i { color: white; font-size: 1.2rem; opacity: 0; transition: opacity 0.2s; }
+    .photo-add-btn {
+      aspect-ratio: 1; border-radius: 10px; border: 2px dashed #dee2e6;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--muted); font-size: 0.75rem; gap: 4px;
+      transition: all 0.2s;
+    }
+    .photo-add-btn:hover { border-color: var(--primary); color: var(--primary); background: #f0f6ff; }
+
+    /* ===== STATUS STEPS ===== */
+    .status-steps { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+    .status-step {
+      padding: 5px 10px; border-radius: 8px; font-size: 0.72rem; font-weight: 600;
+      border: 2px solid transparent; cursor: pointer; transition: all 0.15s;
+      background: #f8f9fa; color: #495057;
+    }
+    .status-step:hover { border-color: var(--primary); color: var(--primary); background: #f0f6ff; }
+    .status-step.current { background: var(--primary); color: white; border-color: var(--primary); }
+    .status-step.done { background: #d1e7dd; color: #0a3622; border-color: #a3cfbb; }
+    .status-step.blocked { background: #f8d7da; color: #842029; border-color: #f5c2c7; }
+
+    /* ===== LIGHTBOX ===== */
+    .lightbox-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 2000;
+      display: flex; align-items: center; justify-content: center; flex-direction: column;
+    }
+    .lightbox-overlay img { max-width: 90vw; max-height: 80vh; border-radius: 8px; object-fit: contain; }
+    .lightbox-toolbar { display: flex; gap: 12px; margin-top: 16px; }
+    .lightbox-toolbar button { background: rgba(255,255,255,0.15); border: none; color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; }
+    .lightbox-toolbar button:hover { background: rgba(255,255,255,0.3); }
+    .lightbox-close { position: absolute; top: 16px; right: 20px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+
+    /* ===== QUICK ACTION CHIPS ===== */
+    .quick-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .quick-chip {
+      padding: 4px 12px; border-radius: 999px; font-size: 0.75rem; font-weight: 600;
+      cursor: pointer; border: 1.5px solid; transition: all 0.15s;
+    }
+    .quick-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+
+    /* ===== TOAST ===== */
+    .toast-container-custom { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 3000; }
+    .toast-custom { background: #1a1a2e; color: white; padding: 10px 20px; border-radius: 12px; font-size: 0.85rem; box-shadow: 0 4px 16px rgba(0,0,0,0.3); white-space: nowrap; }
+  </style>
+</head>
+<body>
+
+  <!-- ===== TOP NAVBAR ===== -->
+  <nav class="navbar navbar-expand-lg navbar-dark sticky-top" style="background-color: #1a1a2e;">
+    <div class="container-fluid px-3">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+        <div style="width:32px;height:32px;background:linear-gradient(135deg,#0f62fe,#00b4d8);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+          <i class="fas fa-camera text-white" style="font-size:14px;"></i>
+        </div>
+        <span class="fw-bold">COMPHONE</span>
+        <span class="badge bg-primary ms-1" style="font-size:0.65rem;">V5.5</span>
+      </a>
+      
+      <!-- Desktop Nav -->
+      <div class="collapse navbar-collapse desktop-nav" id="navbarNav">
+        <ul class="navbar-nav ms-auto align-items-center gap-1">
+          <li class="nav-item">
+            <a class="nav-link active" href="#" onclick="showSection('dashboard'); return false;">
+              <i class="fas fa-th-large me-1"></i>Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showSection('inventory'); return false;">
+              <i class="fas fa-warehouse me-1"></i>คลังสินค้า
+            </a>
+          </li>
+          <li class="nav-item ms-2">
+            <button class="btn btn-success btn-sm">
+              <i class="fas fa-plus me-1"></i>งานใหม่
+            </button>
+          </li>
+        </ul>
+      </div>
+      
+      <!-- Mobile Hamburger -->
+      <div class="d-flex align-items-center gap-2 d-lg-none">
+        <span class="text-white-50 small">อัปเดต: 12/04/2026 10:30</span>
+        <button class="btn btn-outline-light btn-sm">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Section indicator -->
+  <div class="section-indicator" id="sectionIndicator">Dashboard</div>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <div class="container-fluid px-3 py-3" style="max-width: 1400px; margin: 0 auto;">
+    
+    <!-- ===== SECTION: DASHBOARD ===== -->
+    <div id="section-dashboard">
+      
+      <!-- Header Row -->
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h1 class="h4 fw-bold mb-0">ภาพรวมระบบ</h1>
+          <small class="text-muted">อัปเดต: 12/04/2026 10:30 น.</small>
+        </div>
+        <div class="d-none d-md-flex gap-2">
+          <button class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-sync-alt me-1"></i>รีเฟรช
+          </button>
+          <button class="btn btn-success btn-sm">
+            <i class="fas fa-plus me-1"></i>สร้างงานใหม่
+          </button>
+        </div>
+      </div>
+
+      <!-- Summary Cards Row -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="summary-card bg-primary h-100">
+            <div class="icon"><i class="fas fa-briefcase"></i></div>
+            <div class="info">
+              <div class="label">งานทั้งหมด</div>
+              <div class="value">47</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="summary-card h-100" style="background: linear-gradient(135deg,#f59e0b,#d97706);">
+            <div class="icon"><i class="fas fa-spinner"></i></div>
+            <div class="info">
+              <div class="label">กำลังดำเนินการ</div>
+              <div class="value">18</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="summary-card h-100" style="background: linear-gradient(135deg,#dc3545,#c82333);">
+            <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="info">
+              <div class="label">งานค้างเกินกำหนด</div>
+              <div class="value">3</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="summary-card h-100" style="background: linear-gradient(135deg,#198754,#157347);">
+            <div class="icon"><i class="fas fa-check-circle"></i></div>
+            <div class="info">
+              <div class="label">เสร็จแล้ว</div>
+              <div class="value">26</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Revenue Row -->
+      <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+          <div class="revenue-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="label">รายได้วันนี้</div>
+                <div class="value mt-1">฿12,500</div>
+                <div class="meta mt-1">5 บิล</div>
+              </div>
+              <div class="icon text-success"><i class="fas fa-coins"></i></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-4">
+          <div class="revenue-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="label">รายได้สัปดาห์นี้</div>
+                <div class="value mt-1">฿68,200</div>
+                <div class="meta mt-1">28 บิล</div>
+              </div>
+              <div class="icon text-primary"><i class="fas fa-chart-line"></i></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-4">
+          <div class="revenue-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="label">รายได้เดือนนี้</div>
+                <div class="value mt-1">฿245,800</div>
+                <div class="meta mt-1">102 บิล</div>
+              </div>
+              <div class="icon text-warning"><i class="fas fa-chart-bar"></i></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Stats Row — รวมเป็น 1 แถวกระชับ -->
+      <div class="panel mb-4 py-3">
+        <div class="row g-0 text-center">
+          <div class="col border-end">
+            <div class="text-danger"><i class="fas fa-box-open"></i></div>
+            <div class="fw-bold">4</div>
+            <div style="font-size:0.72rem;color:#6c757d;">สต็อกต่ำ</div>
+          </div>
+          <div class="col border-end">
+            <div class="text-info"><i class="fas fa-tools"></i></div>
+            <div class="fw-bold">7</div>
+            <div style="font-size:0.72rem;color:#6c757d;">PM ถึงรอบ</div>
+          </div>
+          <div class="col border-end">
+            <div class="text-warning"><i class="fas fa-images"></i></div>
+            <div class="fw-bold">12</div>
+            <div style="font-size:0.72rem;color:#6c757d;">รูปรอประมวลผล</div>
+          </div>
+          <div class="col">
+            <div class="text-success"><i class="fas fa-user-cog"></i></div>
+            <div class="fw-bold" style="font-size:0.9rem;">สมชาย</div>
+            <div style="font-size:0.72rem;color:#6c757d;">ช่างดีเด่นวันนี้</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Board ถูกย้ายไปอยู่ใน Job Detail Modal แล้ว -->
+
+      <!-- Alerts + Recent Jobs -->
+      <div class="row g-3">
+        <!-- Alerts -->
+        <div class="col-12 col-lg-4">
+          <div class="panel h-100">
+            <div class="panel-header">
+              <h2><i class="fas fa-bell me-2 text-danger"></i>แจ้งเตือนด่วน</h2>
+              <span class="counter">3</span>
+            </div>
+            <div class="alert-item">
+              <div class="alert-icon"><i class="fas fa-exclamation-circle text-danger"></i></div>
+              <div class="alert-body">
+                <div class="title">สต็อกสายไฟ CAT6 ต่ำ</div>
+                <div class="detail">คงเหลือ 2 ม้วน (ต่ำกว่า 5)</div>
+              </div>
+            </div>
+            <div class="alert-item">
+              <div class="alert-icon"><i class="fas fa-exclamation-triangle text-warning"></i></div>
+              <div class="alert-body">
+                <div class="title">งาน JB-2024-0089 ค้างนาน</div>
+                <div class="detail">รอมอบหมายมา 3 วันแล้ว</div>
+              </div>
+            </div>
+            <div class="alert-item">
+              <div class="alert-icon"><i class="fas fa-info-circle text-info"></i></div>
+              <div class="alert-body">
+                <div class="title">ลูกค้า 7 รายถึงรอบ PM</div>
+                <div class="detail">ควรติดต่อนัดหมายภายในสัปดาห์นี้</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Recent Jobs -->
+        <div class="col-12 col-lg-8">
+          <div class="panel h-100">
+            <div class="panel-header">
+              <h2><i class="fas fa-list me-2 text-primary"></i>รายการงานล่าสุด</h2>
+              <span class="counter">20 รายการ</span>
+            </div>
+            
+            <!-- Smart Search + Voice -->
+            <div class="row g-2 mb-3">
+              <div class="col-12">
+                <!-- Quick Filter Chips -->
+                <div class="quick-chips" id="quickChips">
+                  <span class="quick-chip" style="border-color:#6c757d;color:#6c757d;" onclick="filterChip(this,'pending')">⏰ รอดำเนินการ</span>
+                  <span class="quick-chip" style="border-color:#0f62fe;color:#0f62fe;" onclick="filterChip(this,'active')">⚡ กำลังทำ</span>
+                  <span class="quick-chip" style="border-color:#b45309;color:#b45309;" onclick="filterChip(this,'billing')">💰 รอชำระ</span>
+                  <span class="quick-chip" style="border-color:#198754;color:#198754;" onclick="filterChip(this,'closed')">✅ ปิดงาน</span>
+                  <span class="quick-chip" style="border-color:#dc3545;color:#dc3545;" onclick="filterChip(this,'overdue')">🔴 ค้างเกินกำหนด</span>
+                </div>
+              </div>
+              <div class="col-12 col-md-7">
+                <!-- Smart Search with Voice -->
+                <div class="smart-search-wrap" id="smartSearchWrap">
+                  <i class="fas fa-search search-icon"></i>
+                  <input type="search" class="form-control" id="smartSearchInput"
+                    placeholder="ค้นหา... Job ID, ชื่อลูกค้า, อาการ, ช่าง"
+                    oninput="onSmartSearch(this.value)"
+                    onfocus="showSearchDropdown()"
+                    autocomplete="off">
+                  <button class="voice-btn" id="voiceBtn" onclick="toggleVoiceSearch()" title="ค้นหาด้วยเสียง">
+                    <i class="fas fa-microphone" id="voiceIcon"></i>
+                  </button>
+                  <!-- Search Dropdown -->
+                  <div class="search-dropdown" id="searchDropdown">
+                    <div id="searchDropdownContent">
+                      <!-- เมื่อยังไม่พิมพ์ -->
+                      <div class="search-section-label">ค้นหาล่าสุด</div>
+                      <div class="search-result-item" onclick="selectSearchResult('ABC')">
+                        <div class="sri-icon bg-primary bg-opacity-10 text-primary"><i class="fas fa-briefcase"></i></div>
+                        <div><div class="sri-title">JB-2026-0142</div><div class="sri-sub">บริษัท ABC — ติดตั้ง CCTV</div></div>
+                        <span class="sri-badge badge bg-warning text-dark">เริ่มงาน</span>
+                      </div>
+                      <div class="search-result-item" onclick="selectSearchResult('สมศรี')">
+                        <div class="sri-icon bg-secondary bg-opacity-10 text-secondary"><i class="fas fa-briefcase"></i></div>
+                        <div><div class="sri-title">JB-2026-0141</div><div class="sri-sub">คุณสมศรี — ซ่อมกล้อง</div></div>
+                        <span class="sri-badge badge bg-secondary">รอมอบหมาย</span>
+                      </div>
+                      <div class="search-section-label mt-1">ค้นหาลูกค้า</div>
+                      <div class="search-result-item" onclick="selectSearchResult('สมชาย')">
+                        <div class="sri-icon bg-success bg-opacity-10 text-success"><i class="fas fa-user"></i></div>
+                        <div><div class="sri-title">บริษัท ABC จำกัด</div><div class="sri-sub">งาน 3 รายการ</div></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <select class="form-select" id="statusFilter" onchange="filterTable()">
+                  <option value="">ทุกสถานะ</option>
+                  <option value="รอมอบหมาย">รอมอบหมาย</option>
+                  <option value="เริ่มงาน">เริ่มงาน</option>
+                  <option value="รอชิ้นส่วน">รอชิ้นส่วน</option>
+                  <option value="ปิดงาน">ปิดงาน</option>
+                </select>
+              </div>
+              <div class="col-6 col-md-2">
+                <select class="form-select">
+                  <option>20 รายการ</option>
+                  <option>50 รายการ</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width:15%">Job ID</th>
+                    <th style="width:25%">ลูกค้า</th>
+                    <th class="d-none d-md-table-cell" style="width:25%">อาการ</th>
+                    <th class="d-none d-md-table-cell" style="width:15%">ช่าง</th>
+                    <th style="width:20%">สถานะ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="job-row row-inprogress" onclick="openJobDetailDemo()">
+                    <td><strong class="text-primary">JB-2026-0142</strong></td>
+                    <td>บริษัท ABC จำกัด</td>
+                    <td class="d-none d-md-table-cell text-muted small">ติดตั้ง CCTV 8 ตัว ชั้น 3-5</td>
+                    <td class="d-none d-md-table-cell">สมชาย</td>
+                    <td><span class="badge-status badge bg-warning text-dark">เริ่มงาน</span></td>
+                  </tr>
+                  <tr class="job-row" onclick="openJobDetailDemo()">
+                    <td><strong class="text-primary">JB-2026-0141</strong></td>
+                    <td>คุณสมศรี</td>
+                    <td class="d-none d-md-table-cell text-muted small">ซ่อมกล้องวงจรปิดไม่ออนไลน์</td>
+                    <td class="d-none d-md-table-cell">วิชัย</td>
+                    <td><span class="badge-status badge bg-secondary">รอมอบหมาย</span></td>
+                  </tr>
+                  <tr class="job-row row-completed" onclick="openJobDetailDemo()">
+                    <td><strong class="text-primary">JB-2026-0140</strong></td>
+                    <td>ห้างสรรพสินค้า XYZ</td>
+                    <td class="d-none d-md-table-cell text-muted small">ติดตั้ง Access Control 2 จุด</td>
+                    <td class="d-none d-md-table-cell">สมชาย</td>
+                    <td><span class="badge-status badge bg-success">ปิดงาน</span></td>
+                  </tr>
+                  <tr class="job-row row-overdue" onclick="openJobDetailDemo()">
+                    <td><strong class="text-primary">JB-2026-0139</strong></td>
+                    <td>โรงงาน DEF</td>
+                    <td class="d-none d-md-table-cell text-muted small">รอชิ้นส่วน DVR รุ่น Hikvision</td>
+                    <td class="d-none d-md-table-cell">ประยุทธ</td>
+                    <td><span class="badge-status badge bg-danger">รอชิ้นส่วน</span></td>
+                  </tr>
+                  <tr class="job-row" onclick="openJobDetailDemo()">
+                    <td><strong class="text-primary">JB-2026-0138</strong></td>
+                    <td>คุณมานะ</td>
+                    <td class="d-none d-md-table-cell text-muted small">ติดตั้ง NVR + IP Camera 4 ตัว</td>
+                    <td class="d-none d-md-table-cell">วิชัย</td>
+                    <td><span class="badge-status badge bg-info text-dark">เดินทาง</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- END SECTION: DASHBOARD -->
+    
+    <!-- ===== SECTION: INVENTORY ===== -->
+    <div id="section-inventory" class="hidden">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h1 class="h4 fw-bold mb-0">คลังสินค้า</h1>
+          <small class="text-muted">ระบบสต็อก 3 ชั้น: คลังหลัก / หน้าร้าน / รถช่าง</small>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary btn-sm">
+            <i class="fas fa-plus me-1"></i>รับของเข้า
+          </button>
+          <button class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-exchange-alt me-1"></i>โอนย้าย
+          </button>
+        </div>
+      </div>
+      
+      <!-- Inventory Summary Cards -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="revenue-card text-center">
+            <div class="icon text-primary mb-1"><i class="fas fa-warehouse fa-lg"></i></div>
+            <div class="label">คลังหลัก</div>
+            <div class="value">24</div>
+            <div class="meta">รายการ</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="revenue-card text-center">
+            <div class="icon text-success mb-1"><i class="fas fa-store fa-lg"></i></div>
+            <div class="label">หน้าร้าน</div>
+            <div class="value">18</div>
+            <div class="meta">รายการ</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="revenue-card text-center">
+            <div class="icon text-warning mb-1"><i class="fas fa-truck fa-lg"></i></div>
+            <div class="label">รถช่าง</div>
+            <div class="value">12</div>
+            <div class="meta">รายการ</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="revenue-card text-center">
+            <div class="icon text-danger mb-1"><i class="fas fa-exclamation-circle fa-lg"></i></div>
+            <div class="label">สต็อกต่ำ</div>
+            <div class="value">4</div>
+            <div class="meta">รายการ</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Inventory Table -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2><i class="fas fa-boxes me-2 text-primary"></i>ภาพรวมสต็อกสินค้า</h2>
+          <div class="search-bar">
+            <i class="fas fa-search search-icon"></i>
+            <input type="search" class="form-control form-control-sm" placeholder="ค้นหาสินค้า..." style="padding-left:32px;">
+          </div>
+        </div>
+        
+        <!-- Location Tabs -->
+        <ul class="nav nav-tabs mb-3">
+          <li class="nav-item"><a class="nav-link active" href="#">ทั้งหมด</a></li>
+          <li class="nav-item"><a class="nav-link" href="#"><i class="fas fa-warehouse me-1"></i>คลังหลัก</a></li>
+          <li class="nav-item"><a class="nav-link" href="#"><i class="fas fa-store me-1"></i>หน้าร้าน</a></li>
+          <li class="nav-item"><a class="nav-link" href="#"><i class="fas fa-truck me-1"></i>รถช่าง</a></li>
+        </ul>
+        
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>รหัสสินค้า</th>
+                <th>ชื่อสินค้า</th>
+                <th class="text-center">คลังหลัก</th>
+                <th class="text-center">หน้าร้าน</th>
+                <th class="text-center">รถช่าง</th>
+                <th class="text-center">รวม</th>
+                <th class="text-center">สถานะ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code class="text-primary">CAM-IP-4MP</code></td>
+                <td><strong>กล้อง IP 4MP Hikvision</strong></td>
+                <td class="text-center">15</td>
+                <td class="text-center">8</td>
+                <td class="text-center">4</td>
+                <td class="text-center fw-bold">27</td>
+                <td class="text-center"><span class="badge bg-success">ปกติ</span></td>
+              </tr>
+              <tr>
+                <td><code class="text-primary">NVR-8CH</code></td>
+                <td><strong>NVR 8 ช่อง Dahua</strong></td>
+                <td class="text-center">6</td>
+                <td class="text-center">3</td>
+                <td class="text-center">2</td>
+                <td class="text-center fw-bold">11</td>
+                <td class="text-center"><span class="badge bg-success">ปกติ</span></td>
+              </tr>
+              <tr>
+                <td><code class="text-primary">CABLE-CAT6</code></td>
+                <td><strong>สายไฟ CAT6 (ม้วน)</strong></td>
+                <td class="text-center text-danger">1</td>
+                <td class="text-center text-danger">1</td>
+                <td class="text-center">0</td>
+                <td class="text-center fw-bold text-danger">2</td>
+                <td class="text-center"><span class="badge bg-danger">สต็อกต่ำ</span></td>
+              </tr>
+              <tr>
+                <td><code class="text-primary">HDD-2TB</code></td>
+                <td><strong>Hard Disk 2TB WD Purple</strong></td>
+                <td class="text-center">10</td>
+                <td class="text-center">5</td>
+                <td class="text-center">3</td>
+                <td class="text-center fw-bold">18</td>
+                <td class="text-center"><span class="badge bg-success">ปกติ</span></td>
+              </tr>
+              <tr>
+                <td><code class="text-primary">POE-SWITCH-8</code></td>
+                <td><strong>PoE Switch 8 Port</strong></td>
+                <td class="text-center text-danger">2</td>
+                <td class="text-center">0</td>
+                <td class="text-center">1</td>
+                <td class="text-center fw-bold text-danger">3</td>
+                <td class="text-center"><span class="badge bg-danger">สต็อกต่ำ</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- END SECTION: INVENTORY -->
+    
+  </div>
+
+  <!-- ===== BOTTOM NAV (Mobile) ===== -->
+  <div class="bottom-nav">
+    <a class="nav-item active" href="#" onclick="showSection('dashboard'); return false;" id="bnav-dashboard">
+      <i class="fas fa-th-large"></i>Dashboard
+    </a>
+    <a class="nav-item" href="#" id="bnav-jobs">
+      <i class="fas fa-list-check"></i>งาน
+    </a>
+    <a class="nav-item" href="#" onclick="showSection('inventory'); return false;" id="bnav-inventory">
+      <i class="fas fa-warehouse"></i>คลัง
+    </a>
+    <a class="nav-item" href="#">
+      <i class="fas fa-plus-circle"></i>งานใหม่
+    </a>
+  </div>
+
+  <!-- ===== JOB DETAIL MODAL ===== -->
+  <div class="modal fade modal-job-detail" id="jobDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <!-- Header -->
+        <div class="modal-header py-2">
+          <div>
+            <div class="fw-bold" style="font-size:1rem;">งาน JB-2026-0142</div>
+            <div class="d-flex align-items-center gap-2 mt-1">
+              <span class="badge bg-warning text-dark">เริ่มงาน</span>
+              <span class="text-white-50" style="font-size:0.75rem;">บริษัท ABC • สมชาย</span>
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <!-- Share Button -->
+            <button class="btn btn-outline-light btn-sm" onclick="shareJob()" title="แชร์งาน">
+              <i class="fas fa-share-alt"></i>
+            </button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+        </div>
+
+        <!-- Progress Bar (always visible) -->
+        <div style="background:#1a1a2e;padding:8px 16px 10px;">
+          <div class="d-flex justify-content-between mb-1">
+            <small style="color:#aaa;font-size:0.7rem;">ความคืบหน้า</small>
+            <small style="color:#60a5fa;font-size:0.7rem;font-weight:700;">Step 6/12</small>
+          </div>
+          <div class="progress" style="height:6px;border-radius:4px;background:rgba(255,255,255,0.15);">
+            <div class="progress-bar" style="width:50%;background:#60a5fa;"></div>
+          </div>
+          <div class="d-flex justify-content-between mt-1" style="font-size:0.55rem;color:rgba(255,255,255,0.4);">
+            <span>รอมอบ</span><span>มอบหมาย</span><span>รับงาน</span><span>เดินทาง</span><span>หน้างาน</span>
+            <span style="color:#60a5fa;font-weight:700;">●เริ่มงาน</span>
+            <span>รอชิ้น</span><span>เสร็จ</span><span>ตรวจรับ</span><span>รอเก็บ</span><span>เก็บแล้ว</span><span>ปิดงาน</span>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs px-3 pt-2" style="border-bottom:1px solid #dee2e6;">
+          <li class="nav-item"><a class="nav-link active" href="#" onclick="switchJobTab(event,'tab-info')">รายละเอียด</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="switchJobTab(event,'tab-status')">สถานะ</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="switchJobTab(event,'tab-photos')">ภาพ <span class="badge bg-secondary ms-1" style="font-size:0.65rem;">6</span></a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="switchJobTab(event,'tab-timeline')">Timeline</a></li>
+        </ul>
+
+        <div class="modal-body pt-3">
+
+          <!-- TAB: รายละเอียด -->
+          <div id="tab-info">
+            <div class="row g-2 mb-3">
+              <div class="col-6"><div class="bg-light rounded p-2"><div class="text-muted" style="font-size:0.7rem;">Job ID</div><div class="fw-bold">JB-2026-0142</div></div></div>
+              <div class="col-6"><div class="bg-light rounded p-2"><div class="text-muted" style="font-size:0.7rem;">ลูกค้า</div><div class="fw-bold">บริษัท ABC จำกัด</div></div></div>
+              <div class="col-6"><div class="bg-light rounded p-2"><div class="text-muted" style="font-size:0.7rem;">ช่าง</div><div class="fw-bold">สมชาย</div></div></div>
+              <div class="col-6"><div class="bg-light rounded p-2"><div class="text-muted" style="font-size:0.7rem;">เปิดงาน</div><div class="fw-bold">10/04/2026</div></div></div>
+              <div class="col-12"><div class="bg-light rounded p-2"><div class="text-muted" style="font-size:0.7rem;">อาการ / รายละเอียด</div><div>ติดตั้ง CCTV 8 ตัว ชั้น 3-5 พร้อม NVR 16 ช่อง</div></div></div>
+              <div class="col-6"><div class="bg-light rounded p-2"><div class="text-muted" style="font-size:0.7rem;">โทรศัพท์ลูกค้า</div><div class="fw-bold">081-234-5678</div></div></div>
+              <div class="col-6"><div class="bg-light rounded p-2"><div class="text-muted" style="font-size:0.7rem;">สถานที่</div><div class="fw-bold">สุขุมวิท 21</div></div></div>
+            </div>
+            <!-- หมายเหตุด่วน -->
+            <div class="mb-2">
+              <label class="form-label fw-bold" style="font-size:0.85rem;">บันทึกหมายเหตุ</label>
+              <textarea class="form-control mb-2" rows="2" placeholder="พิมพ์หมายเหตุหรือผลการติดตาม..."></textarea>
+              <div class="d-flex gap-2">
+                <button class="btn btn-success btn-sm" onclick="showToast('บันทึกหมายเหตุเรียบร้อยแล้ว ✅')"><i class="fas fa-save me-1"></i>บันทึก</button>
+                <a href="#" class="btn btn-outline-secondary btn-sm"><i class="fas fa-folder-open me-1"></i>โฟลเดอร์งาน</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: สถานะ -->
+          <div id="tab-status" class="d-none">
+            <p class="text-muted mb-2" style="font-size:0.82rem;">คลิกที่สถานะเพื่อเปลี่ยนสถานะงานนี้</p>
+            <div class="status-steps">
+              <span class="status-step done">✓ รอมอบหมาย</span>
+              <span class="status-step done">✓ มอบหมายแล้ว</span>
+              <span class="status-step done">✓ รับงาน</span>
+              <span class="status-step done">✓ เดินทาง</span>
+              <span class="status-step done">✓ ถึงหน้างาน</span>
+              <span class="status-step current">● เริ่มงาน</span>
+              <span class="status-step" onclick="changeStatus(this,'รอชิ้นส่วน')">รอชิ้นส่วน</span>
+              <span class="status-step" onclick="changeStatus(this,'งานเสร็จ')">งานเสร็จ</span>
+              <span class="status-step" onclick="changeStatus(this,'ลูกค้าตรวจรับ')">ลูกค้าตรวจรับ</span>
+              <span class="status-step" onclick="changeStatus(this,'รอเก็บเงิน')">รอเก็บเงิน</span>
+              <span class="status-step" onclick="changeStatus(this,'เก็บเงินแล้ว')">เก็บเงินแล้ว</span>
+              <span class="status-step" onclick="changeStatus(this,'ปิดงาน')">ปิดงาน</span>
+            </div>
+            <div class="mt-3 p-3 bg-light rounded">
+              <div class="fw-bold mb-1" style="font-size:0.82rem;">มอบหมายช่าง</div>
+              <select class="form-select form-select-sm mb-2">
+                <option selected>สมชาย (ปัจจุบัน)</option>
+                <option>วิชัย</option>
+                <option>ประยุทธ์</option>
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="showToast('อัปเดตสถานะเรียบร้อย ✅')"><i class="fas fa-save me-1"></i>บันทึกการเปลี่ยนแปลง</button>
+            </div>
+          </div>
+
+          <!-- TAB: ภาพ -->
+          <div id="tab-photos" class="d-none">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <span class="text-muted" style="font-size:0.82rem;">ภาพทั้งหมด 6 รูป</span>
+              <div class="d-flex gap-2">
+                <label class="btn btn-primary btn-sm mb-0" style="cursor:pointer;">
+                  <i class="fas fa-camera me-1"></i>ถ่ายภาพ
+                  <input type="file" accept="image/*" capture="environment" class="d-none" onchange="previewUpload(this)">
+                </label>
+                <label class="btn btn-outline-secondary btn-sm mb-0" style="cursor:pointer;">
+                  <i class="fas fa-image me-1"></i>เลือกจากคลัง
+                  <input type="file" accept="image/*" multiple class="d-none" onchange="previewUpload(this)">
+                </label>
+              </div>
+            </div>
+            <!-- Photo Grid -->
+            <div class="photo-grid" id="photoGrid">
+              <!-- ภาพตัวอย่าง -->
+              <div class="photo-thumb" onclick="openLightbox('https://picsum.photos/seed/cctv1/400/400','12/04/2026 09:20')">
+                <img src="https://picsum.photos/seed/cctv1/200/200" alt="ภาพงาน 1" loading="lazy">
+                <div class="photo-overlay"><i class="fas fa-expand"></i></div>
+              </div>
+              <div class="photo-thumb" onclick="openLightbox('https://picsum.photos/seed/cctv2/400/400','12/04/2026 09:22')">
+                <img src="https://picsum.photos/seed/cctv2/200/200" alt="ภาพงาน 2" loading="lazy">
+                <div class="photo-overlay"><i class="fas fa-expand"></i></div>
+              </div>
+              <div class="photo-thumb" onclick="openLightbox('https://picsum.photos/seed/cctv3/400/400','12/04/2026 09:35')">
+                <img src="https://picsum.photos/seed/cctv3/200/200" alt="ภาพงาน 3" loading="lazy">
+                <div class="photo-overlay"><i class="fas fa-expand"></i></div>
+              </div>
+              <div class="photo-thumb" onclick="openLightbox('https://picsum.photos/seed/cctv4/400/400','12/04/2026 09:40')">
+                <img src="https://picsum.photos/seed/cctv4/200/200" alt="ภาพงาน 4" loading="lazy">
+                <div class="photo-overlay"><i class="fas fa-expand"></i></div>
+              </div>
+              <div class="photo-thumb" onclick="openLightbox('https://picsum.photos/seed/cctv5/400/400','12/04/2026 10:05')">
+                <img src="https://picsum.photos/seed/cctv5/200/200" alt="ภาพงาน 5" loading="lazy">
+                <div class="photo-overlay"><i class="fas fa-expand"></i></div>
+              </div>
+              <div class="photo-thumb" onclick="openLightbox('https://picsum.photos/seed/cctv6/400/400','12/04/2026 10:15')">
+                <img src="https://picsum.photos/seed/cctv6/200/200" alt="ภาพงาน 6" loading="lazy">
+                <div class="photo-overlay"><i class="fas fa-expand"></i></div>
+              </div>
+              <!-- ปุ่มเพิ่มภาพ -->
+              <label class="photo-add-btn" style="cursor:pointer;">
+                <i class="fas fa-plus fa-lg"></i>
+                <span>เพิ่มภาพ</span>
+                <input type="file" accept="image/*" multiple class="d-none" onchange="previewUpload(this)">
+              </label>
+            </div>
+          </div>
+
+          <!-- TAB: Timeline -->
+          <div id="tab-timeline" class="d-none">
+            <div class="timeline-item">
+              <div class="timeline-dot" style="background:#0f62fe;"></div>
+              <div>
+                <div class="text-muted" style="font-size:0.72rem;">12/04/2026 09:15 • สมชาย</div>
+                <div class="fw-semibold">เริ่มงาน</div>
+                <div class="text-muted small">ช่างเริ่มงาน ณ หน้างาน</div>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-dot" style="background:#0f62fe;"></div>
+              <div>
+                <div class="text-muted" style="font-size:0.72rem;">12/04/2026 08:45 • สมชาย</div>
+                <div class="fw-semibold">ถึงหน้างาน</div>
+                <div class="text-muted small">GPS: 13.7563, 100.5018 • <a href="https://maps.google.com/?q=13.7563,100.5018" target="_blank" class="text-primary">ดูแผนที่</a></div>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-dot" style="background:#198754;"></div>
+              <div>
+                <div class="text-muted" style="font-size:0.72rem;">12/04/2026 08:00 • สมชาย</div>
+                <div class="fw-semibold">รับงาน</div>
+                <div class="text-muted small">รับมอบหมายงานผ่าน LINE</div>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-dot" style="background:#6c757d;"></div>
+              <div>
+                <div class="text-muted" style="font-size:0.72rem;">10/04/2026 14:30 • อานนท์ (ผู้จัดการ)</div>
+                <div class="fw-semibold">มอบหมายงาน</div>
+                <div class="text-muted small">มอบหมายให้ช่างสมชาย</div>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-dot" style="background:#6c757d;"></div>
+              <div>
+                <div class="text-muted" style="font-size:0.72rem;">10/04/2026 14:00 • อานนท์</div>
+                <div class="fw-semibold">เปิดงาน</div>
+                <div class="text-muted small">รับแจ้งผ่าน LINE Bot</div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- end modal-body -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== LIGHTBOX ===== -->
+  <div class="lightbox-overlay d-none" id="lightboxOverlay" onclick="closeLightboxOnBg(event)">
+    <button class="lightbox-close" onclick="closeLightbox()"><i class="fas fa-times"></i></button>
+    <img id="lightboxImg" src="" alt="ภาพขนาดใหญ่">
+    <div class="lightbox-toolbar">
+      <button onclick="sharePhoto()"><i class="fas fa-share-alt me-1"></i>แชร์</button>
+      <button onclick="downloadPhoto()"><i class="fas fa-download me-1"></i>ดาวน์โหลด</button>
+      <button onclick="copyPhotoLink()"><i class="fas fa-link me-1"></i>คัดลิงก์</button>
+      <button onclick="closeLightbox()">ปิด</button>
+    </div>
+    <div id="lightboxCaption" style="color:rgba(255,255,255,0.5);font-size:0.75rem;margin-top:8px;"></div>
+  </div>
+
+  <!-- ===== TOAST ===== -->
+  <div class="toast-container-custom" id="toastContainer" style="display:none;">
+    <div class="toast-custom" id="toastMsg"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+  // ===== SECTION NAVIGATION =====
+  function showSection(section) {
+    ['dashboard','inventory'].forEach(function(s) {
+      var el = document.getElementById('section-' + s);
+      if (el) el.classList.toggle('hidden', s !== section);
+      var nav = document.getElementById('bnav-' + s);
+      if (nav) nav.classList.toggle('active', s === section);
+    });
+    var names = { dashboard: 'Dashboard', inventory: 'คลังสินค้า' };
+    var ind = document.getElementById('sectionIndicator');
+    if (ind) ind.textContent = names[section] || section;
+  }
+
+  // ===== OPEN JOB DETAIL =====
+  function openJobDetailDemo() {
+    switchJobTab(null, 'tab-info');
+    new bootstrap.Modal(document.getElementById('jobDetailModal')).show();
+  }
+
+  // ===== JOB DETAIL TABS =====
+  function switchJobTab(e, tabId) {
+    if (e) e.preventDefault();
+    ['tab-info','tab-status','tab-photos','tab-timeline'].forEach(function(t) {
+      var el = document.getElementById(t);
+      if (el) el.classList.toggle('d-none', t !== tabId);
+    });
+    document.querySelectorAll('#jobDetailModal .nav-link').forEach(function(a) {
+      a.classList.toggle('active', a.getAttribute('onclick') && a.getAttribute('onclick').includes(tabId));
+    });
+  }
+
+  // ===== CHANGE STATUS =====
+  function changeStatus(el, newStatus) {
+    document.querySelectorAll('.status-step').forEach(function(s) { s.classList.remove('current'); });
+    el.classList.remove('status-step');
+    el.classList.add('status-step','current');
+    el.textContent = '● ' + newStatus;
+    showToast('เปลี่ยนสถานะเป็น “' + newStatus + '” ✅');
+  }
+
+  // ===== SMART SEARCH =====
+  var searchData = [
+    { type:'job', id:'JB-2026-0142', title:'บริษัท ABC จำกัด', sub:'ติดตั้ง CCTV 8 ตัว', status:'เริ่มงาน', badge:'bg-warning text-dark' },
+    { type:'job', id:'JB-2026-0141', title:'คุณสมศรี', sub:'ซ่อมกล้องวงจรปิดไม่ออนไลน์', status:'รอมอบหมาย', badge:'bg-secondary' },
+    { type:'job', id:'JB-2026-0140', title:'ห้างสรรพสินค้า XYZ', sub:'ติดตั้ง Access Control', status:'ปิดงาน', badge:'bg-success' },
+    { type:'job', id:'JB-2026-0139', title:'โรงงาน DEF', sub:'รอชิ้นส่วน DVR Hikvision', status:'รอชิ้นส่วน', badge:'bg-danger' },
+    { type:'job', id:'JB-2026-0138', title:'คุณมานะ', sub:'ติดตั้ง NVR + IP Camera 4 ตัว', status:'เดินทาง', badge:'bg-info text-dark' },
+    { type:'customer', id:'CUST-001', title:'บริษัท ABC จำกัด', sub:'งาน 3 รายการ' },
+    { type:'customer', id:'CUST-002', title:'โรงงาน DEF', sub:'งาน 1 รายการ' },
+    { type:'tech', id:'TECH-01', title:'สมชาย', sub:'ช่าง • งานวันนี้ 3 รายการ' },
+  ];
+
+  function onSmartSearch(q) {
+    var dd = document.getElementById('searchDropdown');
+    var content = document.getElementById('searchDropdownContent');
+    dd.classList.add('show');
+    if (!q || q.length < 1) { showDefaultDropdown(); return; }
+    var results = searchData.filter(function(d) {
+      return (d.id+d.title+d.sub).toLowerCase().includes(q.toLowerCase());
+    });
+    if (results.length === 0) {
+      content.innerHTML = '<div class="search-voice-status"><i class="fas fa-search-minus"></i>ไม่พบผลลัพธ์</div>';
+      return;
+    }
+    var html = '';
+    var jobResults = results.filter(function(r){return r.type==='job';});
+    var otherResults = results.filter(function(r){return r.type!=='job';});
+    if (jobResults.length) {
+      html += '<div class="search-section-label">งาน</div>';
+      jobResults.forEach(function(r) {
+        html += '<div class="search-result-item" onclick="selectSearchResult(\'' + r.id + '\')">';
+        html += '<div class="sri-icon bg-primary bg-opacity-10 text-primary"><i class="fas fa-briefcase"></i></div>';
+        html += '<div><div class="sri-title">' + r.id + '</div><div class="sri-sub">' + r.title + ' — ' + r.sub + '</div></div>';
+        if (r.status) html += '<span class="sri-badge badge ' + r.badge + '">' + r.status + '</span>';
+        html += '</div>';
+      });
+    }
+    if (otherResults.length) {
+      html += '<div class="search-section-label">ลูกค้า / ช่าง</div>';
+      otherResults.forEach(function(r) {
+        var icon = r.type === 'customer' ? 'fa-building' : 'fa-user-cog';
+        var color = r.type === 'customer' ? 'text-success' : 'text-info';
+        html += '<div class="search-result-item" onclick="selectSearchResult(\'' + r.id + '\')">';
+        html += '<div class="sri-icon bg-success bg-opacity-10 ' + color + '"><i class="fas ' + icon + '"></i></div>';
+        html += '<div><div class="sri-title">' + r.title + '</div><div class="sri-sub">' + r.sub + '</div></div>';
+        html += '</div>';
+      });
+    }
+    content.innerHTML = html;
+  }
+
+  function showDefaultDropdown() {
+    document.getElementById('searchDropdownContent').innerHTML =
+      '<div class="search-section-label">ค้นหาล่าสุด</div>' +
+      '<div class="search-result-item" onclick="selectSearchResult(\'JB-2026-0142\')"><div class="sri-icon bg-primary bg-opacity-10 text-primary"><i class="fas fa-briefcase"></i></div><div><div class="sri-title">JB-2026-0142</div><div class="sri-sub">บริษัท ABC — ติดตั้ง CCTV</div></div><span class="sri-badge badge bg-warning text-dark">เริ่มงาน</span></div>' +
+      '<div class="search-result-item" onclick="selectSearchResult(\'JB-2026-0139\')"><div class="sri-icon bg-danger bg-opacity-10 text-danger"><i class="fas fa-briefcase"></i></div><div><div class="sri-title">JB-2026-0139</div><div class="sri-sub">โรงงาน DEF — รอชิ้นส่วน</div></div><span class="sri-badge badge bg-danger">รอชิ้นส่วน</span></div>';
+  }
+
+  function showSearchDropdown() {
+    document.getElementById('searchDropdown').classList.add('show');
+    showDefaultDropdown();
+  }
+
+  function selectSearchResult(id) {
+    document.getElementById('smartSearchInput').value = id;
+    document.getElementById('searchDropdown').classList.remove('show');
+    openJobDetailDemo();
+  }
+
+  document.addEventListener('click', function(e) {
+    if (!document.getElementById('smartSearchWrap').contains(e.target)) {
+      document.getElementById('searchDropdown').classList.remove('show');
+    }
+  });
+
+  // ===== VOICE SEARCH =====
+  var recognition = null;
+  var isListening = false;
+
+  function toggleVoiceSearch() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      showToast('บราวเซอร์นี้ไม่รองรับ Voice Search — ลองใน Chrome หรือ Edge');
+      return;
+    }
+    if (isListening) { stopVoice(); return; }
+    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.lang = 'th-TH';
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = function() {
+      isListening = true;
+      document.getElementById('voiceBtn').classList.add('listening');
+      document.getElementById('voiceIcon').className = 'fas fa-microphone-slash';
+      document.getElementById('searchDropdown').classList.add('show');
+      document.getElementById('searchDropdownContent').innerHTML =
+        '<div class="search-voice-status"><i class="fas fa-microphone text-danger"></i>กำลังฟัง... พูดชื่อลูกค้า หรือ Job ID</div>';
+    };
+    recognition.onresult = function(e) {
+      var transcript = e.results[0][0].transcript;
+      document.getElementById('smartSearchInput').value = transcript;
+      onSmartSearch(transcript);
+    };
+    recognition.onend = function() { stopVoice(); };
+    recognition.onerror = function(e) {
+      stopVoice();
+      showToast('ไม่ได้ยินเสียง — ลองใหม่อีกครั้ง');
+    };
+    recognition.start();
+  }
+
+  function stopVoice() {
+    isListening = false;
+    if (recognition) recognition.stop();
+    document.getElementById('voiceBtn').classList.remove('listening');
+    document.getElementById('voiceIcon').className = 'fas fa-microphone';
+  }
+
+  // ===== FILTER CHIPS =====
+  function filterChip(el, group) {
+    var active = el.classList.contains('chip-active');
+    document.querySelectorAll('.quick-chip').forEach(function(c) { c.classList.remove('chip-active'); c.style.opacity='1'; });
+    if (!active) {
+      el.classList.add('chip-active');
+      el.style.background = el.style.borderColor;
+      el.style.color = 'white';
+      showToast('กรอง: ' + el.textContent.trim());
+    } else {
+      el.style.background = '';
+    }
+  }
+
+  function filterTable() { /* GAS integration point */ }
+
+  // ===== LIGHTBOX =====
+  var currentPhotoUrl = '';
+  function openLightbox(url, caption) {
+    currentPhotoUrl = url;
+    document.getElementById('lightboxImg').src = url;
+    document.getElementById('lightboxCaption').textContent = caption || '';
+    document.getElementById('lightboxOverlay').classList.remove('d-none');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeLightbox() {
+    document.getElementById('lightboxOverlay').classList.add('d-none');
+    document.body.style.overflow = '';
+  }
+  function closeLightboxOnBg(e) {
+    if (e.target === document.getElementById('lightboxOverlay')) closeLightbox();
+  }
+  function sharePhoto() {
+    if (navigator.share) {
+      navigator.share({ title: 'ภาพงาน JB-2026-0142', url: currentPhotoUrl })
+        .catch(function(){});
+    } else {
+      navigator.clipboard.writeText(currentPhotoUrl);
+      showToast('คัดลิงก์ภาพแล้ว — วางใน LINE / WhatsApp ได้เลย');
+    }
+  }
+  function downloadPhoto() {
+    var a = document.createElement('a');
+    a.href = currentPhotoUrl;
+    a.download = 'job-photo.jpg';
+    a.target = '_blank';
+    a.click();
+  }
+  function copyPhotoLink() {
+    navigator.clipboard.writeText(currentPhotoUrl).then(function() {
+      showToast('คัดลิงก์เรียบร้อย ✅');
+    });
+  }
+
+  // ===== SHARE JOB =====
+  function shareJob() {
+    var text = 'งาน JB-2026-0142 | บริษัท ABC | สถานะ: เริ่มงาน | ช่าง: สมชาย';
+    if (navigator.share) {
+      navigator.share({ title: 'COMPHONE Job', text: text, url: window.location.href });
+    } else {
+      navigator.clipboard.writeText(text);
+      showToast('คัดข้อมูลงานแล้ว — วางใน LINE ได้เลย');
+    }
+  }
+
+  // ===== PREVIEW UPLOAD =====
+  function previewUpload(input) {
+    if (!input.files || !input.files.length) return;
+    var grid = document.getElementById('photoGrid');
+    Array.from(input.files).forEach(function(file) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var url = e.target.result;
+        var div = document.createElement('div');
+        div.className = 'photo-thumb';
+        div.onclick = function() { openLightbox(url, 'ภาพใหม่'); };
+        div.innerHTML = '<img src="' + url + '"><div class="photo-overlay"><i class="fas fa-expand"></i></div>';
+        grid.insertBefore(div, grid.lastElementChild);
+      };
+      reader.readAsDataURL(file);
+    });
+    showToast('อัปโหลดภาพ ' + input.files.length + ' รูป ✅');
+  }
+
+  // ===== TOAST =====
+  var toastTimer = null;
+  function showToast(msg) {
+    var c = document.getElementById('toastContainer');
+    var m = document.getElementById('toastMsg');
+    m.textContent = msg;
+    c.style.display = 'block';
+    c.style.opacity = '1';
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() {
+      c.style.opacity = '0';
+      setTimeout(function() { c.style.display = 'none'; }, 300);
+    }, 2500);
+  }
+
+  // ===== KEYBOARD SHORTCUT =====
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      document.getElementById('smartSearchInput').focus();
+      showSearchDropdown();
+    }
+    if (e.key === 'Escape') {
+      closeLightbox();
+      document.getElementById('searchDropdown').classList.remove('show');
+    }
+  });
+  </script>
+</body>
+</html>
