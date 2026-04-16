@@ -72,7 +72,7 @@
     if (empty) empty.classList.add('hidden');
     if (tableWrap) tableWrap.classList.add('hidden');
 
-    api.callServer('getInventoryOverview', [{}])
+    api.callServer('inventoryOverview', [{}])
       .then(function(result) {
         if (loading) loading.classList.add('hidden');
         if (result && result.success && result.items && result.items.length > 0) {
