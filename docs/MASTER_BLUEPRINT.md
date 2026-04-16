@@ -236,7 +236,93 @@ clasp open
 
 ---
 
-## 7. กฎสำคัญสำหรับ AI Model ที่จะทำงานต่อ (Handoff Rules)
+## 6.1 Static Website (Permanent Preview)
+
+Dashboard Preview ถูก Deploy เป็นเว็บไซต์ถาวรบน Cloudflare Pages:
+
+| รายการ | ค่า |
+| :--- | :--- |
+| **URL** | https://comphone-superapp.pages.dev |
+| **Source** | `clasp-ready/dashboard_preview.html` |
+| **Platform** | Cloudflare Pages (ฟรี, ถาวร, CDN ทั่วโลก) |
+| **Auto Deploy** | Push ขึ้น GitHub branch `main` → Deploy อัตโนมัติ |
+
+---
+
+## 8. โมดูลใหม่ V5.5+ Smart (Planned Features)
+
+ฟีเจอร์เหล่านี้ได้รับการออกแบบและบรรจุใน Blueprint แล้ว รอการพัฒนาในลำดับถัดไป
+
+### 8.1 Executive Decision Center — ศูนย์สั่งการ
+
+> **เป้าหมาย:** บริหารจัดการงานผ่านมือถือได้ทั้งหมด ไม่ต้องเปิดคอมพิวเตอร์
+
+| ฟีเจอร์ | รายละเอียด | Priority |
+| :--- | :--- | :---: |
+| **Executive Dashboard** | สรุปกำไร-ขาดทุนรายบิล + งานล่าช้า Real-time | 🔴 สูง |
+| **Quick Call Button** | กดโทรหาลูกค้า/ช่างได้ทันทีจากหน้างานค้าง | 🔴 สูง |
+| **Quick Notify Button** | ส่งข้อความจี้งานเข้าห้อง LINE โดยตรงจาก Dashboard | 🔴 สูง |
+| **Kudos & Recognition Engine** | ส่งดาวคำชมช่างหลังปิดงาน เก็บเป็น Data ประเมินผล | 🟡 กลาง |
+| **Executive Daily Pulse** | รายงานอัตโนมัติทุกเช้า 08:30 น. (กำไร, งานค้าง, Kudos) | 🟡 กลาง |
+
+**API ที่ต้องสร้างใหม่:**
+- `getExecutiveSummary()` — ดึงข้อมูลกำไร-ขาดทุนรายบิล
+- `sendKudos(jobId, techId, message)` — ส่งคำชมช่าง
+- `sendDailyPulse()` — Trigger รายงานประจำวัน (เพิ่มใน AutoBackup.gs)
+
+---
+
+### 8.2 Smart Financial Ecosystem — บัญชีและภาษีอัจฉริยะ
+
+> **เป้าหมาย:** ลดงานคีย์เอกสารการเงินและป้องกันความผิดพลาด
+
+| ฟีเจอร์ | รายละเอียด | Priority |
+| :--- | :--- | :---: |
+| **Auto-Tax Engine** | คำนวณ VAT 7% และ WHT 3% อัตโนมัติตามประเภทลูกค้า | 🔴 สูง |
+| **PDF Auto-Generator** | ออกใบเสร็จ PDF อัตโนมัติเมื่อชำระเงิน → บันทึก Drive + ส่งลูกค้า | 🔴 สูง |
+| **Slip Matcher Engine** | ตรวจสลิปโอนเงินอัตโนมัติ เทียบยอดกับ DB_BILLING → เปลี่ยนสถานะอัตโนมัติ | 🔴 สูง |
+
+**Script Properties ที่ต้องตั้งค่า:**
+- `SLIP_VERIFY_API_URL` — Endpoint ตรวจสอบสลิป
+- `SLIP_VERIFY_API_KEY` — API Key ตรวจสลิป
+- `BILLING_RECEIPT_FOLDER_ID` — โฟลเดอร์เก็บใบเสร็จ PDF
+- `PROMPTPAY_BILLER_ID` — เลขบัญชี PromptPay
+
+**API ที่มีโครงร่างแล้วใน `BillingManager.gs`:**
+- `createBill()`, `verifySlip()`, `generateReceiptPDF()`
+
+---
+
+### 8.3 Resilience & Context — ความต่อเนื่องและการติดตาม
+
+> **เป้าหมาย:** ทำงานได้ไม่สะดุดและจำข้อมูลลูกค้าได้แม่นยำ
+
+| ฟีเจอร์ | รายละเอียด | Priority |
+| :--- | :--- | :---: |
+| **Offline-First & Auto-Retry** | บันทึกผ่าน LocalStorage ก่อน → Re-sync อัตโนมัติเมื่อสัญญาณกลับ | 🟡 กลาง |
+| **Smart Context Memory** | แสดง "ความทรงจำงาน" ใน Job Detail (เคยซ่อมอะไร เมื่อไหร่) | 🟡 กลาง |
+| **AI Vision-to-Facebook** | ส่งรูป 1 รูป → AI สร้างแคปชั่น 3 สไตล์ (Professional/Sales/Story) → อนุมัติโพสต์ด้วยปุ่มเดียว | 🟢 ต่ำ |
+
+**API ที่ต้องสร้างใหม่:**
+- `getCustomerHistory(customerId)` — ดึงประวัติการซ่อมทั้งหมดของลูกค้า
+- `generateSocialCaption(imageUrl, style)` — สร้างแคปชั่น Facebook ด้วย Gemini AI
+- `approveAndPostToFacebook(jobId, captionIndex)` — โพสต์ Facebook Page
+
+---
+
+### 8.4 ตารางเปรียบเทียบ Blueprint เดิม vs V5.5+ Smart
+
+| หมวดหมู่ | Blueprint เดิม (V5.5) | V5.5+ Smart (Planned) |
+| :--- | :--- | :--- |
+| สถานะงาน | 12 ขั้นตอน | ปรับเป็น 5 ขั้นตอนกระชับ (แนะนำ) |
+| การเงิน | ออกบิลได้ | คำนวณภาษีอัตโนมัติ + จับคู่สลิปเอง |
+| ทีมช่าง | ติดตามงาน | คำนวณค่าแรงรายหน้างาน + ระบบ Kudos |
+| การตลาด | โพสต์ภาพหน้างาน | AI สร้างแคปชั่น 3 สไตล์ + อนุมัติด้วยปุ่มเดียว |
+| การจัดการงาน | ดูงานเฉยๆ | Decision Center + Quick Actions |
+
+---
+
+## 9. กฎสำคัญสำหรับ AI Model ที่จะทำงานต่อ (Handoff Rules)
 
 1. **SPA Architecture:** การเพิ่มหน้าใหม่ **ห้ามสร้างไฟล์ HTML ใหม่** ให้เพิ่ม `<div id="section-xxx" class="section hidden">` ใน `Index.html` และเรียก `showSection('section-xxx')` ใน `JS_Part2.html`
 2. **API Pattern:** เรียก Backend ด้วย `google.script.run.withSuccessHandler(fn).withFailureHandler(fn).functionName(params)` ตาม Pattern ใน `JS_Part1.html`
@@ -245,3 +331,4 @@ clasp open
 5. **Mobile-First:** ออกแบบ UI รองรับมือถือเสมอ เพราะผู้ใช้หลักคือช่างภาคสนาม
 6. **Toast แทน Alert:** ใช้ `showToast(message, type)` แทน `alert()` ทุกกรณี
 7. **Error Handling:** ทุก API call ต้องมี `.withFailureHandler()` และแสดง Toast error ให้ผู้ใช้เห็น
+8. **V5.5+ Smart Modules:** ฟีเจอร์ใหม่ใน Section 8 ให้ใช้ Gemini AI API ผ่าน `getConfig('GEMINI_API_KEY')` และ Facebook Graph API ผ่าน `getConfig('FACEBOOK_PAGE_TOKEN')`
