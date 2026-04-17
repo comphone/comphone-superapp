@@ -2,10 +2,12 @@
 'use strict';
 
 // ===== STATE =====
+const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbye7oTIj-cQjMtSm5CZBJ81mkOHO7GZm9iKFUjcSFBM_DgSsDZXr919Y8D-WezT2jBEUA/exec';
+
 const APP = {
   user: null,
   role: null,
-  scriptUrl: null,
+  scriptUrl: DEFAULT_SCRIPT_URL,
   currentPage: 'home',
   deferredInstall: null,
   notifEnabled: false,
@@ -140,6 +142,8 @@ function initApp() {
 // ===== SETUP =====
 function showSetup() {
   document.getElementById('setup-screen').classList.remove('hidden');
+  const urlInput = document.getElementById('setup-url');
+  if (urlInput && !urlInput.value) urlInput.value = DEFAULT_SCRIPT_URL;
 }
 
 let selectedRole = null;

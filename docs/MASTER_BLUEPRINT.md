@@ -33,6 +33,8 @@
 ### 2.2 Web URLs
 | รายการ | URL |
 |--------|-----|
+| **GAS Web App (หลัก) @437** | `https://script.google.com/macros/s/AKfycbye7oTIj-cQjMtSm5CZBJ81mkOHO7GZm9iKFUjcSFBM_DgSsDZXr919Y8D-WezT2jBEUA/exec` |
+| **GAS Web App (เก่า) @436** | `https://script.google.com/macros/s/AKfycbyubJh1RuPO5NrlNVrxROb9yuLmW-mlZcOEa8zmaOCE2u-xGWTAcI-azwA5C7pn7mlTHg/exec` |
 | **PWA App (ถาวร/หลัก)** | `https://comphone.github.io/comphone-superapp/pwa/` |
 | **Cloudflare Worker (สำรอง)** | `https://comphone-dashboard.narinoutagit.workers.dev` |
 | **GitHub Repository** | `https://github.com/comphone/comphone-superapp` |
@@ -257,4 +259,25 @@
 7. **Dynamic DOM:** หากต้องสร้าง Element ใหม่ ให้ใช้ `innerHTML` หรือ `document.createElement` และผูก Event Listener แบบ Event Delegation
 
 ---
-*อัปเดตล่าสุด: 17 เมษายน 2026 โดย Manus AI (เพิ่ม PWA App, Role-Based Dashboard, และ Inventory CRUD)*
+---
+
+## 8. สถานะ Deploy ล่าสุด (Deployment Status)
+
+| รายการ | สถานะ | รายละเอียด |
+|--------|--------|------------|
+| **GAS Push** | ✅ สำเร็จ | 30 ไฟล์ (22 .gs + 8 .html) |
+| **GAS Deploy** | ✅ @437 | v5.5.2 - setScriptProperties API |
+| **initSystem()** | ✅ สำเร็จ | Sheets 13 ตาราง + Headers ครบ |
+| **Triggers** | ✅ ทำงาน | 6 Triggers (sendAfterSalesAlerts, checkLowStockAlert, cronMorningAlert, geminiReorderSuggestion, autoBackup, getCRMSchedule) |
+| **Script Properties** | ✅ ตั้งค่าแล้ว | DB_SS_ID, ROOT_FOLDER_ID, WEB_APP_URL, LINE_CHANNEL_ACCESS_TOKEN, LINE_GROUP_TECHNICIAN, LINE_GROUP_ACCOUNTING, LINE_GROUP_PROCUREMENT |
+| **API Test** | ✅ 10/10 PASS | systemStatus, getDashboardData, getJobStateConfig, inventoryOverview, listCustomers, loginUser, addInventoryItem, barcodeLookup, getComphoneConfig, validateConfig |
+| **PWA** | ✅ Deploy แล้ว | https://comphone.github.io/comphone-superapp/pwa/ |
+| **GitHub** | ✅ Push แล้ว | Repository: comphone/comphone-superapp |
+
+### สิ่งที่ยังต้องทำ (Pending)
+- [ ] ตั้งค่า `LINE_GROUP_SALES` และ `LINE_GROUP_EXECUTIVE` (รอ Group ID จากผู้ใช้)
+- [ ] ตั้งค่า `GEMINI_API_KEY` (รอ API Key จาก Google AI Studio)
+- [ ] พัฒนา UI สำหรับ CRM, Team Attendance, After-Sales
+- [ ] ระบบ PDF ใบเสร็จ และ Slip Verification
+
+*อัปเดตล่าสุด: 17 เมษายน 2026 โดย Manus AI (Deploy สำเร็จ, initSystem() เสร็จ, API ทดสอบผ่าน 10/10)*

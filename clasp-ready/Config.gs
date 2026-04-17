@@ -202,3 +202,40 @@ function getWhtRate() {
 function getLowStockThreshold() {
   return parseInt(getConfig('LOW_STOCK_ALERT', CONFIG.DEFAULTS.LOW_STOCK_ALERT), 10);
 }
+
+// ── setScriptPropertiesFromPayload() — ตั้งค่า Script Properties ผ่าน API ──
+function setScriptPropertiesFromPayload(payload) {
+  payload = payload || {};
+  var props = PropertiesService.getScriptProperties();
+  var allowed = [
+    'DB_SS_ID', 'ROOT_FOLDER_ID', 'WEB_APP_URL', 'GEMINI_API_KEY',
+    'LINE_CHANNEL_ACCESS_TOKEN', 'LINE_GROUP_TECHNICIAN', 'LINE_GROUP_ACCOUNTING',
+    'LINE_GROUP_PROCUREMENT', 'LINE_GROUP_SALES', 'LINE_GROUP_EXECUTIVE',
+    'LINE_OA_TOKEN', 'VAT_RATE', 'WHT_RATE', 'LOW_STOCK_ALERT',
+    'FOLDER_JOBS_PHOTOS', 'FOLDER_BILLING_RECEIPTS', 'FOLDER_SLIPS', 'FOLDER_AI_QUEUE', 'FOLDER_PO'
+  ];
+  var properties = payload.properties || payload;
+  // ลบ action key ออก
+  delete properties['action'];
+  var set = [];
+  var skipped = [];
+  for (var key in properties) {
+    if (allowed.indexOf(key) > -1) {
+      var value = String(properties[key] || '');
+      if (value) {
+        props.setProperty(key, value);
+        set.push(key);
+      } else {
+        skipped.push(key + ' (ค่าว่าง)');
+      }
+    } else {
+      skipped.push(key + ' (ไม่อนุญาต)');
+    }
+  }
+  return {
+    success: true,
+    set: set,
+    skipped: skipped,
+    message: 'ตั้งค่า ' + set.length + ' รายการ, ข้าม ' + skipped.length + ' รายการ'
+  };
+}

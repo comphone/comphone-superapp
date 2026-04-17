@@ -128,7 +128,7 @@ function dispatchActionV55_(action, payload, args) {
             'addInventoryItem', 'updateInventoryItem', 'deleteInventoryItem', 'getInventoryItemDetail',
             'getStockMovementHistory', 'createPurchaseOrder', 'listPurchaseOrders', 'receivePurchaseOrder',
             'checkStock', 'barcodeLookup', 'scanWithdrawStock', 'geminiReorderSuggestion',
-            'initSystem', 'systemStatus', 'setupAllTriggers', 'getSchemaInfo', 'validateConfig', 'getComphoneConfig'
+            'initSystem', 'systemStatus', 'setupAllTriggers', 'getSchemaInfo', 'validateConfig', 'getComphoneConfig', 'setScriptProperties'
           ]
         };
 
@@ -223,6 +223,8 @@ function dispatchActionV55_(action, payload, args) {
       // ============================================================
       // System Setup & Health Check
       // ============================================================
+      case 'setScriptProperties':
+        return setScriptPropertiesFromPayload(payload);
       case 'initSystem':
         return initSystem();
       case 'systemStatus':
