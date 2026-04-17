@@ -53,9 +53,14 @@ function renderDashboard(data) {
   const lowStock = Number(summary.lowStock || summary.low_stock || 0);
   const pmDue = Number(summary.pmDueCount || summary.pm_due_count || 0);
   const topTech = summary.topTechnician || null;
-  const alerts = data.alerts || summary.alerts || [];
+  // alerts อาจเป็น object { success, items } หรือ array
+  const alertsRaw = data.alerts || summary.alerts || {};
+  const alerts = Array.isArray(alertsRaw) ? alertsRaw : (alertsRaw.items || []);
   const recentJobs = (data.jobs || summary.recentJobs || []).slice(0, 8);
-  const statusDist = data.status_distribution || summary.status_distribution || [];
+  // status_distribution อาจเป็น object { success, total_jobs, statuses } หรือ array
+  const sdRaw = data.status_distribution || summary.status_distribution || {};
+  const statusDist = Array.isArray(sdRaw) ? sdRaw :
+    (sdRaw.statuses || []).filter(s => s.job_count > 0);
   const dateStr = summary.date || new Date().toLocaleDateString('th-TH');
 
   container.innerHTML = `
@@ -123,8 +128,8 @@ function renderDashboard(data) {
       <div style="display:flex;flex-wrap:wrap;gap:8px">
         ${statusDist.map(s => `
         <div style="flex:1;min-width:80px;background:#f9fafb;border-radius:12px;padding:10px;text-align:center">
-          <div style="font-size:18px;font-weight:900;color:#111827">${s.count || 0}</div>
-          <div style="font-size:10px;color:#6b7280;font-weight:600">${s.label || s.status || '-'}</div>
+          <div style="font-size:18px;font-weight:900;color:#111827">${s.job_count || s.count || 0}</div>
+          <div style="font-size:10px;color:#6b7280;font-weight:600">${s.status_label || s.label || s.status || '-'}</div>
         </div>`).join('')}
       </div>
     </div>` : ''}
@@ -134,11 +139,11 @@ function renderDashboard(data) {
     <div class="section-card" style="margin:0 12px 10px">
       <div class="section-label" style="color:#ef4444">⚠️ แจ้งเตือนด่วน (${alerts.length})</div>
       ${alerts.slice(0, 5).map(a => `
-      <div class="alert-card ${a.type === 'overdue' ? 'danger' : a.type === 'low_stock' ? 'warning' : 'success'}" style="margin-bottom:6px">
-        <i class="bi ${a.type === 'overdue' ? 'bi-clock-fill' : a.type === 'low_stock' ? 'bi-box-seam-fill' : 'bi-info-circle-fill'}"></i>
+      <div class="alert-card ${(a.type||'').toLowerCase().includes('overdue') ? 'danger' : (a.type||'').toLowerCase().includes('stock') ? 'warning' : 'success'}" style="margin-bottom:6px">
+        <i class="bi ${ (a.type||'').includes('OVERDUE') || (a.type||'').includes('overdue') ? 'bi-clock-fill' : (a.type||'').includes('STOCK') || (a.type||'').includes('stock') ? 'bi-box-seam-fill' : 'bi-info-circle-fill'}"></i>
         <div style="flex:1">
-          <div style="font-weight:700;font-size:13px">${a.message || a.title || '-'}</div>
-          ${a.detail ? `<div style="font-size:11px;font-weight:400">${a.detail}</div>` : ''}
+          <div style="font-weight:700;font-size:13px">${a.message || (a.data && a.data.customer_name ? a.id+' — '+a.data.customer_name : '-')}</div>
+          ${a.data && a.data.status_label ? `<div style="font-size:11px;font-weight:400">สถานะ: ${a.data.status_label}</div>` : ''}
         </div>
       </div>`).join('')}
     </div>` : ''}
