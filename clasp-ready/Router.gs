@@ -132,6 +132,7 @@ function dispatchActionV55_(action, payload, args) {
             'addInventoryItem', 'updateInventoryItem', 'deleteInventoryItem', 'getInventoryItemDetail',
             'getStockMovementHistory', 'createPurchaseOrder', 'listPurchaseOrders', 'receivePurchaseOrder',
             'checkStock', 'barcodeLookup', 'scanWithdrawStock', 'geminiReorderSuggestion',
+            'createBilling', 'getBilling', 'generatePromptPayQR', 'updatePayment', 'listBillings',
             'initSystem', 'systemStatus', 'setupAllTriggers', 'getSchemaInfo', 'validateConfig', 'getComphoneConfig', 'setScriptProperties'
           ]
         };
@@ -256,6 +257,21 @@ function dispatchActionV55_(action, payload, args) {
         return getTechHistory(payload.tech || payload.tech_name || '', payload);
       case 'getAllTechsSummary':
         return getAllTechsSummary();
+
+      // ============================================================
+      // Billing & Payment
+      // ============================================================
+      case 'createBilling':
+        return autoGenerateBillingForJob(payload.job_id || payload.jobId || '', payload);
+      case 'getBilling':
+        return getBilling(payload);
+      case 'generatePromptPayQR':
+        return generatePromptPayQR(payload);
+      case 'updatePayment':
+      case 'markBillingPaid':
+        return markBillingPaid(payload);
+      case 'listBillings':
+        return listAllBillings_(payload);
 
       // ============================================================
       // After-Sales Service

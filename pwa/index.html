@@ -498,6 +498,44 @@
     <div id="modal-timeline-content"></div>
   </div>
 </div>
+<!-- Billing Modal -->
+<div id="modal-billing" class="modal-overlay hidden" onclick="closeModal('modal-billing')">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="max-height:90vh;overflow-y:auto;padding:0 0 24px">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><i class="bi bi-receipt" style="color:#1e40af"></i> ใบเสร็จรับเงิน</div>
+    <div id="billing-modal-content" style="padding:0 16px"></div>
+  </div>
+</div>
+<!-- QR Payment Modal -->
+<div id="modal-qr-payment" class="modal-overlay hidden" onclick="closeModal('modal-qr-payment')">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><i class="bi bi-qr-code" style="color:#22c55e"></i> QR รับเงิน PromptPay</div>
+    <div id="qr-payment-content" style="padding:0 16px"></div>
+  </div>
+</div>
+<!-- Add Inventory Modal -->
+<div id="modal-add-inventory" class="modal-overlay hidden" onclick="closeModal('modal-add-inventory')">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><i class="bi bi-box-seam" style="color:#f59e0b"></i> เพิ่มสินค้าใหม่</div>
+    <div style="padding:0 16px">
+      <div class="form-group-custom"><label>รหัสสินค้า *</label><div class="input-wrap"><i class="bi bi-upc-scan"></i><input type="text" id="inv-code" placeholder="เช่น PART-001"></div></div>
+      <div class="form-group-custom"><label>ชื่อสินค้า *</label><div class="input-wrap"><i class="bi bi-box"></i><input type="text" id="inv-name" placeholder="เช่น จอ iPhone 14"></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+        <div class="form-group-custom"><label>จำนวน</label><input type="number" id="inv-qty" value="0" min="0" class="form-select" style="border-radius:12px;border:1.5px solid #e5e7eb;padding:10px 14px"></div>
+        <div class="form-group-custom"><label>จุดสั่งซื้อขั้นต่ำ</label><input type="number" id="inv-reorder" value="5" min="0" class="form-select" style="border-radius:12px;border:1.5px solid #e5e7eb;padding:10px 14px"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+        <div class="form-group-custom"><label>ราคาทุน (฿)</label><input type="number" id="inv-cost" value="0" min="0" step="0.01" class="form-select" style="border-radius:12px;border:1.5px solid #e5e7eb;padding:10px 14px"></div>
+        <div class="form-group-custom"><label>ราคาขาย (฿)</label><input type="number" id="inv-price" value="0" min="0" step="0.01" class="form-select" style="border-radius:12px;border:1.5px solid #e5e7eb;padding:10px 14px"></div>
+      </div>
+      <button id="btn-save-inventory" class="btn-setup" onclick="saveNewInventoryItem()" style="margin-top:8px">
+        <i class="bi bi-plus-lg"></i> เพิ่มสินค้า
+      </button>
+    </div>
+  </div>
+</div>
 <!-- Toast -->
 <div id="toast" class="toast-msg hidden"></div>
 
@@ -517,5 +555,6 @@
 <script src="purchase_order.js"></script>
 <script src="dashboard.js"></script>
 <script src="job_workflow.js"></script>
+<script src="billing_customer.js"></script>
 </body>
 </html>

@@ -920,3 +920,32 @@ function buildReceiptHtml_(billing, receiptNo, jobId, paidDateText, data) {
 function getReceiptHtmlFallback_() {
   return '<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><style>body{font-family:Tahoma,Arial,sans-serif;font-size:13px;padding:20px;max-width:700px;margin:0 auto}.header{text-align:center;border-bottom:3px solid #1565C0;padding-bottom:12px;margin-bottom:12px}.company{font-size:20px;font-weight:bold;color:#1565C0}.title{font-size:15px;font-weight:bold;margin-top:6px}.meta{display:flex;gap:12px;margin-bottom:12px}.meta-box{flex:1;background:#F5F5F5;border-radius:6px;padding:8px 12px}.meta-label{font-size:11px;color:#888}.meta-value{font-size:13px;font-weight:bold}table{width:100%;border-collapse:collapse;margin-bottom:10px}th{background:#1565C0;color:#fff;padding:7px 10px;text-align:left}td{padding:6px 10px;border-bottom:1px solid #EEE}td:last-child{text-align:right}.total-row{display:flex;justify-content:space-between;padding:5px 10px}.grand{background:#1565C0;color:#fff;font-weight:bold;font-size:15px;border-radius:4px;margin-top:4px;padding:8px 12px}.footer{text-align:center;margin-top:20px;color:#888;font-size:11px;border-top:1px solid #DDD;padding-top:10px}</style></head><body><div class="header"><div class="company">COMPHONE &amp; ELECTRONICS</div><div>{{COMPANY_ADDRESS}} | Tel: {{COMPANY_PHONE}}</div><div class="title">ใบเสร็จรับเงิน / RECEIPT</div></div><div class="meta"><div class="meta-box"><div class="meta-label">เลขที่ใบเสร็จ</div><div class="meta-value">{{RECEIPT_NO}}</div></div><div class="meta-box"><div class="meta-label">เลขที่งาน</div><div class="meta-value">{{JOB_ID}}</div></div><div class="meta-box"><div class="meta-label">วันที่ชำระ</div><div class="meta-value">{{PAID_DATE}}</div></div></div><p><b>ลูกค้า:</b> {{CUSTOMER_NAME}} | <b>โทร:</b> {{PHONE}}</p><p><b>รายละเอียด:</b> {{PARTS_DESCRIPTION}}</p><table><tr><th>รายการ</th><th>จำนวนเงิน (บาท)</th></tr><tr><td>ค่าอะไหล่</td><td>{{PARTS_COST}}</td></tr><tr><td>ค่าแรง</td><td>{{LABOR_COST}}</td></tr>{{DISCOUNT_ROW}}</table><div class="total-row"><span>ยอดรวมก่อนลด</span><span>{{SUBTOTAL}} บาท</span></div>{{DISCOUNT_TOTAL_ROW}}<div class="total-row grand"><span>ยอดรวมสุทธิ</span><span>{{TOTAL_AMOUNT}} บาท</span></div>{{QR_CODE_SECTION}}<p>{{PAYMENT_BADGE}} ชำระแล้ว: {{AMOUNT_PAID}} บาท {{BALANCE_ROW}}</p><p>วิธีชำระ: {{PAYMENT_METHOD}} | Ref: {{TRANSACTION_REF}}</p><div class="footer">ขอบคุณที่ใช้บริการ | {{GENERATED_AT}}</div></body></html>';
 }
+
+// ============================================================
+// listAllBillings_ — ดึงรายการ billing ทั้งหมด
+// ============================================================
+function listAllBillings_(options) {
+  try {
+    options = options || {};
+    var ss = getComphoneSheet();
+    if (!ss) return { success: false, error: 'Spreadsheet not found' };
+    var sh = ensureBillingSheet_(ss);
+    var ctx = getBillingSheetContext_(sh);
+    var all = sh.getDataRange().getValues();
+    var billings = [];
+    for (var i = 1; i < all.length; i++) {
+      var row = all[i];
+      if (!row[0]) continue;
+      billings.push(buildBillingObjectFromRow_(row, ctx.indices));
+    }
+    // filter by status
+    if (options.status) {
+      billings = billings.filter(function(b) { return b.payment_status === options.status; });
+    }
+    // sort by created_at desc
+    billings.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
+    return { success: true, billings: billings, count: billings.length };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
