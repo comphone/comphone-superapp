@@ -1008,3 +1008,443 @@ function buildPredictiveStockingAlert_(techPlan, days) {
   }
   return msg;
 }
+
+// ============================================================
+// V5.5+ INVENTORY CRUD — เพิ่ม / แก้ไข / ลบ สินค้า
+// ============================================================
+
+/**
+ * addInventoryItem — เพิ่มสินค้าใหม่เข้าคลัง
+ * payload: { item_code, item_name, qty, cost, price, location_type, location_code, assigned_to, notes, reorder_point }
+ */
+function addInventoryItem(data) {
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch(e) { return { success: false, error: 'Lock timeout' }; }
+  try {
+    data = data || {};
+    var code = String(data.item_code || '').trim();
+    var name = String(data.item_name || '').trim();
+    if (!code || !name) return { success: false, error: 'กรุณาระบุรหัสสินค้าและชื่อสินค้า' };
+
+    var ss = getComphoneSheet();
+    var sh = findSheetByName(ss, 'DB_INVENTORY');
+    if (!sh) {
+      sh = ss.insertSheet('DB_INVENTORY');
+      sh.getRange(1, 1, 1, 12).setValues([[
+        'Item_Code','Item_Name','Qty','Cost','Price',
+        'Location_Type','Location_Code','Assigned_To',
+        'Updated_At','Last_Job_ID','Notes','Reorder_Point'
+      ]]);
+    }
+
+    // ตรวจสอบรหัสซ้ำ
+    var all = sh.getDataRange().getValues();
+    for (var i = 1; i < all.length; i++) {
+      if (String(all[i][0]).trim().toLowerCase() === code.toLowerCase()) {
+        return { success: false, error: 'รหัสสินค้า "' + code + '" มีอยู่แล้วในระบบ' };
+      }
+    }
+
+    var locType = String(data.location_type || 'MAIN').toUpperCase();
+    var locCode = String(data.location_code || 'MAIN-01');
+    var assignedTo = String(data.assigned_to || '');
+    var qty = Math.max(0, parseFloat(data.qty) || 0);
+    var cost = Math.max(0, parseFloat(data.cost) || 0);
+    var price = Math.max(0, parseFloat(data.price) || 0);
+    var notes = String(data.notes || '');
+    var reorderPoint = Math.max(0, parseInt(data.reorder_point) || 5);
+
+    sh.appendRow([
+      code, name, qty, cost, price,
+      locType, locCode, assignedTo,
+      new Date(), '', notes, reorderPoint
+    ]);
+
+    try { logActivity('ADD_ITEM', data.added_by || 'ADMIN', code + ' | ' + name + ' | qty:' + qty); } catch(le) {}
+
+    return {
+      success: true,
+      message: 'เพิ่มสินค้า "' + name + '" เรียบร้อยแล้ว',
+      item: { item_code: code, item_name: name, qty: qty, cost: cost, price: price,
+              location_type: locType, reorder_point: reorderPoint }
+    };
+  } catch(e) {
+    return { success: false, error: e.toString() };
+  } finally {
+    try { lock.releaseLock(); } catch(ex) {}
+  }
+}
+
+/**
+ * updateInventoryItem — แก้ไขข้อมูลสินค้า
+ * payload: { item_code, item_name, qty, cost, price, location_type, notes, reorder_point }
+ */
+function updateInventoryItem(data) {
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch(e) { return { success: false, error: 'Lock timeout' }; }
+  try {
+    data = data || {};
+    var code = String(data.item_code || '').trim();
+    if (!code) return { success: false, error: 'กรุณาระบุรหัสสินค้า' };
+
+    var ss = getComphoneSheet();
+    var sh = findSheetByName(ss, 'DB_INVENTORY');
+    if (!sh) return { success: false, error: 'DB_INVENTORY not found' };
+
+    var all = sh.getDataRange().getValues();
+    var hdrs = all[0];
+
+    // Map headers
+    var idx = { code:0, name:1, qty:2, cost:3, price:4, locType:5, locCode:6, assignedTo:7, updatedAt:8, lastJob:9, notes:10, reorderPoint:11 };
+    for (var hi = 0; hi < hdrs.length; hi++) {
+      var hv = String(hdrs[hi]).toLowerCase().replace(/_/g,'');
+      if (hv === 'itemcode' || hv === 'code') idx.code = hi;
+      else if (hv === 'itemname' || hv === 'name') idx.name = hi;
+      else if (hv === 'qty' || hv === 'quantity') idx.qty = hi;
+      else if (hv === 'cost') idx.cost = hi;
+      else if (hv === 'price') idx.price = hi;
+      else if (hv === 'locationtype') idx.locType = hi;
+      else if (hv === 'locationcode') idx.locCode = hi;
+      else if (hv === 'assignedto') idx.assignedTo = hi;
+      else if (hv === 'updatedat') idx.updatedAt = hi;
+      else if (hv === 'notes') idx.notes = hi;
+      else if (hv === 'reorderpoint') idx.reorderPoint = hi;
+    }
+
+    var found = false;
+    for (var i = 1; i < all.length; i++) {
+      if (String(all[i][idx.code]).trim().toLowerCase() === code.toLowerCase()) {
+        found = true;
+        if (data.item_name !== undefined) all[i][idx.name] = String(data.item_name);
+        if (data.qty !== undefined) all[i][idx.qty] = Math.max(0, parseFloat(data.qty) || 0);
+        if (data.cost !== undefined) all[i][idx.cost] = Math.max(0, parseFloat(data.cost) || 0);
+        if (data.price !== undefined) all[i][idx.price] = Math.max(0, parseFloat(data.price) || 0);
+        if (data.location_type !== undefined) all[i][idx.locType] = String(data.location_type).toUpperCase();
+        if (data.location_code !== undefined) all[i][idx.locCode] = String(data.location_code);
+        if (data.assigned_to !== undefined) all[i][idx.assignedTo] = String(data.assigned_to);
+        if (data.notes !== undefined) all[i][idx.notes] = String(data.notes);
+        if (data.reorder_point !== undefined) all[i][idx.reorderPoint] = Math.max(0, parseInt(data.reorder_point) || 5);
+        all[i][idx.updatedAt] = new Date();
+        break;
+      }
+    }
+
+    if (!found) return { success: false, error: 'ไม่พบสินค้ารหัส: ' + code };
+
+    sh.getDataRange().setValues(all);
+    try { logActivity('UPDATE_ITEM', data.updated_by || 'ADMIN', 'แก้ไข: ' + code); } catch(le) {}
+
+    return { success: true, message: 'อัปเดตสินค้า "' + code + '" เรียบร้อยแล้ว' };
+  } catch(e) {
+    return { success: false, error: e.toString() };
+  } finally {
+    try { lock.releaseLock(); } catch(ex) {}
+  }
+}
+
+/**
+ * deleteInventoryItem — ลบสินค้าออกจากคลัง
+ * payload: { item_code }
+ */
+function deleteInventoryItem(data) {
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch(e) { return { success: false, error: 'Lock timeout' }; }
+  try {
+    data = data || {};
+    var code = String(data.item_code || '').trim();
+    if (!code) return { success: false, error: 'กรุณาระบุรหัสสินค้า' };
+
+    var ss = getComphoneSheet();
+    var sh = findSheetByName(ss, 'DB_INVENTORY');
+    if (!sh) return { success: false, error: 'DB_INVENTORY not found' };
+
+    var all = sh.getDataRange().getValues();
+    var deleteRow = -1;
+    var deletedName = '';
+    for (var i = 1; i < all.length; i++) {
+      if (String(all[i][0]).trim().toLowerCase() === code.toLowerCase()) {
+        deleteRow = i + 1; // 1-indexed row number
+        deletedName = String(all[i][1]);
+        break;
+      }
+    }
+
+    if (deleteRow < 0) return { success: false, error: 'ไม่พบสินค้ารหัส: ' + code };
+
+    sh.deleteRow(deleteRow);
+    try { logActivity('DELETE_ITEM', data.deleted_by || 'ADMIN', 'ลบ: ' + code + ' | ' + deletedName); } catch(le) {}
+
+    return { success: true, message: 'ลบสินค้า "' + deletedName + '" เรียบร้อยแล้ว' };
+  } catch(e) {
+    return { success: false, error: e.toString() };
+  } finally {
+    try { lock.releaseLock(); } catch(ex) {}
+  }
+}
+
+/**
+ * getInventoryItemDetail — ดูรายละเอียดสินค้า 1 รายการ
+ * payload: { item_code }
+ */
+function getInventoryItemDetail(data) {
+  try {
+    data = data || {};
+    var code = String(data.item_code || '').trim();
+    if (!code) return { success: false, error: 'กรุณาระบุรหัสสินค้า' };
+
+    var ss = getComphoneSheet();
+    var sh = findSheetByName(ss, 'DB_INVENTORY');
+    if (!sh) return { success: false, error: 'DB_INVENTORY not found' };
+
+    var all = sh.getDataRange().getValues();
+    var hdrs = all[0];
+    for (var i = 1; i < all.length; i++) {
+      if (String(all[i][0]).trim().toLowerCase() === code.toLowerCase()) {
+        var obj = {};
+        for (var j = 0; j < hdrs.length; j++) {
+          obj[String(hdrs[j]).toLowerCase().replace(/ /g,'_')] = all[i][j];
+        }
+        // คำนวณ reserved
+        var reserved = 0;
+        var resSheet = findSheetByName(ss, 'DB_RESERVATIONS');
+        if (resSheet) {
+          var resAll = resSheet.getDataRange().getValues();
+          for (var r = 1; r < resAll.length; r++) {
+            if (String(resAll[r][1]) === String(all[i][0]) && String(resAll[r][5]) === 'reserved') {
+              reserved += Number(resAll[r][3] || 0);
+            }
+          }
+        }
+        obj.reserved = reserved;
+        obj.available = (Number(all[i][2]) || 0) - reserved;
+        return { success: true, item: obj };
+      }
+    }
+    return { success: false, error: 'ไม่พบสินค้ารหัส: ' + code };
+  } catch(e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * getStockMovementHistory — ดูประวัติการเคลื่อนไหวสินค้า
+ * payload: { item_code, limit }
+ */
+function getStockMovementHistory(data) {
+  try {
+    data = data || {};
+    var code = String(data.item_code || '').trim();
+    var limit = parseInt(data.limit) || 50;
+
+    var ss = getComphoneSheet();
+    var logSheet = findSheetByName(ss, 'DB_INVENTORY_LOG');
+    if (!logSheet) return { success: true, items: [], message: 'ยังไม่มีประวัติการเคลื่อนไหว' };
+
+    var all = logSheet.getDataRange().getValues();
+    var results = [];
+    for (var i = all.length - 1; i >= 1; i--) {
+      if (!code || String(all[i][1]).trim().toLowerCase() === code.toLowerCase()) {
+        results.push({
+          timestamp: all[i][0],
+          item_code: String(all[i][1]),
+          item_name: String(all[i][2]),
+          action: String(all[i][3]),
+          qty_change: Number(all[i][4] || 0),
+          qty_before: Number(all[i][5] || 0),
+          qty_after: Number(all[i][6] || 0),
+          job_id: String(all[i][7] || ''),
+          changed_by: String(all[i][8] || ''),
+          notes: String(all[i][9] || '')
+        });
+        if (results.length >= limit) break;
+      }
+    }
+    return { success: true, total: results.length, items: results };
+  } catch(e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * createPurchaseOrder — สร้างใบสั่งซื้อ
+ * payload: { items: [{item_code, item_name, qty, unit_cost}], supplier, notes }
+ */
+function createPurchaseOrder(data) {
+  try {
+    data = data || {};
+    var items = data.items || [];
+    if (!items.length) return { success: false, error: 'กรุณาระบุรายการสินค้า' };
+
+    var ss = getComphoneSheet();
+    var poSheet = findSheetByName(ss, 'DB_PURCHASE_ORDERS');
+    if (!poSheet) {
+      poSheet = ss.insertSheet('DB_PURCHASE_ORDERS');
+      poSheet.getRange(1, 1, 1, 10).setValues([[
+        'PO_ID','Created_At','Supplier','Status',
+        'Item_Code','Item_Name','Qty','Unit_Cost','Total_Cost','Notes'
+      ]]);
+    }
+
+    var poId = 'PO-' + Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyyMMdd') + '-' + Math.floor(Math.random() * 9000 + 1000);
+    var totalCost = 0;
+    var now = new Date();
+
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var qty = Math.max(1, parseInt(item.qty) || 1);
+      var unitCost = Math.max(0, parseFloat(item.unit_cost) || 0);
+      var lineCost = qty * unitCost;
+      totalCost += lineCost;
+      poSheet.appendRow([
+        poId, now,
+        String(data.supplier || 'ไม่ระบุ'),
+        'PENDING',
+        String(item.item_code || ''),
+        String(item.item_name || ''),
+        qty, unitCost, lineCost,
+        String(data.notes || '')
+      ]);
+    }
+
+    // แจ้งเตือนกลุ่มจัดซื้อ
+    try {
+      var msg = '🛒 ใบสั่งซื้อใหม่: ' + poId + '\n';
+      msg += '📦 ' + items.length + ' รายการ | รวม ' + totalCost.toLocaleString() + ' บาท\n';
+      msg += '🏭 ผู้จำหน่าย: ' + (data.supplier || 'ไม่ระบุ') + '\n';
+      msg += '📋 ' + (data.notes || '');
+      sendLineNotify({ message: msg, room: 'PROCUREMENT' });
+    } catch(ne) {}
+
+    return {
+      success: true,
+      po_id: poId,
+      total_items: items.length,
+      total_cost: totalCost,
+      message: 'สร้างใบสั่งซื้อ ' + poId + ' เรียบร้อยแล้ว'
+    };
+  } catch(e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * listPurchaseOrders — ดูรายการใบสั่งซื้อ
+ * payload: { status, limit }
+ */
+function listPurchaseOrders(data) {
+  try {
+    data = data || {};
+    var statusFilter = String(data.status || '').toUpperCase();
+    var limit = parseInt(data.limit) || 100;
+
+    var ss = getComphoneSheet();
+    var poSheet = findSheetByName(ss, 'DB_PURCHASE_ORDERS');
+    if (!poSheet) return { success: true, items: [], total: 0 };
+
+    var all = poSheet.getDataRange().getValues();
+    var grouped = {};
+    for (var i = 1; i < all.length; i++) {
+      var poId = String(all[i][0]);
+      var status = String(all[i][3]);
+      if (statusFilter && status !== statusFilter) continue;
+      if (!grouped[poId]) {
+        grouped[poId] = {
+          po_id: poId,
+          created_at: all[i][1],
+          supplier: String(all[i][2]),
+          status: status,
+          items: [],
+          total_cost: 0
+        };
+      }
+      grouped[poId].items.push({
+        item_code: String(all[i][4]),
+        item_name: String(all[i][5]),
+        qty: Number(all[i][6] || 0),
+        unit_cost: Number(all[i][7] || 0),
+        total_cost: Number(all[i][8] || 0)
+      });
+      grouped[poId].total_cost += Number(all[i][8] || 0);
+    }
+
+    var result = [];
+    for (var key in grouped) {
+      if (grouped.hasOwnProperty(key)) result.push(grouped[key]);
+    }
+    result.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
+    if (result.length > limit) result = result.slice(0, limit);
+
+    return { success: true, total: result.length, items: result };
+  } catch(e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * receivePurchaseOrder — รับสินค้าตามใบสั่งซื้อ (เพิ่มสต็อก)
+ * payload: { po_id, received_by }
+ */
+function receivePurchaseOrder(data) {
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch(e) { return { success: false, error: 'Lock timeout' }; }
+  try {
+    data = data || {};
+    var poId = String(data.po_id || '').trim();
+    if (!poId) return { success: false, error: 'กรุณาระบุ PO ID' };
+
+    var ss = getComphoneSheet();
+    var poSheet = findSheetByName(ss, 'DB_PURCHASE_ORDERS');
+    if (!poSheet) return { success: false, error: 'ไม่พบ DB_PURCHASE_ORDERS' };
+
+    var all = poSheet.getDataRange().getValues();
+    var invSheet = findSheetByName(ss, 'DB_INVENTORY');
+    if (!invSheet) return { success: false, error: 'DB_INVENTORY not found' };
+
+    var invAll = invSheet.getDataRange().getValues();
+    var received = [];
+
+    for (var i = 1; i < all.length; i++) {
+      if (String(all[i][0]) === poId && String(all[i][3]) === 'PENDING') {
+        var itemCode = String(all[i][4]);
+        var qty = Number(all[i][6] || 0);
+
+        // เพิ่มสต็อก
+        var found = false;
+        for (var j = 1; j < invAll.length; j++) {
+          if (String(invAll[j][0]) === itemCode) {
+            invAll[j][2] = Number(invAll[j][2] || 0) + qty;
+            invAll[j][8] = new Date();
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          // เพิ่มสินค้าใหม่
+          invAll.push([itemCode, String(all[i][5]), qty, Number(all[i][7] || 0), 0, 'MAIN', 'MAIN-01', '', new Date(), poId, 'รับจาก PO: ' + poId, 5]);
+        }
+
+        all[i][3] = 'RECEIVED';
+        received.push({ item_code: itemCode, item_name: String(all[i][5]), qty: qty });
+      }
+    }
+
+    if (!received.length) return { success: false, error: 'ไม่พบรายการ PENDING สำหรับ PO: ' + poId };
+
+    poSheet.getDataRange().setValues(all);
+    invSheet.getDataRange().setValues(invAll);
+
+    try { logActivity('RECEIVE_PO', data.received_by || 'ADMIN', poId + ' | ' + received.length + ' รายการ'); } catch(le) {}
+
+    return {
+      success: true,
+      po_id: poId,
+      received_items: received.length,
+      items: received,
+      message: 'รับสินค้าตาม ' + poId + ' เรียบร้อย (' + received.length + ' รายการ)'
+    };
+  } catch(e) {
+    return { success: false, error: e.toString() };
+  } finally {
+    try { lock.releaseLock(); } catch(ex) {}
+  }
+}

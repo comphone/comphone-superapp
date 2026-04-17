@@ -123,7 +123,10 @@ function dispatchActionV55_(action, payload, args) {
             'transferStock', 'createCustomer', 'updateCustomer', 'getCustomer', 'listCustomers',
             'loginUser', 'logoutUser', 'verifySession', 'listUsers', 'createUser', 'updateUserRole', 'setUserActive', 'setupUserSheet',
             'clockIn', 'clockOut', 'getAttendanceReport', 'getTechHistory', 'getAllTechsSummary',
-            'getAfterSalesDue', 'logAfterSalesFollowUp', 'sendAfterSalesAlerts', 'getAfterSalesSummary'
+            'getAfterSalesDue', 'logAfterSalesFollowUp', 'sendAfterSalesAlerts', 'getAfterSalesSummary',
+            'addInventoryItem', 'updateInventoryItem', 'deleteInventoryItem', 'getInventoryItemDetail',
+            'getStockMovementHistory', 'createPurchaseOrder', 'listPurchaseOrders', 'receivePurchaseOrder',
+            'checkStock', 'barcodeLookup', 'scanWithdrawStock', 'geminiReorderSuggestion'
           ]
         };
 
@@ -162,6 +165,30 @@ function dispatchActionV55_(action, payload, args) {
         return getInventoryOverview(payload);
       case 'transferStock':
         return transferStock(payload.from_location || payload.from, payload.to_location || payload.to, payload.item_id || payload.item_code || payload.code || payload.itemId, payload.qty, payload);
+      case 'addInventoryItem':
+        return addInventoryItem(payload);
+      case 'updateInventoryItem':
+        return updateInventoryItem(payload);
+      case 'deleteInventoryItem':
+        return deleteInventoryItem(payload);
+      case 'getInventoryItemDetail':
+        return getInventoryItemDetail(payload);
+      case 'getStockMovementHistory':
+        return getStockMovementHistory(payload);
+      case 'createPurchaseOrder':
+        return createPurchaseOrder(payload);
+      case 'listPurchaseOrders':
+        return listPurchaseOrders(payload);
+      case 'receivePurchaseOrder':
+        return receivePurchaseOrder(payload);
+      case 'checkStock':
+        return checkStock(payload);
+      case 'barcodeLookup':
+        return barcodeLookup(payload);
+      case 'scanWithdrawStock':
+        return scanWithdrawStock(payload);
+      case 'geminiReorderSuggestion':
+        return geminiReorderSuggestion();
       case 'createCustomer':
         return createCustomer(payload);
       case 'updateCustomer':

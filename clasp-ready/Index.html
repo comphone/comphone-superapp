@@ -457,12 +457,21 @@
           <h1 class="h4 fw-bold mb-0">คลังสินค้า</h1>
           <small class="text-muted">ระบบสต็อก 3 ชั้น: คลังหลัก / หน้าร้าน / รถช่าง</small>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap">
+          <button class="btn btn-success btn-sm" onclick="openAddItemModal()">
+            <i class="fas fa-plus me-1"></i>เพิ่มสินค้า
+          </button>
+          <button class="btn btn-info btn-sm text-white" onclick="openBarcodeScanner()">
+            <i class="fas fa-barcode me-1"></i>สแกน
+          </button>
           <button class="btn btn-primary btn-sm" onclick="openReceiveModal()">
-            <i class="fas fa-plus me-1"></i>รับของเข้า
+            <i class="fas fa-truck-loading me-1"></i>รับของ
           </button>
           <button class="btn btn-outline-secondary btn-sm" onclick="openTransferModal()">
             <i class="fas fa-exchange-alt me-1"></i>โอนย้าย
+          </button>
+          <button class="btn btn-outline-warning btn-sm" onclick="openPurchaseOrderModal()">
+            <i class="fas fa-shopping-cart me-1"></i>สั่งซื้อ
           </button>
         </div>
       </div>
@@ -552,11 +561,14 @@
               <tr>
                 <th>รหัสสินค้า</th>
                 <th>ชื่อสินค้า</th>
+                <th class="text-center">ต้นทุน</th>
+                <th class="text-center">ราคาขาย</th>
                 <th class="text-center">คลังหลัก</th>
                 <th class="text-center">หน้าร้าน</th>
                 <th class="text-center">รถช่าง</th>
                 <th class="text-center">รวม</th>
                 <th class="text-center">สถานะ</th>
+                <th class="text-center">จัดการ</th>
               </tr>
             </thead>
             <tbody id="invTableBody"></tbody>
@@ -607,6 +619,249 @@
     </div>
   </div>
   
+  <!-- ===== ADD/EDIT ITEM MODAL ===== -->
+  <div class="modal fade" id="itemModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title" id="itemModalTitle"><i class="fas fa-box me-2"></i>เพิ่มสินค้าใหม่</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="itemModalMode" value="add">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">รหัสสินค้า <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="itemCode" placeholder="เช่น BAT-001, SCR-IPHONE14">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">ชื่อสินค้า <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="itemName" placeholder="เช่น แบตเตอรี่ iPhone 14">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">จำนวน (ชิ้น)</label>
+              <input type="number" class="form-control" id="itemQty" min="0" value="0">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">ราคาต้นทุน (บาท)</label>
+              <input type="number" class="form-control" id="itemCost" min="0" value="0" step="0.01">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">ราคาขาย (บาท)</label>
+              <input type="number" class="form-control" id="itemPrice" min="0" value="0" step="0.01">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">ที่เก็บ</label>
+              <select class="form-select" id="itemLocType">
+                <option value="MAIN">คลังหลัก</option>
+                <option value="SITE">หน้าร้าน</option>
+                <option value="VAN">รถช่าง</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">รหัสชั้น/ตำแหน่ง</label>
+              <input type="text" class="form-control" id="itemLocCode" placeholder="เช่น A1, B2">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">จุดสั่งซื้อ (Reorder Point)</label>
+              <input type="number" class="form-control" id="itemReorderPoint" min="0" value="5">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">หมายเหตุ</label>
+              <input type="text" class="form-control" id="itemNotes" placeholder="หมายเหตุเพิ่มเติม">
+            </div>
+          </div>
+          <div id="itemModalAlert" class="mt-3"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="button" class="btn btn-success" id="saveItemBtn" onclick="saveInventoryItem()">
+            <i class="fas fa-save me-1"></i>บันทึก
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BARCODE SCANNER MODAL ===== -->
+  <div class="modal fade" id="barcodeModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-info text-white">
+          <h5 class="modal-title"><i class="fas fa-barcode me-2"></i>สแกน Barcode / ค้นหาสินค้า</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">รหัสสินค้า / Barcode</label>
+            <div class="input-group">
+              <input type="text" class="form-control form-control-lg" id="barcodeInput"
+                placeholder="สแกนหรือพิมพ์รหัส..." autofocus
+                onkeydown="if(event.key==='Enter') lookupBarcode()">
+              <button class="btn btn-info text-white" onclick="lookupBarcode()">
+                <i class="fas fa-search"></i>
+              </button>
+            </div>
+            <small class="text-muted">กด Enter หรือกดปุ่มค้นหาหลังสแกน</small>
+          </div>
+          <div id="barcodeResult" class="d-none">
+            <div class="card border-0 shadow-sm">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <div>
+                    <h6 class="fw-bold mb-1" id="bcItemName">-</h6>
+                    <small class="text-muted" id="bcItemCode">-</small>
+                  </div>
+                  <span class="badge" id="bcStatusBadge">-</span>
+                </div>
+                <div class="row g-2 text-center">
+                  <div class="col-4">
+                    <div class="bg-light rounded p-2">
+                      <div class="fw-bold fs-5" id="bcQty">0</div>
+                      <small class="text-muted">คงเหลือ</small>
+                    </div>
+                  </div>
+                  <div class="col-4">
+                    <div class="bg-light rounded p-2">
+                      <div class="fw-bold fs-5" id="bcReserved">0</div>
+                      <small class="text-muted">จอง</small>
+                    </div>
+                  </div>
+                  <div class="col-4">
+                    <div class="bg-light rounded p-2">
+                      <div class="fw-bold fs-5 text-success" id="bcAvailable">0</div>
+                      <small class="text-muted">พร้อมใช้</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="row g-2 text-center mt-1">
+                  <div class="col-6">
+                    <div class="bg-light rounded p-2">
+                      <div class="fw-bold" id="bcCost">0</div>
+                      <small class="text-muted">ต้นทุน/ชิ้น</small>
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <div class="bg-light rounded p-2">
+                      <div class="fw-bold text-primary" id="bcPrice">0</div>
+                      <small class="text-muted">ราคาขาย/ชิ้น</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-3 d-flex gap-2">
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text">เบิก</span>
+                    <input type="number" class="form-control" id="bcWithdrawQty" min="1" value="1">
+                    <span class="input-group-text">ชิ้น</span>
+                  </div>
+                  <button class="btn btn-danger btn-sm" onclick="withdrawFromBarcode()">
+                    <i class="fas fa-minus-circle me-1"></i>เบิก
+                  </button>
+                  <button class="btn btn-outline-primary btn-sm" onclick="editItemFromBarcode()">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="barcodeNotFound" class="d-none">
+            <div class="alert alert-warning">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              ไม่พบสินค้า กด "เพิ่มสินค้าใหม่" เพื่อเพิ่มเข้าระบบ
+            </div>
+            <button class="btn btn-success w-100" onclick="openAddFromBarcode()">
+              <i class="fas fa-plus me-1"></i>เพิ่มสินค้าใหม่
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PURCHASE ORDER MODAL ===== -->
+  <div class="modal fade" id="purchaseOrderModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-warning">
+          <h5 class="modal-title fw-bold"><i class="fas fa-shopping-cart me-2"></i>สร้างใบสั่งซื้อ</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">ผู้จำหน่าย</label>
+              <input type="text" class="form-control" id="poSupplier" placeholder="ชื่อร้าน/บริษัท">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">หมายเหตุ</label>
+              <input type="text" class="form-control" id="poNotes" placeholder="หมายเหตุ">
+            </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold mb-0">รายการสินค้า</h6>
+            <button class="btn btn-sm btn-outline-success" onclick="addPOItem()">
+              <i class="fas fa-plus me-1"></i>เพิ่มรายการ
+            </button>
+          </div>
+          <div id="poItemsList">
+            <!-- PO items will be added here -->
+          </div>
+          <div class="mt-3 p-3 bg-light rounded">
+            <div class="d-flex justify-content-between fw-bold">
+              <span>ยอดรวมทั้งหมด</span>
+              <span class="text-primary fs-5" id="poTotalCost">฿0</span>
+            </div>
+          </div>
+          <div id="poModalAlert" class="mt-3"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="button" class="btn btn-warning fw-bold" onclick="submitPurchaseOrder()">
+            <i class="fas fa-paper-plane me-1"></i>ส่งใบสั่งซื้อ
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STOCK MOVEMENT MODAL ===== -->
+  <div class="modal fade" id="stockMovementModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-history me-2"></i>ประวัติการเคลื่อนไหวสินค้า</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2 fw-semibold" id="movementItemTitle">-</div>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>วันที่</th>
+                  <th>การดำเนินการ</th>
+                  <th class="text-center">จำนวน</th>
+                  <th class="text-center">ก่อน</th>
+                  <th class="text-center">หลัง</th>
+                  <th>งาน/ผู้ทำ</th>
+                </tr>
+              </thead>
+              <tbody id="movementTableBody"></tbody>
+            </table>
+          </div>
+          <div class="loading-box" id="movementLoading">
+            <div class="spinner-border text-primary mb-2"></div>
+            <div>กำลังโหลด...</div>
+          </div>
+          <div class="empty-box d-none" id="movementEmpty">
+            <i class="fas fa-history fa-2x mb-2"></i>
+            <div>ยังไม่มีประวัติการเคลื่อนไหว</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== TRANSFER MODAL ===== -->
   <div class="modal fade" id="transferModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">

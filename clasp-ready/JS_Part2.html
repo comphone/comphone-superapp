@@ -144,19 +144,34 @@
 
     var html = '';
     filtered.forEach(function(item) {
-      var isLow = item.total_qty <= 5;
+      var reorderPt = item.records && item.records[0] ? (Number(item.records[0].reorder_point) || 5) : 5;
+      var isLow = item.total_qty <= reorderPt;
       var statusBadge = isLow
         ? '<span class="badge bg-danger">สต็อกต่ำ</span>'
         : '<span class="badge bg-success">ปกติ</span>';
-      
+      var cost = item.records && item.records[0] ? Number(item.records[0].cost || 0) : 0;
+      var price = item.records && item.records[0] ? Number(item.records[0].price || 0) : 0;
+
       html += '<tr>';
-      html += '<td><code class="text-primary">' + api.escapeHtml(item.item_code || '-') + '</code></td>';
+      html += '<td><code class="text-primary" style="cursor:pointer" onclick="openBarcodeWithCode(\'' + api.escapeHtml(item.item_code || '') + '\')">' + api.escapeHtml(item.item_code || '-') + '</code></td>';
       html += '<td><strong>' + api.escapeHtml(item.item_name || '-') + '</strong></td>';
+      html += '<td class="text-center text-muted small">' + (cost > 0 ? '฿' + cost.toLocaleString() : '-') + '</td>';
+      html += '<td class="text-center small">' + (price > 0 ? '<span class="text-primary fw-bold">฿' + price.toLocaleString() + '</span>' : '-') + '</td>';
       html += '<td class="text-center">' + (item.main_qty || 0) + '</td>';
       html += '<td class="text-center">' + (item.site_qty || 0) + '</td>';
       html += '<td class="text-center">' + (item.van_qty || 0) + '</td>';
       html += '<td class="text-center fw-bold ' + (isLow ? 'text-danger' : '') + '">' + (item.total_qty || 0) + '</td>';
       html += '<td class="text-center">' + statusBadge + '</td>';
+      html += '<td class="text-center">';
+      html += '<div class="btn-group btn-group-sm">';
+      html += '<button class="btn btn-outline-primary" title="แก้ไข" onclick="openEditItemModal(\'' + api.escapeHtml(item.item_code || '') + '\')">';
+      html += '<i class="fas fa-edit"></i></button>';
+      html += '<button class="btn btn-outline-secondary" title="ประวัติ" onclick="openStockMovement(\'' + api.escapeHtml(item.item_code || '') + '\', \'' + api.escapeHtml(item.item_name || '') + '\')">';
+      html += '<i class="fas fa-history"></i></button>';
+      html += '<button class="btn btn-outline-danger" title="ลบ" onclick="confirmDeleteItem(\'' + api.escapeHtml(item.item_code || '') + '\', \'' + api.escapeHtml(item.item_name || '') + '\')">';
+      html += '<i class="fas fa-trash"></i></button>';
+      html += '</div>';
+      html += '</td>';
       html += '</tr>';
     });
     tbody.innerHTML = html;
@@ -488,6 +503,278 @@
     if (newJobBtnDesktop) newJobBtnDesktop.addEventListener('click', handleNewJob);
     if (bnavNewjob) bnavNewjob.addEventListener('click', handleNewJob);
   }
+
+  // ===== INVENTORY CRUD =====
+  var _poItems = [];
+
+  window.openAddItemModal = function() {
+    document.getElementById('itemModalTitle').innerHTML = '<i class="fas fa-plus me-2"></i>เพิ่มสินค้าใหม่';
+    document.getElementById('itemModalMode').value = 'add';
+    document.getElementById('itemCode').value = '';
+    document.getElementById('itemCode').removeAttribute('readonly');
+    document.getElementById('itemName').value = '';
+    document.getElementById('itemQty').value = '0';
+    document.getElementById('itemCost').value = '0';
+    document.getElementById('itemPrice').value = '0';
+    document.getElementById('itemLocType').value = 'MAIN';
+    document.getElementById('itemLocCode').value = '';
+    document.getElementById('itemReorderPoint').value = '5';
+    document.getElementById('itemNotes').value = '';
+    document.getElementById('itemModalAlert').innerHTML = '';
+    new bootstrap.Modal(document.getElementById('itemModal')).show();
+  };
+
+  window.openEditItemModal = function(itemCode) {
+    var item = inventoryData.find(function(i) { return i.item_code === itemCode; });
+    if (!item) { api.toast('ไม่พบข้อมูลสินค้า', 'warning'); return; }
+    var rec = (item.records && item.records[0]) || {};
+    document.getElementById('itemModalTitle').innerHTML = '<i class="fas fa-edit me-2"></i>แก้ไขสินค้า';
+    document.getElementById('itemModalMode').value = 'edit';
+    document.getElementById('itemCode').value = itemCode;
+    document.getElementById('itemCode').setAttribute('readonly', true);
+    document.getElementById('itemName').value = item.item_name || '';
+    document.getElementById('itemQty').value = item.total_qty || 0;
+    document.getElementById('itemCost').value = rec.cost || 0;
+    document.getElementById('itemPrice').value = rec.price || 0;
+    document.getElementById('itemLocType').value = rec.location_type || 'MAIN';
+    document.getElementById('itemLocCode').value = rec.location_code || '';
+    document.getElementById('itemReorderPoint').value = rec.reorder_point || 5;
+    document.getElementById('itemNotes').value = rec.notes || '';
+    document.getElementById('itemModalAlert').innerHTML = '';
+    new bootstrap.Modal(document.getElementById('itemModal')).show();
+  };
+
+  window.saveInventoryItem = function() {
+    var mode = document.getElementById('itemModalMode').value;
+    var code = document.getElementById('itemCode').value.trim();
+    var name = document.getElementById('itemName').value.trim();
+    if (!code || !name) {
+      document.getElementById('itemModalAlert').innerHTML = '<div class="alert alert-danger">กรุณากรอกรหัสและชื่อสินค้า</div>';
+      return;
+    }
+    var payload = {
+      item_code: code, item_name: name,
+      qty: Number(document.getElementById('itemQty').value) || 0,
+      cost: Number(document.getElementById('itemCost').value) || 0,
+      price: Number(document.getElementById('itemPrice').value) || 0,
+      location_type: document.getElementById('itemLocType').value,
+      location_code: document.getElementById('itemLocCode').value.trim(),
+      reorder_point: Number(document.getElementById('itemReorderPoint').value) || 5,
+      notes: document.getElementById('itemNotes').value.trim()
+    };
+    var action = mode === 'add' ? 'addInventoryItem' : 'updateInventoryItem';
+    var btn = document.getElementById('saveItemBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>กำลังบันทึก...';
+    api.call(action, payload, function(res) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-save me-1"></i>บันทึก';
+      if (res && res.success) {
+        bootstrap.Modal.getInstance(document.getElementById('itemModal')).hide();
+        api.toast((mode === 'add' ? 'เพิ่ม' : 'อัปเดต') + 'สินค้าสำเร็จ', 'success');
+        api.call('inventoryOverview', {}, function(r) {
+          if (r && r.items) { inventoryData = r.items; renderInventoryTable(); }
+        });
+      } else {
+        document.getElementById('itemModalAlert').innerHTML = '<div class="alert alert-danger">' + (res && res.error ? res.error : 'เกิดข้อผิดพลาด') + '</div>';
+      }
+    });
+  };
+
+  window.confirmDeleteItem = function(itemCode, itemName) {
+    if (!confirm('ลบสินค้า "' + itemName + '" ?
+การดำเนินการนี้ไม่สามารถย้อนกลับได้')) return;
+    api.call('deleteInventoryItem', { item_code: itemCode }, function(res) {
+      if (res && res.success) {
+        api.toast('ลบสินค้าเรียบร้อย', 'success');
+        api.call('inventoryOverview', {}, function(r) {
+          if (r && r.items) { inventoryData = r.items; renderInventoryTable(); }
+        });
+      } else {
+        api.toast('ลบไม่สำเร็จ: ' + (res && res.error ? res.error : 'เกิดข้อผิดพลาด'), 'danger');
+      }
+    });
+  };
+
+  // ===== BARCODE SCANNER =====
+  window.openBarcodeScanner = function() {
+    document.getElementById('barcodeInput').value = '';
+    document.getElementById('barcodeResult').classList.add('d-none');
+    document.getElementById('barcodeNotFound').classList.add('d-none');
+    var modal = new bootstrap.Modal(document.getElementById('barcodeModal'));
+    modal.show();
+    setTimeout(function() { document.getElementById('barcodeInput').focus(); }, 400);
+  };
+
+  window.openBarcodeWithCode = function(code) {
+    document.getElementById('barcodeInput').value = code;
+    var modal = new bootstrap.Modal(document.getElementById('barcodeModal'));
+    modal.show();
+    setTimeout(function() { lookupBarcode(); }, 300);
+  };
+
+  window.lookupBarcode = function() {
+    var code = document.getElementById('barcodeInput').value.trim();
+    if (!code) return;
+    document.getElementById('barcodeResult').classList.add('d-none');
+    document.getElementById('barcodeNotFound').classList.add('d-none');
+    api.call('barcodeLookup', { item_code: code }, function(res) {
+      if (res && res.success && res.item) {
+        var item = res.item;
+        document.getElementById('bcItemName').textContent = item.item_name || '-';
+        document.getElementById('bcItemCode').textContent = item.item_code || '-';
+        var avail = (item.total_qty || 0) - (item.reserved_qty || 0);
+        document.getElementById('bcQty').textContent = item.total_qty || 0;
+        document.getElementById('bcReserved').textContent = item.reserved_qty || 0;
+        document.getElementById('bcAvailable').textContent = avail;
+        document.getElementById('bcCost').textContent = '฿' + Number(item.cost || 0).toLocaleString();
+        document.getElementById('bcPrice').textContent = '฿' + Number(item.price || 0).toLocaleString();
+        var isLow = (item.total_qty || 0) <= (item.reorder_point || 5);
+        document.getElementById('bcStatusBadge').className = 'badge ' + (isLow ? 'bg-danger' : 'bg-success');
+        document.getElementById('bcStatusBadge').textContent = isLow ? 'สต็อกต่ำ' : 'ปกติ';
+        document.getElementById('bcWithdrawQty').value = '1';
+        document.getElementById('barcodeResult').classList.remove('d-none');
+      } else {
+        document.getElementById('barcodeNotFound').classList.remove('d-none');
+      }
+    });
+  };
+
+  window.withdrawFromBarcode = function() {
+    var code = document.getElementById('barcodeInput').value.trim();
+    var qty = Number(document.getElementById('bcWithdrawQty').value) || 1;
+    if (!code || qty < 1) return;
+    api.call('scanWithdrawStock', { item_code: code, qty: qty }, function(res) {
+      if (res && res.success) {
+        api.toast('เบิกสินค้า ' + qty + ' ชิ้นเรียบร้อย', 'success');
+        lookupBarcode();
+        api.call('inventoryOverview', {}, function(r) {
+          if (r && r.items) { inventoryData = r.items; renderInventoryTable(); }
+        });
+      } else {
+        api.toast('เบิกไม่สำเร็จ: ' + (res && res.error || 'สต็อกไม่พอ'), 'danger');
+      }
+    });
+  };
+
+  window.editItemFromBarcode = function() {
+    var code = document.getElementById('barcodeInput').value.trim();
+    bootstrap.Modal.getInstance(document.getElementById('barcodeModal')).hide();
+    setTimeout(function() { openEditItemModal(code); }, 400);
+  };
+
+  window.openAddFromBarcode = function() {
+    var code = document.getElementById('barcodeInput').value.trim();
+    bootstrap.Modal.getInstance(document.getElementById('barcodeModal')).hide();
+    setTimeout(function() {
+      openAddItemModal();
+      document.getElementById('itemCode').value = code;
+    }, 400);
+  };
+
+  // ===== STOCK MOVEMENT =====
+  window.openStockMovement = function(itemCode, itemName) {
+    document.getElementById('movementItemTitle').textContent = itemName + ' (' + itemCode + ')';
+    document.getElementById('movementLoading').classList.remove('d-none');
+    document.getElementById('movementEmpty').classList.add('d-none');
+    document.getElementById('movementTableBody').innerHTML = '';
+    new bootstrap.Modal(document.getElementById('stockMovementModal')).show();
+    api.call('getStockMovementHistory', { item_code: itemCode }, function(res) {
+      document.getElementById('movementLoading').classList.add('d-none');
+      if (!res || !res.movements || res.movements.length === 0) {
+        document.getElementById('movementEmpty').classList.remove('d-none');
+        return;
+      }
+      var html = '';
+      res.movements.forEach(function(m) {
+        var qtyClass = m.qty_change > 0 ? 'text-success' : 'text-danger';
+        var qtySign = m.qty_change > 0 ? '+' : '';
+        html += '<tr>';
+        html += '<td class="small">' + (m.date || '-') + '</td>';
+        html += '<td class="small">' + api.escapeHtml(m.action || '-') + '</td>';
+        html += '<td class="text-center ' + qtyClass + ' fw-bold">' + qtySign + (m.qty_change || 0) + '</td>';
+        html += '<td class="text-center">' + (m.qty_before || 0) + '</td>';
+        html += '<td class="text-center">' + (m.qty_after || 0) + '</td>';
+        html += '<td class="small">' + api.escapeHtml(m.reference || m.changed_by || '-') + '</td>';
+        html += '</tr>';
+      });
+      document.getElementById('movementTableBody').innerHTML = html;
+    });
+  };
+
+  // ===== PURCHASE ORDER =====
+  window.openPurchaseOrderModal = function() {
+    _poItems = [];
+    document.getElementById('poSupplier').value = '';
+    document.getElementById('poNotes').value = '';
+    document.getElementById('poItemsList').innerHTML = '<div class="text-muted small text-center py-2">กด "เพิ่มรายการ" เพื่อเพิ่มสินค้า</div>';
+    document.getElementById('poTotalCost').textContent = '฿0';
+    document.getElementById('poModalAlert').innerHTML = '';
+    new bootstrap.Modal(document.getElementById('purchaseOrderModal')).show();
+  };
+
+  window.addPOItem = function() {
+    var idx = _poItems.length;
+    _poItems.push({ item_code: '', item_name: '', qty: 1, unit_cost: 0 });
+    renderPOItems();
+  };
+
+  function renderPOItems() {
+    if (_poItems.length === 0) {
+      document.getElementById('poItemsList').innerHTML = '<div class="text-muted small text-center py-2">กด "เพิ่มรายการ" เพื่อเพิ่มสินค้า</div>';
+      document.getElementById('poTotalCost').textContent = '฿0';
+      return;
+    }
+    var html = '';
+    var total = 0;
+    _poItems.forEach(function(item, i) {
+      var subtotal = (Number(item.qty) || 0) * (Number(item.unit_cost) || 0);
+      total += subtotal;
+      html += '<div class="border rounded p-2 mb-2">';
+      html += '<div class="row g-2 align-items-center">';
+      html += '<div class="col-5"><input type="text" class="form-control form-control-sm" placeholder="รหัส/ชื่อสินค้า" value="' + api.escapeHtml(item.item_name || item.item_code || '') + '" onchange="updatePOItem(' + i + ', \'name\', this.value)"></div>';
+      html += '<div class="col-2"><input type="number" class="form-control form-control-sm" placeholder="จำนวน" min="1" value="' + (item.qty || 1) + '" onchange="updatePOItem(' + i + ', \'qty\', this.value)"></div>';
+      html += '<div class="col-3"><input type="number" class="form-control form-control-sm" placeholder="ราคา/ชิ้น" min="0" value="' + (item.unit_cost || 0) + '" onchange="updatePOItem(' + i + ', \'cost\', this.value)"></div>';
+      html += '<div class="col-2 text-end"><button class="btn btn-sm btn-outline-danger" onclick="removePOItem(' + i + ')"><i class="fas fa-times"></i></button></div>';
+      html += '</div>';
+      html += '<div class="text-end text-muted small mt-1">รวม: ฿' + subtotal.toLocaleString() + '</div>';
+      html += '</div>';
+    });
+    document.getElementById('poItemsList').innerHTML = html;
+    document.getElementById('poTotalCost').textContent = '฿' + total.toLocaleString();
+  }
+
+  window.updatePOItem = function(idx, field, val) {
+    if (field === 'name') _poItems[idx].item_name = val;
+    else if (field === 'qty') _poItems[idx].qty = Number(val) || 1;
+    else if (field === 'cost') _poItems[idx].unit_cost = Number(val) || 0;
+    renderPOItems();
+  };
+
+  window.removePOItem = function(idx) {
+    _poItems.splice(idx, 1);
+    renderPOItems();
+  };
+
+  window.submitPurchaseOrder = function() {
+    if (_poItems.length === 0) {
+      document.getElementById('poModalAlert').innerHTML = '<div class="alert alert-warning">กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ</div>';
+      return;
+    }
+    var payload = {
+      supplier: document.getElementById('poSupplier').value.trim(),
+      notes: document.getElementById('poNotes').value.trim(),
+      items: _poItems
+    };
+    api.call('createPurchaseOrder', payload, function(res) {
+      if (res && res.success) {
+        bootstrap.Modal.getInstance(document.getElementById('purchaseOrderModal')).hide();
+        api.toast('สร้างใบสั่งซื้อเรียบร้อย (เลขที่ ' + (res.po_number || '') + ')', 'success');
+      } else {
+        document.getElementById('poModalAlert').innerHTML = '<div class="alert alert-danger">' + (res && res.error ? res.error : 'เกิดข้อผิดพลาด') + '</div>';
+      }
+    });
+  };
 
   // ===== INIT =====
   document.addEventListener('DOMContentLoaded', function() {
