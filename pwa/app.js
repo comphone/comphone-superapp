@@ -201,6 +201,32 @@ function startMainApp() {
   renderHome();
   renderJobsBadge();
   renderProfile();
+
+  // B1: Deep Link handler — อ่าน ?page= จาก URL และนำทางอัตโนมัติ
+  handleDeepLink();
+}
+
+function handleDeepLink() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const page = params.get('page');
+    if (!page || page === 'home') return;
+
+    const navBtn = document.getElementById('nav-' + page);
+    // รอให้ DOM เรนเอร์ก่อน
+    setTimeout(() => {
+      goPage(page, navBtn);
+
+      // ถ้ามี id ให้เปิด modal อัตโนมัติ
+      const id = params.get('id');
+      if (id) {
+        setTimeout(() => {
+          if (page === 'jobs') showJobDetail(id);
+          else if (page === 'po') showPODetail(id);
+        }, 800);
+      }
+    }, 300);
+  } catch(e) {}
 }
 
 // ===== HOME RENDER =====
@@ -502,6 +528,7 @@ function goPage(page, btn) {
   if (page === 'crm') loadCRMPage();
   if (page === 'attendance') loadAttendancePage();
   if (page === 'po') loadPurchaseOrderPage();
+  if (page === 'dashboard') loadDashboardPage();
 }
 
 // ===== JOB DETAIL MODAL =====
@@ -651,7 +678,7 @@ function scanSlip() { openCamera('slip'); }
 function createReceipt() { showToast('กำลังสร้างใบเสร็จ...'); }
 function showQR() { showToast('กำลังสร้าง QR รับเงิน...'); }
 function createBill() { showToast('กำลังสร้างบิล...'); }
-function viewDashboard() { showToast('กำลังโหลด Dashboard...'); }
+function viewDashboard() { const navBtn = document.getElementById('nav-dashboard'); goPage('dashboard', navBtn); }
 function urgentAction() { showToast('ส่งการแจ้งเตือนด่วนแล้ว'); }
 function callVIP() { showToast('กำลังโทรหาลูกค้า VIP...'); }
 function viewPL() { showToast('กำลังโหลดรายงาน P&L...'); }

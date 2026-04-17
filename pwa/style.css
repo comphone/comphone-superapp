@@ -635,3 +635,22 @@ html, body {
 /* ===== SCROLLBAR HIDE ===== */
 #pages-container::-webkit-scrollbar { display: none; }
 #pages-container { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ===== EXECUTIVE DASHBOARD ===== */
+.kpi-card {
+  border-radius: 16px; padding: 14px 12px;
+  color: #fff; position: relative; overflow: hidden;
+}
+.kpi-card::after {
+  content: ''; position: absolute; right: -16px; top: -16px;
+  width: 72px; height: 72px; border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+}
+.kpi-icon { font-size: 20px; opacity: 0.85; margin-bottom: 6px; }
+.kpi-value { font-size: 22px; font-weight: 900; line-height: 1.1; }
+.kpi-label { font-size: 11px; opacity: 0.85; margin-top: 3px; font-weight: 600; }
+.kpi-alert { animation: kpi-pulse 1.5s ease-in-out infinite; }
+@keyframes kpi-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+}

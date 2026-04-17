@@ -10,11 +10,34 @@
 //   5. createBillingFlexMessage_() - แจ้งใบเสร็จ/ชำระเงิน
 // ============================================================
 
+// ============================================================
+// B1: Deep Link Helper — ชี้ไป PWA GitHub Pages
+// ============================================================
+var PWA_BASE_URL_ = 'https://comphone.github.io/comphone-superapp/pwa/';
+
 var WEB_APP_BASE_URL_ = (function() {
   try {
     return getConfig('WEB_APP_URL') || '';
   } catch(e) { return ''; }
 })();
+
+/**
+ * buildPwaDeepLink_(page, params)
+ * สร้าง URL ไปยัง PWA ตรงหน้าที่ต้องการ
+ * @param {string} page - ชื่อหน้า เช่น 'jobs', 'po', 'dashboard'
+ * @param {Object} params - query params เพิ่มเติม เช่น { id: 'JOB-001' }
+ * @returns {string} URL
+ */
+function buildPwaDeepLink_(page, params) {
+  var base = PWA_BASE_URL_;
+  var query = '?page=' + encodeURIComponent(page || 'home');
+  if (params) {
+    Object.keys(params).forEach(function(k) {
+      query += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(String(params[k] || ''));
+    });
+  }
+  return base + query;
+}
 
 // ============================================================
 // 1. Flex Message — งานใหม่
@@ -28,7 +51,7 @@ function createJobFlexMessage_(job) {
   var address  = String(job.address || job.location || '-');
   var techName = String(job.technician || job.tech_name || 'ยังไม่มอบหมาย');
   var dueDate  = String(job.due_date || job.scheduled_date || '-');
-  var dashUrl  = WEB_APP_BASE_URL_ || 'https://script.google.com/macros/s/AKfycbye7oTIj-cQjMtSm5CZBJ81mkOHO7GZm9iKFUjcSFBM_DgSsDZXr919Y8D-WezT2jBEUA/exec';
+  var dashUrl  = buildPwaDeepLink_('jobs', { id: jobId });
 
   var priorityColor = priority === 'ด่วน' ? '#E53935' : priority === 'สูง' ? '#FB8C00' : '#43A047';
 
@@ -101,7 +124,7 @@ function createJobFlexMessage_(job) {
             action: {
               type: 'uri',
               label: 'ดูงาน',
-              uri: dashUrl + '?action=viewJob&id=' + jobId
+              uri: dashUrl
             },
             style: 'primary',
             color: '#1565C0',
@@ -135,7 +158,7 @@ function createStatusFlexMessage_(job, newStatus) {
   var techName = String(job.technician || job.tech_name || job.changed_by || '-');
   var statusLabel = String(newStatus || job.status_label || job.status || '-');
   var note     = String(job.note || '');
-  var dashUrl  = WEB_APP_BASE_URL_ || 'https://script.google.com/macros/s/AKfycbye7oTIj-cQjMtSm5CZBJ81mkOHO7GZm9iKFUjcSFBM_DgSsDZXr919Y8D-WezT2jBEUA/exec';
+  var dashUrl  = buildPwaDeepLink_('jobs', { id: jobId });
 
   var statusEmoji = getStatusEmoji_(statusLabel);
   var statusColor = getStatusColor_(statusLabel);
@@ -189,7 +212,7 @@ function createStatusFlexMessage_(job, newStatus) {
             action: {
               type: 'uri',
               label: 'ดูรายละเอียดงาน',
-              uri: dashUrl + '?action=viewJob&id=' + jobId
+              uri: dashUrl
             },
             style: 'link',
             height: 'sm',
@@ -215,7 +238,7 @@ function createSummaryFlexMessage_(summary) {
   var monthRev    = Number(revenue.month || 0).toLocaleString('th-TH');
   var lowStock    = Number(summary.lowStock || 0);
   var dateStr     = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'dd/MM/yyyy');
-  var dashUrl     = WEB_APP_BASE_URL_ || 'https://script.google.com/macros/s/AKfycbye7oTIj-cQjMtSm5CZBJ81mkOHO7GZm9iKFUjcSFBM_DgSsDZXr919Y8D-WezT2jBEUA/exec';
+  var dashUrl     = buildPwaDeepLink_('dashboard');
 
   return {
     type: 'flex',
@@ -284,7 +307,17 @@ function createSummaryFlexMessage_(summary) {
               uri: dashUrl
             },
             style: 'primary',
-            color: '#37474F',
+            color: '#1565C0',
+            height: 'sm'
+          },
+          {
+            type: 'button',
+            action: {
+              type: 'uri',
+              label: 'สั่งซื้อ PO',
+              uri: buildPwaDeepLink_('po')
+            },
+            style: 'secondary',
             height: 'sm'
           }
         ]
@@ -298,10 +331,11 @@ function createSummaryFlexMessage_(summary) {
 // ============================================================
 function createLowStockFlexMessage_(items) {
   items = items || [];
-  var dashUrl = WEB_APP_BASE_URL_ || 'https://script.google.com/macros/s/AKfycbye7oTIj-cQjMtSm5CZBJ81mkOHO7GZm9iKFUjcSFBM_DgSsDZXr919Y8D-WezT2jBEUA/exec';
+  var dashUrl = buildPwaDeepLink_('po');
 
-  var itemRows = [];
-  for (var i = 0; i < Math.min(items.length, 6); i++) {
+  return {
+    type: 'flex',
+    altText: '⚠️th.min(items.length, 6); i++) {
     var item = items[i] || {};
     itemRows.push({
       type: 'box',
@@ -376,7 +410,7 @@ function createLowStockFlexMessage_(items) {
             action: {
               type: 'uri',
               label: 'จัดการสต็อก',
-              uri: dashUrl + '?tab=inventory'
+              uri: dashUrl
             },
             style: 'primary',
             color: '#E65100',
@@ -411,7 +445,7 @@ function createBillingFlexMessage_(billing) {
   var status    = String(billing.payment_status || billing.status || 'รอชำระ');
   var method    = String(billing.payment_method || '-');
   var billDate  = String(billing.bill_date || Utilities.formatDate(new Date(), 'Asia/Bangkok', 'dd/MM/yyyy'));
-  var dashUrl   = WEB_APP_BASE_URL_ || 'https://script.google.com/macros/s/AKfycbye7oTIj-cQjMtSm5CZBJ81mkOHO7GZm9iKFUjcSFBM_DgSsDZXr919Y8D-WezT2jBEUA/exec';
+  var dashUrl   = buildPwaDeepLink_('jobs', { id: jobId, tab: 'billing' });
 
   var isPaid = status === 'ชำระแล้ว' || status === 'paid';
   var headerColor = isPaid ? '#2E7D32' : '#1565C0';
@@ -488,7 +522,7 @@ function createBillingFlexMessage_(billing) {
             action: {
               type: 'uri',
               label: 'ดูใบเสร็จ',
-              uri: dashUrl + '?action=viewBill&id=' + jobId
+              uri: dashUrl
             },
             style: 'primary',
             color: headerColor,
