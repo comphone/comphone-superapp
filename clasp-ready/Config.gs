@@ -4,42 +4,73 @@
 // ============================================================
 
 var CONFIG = {
-  APP_NAME: 'COMPHONE SUPER APP V5.5',
+  APP_NAME: 'COMPHONE SUPER APP V5.5+',
+  VERSION: '5.5.2',
   TIMEZONE: 'Asia/Bangkok',
+
+  // ── ชื่อ Sheet ทั้งหมดในระบบ ──
   SHEETS: {
-    JOBS: 'DBJOBS',
-    INVENTORY: 'DB_INVENTORY',
-    CUSTOMERS: 'DB_CUSTOMERS',
-    STOCK_MOVEMENTS: 'DB_STOCK_MOVEMENTS',
-    JOB_ITEMS: 'DB_JOB_ITEMS',
-    BILLING: 'DB_BILLING',
-    JOB_LOGS: 'DB_JOB_LOGS',
-    PHOTO_QUEUE: 'DB_PHOTO_QUEUE'
+    JOBS:             'DBJOBS',
+    INVENTORY:        'DB_INVENTORY',
+    CUSTOMERS:        'DB_CUSTOMERS',
+    BILLING:          'DB_BILLING',
+    STOCK_MOVEMENTS:  'DB_STOCK_MOVEMENTS',
+    JOB_ITEMS:        'DB_JOB_ITEMS',
+    PHOTO_QUEUE:      'DB_PHOTO_QUEUE',
+    PURCHASE_ORDERS:  'DB_PURCHASE_ORDERS',
+    ATTENDANCE:       'DB_ATTENDANCE',
+    AFTER_SALES:      'DB_AFTER_SALES',
+    JOB_LOGS:         'DB_JOB_LOGS',
+    USERS:            'DB_USERS',
+    ACTIVITY_LOG:     'DB_ACTIVITY_LOG'
   },
-  DEFAULTS: {
-    ROOT_FOLDER_ID: '',
-    SPREADSHEET_ID: '',
-    WEB_APP_URL: '',
-    LINE_GROUP_TECHNICIAN: '',
-    LINE_GROUP_SALES: '',
-    LINE_GROUP_ADMIN: ''
+
+  // ── ชื่อโฟลเดอร์ Google Drive ──
+  FOLDERS: {
+    ROOT:              'COMPHONE_SUPERAPP_ROOT',
+    JOBS_PHOTOS:       'JOBS_PHOTOS',
+    BILLING_RECEIPTS:  'BILLING_RECEIPTS',
+    SLIPS:             'SLIPS_VERIFICATION',
+    AI_QUEUE:          'TEMP_AI_QUEUE',
+    PURCHASE_ORDERS:   'PURCHASE_ORDERS'
   },
+
+  // ── Script Properties ที่จำเป็น (ต้องตั้งค่าก่อน Deploy) ──
   REQUIRED_PROPERTIES: [
     'DB_SS_ID',
     'ROOT_FOLDER_ID'
   ],
+
+  // ── Script Properties ที่ควรตั้งค่า (ไม่บังคับแต่แนะนำ) ──
   OPTIONAL_PROPERTIES: [
     'WEB_APP_URL',
+    'GEMINI_API_KEY',
     'LINE_CHANNEL_ACCESS_TOKEN',
-    'LINE_GROUP_ID',
     'LINE_GROUP_TECHNICIAN',
+    'LINE_GROUP_ACCOUNTING',
+    'LINE_GROUP_PROCUREMENT',
     'LINE_GROUP_SALES',
-    'LINE_GROUP_ADMIN',
-    'LINE_NOTIFY_ENABLED',
-    'TELEGRAM_BOT_TOKEN',
-    'GOOGLE_AI_API_KEY',
-    'GEMINI_API_KEY'
-  ]
+    'LINE_GROUP_EXECUTIVE',
+    'LINE_OA_TOKEN',
+    'FOLDER_JOBS_PHOTOS',
+    'FOLDER_BILLING_RECEIPTS',
+    'FOLDER_SLIPS',
+    'FOLDER_AI_QUEUE',
+    'FOLDER_PO',
+    'ALLOW_RESET'
+  ],
+
+  // ── ค่า Default ──
+  DEFAULTS: {
+    ROOT_FOLDER_ID:   '',
+    SPREADSHEET_ID:   '',
+    WEB_APP_URL:      '',
+    PRIORITY_LEVELS:  ['ด่วนมาก', 'ด่วน', 'ปกติ'],
+    SLA_HOURS:        { 'ด่วนมาก': 4, 'ด่วน': 24, 'ปกติ': 72 },
+    VAT_RATE:         0.07,
+    WHT_RATE:         0.03,
+    LOW_STOCK_ALERT:  5
+  }
 };
 
 function getScriptProperties_() {
@@ -136,10 +167,38 @@ function buildWebAppUrl_(baseUrl, params) {
   return baseUrl + (baseUrl.indexOf('?') > -1 ? '&' : '?') + query.join('&');
 }
 
-// Hardcoded fallbacks — ใช้เมื่อ Script Properties ยังไม่ได้ตั้งค่า
-var _FALLBACK_SS_ID = '19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA';
-var _FALLBACK_FOLDER_ID = '1YRZRG9r1Y_jMHg2XFFKYjK4Hx-sW0Eq0';
+// ── Hardcoded Fallbacks — ใช้เมื่อ Script Properties ยังไม่ได้ตั้งค่า ──
+var _FALLBACK_SS_ID      = '19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA';
+var _FALLBACK_FOLDER_ID  = '1YRZRG9r1Y_jMHg2XFFKYjK4Hx-sW0Eq0';
 
-var DB_SS_ID = getSpreadsheetId_() || _FALLBACK_SS_ID;
-var ROOT_FOLDER_ID = getRootFolderId_() || _FALLBACK_FOLDER_ID;
-var WEB_APP_URL = getWebAppBaseUrl_() || '';
+var DB_SS_ID       = getSpreadsheetId_()  || _FALLBACK_SS_ID;
+var ROOT_FOLDER_ID = getRootFolderId_()   || _FALLBACK_FOLDER_ID;
+var WEB_APP_URL    = getWebAppBaseUrl_()  || '';
+
+// ── LINE Group IDs (Hardcoded Fallbacks) ──
+var LINE_GROUP_TECHNICIAN  = getConfig('LINE_GROUP_TECHNICIAN',  'C8ad22a115f38c9ad3cb5ea5c2ff4863b');
+var LINE_GROUP_ACCOUNTING  = getConfig('LINE_GROUP_ACCOUNTING',  'C7b939d1d367e6b854690e58b392e88cc');
+var LINE_GROUP_PROCUREMENT = getConfig('LINE_GROUP_PROCUREMENT', 'Cfd103d59e7b6b7e6e4a8d7c9f1e2b3a4');
+var LINE_GROUP_SALES       = getConfig('LINE_GROUP_SALES',       '');
+var LINE_GROUP_EXECUTIVE   = getConfig('LINE_GROUP_EXECUTIVE',   '');
+
+// ── ฟังก์ชัน Helper เพิ่มเติม ──
+function getSheetName(key) {
+  return (CONFIG.SHEETS[key] || key);
+}
+
+function getSlaHours(priority) {
+  return (CONFIG.DEFAULTS.SLA_HOURS[priority] || CONFIG.DEFAULTS.SLA_HOURS['ปกติ'] || 72);
+}
+
+function getVatRate() {
+  return parseFloat(getConfig('VAT_RATE', CONFIG.DEFAULTS.VAT_RATE));
+}
+
+function getWhtRate() {
+  return parseFloat(getConfig('WHT_RATE', CONFIG.DEFAULTS.WHT_RATE));
+}
+
+function getLowStockThreshold() {
+  return parseInt(getConfig('LOW_STOCK_ALERT', CONFIG.DEFAULTS.LOW_STOCK_ALERT), 10);
+}

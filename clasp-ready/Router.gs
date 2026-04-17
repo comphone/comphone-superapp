@@ -115,7 +115,8 @@ function dispatchActionV55_(action, payload, args) {
       case 'help':
         return {
           success: true,
-          app: 'COMPHONE SUPER APP V5.5',
+          app: 'COMPHONE SUPER APP V5.5+',
+          version: CONFIG.VERSION || '5.5.2',
           actions: [
             'getDashboardData', 'getJobStateConfig', 'getJobTimeline', 'transitionJob', 'updateJobById',
             'addQuickNote', 'openJob', 'updateJobStatus', 'getPhotoGalleryData', 'generateJobQR',
@@ -126,7 +127,8 @@ function dispatchActionV55_(action, payload, args) {
             'getAfterSalesDue', 'logAfterSalesFollowUp', 'sendAfterSalesAlerts', 'getAfterSalesSummary',
             'addInventoryItem', 'updateInventoryItem', 'deleteInventoryItem', 'getInventoryItemDetail',
             'getStockMovementHistory', 'createPurchaseOrder', 'listPurchaseOrders', 'receivePurchaseOrder',
-            'checkStock', 'barcodeLookup', 'scanWithdrawStock', 'geminiReorderSuggestion'
+            'checkStock', 'barcodeLookup', 'scanWithdrawStock', 'geminiReorderSuggestion',
+            'initSystem', 'systemStatus', 'setupAllTriggers', 'getSchemaInfo', 'validateConfig', 'getComphoneConfig'
           ]
         };
 
@@ -217,6 +219,23 @@ function dispatchActionV55_(action, payload, args) {
         return setUserActive(payload.token || '', payload.username || '', payload.active !== false);
       case 'setupUserSheet':
         return setupUserSheet();
+
+      // ============================================================
+      // System Setup & Health Check
+      // ============================================================
+      case 'initSystem':
+        return initSystem();
+      case 'systemStatus':
+        return systemStatus();
+      case 'setupTriggers':
+      case 'setupAllTriggers':
+        return setupAllTriggers();
+      case 'getSchemaInfo':
+        return getSchemaInfo();
+      case 'validateConfig':
+        return validateRequiredConfigs();
+      case 'getComphoneConfig':
+        return getComphoneConfig();
 
       // ============================================================
       // Attendance & Tech History
