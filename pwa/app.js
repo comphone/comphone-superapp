@@ -114,6 +114,7 @@ function normalizeJob(j) {
     location: j.location || 'ร้าน',
     price: j.price || j.estimated_price || 0,
     tech: j.tech || j.technician || null,
+    note: j.note || j.notes || j.remark || '',
     folder: j.folder || j.folder_url || '',
     created: j.created || j.created_at || '',
     raw: j
@@ -583,10 +584,14 @@ function renderProfile() {
 
 // ===== NAVIGATION =====
 function goPage(page, btn) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const pageEl = document.getElementById('page-' + page);
+  if (!pageEl) { showToast('ไม่พบหน้า ' + page); return; }
+
+  document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); p.classList.add('hidden'); });
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
-  document.getElementById('page-' + page).classList.add('active');
+  pageEl.classList.add('active');
+  pageEl.classList.remove('hidden');
   if (btn) btn.classList.add('active');
   APP.currentPage = page;
 
@@ -596,6 +601,10 @@ function goPage(page, btn) {
   if (page === 'attendance') loadAttendancePage();
   if (page === 'po') loadPurchaseOrderPage();
   if (page === 'dashboard') loadDashboardPage();
+  if (page === 'inventory') {
+    if (typeof loadInventoryPage === 'function') loadInventoryPage();
+    else if (typeof openInventoryPage === 'function') openInventoryPage();
+  }
 }
 
 // ===== JOB DETAIL MODAL =====
@@ -721,10 +730,15 @@ function doCheckin() {
 }
 
 function markJobDone(jobId) {
-  const job = APP.jobs.find(j => j.id === jobId);
-  if (job) { job.status = 'done'; renderHome(); renderJobsBadge(); }
-  showToast('✅ บันทึกงานเสร็จแล้ว');
-  callAPI('updateJobStatus', { jobId, status: 'done' });
+  // Delegate ไป markJobDoneV2 ซึ่งใช้ transitionJob จาก job_workflow.js
+  if (typeof markJobDoneV2 === 'function') {
+    markJobDoneV2(jobId);
+  } else {
+    const job = APP.jobs.find(j => j.id === jobId);
+    if (job) { job.status = 'done'; renderHome(); renderJobsBadge(); }
+    showToast('✅ บันทึกงานเสร็จแล้ว');
+    callAPI('transitionJob', { job_id: jobId, new_status: 'งานเสร็จ', changed_by: (APP.user && APP.user.name) || APP.user || 'PWA' });
+  }
 }
 
 function assignJob(jobId) { if (typeof openAssignJob === 'function') openAssignJob(jobId || ''); else showToast('กำลังเปิดหน้ามอบหมายช่าง...'); }
@@ -745,7 +759,16 @@ function openCameraQuick() { openCamera('job'); }
 function markDone() { showToast('เลือกงานที่ต้องการก่อน'); goPage('jobs', document.getElementById('nav-jobs')); }
 function markWaiting() { showToast('เลือกงานที่ต้องการก่อน'); goPage('jobs', document.getElementById('nav-jobs')); }
 function callForHelp() { showToast('ส่งการแจ้งเตือนแล้ว 🆘'); }
-function openNewJob() { if (typeof openNewJobForm === 'function') openNewJobForm(); else if (typeof openNewJob_jw === 'function') openNewJob_jw(); else { if(document.getElementById('modal-new-job')) { openNewJob_delayed(); } else showToast('กำลังเปิดฟอร์มงานใหม่...'); } }
+function openNewJob() {
+  // job_workflow.js โหลดแล้ว เรียกได้ตรงๆ
+  if (document.getElementById('modal-new-job-content')) {
+    // openNewJob จาก job_workflow.js override window.openNewJob แล้ว
+    // แต่ถ้ายังไม่โหลด ใช้ fallback
+    showToast('กำลังเปิดฟอร์มงานใหม่...');
+  } else {
+    showToast('กำลังเปิดฟอร์มงานใหม่...');
+  }
+}
 function openNewJob_delayed() { const fn = setInterval(() => { if(typeof openNewJob === 'function' && document.getElementById('modal-new-job-content')) { clearInterval(fn); openNewJob(); } }, 100); setTimeout(() => clearInterval(fn), 3000); }
 function addCustomer() {
   if (typeof openAddCustomerModal === 'function') openAddCustomerModal();
@@ -876,7 +899,15 @@ async function callAPI(action, params = {}) {
     return null;
   }
   try {
+    // เพิ่ม auth token ถ้ามี
     const payload = { action, ...params };
+    if (typeof AUTH !== 'undefined' && AUTH.token) {
+      payload.token = AUTH.token;
+      payload.username = AUTH.username;
+    } else if (APP.user && APP.user.authToken) {
+      payload.token = APP.user.authToken;
+      payload.username = APP.user.username;
+    }
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },

@@ -142,7 +142,7 @@ function dispatchActionV55_(action, payload, args) {
       case 'getJobStateConfig':
         return getJobStateConfig();
       case 'getJobTimeline':
-        return invokeFunctionByNameV55_('getJobTimeline', args);
+        return getJobTimelineV55_(payload.job_id || payload.jobId || (args[0] && args[0].job_id) || '');
       case 'transitionJob':
         if (args.length >= 2) return invokeFunctionByNameV55_('transitionJob', args);
         return transitionJob(payload.job_id || payload.jobId || '', payload.new_status || payload.to_status || payload.status_code || payload.status, payload);
