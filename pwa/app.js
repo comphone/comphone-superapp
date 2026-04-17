@@ -852,21 +852,44 @@ function startVoiceSearch() {
 }
 
 // ===== API CALL =====
+// callAPI(action, params) — ใช้ใน job_workflow.js
 async function callAPI(action, params = {}) {
-  if (!APP.scriptUrl) return null;
+  const url = APP.scriptUrl || DEFAULT_SCRIPT_URL;
+  if (!url) return null;
   if (!navigator.onLine) {
     saveOfflineAction({ action, params, time: Date.now() });
     return null;
   }
   try {
-    const url = `${APP.scriptUrl}?action=${action}&${new URLSearchParams(params)}`;
-    const res = await fetch(url);
+    const payload = { action, ...params };
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload),
+      redirect: 'follow'
+    });
     return await res.json();
   } catch (e) {
     saveOfflineAction({ action, params, time: Date.now() });
     return null;
   }
 }
+// callApi(payload) — alias สำหรับ crm_attendance.js, purchase_order.js, dashboard.js
+window.callApi = async function(payload) {
+  const url = APP.scriptUrl || DEFAULT_SCRIPT_URL;
+  if (!url) return { success: false, error: 'ไม่พบ Script URL' };
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload),
+      redirect: 'follow'
+    });
+    return await res.json();
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+};
 
 // ===== OFFLINE QUEUE =====
 function saveOfflineAction(action) {

@@ -7,7 +7,7 @@ function loadCRMPage() {
   document.getElementById('crm-list').innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af"><div class="spinner" style="margin:0 auto 12px"></div><p>กำลังโหลดข้อมูลลูกค้า...</p></div>';
   callApi({ action: 'listCustomers' }).then(res => {
     if (res && res.success) {
-      ALL_CUSTOMERS = res.data || [];
+      ALL_CUSTOMERS = res.customers || res.data || [];
       renderCRMList(ALL_CUSTOMERS);
       loadAfterSalesSection();
     } else {
@@ -145,23 +145,24 @@ function saveNewCustomer() {
 function loadAfterSalesSection() {
   callApi({ action: 'getAfterSalesDue' }).then(res => {
     const section = document.getElementById('crm-after-sales-section');
-    if (!section || !res || !res.success || !res.data || res.data.length === 0) return;
+    const afterItems = (res && res.success) ? (res.items || res.data || []) : [];
+    if (!section || afterItems.length === 0) return;
     section.innerHTML = `
       <div class="section-card">
-        <div class="section-label" style="color:#ef4444">⚠️ ต้องติดตาม After-Sales (${res.data.length} รายการ)</div>
-        ${res.data.map(a => `
-        <div class="job-card" onclick="showAfterSalesModal('${a.customerId}','${a.customerName}','${a.jobId}')">
+        <div class="section-label" style="color:#ef4444">⚠️ ต้องติดตาม After-Sales (${afterItems.length} รายการ)</div>
+        ${afterItems.map(a => `
+        <div class="job-card" onclick="showAfterSalesModal('${a.customerId||a.customer_id||''}','${a.customerName||a.customer_name||''}','${a.jobId||a.job_id||''}')">
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div>
-              <div style="font-weight:700;font-size:13px">${a.customerName||'-'}</div>
-              <div style="font-size:11px;color:#6b7280">งาน: ${a.jobId||'-'} | ${a.dueDate||'-'}</div>
+              <div style="font-weight:700;font-size:13px">${a.customerName||a.customer_name||'-'}</div>
+              <div style="font-size:11px;color:#6b7280">งาน: ${a.jobId||a.job_id||'-'} | ${a.dueDate||a.due_date||'-'}</div>
             </div>
             <span style="background:#fee2e2;color:#ef4444;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700">ติดตาม</span>
           </div>
         </div>`).join('')}
       </div>`;
     const badge = document.getElementById('crm-badge');
-    if (badge) { badge.textContent = res.data.length; badge.style.display = 'flex'; }
+    if (badge) { badge.textContent = afterItems.length; badge.style.display = 'flex'; }
   }).catch(() => {});
 }
 
@@ -215,8 +216,11 @@ let CLOCK_ACTION = 'in';
 function loadAttendancePage() {
   const container = document.getElementById('attendance-content');
   container.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af"><div class="spinner" style="margin:0 auto 12px"></div><p>กำลังโหลด...</p></div>';
+  // getTechHistory returns { success, tech, summary, jobs, attendance }
   callApi({ action: 'getTechHistory', tech: APP.user ? APP.user.name : '', limit: 1 }).then(res => {
-    renderAttendancePage(res && res.data ? res.data : null);
+    // ดึงข้อมูล attendance ล่าสุด (วันนี้) จาก attendance array
+    const todayAtt = res && res.attendance && res.attendance.length > 0 ? res.attendance[0] : null;
+    renderAttendancePage(todayAtt);
   }).catch(() => renderAttendancePage(null));
 }
 
@@ -274,8 +278,8 @@ function renderAttendancePage(data) {
 function loadWeeklyAttendance() {
   callApi({ action: 'getAttendanceReport', tech: APP.user ? APP.user.name : '', days: 7 }).then(res => {
     const container = document.getElementById('weekly-attendance');
-    if (!container || !res || !res.data) return;
-    const days = res.data;
+    if (!container || !res || !res.success) return;
+    const days = res.records || res.data || [];
     const dayNames = ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา'];
     container.innerHTML = `
       <div class="section-card">
