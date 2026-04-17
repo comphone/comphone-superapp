@@ -193,6 +193,32 @@
       </div>
     </div>
 
+    <!-- CRM PAGE -->
+    <div id="page-crm" class="page hidden">
+      <div class="page-header">
+        <h5>ลูกค้า / CRM</h5>
+        <div class="search-bar-inline">
+          <i class="bi bi-search"></i>
+          <input type="text" id="crm-search" placeholder="ค้นหาชื่อ, เบอร์, ประวัติ..." oninput="filterCustomers(this.value)">
+          <button onclick="startVoiceSearch()" class="voice-mini"><i class="bi bi-mic-fill"></i></button>
+        </div>
+      </div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="filterCRMType('all', this)">ทั้งหมด</button>
+        <button class="filter-tab" onclick="filterCRMType('vip', this)">VIP</button>
+        <button class="filter-tab" onclick="filterCRMType('due', this)">ติดตาม</button>
+        <button class="filter-tab" onclick="filterCRMType('new', this)">ใหม่</button>
+      </div>
+      <div id="crm-list"></div>
+      <div id="crm-after-sales-section" style="margin-top:8px"></div>
+    </div>
+
+    <!-- ATTENDANCE PAGE -->
+    <div id="page-attendance" class="page hidden">
+      <div class="page-header"><h5>เวลาทำงาน</h5></div>
+      <div id="attendance-content"></div>
+    </div>
+
     <!-- PROFILE PAGE -->
     <div id="page-profile" class="page hidden">
       <div class="profile-header">
@@ -255,9 +281,16 @@
       </div>
       <span>งาน</span>
     </button>
-    <button class="nav-btn" id="nav-camera" onclick="goPage('camera', this)">
-      <i class="bi bi-camera-fill"></i>
-      <span>ถ่ายรูป</span>
+    <button class="nav-btn" id="nav-crm" onclick="goPage('crm', this)">
+      <div class="nav-icon-wrap">
+        <i class="bi bi-people-fill"></i>
+        <span class="nav-badge-dot" id="crm-badge" style="display:none">0</span>
+      </div>
+      <span>ลูกค้า</span>
+    </button>
+    <button class="nav-btn" id="nav-attendance" onclick="goPage('attendance', this)">
+      <i class="bi bi-clock-fill"></i>
+      <span>เวลา</span>
     </button>
     <button class="nav-btn" id="nav-profile" onclick="goPage('profile', this)">
       <i class="bi bi-person-fill"></i>
@@ -290,6 +323,55 @@
   </div>
 </div>
 
+<!-- Customer Detail Modal -->
+<div id="modal-customer" class="modal-overlay hidden" onclick="closeModal('modal-customer')">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div id="modal-customer-content"></div>
+  </div>
+</div>
+
+<!-- Add Customer Modal -->
+<div id="modal-add-customer" class="modal-overlay hidden" onclick="closeModal('modal-add-customer')">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px">
+    <div class="modal-handle"></div>
+    <div class="modal-title">เพิ่มลูกค้าใหม่</div>
+    <div style="padding:0 16px">
+      <div class="form-group-custom"><label>ชื่อ-นามสกุล *</label><div class="input-wrap"><i class="bi bi-person-fill"></i><input type="text" id="new-cust-name" placeholder="เช่น สมชาย ทำดี"></div></div>
+      <div class="form-group-custom"><label>เบอร์โทร *</label><div class="input-wrap"><i class="bi bi-telephone-fill"></i><input type="tel" id="new-cust-phone" placeholder="081-234-5678"></div></div>
+      <div class="form-group-custom"><label>ที่อยู่</label><div class="input-wrap"><i class="bi bi-geo-alt-fill"></i><input type="text" id="new-cust-address" placeholder="ที่อยู่หรือสถานที่ทำงาน"></div></div>
+      <div class="form-group-custom"><label>ประเภทลูกค้า</label><select id="new-cust-type" class="form-select" style="border-radius:12px;border:1.5px solid #e5e7eb;padding:10px 14px"><option value="regular">ทั่วไป</option><option value="vip">VIP</option><option value="corporate">องค์กร</option></select></div>
+      <div class="form-group-custom"><label>หมายเหตุ</label><div class="input-wrap"><i class="bi bi-chat-left-text"></i><input type="text" id="new-cust-notes" placeholder="หมายเหตุเพิ่มเติม"></div></div>
+      <button class="btn-setup" onclick="saveNewCustomer()" style="margin-top:8px">
+        <i class="bi bi-person-plus-fill"></i> บันทึกลูกค้า
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- After-Sales Follow-up Modal -->
+<div id="modal-aftersales" class="modal-overlay hidden" onclick="closeModal('modal-aftersales')">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px">
+    <div class="modal-handle"></div>
+    <div class="modal-title">ติดตาม After-Sales</div>
+    <div id="modal-aftersales-content" style="padding:0 16px"></div>
+  </div>
+</div>
+
+<!-- Attendance Clock-in Modal -->
+<div id="modal-clockin" class="modal-overlay hidden" onclick="closeModal('modal-clockin')">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="clockin-modal-title">เช็คอิน</div>
+    <div style="padding:0 16px">
+      <div class="form-group-custom"><label>หมายเหตุ (ไม่บังคับ)</label><div class="input-wrap"><i class="bi bi-chat-left-text"></i><input type="text" id="clockin-note" placeholder="เช่น มาสายแล้ว, ออกนอกสถานที่"></div></div>
+      <button class="btn-setup" id="clockin-confirm-btn" onclick="confirmClockAction()" style="margin-top:8px">
+        <i class="bi bi-clock-fill"></i> ยืนยัน
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Notification Modal -->
 <div id="modal-notif" class="modal-overlay hidden" onclick="closeModal('modal-notif')">
   <div class="modal-sheet" onclick="event.stopPropagation()">
@@ -314,5 +396,6 @@
 </div>
 
 <script src="app.js"></script>
+<script src="crm_attendance.js"></script>
 </body>
 </html>

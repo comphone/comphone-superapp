@@ -293,40 +293,11 @@ function generateReceiptPDF(data) {
     var paidAt = data.paid_at || billing.paid_at || new Date();
     var paidDateText = formatDateTimeSafe_(paidAt);
 
-    var doc = DocumentApp.create('Receipt-' + receiptNo + '-' + jobId);
-    var body = doc.getBody();
-    body.clear();
-    body.appendParagraph('COMPHONE & ELECTRONICS').setHeading(DocumentApp.ParagraphHeading.HEADING1);
-    body.appendParagraph('ใบเสร็จรับเงิน / RECEIPT').setHeading(DocumentApp.ParagraphHeading.HEADING2);
-    body.appendParagraph('เลขที่ใบเสร็จ: ' + receiptNo);
-    body.appendParagraph('วันที่ชำระ: ' + paidDateText);
-    body.appendParagraph('เลขที่งาน: ' + jobId);
-    body.appendParagraph('ลูกค้า: ' + (billing.customer_name || '-'));
-    body.appendParagraph('เบอร์โทร: ' + (billing.phone || '-'));
-    body.appendParagraph('');
-
-    var table = body.appendTable([
-      ['รายการ', 'จำนวนเงิน (บาท)'],
-      ['ค่าอะไหล่', formatMoneyText_(billing.parts_cost)],
-      ['ค่าแรง', formatMoneyText_(billing.labor_cost)],
-      ['ส่วนลด', formatMoneyText_(billing.discount)],
-      ['ยอดรวม', formatMoneyText_(billing.total_amount)],
-      ['ชำระแล้ว', formatMoneyText_(billing.amount_paid || billing.total_amount)]
-    ]);
-    table.getRow(0).editAsText().setBold(true);
-
-    body.appendParagraph('');
-    body.appendParagraph('อ้างอิงรายการ: ' + (billing.parts_description || '-'));
-    body.appendParagraph('Transaction Ref: ' + (data.transaction_ref || billing.transaction_ref || '-'));
-    body.appendParagraph('สถานะการชำระ: ' + (billing.payment_status || 'PAID'));
-    body.appendParagraph('ขอบคุณที่ใช้บริการ');
-
-    doc.saveAndClose();
-
-    var docFile = DriveApp.getFileById(doc.getId());
-    var pdfBlob = docFile.getBlob().getAs(MimeType.PDF).setName('Receipt-' + receiptNo + '-' + jobId + '.pdf');
+    // สร้าง HTML ใบเสร็จสวยงาม
+    var htmlContent = buildReceiptHtml_(billing, receiptNo, jobId, paidDateText, data);
+    var htmlBlob = Utilities.newBlob(htmlContent, 'text/html', 'Receipt-' + receiptNo + '-' + jobId + '.html');
+    var pdfBlob = htmlBlob.getAs(MimeType.PDF).setName('Receipt-' + receiptNo + '-' + jobId + '.pdf');
     var pdfFile = folder.createFile(pdfBlob);
-    try { docFile.setTrashed(true); } catch (trashErr) {}
 
     updateBillingFieldsByJobId_(jobId, {
       Receipt_No: receiptNo,
@@ -857,4 +828,95 @@ function mergeObjects_(base, extra) {
   for (k in base) if (base.hasOwnProperty(k)) out[k] = base[k];
   for (k in extra) if (extra.hasOwnProperty(k)) out[k] = extra[k];
   return out;
+}
+
+function buildReceiptHtml_(billing, receiptNo, jobId, paidDateText, data) {
+  try {
+    data = data || {};
+    var companyPhone = getConfigSafe_('COMPANY_PHONE') || '-';
+    var companyAddress = getConfigSafe_('COMPANY_ADDRESS') || 'ร้านคอมโฟน';
+    var promptpayId = billing.promptpay_biller_id || getConfigSafe_('PROMPTPAY_BILLER_ID') || '';
+    var qrUrl = billing.promptpay_qr_url || '';
+    var isPaid = (billing.payment_status === 'PAID');
+    var discount = Number(billing.discount || 0);
+    var balanceDue = Number(billing.balance_due || 0);
+    var transactionRef = data.transaction_ref || billing.transaction_ref || '-';
+    var invoiceDate = billing.invoice_date ? formatDateTimeSafe_(billing.invoice_date) : paidDateText;
+    var receivedBy = data.received_by || getConfigSafe_('OWNER_NAME') || 'COMPHONE';
+
+    // QR Code section
+    var qrSection = '';
+    if (qrUrl) {
+      qrSection = '<div class="qr-box">' +
+        '<img src="' + qrUrl + '" alt="PromptPay QR Code" />' +
+        '<div class="qr-label">PromptPay: ' + promptpayId + '</div>' +
+        '</div>';
+    } else if (promptpayId) {
+      var amount = Number(billing.balance_due || billing.total_amount || 0);
+      var qrApiUrl = 'https://promptpay.io/' + promptpayId + '/' + amount + '.png';
+      qrSection = '<div class="qr-box">' +
+        '<img src="' + qrApiUrl + '" alt="PromptPay QR Code" />' +
+        '<div class="qr-label">PromptPay: ' + promptpayId + '</div>' +
+        '</div>';
+    }
+
+    // Discount rows
+    var discountRow = discount > 0 ? '<tr><td>ส่วนลด / Discount</td><td style="color:#E53935;">-' + formatMoneyText_(discount) + '</td></tr>' : '';
+    var discountTotalRow = discount > 0 ? '<div class="total-row discount"><span>ส่วนลด</span><span>-' + formatMoneyText_(discount) + ' บาท</span></div>' : '';
+
+    // Balance row
+    var balanceRow = balanceDue > 0 ? '<div class="info-row" style="margin-bottom:6px;"><span class="info-label">คงเหลือ:</span><span class="info-value" style="color:#E53935;font-weight:bold;">' + formatMoneyText_(balanceDue) + ' บาท</span></div>' : '';
+
+    // Payment badge
+    var paymentBadge = isPaid
+      ? '<div class="paid-badge">✓ ชำระเงินแล้ว / PAID</div>'
+      : '<div class="unpaid-badge">⏳ รอชำระ / UNPAID</div>';
+
+    // Payment method
+    var paymentMethod = data.payment_method || (billing.transaction_ref ? 'PromptPay / โอนเงิน' : 'เงินสด / Cash');
+
+    // Read HTML template
+    var template = '';
+    try {
+      template = HtmlService.createTemplateFromFile('ReceiptTemplate').getRawContent();
+    } catch (e) {
+      // Fallback: use inline template
+      template = getReceiptHtmlFallback_();
+    }
+
+    // Replace placeholders
+    template = template
+      .replace(/{{COMPANY_PHONE}}/g, companyPhone)
+      .replace(/{{COMPANY_ADDRESS}}/g, companyAddress)
+      .replace(/{{RECEIPT_NO}}/g, receiptNo)
+      .replace(/{{JOB_ID}}/g, jobId)
+      .replace(/{{INVOICE_DATE}}/g, invoiceDate)
+      .replace(/{{PAID_DATE}}/g, paidDateText)
+      .replace(/{{CUSTOMER_NAME}}/g, billing.customer_name || '-')
+      .replace(/{{PHONE}}/g, billing.phone || '-')
+      .replace(/{{PARTS_DESCRIPTION}}/g, billing.parts_description || '-')
+      .replace(/{{TRANSACTION_REF}}/g, transactionRef)
+      .replace(/{{PARTS_COST}}/g, formatMoneyText_(billing.parts_cost))
+      .replace(/{{LABOR_COST}}/g, formatMoneyText_(billing.labor_cost))
+      .replace(/{{DISCOUNT_ROW}}/g, discountRow)
+      .replace(/{{SUBTOTAL}}/g, formatMoneyText_(billing.subtotal || (Number(billing.parts_cost || 0) + Number(billing.labor_cost || 0))))
+      .replace(/{{DISCOUNT_TOTAL_ROW}}/g, discountTotalRow)
+      .replace(/{{TOTAL_AMOUNT}}/g, formatMoneyText_(billing.total_amount))
+      .replace(/{{QR_CODE_SECTION}}/g, qrSection)
+      .replace(/{{PAYMENT_BADGE}}/g, paymentBadge)
+      .replace(/{{AMOUNT_PAID}}/g, formatMoneyText_(billing.amount_paid || billing.total_amount))
+      .replace(/{{BALANCE_ROW}}/g, balanceRow)
+      .replace(/{{PAYMENT_METHOD}}/g, paymentMethod)
+      .replace(/{{RECEIVED_BY}}/g, receivedBy)
+      .replace(/{{GENERATED_AT}}/g, Utilities.formatDate(new Date(), 'Asia/Bangkok', 'dd/MM/yyyy HH:mm'));
+
+    return template;
+  } catch (e) {
+    Logger.log('buildReceiptHtml_ error: ' + e);
+    return '<html><body><h1>Receipt ' + receiptNo + '</h1><p>Job: ' + jobId + '</p><p>Total: ' + formatMoneyText_(billing.total_amount) + '</p></body></html>';
+  }
+}
+
+function getReceiptHtmlFallback_() {
+  return '<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><style>body{font-family:Tahoma,Arial,sans-serif;font-size:13px;padding:20px;max-width:700px;margin:0 auto}.header{text-align:center;border-bottom:3px solid #1565C0;padding-bottom:12px;margin-bottom:12px}.company{font-size:20px;font-weight:bold;color:#1565C0}.title{font-size:15px;font-weight:bold;margin-top:6px}.meta{display:flex;gap:12px;margin-bottom:12px}.meta-box{flex:1;background:#F5F5F5;border-radius:6px;padding:8px 12px}.meta-label{font-size:11px;color:#888}.meta-value{font-size:13px;font-weight:bold}table{width:100%;border-collapse:collapse;margin-bottom:10px}th{background:#1565C0;color:#fff;padding:7px 10px;text-align:left}td{padding:6px 10px;border-bottom:1px solid #EEE}td:last-child{text-align:right}.total-row{display:flex;justify-content:space-between;padding:5px 10px}.grand{background:#1565C0;color:#fff;font-weight:bold;font-size:15px;border-radius:4px;margin-top:4px;padding:8px 12px}.footer{text-align:center;margin-top:20px;color:#888;font-size:11px;border-top:1px solid #DDD;padding-top:10px}</style></head><body><div class="header"><div class="company">COMPHONE &amp; ELECTRONICS</div><div>{{COMPANY_ADDRESS}} | Tel: {{COMPANY_PHONE}}</div><div class="title">ใบเสร็จรับเงิน / RECEIPT</div></div><div class="meta"><div class="meta-box"><div class="meta-label">เลขที่ใบเสร็จ</div><div class="meta-value">{{RECEIPT_NO}}</div></div><div class="meta-box"><div class="meta-label">เลขที่งาน</div><div class="meta-value">{{JOB_ID}}</div></div><div class="meta-box"><div class="meta-label">วันที่ชำระ</div><div class="meta-value">{{PAID_DATE}}</div></div></div><p><b>ลูกค้า:</b> {{CUSTOMER_NAME}} | <b>โทร:</b> {{PHONE}}</p><p><b>รายละเอียด:</b> {{PARTS_DESCRIPTION}}</p><table><tr><th>รายการ</th><th>จำนวนเงิน (บาท)</th></tr><tr><td>ค่าอะไหล่</td><td>{{PARTS_COST}}</td></tr><tr><td>ค่าแรง</td><td>{{LABOR_COST}}</td></tr>{{DISCOUNT_ROW}}</table><div class="total-row"><span>ยอดรวมก่อนลด</span><span>{{SUBTOTAL}} บาท</span></div>{{DISCOUNT_TOTAL_ROW}}<div class="total-row grand"><span>ยอดรวมสุทธิ</span><span>{{TOTAL_AMOUNT}} บาท</span></div>{{QR_CODE_SECTION}}<p>{{PAYMENT_BADGE}} ชำระแล้ว: {{AMOUNT_PAID}} บาท {{BALANCE_ROW}}</p><p>วิธีชำระ: {{PAYMENT_METHOD}} | Ref: {{TRANSACTION_REF}}</p><div class="footer">ขอบคุณที่ใช้บริการ | {{GENERATED_AT}}</div></body></html>';
 }

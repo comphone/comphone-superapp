@@ -152,6 +152,30 @@ function handleOpenJob(text, userId, userName) {
     return createTextMessage('เปิดงานไม่สำเร็จ: ' + (result && (result.error || result.message) || 'unknown'));
   }
 
+  // ส่ง Flex Message แจ้งกลุ่มช่างด้วย
+  if (typeof notifyNewJobToTechnicians === 'function') {
+    notifyNewJobToTechnicians({
+      job_id: result.job_id,
+      customer_name: payload.customer_name || payload.customer,
+      symptom: payload.symptom,
+      address: payload.address || '',
+      technician: payload.technician || 'ยังไม่มอบหมาย',
+      priority: payload.priority || 'ปกติ',
+      due_date: payload.due_date || '-'
+    });
+  }
+  // ตอบกลับผู้ส่งด้วย Flex Message
+  if (typeof createJobFlexMessage_ === 'function') {
+    return createJobFlexMessage_({
+      job_id: result.job_id,
+      customer_name: payload.customer_name || payload.customer,
+      symptom: payload.symptom,
+      address: payload.address || '',
+      technician: payload.technician || 'ยังไม่มอบหมาย',
+      priority: payload.priority || 'ปกติ',
+      due_date: payload.due_date || '-'
+    });
+  }
   var lines = [
     'เปิดงานสำเร็จ',
     'JobID: ' + (result.job_id || '-'),
@@ -177,6 +201,10 @@ function handleCloseJob(text, userId, userName) {
     return createTextMessage('ปิดงานไม่สำเร็จ: ' + (result && (result.error || result.message) || 'unknown'));
   }
 
+  // ส่ง Flex Message อัปเดตสถานะ
+  if (typeof createStatusFlexMessage_ === 'function') {
+    return createStatusFlexMessage_({ job_id: jobId, changed_by: userName || userId }, result.to_status_label || 'ปิดงานสมบูรณ์');
+  }
   return createTextMessage('ปิดงานสำเร็จ\nJobID: ' + jobId + '\nสถานะ: ' + (result.to_status_label || 'ปิดงาน'));
 }
 
@@ -216,6 +244,10 @@ function handleStatus(classification, text, userId, userName) {
     return createTextMessage('อัปเดตสถานะไม่สำเร็จ: ' + (result && (result.error || result.message) || 'unknown'));
   }
 
+  // ส่ง Flex Message อัปเดตสถานะ
+  if (typeof createStatusFlexMessage_ === 'function') {
+    return createStatusFlexMessage_({ job_id: jobId, changed_by: userName || userId, note: text }, result.to_status_label || statusLabel);
+  }
   return createTextMessage('อัปเดตสถานะเรียบร้อย\nJobID: ' + jobId + '\nสถานะ: ' + (result.to_status_label || '-'));
 }
 
@@ -367,6 +399,10 @@ function formatCheckStockV55_(text) {
 function formatSummaryV55_() {
   var dashboard = callRouterActionV55_('getDashboardData', {});
   var summary = dashboard && dashboard.summary ? dashboard.summary : {};
+  // ใช้ Flex Message ถ้ามี
+  if (typeof createSummaryFlexMessage_ === 'function') {
+    return createSummaryFlexMessage_(summary);
+  }
   var revenue = summary.revenue || {};
   return createTextMessage([
     'สรุป COMPHONE SUPER APP V5.5',
