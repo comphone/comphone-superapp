@@ -78,20 +78,47 @@ const ROLES = {
   }
 };
 
-// ===== SAMPLE DATA =====
-const SAMPLE_JOBS = [
-  { id: 'JOB-0417-001', title: 'iPhone 14 Pro — จอแตก', customer: 'สมศักดิ์ วงศ์ดี', phone: '081-234-5678', status: 'urgent', sla: -120, location: 'ลาดพร้าว 71', price: 1500, tech: 'สมชาย' },
-  { id: 'JOB-0417-002', title: 'Samsung S23 — แบตเสื่อม', customer: 'มาลี ใจดี', phone: '089-876-5432', status: 'inprog', sla: 90, location: 'ร้าน', price: 850, tech: 'วิชัย' },
-  { id: 'JOB-0417-003', title: 'OPPO Reno8 — เมนบอร์ดเสีย', customer: 'ประสิทธิ์ มั่นคง', phone: '062-111-2222', status: 'waiting', sla: 240, location: 'ร้าน', price: 2200, tech: 'สมชาย' },
-  { id: 'JOB-0417-004', title: 'Xiaomi 13T — หน้าจอดำ', customer: 'วิชัย สุขใจ', phone: '091-333-4444', status: 'new', sla: 480, location: 'ร้าน', price: 1200, tech: null },
-  { id: 'JOB-0417-005', title: 'iPhone 13 — แบตหมดเร็ว', customer: 'อรุณี ดีงาม', phone: '086-555-6666', status: 'done', sla: 0, location: 'ร้าน', price: 650, tech: 'วิชัย' }
-];
+// ===== LIVE DATA HELPERS =====
+// แปลง job จาก GAS API ให้เป็นรูปแบบที่ PWA ใช้
+function normalizeJob(j) {
+  if (!j) return null;
+  const statusRaw = (j.status || j.status_label || '').toLowerCase();
+  let status = 'new';
+  if (/เสร็จ|completed|done/.test(statusRaw)) status = 'done';
+  else if (/กำลัง|เริ่มงาน|in.prog/.test(statusRaw)) status = 'inprog';
+  else if (/รอชิ้น|waiting/.test(statusRaw)) status = 'waiting';
+  else if (/ด่วน|urgent/.test(statusRaw)) status = 'urgent';
+  else if (/ยกเลิก|cancel/.test(statusRaw)) status = 'cancel';
 
-const SAMPLE_NOTIFS = [
-  { icon: 'bi-exclamation-triangle-fill', color: '#ef4444', title: 'JOB-001 เกิน SLA 2 ชั่วโมง', sub: 'iPhone 14 Pro · สมศักดิ์', time: '5 นาทีที่แล้ว' },
-  { icon: 'bi-box-seam-fill', color: '#f59e0b', title: 'สต็อก "กระจก iPhone 14" เหลือ 2 ชิ้น', sub: 'ต่ำกว่าจุดสั่งซื้อ', time: '1 ชั่วโมงที่แล้ว' },
-  { icon: 'bi-trophy-fill', color: '#10b981', title: 'สมชาย ได้รับ Kudos 5 ดาว', sub: 'จากลูกค้า 3 ราย', time: '2 ชั่วโมงที่แล้ว' }
-];
+  // คำนวณ SLA จากวันที่สร้าง
+  let sla = 999;
+  try {
+    const created = j.created || j.created_at || '';
+    const parts = created.split(' ')[0].split('/');
+    if (parts.length === 2) {
+      const d = new Date(new Date().getFullYear(), parseInt(parts[1])-1, parseInt(parts[0]));
+      const diffHrs = (Date.now() - d.getTime()) / 3600000;
+      const slaHrs = 72; // default 72 hrs
+      sla = Math.round((slaHrs - diffHrs) * 60); // minutes remaining
+    }
+  } catch(e) {}
+
+  return {
+    id: j.id || j.job_id || '-',
+    title: j.symptom || j.device || j.title || 'ไม่ระบุอาการ',
+    customer: j.customer || j.customer_name || '-',
+    phone: j.phone || j.customer_phone || '-',
+    status: status,
+    statusLabel: j.status || j.status_label || '-',
+    sla: sla,
+    location: j.location || 'ร้าน',
+    price: j.price || j.estimated_price || 0,
+    tech: j.tech || j.technician || null,
+    folder: j.folder || j.folder_url || '',
+    created: j.created || j.created_at || '',
+    raw: j
+  };
+}
 
 // ===== INIT =====
 window.addEventListener('load', () => {
@@ -194,16 +221,43 @@ function startMainApp() {
   document.getElementById('greeting-text').textContent = greet + ' 👋';
   document.getElementById('user-name-display').textContent = APP.user.name;
 
-  // Load jobs
-  APP.jobs = SAMPLE_JOBS;
-
-  // Render home
+  // Render home ด้วย loading state ก่อน
   renderHome();
-  renderJobsBadge();
   renderProfile();
 
-  // B1: Deep Link handler — อ่าน ?page= จาก URL และนำทางอัตโนมัติ
+  // B1: Deep Link handler
   handleDeepLink();
+
+  // โหลดข้อมูลจริงจาก GAS API
+  loadLiveData();
+}
+
+async function loadLiveData() {
+  try {
+    const url = APP.scriptUrl || DEFAULT_SCRIPT_URL;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'getDashboardData' })
+    });
+    const data = await res.json();
+    if (!data || !data.success) return;
+
+    // เก็บ jobs จาก API
+    const rawJobs = data.jobs || data.summary && data.summary.recentJobs || [];
+    APP.jobs = rawJobs.map(normalizeJob).filter(Boolean);
+    APP.dashboardData = data;
+
+    // อัปเดต UI
+    renderHome();
+    renderJobsBadge();
+
+    // ถ้าอยู่หน้า jobs ให้ re-render
+    if (APP.currentPage === 'jobs') renderJobsPage();
+  } catch(e) {
+    // ไม่มี internet — แสดง offline state
+    showOfflineBar(true);
+  }
 }
 
 function handleDeepLink() {
@@ -253,29 +307,38 @@ function renderHome() {
 function renderStats() {
   const row = document.getElementById('stats-row');
   const role = APP.role;
+  const d = APP.dashboardData;
+  const summary = d && d.summary ? d.summary : {};
+  const revenue = summary.revenue || {};
+  const totalJobs = Number(summary.totalJobs || APP.jobs.length || 0);
+  const overdueJobs = Number(summary.overdueJobs || 0);
+  const doneJobs = APP.jobs.filter(j => j.status === 'done').length;
+  const pendingJobs = APP.jobs.filter(j => j.status !== 'done' && j.status !== 'cancel').length;
+  const myJobs = APP.jobs.filter(j => j.tech && APP.user && j.tech.includes(APP.user.name.split(' ')[0])).length;
+  const topTech = summary.topTechnician;
 
   const statsMap = {
     tech: [
-      { label: 'งานของฉัน', value: '3', sub: 'วันนี้', trend: '', color: '#0d6efd' },
-      { label: 'Kudos เดือนนี้', value: '12 ⭐', sub: 'อันดับ 2 ของทีม', trend: '', color: '#f59e0b' }
+      { label: 'งานของฉัน', value: myJobs || pendingJobs, sub: 'งานทั้งหมด', trend: '', color: '#0d6efd' },
+      { label: 'งานรอดำเนินการ', value: pendingJobs, sub: 'ยังไม่เสร็จ', trend: pendingJobs > 5 ? 'down' : '', color: '#f59e0b' }
     ],
     admin: [
-      { label: 'งานวันนี้', value: '12', sub: '+3 จากเมื่อวาน', trend: 'up', color: '#7c3aed' },
-      { label: 'รอมอบหมาย', value: '4', sub: 'ต้องจัดการด่วน', trend: 'down', color: '#ef4444' },
-      { label: 'เสร็จวันนี้', value: '7', sub: 'เป้า 10 งาน', trend: 'up', color: '#10b981' },
-      { label: 'ลูกค้าใหม่', value: '2', sub: 'วันนี้', trend: '', color: '#f97316' }
+      { label: 'งานทั้งหมด', value: totalJobs, sub: 'ในระบบ', trend: '', color: '#7c3aed' },
+      { label: 'รอดำเนินการ', value: pendingJobs, sub: overdueJobs > 0 ? `เกิน SLA ${overdueJobs} งาน` : 'ปกติ', trend: overdueJobs > 0 ? 'down' : '', color: '#ef4444' },
+      { label: 'เสร็จแล้ว', value: doneJobs, sub: 'งาน', trend: doneJobs > 0 ? 'up' : '', color: '#10b981' },
+      { label: 'เกิน SLA', value: overdueJobs, sub: 'ต้องดำเนินการ', trend: overdueJobs > 0 ? 'down' : '', color: '#f97316' }
     ],
     acct: [
-      { label: 'รายรับวันนี้', value: '฿8,450', sub: '+12% vs เมื่อวาน', trend: 'up', color: '#10b981' },
-      { label: 'รอเก็บเงิน', value: '฿3,200', sub: '3 บิล', trend: 'down', color: '#ef4444' },
-      { label: 'สลิปรอตรวจ', value: '2', sub: 'ใบ', trend: '', color: '#f59e0b' },
-      { label: 'ออกใบเสร็จ', value: '5', sub: 'ใบวันนี้', trend: '', color: '#0891b2' }
+      { label: 'รายรับวันนี้', value: '฿' + Number(revenue.today || 0).toLocaleString(), sub: 'บาท', trend: revenue.today > 0 ? 'up' : '', color: '#10b981' },
+      { label: 'รายรับเดือนนี้', value: '฿' + Number(revenue.month || 0).toLocaleString(), sub: 'บาท', trend: '', color: '#0891b2' },
+      { label: 'งานทั้งหมด', value: totalJobs, sub: 'ในระบบ', trend: '', color: '#7c3aed' },
+      { label: 'เสร็จแล้ว', value: doneJobs, sub: 'งาน', trend: '', color: '#f59e0b' }
     ],
     exec: [
-      { label: 'กำไรวันนี้', value: '฿12,450', sub: '+18% vs เมื่อวาน', trend: 'up', color: '#d97706' },
-      { label: 'งานค้าง', value: '5', sub: '2 เกิน SLA', trend: 'down', color: '#ef4444' },
-      { label: 'งานเสร็จ', value: '7', sub: 'เป้า 10/วัน', trend: 'up', color: '#0d6efd' },
-      { label: 'ลูกค้าพึงพอใจ', value: '4.8★', sub: 'จาก 12 รีวิว', trend: 'up', color: '#7c3aed' }
+      { label: 'รายรับวันนี้', value: '฿' + Number(revenue.today || 0).toLocaleString(), sub: 'เดือน: ฿' + Number(revenue.month || 0).toLocaleString(), trend: revenue.today > 0 ? 'up' : '', color: '#d97706' },
+      { label: 'งานค้าง', value: pendingJobs, sub: overdueJobs > 0 ? `เกิน SLA ${overdueJobs} งาน` : 'ปกติ', trend: overdueJobs > 0 ? 'down' : '', color: '#ef4444' },
+      { label: 'งานเสร็จ', value: doneJobs, sub: `จาก ${totalJobs} งาน`, trend: doneJobs > 0 ? 'up' : '', color: '#0d6efd' },
+      { label: 'ช่างยอดเยี่ยม', value: topTech ? topTech.name.split(' ')[0] : '-', sub: topTech ? `${topTech.jobs_completed || 0} งาน` : '', trend: '', color: '#7c3aed' }
     ]
   };
 
@@ -307,7 +370,10 @@ function renderMainContent() {
 }
 
 function renderTechHome() {
-  const myJobs = APP.jobs.filter(j => j.tech === APP.user.name.split(' ')[0] || j.status !== 'done');
+  const myName = APP.user ? APP.user.name.split(' ')[0] : '';
+  const myJobs = APP.jobs.filter(j => !myName || (j.tech && j.tech.includes(myName)) || j.status !== 'done');
+  const d = APP.dashboardData;
+  const topTech = d && d.summary && d.summary.topTechnician;
   return `
     <div class="checkin-banner" style="background:linear-gradient(135deg,#0d6efd,#0a58ca)">
       <div class="checkin-icon-wrap"><i class="bi bi-geo-alt-fill"></i></div>
@@ -317,40 +383,45 @@ function renderTechHome() {
       </div>
       <button class="checkin-action-btn" style="color:#0d6efd" onclick="doCheckin()">เช็คอิน</button>
     </div>
-    <div style="padding:0 12px 4px"><div class="section-label">งานของฉัน (${myJobs.length} งาน)</div></div>
-    ${myJobs.slice(0,3).map(j => renderJobCard(j)).join('')}
+    <div style="padding:0 12px 4px"><div class="section-label">งานในระบบ (${myJobs.length} งาน)</div></div>
+    ${myJobs.length === 0 ? `<div style="text-align:center;padding:30px;color:#9ca3af"><i class="bi bi-clipboard2-check" style="font-size:36px;display:block;margin-bottom:8px"></i>ไม่มีงานค้าง</div>` : myJobs.slice(0,3).map(j => renderJobCard(j)).join('')}
+    ${topTech ? `
     <div class="kudos-banner">
       <div style="font-size:36px">⭐</div>
       <div>
-        <div style="font-weight:700;font-size:13px">Kudos เดือนนี้</div>
-        <div style="font-size:22px;font-weight:900">12 ดาว</div>
-        <div style="font-size:11px;opacity:0.8">อันดับ 2 ของทีม</div>
+        <div style="font-weight:700;font-size:13px">ช่างยอดเยี่ยมสัปดาห์นี้</div>
+        <div style="font-size:22px;font-weight:900">${topTech.name}</div>
+        <div style="font-size:11px;opacity:0.8">${topTech.jobs_completed || 0} งานเสร็จ</div>
       </div>
-    </div>
+    </div>` : ''}
   `;
 }
 
 function renderAdminHome() {
-  const pending = APP.jobs.filter(j => j.status === 'new');
+  const pending = APP.jobs.filter(j => j.status === 'new' || j.status === 'urgent');
+  const overdue = APP.jobs.filter(j => j.sla < 0 && j.status !== 'done' && j.status !== 'cancel');
+  const d = APP.dashboardData;
+  const alertsRaw = d && d.alerts ? d.alerts : {};
+  const alerts = Array.isArray(alertsRaw) ? alertsRaw : (alertsRaw.items || []);
   return `
-    <div style="padding:0 12px 4px"><div class="section-label">รอมอบหมายช่าง <span style="display:inline-block;width:8px;height:8px;background:#ef4444;border-radius:50%;margin-left:4px;"></span></div></div>
-    ${pending.map(j => renderJobCard(j)).join('')}
-    <div style="padding:0 12px 4px;margin-top:4px"><div class="section-label">Follow-up วันนี้</div></div>
-    <div class="bill-row">
-      <div class="avatar-sm" style="background:#ede9fe;color:#7c3aed">ก</div>
-      <div><div style="font-size:13px;font-weight:700">กมลา รักดี</div><div class="bill-sub">ซ่อมเสร็จ 3 วันที่แล้ว — ยังไม่ได้ติดตาม</div></div>
-      <button class="bill-status-badge" style="background:#ede9fe;color:#7c3aed;border:none;cursor:pointer" onclick="showToast('กำลังโทร...')">โทร</button>
-    </div>
-    <div class="bill-row">
-      <div class="avatar-sm" style="background:#fef9c3;color:#d97706">ป</div>
-      <div><div style="font-size:13px;font-weight:700">ประยุทธ์ ใจเย็น</div><div class="bill-sub">ครบกำหนดรับประกัน 7 วัน</div></div>
-      <button class="bill-status-badge" style="background:#fef9c3;color:#d97706;border:none;cursor:pointer" onclick="showToast('เปิด LINE...')">LINE</button>
-    </div>
+    ${overdue.length > 0 ? `
+    <div style="padding:0 12px 4px"><div class="section-label" style="color:#ef4444">⚠️ งานเกิน SLA (${overdue.length} งาน)</div></div>
+    ${overdue.slice(0,2).map(j => renderJobCard(j)).join('')}` : ''}
+    <div style="padding:0 12px 4px;margin-top:4px"><div class="section-label">งานทั้งหมด (${APP.jobs.length} งาน)</div></div>
+    ${APP.jobs.length === 0 ? `<div style="text-align:center;padding:30px;color:#9ca3af"><div style="font-size:32px;margin-bottom:8px">⏳</div>กำลังโหลดข้อมูล...</div>` :
+      APP.jobs.slice(0,5).map(j => renderJobCard(j)).join('')}
   `;
 }
 
 function renderAcctHome() {
   const pending = APP.jobs.filter(j => j.status === 'done');
+  const d = APP.dashboardData;
+  const summary = d && d.summary ? d.summary : {};
+  const revenue = summary.revenue || {};
+  const todayRevenue = Number(revenue.today || 0);
+  const vat = Math.round(todayRevenue * 0.07 * 100) / 100;
+  const wht = Math.round(todayRevenue * 0.03 * 100) / 100;
+  const net = todayRevenue - vat;
   return `
     <div class="slip-scan-card">
       <i class="bi bi-camera-fill"></i>
@@ -358,66 +429,62 @@ function renderAcctHome() {
       <p>AI จะตรวจยอดและจับคู่บิลอัตโนมัติ</p>
       <button class="slip-scan-btn" onclick="scanSlip()"><i class="bi bi-camera"></i> เปิดกล้อง</button>
     </div>
-    <div style="padding:0 12px 4px"><div class="section-label">บิลรอเก็บเงิน</div></div>
-    ${pending.map(j => `
-      <div class="bill-row">
-        <div class="avatar-sm" style="background:#fee2e2;color:#dc2626">${j.customer.charAt(0)}</div>
-        <div><div class="bill-amount">฿${j.price.toLocaleString()}</div><div class="bill-sub">${j.id} · ${j.customer}</div></div>
-        <span class="bill-status-badge" style="background:#fee2e2;color:#dc2626">รอเก็บ</span>
-      </div>
-    `).join('')}
+    <div style="padding:0 12px 4px"><div class="section-label">งานเสร็จแล้ว (${pending.length} งาน)</div></div>
+    ${pending.length === 0 ? `<div style="text-align:center;padding:20px;color:#9ca3af">ยังไม่มีงานเสร็จ</div>` :
+      pending.map(j => `
+        <div class="bill-row">
+          <div class="avatar-sm" style="background:#fee2e2;color:#dc2626">${(j.customer||'-').charAt(0)}</div>
+          <div><div class="bill-amount">฿${Number(j.price||0).toLocaleString()}</div><div class="bill-sub">${j.id} · ${j.customer}</div></div>
+          <span class="bill-status-badge" style="background:#d1fae5;color:#065f46">เสร็จ</span>
+        </div>
+      `).join('')}
     <div class="mini-chart-card">
       <div class="chart-title">สรุปภาษีวันนี้ (อัตโนมัติ)</div>
       <div style="display:flex;justify-content:space-between;font-size:12px;color:#374151">
-        <div><span style="font-weight:700">VAT 7%</span><br><span style="font-size:18px;font-weight:900;color:#0891b2">฿591.50</span></div>
-        <div><span style="font-weight:700">WHT 3%</span><br><span style="font-size:18px;font-weight:900;color:#7c3aed">฿253.50</span></div>
-        <div><span style="font-weight:700">ยอดสุทธิ</span><br><span style="font-size:18px;font-weight:900;color:#10b981">฿7,605</span></div>
+        <div><span style="font-weight:700">VAT 7%</span><br><span style="font-size:18px;font-weight:900;color:#0891b2">฿${vat.toLocaleString()}</span></div>
+        <div><span style="font-weight:700">WHT 3%</span><br><span style="font-size:18px;font-weight:900;color:#7c3aed">฿${wht.toLocaleString()}</span></div>
+        <div><span style="font-weight:700">รายรับวันนี้</span><br><span style="font-size:18px;font-weight:900;color:#10b981">฿${todayRevenue.toLocaleString()}</span></div>
       </div>
     </div>
   `;
 }
 
 function renderExecHome() {
+  const d = APP.dashboardData;
+  const summary = d && d.summary ? d.summary : {};
+  const alertsRaw = d && d.alerts ? d.alerts : {};
+  const alerts = Array.isArray(alertsRaw) ? alertsRaw : (alertsRaw.items || []);
+  const topTech = summary.topTechnician;
+  const revenue = summary.revenue || {};
+  const overdueJobs = APP.jobs.filter(j => j.sla < 0 && j.status !== 'done' && j.status !== 'cancel');
+
   return `
-    <div style="padding:0 12px 4px"><div class="section-label">แจ้งเตือนด่วน</div></div>
-    <div class="alert-card danger" onclick="showToast('เปิดรายละเอียดงาน...')">
-      <i class="bi bi-exclamation-triangle-fill"></i>
-      <div><div style="font-weight:700">JOB-001 เกิน SLA 2 ชั่วโมง</div><div style="font-size:11px;font-weight:400">iPhone 14 Pro · สมศักดิ์ วงศ์ดี</div></div>
-      <button class="alert-action-btn" style="background:#ef4444;color:#fff" onclick="event.stopPropagation();showToast('ส่งการแจ้งเตือนช่างแล้ว')">จี้ช่าง</button>
-    </div>
-    <div class="alert-card warning" onclick="showToast('เปิดหน้าสต็อก...')">
-      <i class="bi bi-box-seam-fill"></i>
-      <div><div style="font-weight:700">สต็อก "กระจก iPhone 14" เหลือ 2 ชิ้น</div><div style="font-size:11px;font-weight:400">ต่ำกว่าจุดสั่งซื้อ (5 ชิ้น)</div></div>
-      <button class="alert-action-btn" style="background:#f59e0b;color:#000" onclick="event.stopPropagation();showToast('เปิดใบสั่งซื้อ...')">สั่งซื้อ</button>
-    </div>
-    <div class="alert-card success">
-      <i class="bi bi-trophy-fill"></i>
-      <div><div style="font-weight:700">สมชาย ได้รับ Kudos 5 ดาว</div><div style="font-size:11px;font-weight:400">จากลูกค้า 3 รายวันนี้</div></div>
-    </div>
-    <div class="mini-chart-card">
-      <div class="chart-title">รายได้ 7 วันล่าสุด (บาท)</div>
-      <div class="bar-chart-row">
-        ${[35,50,42,55,48,38,60].map((h,i) => `
-          <div class="bar-item">
-            <div class="bar-fill" style="height:${h}px;background:${i===6?'#0d6efd':'#bfdbfe'}"></div>
-            <div class="bar-lbl" style="color:${i===6?'#0d6efd':'#9ca3af'};font-weight:${i===6?'700':'400'}">${['จ','อ','พ','พฤ','ศ','ส','วันนี้'][i]}</div>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-    <div style="padding:0 12px 4px"><div class="section-label">อันดับช่างสัปดาห์นี้</div></div>
+    ${alerts.length > 0 ? `
+    <div style="padding:0 12px 4px"><div class="section-label" style="color:#ef4444">⚠️ แจ้งเตือนด่วน (${alerts.length})</div></div>
+    ${alerts.slice(0,3).map(a => {
+      const isOverdue = (a.type||'').includes('OVERDUE');
+      const isStock = (a.type||'').includes('STOCK');
+      const cls = isOverdue ? 'danger' : isStock ? 'warning' : 'success';
+      const icon = isOverdue ? 'bi-clock-fill' : isStock ? 'bi-box-seam-fill' : 'bi-info-circle-fill';
+      const msg = a.message || (a.data && a.data.customer_name ? `${a.id} — ${a.data.customer_name}` : '-');
+      return `<div class="alert-card ${cls}">
+        <i class="bi ${icon}"></i>
+        <div style="flex:1"><div style="font-weight:700">${msg}</div>${a.data && a.data.status_label ? `<div style="font-size:11px;font-weight:400">สถานะ: ${a.data.status_label}</div>` : ''}</div>
+      </div>`;
+    }).join('')}` : ''}
+
+    <div style="padding:0 12px 4px;margin-top:4px"><div class="section-label">งานล่าสุด</div></div>
+    ${APP.jobs.length === 0 ? `<div style="text-align:center;padding:30px;color:#9ca3af"><div style="font-size:32px;margin-bottom:8px">⏳</div>กำลังโหลดข้อมูล...</div>` :
+      APP.jobs.slice(0,4).map(j => renderJobCard(j)).join('')}
+
+    ${topTech ? `
+    <div style="padding:0 12px 4px;margin-top:4px"><div class="section-label">ช่างยอดเยี่ยมสัปดาห์นี้</div></div>
     <div class="rank-card">
       <div class="rank-num">1</div>
-      <div class="avatar-sm" style="background:#fef9c3;color:#d97706">ส</div>
-      <div style="flex:1"><div style="font-size:13px;font-weight:700">สมชาย ทำดี</div><div class="stars-row">★★★★★ <span style="color:#9ca3af;font-size:11px">12 Kudos</span></div></div>
-      <div style="text-align:right"><div style="font-size:12px;font-weight:700;color:#10b981">7 งาน</div><div style="font-size:10px;color:#9ca3af">สัปดาห์นี้</div></div>
-    </div>
-    <div class="rank-card">
-      <div class="rank-num silver">2</div>
-      <div class="avatar-sm" style="background:#dbeafe;color:#1e40af">ว</div>
-      <div style="flex:1"><div style="font-size:13px;font-weight:700">วิชัย มุ่งมั่น</div><div class="stars-row">★★★★☆ <span style="color:#9ca3af;font-size:11px">8 Kudos</span></div></div>
-      <div style="text-align:right"><div style="font-size:12px;font-weight:700;color:#10b981">5 งาน</div><div style="font-size:10px;color:#9ca3af">สัปดาห์นี้</div></div>
-    </div>
+      <div class="avatar-sm" style="background:#fef9c3;color:#d97706">${(topTech.name||'?')[0]}</div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:700">${topTech.name}</div><div class="stars-row">${'★'.repeat(Math.min(5,Math.round(topTech.rating||5)))} <span style="color:#9ca3af;font-size:11px">${topTech.kudos||0} Kudos</span></div></div>
+      <div style="text-align:right"><div style="font-size:12px;font-weight:700;color:#10b981">${topTech.jobs_completed||0} งาน</div><div style="font-size:10px;color:#9ca3af">สัปดาห์นี้</div></div>
+    </div>` : ''}
   `;
 }
 
@@ -610,18 +677,33 @@ function globalSearch(val) {
 // ===== NOTIFICATIONS =====
 function showNotifications() {
   const list = document.getElementById('notif-list');
-  list.innerHTML = SAMPLE_NOTIFS.map(n => `
-    <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #f3f4f6">
-      <div style="width:40px;height:40px;border-radius:50%;background:${n.color}20;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <i class="bi ${n.icon}" style="color:${n.color};font-size:18px"></i>
-      </div>
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:700;color:#111827">${n.title}</div>
-        <div style="font-size:11px;color:#6b7280">${n.sub}</div>
-      </div>
-      <div style="font-size:10px;color:#9ca3af;flex-shrink:0">${n.time}</div>
-    </div>
-  `).join('');
+  const d = APP.dashboardData;
+  const alertsRaw = d && d.alerts ? d.alerts : {};
+  const alerts = Array.isArray(alertsRaw) ? alertsRaw : (alertsRaw.items || []);
+
+  if (alerts.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af"><i class="bi bi-bell-slash" style="font-size:36px;display:block;margin-bottom:8px"></i>ไม่มีการแจ้งเตือน</div>';
+  } else {
+    list.innerHTML = alerts.map(a => {
+      const isOverdue = (a.type||'').includes('OVERDUE');
+      const isStock = (a.type||'').includes('STOCK');
+      const color = isOverdue ? '#ef4444' : isStock ? '#f59e0b' : '#10b981';
+      const icon = isOverdue ? 'bi-clock-fill' : isStock ? 'bi-box-seam-fill' : 'bi-info-circle-fill';
+      const title = a.message || (a.data && a.data.customer_name ? `${a.id} — ${a.data.customer_name}` : '-');
+      const sub = a.data && a.data.status_label ? `สถานะ: ${a.data.status_label}` : (isOverdue ? 'เกิน SLA' : isStock ? 'สต็อกต่ำ' : '');
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #f3f4f6">
+          <div style="width:40px;height:40px;border-radius:50%;background:${color}20;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <i class="bi ${icon}" style="color:${color};font-size:18px"></i>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;color:#111827">${title}</div>
+            <div style="font-size:11px;color:#6b7280">${sub}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
   document.getElementById('modal-notif').classList.remove('hidden');
   document.getElementById('notif-count').style.display = 'none';
 }
