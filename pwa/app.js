@@ -727,9 +727,7 @@ function markJobDone(jobId) {
   callAPI('updateJobStatus', { jobId, status: 'done' });
 }
 
-function assignJob(jobId) {
-  showToast('กำลังเปิดหน้ามอบหมายช่าง...');
-}
+function assignJob(jobId) { if (typeof openAssignJob === 'function') openAssignJob(jobId || ''); else showToast('กำลังเปิดหน้ามอบหมายช่าง...'); }
 
 function openCameraForJob(jobId) {
   const input = document.getElementById('camera-input');
@@ -747,7 +745,8 @@ function openCameraQuick() { openCamera('job'); }
 function markDone() { showToast('เลือกงานที่ต้องการก่อน'); goPage('jobs', document.getElementById('nav-jobs')); }
 function markWaiting() { showToast('เลือกงานที่ต้องการก่อน'); goPage('jobs', document.getElementById('nav-jobs')); }
 function callForHelp() { showToast('ส่งการแจ้งเตือนแล้ว 🆘'); }
-function openNewJob() { showToast('กำลังเปิดฟอร์มงานใหม่...'); }
+function openNewJob() { if (typeof openNewJobForm === 'function') openNewJobForm(); else if (typeof openNewJob_jw === 'function') openNewJob_jw(); else { if(document.getElementById('modal-new-job')) { openNewJob_delayed(); } else showToast('กำลังเปิดฟอร์มงานใหม่...'); } }
+function openNewJob_delayed() { const fn = setInterval(() => { if(typeof openNewJob === 'function' && document.getElementById('modal-new-job-content')) { clearInterval(fn); openNewJob(); } }, 100); setTimeout(() => clearInterval(fn), 3000); }
 function addCustomer() { showToast('กำลังเปิดฟอร์มลูกค้าใหม่...'); }
 function callCustomer(phone) { if (phone) window.location.href = 'tel:' + phone; else showToast('กำลังเปิดรายชื่อลูกค้า...'); }
 function sendLine() { showToast('กำลังเปิด LINE...'); }

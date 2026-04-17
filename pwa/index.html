@@ -466,6 +466,38 @@
   </div>
 </div>
 
+<!-- New Job Modal -->
+<div id="modal-new-job" class="modal-overlay hidden" onclick="closeModal('modal-new-job')">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="max-height:90vh;overflow-y:auto;padding:0 0 24px">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><i class="bi bi-plus-circle-fill" style="color:#10b981"></i> สร้างงานใหม่</div>
+    <div id="modal-new-job-content"></div>
+  </div>
+</div>
+<!-- Assign Tech Modal -->
+<div id="modal-assign" class="modal-overlay hidden" onclick="closeModal('modal-assign')">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><i class="bi bi-person-check-fill" style="color:#3b82f6"></i> มอบหมายช่าง</div>
+    <div id="modal-assign-content"></div>
+  </div>
+</div>
+<!-- Quick Note Modal -->
+<div id="modal-note" class="modal-overlay hidden" onclick="closeModal('modal-note')">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><i class="bi bi-chat-left-text-fill" style="color:#f59e0b"></i> บันทึกงาน</div>
+    <div id="modal-note-content"></div>
+  </div>
+</div>
+<!-- Timeline Modal -->
+<div id="modal-timeline" class="modal-overlay hidden" onclick="closeModal('modal-timeline')">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="max-height:85vh;overflow-y:auto;padding:0 0 24px">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><i class="bi bi-clock-history" style="color:#8b5cf6"></i> ประวัติสถานะ</div>
+    <div id="modal-timeline-content"></div>
+  </div>
+</div>
 <!-- Toast -->
 <div id="toast" class="toast-msg hidden"></div>
 
@@ -484,5 +516,6 @@
 <script src="crm_attendance.js"></script>
 <script src="purchase_order.js"></script>
 <script src="dashboard.js"></script>
+<script src="job_workflow.js"></script>
 </body>
 </html>

@@ -277,9 +277,13 @@ LINE Platform → POST /line/webhook
 
 | ไฟล์ | หน้าที่ | Version |
 |------|---------|---------|
-| `pwa/index.html` | Main HTML — ทุกหน้า, modals | v5.5.3 |
-| `pwa/app.js` | Main JS — navigation, API calls, UI | v5.5.3 |
-| `pwa/crm_attendance.js` | CRM + Attendance functions | **NEW v5.5.3** |
+| `pwa/index.html` | Main HTML — ทุกหน้า, modals | v5.5.4 |
+| `pwa/app.js` | Main JS — navigation, API calls, UI (ไม่มี demo data) | v5.5.4 |
+| `pwa/crm_attendance.js` | CRM + Attendance functions | v5.5.3 |
+| `pwa/purchase_order.js` | Purchase Order UI | **NEW v5.5.3** |
+| `pwa/dashboard.js` | Executive Dashboard (Mobile) | **NEW v5.5.3** |
+| `pwa/dashboard_pc.html` | Executive Dashboard (PC — Responsive) | **NEW v5.5.3** |
+| `pwa/job_workflow.js` | Open Job, Assign Tech, Timeline, Quick Note | **NEW v5.5.4** |
 | `pwa/style.css` | Custom CSS | v5.5+ |
 | `pwa/manifest.json` | PWA manifest | v5.5+ |
 | `pwa/sw.js` | Service Worker (offline cache) | v5.5+ |
@@ -293,12 +297,14 @@ LINE Platform → POST /line/webhook
 | v5.5.0 | 2026-04-07 | @436 | Initial deploy |
 | v5.5.1 | 2026-04-17 | @437 | initSystem, Triggers, Config |
 | v5.5.2 | 2026-04-17 | @438 | setScriptProperties API, LINE Group ID detection |
-| **v5.5.3** | **2026-04-17** | **@439** | FlexMessage.gs, CRM UI, Attendance, PDF Receipt, Cloudflare Worker |
+| v5.5.3 | 2026-04-17 | @439 | FlexMessage.gs, CRM UI, Attendance, PDF Receipt, Cloudflare Worker |
+| **v5.5.4** | **2026-04-17** | **@439** | Purchase Order UI, Executive Dashboard (PC+Mobile), LINE Deep Link, Phase 1 Core Workflow |
 
 ---
 
 ## 16. ฟีเจอร์ที่พัฒนาแล้ว ✅
 
+**GAS Backend:**
 - [x] ระบบงานซ่อม (Job Management) — CRUD, Status 12 ขั้นตอน, Assign Technician
 - [x] ระบบสต็อก (Inventory) — CRUD, Barcode Scanner, Stock Movement
 - [x] ระบบลูกค้า (CRM) — CRUD, Filter, ประวัติ, After-Sales
@@ -311,23 +317,40 @@ LINE Platform → POST /line/webhook
 - [x] Scheduled Alerts — Morning, Low Stock, After-Sales, CRM
 - [x] Auto Backup — Daily Google Sheets backup
 - [x] Cloudflare Worker — Fast LINE webhook proxy (async forward)
-- [x] PWA — Mobile-first, Offline-capable, Install to Home Screen
 - [x] initSystem() — สร้าง Sheets 13 ตาราง + Triggers 6 ตัวอัตโนมัติ
+
+**PWA Frontend (v5.5.4):**
+- [x] PWA — Mobile-first, Offline-capable, Install to Home Screen
+- [x] ข้อมูลจริงจาก Sheet — ไม่มี demo data หลงเหลือใน app.js
+- [x] **Purchase Order UI** — สร้าง/ดู/รับสินค้า (`purchase_order.js`)
+- [x] **Executive Dashboard Mobile** — KPI, กราฟ Chart.js (`dashboard.js`)
+- [x] **Executive Dashboard PC** — Sidebar layout, Table, Responsive (`dashboard_pc.html`)
+- [x] **LINE Deep Link** — `?page=` URL handler เปิดหน้าอัตโนมัติจาก LINE Bot
+- [x] **Open Job Form** — Modal สร้างงานใหม่ + เชื่อม `openJob` API (`job_workflow.js`)
+- [x] **Assign Technician** — Modal มอบหมายช่าง + เพิ่มช่างใหม่ (`job_workflow.js`)
+- [x] **Job Status Timeline** — ประวัติสถานะแบบ Timeline + ไอคอน (`job_workflow.js`)
+- [x] **Quick Note** — จดบันทึกบนงาน + Quick Tags (`job_workflow.js`)
 
 ---
 
 ## 17. ฟีเจอร์ที่ยังไม่ได้พัฒนา 🔲
 
-- [ ] **Purchase Order UI** — หน้าสร้างใบสั่งซื้อใน PWA (Backend มีแล้ว)
-- [ ] **Executive Dashboard** — กราฟ KPI, รายงานกำไร-ขาดทุน
-- [ ] **Slip Verification** — ตรวจสอบสลิปโอนเงินอัตโนมัติ
-- [ ] **LINE Bot Deep Link** — กดปุ่มใน Flex Message แล้วเปิด PWA ตรงหน้างาน
-- [ ] **Photo Upload** — รูปภาพงานซ่อม Before/After
+**Phase 2 — Financial & Billing:**
+- [ ] **สร้างบิล / ใบเสร็จ** — Form สร้างใบเสร็จใน PWA (`createBilling` API พร้อม)
+- [ ] **QR รับเงิน PromptPay** — แสดง QR Code ใน PWA
+- [ ] **Slip Verification** — ตรวจสอบสลิปโอนเงินอัตโนมัติ (AI)
+
+**Phase 3 — Customer Experience:**
 - [ ] **Customer Portal** — ลูกค้าตรวจสอบสถานะงานเอง (ไม่ต้อง Login)
-- [ ] **Multi-branch** — รองรับหลายสาขา
-- [ ] **Warranty Management** — ระบบรับประกัน
-- [ ] **Auto-Tax Engine** — คำนวณ VAT 7% และ WHT 3% อัตโนมัติ
+- [ ] **Photo Upload** — รูปภาพงานซ่อม Before/After
+- [ ] **Inventory Management UI** — หน้าจัดการสต็อกใน PWA
+
+**Phase 4 — Advanced:**
 - [ ] **Kudos System** — ระบบให้ดาวช่าง
+- [ ] **Warranty Management** — ระบบรับประกัน
+- [ ] **P&L Report** — รายงานกำไร-ขาดทุน
+- [ ] **Auto-Tax Engine** — คำนวณ VAT 7% และ WHT 3% อัตโนมัติ
+- [ ] **Multi-branch** — รองรับหลายสาขา
 
 ---
 
