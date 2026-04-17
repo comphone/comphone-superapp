@@ -32,7 +32,8 @@
 ### 2.2 Web URLs
 | รายการ | URL |
 |--------|-----|
-| **Cloudflare Worker (ถาวร)** | `https://comphone-dashboard.narinoutagit.workers.dev` |
+| **PWA App (ถาวร/หลัก)** | `https://comphone.github.io/comphone-superapp/pwa/` |
+| **Cloudflare Worker (สำรอง)** | `https://comphone-dashboard.narinoutagit.workers.dev` |
 | **GitHub Repository** | `https://github.com/comphone/comphone-superapp` |
 
 ### 2.3 LINE Group IDs (สำหรับการแจ้งเตือน)
@@ -64,7 +65,11 @@
 
 ระบบปัจจุบัน (V5.5+) มีฟีเจอร์ที่พร้อมใช้งานทั้ง Frontend และ Backend ดังนี้:
 
-### 📱 Smart Dashboard & UI
+### 📱 Smart Dashboard & UI (PWA)
+- **Progressive Web App (PWA):** ติดตั้งบนมือถือได้เหมือน App จาก Play Store/App Store
+- **Role-Based Dashboard:** หน้าจอและปุ่มด่วนเปลี่ยนตามบทบาท (ช่าง, แอดมิน, บัญชี, ผู้บริหาร)
+- **Offline Support:** มี Service Worker Cache ทำงานได้แม้ไม่มีอินเทอร์เน็ต
+- **Auto-Login Memory:** กรอกข้อมูล Setup ครั้งเดียว ระบบจดจำด้วย LocalStorage ไม่ต้อง Login ซ้ำ
 - **SPA Architecture:** เปลี่ยนหน้าโดยไม่ต้องโหลดใหม่ (Section-based)
 - **Mobile-First Design:** มี Bottom Navigation สำหรับช่างหน้างาน
 - **Smart Search:** ค้นหาแบบ Dropdown พิมพ์คำเดียวเจอทั้ง Job ID, ชื่อลูกค้า, อาการ
@@ -248,4 +253,4 @@
 7. **Dynamic DOM:** หากต้องสร้าง Element ใหม่ ให้ใช้ `innerHTML` หรือ `document.createElement` และผูก Event Listener แบบ Event Delegation
 
 ---
-*อัปเดตล่าสุด: 17 เมษายน 2026 โดย Manus AI (เพิ่มโมดูล 6.7-6.8: Customer Experience + Advanced Operations)*
+*อัปเดตล่าสุด: 17 เมษายน 2026 โดย Manus AI (เพิ่ม PWA App และ Role-Based Dashboard)*
