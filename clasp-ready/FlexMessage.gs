@@ -333,9 +333,8 @@ function createLowStockFlexMessage_(items) {
   items = items || [];
   var dashUrl = buildPwaDeepLink_('po');
 
-  return {
-    type: 'flex',
-    altText: '⚠️th.min(items.length, 6); i++) {
+  var itemRows = [];
+  for (var i = 0; i < Math.min(items.length, 6); i++) {
     var item = items[i] || {};
     itemRows.push({
       type: 'box',

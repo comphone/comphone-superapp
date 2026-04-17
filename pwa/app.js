@@ -2,7 +2,7 @@
 'use strict';
 
 // ===== STATE =====
-const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-IRTHbHMfCZ8TiXSAJ8zr_T6xQcmJNvGNYYI2X2VoAEMPwYtHwlCp1mf9f6IzWSSJfQ/exec';
+const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzTkaRqupj6H5cDnL69bZj4Nh0er8NLgqrRshy4bh9eq9HI5DdhosUiLaNn-Oaa93_47Q/exec';
 
 const APP = {
   user: null,
