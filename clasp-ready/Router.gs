@@ -93,6 +93,10 @@ function doGet(e) {
 function doPost(e) {
   try {
     var payload = parsePostPayloadV55_(e);
+    // ── ตรวจจับ LINE Webhook (มี destination + events array) ──
+    if (payload.destination && Array.isArray(payload.events)) {
+      return jsonOutputV55_(handleLineWebhook(e));
+    }
     var action = payload.action || payload.route || payload.fn || payload.method || 'help';
     return jsonOutputV55_(routeActionV55(action, payload));
   } catch (error) {

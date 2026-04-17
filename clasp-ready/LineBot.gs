@@ -37,14 +37,21 @@ function processLineEventV55_(event) {
   var message = event.message || {};
   var source = event.source || {};
   var replyToken = event.replyToken || '';
-  var userId = source.userId || source.groupId || source.roomId || '';
+  var groupId = source.groupId || source.roomId || '';
+  var userId = source.userId || groupId || '';
   var userName = getLineDisplayNameV55_(userId) || 'LINE_USER';
+
+  // ── จับ join event: เมื่อ Bot ถูกเพิ่มเข้ากลุ่ม ──
+  if (event.type === 'join' && groupId) {
+    saveLineGroupId_(groupId, replyToken);
+    return { success: true, event_type: 'join', group_id: groupId };
+  }
 
   if (event.type !== 'message') {
     return { success: true, skipped: true, reason: 'unsupported_event_type', type: event.type || '' };
   }
 
-  var responseMessage = processLineMessage(message, userId, userName);
+  var responseMessage = processLineMessage(message, userId, userName, groupId);
   if (responseMessage && replyToken) {
     replyLineMessage(replyToken, normalizeLineMessagesV55_(responseMessage));
   }
@@ -57,18 +64,17 @@ function processLineEventV55_(event) {
   };
 }
 
-function processLineMessage(message, userId, userName) {
+function processLineMessage(message, userId, userName, groupId) {
+  groupId = groupId || '';
   message = message || {};
   var text = message.text || '';
   var hasImage = message.type === 'image';
   var hasLocation = message.type === 'location';
-  var classification = classifyMessage(text, hasImage, hasLocation);
-
+   var classification = classifyMessage(text, hasImage, hasLocation);
   if (classification.type === 'casual') return null;
-
   switch (classification.type) {
     case 'command':
-      return handleCommand(classification, text, userId, userName);
+      return handleCommand(classification, text, userId, userName, groupId);
     case 'location_share':
       return handleLocation(message, classification, userId, userName);
     case 'work_report':
@@ -88,6 +94,7 @@ function classifyMessage(text, hasImage, hasLocation) {
   var jobIdMatch = text.match(/j\d{3,6}/i);
   var jobId = jobIdMatch ? String(jobIdMatch[0]).toUpperCase() : '';
 
+  if (/^\/groupid/i.test(text)) return { type: 'command', command: 'get_group_id' };
   if (/^(#?เปิดงาน|create job)/i.test(text)) return { type: 'command', command: 'open_job', jobId: jobId };
   if (/^(#?ปิดงาน|close job)/i.test(text)) return { type: 'command', command: 'close_job', jobId: jobId };
   if (/^(#?เช็คงาน|check job)/i.test(text)) return { type: 'command', command: 'check_job', jobId: jobId };
@@ -115,8 +122,11 @@ function classifyMessage(text, hasImage, hasLocation) {
   return { type: 'work_note', jobId: jobId };
 }
 
-function handleCommand(classification, text, userId, userName) {
+function handleCommand(classification, text, userId, userName, groupId) {
+  groupId = groupId || '';
   switch (classification.command) {
+    case 'get_group_id':
+      return handleGetGroupId_(groupId, userId);
     case 'open_job':
       return handleOpenJob(text, userId, userName);
     case 'close_job':
@@ -241,6 +251,38 @@ function handlePhotoReport(message, classification, userId, userName) {
   }
 
   return createTextMessage('รับรูปเรียบร้อย\nJobID: ' + jobId + '\nหมายเหตุ: ยังไม่เปิดใช้งานคิวรูปภาพอัตโนมัติในสคริปต์นี้');
+}
+
+// ── GROUP ID HELPERS ──
+function handleGetGroupId_(groupId, userId) {
+  if (!groupId) {
+    return createTextMessage('คำสั่งนี้ใช้ได้เฉพาะใน LINE Group เท่านั้น\nกรุณาเพิ่ม Bot เข้ากลุ่มก่อนแล้วพิมพ์ /groupid ในกลุ่มนั้น');
+  }
+  return createTextMessage('LINE Group ID ของกลุ่มนี้:\n\n' + groupId + '\n\nคัดลอก ID นี้ไปตั้งค่าในระบบได้เลย');
+}
+
+function saveLineGroupId_(groupId, replyToken) {
+  if (!groupId) return;
+  try {
+    var ss = SpreadsheetApp.openById(getConfig('DB_SS_ID'));
+    var logSheet = ss.getSheetByName('DB_ACTIVITY_LOG');
+    if (logSheet) {
+      logSheet.appendRow([
+        new Date(),
+        'LINE_JOIN',
+        groupId,
+        'Bot ถูกเพิ่มเข้ากลุ่ม',
+        'LINE_BOT'
+      ]);
+    }
+    if (replyToken) {
+      replyLineMessage(replyToken, [createTextMessage(
+        'สวัสดี! COMPHONE Bot พร้อมใช้งานแล้ว\n\nGroup ID ของกลุ่มนี้:\n' + groupId + '\n\nพิมพ์ /groupid เพื่อดู ID ได้ตลอดเวลา'
+      )]);
+    }
+  } catch (err) {
+    // ไม่ต้อง throw เพื่อไม่ให้ webhook ล้ม
+  }
 }
 
 function replyLineMessage(replyToken, messages) {
