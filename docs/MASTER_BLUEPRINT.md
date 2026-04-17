@@ -15,6 +15,7 @@
 - **Hosting:** 
   - หลัก: GAS Web App
   - สำรอง/ถาวร: Cloudflare Workers (`comphone-dashboard.narinoutagit.workers.dev`)
+  - PWA: GitHub Pages (`comphone.github.io/comphone-superapp/pwa/`)
 
 ---
 
@@ -82,11 +83,14 @@
 - **Photo Gallery & Lightbox:** อัปโหลดรูป, ดูรูปขยายใหญ่, และแชร์รูปผ่าน Web Share API
 - **Status Timeline:** บันทึกประวัติการเปลี่ยนสถานะพร้อมเวลาและผู้ดำเนินการ
 
-### 📦 Inventory System (ระบบคลังสินค้า 3 ชั้น)
+### 📦 Inventory System (ระบบคลังสินค้า 3 ชั้น ครบวงจร)
 - **โครงสร้าง 3 ชั้น:** คลังหลัก (MAIN) → หน้าร้าน (SITE) → รถช่าง (VAN)
-- **Stock Overview:** ดูยอดคงเหลือแยกตามคลัง
+- **CRUD สินค้า:** เพิ่ม/แก้ไข/ลบ สินค้า พร้อมกำหนดจุดสั่งซื้อ (Reorder Point)
+- **Barcode Scanner:** สแกนรหัสผ่านกล้องมือถือเพื่อค้นหาและเบิกสินค้าทันที
+- **Purchase Order:** สร้างใบสั่งซื้อหลายรายการ คำนวณยอดรวมอัตโนมัติ
+- **Stock Movement:** บันทึกประวัติการเคลื่อนไหวสินค้าทุกครั้งที่มีการเปลี่ยนแปลง
 - **Transfer System:** โอนย้ายสินค้าระหว่างคลังพร้อมบันทึกประวัติ (Log)
-- **Low Stock Alert:** แจ้งเตือนเมื่อสินค้าต่ำกว่าจุดสั่งซื้อ (≤ 5)
+- **Low Stock Alert:** แจ้งเตือนเมื่อสินค้าต่ำกว่าจุดสั่งซื้อ
 
 ### 🤖 Automation & AI
 - **Auto Backup:** สำรองข้อมูล Google Sheets อัตโนมัติทุกคืนเวลา 00:00 น.
@@ -253,4 +257,4 @@
 7. **Dynamic DOM:** หากต้องสร้าง Element ใหม่ ให้ใช้ `innerHTML` หรือ `document.createElement` และผูก Event Listener แบบ Event Delegation
 
 ---
-*อัปเดตล่าสุด: 17 เมษายน 2026 โดย Manus AI (เพิ่ม PWA App และ Role-Based Dashboard)*
+*อัปเดตล่าสุด: 17 เมษายน 2026 โดย Manus AI (เพิ่ม PWA App, Role-Based Dashboard, และ Inventory CRUD)*
