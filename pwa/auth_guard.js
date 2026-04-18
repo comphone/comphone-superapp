@@ -262,6 +262,83 @@ function getRoleLabel(role) {
 })();
 
 // ============================================================
+// FORCE PASSWORD CHANGE MODAL
+// ============================================================
+/**
+ * showForcePasswordChangeModal — แสดง modal บังคับเปลี่ยนรหัสผ่าน
+ */
+function showForcePasswordChangeModal() {
+  let modal = document.getElementById('modal-force-pw');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-force-pw';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+    modal.innerHTML = `
+      <div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:360px">
+        <div style="text-align:center;margin-bottom:16px">
+          <div style="font-size:40px">🔐</div>
+          <div style="font-size:18px;font-weight:800;color:#111827;margin-top:8px">ต้องเปลี่ยนรหัสผ่าน</div>
+          <div style="font-size:13px;color:#6b7280;margin-top:4px">ผู้ดูแลระบบกำหนดให้เปลี่ยนรหัสผ่าน</div>
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:12px;font-weight:600;color:#374151">รหัสผ่านเดิม</label>
+          <input type="password" id="force-pw-old" placeholder="รหัสผ่านเดิม"
+            style="width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;margin-top:4px;box-sizing:border-box">
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:12px;font-weight:600;color:#374151">รหัสผ่านใหม่ (อย่างน้อย 8 ตัว)</label>
+          <input type="password" id="force-pw-new" placeholder="รหัสผ่านใหม่"
+            style="width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;margin-top:4px;box-sizing:border-box">
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="font-size:12px;font-weight:600;color:#374151">ยืนยันรหัสผ่านใหม่</label>
+          <input type="password" id="force-pw-confirm" placeholder="ยืนยันรหัสผ่านใหม่"
+            style="width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;margin-top:4px;box-sizing:border-box">
+        </div>
+        <button onclick="submitForcePasswordChange()"
+          style="width:100%;padding:13px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">
+          เปลี่ยนรหัสผ่าน
+        </button>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+  modal.style.display = 'flex';
+}
+
+/**
+ * submitForcePasswordChange — submit การเปลี่ยนรหัสผ่านบังคับ
+ */
+async function submitForcePasswordChange() {
+  const oldPw     = document.getElementById('force-pw-old')?.value?.trim();
+  const newPw     = document.getElementById('force-pw-new')?.value?.trim();
+  const confirmPw = document.getElementById('force-pw-confirm')?.value?.trim();
+
+  if (!oldPw || !newPw || !confirmPw) { showToast('⚠️ กรุณากรอกข้อมูลให้ครบ'); return; }
+  if (newPw !== confirmPw) { showToast('⚠️ รหัสผ่านใหม่ไม่ตรงกัน'); return; }
+  if (newPw.length < 8) { showToast('⚠️ รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'); return; }
+
+  const btn = document.querySelector('#modal-force-pw button');
+  if (btn) { btn.disabled = true; btn.textContent = 'กำลังเปลี่ยน...'; }
+
+  try {
+    const result = await callAPI('changePassword', {
+      username:     (APP && APP.user && APP.user.username) || '',
+      old_password: oldPw,
+      new_password: newPw,
+    });
+    if (!result || !result.success) throw new Error(result?.error || 'เปลี่ยนรหัสผ่านไม่สำเร็จ');
+
+    showToast('✅ เปลี่ยนรหัสผ่านสำเร็จ');
+    if (APP && APP.user) APP.user.force_change_pw = false;
+    const modal = document.getElementById('modal-force-pw');
+    if (modal) modal.style.display = 'none';
+  } catch (err) {
+    showToast(`❌ ${err.message}`);
+    if (btn) { btn.disabled = false; btn.textContent = 'เปลี่ยนรหัสผ่าน'; }
+  }
+}
+
+// ============================================================
 // EXPOSE
 // ============================================================
 window.canAccess    = canAccess;

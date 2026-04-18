@@ -231,6 +231,11 @@ function startMainApp() {
   // Apply role-based UI guard (auth_guard.js)
   if (typeof applyRoleUI === 'function') applyRoleUI();
 
+  // Force Password Change check
+  if (APP.user && APP.user.force_change_pw === true) {
+    setTimeout(() => showForcePasswordChangeModal(), 500);
+  }
+
   // Render home ด้วย loading state ก่อน
   renderHome();
   renderProfile();

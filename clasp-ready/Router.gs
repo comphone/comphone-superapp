@@ -312,6 +312,20 @@ function dispatchActionV55_(action, payload, args) {
       // ============================================================
       // Audit Log
       // ============================================================
+      // ============================================================
+      // Security
+      // ============================================================
+      case 'changePassword':
+        return changePassword(payload);
+      case 'forcePasswordChange':
+        return forcePasswordChange(payload);
+      case 'lockAccount':
+        return lockAccount(payload);
+      case 'unlockAccount':
+        return unlockAccount(payload);
+      case 'getSecurityStatus':
+        return getSecurityStatus();
+
       case 'getAuditLog':
         return getAuditLog(payload);
       case 'getAuditSummary':

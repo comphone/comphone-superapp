@@ -46,7 +46,10 @@ function loginUser(username, password) {
       if (rowActive === 'FALSE' || rowActive === '0') return { success: false, error: 'บัญชีนี้ถูกระงับการใช้งาน' };
 
       var passMatch = (rowPass === hashedInput) || (rowPass === password);
-      if (!passMatch) return { success: false, error: 'รหัสผ่านไม่ถูกต้อง' };
+      if (!passMatch) {
+        try { trackFailedLogin_(rowUser); } catch(e) {}
+        return { success: false, error: 'รหัสผ่านไม่ถูกต้อง' };
+      }
 
       var role = String(row[colRole] || 'TECHNICIAN').toUpperCase();
       var roleInfo = AUTH_ROLES[role] || AUTH_ROLES.TECHNICIAN;
@@ -68,6 +71,11 @@ function loginUser(username, password) {
       PropertiesService.getScriptProperties().setProperty(sessionKey, sessionData);
 
       try { logActivity('LOGIN', rowUser, 'เข้าสู่ระบบสำเร็จ role=' + role); } catch(e) {}
+      try { resetFailedLogin_(rowUser); } catch(e) {}
+
+      var forceChangePw = false;
+      var colForce = idx['force_change_pw'] !== undefined ? idx['force_change_pw'] : -1;
+      if (colForce >= 0) forceChangePw = String(rows[i][colForce] || '').toUpperCase() === 'TRUE';
 
       return {
         success: true,
@@ -77,6 +85,7 @@ function loginUser(username, password) {
         role: role,
         role_label: roleInfo.label,
         level: roleInfo.level,
+        force_change_pw: forceChangePw,
         can_view_revenue: roleInfo.canViewRevenue,
         can_manage_users: roleInfo.canManageUsers
       };
