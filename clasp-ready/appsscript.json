@@ -6,5 +6,38 @@
   "webapp": {
     "executeAs": "USER_DEPLOYING",
     "access": "ANYONE_ANONYMOUS"
-  }
+  },
+  "files": [
+    { "name": "Utils",            "type": "SERVER_JS" },
+    { "name": "Config",           "type": "SERVER_JS" },
+    { "name": "Auth",             "type": "SERVER_JS" },
+    { "name": "Security",         "type": "SERVER_JS" },
+    { "name": "AuditLog",         "type": "SERVER_JS" },
+    { "name": "Setup",            "type": "SERVER_JS" },
+    { "name": "DataSeeding",      "type": "SERVER_JS" },
+    { "name": "AutoBackup",       "type": "SERVER_JS" },
+    { "name": "GpsPipeline",      "type": "SERVER_JS" },
+    { "name": "SmartAssignment",  "type": "SERVER_JS" },
+    { "name": "VisionAnalysis",   "type": "SERVER_JS" },
+    { "name": "JobStateMachine",  "type": "SERVER_JS" },
+    { "name": "JobsHandler",      "type": "SERVER_JS" },
+    { "name": "Dashboard",        "type": "SERVER_JS" },
+    { "name": "DashboardV55",     "type": "SERVER_JS" },
+    { "name": "Reports",          "type": "SERVER_JS" },
+    { "name": "CustomerManager",  "type": "SERVER_JS" },
+    { "name": "CustomerPortal",   "type": "SERVER_JS" },
+    { "name": "CRM",              "type": "SERVER_JS" },
+    { "name": "Inventory",        "type": "SERVER_JS" },
+    { "name": "BillingManager",   "type": "SERVER_JS" },
+    { "name": "AfterSales",       "type": "SERVER_JS" },
+    { "name": "Attendance",       "type": "SERVER_JS" },
+    { "name": "Notify",           "type": "SERVER_JS" },
+    { "name": "LineBot",          "type": "SERVER_JS" },
+    { "name": "FlexMessage",      "type": "SERVER_JS" },
+    { "name": "PhotoQueue",       "type": "SERVER_JS" },
+    { "name": "PushNotifications","type": "SERVER_JS" },
+    { "name": "DriveSync",        "type": "SERVER_JS" },
+    { "name": "DeployGuide",      "type": "SERVER_JS" },
+    { "name": "Router",           "type": "SERVER_JS" }
+  ]
 }
