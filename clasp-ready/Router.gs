@@ -300,6 +300,16 @@ function dispatchActionV55_(action, payload, args) {
         return setupNotificationTriggers();
 
       // ============================================================
+      // Audit Log
+      // ============================================================
+      case 'getAuditLog':
+        return getAuditLog(payload);
+      case 'getAuditSummary':
+        return getAuditSummary(payload.period || 'today');
+      case 'pruneAuditLog':
+        return pruneAuditLog(payload.keep_days || 90);
+
+      // ============================================================
       // Quick Actions (LINE, Appointment, Status)
       // ============================================================
       case 'sendLineMessage':

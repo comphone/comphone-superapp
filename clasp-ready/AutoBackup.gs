@@ -21,13 +21,19 @@ function autoBackup() {
   }
 }
 
-function logActivity(action, user, detail) {
+function logActivity(action, user, detail, opts) {
   try {
     var ss = getComphoneSheet();
     var sh = findOrCreateLogSheet(ss);
     var ts = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm');
     sh.appendRow([ts, action, user || 'SYSTEM', detail || '']);
   } catch(e) { Logger.log('Log failed: ' + e); }
+  // เขียนลง DB_AUDIT ด้วย (structured audit trail)
+  try {
+    if (typeof writeAuditLog === 'function') {
+      writeAuditLog(action, user || 'SYSTEM', detail || '', opts || {});
+    }
+  } catch(e) { Logger.log('writeAuditLog failed: ' + e.message); }
 }
 
 function findOrCreateLogSheet(ss) {
