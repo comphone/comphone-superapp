@@ -789,7 +789,7 @@ function addCustomer() {
 function callCustomer(phone) { if (phone) window.location.href = 'tel:' + phone; else showToast('กำลังเปิดรายชื่อลูกค้า...'); }
 function sendLine() { showToast('กำลังเปิด LINE...'); }
 function nudgeTech() { showToast('ส่งการแจ้งเตือนช่างแล้ว 🔔'); }
-function viewReport() { showToast('กำลังโหลดรายงาน...'); }
+function viewReport() { goPage('reports', document.getElementById('nav-reports')); }
 function addAppointment() { showToast('กำลังเปิดปฏิทิน...'); }
 function moreActions() { showToast('เพิ่มเติม...'); }
 function openPO() { openPurchaseOrders(); }
@@ -812,7 +812,14 @@ function createBill() {
 function viewDashboard() { const navBtn = document.getElementById('nav-dashboard'); goPage('dashboard', navBtn); }
 function urgentAction() { showToast('ส่งการแจ้งเตือนด่วนแล้ว'); }
 function callVIP() { showToast('กำลังโทรหาลูกค้า VIP...'); }
-function viewPL() { showToast('กำลังโหลดรายงาน P&L...'); }
+function viewPL() {
+  if (typeof REPORTS === 'undefined') {
+    goPage('reports', document.getElementById('nav-reports'));
+    return;
+  }
+  REPORTS.currentTab = 'pl';
+  goPage('reports', document.getElementById('nav-reports'));
+}
 function fabAction() {
   const actions = { tech: openCameraQuick, admin: openNewJob, acct: scanSlip, exec: viewDashboard };
   (actions[APP.role] || openNewJob)();
