@@ -250,12 +250,20 @@ function startMainApp() {
 async function loadLiveData() {
   try {
     const url = APP.scriptUrl || DEFAULT_SCRIPT_URL;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'getDashboardData' })
-    });
-    const data = await res.json();
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 20000); // 20s startup timeout
+    let data;
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'getDashboardData' }),
+        signal: ctrl.signal
+      });
+      data = await res.json();
+    } finally {
+      clearTimeout(tid);
+    }
     if (!data || !data.success) return;
 
     // เก็บ jobs จาก API
@@ -1095,17 +1103,28 @@ async function callAPI(action, params = {}) {
       payload.token = APP.user.authToken;
       payload.username = APP.user.username;
     }
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload),
-      redirect: 'follow'
-    });
-    const data = await res.json();
-    // กรอง _headers metadata ที่ GAS เพิ่มเข้ามาใน response body
-    if (data && data._headers) delete data._headers;
-    return data;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload),
+        redirect: 'follow',
+        signal: controller.signal
+      });
+      const data = await res.json();
+      // กรอง _headers metadata ที่ GAS เพิ่มเข้ามาใน response body
+      if (data && data._headers) delete data._headers;
+      return data;
+    } finally {
+      clearTimeout(timeoutId);
+    }
   } catch (e) {
+    if (e.name === 'AbortError') {
+      showToast('คำขอใช้เวลานานเกินไป กรุณาลองใหม่', 'warning');
+      return null;
+    }
     saveOfflineAction({ action, params, time: Date.now() });
     return null;
   }
@@ -1114,18 +1133,24 @@ async function callAPI(action, params = {}) {
 window.callApi = async function(payload) {
   const url = APP.scriptUrl || DEFAULT_SCRIPT_URL;
   if (!url) return { success: false, error: 'ไม่พบ Script URL' };
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
   try {
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(payload),
-      redirect: 'follow'
+      redirect: 'follow',
+      signal: controller.signal
     });
     const data = await res.json();
     if (data && data._headers) delete data._headers;
     return data;
   } catch (e) {
+    if (e.name === 'AbortError') return { success: false, error: 'Request timeout (30s)' };
     return { success: false, error: e.message };
+  } finally {
+    clearTimeout(timeoutId);
   }
 };
 
