@@ -302,3 +302,132 @@ function findHeaderIndex_(headers, candidates) {
   }
   return -1;
 }
+
+// ============================================================
+// User Management — Admin Panel (Sprint 3 T3)
+// ฟังก์ชัน internal สำหรับ Router.gs (ไม่ต้องการ token เพราะ Router ตรวจ auth แล้ว)
+// ============================================================
+
+/**
+ * listUsers_ — คืนรายชื่อผู้ใช้ทั้งหมด (ไม่รวม password_hash)
+ * @param {Object} payload
+ * @return {Object} { success, data: Array }
+ */
+function listUsers_(payload) {
+  try {
+    var ss = getComphoneSheet();
+    var sh = findSheetByName(ss, AUTH_SHEET_NAME);
+    if (!sh) return { success: false, error: 'ไม่พบ DB_USERS' };
+    var rows    = sh.getDataRange().getValues();
+    var headers = rows[0];
+    var idx     = buildHeaderIndex_(headers);
+    var result  = [];
+    for (var i = 1; i < rows.length; i++) {
+      if (!rows[i][0]) continue;
+      var row = rows[i];
+      var colActive = idx['active'] !== undefined ? idx['active'] : 4;
+      var colForce  = idx['force_change_pw'] !== undefined ? idx['force_change_pw'] : -1;
+      result.push({
+        username:        String(row[idx['username'] !== undefined ? idx['username'] : 0] || ''),
+        full_name:       String(row[idx['full_name'] !== undefined ? idx['full_name'] : idx['name'] !== undefined ? idx['name'] : 3] || ''),
+        role:            String(row[idx['role'] !== undefined ? idx['role'] : 2] || '').toLowerCase(),
+        active:          String(row[colActive] || 'TRUE').toUpperCase(),
+        force_change_pw: colForce >= 0 ? String(row[colForce] || '').toUpperCase() : 'FALSE',
+        created_at:      String(row[idx['created_at'] !== undefined ? idx['created_at'] : 5] || '')
+      });
+    }
+    return { success: true, data: result };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * createUser_ — สร้างผู้ใช้ใหม่ (internal)
+ * @param {Object} payload { username, full_name, role, password, created_by }
+ * @return {Object} { success }
+ */
+function createUser_(payload) {
+  try {
+    var username = String(payload.username || '').trim().toLowerCase();
+    var fullName = String(payload.full_name || '').trim();
+    var role     = String(payload.role     || 'tech').trim().toLowerCase();
+    var password = String(payload.password || '').trim();
+    if (!username || !password) return { success: false, error: 'กรุณาระบุ username และ password' };
+
+    var ss = getComphoneSheet();
+    var sh = findOrCreateUserSheet_(ss);
+    var rows = sh.getDataRange().getValues();
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]).toLowerCase() === username) return { success: false, error: 'Username นี้มีอยู่แล้ว' };
+    }
+
+    var hash = hashPassword_(password);
+    sh.appendRow([username, hash, role, fullName, 'TRUE', 'FALSE', getThaiTimestamp(), payload.created_by || 'admin']);
+    try { writeAuditLog('USER_CREATED', username, 'role=' + role, payload.created_by || 'admin'); } catch(e) {}
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * setUserActive_ — เปิด/ปิดใช้งานบัญชี (internal)
+ * @param {Object} payload { username, active: boolean|string, changed_by }
+ * @return {Object} { success }
+ */
+function setUserActive_(payload) {
+  try {
+    var username = String(payload.username || '').trim().toLowerCase();
+    var active   = payload.active === true || payload.active === 'true' || payload.active === 'TRUE';
+    var ss = getComphoneSheet();
+    var sh = findSheetByName(ss, AUTH_SHEET_NAME);
+    if (!sh) return { success: false, error: 'ไม่พบ DB_USERS' };
+    var rows    = sh.getDataRange().getValues();
+    var headers = rows[0];
+    var idx     = buildHeaderIndex_(headers);
+    var colActive = idx['active'] !== undefined ? idx['active'] : 4;
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]).toLowerCase() === username) {
+        sh.getRange(i + 1, colActive + 1).setValue(active ? 'TRUE' : 'FALSE');
+        try { writeAuditLog(active ? 'ACCOUNT_UNLOCKED' : 'ACCOUNT_LOCKED', username, 'by admin', payload.changed_by || 'admin'); } catch(e) {}
+        return { success: true };
+      }
+    }
+    return { success: false, error: 'ไม่พบผู้ใช้ ' + username };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * updateUserRole_ — อัปเดต role และ full_name (internal)
+ * @param {Object} payload { username, newRole, full_name, changed_by }
+ * @return {Object} { success }
+ */
+function updateUserRole_(payload) {
+  try {
+    var username = String(payload.username || '').trim().toLowerCase();
+    var newRole  = String(payload.newRole  || '').trim().toLowerCase();
+    var fullName = String(payload.full_name || '').trim();
+    var ss = getComphoneSheet();
+    var sh = findSheetByName(ss, AUTH_SHEET_NAME);
+    if (!sh) return { success: false, error: 'ไม่พบ DB_USERS' };
+    var rows    = sh.getDataRange().getValues();
+    var headers = rows[0];
+    var idx     = buildHeaderIndex_(headers);
+    var colRole = idx['role']      !== undefined ? idx['role']      : 2;
+    var colName = idx['full_name'] !== undefined ? idx['full_name'] : idx['name'] !== undefined ? idx['name'] : 3;
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]).toLowerCase() === username) {
+        if (newRole)  sh.getRange(i + 1, colRole + 1).setValue(newRole);
+        if (fullName) sh.getRange(i + 1, colName + 1).setValue(fullName);
+        try { writeAuditLog('USER_UPDATED', username, 'role=' + newRole, payload.changed_by || 'admin'); } catch(e) {}
+        return { success: true };
+      }
+    }
+    return { success: false, error: 'ไม่พบผู้ใช้ ' + username };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}

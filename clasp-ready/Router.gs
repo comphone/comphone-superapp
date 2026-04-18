@@ -398,6 +398,30 @@ function dispatchActionV55_(action, payload, args) {
           payload.phone || ''
         );
 
+      // ============================================================
+      // Notification Center — Sprint 3 T4
+      // ============================================================
+      case 'cronMorningAlert':
+        return cronMorningAlert();
+
+      // ============================================================
+      // Admin Panel — Sprint 3 T3
+      // ============================================================
+      case 'listUsers':
+        return listUsers_(payload);
+      case 'createUser':
+        return createUser_(payload);
+      case 'setUserActive':
+        return setUserActive_(payload);
+      case 'updateUserRole':
+        return updateUserRole_(payload);
+      case 'setupAllTriggers':
+        return setupAllTriggers();
+      case 'runBackup':
+        return runBackup();
+      case 'seedAllData':
+        return seedAllData();
+
       default:
         return invokeFunctionByNameV55_(action, args);
     }
