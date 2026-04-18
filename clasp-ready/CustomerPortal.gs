@@ -14,8 +14,10 @@ function getJobStatusPublic(jobId, phone) {
   try {
     if (!jobId) return { success: false, error: 'กรุณาระบุหมายเลขงาน' };
 
-    var ss = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('DB_SS_ID'));
-    var sheet = ss.getSheetByName('DBJOBS');
+    var ss = (typeof getComphoneSheet === 'function') ? getComphoneSheet() :
+              SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('DB_SS_ID'));
+    var jobSheetName = (typeof CONFIG !== 'undefined' && CONFIG.SHEETS && CONFIG.SHEETS.JOBS) ? CONFIG.SHEETS.JOBS : 'DBJOBS';
+    var sheet = ss.getSheetByName(jobSheetName);
     if (!sheet) return { success: false, error: 'ไม่พบข้อมูล' };
 
     var data = sheet.getDataRange().getValues();
