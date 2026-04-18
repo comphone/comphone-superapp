@@ -103,6 +103,10 @@ function doPost(e) {
     var payload = parsePostPayloadV55_(e);
     // ── ตรวจจับ LINE Webhook (มี destination + events array) ──
     if (payload.destination && Array.isArray(payload.events)) {
+      // ตรวจสอบ HMAC-SHA256 signature ก่อนประมวลผล
+      if (typeof verifyLineSignature_ === 'function' && !verifyLineSignature_(e)) {
+        return jsonOutputV55_({ success: false, error: 'Invalid LINE signature' });
+      }
       return jsonOutputV55_(handleLineWebhook(e));
     }
     var action = payload.action || payload.route || payload.fn || payload.method || 'help';

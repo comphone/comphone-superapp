@@ -99,6 +99,7 @@ function classifyMessage(text, hasImage, hasLocation) {
   if (/^(#?ปิดงาน|close job)/i.test(text)) return { type: 'command', command: 'close_job', jobId: jobId };
   if (/^(#?เช็คงาน|check job)/i.test(text)) return { type: 'command', command: 'check_job', jobId: jobId };
   if (/^(#?เช็คสต็อก|check stock)/i.test(text)) return { type: 'command', command: 'check_stock', jobId: jobId };
+  if (/^(#?เช็คบิล|เช็คยอด|check bill)/i.test(text)) return { type: 'command', command: 'check_billing', jobId: jobId };
   if (/^(#?สรุป|summary)/i.test(text)) return { type: 'command', command: 'summary', jobId: jobId };
 
   if (hasLocation) return { type: 'location_share', jobId: jobId };
@@ -135,6 +136,8 @@ function handleCommand(classification, text, userId, userName, groupId) {
       return formatCheckJobsV55_(text);
     case 'check_stock':
       return formatCheckStockV55_(text);
+    case 'check_billing':
+      return formatCheckBillingV55_(text);
     case 'summary':
       return formatSummaryV55_();
     default:
@@ -430,6 +433,30 @@ function parseLineWebhookBodyV55_(e) {
   return JSON.parse(e.postData.contents || '{}');
 }
 
+/**
+ * ตรวจสอบ HMAC-SHA256 signature จาก LINE Platform
+ * @param {Object} e - GAS doPost event
+ * @returns {boolean}
+ */
+function verifyLineSignature_(e) {
+  try {
+    var secret = getConfig('LINE_CHANNEL_SECRET') || '';
+    if (!secret) return true; // ถ้ายังไม่ตั้งค่า ให้ผ่าน (dev mode)
+    var signature = (e.parameter && e.parameter['X-Line-Signature']) ||
+                    (e.headers && e.headers['X-Line-Signature']) || '';
+    if (!signature) return false;
+    var body = (e.postData && e.postData.contents) || '';
+    var key = Utilities.newBlob(secret).getBytes();
+    var data = Utilities.newBlob(body).getBytes();
+    var hmac = Utilities.computeHmacSha256Signature(data, key);
+    var computed = Utilities.base64Encode(hmac);
+    return computed === signature;
+  } catch (err) {
+    Logger.log('verifyLineSignature_ error: ' + err);
+    return false;
+  }
+}
+
 function normalizeLineMessagesV55_(messages) {
   if (!messages) return [];
   return Array.isArray(messages) ? messages : [messages];
@@ -483,4 +510,44 @@ function getLineDisplayNameV55_(userId) {
   } catch (error) {
     return '';
   }
+}
+
+/**
+ * formatCheckBillingV55_ — ตรวจสอบยอดบิลผ่าน LINE
+ * คำสั่ง: #เช็คบิล J0001 หรือ #เช็คยอด J0001
+ * @param {string} text
+ * @returns {Object} LINE text message
+ */
+function formatCheckBillingV55_(text) {
+  var jobId = extractJobIdV55_(text);
+  if (!jobId) {
+    return createTextMessage(
+      '📋 วิธีใช้: #เช็คบิล [JobID]\n' +
+      'ตัวอย่าง: #เช็คบิล J0001\n\n' +
+      'หรือ: #เช็คยอด J0001'
+    );
+  }
+
+  var result = callRouterActionV55_('getBilling', { job_id: jobId });
+  if (!result || result.success === false || !result.billing) {
+    return createTextMessage('❌ ไม่พบข้อมูลบิลสำหรับ ' + jobId + '\n' + (result && result.error || ''));
+  }
+
+  var b = result.billing;
+  var statusEmoji = b.payment_status === 'PAID' ? '✅' : (b.payment_status === 'PARTIAL' ? '🔶' : '⏳');
+  var statusLabel = b.payment_status === 'PAID' ? 'ชำระแล้ว' : (b.payment_status === 'PARTIAL' ? 'ชำระบางส่วน' : 'ยังไม่ชำระ');
+
+  var lines = [
+    statusEmoji + ' ข้อมูลบิล ' + jobId,
+    '👤 ลูกค้า: ' + (b.customer_name || '-'),
+    '💰 ยอดรวม: ฿' + Number(b.total_amount || 0).toLocaleString(),
+    '✅ ชำระแล้ว: ฿' + Number(b.amount_paid || 0).toLocaleString(),
+    '📌 คงค้าง: ฿' + Number(b.balance_due || 0).toLocaleString(),
+    '🏷️ สถานะ: ' + statusLabel
+  ];
+
+  if (b.transaction_ref) lines.push('🔖 Ref: ' + b.transaction_ref);
+  if (b.paid_at) lines.push('🕒 ชำระเมื่อ: ' + String(b.paid_at).substring(0, 10));
+
+  return createTextMessage(lines.join('\n'));
 }
