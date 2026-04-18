@@ -228,6 +228,9 @@ function startMainApp() {
     navAdmin.style.display = (APP.role === 'owner' || APP.role === 'admin') ? '' : 'none';
   }
 
+  // Apply role-based UI guard (auth_guard.js)
+  if (typeof applyRoleUI === 'function') applyRoleUI();
+
   // Render home ด้วย loading state ก่อน
   renderHome();
   renderProfile();
