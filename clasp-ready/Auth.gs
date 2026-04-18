@@ -253,7 +253,9 @@ function setupUserSheet() {
       if (String(rows[i][2] || '').toUpperCase() === 'OWNER') { hasOwner = true; break; }
     }
     if (!hasOwner) {
-      sh.appendRow(['admin', hashPassword_('admin1234'), 'OWNER', 'ผู้ดูแลระบบ', 'TRUE', getThaiTimestamp(), 'SYSTEM']);
+      // ใช้ DEFAULT_ADMIN_PASSWORD จาก Script Properties หรือ fallback ที่ปลอดภัยกว่า hardcode
+      var defaultPw = PropertiesService.getScriptProperties().getProperty('DEFAULT_ADMIN_PASSWORD') || 'Comphone@2025!';
+      sh.appendRow(['admin', hashPassword_(defaultPw), 'OWNER', 'ผู้ดูแลระบบ', 'TRUE', getThaiTimestamp(), 'SYSTEM']);
     }
     return { success: true, message: 'DB_USERS พร้อมใช้งาน', rows: sh.getLastRow() - 1 };
   } catch (e) {
