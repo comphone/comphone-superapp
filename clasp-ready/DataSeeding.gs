@@ -51,26 +51,44 @@ function seedUsers() {
     }
 
     const now = new Date().toISOString();
-    const defaultHash = hashPin_('1234');
 
-    // User_ID, Username, Password_Hash, Role, Full_Name, Active, Created_At, Created_By
+    // — แต่ละ user ใช้ password เริ่มต้นที่แตกต่างกัน + force_change_pw = TRUE —
+    // ผู้ใช้ต้องเปลี่ยนรหัสผ่านในการเข้าใช้ครั้งแรก
+    // User_ID, Username, Password_Hash, Role, Full_Name, Active, Created_At, Created_By, Force_Change_PW
     const users = [
-      ['USR-001', 'admin',      defaultHash, 'owner',   'เจ้าของร้าน (Admin)',  'TRUE', now, 'system'],
-      ['USR-002', 'manager',    defaultHash, 'admin',   'ผู้จัดการ',             'TRUE', now, 'system'],
-      ['USR-003', 'tech1',      defaultHash, 'tech',    'ช่างโต้',               'TRUE', now, 'system'],
-      ['USR-004', 'tech2',      defaultHash, 'tech',    'ช่างเหม่ง',             'TRUE', now, 'system'],
-      ['USR-005', 'accounting', defaultHash, 'acct',    'ฝ่ายบัญชี',             'TRUE', now, 'system'],
-      ['USR-006', 'sales',      defaultHash, 'sales',   'ฝ่ายขาย',               'TRUE', now, 'system'],
+      ['USR-001', 'admin',      hashPin_('Admin@2025!'),  'owner',   'เจ้าของร้าน (Admin)',  'TRUE', now, 'system', 'TRUE'],
+      ['USR-002', 'manager',    hashPin_('Mgr@2025!'),    'admin',   'ผู้จัดการ',             'TRUE', now, 'system', 'TRUE'],
+      ['USR-003', 'tech1',      hashPin_('Tech1@2025!'),  'tech',    'ช่างโต้',               'TRUE', now, 'system', 'TRUE'],
+      ['USR-004', 'tech2',      hashPin_('Tech2@2025!'),  'tech',    'ช่างเหม่ง',             'TRUE', now, 'system', 'TRUE'],
+      ['USR-005', 'accounting', hashPin_('Acct@2025!'),   'acct',    'ฝ่ายบัญชี',             'TRUE', now, 'system', 'TRUE'],
+      ['USR-006', 'sales',      hashPin_('Sales@2025!'),  'sales',   'ฝ่ายขาย',               'TRUE', now, 'system', 'TRUE'],
     ];
+
+    // ตรวจสอบว่า header มี Force_Change_PW column หรือไม่
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var hasForcePW = headers.some(function(h) { return String(h).toLowerCase().includes('force'); });
+    if (!hasForcePW) {
+      // เพิ่ม column Force_Change_PW
+      var newCol = sheet.getLastColumn() + 1;
+      sheet.getRange(1, newCol).setValue('Force_Change_PW');
+    }
 
     sheet.getRange(2, 1, users.length, users[0].length).setValues(users);
     SpreadsheetApp.flush();
 
-    Logger.log('seedUsers: inserted ' + users.length + ' users');
+    Logger.log('seedUsers: inserted ' + users.length + ' users with unique passwords + force_change_pw');
     return {
       success: true,
       inserted: users.length,
-      note: 'Default PIN is 1234 — CHANGE BEFORE PRODUCTION'
+      credentials: [
+        { user: 'admin',      pass: 'Admin@2025!',  role: 'owner' },
+        { user: 'manager',    pass: 'Mgr@2025!',    role: 'admin' },
+        { user: 'tech1',      pass: 'Tech1@2025!',  role: 'tech' },
+        { user: 'tech2',      pass: 'Tech2@2025!',  role: 'tech' },
+        { user: 'accounting', pass: 'Acct@2025!',   role: 'acct' },
+        { user: 'sales',      pass: 'Sales@2025!',  role: 'sales' }
+      ],
+      note: 'All users must change password on first login (force_change_pw=TRUE)'
     };
   } catch (e) {
     Logger.log('seedUsers ERROR: ' + e.message);

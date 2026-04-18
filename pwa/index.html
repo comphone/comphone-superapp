@@ -321,6 +321,15 @@
       </div>
     </div>
 
+    <!-- Notifications Page -->
+    <div id="page-notifications" class="page hidden">
+      <!-- Content will be rendered by notification_center.js -->
+      <div style="text-align:center;padding:3rem;color:#9ca3af">
+        <i class="bi bi-bell" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
+        กำลังโหลดการแจ้งเตือน...
+      </div>
+    </div>
+
   </div><!-- end pages-container -->
 
   <!-- FAB -->
@@ -607,6 +616,19 @@
   <div class="modal-card" onclick="event.stopPropagation()">
     <div class="modal-title"><i class="bi bi-calendar-check" style="color:#f59e0b"></i> นัดหมาย</div>
     <div id="modal-appointment-content" style="padding:0 16px 16px"></div>
+  </div>
+</div>
+
+<!-- Modal: เพิ่มเติม (moreActions) -->
+<div id="modal-more-actions" class="modal fade" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content" style="border-radius:20px;padding:8px">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fw-bold"><i class="bi bi-grid-3x3-gap-fill me-2"></i>เพิ่มเติม</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pt-2" id="more-actions-body"></div>
+    </div>
   </div>
 </div>
 

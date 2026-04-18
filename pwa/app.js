@@ -628,6 +628,9 @@ function goPage(page, btn) {
   if (page === 'customer-portal') {
     if (typeof loadCustomerPortalPage === 'function') loadCustomerPortalPage();
   }
+  if (page === 'notifications') {
+    if (typeof loadNotificationCenter === 'function') loadNotificationCenter();
+  }
 }
 
 // ===== JOB DETAIL MODAL =====
@@ -781,7 +784,20 @@ function openCamera(type) {
 function openCameraQuick() { openCamera('job'); }
 function markDone() { showToast('เลือกงานที่ต้องการก่อน'); goPage('jobs', document.getElementById('nav-jobs')); }
 function markWaiting() { showToast('เลือกงานที่ต้องการก่อน'); goPage('jobs', document.getElementById('nav-jobs')); }
-function callForHelp() { showToast('ส่งการแจ้งเตือนแล้ว 🆘'); }
+function callForHelp() {
+  // ส่ง LINE แจ้งเจ้าของร้านว่าช่างต้องการความช่วยเหลือ
+  const user = APP.user || {};
+  const jobId = APP.currentJobId || '';
+  if (typeof QA !== 'undefined' && typeof QA.nudgeTech === 'function') {
+    QA.nudgeTech({ jobId, techName: user.display_name || user.username || 'ช่าง', message: '🆘 ต้องการความช่วยเหลือ' });
+  } else {
+    callAPI('sendLineMessage', {
+      message: `🆘 [ขอความช่วยเหลือ] ช่าง ${user.display_name || user.username || 'ช่าง'} ต้องการความช่วยเหลือ${jobId ? ' งาน #' + jobId : ''}`,
+      room: 'OWNER',
+      sent_by: user.username || 'system'
+    }).then(() => showToast('✅ แจ้งเจ้าของร้านแล้ว 🆘')).catch(() => showToast('⚠️ ส่งไม่ได้ — ตรวจสอบ LINE Token'));
+  }
+}
 function openNewJob() {
   // job_workflow.js โหลดแล้ว เรียกได้ตรงๆ
   if (document.getElementById('modal-new-job-content')) {
@@ -798,11 +814,38 @@ function addCustomer() {
   else showToast('กำลังเปิดฟอร์มลูกค้าใหม่...');
 }
 function callCustomer(phone) { if (phone) window.location.href = 'tel:' + phone; else showToast('กำลังเปิดรายชื่อลูกค้า...'); }
-function sendLine() { showToast('กำลังเปิด LINE...'); }
-function nudgeTech() { showToast('ส่งการแจ้งเตือนช่างแล้ว 🔔'); }
+function sendLine() {
+  if (typeof QA !== 'undefined' && typeof QA.sendLine === 'function') QA.sendLine();
+  else showToast('กำลังเปิด LINE...');
+}
+function nudgeTech() {
+  if (typeof QA !== 'undefined' && typeof QA.nudgeTech === 'function') QA.nudgeTech();
+  else showToast('ส่งการแจ้งเตือนช่างแล้ว 🔔');
+}
 function viewReport() { goPage('reports', document.getElementById('nav-reports')); }
-function addAppointment() { showToast('กำลังเปิดปฏิทิน...'); }
-function moreActions() { showToast('เพิ่มเติม...'); }
+function addAppointment() {
+  if (typeof QA !== 'undefined' && typeof QA.addAppointment === 'function') QA.addAppointment();
+  else showToast('กำลังเปดปฏิทิน...');
+}
+function moreActions() {
+  // แสดง bottom sheet เมนูเพิ่มเติม
+  const items = [
+    { label: '📦 คลังสินค้า', action: () => goPage('inventory', document.getElementById('nav-inventory')) },
+    { label: '🧾 ใบสั่งซื้อ', action: () => { if (typeof openPurchaseOrders === 'function') openPurchaseOrders(); else goPage('inventory', null); } },
+    { label: '📊 รายงาน', action: () => goPage('reports', document.getElementById('nav-reports')) },
+    { label: '🔔 การแจ้งเตือน', action: () => goPage('notifications', null) },
+    { label: '⚙️ ตั้งค่า', action: () => goPage('admin', document.getElementById('nav-admin')) }
+  ];
+  const html = items.map(it => `<button class="btn btn-light w-100 text-start mb-2" onclick="this.closest('.modal').querySelector('[data-bs-dismiss]').click();(${it.action.toString()})()">${it.label}</button>`).join('');
+  const modal = document.getElementById('modal-more-actions');
+  if (modal) {
+    modal.querySelector('#more-actions-body').innerHTML = html;
+    new bootstrap.Modal(modal).show();
+  } else {
+    // fallback: ไปหน้า admin
+    goPage('admin', document.getElementById('nav-admin'));
+  }
+}
 function openPO() { openPurchaseOrders(); }
 function scanSlip() { openCamera('slip'); }
 function createReceipt() {
@@ -821,8 +864,22 @@ function createBill() {
   else showToast('กำลังโหลด Billing module...');
 }
 function viewDashboard() { const navBtn = document.getElementById('nav-dashboard'); goPage('dashboard', navBtn); }
-function urgentAction() { showToast('ส่งการแจ้งเตือนด่วนแล้ว'); }
-function callVIP() { showToast('กำลังโทรหาลูกค้า VIP...'); }
+function urgentAction() {
+  // ผู้บริหาร: ดู jobs ที่ urgent หรือ SLA เกิน
+  goPage('jobs', document.getElementById('nav-jobs'));
+  setTimeout(() => {
+    const urgentFilter = document.getElementById('filter-urgent');
+    if (urgentFilter) urgentFilter.click();
+    else showToast('🔴 กรองงานด่วนแล้ว');
+  }, 400);
+}
+function callVIP() {
+  // ผู้บริหาร: ไปหน้า CRM เพื่อดูลูกค้า VIP
+  goPage('crm', document.getElementById('nav-crm'));
+  setTimeout(() => {
+    if (typeof loadCRMPage === 'function') loadCRMPage();
+  }, 300);
+}
 function viewPL() {
   if (typeof REPORTS === 'undefined') {
     goPage('reports', document.getElementById('nav-reports'));
@@ -1044,7 +1101,10 @@ async function callAPI(action, params = {}) {
       body: JSON.stringify(payload),
       redirect: 'follow'
     });
-    return await res.json();
+    const data = await res.json();
+    // กรอง _headers metadata ที่ GAS เพิ่มเข้ามาใน response body
+    if (data && data._headers) delete data._headers;
+    return data;
   } catch (e) {
     saveOfflineAction({ action, params, time: Date.now() });
     return null;
@@ -1061,7 +1121,9 @@ window.callApi = async function(payload) {
       body: JSON.stringify(payload),
       redirect: 'follow'
     });
-    return await res.json();
+    const data = await res.json();
+    if (data && data._headers) delete data._headers;
+    return data;
   } catch (e) {
     return { success: false, error: e.message };
   }

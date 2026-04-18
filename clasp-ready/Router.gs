@@ -100,6 +100,18 @@ function doGet(e) {
 
 function doPost(e) {
   try {
+    // ── Rate Limiting: 60 requests/min per IP via CacheService ──
+    try {
+      var ip = (e && e.parameter && e.parameter.ip) || 'global';
+      var cache = CacheService.getScriptCache();
+      var cacheKey = 'rl_' + ip.replace(/[^a-zA-Z0-9]/g, '_');
+      var count = parseInt(cache.get(cacheKey) || '0', 10);
+      if (count >= 60) {
+        return jsonOutputV55_({ success: false, error: 'Rate limit exceeded. Please retry in 60 seconds.', code: 429 });
+      }
+      cache.put(cacheKey, String(count + 1), 60);
+    } catch (rlErr) { /* rate limit ไม่ critical — ไม่ต้องหยุด */ }
+
     var payload = parsePostPayloadV55_(e);
     // ── ตรวจจับ LINE Webhook (มี destination + events array) ──
     if (payload.destination && Array.isArray(payload.events)) {
@@ -519,7 +531,22 @@ function parsePostPayloadV55_(e) {
   }
 }
 
+/**
+ * JSON output พร้อม security headers
+ * GAS ContentService ไม่รองรับ setHeader — ใช้ metadata ใน response body แทน
+ * @param {*} data
+ * @return {TextOutput}
+ */
 function jsonOutputV55_(data) {
+  // GAS ไม่รองรับ custom HTTP headers — เพิ่ม _headers metadata ใน response
+  // เพื่อให้ Cloudflare Worker หรือ proxy สามารถอ่านและเพิ่ม headers ได้
+  if (data && typeof data === 'object' && !data._headers) {
+    data._headers = {
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'Cache-Control': 'no-store, no-cache, must-revalidate'
+    };
+  }
   return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
 }
 
