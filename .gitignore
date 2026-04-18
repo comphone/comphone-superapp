@@ -25,3 +25,4 @@ npm-debug.log
 *.bak
 *.log
 docs/SYSTEM_KEYS_BACKUP*.md
+.github/workflows/
