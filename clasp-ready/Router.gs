@@ -470,6 +470,58 @@ function dispatchActionV55_(action, payload, args) {
         // ตรวจสลิปด้วย API หรือ Gemini Vision เป็น fallback
         return verifyPaymentSlip_(payload);
 
+      // ============================================================
+      // Tax Engine (TASK 1-2: VAT Flexible + WHT ภงด.)
+      // ============================================================
+      case 'calculateTax':
+        return taxAction(Object.assign({ sub: 'calculate' }, payload));
+      case 'getTaxReport':
+        return taxAction(Object.assign({ sub: 'report' }, payload));
+      case 'saveTaxReport':
+        return taxAction(Object.assign({ sub: 'save' }, payload));
+      case 'taxAction':
+        return taxAction(payload);
+      case 'generateTaxInvoice':
+        return generateTaxInvoice(payload);
+      case 'generateWhtDocument':
+        return generateWhtDocument(payload);
+      case 'getTaxReminder':
+        return getTaxReminder(payload);
+
+      // ============================================================
+      // Warranty Management (TASK 6)
+      // ============================================================
+      case 'createWarranty':
+        return createWarranty(payload);
+      case 'getWarrantyByJobId':
+        return getWarrantyByJobId(payload);
+      case 'listWarranties':
+        return listWarranties(payload);
+      case 'updateWarrantyStatus':
+        return updateWarrantyStatus(payload);
+      case 'getWarrantyDue':
+        return getWarrantyDue(payload);
+
+      // ============================================================
+      // Health Monitoring (TASK 9)
+      // ============================================================
+      case 'healthCheck':
+        return healthCheck(payload);
+      case 'getHealthHistory':
+        return getHealthHistory(payload);
+
+      // ============================================================
+      // Multi-branch (TASK 7)
+      // ============================================================
+      case 'getBranchList':
+        return getBranchList();
+      case 'getBranchSummary':
+        return getBranchSummary(payload.branch_id || '');
+      case 'branchAction':
+        return branchAction(payload);
+      case 'ensureAllBranchIdColumns':
+        return ensureAllBranchIdColumns();
+
       default:
         return invokeFunctionByNameV55_(action, args);
     }
