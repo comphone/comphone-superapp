@@ -625,6 +625,9 @@ function goPage(page, btn) {
   if (page === 'reports') {
     if (typeof loadReportsPage === 'function') loadReportsPage();
   }
+  if (page === 'customer-portal') {
+    if (typeof loadCustomerPortalPage === 'function') loadCustomerPortalPage();
+  }
 }
 
 // ===== JOB DETAIL MODAL =====
