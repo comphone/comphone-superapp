@@ -83,8 +83,18 @@ async function loadReportData_() {
     REPORTS.data = res.data;
     await cacheAPIResponse(cacheKey, res.data, 15); // cache 15 นาที
   } else {
-    // ใช้ข้อมูล mock ถ้า API ยังไม่พร้อม
-    REPORTS.data = generateMockReportData_(REPORTS.period);
+    /* แสดง error จริง — ไม่ใช้ mock */
+    const errBody = document.getElementById('report-body');
+    if (errBody) errBody.innerHTML = `
+      <div style="padding:32px;text-align:center">
+        <i class="bi bi-exclamation-triangle-fill" style="font-size:40px;color:#f59e0b"></i>
+        <p style="margin-top:12px;color:#374151;font-weight:600">ไม่สามารถโหลดข้อมูลได้</p>
+        <p style="color:#6b7280;font-size:13px">${res?.error || 'กรุณาตรวจสอบการเชื่อมต่อ GAS'}</p>
+        <button onclick="loadReportData_()" class="btn-secondary" style="margin-top:12px">
+          <i class="bi bi-arrow-clockwise"></i> ลองใหม่
+        </button>
+      </div>`;
+    return;
   }
 
   renderReportBody_();
@@ -364,60 +374,4 @@ function drawCharts_() {
   }
 }
 
-// ===== MOCK DATA (ใช้เมื่อ API ยังไม่พร้อม) =====
-function generateMockReportData_(period) {
-  const multiplier = { week: 1, month: 4, quarter: 12, year: 48 }[period] || 4;
-  return {
-    revenue: 45000 * multiplier,
-    cost: 18000 * multiplier,
-    jobCount: 28 * multiplier,
-    breakdown: [
-      { label: 'ค่าแรงซ่อม', type: 'income', amount: 32000 * multiplier },
-      { label: 'ขายอะไหล่', type: 'income', amount: 13000 * multiplier },
-      { label: 'ต้นทุนอะไหล่', type: 'expense', amount: 12000 * multiplier },
-      { label: 'ค่าใช้จ่ายอื่น', type: 'expense', amount: 6000 * multiplier }
-    ],
-    categoryRevenue: [
-      { label: 'ซ่อมมือถือ', amount: 22000 * multiplier },
-      { label: 'ซ่อมคอม', amount: 15000 * multiplier },
-      { label: 'เน็ตเวิร์ค', amount: 5000 * multiplier },
-      { label: 'อื่นๆ', amount: 3000 * multiplier }
-    ],
-    techPerformance: [
-      { name: 'ช่างโต้', completed: 12 * multiplier, total: 14 * multiplier, avgDays: 1.5, revenue: 18000 * multiplier, rating: '4.8' },
-      { name: 'ช่างเหม่ง', completed: 10 * multiplier, total: 11 * multiplier, avgDays: 2.1, revenue: 15000 * multiplier, rating: '4.6' },
-      { name: 'ช่างรุ่ง', completed: 6 * multiplier, total: 7 * multiplier, avgDays: 1.8, revenue: 12000 * multiplier, rating: '4.7' }
-    ],
-    dailyRevenue: Array.from({ length: 7 }, (_, i) => ({
-      date: new Date(Date.now() - (6 - i) * 86400000).toLocaleDateString('th-TH', { day: '2-digit', month: 'short' }),
-      amount: Math.floor(Math.random() * 8000 + 3000)
-    })),
-    channelRevenue: [
-      { label: 'Walk-in', amount: 28000 * multiplier },
-      { label: 'LINE OA', amount: 10000 * multiplier },
-      { label: 'Facebook', amount: 5000 * multiplier },
-      { label: 'อื่นๆ', amount: 2000 * multiplier }
-    ],
-    topCustomers: [
-      { name: 'บริษัท ABC จำกัด', total: 12000 },
-      { name: 'คุณสมชาย ทำดี', total: 8500 },
-      { name: 'ร้านค้า XYZ', total: 6200 },
-      { name: 'คุณสมหญิง ใจดี', total: 4800 },
-      { name: 'บริษัท DEF', total: 3900 }
-    ],
-    inventoryValue: 185000,
-    totalItems: 20,
-    lowStockItems: [
-      { code: 'ITM-010', name: 'Screen 15.6" FHD', qty: 2 },
-      { code: 'ITM-013', name: 'iPhone Screen (Gen)', qty: 1 }
-    ],
-    inventoryByCategory: [
-      { label: 'RAM', qty: 15 },
-      { label: 'Storage', qty: 19 },
-      { label: 'Battery', qty: 14 },
-      { label: 'Display', qty: 8 },
-      { label: 'Network', qty: 303 },
-      { label: 'Tools', qty: 8 }
-    ]
-  };
-}
+// Mock data removed — ใช้ Real API จาก Reports.gs แทน (Final Sprint T1)
