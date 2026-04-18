@@ -13,6 +13,14 @@ function doGet(e) {
     var action = normalizeActionV55_(params.action || '');
     var jobId = params.jobId || params.job_id || '';
 
+    // ============================================================
+    // Health Check Endpoint — GET ?action=health
+    // Returns: { status, version, timestamp, checks }
+    // ============================================================
+    if (action === 'health' || action === 'ping' || action === 'healthcheck') {
+      return jsonOutputV55_(healthCheckV55_());
+    }
+
     if (action === 'json' || action === 'getDashboardData') {
       return jsonOutputV55_(getDashboardData());
     }
@@ -428,4 +436,77 @@ function sanitizeHtmlTextV55_(text) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+// ============================================================
+// 🏥 Health Check — GET ?action=health
+// ============================================================
+/**
+ * ตรวจสอบสุขภาพระบบแบบ lightweight
+ * เรียกได้โดยไม่ต้อง auth (public endpoint)
+ * @return {Object} { status, version, timestamp, checks }
+ */
+function healthCheckV55_() {
+  var start = Date.now();
+  var checks = {};
+  var overallOk = true;
+
+  // 1. Spreadsheet connectivity
+  try {
+    var ss = getComphoneSheet();
+    checks.spreadsheet = { ok: true, id: ss.getId() };
+  } catch (e) {
+    checks.spreadsheet = { ok: false, error: e.message };
+    overallOk = false;
+  }
+
+  // 2. Script Properties (required keys)
+  try {
+    var props = PropertiesService.getScriptProperties().getProperties();
+    var requiredKeys = ['DB_SS_ID'];
+    var missingKeys  = requiredKeys.filter(function(k) { return !props[k]; });
+    checks.config = {
+      ok:       missingKeys.length === 0,
+      missing:  missingKeys,
+      line_ok:  !!props['LINE_CHANNEL_ACCESS_TOKEN'],
+      gemini_ok: !!props['GEMINI_API_KEY']
+    };
+    if (missingKeys.length > 0) overallOk = false;
+  } catch (e) {
+    checks.config = { ok: false, error: e.message };
+    overallOk = false;
+  }
+
+  // 3. Triggers
+  try {
+    var triggers = ScriptApp.getProjectTriggers();
+    checks.triggers = {
+      ok:    triggers.length > 0,
+      count: triggers.length,
+      fns:   triggers.map(function(t) { return t.getHandlerFunction(); })
+    };
+  } catch (e) {
+    checks.triggers = { ok: false, error: e.message };
+  }
+
+  // 4. DB_USERS (login ได้ไหม)
+  try {
+    var userSheet = findSheetByName(getComphoneSheet(), 'DB_USERS');
+    var userCount = userSheet ? Math.max(0, userSheet.getLastRow() - 1) : 0;
+    checks.users = { ok: userCount > 0, count: userCount };
+    if (userCount === 0) overallOk = false;
+  } catch (e) {
+    checks.users = { ok: false, error: e.message };
+    overallOk = false;
+  }
+
+  var elapsed = Date.now() - start;
+
+  return {
+    status:    overallOk ? 'healthy' : 'degraded',
+    version:   'V5.5.6',
+    timestamp: Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss'),
+    elapsed_ms: elapsed,
+    checks:    checks
+  };
 }
