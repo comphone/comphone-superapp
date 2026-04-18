@@ -349,3 +349,47 @@ function sendCriticalDashboardAlerts() {
     return { success: false, error: e.toString() };
   }
 }
+
+// ============================================================
+// nudgeTechAction_() — จี้ช่างผ่าน LINE (เรียกจาก Router)
+// payload: { job_id, tech_name, message, user }
+// ============================================================
+/**
+ * ส่ง LINE แจ้งเตือนช่างให้เร่งทำงาน
+ * @param {Object} payload - { job_id, tech_name, message, user }
+ * @return {Object} { success, message, lineResult }
+ */
+function nudgeTechAction_(payload) {
+  try {
+    payload = payload || {};
+    var jobId    = payload.job_id || payload.jobId || '';
+    var techName = payload.tech_name || payload.tech || 'ช่าง';
+    var sender   = payload.user || payload.changed_by || 'Admin';
+    var customMsg = payload.message || '';
+
+    var msg = customMsg ||
+      '🔔 แจ้งเตือนจากระบบ COMPHONE\n' +
+      '━━━━━━━━━━━━━━━━━━━━\n' +
+      '👤 ช่าง: ' + techName + '\n' +
+      (jobId ? '🔧 งาน: ' + jobId + '\n' : '') +
+      '⚡ กรุณาอัปเดตสถานะงานด้วยนะครับ\n' +
+      '📤 ส่งโดย: ' + sender + '\n' +
+      '⏰ ' + Utilities.formatDate(new Date(), 'Asia/Bangkok', 'dd/MM/yyyy HH:mm');
+
+    var lineResult = sendLineNotify({ message: msg, room: 'TECHNICIAN' });
+
+    // บันทึก log
+    _logNotifyFallback('NUDGE_TECH', techName, msg);
+
+    return {
+      success: true,
+      message: 'ส่งการแจ้งเตือนช่างแล้ว',
+      tech: techName,
+      job_id: jobId,
+      lineResult: lineResult
+    };
+  } catch (e) {
+    Logger.log('nudgeTechAction_ ERROR: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}

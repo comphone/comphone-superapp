@@ -300,6 +300,27 @@ function dispatchActionV55_(action, payload, args) {
         return setupNotificationTriggers();
 
       // ============================================================
+      // Quick Actions (LINE, Appointment, Status)
+      // ============================================================
+      case 'sendLineMessage':
+        return sendLinePush(
+          payload.message || '',
+          payload.to || payload.toId || _getRoomGroupId(payload.room || 'TECHNICIAN')
+        );
+      case 'nudgeTech':
+        return nudgeTechAction_(payload);
+      case 'addAppointment':
+      case 'updateJobSchedule':
+        return updateJobScheduleV55(payload);
+      case 'markJobStatus':
+        return transitionJob(
+          payload.job_id || payload.jobId || '',
+          payload.new_status || payload.status || '',
+          payload.changed_by || payload.user || 'PWA',
+          payload.note || ''
+        );
+
+      // ============================================================
       // Reports
       // ============================================================
       case 'getReportData':

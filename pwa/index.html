@@ -576,6 +576,31 @@
     </div>
   </div>
 </div>
+<!-- ===== Quick Action Modals ===== -->
+<!-- Modal: ส่ง LINE ให้ลูกค้า -->
+<div id="modal-send-line" class="modal-overlay hidden" onclick="closeModal('modal-send-line')">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-title"><i class="bi bi-chat-dots-fill" style="color:#06c755"></i> ส่ง LINE ให้ลูกค้า</div>
+    <div id="modal-send-line-content" style="padding:0 16px 16px"></div>
+  </div>
+</div>
+
+<!-- Modal: จี้ช่าง -->
+<div id="modal-nudge" class="modal-overlay hidden" onclick="closeModal('modal-nudge')">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-title"><i class="bi bi-bell-fill" style="color:#ef4444"></i> จี้ช่าง</div>
+    <div id="modal-nudge-content" style="padding:0 16px 16px"></div>
+  </div>
+</div>
+
+<!-- Modal: นัดหมาย -->
+<div id="modal-appointment" class="modal-overlay hidden" onclick="closeModal('modal-appointment')">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-title"><i class="bi bi-calendar-check" style="color:#f59e0b"></i> นัดหมาย</div>
+    <div id="modal-appointment-content" style="padding:0 16px 16px"></div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div id="toast" class="toast-msg hidden"></div>
 
@@ -604,5 +629,6 @@
 <script src="push_notifications.js"></script>
 <script src="reports.js"></script>
 <script src="admin.js"></script>
+<script src="quick_actions.js"></script>
 </body>
 </html>
