@@ -94,108 +94,94 @@ function addQuickNote(jobId, note, user) {
 }
 
 // ============================================================
-// 🔧 SETUP ALL TIME-DRIVEN TRIGGERS
+// 🔧 SETUP ALL TIME-DRIVEN TRIGGERS (Duplicate-safe)
 // ============================================================
+/**
+ * ตั้ง Time-Driven Triggers ทั้งหมด — ป้องกัน duplicate
+ * วิธีใช้: GAS Editor → เลือก setupAllTriggers → กด Run
+ * @return {Object} { success, triggers, total, skipped }
+ */
 function setupAllTriggers() {
-  // ลบ triggers เก่าทั้งหมดก่อน
-  deleteAllTriggers();
-  
-  var triggers = [];
-  
-  // 1. autoBackup — ทุกวัน 00:00-01:00
-  try {
-    ScriptApp.newTrigger('autoBackup')
-      .timeBased()
-      .atHour(0)
-      .everyDays(1)
-      .create();
-    triggers.push({ fn: 'autoBackup', schedule: 'ทุกวัน 00:00-01:00', status: '✅' });
-  } catch(e) {
-    triggers.push({ fn: 'autoBackup', schedule: 'ทุกวัน 00:00-01:00', status: '❌ ' + e });
-  }
-  
-  // 2. checkLowStockAlert — ทุก 6 ชั่วโมง
-  try {
-    ScriptApp.newTrigger('checkLowStockAlert')
-      .timeBased()
-      .everyHours(6)
-      .create();
-    triggers.push({ fn: 'checkLowStockAlert', schedule: 'ทุก 6 ชั่วโมง', status: '✅' });
-  } catch(e) {
-    triggers.push({ fn: 'checkLowStockAlert', schedule: 'ทุก 6 ชั่วโมง', status: '❌ ' + e });
-  }
-  
-  // 3. geminiReorderSuggestion — ทุกวัน 09:00-10:00
-  try {
-    ScriptApp.newTrigger('geminiReorderSuggestion')
-      .timeBased()
-      .atHour(9)
-      .everyDays(1)
-      .create();
-    triggers.push({ fn: 'geminiReorderSuggestion', schedule: 'ทุกวัน 09:00-10:00', status: '✅' });
-  } catch(e) {
-    triggers.push({ fn: 'geminiReorderSuggestion', schedule: 'ทุกวัน 09:00-10:00', status: '❌ ' + e });
-  }
-  
-  // 4. getCRMSchedule — ทุกจันทร์ 08:00-09:00
-  try {
-    ScriptApp.newTrigger('getCRMSchedule')
-      .timeBased()
-      .onWeekDay(ScriptApp.WeekDay.MONDAY)
-      .atHour(8)
-      .create();
-    triggers.push({ fn: 'getCRMSchedule', schedule: 'จันทรทุก 08:00-09:00', status: '✅' });
-  } catch(e) {
-    triggers.push({ fn: 'getCRMSchedule', schedule: 'จันทรทุก 08:00-09:00', status: '❌ ' + e });
-  }
-  
-  // 5. cronMorningAlert — ทุกวัน 06:00-07:00 (สรุปเช้า)
-  try {
-    ScriptApp.newTrigger('cronMorningAlert')
-      .timeBased()
-      .atHour(6)
-      .everyDays(1)
-      .create();
-    triggers.push({ fn: 'cronMorningAlert', schedule: 'ทุกวัน 06:00-07:00', status: '✅' });
-  } catch(e) {
-    triggers.push({ fn: 'cronMorningAlert', schedule: 'ทุกวัน 06:00-07:00', status: '❌ ' + e });
-  }
+  // ── Trigger definitions ──
+  var TRIGGER_DEFS = [
+    { fn: 'autoBackup',             type: 'daily',   hour: 0,  schedule: 'ทุกวัน 00:00-01:00' },
+    { fn: 'checkLowStockAlert',     type: 'hourly',  every: 6, schedule: 'ทุก 6 ชั่วโมง' },
+    { fn: 'geminiReorderSuggestion',type: 'daily',   hour: 9,  schedule: 'ทุกวัน 09:00-10:00' },
+    { fn: 'getCRMSchedule',         type: 'weekly',  day: ScriptApp.WeekDay.MONDAY, hour: 8, schedule: 'ทุกจันทร์ 08:00-09:00' },
+    { fn: 'cronMorningAlert',       type: 'daily',   hour: 6,  schedule: 'ทุกวัน 06:00-07:00' },
+    { fn: 'sendAfterSalesAlerts',   type: 'daily',   hour: 8,  schedule: 'ทุกวัน 08:00-09:00' },
+    { fn: 'autoSyncToDrive',        type: 'daily',   hour: 2,  schedule: 'ทุกวัน 02:00-03:00' },
+  ];
 
-  // 6. sendAfterSalesAlerts — ทุกวัน 08:00-09:00 (แจ้งเตือน After-Sales)
-  try {
-    ScriptApp.newTrigger('sendAfterSalesAlerts')
-      .timeBased()
-      .atHour(8)
-      .everyDays(1)
-      .create();
-    triggers.push({ fn: 'sendAfterSalesAlerts', schedule: 'ทุกวัน 08:00-09:00', status: '✅' });
-  } catch(e) {
-    triggers.push({ fn: 'sendAfterSalesAlerts', schedule: 'ทุกวัน 08:00-09:00', status: '❌ ' + e });
-  }
-  
-  return { success: true, triggers: triggers, total: triggers.length };
+  // ── ดึง triggers ที่มีอยู่แล้ว (duplicate prevention) ──
+  var existing = {};
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    existing[t.getHandlerFunction()] = t;
+  });
+
+  var results = [];
+  var skipped = [];
+
+  TRIGGER_DEFS.forEach(function(def) {
+    // ถ้ามี trigger นี้อยู่แล้ว ข้ามไป
+    if (existing[def.fn]) {
+      skipped.push(def.fn);
+      results.push({ fn: def.fn, schedule: def.schedule, status: '⏭️ skipped (already exists)' });
+      return;
+    }
+    try {
+      var builder = ScriptApp.newTrigger(def.fn).timeBased();
+      if (def.type === 'daily') {
+        builder.atHour(def.hour).everyDays(1);
+      } else if (def.type === 'hourly') {
+        builder.everyHours(def.every);
+      } else if (def.type === 'weekly') {
+        builder.onWeekDay(def.day).atHour(def.hour);
+      }
+      builder.create();
+      results.push({ fn: def.fn, schedule: def.schedule, status: '✅ created' });
+    } catch (e) {
+      results.push({ fn: def.fn, schedule: def.schedule, status: '❌ ' + e.message });
+    }
+  });
+
+  Logger.log('setupAllTriggers: ' + results.length + ' processed, ' + skipped.length + ' skipped');
+  return {
+    success: true,
+    triggers: results,
+    total: results.length,
+    skipped: skipped.length
+  };
 }
 
+/**
+ * ลบ triggers ทั้งหมด (ใช้เมื่อต้องการ reset)
+ * @return {Object} { deleted, count }
+ */
 function deleteAllTriggers() {
   var allTriggers = ScriptApp.getProjectTriggers();
   var deleted = [];
-  for (var i = 0; i < allTriggers.length; i++) {
-    var fn = allTriggers[i].getHandlerFunction();
-    ScriptApp.deleteTrigger(allTriggers[i]);
+  allTriggers.forEach(function(t) {
+    var fn = t.getHandlerFunction();
+    ScriptApp.deleteTrigger(t);
     deleted.push(fn);
-  }
+  });
+  Logger.log('deleteAllTriggers: removed ' + deleted.length);
   return { deleted: deleted, count: deleted.length };
 }
 
+/**
+ * แสดงรายการ triggers ที่ active อยู่
+ * @return {Object} { count, triggers }
+ */
 function listTriggers() {
   var allTriggers = ScriptApp.getProjectTriggers();
-  var triggers = [];
-  for (var i = 0; i < allTriggers.length; i++) {
-    triggers.push({
-      fn: allTriggers[i].getHandlerFunction(),
-      type: allTriggers[i].getEventType(),
-      id: allTriggers[i].getUniqueId()
-    });
-  }
+  var triggers = allTriggers.map(function(t) {
+    return {
+      fn:   t.getHandlerFunction(),
+      type: String(t.getEventType()),
+      id:   t.getUniqueId()
+    };
+  });
   return { count: triggers.length, triggers: triggers };
 }
