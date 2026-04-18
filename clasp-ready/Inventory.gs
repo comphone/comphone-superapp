@@ -1448,3 +1448,45 @@ function receivePurchaseOrder(data) {
     try { lock.releaseLock(); } catch(ex) {}
   }
 }
+
+/**
+ * cancelPurchaseOrder_ — ยกเลิก PO (เปลี่ยนสถานะเป็น CANCELLED)
+ * @param {Object} data - { po_id }
+ * @return {Object} { success, po_id }
+ */
+function cancelPurchaseOrder_(data) {
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch(e) { return { success: false, error: 'Lock timeout' }; }
+  try {
+    data = data || {};
+    var poId = String(data.po_id || '').trim();
+    if (!poId) return { success: false, error: 'กรุณาระบุ PO ID' };
+
+    var ss      = getComphoneSheet();
+    var poSheet = findSheetByName(ss, 'DB_PURCHASE_ORDERS');
+    if (!poSheet) return { success: false, error: 'ไม่พบ DB_PURCHASE_ORDERS' };
+
+    var all = poSheet.getDataRange().getValues();
+    var updated = 0;
+
+    for (var i = 1; i < all.length; i++) {
+      if (String(all[i][0]) === poId) {
+        if (String(all[i][3]) === 'RECEIVED') {
+          return { success: false, error: 'ไม่สามารถยกเลิก PO ที่รับสินค้าแล้ว' };
+        }
+        poSheet.getRange(i + 1, 4).setValue('CANCELLED');
+        updated++;
+      }
+    }
+
+    if (updated === 0) return { success: false, error: 'ไม่พบ PO: ' + poId };
+
+    writeAuditLog('cancelPurchaseOrder', 'PURCHASE_ORDER', poId, { po_id: poId, status: 'CANCELLED' });
+    return { success: true, po_id: poId };
+
+  } catch(e) {
+    return { success: false, error: e.toString() };
+  } finally {
+    lock.releaseLock();
+  }
+}

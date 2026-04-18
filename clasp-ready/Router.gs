@@ -196,6 +196,8 @@ function dispatchActionV55_(action, payload, args) {
         return listPurchaseOrders(payload);
       case 'receivePurchaseOrder':
         return receivePurchaseOrder(payload);
+      case 'cancelPurchaseOrder':
+        return cancelPurchaseOrder_(payload);
       case 'checkStock':
         return checkStock(payload);
       case 'barcodeLookup':

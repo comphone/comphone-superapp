@@ -398,3 +398,148 @@ function openPurchaseOrders() {
   const navBtn = document.getElementById('nav-po');
   goPage('po', navBtn);
 }
+
+// ============================================================
+// PURCHASE ORDER EXTENSIONS (Sprint 2)
+// ============================================================
+
+/**
+ * openCreatePOModal — alias ของ showCreatePOModal
+ * ใช้จาก inventory_ui.js และ quick_actions.js
+ * @param {Object} prefill - { item_code, item_name, qty } (optional)
+ */
+function openCreatePOModal(prefill) {
+  showCreatePOModal();
+  if (prefill) {
+    setTimeout(() => {
+      // Pre-fill รายการแรก
+      const firstCode = document.getElementById('po-item-code-0');
+      const firstName = document.getElementById('po-item-name-0');
+      const firstQty  = document.getElementById('po-item-qty-0');
+      if (firstCode) firstCode.value = prefill.item_code || '';
+      if (firstName) firstName.value = prefill.item_name || '';
+      if (firstQty)  firstQty.value  = prefill.qty || 1;
+      updatePOTotal();
+    }, 200);
+  }
+}
+
+/**
+ * cancelPO — ยกเลิก PO
+ * @param {string} poId
+ */
+async function cancelPO(poId) {
+  if (!confirm(`ยืนยันยกเลิกใบสั่งซื้อ ${poId}?`)) return;
+
+  const btn = document.querySelector(`[data-cancel-po="${poId}"]`);
+  if (btn) { btn.disabled = true; btn.textContent = 'กำลังยกเลิก...'; }
+
+  try {
+    const result = await callAPI('cancelPurchaseOrder', { po_id: poId });
+    if (!result || !result.success) {
+      throw new Error(result?.error || 'ยกเลิกไม่สำเร็จ');
+    }
+    showToast(`✅ ยกเลิก ${poId} สำเร็จ`);
+    closeModal('modal-po');
+    ALL_PO = [];
+    loadPurchaseOrderPage();
+  } catch (err) {
+    showToast(`❌ ${err.message}`);
+    if (btn) { btn.disabled = false; btn.textContent = 'ยกเลิก PO'; }
+  }
+}
+
+/**
+ * printPO — พิมพ์ใบสั่งซื้อ (เปิด print dialog)
+ * @param {string} poId
+ */
+function printPO(poId) {
+  const po = ALL_PO.find(o => o.po_id === poId);
+  if (!po) { showToast('ไม่พบข้อมูล PO'); return; }
+
+  const dateStr = po.created_at ? new Date(po.created_at).toLocaleDateString('th-TH') : '-';
+  const itemRows = (po.items || []).map(item => `
+    <tr>
+      <td style="padding:6px 8px;border:1px solid #e5e7eb">${item.item_code || '-'}</td>
+      <td style="padding:6px 8px;border:1px solid #e5e7eb">${item.item_name || '-'}</td>
+      <td style="padding:6px 8px;border:1px solid #e5e7eb;text-align:center">${item.qty || 0}</td>
+      <td style="padding:6px 8px;border:1px solid #e5e7eb;text-align:right">฿${Number(item.unit_cost || 0).toLocaleString()}</td>
+      <td style="padding:6px 8px;border:1px solid #e5e7eb;text-align:right">฿${Number(item.total_cost || 0).toLocaleString()}</td>
+    </tr>`).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="th"><head>
+<meta charset="UTF-8">
+<title>ใบสั่งซื้อ ${po.po_id}</title>
+<style>
+  body { font-family: 'Sarabun', sans-serif; padding: 20mm; font-size: 12pt; }
+  h2 { text-align: center; color: #1d4ed8; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  th { background: #f3f4f6; padding: 8px; border: 1px solid #e5e7eb; text-align: left; }
+  .total { font-weight: bold; font-size: 14pt; text-align: right; margin-top: 12px; }
+  @media print { .no-print { display: none; } }
+</style>
+</head><body>
+<h2>ใบสั่งซื้อ (Purchase Order)</h2>
+<p><strong>เลขที่:</strong> ${po.po_id} &nbsp;&nbsp; <strong>วันที่:</strong> ${dateStr}</p>
+<p><strong>ผู้จำหน่าย:</strong> ${po.supplier || '-'}</p>
+<table>
+  <thead>
+    <tr>
+      <th>รหัส</th><th>ชื่อสินค้า</th><th style="text-align:center">จำนวน</th>
+      <th style="text-align:right">ราคา/หน่วย</th><th style="text-align:right">รวม</th>
+    </tr>
+  </thead>
+  <tbody>${itemRows}</tbody>
+</table>
+<div class="total">ยอดรวมทั้งหมด: ฿${Number(po.total_cost || 0).toLocaleString()}</div>
+<br><p style="font-size:10pt;color:#6b7280">พิมพ์โดย: ${(APP && APP.user && APP.user.name) || 'SYSTEM'} | COMPHONE Super App</p>
+<script>window.onload = function() { window.print(); }<\/script>
+</body></html>`;
+
+  const win = window.open('', '_blank', 'width=800,height=600');
+  if (win) {
+    win.document.write(html);
+    win.document.close();
+  } else {
+    showToast('ไม่สามารถเปิดหน้าต่างพิมพ์ได้ กรุณาอนุญาต popup');
+  }
+}
+
+/**
+ * exportPOToCSV — export รายการ PO เป็น CSV
+ */
+function exportPOToCSV() {
+  const orders = ALL_PO.filter(o => PO_FILTER === 'all' || o.status === PO_FILTER.toUpperCase());
+  if (orders.length === 0) { showToast('ไม่มีข้อมูลที่จะ export'); return; }
+
+  const rows = [['PO ID', 'ผู้จำหน่าย', 'สถานะ', 'จำนวนรายการ', 'ยอดรวม', 'วันที่สั่ง']];
+  orders.forEach(po => {
+    rows.push([
+      po.po_id || '',
+      po.supplier || '',
+      po.status || '',
+      (po.items || []).length,
+      po.total_cost || 0,
+      po.created_at ? new Date(po.created_at).toLocaleDateString('th-TH') : '',
+    ]);
+  });
+
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `PO_Export_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ Export CSV สำเร็จ');
+}
+
+// ============================================================
+// EXPOSE ADDITIONAL GLOBALS
+// ============================================================
+window.openCreatePOModal  = openCreatePOModal;
+window.cancelPO           = cancelPO;
+window.printPO            = printPO;
+window.exportPOToCSV      = exportPOToCSV;
