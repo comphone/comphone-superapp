@@ -426,6 +426,38 @@ function dispatchActionV55_(action, payload, args) {
       case 'seedAllData':
         return seedAllData();
 
+      // ============================================================
+      // AI Systems — Final Sprint T5
+      // ============================================================
+      case 'smartAssignTech':
+        return smartAssignTech_(payload);
+      case 'optimizeRoute':
+        return optimizeRoute(
+          payload.start_lat || payload.lat || 0,
+          payload.start_lng || payload.lng || 0,
+          payload.destinations || []
+        );
+      case 'analyzeWorkImage':
+        return analyzeWorkImage(
+          payload.image_url || payload.imageUrl || '',
+          payload.context || payload.symptom || ''
+        );
+      case 'runJobCompletionQC':
+        return runJobCompletionQC(
+          payload.job_id || payload.jobId || '',
+          payload
+        );
+      case 'qualityCheck':
+        return qualityCheck(
+          payload.image_url || payload.imageUrl || '',
+          payload.job_id || payload.jobId || ''
+        );
+      case 'geminiSlipVerify':
+        return geminiSlipVerify_(payload);
+      case 'verifyPaymentSlip':
+        // ตรวจสลิปด้วย API หรือ Gemini Vision เป็น fallback
+        return verifyPaymentSlip_(payload);
+
       default:
         return invokeFunctionByNameV55_(action, args);
     }

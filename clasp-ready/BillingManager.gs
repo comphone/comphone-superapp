@@ -961,3 +961,82 @@ function listAllBillings_(options) {
     return { success: false, error: e.toString() };
   }
 }
+
+/**
+ * verifyPaymentSlip_ — ตรวจสลิปด้วย SLIP_VERIFY_API_URL หรือ Gemini Vision (fallback)
+ * เรียกจาก Router.gs case 'verifyPaymentSlip'
+ * @param {Object} payload - { job_id, billing_id, slip_base64, slip_mime_type, expected_amount }
+ * @returns {Object} { success, verification: { verified, amount_match, detected_amount, confidence, note } }
+ */
+function verifyPaymentSlip_(payload) {
+  try {
+    var jobId = payload.job_id || payload.jobId || '';
+    var billingId = payload.billing_id || payload.billingId || '';
+    var base64 = payload.slip_base64 || '';
+    var mimeType = payload.slip_mime_type || 'image/jpeg';
+    var expectedAmount = parseFloat(payload.expected_amount || payload.amount || 0);
+
+    if (!base64) return { success: false, error: 'ไม่พบข้อมูลรูปสลิป' };
+
+    // ลอง SLIP_VERIFY_API_URL ก่อน
+    var apiUrl = getConfigSafe_('SLIP_VERIFY_API_URL');
+    if (apiUrl) {
+      var apiKey = getConfigSafe_('SLIP_VERIFY_API_KEY');
+      var headers = {};
+      if (apiKey) { headers.Authorization = 'Bearer ' + apiKey; headers['X-API-Key'] = apiKey; }
+
+      var body = { image_base64: base64, mime_type: mimeType, amount: expectedAmount, job_id: jobId };
+      var resp = UrlFetchApp.fetch(apiUrl, {
+        method: 'post', contentType: 'application/json',
+        payload: JSON.stringify(body), headers: headers, muteHttpExceptions: true
+      });
+      var code = resp.getResponseCode();
+      if (code >= 200 && code < 300) {
+        var parsed = JSON.parse(resp.getContentText() || '{}');
+        return {
+          success: true,
+          verification: {
+            verified: parsed.verified || parsed.is_valid || false,
+            amount_match: parsed.amount_match || false,
+            detected_amount: parsed.amount || parsed.detected_amount || 0,
+            confidence: parsed.confidence || 0,
+            note: parsed.note || parsed.message || '',
+            provider: 'slip_verify_api'
+          }
+        };
+      }
+    }
+
+    // Fallback: ใช้ Gemini Vision
+    var geminiKey = getConfigSafe_('GEMINI_API_KEY') || getConfigSafe_('GOOGLE_AI_API_KEY') || '';
+    if (!geminiKey) {
+      return { success: false, error: 'ไม่มี SLIP_VERIFY_API_URL และ GEMINI_API_KEY — กรุณาตั้งค่าใน Script Properties' };
+    }
+
+    var prompt = 'คุณคือระบบตรวจสอบสลิปโอนเงิน PromptPay/ธนาคาร\n\n' +
+      'วิเคราะห์รูปสลิปและตอบ JSON เท่านั้น:\n' +
+      '{"is_slip":true,"amount":1500.00,"receiver_name":"ชื่อผู้รับ","transaction_ref":"รหัส","confidence":0.95,"is_valid":true,"issues":[]}\n\n' +
+      (expectedAmount > 0 ? 'ยอดที่คาดหวัง: ฿' + expectedAmount + '\n\n' : '') +
+      'ตอบ JSON อย่างเดียว ไม่มี markdown:';
+
+    var result = _callGeminiVision_(geminiKey, prompt, base64);
+    if (result.error) return { success: false, error: result.error };
+
+    var detectedAmount = parseFloat(result.amount || 0);
+    var amountMatch = expectedAmount > 0 ? Math.abs(detectedAmount - expectedAmount) < 1 : true;
+
+    return {
+      success: true,
+      verification: {
+        verified: result.is_valid !== false && amountMatch,
+        amount_match: amountMatch,
+        detected_amount: detectedAmount,
+        confidence: result.confidence || 0,
+        note: result.issues && result.issues.length > 0 ? result.issues.join(', ') : '',
+        provider: 'gemini-vision'
+      }
+    };
+  } catch (err) {
+    return { success: false, error: err.toString() };
+  }
+}
