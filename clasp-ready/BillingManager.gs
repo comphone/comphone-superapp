@@ -267,6 +267,18 @@ function markBillingPaid(data) {
       }
     }
 
+    /* LINE Notify เมื่อชำระเงินสำเร็ఈ */
+    if (paymentStatus === 'PAID') {
+      try {
+        var msg = '✅ ชำระเงินแล้ว!\n' +
+          '📋 งาน: ' + jobId + '\n' +
+          '👤 ลูกค้า: ' + (billing.customer_name || '-') + '\n' +
+          '💰 ยอด: ฿' + newPaid.toLocaleString() + '\n' +
+          '🕒 ' + getThaiTimestamp();
+        if (typeof sendLineNotify === 'function') sendLineNotify({ message: msg, room: 'OWNER' });
+      } catch(lineErr) { Logger.log('LINE notify error: ' + lineErr); }
+      try { writeAuditLog('PAYMENT_RECEIVED', jobId, 'ยอด=' + newPaid, data.changed_by || 'system'); } catch(e2) {}
+    }
     return {
       success: true,
       job_id: jobId,
