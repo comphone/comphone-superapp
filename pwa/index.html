@@ -287,6 +287,22 @@
       <div class="app-version">Comphone SuperApp v1.0.0<br><span>PWA — ทำงานได้แม้ไม่มีอินเทอร์เน็ต</span></div>
     </div>
 
+    <!-- REPORTS PAGE -->
+    <div id="page-reports" class="page hidden">
+      <div class="page-header">
+        <h5><i class="bi bi-graph-up-arrow" style="color:#10b981"></i> รายงาน & วิเคราะห์</h5>
+      </div>
+      <div id="reports-content"></div>
+    </div>
+
+    <!-- ADMIN PAGE -->
+    <div id="page-admin" class="page hidden">
+      <div class="page-header">
+        <h5><i class="bi bi-shield-fill-check" style="color:#7c3aed"></i> Admin Panel</h5>
+      </div>
+      <div id="admin-content"></div>
+    </div>
+
     <!-- INVENTORY PAGE -->
     <div id="page-inventory" class="page hidden">
       <!-- Content will be rendered by inventory.js -->
@@ -344,6 +360,14 @@
     <button class="nav-btn" id="nav-attendance" onclick="goPage('attendance', this)">
       <i class="bi bi-clock-fill"></i>
       <span>เวลา</span>
+    </button>
+    <button class="nav-btn" id="nav-reports" onclick="goPage('reports', this)">
+      <i class="bi bi-graph-up-arrow"></i>
+      <span>รายงาน</span>
+    </button>
+    <button class="nav-btn" id="nav-admin" onclick="goPage('admin', this)" style="display:none">
+      <i class="bi bi-shield-fill-check"></i>
+      <span>Admin</span>
     </button>
     <button class="nav-btn" id="nav-profile" onclick="goPage('profile', this)">
       <i class="bi bi-person-fill"></i>
@@ -566,6 +590,7 @@
   <button class="install-close" onclick="dismissInstall()"><i class="bi bi-x"></i></button>
 </div>
 
+<script src="offline_db.js"></script>
 <script src="app.js"></script>
 <script src="crm_attendance.js"></script>
 <script src="purchase_order.js"></script>
@@ -574,5 +599,10 @@
 <script src="billing_customer.js"></script>
 <script src="inventory.js"></script>
 <script src="auth.js"></script>
+<script src="billing_slip_verify.js"></script>
+<script src="after_sales_enhanced.js"></script>
+<script src="push_notifications.js"></script>
+<script src="reports.js"></script>
+<script src="admin.js"></script>
 </body>
 </html>

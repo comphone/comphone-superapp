@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>ตรวจสอบสถานะงานซ่อม — COMPHONE</title>
+  <meta name="description" content="ตรวจสอบสถานะงานซ่อมคอมพิวเตอร์และมือถือ COMPHONE">
+  <meta name="theme-color" content="#1e40af">
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="customer_manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="COMPHONE">
+
+  <!-- Open Graph (สำหรับแชร์ใน LINE/Facebook) -->
+  <meta property="og:title" content="ตรวจสอบสถานะงานซ่อม — COMPHONE">
+  <meta property="og:description" content="ดูสถานะงานซ่อมคอมและมือถือของคุณแบบ Real-time">
+  <meta property="og:image" content="icons/icon-512.png">
+  <meta property="og:type" content="website">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <!-- QR Code library -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #1e3a5f 0%, #1e40af 100%);
+      min-height: 100vh; padding: 1rem;
+    }
+    .container { max-width: 480px; margin: 0 auto; }
+    .card {
+      background: #fff; border-radius: 16px; padding: 1.5rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15); margin-bottom: 1rem;
+    }
+    .logo-area { text-align: center; padding: 1.5rem 0 1rem; color: #fff; }
+    .logo-area h1 { font-size: 1.4rem; font-weight: 800; margin-bottom: 0.25rem; }
+    .logo-area p { font-size: 0.85rem; opacity: 0.8; }
+    .input-group { margin-bottom: 1rem; }
+    .input-group label { display: block; font-size: 0.85rem; font-weight: 600; color: #374151; margin-bottom: 0.4rem; }
+    .input-group input {
+      width: 100%; border: 1.5px solid #e2e8f0; border-radius: 10px;
+      padding: 0.75rem 1rem; font-size: 1rem; outline: none; transition: border-color 0.2s;
+    }
+    .input-group input:focus { border-color: #1e40af; }
+    .btn-search {
+      width: 100%; background: #1e40af; color: #fff; border: none; border-radius: 10px;
+      padding: 0.85rem; font-size: 1rem; font-weight: 700; cursor: pointer;
+      transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    }
+    .btn-search:hover { background: #1e3a8a; }
+    .btn-search:disabled { background: #94a3b8; cursor: not-allowed; }
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.4rem 0.9rem; border-radius: 20px; font-size: 0.85rem; font-weight: 700; color: #fff;
+    }
+    .progress-bar-wrap { background: #e2e8f0; border-radius: 10px; height: 10px; overflow: hidden; margin: 0.75rem 0; }
+    .progress-bar-fill { height: 100%; border-radius: 10px; transition: width 0.8s ease; background: linear-gradient(90deg, #1e40af, #3b82f6); }
+    .info-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: #64748b; }
+    .info-value { font-weight: 600; color: #1e293b; text-align: right; max-width: 60%; }
+    .timeline-item { display: flex; gap: 0.75rem; margin-bottom: 0.75rem; align-items: flex-start; }
+    .timeline-dot { width: 10px; height: 10px; border-radius: 50%; background: #1e40af; margin-top: 4px; flex-shrink: 0; }
+    .timeline-dot.done { background: #10b981; }
+    .timeline-content { flex: 1; }
+    .timeline-event { font-size: 0.85rem; font-weight: 600; color: #1e293b; }
+    .timeline-time { font-size: 0.75rem; color: #94a3b8; }
+    .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+    .photo-item { aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #f1f5f9; }
+    .photo-item img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
+    .error-box { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 10px; padding: 1rem; color: #dc2626; text-align: center; font-size: 0.9rem; }
+    .section-title { font-size: 0.9rem; font-weight: 700; color: #374151; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem; }
+    .hidden { display: none !important; }
+    .spinner { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .lightbox-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+    .lightbox-overlay img { max-width: 95vw; max-height: 90vh; border-radius: 8px; }
+    .lightbox-close { position: fixed; top: 1rem; right: 1rem; background: rgba(255,255,255,0.2); border: none; color: #fff; font-size: 1.5rem; cursor: pointer; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+    .share-btn { display: flex; align-items: center; gap: 0.4rem; background: #f1f5f9; border: none; border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 0.8rem; cursor: pointer; color: #374151; transition: background 0.15s; }
+    .share-btn:hover { background: #e2e8f0; }
+    .share-btn.line { background: #06c755; color: #fff; }
+    .share-btn.line:hover { background: #05a847; }
+    /* Install Banner */
+    .install-banner {
+      background: linear-gradient(135deg, #0f172a, #1e3a8a);
+      color: #fff; border-radius: 12px; padding: 0.75rem 1rem;
+      display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;
+      cursor: pointer; transition: opacity 0.2s;
+    }
+    .install-banner:hover { opacity: 0.9; }
+    .install-banner-text { flex: 1; font-size: 0.85rem; }
+    .install-banner-text strong { display: block; font-size: 0.95rem; }
+    /* QR Modal */
+    .qr-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9998; display: flex; align-items: center; justify-content: center; }
+    .qr-modal-box { background: #fff; border-radius: 16px; padding: 1.5rem; text-align: center; max-width: 300px; width: 90%; }
+    .qr-modal-box h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+    .qr-modal-box p { font-size: 0.8rem; color: #64748b; margin-bottom: 1rem; }
+    /* Rating stars */
+    .rating-stars { display: flex; gap: 0.25rem; justify-content: center; margin: 0.75rem 0; }
+    .rating-star { font-size: 2rem; cursor: pointer; color: #e2e8f0; transition: color 0.15s; }
+    .rating-star.active, .rating-star:hover { color: #f59e0b; }
+    /* Refresh button */
+    .btn-refresh { background: #f1f5f9; border: none; border-radius: 8px; padding: 0.4rem 0.75rem; font-size: 0.8rem; cursor: pointer; color: #374151; display: flex; align-items: center; gap: 0.3rem; }
+    .btn-refresh:hover { background: #e2e8f0; }
+    /* Status steps */
+    .status-steps { display: flex; justify-content: space-between; margin: 1rem 0; position: relative; }
+    .status-steps::before { content: ''; position: absolute; top: 12px; left: 10%; right: 10%; height: 2px; background: #e2e8f0; z-index: 0; }
+    .step { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; z-index: 1; flex: 1; }
+    .step-dot { width: 24px; height: 24px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; color: #94a3b8; }
+    .step-dot.done { background: #10b981; color: #fff; }
+    .step-dot.active { background: #1e40af; color: #fff; box-shadow: 0 0 0 3px rgba(30,64,175,0.2); }
+    .step-label { font-size: 0.65rem; color: #94a3b8; text-align: center; }
+    .step-label.active { color: #1e40af; font-weight: 700; }
+    .step-label.done { color: #10b981; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Install Banner (hidden by default) -->
+    <div id="install-banner" class="install-banner hidden" onclick="installPWA()">
+      <i class="bi bi-download" style="font-size:1.5rem;"></i>
+      <div class="install-banner-text">
+        <strong>ติดตั้งแอปบนมือถือ</strong>
+        ใช้งานได้แม้ไม่มีอินเทอร์เน็ต
+      </div>
+      <i class="bi bi-chevron-right"></i>
+    </div>
+
+    <!-- Logo -->
+    <div class="logo-area">
+      <div style="font-size:2.5rem;">🔧</div>
+      <h1>COMPHONE</h1>
+      <p>ตรวจสอบสถานะงานซ่อมของคุณ</p>
+    </div>
+
+    <!-- Search Form -->
+    <div class="card">
+      <div class="section-title"><i class="bi bi-search"></i> ค้นหางาน</div>
+      <div class="input-group">
+        <label for="input-job-id">หมายเลขงาน <span style="color:#ef4444;">*</span></label>
+        <input type="text" id="input-job-id" placeholder="เช่น J0001" autocomplete="off"
+          style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
+      </div>
+      <div class="input-group">
+        <label for="input-phone">เบอร์โทรศัพท์ <span style="color:#94a3b8;font-weight:400;">(ไม่บังคับ)</span></label>
+        <input type="tel" id="input-phone" placeholder="เช่น 0812345678">
+      </div>
+      <button class="btn-search" id="btn-search" onclick="searchJob()">
+        <i class="bi bi-search"></i> ตรวจสอบสถานะ
+      </button>
+    </div>
+
+    <!-- Result Area -->
+    <div id="result-area"></div>
+  </div>
+
+  <!-- Lightbox -->
+  <div id="lightbox" class="lightbox-overlay hidden" onclick="closeLightbox()">
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <img id="lightbox-img" src="" alt="รูปภาพงาน">
+  </div>
+
+  <!-- QR Modal -->
+  <div id="qr-modal" class="qr-modal hidden" onclick="closeQRModal()">
+    <div class="qr-modal-box" onclick="event.stopPropagation()">
+      <h3>QR Code สำหรับแชร์</h3>
+      <p>สแกนเพื่อดูสถานะงานซ่อม</p>
+      <canvas id="qr-canvas"></canvas>
+      <br><br>
+      <button onclick="closeQRModal()" style="background:#f1f5f9;border:none;border-radius:8px;padding:0.5rem 1.5rem;cursor:pointer;">ปิด</button>
+    </div>
+  </div>
+
+  <script>
+    // ── Config ──────────────────────────────────────────────
+    var GAS_URL = '';
+    var PORTAL_STATE = { currentJob: null, refreshInterval: null };
+    var deferredInstall = null;
+
+    // ── PWA Install ──────────────────────────────────────────
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      deferredInstall = e;
+      document.getElementById('install-banner').classList.remove('hidden');
+    });
+
+    function installPWA() {
+      if (!deferredInstall) return;
+      deferredInstall.prompt();
+      deferredInstall.userChoice.then(function(result) {
+        if (result.outcome === 'accepted') {
+          document.getElementById('install-banner').classList.add('hidden');
+        }
+      });
+    }
+
+    // ── Service Worker ───────────────────────────────────────
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('customer_sw.js').catch(function() {});
+    }
+
+    // ── Auto-detect from URL params ──────────────────────────
+    (function() {
+      var params = new URLSearchParams(window.location.search);
+      var jobId = params.get('job') || params.get('job_id') || params.get('j');
+      var phone = params.get('phone') || params.get('p');
+      var gasUrl = params.get('api') || params.get('url');
+
+      if (gasUrl) GAS_URL = decodeURIComponent(gasUrl);
+
+      // ลอง load GAS_URL จาก localStorage ถ้าไม่มีใน params
+      if (!GAS_URL) GAS_URL = localStorage.getItem('comphone_gas_url') || '';
+
+      if (jobId) {
+        document.getElementById('input-job-id').value = jobId.toUpperCase();
+        if (phone) document.getElementById('input-phone').value = phone;
+        window.addEventListener('load', function() { searchJob(); });
+      }
+    })();
+
+    // ── Search ───────────────────────────────────────────────
+    async function searchJob() {
+      var jobId = document.getElementById('input-job-id').value.trim();
+      var phone = document.getElementById('input-phone').value.trim();
+      var btn = document.getElementById('btn-search');
+      var resultArea = document.getElementById('result-area');
+
+      if (!jobId) {
+        resultArea.innerHTML = '<div class="error-box"><i class="bi bi-exclamation-circle"></i> กรุณากรอกหมายเลขงาน</div>';
+        return;
+      }
+      if (!GAS_URL) {
+        resultArea.innerHTML = '<div class="error-box"><i class="bi bi-exclamation-circle"></i> ยังไม่ได้ตั้งค่า API URL กรุณาติดต่อร้าน</div>';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="bi bi-hourglass-split spinner"></i> กำลังค้นหา...';
+      resultArea.innerHTML = '<div class="card" style="text-align:center;padding:2rem;color:#64748b;"><i class="bi bi-hourglass-split spinner" style="font-size:2rem;"></i><br><br>กำลังโหลดข้อมูล...</div>';
+
+      try {
+        var payload = { action: 'getJobStatusPublic', job_id: jobId };
+        if (phone) payload.phone = phone;
+
+        var res = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        var data = await res.json();
+
+        if (data.success) {
+          PORTAL_STATE.currentJob = data;
+          renderJobResult(data);
+          // อัปเดต URL
+          var url = new URL(window.location.href);
+          url.searchParams.set('job', jobId);
+          window.history.replaceState({}, '', url.toString());
+          // Auto-refresh ทุก 60 วินาที
+          startAutoRefresh_(jobId, phone);
+        } else {
+          resultArea.innerHTML = '<div class="error-box"><i class="bi bi-exclamation-circle"></i> ' + (data.error || 'ไม่พบข้อมูล') + '</div>';
+        }
+      } catch (err) {
+        resultArea.innerHTML = '<div class="error-box"><i class="bi bi-wifi-off"></i> ไม่สามารถเชื่อมต่อได้ กรุณาลองใหม่</div>';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-search"></i> ตรวจสอบสถานะ';
+      }
+    }
+
+    function startAutoRefresh_(jobId, phone) {
+      if (PORTAL_STATE.refreshInterval) clearInterval(PORTAL_STATE.refreshInterval);
+      PORTAL_STATE.refreshInterval = setInterval(async function() {
+        try {
+          var payload = { action: 'getJobStatusPublic', job_id: jobId };
+          if (phone) payload.phone = phone;
+          var res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          var data = await res.json();
+          if (data.success) {
+            var oldStatus = PORTAL_STATE.currentJob && PORTAL_STATE.currentJob.job && PORTAL_STATE.currentJob.job.status;
+            var newStatus = data.job && data.job.status;
+            if (oldStatus !== newStatus) {
+              PORTAL_STATE.currentJob = data;
+              renderJobResult(data);
+              // แจ้งเตือนถ้าสถานะเปลี่ยน
+              if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('สถานะงานซ่อมอัปเดต!', {
+                  body: 'Job ' + jobId + ': ' + (data.job.status_label || newStatus),
+                  icon: 'icons/icon-192.png'
+                });
+              }
+            }
+          }
+        } catch(e) {}
+      }, 60000);
+    }
+
+    // ── Render Result ────────────────────────────────────────
+    function renderJobResult(data) {
+      var job = data.job;
+      var timeline = data.timeline || [];
+      var photos = data.photos || [];
+
+      var shareUrl = window.location.origin + window.location.pathname + '?job=' + job.job_id + (GAS_URL ? '&api=' + encodeURIComponent(GAS_URL) : '');
+
+      // Status Steps
+      var steps = [
+        { key: 'new', label: 'รับเครื่อง', icon: '📥' },
+        { key: 'inprog', label: 'กำลังซ่อม', icon: '🔧' },
+        { key: 'waiting', label: 'รออะไหล่', icon: '⏳' },
+        { key: 'done', label: 'เสร็จแล้ว', icon: '✅' },
+        { key: 'delivered', label: 'รับคืนแล้ว', icon: '🎉' }
+      ];
+      var statusOrder = ['new','inprog','waiting','done','delivered'];
+      var currentIdx = statusOrder.indexOf(job.status);
+      var stepsHtml = steps.map(function(s, i) {
+        var cls = i < currentIdx ? 'done' : i === currentIdx ? 'active' : '';
+        return '<div class="step"><div class="step-dot ' + cls + '">' + (i < currentIdx ? '✓' : (i+1)) + '</div><div class="step-label ' + cls + '">' + s.label + '</div></div>';
+      }).join('');
+
+      var timelineHtml = timeline.length === 0
+        ? '<div style="color:#94a3b8;font-size:0.85rem;text-align:center;padding:0.5rem;">ยังไม่มีประวัติการอัปเดต</div>'
+        : timeline.map(function(t) {
+            return '<div class="timeline-item"><div class="timeline-dot ' + (t.done ? 'done' : '') + '"></div><div class="timeline-content"><div class="timeline-event">' + t.event + (t.note ? ' — ' + t.note : '') + '</div><div class="timeline-time">' + t.time + '</div></div></div>';
+          }).join('');
+
+      var photosHtml = photos.length === 0
+        ? '<div style="color:#94a3b8;font-size:0.85rem;text-align:center;padding:0.5rem;">ยังไม่มีรูปภาพ</div>'
+        : '<div class="photo-grid">' + photos.map(function(p) {
+            return '<div class="photo-item"><img src="' + p.url + '" alt="' + p.type + '" loading="lazy" onclick="openLightbox(\'' + p.url + '\')" onerror="this.parentElement.style.display=\'none\'"></div>';
+          }).join('') + '</div>';
+
+      document.getElementById('result-area').innerHTML = `
+        <!-- Status Card -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem;">
+            <div>
+              <div style="font-size:0.8rem;color:#64748b;">หมายเลขงาน</div>
+              <div style="font-size:1.3rem;font-weight:800;color:#1e293b;">${job.job_id}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem;">
+              <span class="status-badge" style="background:${job.status_color};">${job.status_icon} ${job.status_label}</span>
+              <button class="btn-refresh" onclick="searchJob()"><i class="bi bi-arrow-clockwise"></i> รีเฟรช</button>
+            </div>
+          </div>
+
+          <!-- Status Steps -->
+          <div class="status-steps">${stepsHtml}</div>
+
+          <!-- Progress Bar -->
+          <div style="font-size:0.75rem;color:#64748b;margin-bottom:0.25rem;">ความคืบหน้า ${job.progress_percent}%</div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" style="width:${job.progress_percent}%;background:${job.status_color};"></div>
+          </div>
+
+          <!-- Info -->
+          <div style="margin-top:0.75rem;">
+            <div class="info-row">
+              <span class="info-label"><i class="bi bi-person"></i> ชื่อลูกค้า</span>
+              <span class="info-value">${job.customer_name || '-'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label"><i class="bi bi-tools"></i> อาการ</span>
+              <span class="info-value">${job.symptom || '-'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label"><i class="bi bi-person-badge"></i> ช่างผู้รับผิดชอบ</span>
+              <span class="info-value">${job.technician || 'รอมอบหมาย'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label"><i class="bi bi-calendar-plus"></i> วันที่รับงาน</span>
+              <span class="info-value">${job.received_date || '-'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label"><i class="bi bi-clock-history"></i> อัปเดตล่าสุด</span>
+              <span class="info-value">${job.updated_date || '-'}</span>
+            </div>
+            ${job.estimated_price ? `
+            <div class="info-row">
+              <span class="info-label"><i class="bi bi-currency-exchange"></i> ราคาประเมิน</span>
+              <span class="info-value" style="color:#16a34a;font-weight:700;">฿${Number(job.estimated_price).toLocaleString('th-TH')}</span>
+            </div>` : ''}
+            ${job.public_note ? `
+            <div class="info-row">
+              <span class="info-label"><i class="bi bi-chat-text"></i> หมายเหตุ</span>
+              <span class="info-value">${job.public_note}</span>
+            </div>` : ''}
+          </div>
+
+          <!-- Share Buttons -->
+          <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <button class="share-btn" onclick="copyShareLink('${shareUrl}')"><i class="bi bi-link-45deg"></i> คัดลอกลิงก์</button>
+            <button class="share-btn line" onclick="shareToLine('${shareUrl}','${job.job_id}','${job.status_label}')"><i class="bi bi-chat-dots"></i> ส่ง LINE</button>
+            <button class="share-btn" onclick="showQRCode('${shareUrl}')"><i class="bi bi-qr-code"></i> QR Code</button>
+          </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="card">
+          <div class="section-title"><i class="bi bi-clock-history"></i> ประวัติการอัปเดต</div>
+          ${timelineHtml}
+        </div>
+
+        <!-- Photos -->
+        ${photos.length > 0 ? `
+        <div class="card">
+          <div class="section-title"><i class="bi bi-images"></i> รูปภาพงาน</div>
+          ${photosHtml}
+        </div>` : ''}
+
+        <!-- Rating (แสดงเมื่องานเสร็จ) -->
+        ${job.status === 'done' || job.status === 'delivered' ? `
+        <div class="card" style="text-align:center;">
+          <div class="section-title" style="justify-content:center;"><i class="bi bi-star-fill" style="color:#f59e0b;"></i> ให้คะแนนบริการ</div>
+          <div class="rating-stars" id="rating-stars">
+            ${[1,2,3,4,5].map(i => `<span class="rating-star" onclick="submitRating(${i},'${job.job_id}')" onmouseover="hoverRating(${i})" onmouseout="resetRatingHover()">★</span>`).join('')}
+          </div>
+          <div id="rating-msg" style="font-size:0.8rem;color:#94a3b8;">แตะดาวเพื่อให้คะแนน</div>
+        </div>` : ''}
+
+        <!-- Contact -->
+        <div class="card" style="text-align:center;background:#f0f9ff;border:1px solid #bae6fd;">
+          <div style="font-size:0.85rem;color:#0369a1;margin-bottom:0.5rem;">มีคำถาม? ติดต่อร้านได้เลย</div>
+          <a href="tel:" style="display:inline-flex;align-items:center;gap:0.4rem;background:#0369a1;color:#fff;text-decoration:none;border-radius:8px;padding:0.5rem 1.25rem;font-size:0.9rem;font-weight:600;">
+            <i class="bi bi-telephone-fill"></i> โทรหาร้าน
+          </a>
+        </div>
+      `;
+    }
+
+    // ── Rating ───────────────────────────────────────────────
+    var selectedRating = 0;
+    function hoverRating(n) {
+      document.querySelectorAll('.rating-star').forEach(function(s, i) {
+        s.classList.toggle('active', i < n);
+      });
+    }
+    function resetRatingHover() {
+      document.querySelectorAll('.rating-star').forEach(function(s, i) {
+        s.classList.toggle('active', i < selectedRating);
+      });
+    }
+    async function submitRating(n, jobId) {
+      selectedRating = n;
+      hoverRating(n);
+      document.getElementById('rating-msg').textContent = 'กำลังบันทึก...';
+      try {
+        var res = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'submitCustomerRating', job_id: jobId, rating: n })
+        });
+        var data = await res.json();
+        document.getElementById('rating-msg').textContent = data.success ? '✅ ขอบคุณสำหรับคะแนน!' : '❌ บันทึกไม่สำเร็จ';
+      } catch(e) {
+        document.getElementById('rating-msg').textContent = '❌ ไม่สามารถเชื่อมต่อได้';
+      }
+    }
+
+    // ── QR Code ──────────────────────────────────────────────
+    function showQRCode(url) {
+      document.getElementById('qr-modal').classList.remove('hidden');
+      var canvas = document.getElementById('qr-canvas');
+      if (typeof QRCode !== 'undefined') {
+        QRCode.toCanvas(canvas, url, { width: 220, margin: 2 }, function() {});
+      } else {
+        canvas.parentElement.innerHTML += '<p style="color:#dc2626;font-size:0.85rem;">QR Code ไม่พร้อมใช้งาน</p>';
+      }
+    }
+    function closeQRModal() { document.getElementById('qr-modal').classList.add('hidden'); }
+
+    // ── Helpers ──────────────────────────────────────────────
+    function openLightbox(url) {
+      document.getElementById('lightbox-img').src = url;
+      document.getElementById('lightbox').classList.remove('hidden');
+    }
+    function closeLightbox() { document.getElementById('lightbox').classList.add('hidden'); }
+    function copyShareLink(url) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(function() { alert('✅ คัดลอกลิงก์แล้ว!'); });
+      } else {
+        prompt('คัดลอกลิงก์นี้:', url);
+      }
+    }
+    function shareToLine(url, jobId, status) {
+      var text = encodeURIComponent('ตรวจสอบสถานะงาน ' + jobId + ' (' + status + '):\n' + url);
+      window.open('https://line.me/R/msg/text/?' + text, '_blank');
+    }
+
+    // Enter key submit
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') searchJob();
+    });
+  </script>
+</body>
+</html>

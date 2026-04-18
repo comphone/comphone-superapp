@@ -80,13 +80,19 @@ async function syncOfflineJobs() {
 
 // Push notifications
 self.addEventListener('push', e => {
-  const data = e.data ? e.data.json() : {};
+  if (!e.data) return;
+  let data;
+  try { data = e.data.json(); } catch(err) { data = { title: 'Comphone', body: e.data.text() }; }
+
   e.waitUntil(
     self.registration.showNotification(data.title || 'Comphone', {
       body: data.body || 'มีการอัปเดตใหม่',
-      icon: BASE + '/icons/icon-192.png',
-      badge: BASE + '/icons/icon-72.png',
-      data: data.url || BASE + '/',
+      icon: data.icon || BASE + '/icons/icon-192.png',
+      badge: data.badge || BASE + '/icons/icon-72.png',
+      tag: data.tag || 'comphone-notif',
+      vibrate: [200, 100, 200],
+      requireInteraction: false,
+      data: { url: data.url || BASE + '/', ...( data.data || {}) },
       actions: data.actions || []
     })
   );
@@ -94,5 +100,19 @@ self.addEventListener('push', e => {
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  e.waitUntil(clients.openWindow(e.notification.data || BASE + '/'));
+  const url = (e.notification.data && e.notification.data.url) || BASE + '/';
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+      // ถ้ามีหน้าต่างเปิดอยู่แล้ว ให้เปลี่ยนไปหน้านั้น
+      for (const client of windowClients) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          client.focus();
+          client.postMessage({ type: 'NAVIGATE', url });
+          return;
+        }
+      }
+      // เปิดหน้าต่างใหม่
+      return clients.openWindow(url);
+    })
+  );
 });

@@ -222,6 +222,12 @@ function startMainApp() {
   document.getElementById('greeting-text').textContent = greet + ' 👋';
   document.getElementById('user-name-display').textContent = APP.user.name;
 
+  // แสดง/ซ่อน nav-admin ตาม role
+  const navAdmin = document.getElementById('nav-admin');
+  if (navAdmin) {
+    navAdmin.style.display = (APP.role === 'owner' || APP.role === 'admin') ? '' : 'none';
+  }
+
   // Render home ด้วย loading state ก่อน
   renderHome();
   renderProfile();
@@ -605,6 +611,12 @@ function goPage(page, btn) {
     if (typeof loadInventoryPage === 'function') loadInventoryPage();
     else if (typeof openInventoryPage === 'function') openInventoryPage();
   }
+  if (page === 'admin') {
+    if (typeof loadAdminPanel === 'function') loadAdminPanel();
+  }
+  if (page === 'reports') {
+    if (typeof loadReportsPage === 'function') loadReportsPage();
+  }
 }
 
 // ===== JOB DETAIL MODAL =====
@@ -809,17 +821,117 @@ function fabAction() {
 function handlePhoto(input) {
   const file = input.files[0];
   if (!file) return;
+
+  // ตรวจขนาดไฟล์ (max 10MB)
+  if (file.size > 10 * 1024 * 1024) {
+    showToast('⚠️ ไฟล์ใหญ่เกินไป (max 10MB)');
+    input.value = '';
+    return;
+  }
+
+  const jobId = input.dataset.jobId || '';
+  const type = input.dataset.type || 'job';
+  const techName = (APP.user && (APP.user.name || APP.user.username)) || 'Unknown';
+
+  showToast('📸 กำลังอ่านรูป...');
+
   const reader = new FileReader();
-  reader.onload = e => {
-    const jobId = input.dataset.jobId;
-    const type = input.dataset.type || 'job';
-    showToast(`📸 รับรูปแล้ว — กำลังอัปโหลด...`);
-    // Save to offline queue if no internet
-    saveOfflineAction({ type: 'photo', jobId, photoType: type, dataUrl: e.target.result.substring(0, 100), time: Date.now() });
-    setTimeout(() => showToast('✅ อัปโหลดรูปสำเร็จ'), 1500);
+  reader.onload = async (e) => {
+    const base64Full = e.target.result; // data:image/jpeg;base64,...
+    const base64Data = base64Full.split(',')[1]; // เอาเฉพาะ base64 string
+    const mimeType = file.type || 'image/jpeg';
+    const fileName = file.name || `photo_${Date.now()}.jpg`;
+
+    // แสดง preview
+    showPhotoPreview_(base64Full, jobId, type);
+
+    if (!navigator.onLine) {
+      // Offline: บันทึกลง IndexedDB/localStorage
+      showToast('📥 Offline — บันทึกไว้ จะ Sync เมื่อออนไลน์');
+      saveOfflineAction({
+        action: 'handleProcessPhotos',
+        params: { base64: base64Data, mimeType, fileName, jobId, photoType: type, techName },
+        time: Date.now()
+      });
+      input.value = '';
+      return;
+    }
+
+    showToast('☁️ กำลังอัปโหลด...');
+
+    try {
+      const res = await callAPI('handleProcessPhotos', {
+        base64: base64Data,
+        mimeType,
+        fileName,
+        jobId,
+        photoType: type,
+        techName,
+        username: techName
+      });
+
+      if (res && res.success) {
+        showToast('✅ อัปโหลดรูปสำเร็จ!');
+        // Refresh photo grid ถ้าอยู่หน้า camera
+        if (document.getElementById('page-camera').classList.contains('active')) {
+          loadRecentPhotos_(jobId);
+        }
+      } else {
+        const errMsg = (res && res.error) || 'ไม่ทราบสาเหตุ';
+        showToast('⚠️ อัปโหลดไม่สำเร็จ: ' + errMsg);
+        // Fallback: save to offline queue
+        saveOfflineAction({
+          action: 'handleProcessPhotos',
+          params: { base64: base64Data, mimeType, fileName, jobId, photoType: type, techName },
+          time: Date.now()
+        });
+      }
+    } catch (err) {
+      showToast('⚠️ เน็ตเวิร์คขัดข้อง — บันทึกไว้ใน Queue');
+      saveOfflineAction({
+        action: 'handleProcessPhotos',
+        params: { base64: base64Data, mimeType, fileName, jobId, photoType: type, techName },
+        time: Date.now()
+      });
+    }
   };
+
+  reader.onerror = () => showToast('❌ อ่านไฟล์ไม่ได้');
   reader.readAsDataURL(file);
   input.value = '';
+}
+
+// แสดง preview รูปที่เลือก
+ function showPhotoPreview_(dataUrl, jobId, type) {
+  const area = document.getElementById('photo-preview-area');
+  if (!area) return;
+  area.innerHTML = `
+    <div class="photo-preview-wrap">
+      <img src="${dataUrl}" class="photo-preview-img" alt="Preview">
+      <div class="photo-preview-meta">
+        <span class="badge bg-primary">${type === 'slip' ? '🧾 สลิป' : type === 'bill' ? '📄 บิล' : '📸 หน้างาน'}</span>
+        ${jobId ? `<span class="badge bg-secondary">${jobId}</span>` : ''}
+      </div>
+    </div>`;
+}
+
+// โหลดรูปล่าสุดของงาน
+async function loadRecentPhotos_(jobId) {
+  const grid = document.getElementById('photo-grid');
+  if (!grid) return;
+  if (!jobId) { grid.innerHTML = '<p style="color:#9ca3af;font-size:13px;">เลือกงานก่อนเพื่อดูรูป</p>'; return; }
+  grid.innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
+  const res = await callAPI('getPhotoGalleryData', { jobId });
+  if (res && res.success && res.data && res.data.photos) {
+    const photos = res.data.photos.slice(0, 12);
+    grid.innerHTML = photos.map(p =>
+      `<div class="photo-thumb" onclick="window.open('${p.url || p.driveUrl}','_blank')">
+        <img src="${p.thumbnailUrl || p.url || p.driveUrl}" alt="photo" loading="lazy">
+      </div>`
+    ).join('') || '<p style="color:#9ca3af;font-size:13px;">ยังไม่มีรูป</p>';
+  } else {
+    grid.innerHTML = '<p style="color:#9ca3af;font-size:13px;">ไม่พบรูป</p>';
+  }
 }
 
 // ===== PROFILE ACTIONS =====

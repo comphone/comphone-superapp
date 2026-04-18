@@ -1,0 +1,147 @@
+# ============================================================
+# auto-deploy.yml — GitHub Actions CI/CD
+# COMPHONE SUPER APP V5.5
+# ทำงานทุกครั้งที่ push ไปยัง main branch
+# ============================================================
+
+name: Auto Deploy — COMPHONE SUPER APP
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'pwa/**'
+      - 'clasp-ready/**'
+      - 'memory/session.md'
+  workflow_dispatch:    # รันด้วยตนเองได้จาก GitHub UI
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "deploy"
+  cancel-in-progress: false
+
+jobs:
+  # ─────────────────────────────────────────────
+  # Job 1: Validate & Lint
+  # ─────────────────────────────────────────────
+  validate:
+    name: Validate Code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check JS syntax (PWA files)
+        run: |
+          echo "🔍 Checking JS syntax..."
+          for f in pwa/*.js; do
+            node --check "$f" && echo "✅ $f" || echo "❌ $f"
+          done
+
+      - name: Check file sizes
+        run: |
+          echo "📦 File sizes:"
+          du -sh pwa/*.js pwa/*.html clasp-ready/*.gs 2>/dev/null | sort -h
+
+  # ─────────────────────────────────────────────
+  # Job 2: Deploy PWA to GitHub Pages
+  # ─────────────────────────────────────────────
+  deploy-pwa:
+    name: Deploy PWA to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: validate
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload PWA artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './pwa'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "✅ PWA deployed successfully!"
+          echo "URL: ${{ steps.deployment.outputs.page_url }}"
+
+  # ─────────────────────────────────────────────
+  # Job 3: Backup session.md เมื่อมีการเปลี่ยนแปลง
+  # ─────────────────────────────────────────────
+  backup-session:
+    name: Backup session.md
+    runs-on: ubuntu-latest
+    needs: validate
+    if: contains(github.event.head_commit.modified, 'memory/session.md') || contains(github.event.head_commit.added, 'memory/session.md')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create timestamped backup
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M)
+          mkdir -p backups/session
+          cp memory/session.md "backups/session/session_${TIMESTAMP}.md"
+          cp memory/session.md backups/session/session_latest.md
+          echo "✅ Backup created: session_${TIMESTAMP}.md"
+
+      - name: Commit backup
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add backups/session/
+          git diff --staged --quiet || git commit -m "🔄 Auto-backup session.md [skip ci]"
+          git push
+
+  # ─────────────────────────────────────────────
+  # Job 4: Auto-tag release เมื่อ session.md version เปลี่ยน
+  # ─────────────────────────────────────────────
+  auto-tag:
+    name: Auto Tag Release
+    runs-on: ubuntu-latest
+    needs: deploy-pwa
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from session.md
+        id: version
+        run: |
+          VERSION=$(grep -oP 'v\d+\.\d+\.\d+' memory/session.md | head -1 || echo "v5.5.7")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Detected version: $VERSION"
+
+      - name: Create tag if not exists
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if ! git tag | grep -q "^${VERSION}$"; then
+            git config user.name "GitHub Actions Bot"
+            git config user.email "actions@github.com"
+            git tag -a "$VERSION" -m "Release $VERSION — Auto-tagged by CI"
+            git push origin "$VERSION"
+            echo "✅ Tagged: $VERSION"
+          else
+            echo "ℹ️ Tag $VERSION already exists, skipping"
+          fi

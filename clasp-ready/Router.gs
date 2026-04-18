@@ -287,6 +287,44 @@ function dispatchActionV55_(action, payload, args) {
       case 'getAfterSalesSummary':
         return getAfterSalesSummary();
 
+      // ============================================================
+      // Push Notifications
+      // ============================================================
+      case 'savePushSubscription':
+        return savePushSubscription(payload);
+      case 'removePushSubscription':
+        return removePushSubscription(payload);
+      case 'sendPushToAll':
+        return sendPushToAll(payload.title || '', payload.body || '', payload);
+      case 'setupNotificationTriggers':
+        return setupNotificationTriggers();
+
+      // ============================================================
+      // Reports
+      // ============================================================
+      case 'getReportData':
+        return getReportData_(payload.period || 'month');
+
+      // ============================================================
+      // Drive Sync
+      // ============================================================
+      case 'syncCodeToDrive':
+        return DriveSync_receiveSync(payload);
+
+      case 'getDriveSyncStatus':
+        return getDriveSyncStatus();
+
+      case 'storeSessionContent':
+        return storeSessionContent(payload.content || '');
+
+      // Customer Portal (Public — ไม่ต้อง Auth)
+      // ============================================================
+      case 'getJobStatusPublic':
+        return getJobStatusPublic(
+          payload.job_id || payload.jobId || '',
+          payload.phone || ''
+        );
+
       default:
         return invokeFunctionByNameV55_(action, args);
     }

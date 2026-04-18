@@ -1,0 +1,143 @@
+name: 🔄 Auto-Sync to Google Drive
+
+# ─── Triggers ────────────────────────────────────────────────
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'pwa/**'
+      - 'clasp-ready/**'
+      - 'memory/**'
+      - 'scripts/**'
+      - '.github/workflows/**'
+
+  schedule:
+    # Sync ทุกวัน 23:00 (UTC+7 = 16:00 UTC)
+    - cron: '0 16 * * *'
+
+  workflow_dispatch:
+    inputs:
+      sync_type:
+        description: 'ประเภทการ sync'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - session-only
+          - code-only
+
+# ─── Jobs ─────────────────────────────────────────────────────
+jobs:
+  sync-to-drive:
+    name: Sync to Google Drive
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # 1. Checkout code
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # 2. Setup Python
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # 3. Install dependencies
+      - name: 📦 Install Google API packages
+        run: |
+          pip install --quiet \
+            google-auth \
+            google-auth-oauthlib \
+            google-auth-httplib2 \
+            google-api-python-client
+
+      # 4. Setup Service Account credentials
+      - name: 🔑 Setup credentials
+        env:
+          GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+        run: |
+          mkdir -p ~/.comphone
+          
+          # Decode base64 service account key
+          echo "$GOOGLE_SERVICE_ACCOUNT_KEY" | base64 -d > ~/.comphone/service_account.json
+          
+          # สร้าง drive_config.json
+          cat > ~/.comphone/drive_config.json << 'EOF'
+          {
+            "auth_method": "service_account",
+            "service_account_file": "/root/.comphone/service_account.json",
+            "root_folder_name": "COMPHONE_Backups",
+            "code_folder_name": "COMPHONE_Code",
+            "session_folder_name": "COMPHONE_Session",
+            "max_versions": 10,
+            "max_session_backups": 30,
+            "watch_dirs": ["pwa", "clasp-ready", "memory", "scripts"],
+            "watch_extensions": [".js", ".gs", ".html", ".css", ".json", ".md", ".yml"],
+            "ignore_patterns": [".git", "node_modules", "__pycache__"],
+            "version": "v5.5.8"
+          }
+          EOF
+
+      # 5. Sync session.md
+      - name: 🧠 Sync session.md to Drive
+        if: ${{ github.event.inputs.sync_type != 'code-only' }}
+        run: |
+          SESSION_FILE=""
+          if [ -f "memory/session.md" ]; then
+            SESSION_FILE="memory/session.md"
+          elif [ -f "session.md" ]; then
+            SESSION_FILE="session.md"
+          fi
+          
+          if [ -n "$SESSION_FILE" ]; then
+            python3 scripts/drive_sync.py --session "$SESSION_FILE"
+          else
+            echo "⚠️ ไม่พบ session.md — ข้ามขั้นตอนนี้"
+          fi
+
+      # 6. Sync code files
+      - name: 💻 Sync code to Drive
+        if: ${{ github.event.inputs.sync_type != 'session-only' }}
+        run: |
+          python3 scripts/drive_sync.py \
+            --code . \
+            --version "v5.5.8-$(echo $GITHUB_SHA | cut -c1-7)"
+
+      # 7. Summary
+      - name: 📊 Sync Summary
+        if: always()
+        run: |
+          echo "## 🔄 Drive Sync Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| รายการ | ค่า |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`$(echo $GITHUB_SHA | cut -c1-7)\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`$GITHUB_REF_NAME\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Trigger | \`$GITHUB_EVENT_NAME\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Time | $(date '+%Y-%m-%d %H:%M UTC') |" >> $GITHUB_STEP_SUMMARY
+
+  # ─── Notify on failure ────────────────────────────────────
+  notify-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: sync-to-drive
+    if: failure()
+
+    steps:
+      - name: 🚨 Log failure
+        run: |
+          echo "❌ Drive Sync FAILED at $(date)"
+          echo "Commit: $GITHUB_SHA"
+          echo "Branch: $GITHUB_REF_NAME"
+          echo "Workflow: $GITHUB_WORKFLOW"
+          echo ""
+          echo "ตรวจสอบ:"
+          echo "1. GOOGLE_SERVICE_ACCOUNT_KEY secret ถูกต้องหรือไม่"
+          echo "2. Service Account มีสิทธิ์ Editor ใน Google Drive หรือไม่"
+          echo "3. Google Drive API เปิดใช้งานใน Google Cloud Console หรือไม่"
