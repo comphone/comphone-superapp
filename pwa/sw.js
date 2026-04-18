@@ -1,4 +1,10 @@
-const CACHE_NAME = 'comphone-v1.0.0';
+// ============================================================
+// COMPHONE SUPER APP V5.5 — Service Worker v5.6.0
+// 3 Cache Strategies: Cache First | Network First | Network Only
+// Background Sync: flush IndexedDB offline queue
+// ============================================================
+const CACHE_V = 'comphone-v5.6.0';
+const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
 const ASSETS = [
   BASE + '/',
@@ -8,16 +14,47 @@ const ASSETS = [
   BASE + '/manifest.json',
   BASE + '/icons/icon-192.png',
   BASE + '/icons/icon-512.png',
+  BASE + '/inventory.js',
+  BASE + '/inventory_ui.js',
+  BASE + '/quick_actions.js',
+  BASE + '/error_boundary.js',
+  BASE + '/auth_guard.js',
+  BASE + '/analytics.js',
+  BASE + '/purchase_order.js',
+  BASE + '/attendance_ui.js',
+  BASE + '/pwa_install.js',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css',
   'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css'
 ];
 
-// Install: cache all assets
+// Network Only patterns (never cache)
+const NETWORK_ONLY = [
+  /\/line\/webhook/,
+  /action=health/,
+  /action=ping/,
+];
+
+// API patterns (Network First)
+const API_PATTERNS = [
+  /script\.google\.com/,
+  /macros\/s\//,
+  /workers\.dev/,
+];
+
+const NETWORK_TIMEOUT_MS = 3000;
+const SYNC_TAG = 'comphone-offline-queue';
+
+// Install: pre-cache static assets (graceful — ไม่ fail ถ้า asset ไม่พบ)
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
+    caches.open(CACHE_V)
+      .then(cache => Promise.allSettled(
+        ASSETS.map(url => cache.add(url).catch(err =>
+          console.warn('[SW] Pre-cache skip:', url, err.message)
+        ))
+      ))
+      .then(() => { console.log('[SW] Installed:', CACHE_V); return self.skipWaiting(); })
   );
-  self.skipWaiting();
 });
 
 // Activate: clear old caches
@@ -30,40 +67,118 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// Fetch: Cache First for assets, Network First for API
+// Fetch: Route ตาม 3 strategies
 self.addEventListener('fetch', e => {
-  const url = new URL(e.request.url);
+  const { request } = e;
+  const url = request.url;
 
-  // Skip non-GET and chrome-extension
-  if (e.request.method !== 'GET' || url.protocol === 'chrome-extension:') return;
+  // ข้าม non-GET และ chrome-extension
+  if (request.method !== 'GET' || url.startsWith('chrome-extension:')) return;
 
-  // Network first for Google Apps Script API calls
-  if (url.hostname.includes('script.google.com') || url.hostname.includes('googleapis.com')) {
-    e.respondWith(
-      fetch(e.request).catch(() => caches.match(e.request))
-    );
+  // 1. Network Only — LINE webhook, health check
+  if (NETWORK_ONLY.some(p => p.test(url))) {
+    e.respondWith(fetch(request));
     return;
   }
 
-  // Cache first for everything else
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(response => {
-        if (response && response.status === 200) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
-        }
-        return response;
-      }).catch(() => {
-        // Offline fallback
-        if (e.request.destination === 'document') {
-          return caches.match(BASE + '/index.html');
-        }
-      });
-    })
-  );
+  // 2. Network First (timeout 3s) — API calls
+  if (API_PATTERNS.some(p => p.test(url))) {
+    e.respondWith(_networkFirst_(request));
+    return;
+  }
+
+  // 3. Cache First — static assets
+  e.respondWith(_cacheFirst_(request));
 });
+
+// Background Sync — flush offline queue จาก error_boundary.js
+self.addEventListener('sync', e => {
+  if (e.tag === SYNC_TAG || e.tag === 'sync-jobs') {
+    console.log('[SW] Background sync:', e.tag);
+    e.waitUntil(_flushOfflineQueue_());
+  }
+});
+
+// Message handler
+self.addEventListener('message', e => {
+  if (!e.data) return;
+  if (e.data.type === 'SKIP_WAITING') self.skipWaiting();
+  if (e.data.type === 'GET_VERSION') e.ports[0]?.postMessage({ version: CACHE_V });
+});
+
+// ============================================================
+// STRATEGY IMPLEMENTATIONS
+// ============================================================
+async function _cacheFirst_(request) {
+  const cached = await caches.match(request);
+  if (cached) return cached;
+  try {
+    const res = await fetch(request);
+    if (res.ok) {
+      const cache = await caches.open(CACHE_V);
+      cache.put(request, res.clone());
+    }
+    return res;
+  } catch (_) {
+    // Document fallback
+    if (request.destination === 'document') {
+      const fb = await caches.match(BASE + '/index.html');
+      if (fb) return fb;
+    }
+    return new Response('Offline', { status: 503 });
+  }
+}
+
+async function _networkFirst_(request) {
+  try {
+    const res = await _fetchWithTimeout_(request, NETWORK_TIMEOUT_MS);
+    if (res.ok) {
+      const cache = await caches.open(CACHE_V);
+      cache.put(request, res.clone());
+    }
+    return res;
+  } catch (_) {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    return new Response(
+      JSON.stringify({ success: false, error: 'OFFLINE', offline: true }),
+      { status: 503, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+function _fetchWithTimeout_(request, ms) {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('timeout')), ms);
+    fetch(request).then(r => { clearTimeout(t); resolve(r); }).catch(e => { clearTimeout(t); reject(e); });
+  });
+}
+
+async function _flushOfflineQueue_() {
+  const DB_NAME = 'comphone_offline';
+  const STORE   = 'queue';
+  let db;
+  try {
+    db = await new Promise((res, rej) => {
+      const r = indexedDB.open(DB_NAME, 1);
+      r.onsuccess = e => res(e.target.result);
+      r.onerror   = e => rej(e.target.error);
+    });
+  } catch (_) { return; }
+
+  const items = await new Promise(res => {
+    const r = db.transaction(STORE, 'readonly').objectStore(STORE).getAll();
+    r.onsuccess = e => res(e.target.result || []);
+    r.onerror   = () => res([]);
+  });
+
+  // แจ้ง clients ให้ flush
+  const clients = await self.clients.matchAll({ type: 'window' });
+  clients.forEach(c => c.postMessage({ type: 'SYNC_OFFLINE_QUEUE', count: items.length }));
+
+  db.close();
+  console.log('[SW] Notified clients to flush', items.length, 'offline items');
+}
 
 // Background sync for offline actions
 self.addEventListener('sync', e => {
