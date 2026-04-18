@@ -183,6 +183,35 @@ def sync_drive(session_file=None, code_path=None, dry_run=False):
                 log_warn("ยังไม่ได้ login OAuth2")
                 log_warn("รัน: python3 scripts/drive_sync.py --setup-oauth")
                 return {'success': False, 'error': 'OAuth2 not authenticated', 'setup_required': True}
+
+            # ─── Token Schema Validation ───────────────────────────
+            # ตรวจสอบว่า token.json มี keys ที่จำเป็นครบถ้วน
+            try:
+                with open(token_file) as tf:
+                    token_data = json.load(tf)
+
+                required_keys = ['client_id', 'client_secret', 'refresh_token']
+                missing_keys = [k for k in required_keys if not token_data.get(k)]
+
+                if missing_keys:
+                    log_err(f"token.json ไม่ถูกต้อง — ขาด keys: {', '.join(missing_keys)}")
+                    log_err("token.json ต้องมี: client_id, client_secret, refresh_token")
+                    log_err("แก้ไข: รัน python3 scripts/drive_sync.py --setup-oauth เพื่อสร้าง token ใหม่")
+                    return {'success': False, 'error': f'token.json missing keys: {missing_keys}'}
+
+                token_type = token_data.get('type', '')
+                if token_type and token_type != 'authorized_user':
+                    log_warn(f"token.json type = '{token_type}' (คาดว่า 'authorized_user')")
+
+                log_ok(f"Token schema valid: type={token_data.get('type', 'N/A')}, has refresh_token=True")
+
+            except json.JSONDecodeError as je:
+                log_err(f"token.json parse error: {je}")
+                return {'success': False, 'error': f'token.json invalid JSON: {je}'}
+            except Exception as te:
+                log_warn(f"token.json validation warning: {te}")
+                # ไม่ block — ให้ drive_sync.py จัดการเอง
+
     except Exception as e:
         log_warn(f"Config error: {e}")
         return {'success': False, 'error': str(e)}
@@ -199,13 +228,25 @@ def sync_drive(session_file=None, code_path=None, dry_run=False):
         cmd += ['--dry-run']
 
     try:
-        result = subprocess.run(cmd, capture_output=False, timeout=300)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+        # แสดง stdout ทุกบรรทัด (drive_sync.py มี progress output)
+        if result.stdout:
+            for line in result.stdout.splitlines():
+                if line.strip():
+                    print(f"  {line}", flush=True)
         if result.returncode == 0:
             log_ok("Google Drive: sync สำเร็จ")
             return {'success': True}
         else:
-            log_err("Google Drive: sync ล้มเหลว")
-            return {'success': False, 'error': f'Exit code {result.returncode}'}
+            log_err(f"Google Drive: sync ล้มเหลว (exit code {result.returncode})")
+            if result.stderr:
+                log_err(f"STDERR: {result.stderr[:500]}")
+            if result.stdout:
+                # แสดง stdout ส่วนท้ายเพื่อ debug
+                last_lines = result.stdout.strip().splitlines()[-10:]
+                log_err(f"STDOUT (last 10 lines):\n" + '\n'.join(f'  {l}' for l in last_lines))
+            return {'success': False, 'error': f'Exit code {result.returncode}',
+                    'stderr': result.stderr[:200] if result.stderr else ''}
     except subprocess.TimeoutExpired:
         log_err("Google Drive: timeout (>5 นาที)")
         return {'success': False, 'error': 'Timeout'}
