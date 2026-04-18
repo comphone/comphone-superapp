@@ -284,6 +284,24 @@ function dispatchActionV55_(action, payload, args) {
         return listAllBillings_(payload);
 
       // ============================================================
+      // CRM Sprint 3 — Customer History + Follow-up
+      // ============================================================
+      case 'getCustomerHistoryFull':
+        return getCustomerHistoryFull(payload);
+      case 'getCustomerListWithStats':
+        return getCustomerListWithStats(payload);
+      case 'scheduleFollowUp':
+        return scheduleFollowUp_(payload);
+      case 'logFollowUpResult':
+        return logFollowUpResult_(payload);
+      case 'getCRMFollowUpSchedule':
+        return getCRMFollowUpSchedule_(payload);
+      case 'getCRMMetrics':
+        return getCRMMetrics_();
+      case 'nudgeSalesTeam':
+        return nudgeSalesTeam_(payload);
+
+      // ============================================================
       // After-Sales Service
       // ============================================================
       case 'createAfterSalesRecord':
