@@ -534,6 +534,12 @@ function dispatchActionV55_(action, payload, args) {
       case 'cleanAllData':
         return jsonOutputV55_(cleanAllData());
 
+      // ── Kudos / Customer Rating ──────────────────────────────
+      case 'submitCustomerRating':
+        return jsonOutputV55_(submitCustomerRating_(payload));
+      case 'getCustomerRatings':
+        return jsonOutputV55_(getCustomerRatings_(payload));
+
       default:
         return invokeFunctionByNameV55_(action, args);
     }

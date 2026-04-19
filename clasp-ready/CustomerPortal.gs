@@ -202,3 +202,89 @@ function translateEventPublic_(event) {
   }
   return event;
 }
+
+// ══════════════════════════════════════════════════════════════
+// Kudos / Customer Rating
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * บันทึกคะแนนรีวิวจากลูกค้า
+ * @param {Object} params — { job_id, rating (1-5), comment? }
+ * @returns {Object}
+ */
+function submitCustomerRating_(params) {
+  try {
+    var jobId  = String(params.job_id  || '').trim();
+    var rating = parseInt(params.rating || 0, 10);
+    var comment = String(params.comment || '').trim().substring(0, 500);
+
+    if (!jobId)               return { success: false, error: 'job_id is required' };
+    if (rating < 1 || rating > 5) return { success: false, error: 'rating must be 1-5' };
+
+    var ss = SpreadsheetApp.openById(Config.get('DB_SS_ID'));
+    var sheetName = 'DB_RATINGS';
+
+    // สร้าง sheet ถ้ายังไม่มี
+    var sh = ss.getSheetByName(sheetName);
+    if (!sh) {
+      sh = ss.insertSheet(sheetName);
+      sh.appendRow(['Rating_ID', 'Job_ID', 'Rating', 'Comment', 'Timestamp', 'Notified']);
+      sh.setFrozenRows(1);
+    }
+
+    var ratingId = 'RAT-' + new Date().getTime();
+    var ts = new Date().toISOString();
+
+    sh.appendRow([ratingId, jobId, rating, comment, ts, false]);
+
+    // แจ้ง LINE ถ้าคะแนนต่ำ (≤ 2)
+    if (rating <= 2) {
+      try {
+        var msg = '⚠️ ลูกค้าให้คะแนนต่ำ ' + rating + '/5\nงาน: ' + jobId;
+        if (comment) msg += '\nความคิดเห็น: ' + comment;
+        Notify.sendToGroup('LINE_GROUP_ADMIN', msg);
+      } catch (e) { /* ignore */ }
+    }
+
+    return { success: true, rating_id: ratingId, rating: rating };
+
+  } catch (err) {
+    return { success: false, error: err.toString() };
+  }
+}
+
+/**
+ * ดึงคะแนนรีวิวของ Job หรือทั้งหมด
+ * @param {Object} params — { job_id? }
+ * @returns {Object}
+ */
+function getCustomerRatings_(params) {
+  try {
+    var ss = SpreadsheetApp.openById(Config.get('DB_SS_ID'));
+    var sh = ss.getSheetByName('DB_RATINGS');
+    if (!sh) return { success: true, ratings: [], average: 0, total: 0 };
+
+    var rows = sh.getDataRange().getValues();
+    if (rows.length <= 1) return { success: true, ratings: [], average: 0, total: 0 };
+
+    var headers = rows[0].map(function(h) { return String(h).toLowerCase().replace(/ /g, '_'); });
+    var jobIdFilter = String(params.job_id || '').trim();
+
+    var ratings = rows.slice(1).map(function(row) {
+      var obj = {};
+      headers.forEach(function(h, i) { obj[h] = row[i]; });
+      return obj;
+    }).filter(function(r) {
+      return !jobIdFilter || r.job_id === jobIdFilter;
+    });
+
+    var total = ratings.length;
+    var sum = ratings.reduce(function(acc, r) { return acc + (parseFloat(r.rating) || 0); }, 0);
+    var average = total > 0 ? Math.round((sum / total) * 10) / 10 : 0;
+
+    return { success: true, ratings: ratings, average: average, total: total };
+
+  } catch (err) {
+    return { success: false, error: err.toString() };
+  }
+}

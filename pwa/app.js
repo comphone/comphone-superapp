@@ -1181,16 +1181,19 @@ async function syncOfflineQueue() {
 }
 
 // ===== OFFLINE BAR =====
-function showOfflineBar(show) {
-  let bar = document.getElementById('offline-bar');
-  if (!bar && show) {
-    bar = document.createElement('div');
-    bar.id = 'offline-bar';
-    bar.className = 'offline-bar';
-    bar.textContent = '⚠️ ออฟไลน์ — ข้อมูลจะ Sync เมื่อเชื่อมต่ออินเทอร์เน็ต';
-    document.body.prepend(bar);
-  } else if (bar && !show) {
-    bar.remove();
+function showOfflineBar(show, message) {
+  const bar = document.getElementById('offline-bar');
+  if (!bar) return;
+  if (show) {
+    bar.classList.remove('hidden');
+    bar.style.display = 'flex';
+    if (message) {
+      const msgEl = bar.querySelector('span:not(.offline-queue-count)');
+      if (msgEl) msgEl.textContent = message;
+    }
+  } else {
+    bar.classList.add('hidden');
+    bar.style.display = 'none';
     showToast('✅ เชื่อมต่ออินเทอร์เน็ตแล้ว');
   }
 }
