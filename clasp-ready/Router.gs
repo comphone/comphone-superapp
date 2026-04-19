@@ -414,6 +414,37 @@ function dispatchActionV55_(action, payload, args) {
         return setupLineBotV2();
       case 'testLineBotV2':
         return testLineBotV2();
+      // ── LINE Quota Optimization (LineBotQuota.gs) ──────────────────
+      case 'queueAlert':
+        return queueAlert(payload.alertType || '', payload.data || {});
+      case 'getAlertQueue':
+        return { success: true, queue: getAlertQueue() };
+      case 'getUnnotifiedAlerts':
+        return { success: true, alerts: getUnnotifiedAlerts() };
+      case 'clearAlertQueue':
+        return clearAlertQueue();
+      case 'markAlertsNotified':
+        return markAlertsNotified(payload.ids || []);
+      case 'smartPushAlert':
+        return smartPushAlert(payload.alertType || '', payload.data || {}, {});
+      case 'checkAndAlertSLAOptimized':
+        return checkAndAlertSLAOptimized(payload.slaPercent || payload.value || 0, {});
+      case 'checkAndAlertHealthOptimized':
+        return checkAndAlertHealthOptimized(payload.healthScore || payload.value || 0, {});
+      case 'checkAndAlertErrorOptimized':
+        return checkAndAlertErrorOptimized(payload.errorRate || 0, payload.latencyMs || 0, {});
+      case 'sendDailyDigest':
+        return sendDailyDigest();
+      case 'setupDailyDigestTrigger':
+        return setupDailyDigestTrigger();
+      case 'getQuotaStatus':
+        return getQuotaStatus();
+      case 'getCachedResponse':
+        return { success: true, data: getCachedResponse(payload.key || '') };
+      case 'setCachedResponse':
+        return setCachedResponse(payload.key || '', payload.data || {}, payload.ttl || 300);
+      case 'invalidateCache':
+        return invalidateCache(payload.key || '');
       case 'nudgeTech':
         return nudgeTechAction_(payload);
       case 'addAppointment':
