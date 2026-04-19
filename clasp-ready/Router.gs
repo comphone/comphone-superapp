@@ -393,6 +393,27 @@ function dispatchActionV55_(action, payload, args) {
           payload.message || '',
           payload.to || payload.toId || _getRoomGroupId(payload.room || 'TECHNICIAN')
         );
+      // ── LINE Bot V2 Routes (LineBotV2.gs) ──
+      case 'sendLineAlert':
+        return sendLineAlert(
+          payload.alertType || 'CUSTOM',
+          payload.data || {},
+          { toId: payload.toId || payload.to }
+        );
+      case 'checkAndAlertSLA':
+        return checkAndAlertSLA(payload.slaPercent || payload.value || 0, {});
+      case 'checkAndAlertHealth':
+        return checkAndAlertHealth(payload.healthScore || payload.value || 0, {});
+      case 'checkAndAlertError':
+        return checkAndAlertError(payload.errorRate || 0, payload.latencyMs || 0, {});
+      case 'mapLineUser':
+        return mapLineUserToSystem(payload.lineUserId || '', payload.systemUsername || '');
+      case 'getSystemUserFromLine':
+        return { success: true, user: getSystemUserFromLine(payload.lineUserId || '') };
+      case 'setupLineBotV2':
+        return setupLineBotV2();
+      case 'testLineBotV2':
+        return testLineBotV2();
       case 'nudgeTech':
         return nudgeTechAction_(payload);
       case 'addAppointment':
