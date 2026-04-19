@@ -1,12 +1,12 @@
 # COMPHONE SUPER APP — QUICK REFERENCE
 
-> อัปเดต: 17 เมษายน 2026 | v5.5.3 @439
+> อัปเดต: 17 เมษายน 2026 | v5.5.3 @441
 
 ## URLs ที่ใช้บ่อย
 
 | รายการ | URL |
 |--------|-----|
-| **GAS API (หลัก)** | `https://script.google.com/macros/s/AKfycby-IRTHbHMfCZ8TiXSAJ8zr_T6xQcmJNvGNYYI2X2VoAEMPwYtHwlCp1mf9f6IzWSSJfQ/exec` |
+| **GAS API (หลัก)** | `https://script.google.com/macros/s/AKfycbzE5tyKNA-W6gDQEixw9VTDznTNn5FuToVeVuO_OQL75fDSrpW8U9BT3bhVn4kjKc37/exec` |
 | **LINE Webhook** | `https://comphone-line-webhook.narinoutagit.workers.dev/line/webhook` |
 | **PWA** | `https://comphone.github.io/comphone-superapp/pwa/` |
 | **Google Sheets DB** | `https://docs.google.com/spreadsheets/d/19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA` |

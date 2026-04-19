@@ -13,7 +13,7 @@
 │                    COMPHONE SUPER APP V5.5.4                    │
 │                                                                 │
 │  ┌──────────────┐    ┌──────────────────┐    ┌──────────────┐  │
-│  │  LINE Bot    │───►│ Cloudflare Worker│───►│  GAS @439    │  │
+│  │  LINE Bot    │───►│ Cloudflare Worker│───►│  GAS @441    │  │
 │  │  (Webhook)   │    │ (Async Proxy)    │    │  (Backend)   │  │
 │  └──────────────┘    └──────────────────┘    └──────┬───────┘  │
 │                                                      │          │
@@ -33,10 +33,10 @@
 ```
 User (LINE) → POST /line/webhook
 → Cloudflare Worker (ตอบ 200 OK ทันที <50ms)
-→ ctx.waitUntil(fetch(GAS_URL @439)) [async, ไม่รอผล]
+→ ctx.waitUntil(fetch(GAS_URL @441)) [async, ไม่รอผล]
 → GAS ประมวลผล → ตอบกลับ LINE / บันทึก Sheet / แจ้งเตือน Group
 
-User (PWA) → POST GAS_URL @439
+User (PWA) → POST GAS_URL @441
 → GAS ประมวลผล → ส่ง JSON กลับ
 → PWA แสดงผล
 ```
@@ -47,7 +47,7 @@ User (PWA) → POST GAS_URL @439
 
 | รายการ | URL | สถานะ |
 |--------|-----|-------|
-| **GAS Web App (หลัก @439)** | `https://script.google.com/macros/s/AKfycby-IRTHbHMfCZ8TiXSAJ8zr_T6xQcmJNvGNYYI2X2VoAEMPwYtHwlCp1mf9f6IzWSSJfQ/exec` | ✅ ใช้งานอยู่ |
+| **GAS Web App (หลัก @441)** | `https://script.google.com/macros/s/AKfycbzE5tyKNA-W6gDQEixw9VTDznTNn5FuToVeVuO_OQL75fDSrpW8U9BT3bhVn4kjKc37/exec` | ✅ ใช้งานอยู่ |
 | **GAS Web App (@438)** | `https://script.google.com/macros/s/AKfycbw87FkEDeoaxQ6mziojRA0HJKUUNGotFlEPGc95UgbbcSrGgjo-TqoxH8D9HUYlMO0V0Q/exec` | ⚠️ เก่า |
 | **GAS Web App (@437)** | `https://script.google.com/macros/s/AKfycbye7oTIj-cQjMtSm5CZBJ81mkOHO7GZm9iKFUjcSFBM_DgSsDZXr919Y8D-WezT2jBEUA/exec` | ⚠️ เก่า |
 | **LINE Webhook (Cloudflare Worker)** | `https://comphone-line-webhook.narinoutagit.workers.dev/line/webhook` | ✅ ใช้งานอยู่ |
@@ -63,14 +63,14 @@ User (PWA) → POST GAS_URL @439
 
 ## 3. Script Properties (GAS Environment Variables)
 
-> ตั้งค่าผ่าน: `POST {"action": "setScriptProperties", "properties": {...}}` ไปที่ GAS URL @439  
+> ตั้งค่าผ่าน: `POST {"action": "setScriptProperties", "properties": {...}}` ไปที่ GAS URL @441  
 > ตรวจสอบ: `POST {"action": "systemStatus"}` → ดูส่วน `config`
 
 | Property Key | ค่า | สถานะ |
 |-------------|-----|-------|
 | `DB_SS_ID` | `19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA` | ✅ ตั้งค่าแล้ว |
 | `ROOT_FOLDER_ID` | `1YRZRG9r1Y_jMHg2XFFKYjK4Hx-sW0Eq0` | ✅ ตั้งค่าแล้ว |
-| `WEB_APP_URL` | `https://script.google.com/macros/s/AKfycby-IRTHbHMfCZ8TiXSAJ8zr_T6xQcmJNvGNYYI2X2VoAEMPwYtHwlCp1mf9f6IzWSSJfQ/exec` | ✅ @439 (อัปเดตแล้ว) |
+| `WEB_APP_URL` | `https://script.google.com/macros/s/AKfycbzE5tyKNA-W6gDQEixw9VTDznTNn5FuToVeVuO_OQL75fDSrpW8U9BT3bhVn4kjKc37/exec` | ✅ @441 (อัปเดตแล้ว) |
 | `TAX_MODE` | `VAT7` (หรือ `ZERO`, `EXEMPT`, `MIXED`) | ✅ ตั้งค่าแล้ว |
 | `BRANCH_ID` | `HQ` | ✅ ตั้งค่าแล้ว |
 | `COMPANY_NAME` | `ร้านคอมโฟน` | ✅ ตั้งค่าแล้ว |
@@ -87,13 +87,13 @@ User (PWA) → POST GAS_URL @439
 ```bash
 python3.11 -c "
 import requests
-GAS = 'https://script.google.com/macros/s/AKfycby-IRTHbHMfCZ8TiXSAJ8zr_T6xQcmJNvGNYYI2X2VoAEMPwYtHwlCp1mf9f6IzWSSJfQ/exec'
+GAS = 'https://script.google.com/macros/s/AKfycbzE5tyKNA-W6gDQEixw9VTDznTNn5FuToVeVuO_OQL75fDSrpW8U9BT3bhVn4kjKc37/exec'
 r = requests.post(GAS, json={
   'action': 'setScriptProperties',
   'properties': {
     'DB_SS_ID': '19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA',
     'ROOT_FOLDER_ID': '1YRZRG9r1Y_jMHg2XFFKYjK4Hx-sW0Eq0',
-    'WEB_APP_URL': 'GAS_URL_@439',
+    'WEB_APP_URL': 'GAS_URL_@441',
     'LINE_CHANNEL_ACCESS_TOKEN': 'YOUR_TOKEN',
     'GEMINI_API_KEY': 'YOUR_KEY',
     'LINE_GROUP_TECHNICIAN': 'C8ad22a115f38c9ad3cb5ea5c2ff4863b',
@@ -155,7 +155,7 @@ export default {
 |--------|---------|
 | **GAS Script ID** | `1-aoCd5gXoo1dX4FjW62l8JknR3ZPiaf1W7YEmEdtq8gnRzSp4Hwj6043` |
 | **GAS Project URL** | `https://script.google.com/d/1-aoCd5gXoo1dX4FjW62l8JknR3ZPiaf1W7YEmEdtq8gnRzSp4Hwj6043/edit` |
-| **Deploy @439 (หลัก)** | `AKfycby-IRTHbHMfCZ8TiXSAJ8zr_T6xQcmJNvGNYYI2X2VoAEMPwYtHwlCp1mf9f6IzWSSJfQ` |
+| **Deploy @441 (หลัก)** | `AKfycbzE5tyKNA-W6gDQEixw9VTDznTNn5FuToVeVuO_OQL75fDSrpW8U9BT3bhVn4kjKc37` |
 | **Deploy @438** | `AKfycbw87FkEDeoaxQ6mziojRA0HJKUUNGotFlEPGc95UgbbcSrGgjo-TqoxH8D9HUYlMO0V0Q` |
 | **Deploy @437** | `AKfycbye7oTIj-cQjMtSm5CZBJ81mkOHO7GZm9iKFUjcSFBM_DgSsDZXr919Y8D-WezT2jBEUA` |
 | **clasp.json (Local)** | `/home/ubuntu/github-clone/clasp-ready/.clasp.json` |
@@ -179,7 +179,7 @@ clasp deploy --description "v5.5.x"
 |--------|-----|
 | **ชื่อ** | admin |
 | **Role** | admin |
-| **Script URL** | GAS @439 URL (ด้านบน) |
+| **Script URL** | GAS @441 URL (ด้านบน) |
 | **PWA Setup** | เปิด PWA → กรอกชื่อ → เลือก Role → ใส่ Script URL → กด "เริ่มใช้งาน" |
 | **ไม่ต้อง Login** | ระบบจำข้อมูลใน localStorage — เปิดครั้งเดียวพอ |
 
@@ -428,9 +428,9 @@ window.callApi(payload)  // ใช้ใน crm_attendance.js, purchase_order.js
 | v5.5.0 | @436 | ก่อนหน้า | Initial V5.5 |
 | v5.5.1 | @437 | ก่อนหน้า | LINE Bot + Cloudflare |
 | v5.5.2 | @438 | ก่อนหน้า | FlexMessage templates |
-| v5.5.3 | @439 | 16 เม.ย. 69 | LINE Groups ครบ 5, Gemini AI |
-| v5.5.4 | @439 | 17 เม.ย. 69 | PWA Phase 1: Open Job, Assign, Timeline, Note |
-| v5.5.5 | @439 | 18 เม.ย. 69 | MISSION COMPLETE: Tax Engine, Warranty, Multi-branch, Health Monitor |
+| v5.5.3 | @441 | 16 เม.ย. 69 | LINE Groups ครบ 5, Gemini AI |
+| v5.5.4 | @441 | 17 เม.ย. 69 | PWA Phase 1: Open Job, Assign, Timeline, Note |
+| v5.5.5 | @441 | 18 เม.ย. 69 | MISSION COMPLETE: Tax Engine, Warranty, Multi-branch, Health Monitor |
 
 ---
 
@@ -579,7 +579,7 @@ python3.11 /home/ubuntu/update_webapp_url.py
 ```bash
 python3.11 -c "
 import requests, json
-GAS = 'https://script.google.com/macros/s/AKfycby-IRTHbHMfCZ8TiXSAJ8zr_T6xQcmJNvGNYYI2X2VoAEMPwYtHwlCp1mf9f6IzWSSJfQ/exec'
+GAS = 'https://script.google.com/macros/s/AKfycbzE5tyKNA-W6gDQEixw9VTDznTNn5FuToVeVuO_OQL75fDSrpW8U9BT3bhVn4kjKc37/exec'
 r = requests.post(GAS, json={'action': 'systemStatus'}, timeout=30)
 print(json.dumps(r.json(), ensure_ascii=False, indent=2))
 "
