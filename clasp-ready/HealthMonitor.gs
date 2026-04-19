@@ -329,3 +329,149 @@ function sendHealthAlertToLine_(result) {
     Logger.log('sendHealthAlertToLine_ error: ' + e);
   }
 }
+
+// ============================================================
+// 🔧 getHealthMonitor(data) — V5.5.8 Real-time Control Panel
+// ============================================================
+// รวมข้อมูลทั้งหมดสำหรับ System Graph Dashboard
+// Returns: status, version, triggers, logs, latency, node_status
+// ============================================================
+function getHealthMonitor(data) {
+  data = data || {};
+  var startTime = new Date().getTime();
+
+  // ── 1. Version & SSOT Info ──
+  var versionInfo = {
+    version:      CONFIG && CONFIG.VERSION ? CONFIG.VERSION : 'V5.5.8',
+    last_updated: new Date().toISOString(),
+    architecture: 'API-Only (V5.5.8)',
+    ssot_nodes:   ['Router', 'Auth', 'Config', 'Setup']
+  };
+
+  // ── 2. Trigger Status ──
+  var triggerInfo = { count: 0, functions: [], active: false };
+  try {
+    var triggers = ScriptApp.getProjectTriggers();
+    triggerInfo.count     = triggers.length;
+    triggerInfo.functions = triggers.map(function(t) {
+      return { name: t.getHandlerFunction(), type: t.getEventType().toString() };
+    });
+    triggerInfo.active = triggers.length > 0;
+  } catch (e) {
+    triggerInfo.error = e.message;
+  }
+
+  // ── 3. Health Check (fast) ──
+  var healthResult = { status: 'UNKNOWN', spreadsheet_ok: false, drive_ok: false, errors: [] };
+  try {
+    var h = healthCheckV55_();
+    healthResult = {
+      status:         h.status || 'UNKNOWN',
+      spreadsheet_ok: h.checks && h.checks.spreadsheet ? h.checks.spreadsheet.ok : false,
+      config_ok:      h.checks && h.checks.config ? h.checks.config.ok : false,
+      users_ok:       h.checks && h.checks.users ? h.checks.users.ok : false,
+      users_count:    h.checks && h.checks.users ? h.checks.users.count : 0,
+      elapsed_ms:     h.elapsed_ms || 0,
+      errors:         []
+    };
+    if (!healthResult.spreadsheet_ok) healthResult.errors.push('Spreadsheet not accessible');
+    if (!healthResult.config_ok)      healthResult.errors.push('Config not loaded');
+  } catch (e) {
+    healthResult.errors.push('Health check error: ' + e.message);
+  }
+
+  // ── 4. Node Status Map ──
+  // แต่ละ node มี: status, version, isSSOT, latency_ms, error_rate, last_updated
+  var nodeStatus = {
+    Router:       { status: healthResult.status === 'HEALTHY' ? 'ok' : 'warning', isSSOT: true,  version: versionInfo.version, latency_ms: healthResult.elapsed_ms || 0, error_rate: 0 },
+    Auth:         { status: healthResult.users_ok ? 'ok' : 'warning',             isSSOT: true,  version: versionInfo.version, latency_ms: 0, error_rate: 0, users_count: healthResult.users_count },
+    Security:     { status: healthResult.config_ok ? 'ok' : 'warning',            isSSOT: true,  version: versionInfo.version, latency_ms: 0, error_rate: 0 },
+    Dashboard:    { status: healthResult.spreadsheet_ok ? 'ok' : 'error',         isSSOT: false, version: versionInfo.version, latency_ms: 0, error_rate: 0 },
+    CRM:          { status: healthResult.spreadsheet_ok ? 'ok' : 'error',         isSSOT: false, version: versionInfo.version, latency_ms: 0, error_rate: 0 },
+    Jobs:         { status: healthResult.spreadsheet_ok ? 'ok' : 'error',         isSSOT: false, version: versionInfo.version, latency_ms: 0, error_rate: 0 },
+    Billing:      { status: healthResult.spreadsheet_ok ? 'ok' : 'error',         isSSOT: false, version: versionInfo.version, latency_ms: 0, error_rate: 0 },
+    Inventory:    { status: healthResult.spreadsheet_ok ? 'ok' : 'error',         isSSOT: false, version: versionInfo.version, latency_ms: 0, error_rate: 0 },
+    Reports:      { status: healthResult.spreadsheet_ok ? 'ok' : 'error',         isSSOT: false, version: versionInfo.version, latency_ms: 0, error_rate: 0 },
+    Warranty:     { status: healthResult.spreadsheet_ok ? 'ok' : 'error',         isSSOT: false, version: versionInfo.version, latency_ms: 0, error_rate: 0 },
+    MultiBranch:  { status: healthResult.spreadsheet_ok ? 'ok' : 'error',         isSSOT: false, version: versionInfo.version, latency_ms: 0, error_rate: 0 },
+    DB_JOBS:      { status: healthResult.spreadsheet_ok ? 'ok' : 'error',         isSSOT: true,  version: 'sheet-v1', latency_ms: 0, error_rate: 0 },
+    DB_CUSTOMERS: { status: healthResult.spreadsheet_ok ? 'ok' : 'error',         isSSOT: true,  version: 'sheet-v1', latency_ms: 0, error_rate: 0 },
+    DB_INVENTORY: { status: healthResult.spreadsheet_ok ? 'ok' : 'error',         isSSOT: true,  version: 'sheet-v1', latency_ms: 0, error_rate: 0 }
+  };
+
+  // ── 5. Health Score Calculation ──
+  var totalNodes   = Object.keys(nodeStatus).length;
+  var okNodes      = Object.values(nodeStatus).filter(function(n) { return n.status === 'ok'; }).length;
+  var warnNodes    = Object.values(nodeStatus).filter(function(n) { return n.status === 'warning'; }).length;
+  var errorNodes   = Object.values(nodeStatus).filter(function(n) { return n.status === 'error'; }).length;
+  var healthScore  = Math.round((okNodes * 100 + warnNodes * 50) / totalNodes);
+
+  // ── 6. Recent Health Logs (last 5) ──
+  var recentLogs = [];
+  try {
+    var logResult = getHealthHistory({ limit: 5 });
+    if (logResult.success) recentLogs = logResult.logs;
+  } catch (e) {
+    recentLogs = [];
+  }
+
+  // ── 7. Auto Diagnostic ──
+  var diagnostics = [];
+  if (!healthResult.spreadsheet_ok) {
+    diagnostics.push({
+      severity: 'critical',
+      node:     'Dashboard/DB',
+      problem:  'ไม่สามารถเข้าถึง Spreadsheet',
+      cause:    'Spreadsheet ID ผิด หรือ permission ถูกเพิกถอน',
+      fix:      'ตรวจสอบ SPREADSHEET_ID ใน Config และ Share permission'
+    });
+  }
+  if (!healthResult.config_ok) {
+    diagnostics.push({
+      severity: 'warning',
+      node:     'Security/Config',
+      problem:  'Config ไม่ครบถ้วน',
+      cause:    'ค่า Config บางรายการยังไม่ได้ตั้งค่า',
+      fix:      'รัน setupConfig() ใน GAS Editor'
+    });
+  }
+  if (triggerInfo.count === 0) {
+    diagnostics.push({
+      severity: 'warning',
+      node:     'Router',
+      problem:  'ไม่มี Triggers ทำงาน',
+      cause:    'Triggers ยังไม่ได้ตั้งค่า',
+      fix:      'รัน setupAllTriggers() ใน GAS Editor'
+    });
+  }
+  if (healthResult.elapsed_ms > 3000) {
+    diagnostics.push({
+      severity: 'warning',
+      node:     'Router',
+      problem:  'Response time สูง (' + healthResult.elapsed_ms + 'ms)',
+      cause:    'GAS cold start หรือ Spreadsheet ขนาดใหญ่',
+      fix:      'ลด data ใน sheet หรือใช้ Cache'
+    });
+  }
+
+  var totalElapsed = new Date().getTime() - startTime;
+
+  return {
+    success:      true,
+    timestamp:    new Date().toISOString(),
+    version:      versionInfo,
+    health:       healthResult,
+    health_score: healthScore,
+    node_status:  nodeStatus,
+    triggers:     triggerInfo,
+    diagnostics:  diagnostics,
+    recent_logs:  recentLogs,
+    stats: {
+      total_nodes:  totalNodes,
+      ok_nodes:     okNodes,
+      warn_nodes:   warnNodes,
+      error_nodes:  errorNodes,
+      elapsed_ms:   totalElapsed
+    }
+  };
+}

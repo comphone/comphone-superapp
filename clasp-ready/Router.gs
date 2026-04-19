@@ -265,6 +265,8 @@ function dispatchActionV55_(action, payload, args) {
         return systemStatus();
       case 'getSystemMetrics':
         return getSystemMetrics();
+      case 'getHealthMonitor':
+        return getHealthMonitor(payload);
       case 'getSecurityLog':
         var _sl = (typeof getSecurityLog === 'function') ? getSecurityLog() : [];
         return { success: true, data: _sl, count: _sl.length };

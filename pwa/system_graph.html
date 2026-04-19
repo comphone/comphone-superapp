@@ -3,794 +3,500 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>COMPHONE — System Graph Dashboard</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-<!-- vis-network -->
-<script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
-<!-- api_client.js (Single Source of Truth) -->
+<title>COMPHONE — System Control Panel</title>
+<script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
 <script src="api_client.js"></script>
-<!-- Graph Data Adapter -->
 <script src="js/system_graph_data.js"></script>
 <style>
-  :root {
-    --bg: #0f172a;
-    --card: #1e293b;
-    --border: #334155;
-    --text: #f1f5f9;
-    --muted: #94a3b8;
-    --green: #22c55e;
-    --amber: #f59e0b;
-    --red: #ef4444;
-    --blue: #3b82f6;
-    --purple: #8b5cf6;
-    --cyan: #06b6d4;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Segoe UI', 'Sarabun', sans-serif;
-    background: var(--bg); color: var(--text);
-    min-height: 100vh; display: flex; flex-direction: column;
-  }
+:root {
+  --bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;
+  --text:#e6edf3;--text2:#8b949e;
+  --ok:#3fb950;--warn:#d29922;--err:#f85149;
+  --blue:#58a6ff;--purple:#bc8cff;--cyan:#39d353;
+  --sidebar-w:320px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;display:flex;flex-direction:column;}
 
-  /* ===== TOPBAR ===== */
-  .topbar {
-    height: 56px; background: var(--card);
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 16px; padding: 0 20px;
-    position: sticky; top: 0; z-index: 100;
-    flex-shrink: 0;
-  }
-  .topbar-logo {
-    width: 34px; height: 34px; border-radius: 10px;
-    background: linear-gradient(135deg, var(--blue), var(--purple));
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px; flex-shrink: 0;
-  }
-  .topbar-title { font-size: 16px; font-weight: 800; flex: 1; }
-  .topbar-sub { font-size: 11px; color: var(--muted); }
-  .status-pill {
-    display: flex; align-items: center; gap: 6px;
-    background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3);
-    border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 700;
-    color: var(--green); transition: all 0.3s;
-  }
-  .status-pill.warning { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.3); color: var(--amber); }
-  .status-pill.error   { background: rgba(239,68,68,0.12);  border-color: rgba(239,68,68,0.3);  color: var(--red); }
-  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: pulse-dot 2s ease-in-out infinite; }
-  @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
+/* TOPBAR */
+#topbar{height:52px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0;z-index:10;}
+.logo{font-weight:700;font-size:15px;color:var(--blue);}
+.ver-badge{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:2px 10px;font-size:11px;color:var(--text2);}
+#health-badge{margin-left:auto;display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:4px 14px;}
+#health-badge .hl{font-size:11px;color:var(--text2);}
+#score-num{font-size:20px;font-weight:700;color:var(--ok);}
+#score-bar{width:80px;height:6px;background:var(--bg);border-radius:3px;overflow:hidden;}
+#score-fill{height:100%;background:var(--ok);border-radius:3px;transition:width .5s,background .5s;}
+#status-pill{display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);font-size:12px;}
+#status-dot{width:8px;height:8px;border-radius:50%;background:var(--text2);}
+.tbtn{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 12px;cursor:pointer;font-size:12px;text-decoration:none;transition:background .2s;}
+.tbtn:hover{background:var(--border);}
+.tbtn.act{background:var(--blue);border-color:var(--blue);color:#fff;}
 
-  .btn-topbar {
-    background: rgba(255,255,255,0.08); border: 1px solid var(--border);
-    border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 600;
-    color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 6px;
-    transition: background 0.15s; text-decoration: none;
-  }
-  .btn-topbar:hover { background: rgba(255,255,255,0.14); color: var(--text); }
-  .btn-topbar.primary { background: var(--blue); border-color: var(--blue); }
-  .btn-topbar.primary:hover { background: #2563eb; }
+/* STATSBAR */
+#statsbar{height:36px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:20px;flex-shrink:0;font-size:12px;}
+.si{display:flex;align-items:center;gap:5px;}
+.sd{width:8px;height:8px;border-radius:50%;}
+.sd.ok{background:var(--ok);}.sd.warn{background:var(--warn);}.sd.err{background:var(--err);}
+.sn{font-weight:600;}
+.sep{color:var(--border);}
+#lupd{margin-left:auto;color:var(--text2);font-size:11px;}
 
-  /* ===== LAYOUT ===== */
-  html, body { height: 100%; overflow: hidden; }
-  body { height: 100vh; }
-  .layout { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 56px); min-height: 0; }
+/* LAYOUT */
+#layout{display:flex;flex:1;overflow:hidden;}
 
-  /* ===== GRAPH AREA ===== */
-  .graph-area {
-    flex: 1; position: relative; overflow: hidden; min-height: 0;
-    display: flex; flex-direction: column;
-  }
-  #graph-container {
-    flex: 1; width: 100%; min-height: 0;
-    background: radial-gradient(ellipse at center, #1a2744 0%, #0f172a 70%);
-    overflow: hidden;
-  }
+/* GRAPH */
+#graph-area{flex:1;position:relative;overflow:hidden;}
+#graph-container{width:100%;height:100%;background:radial-gradient(ellipse at center,#1a2744 0%,#0d1117 70%);}
 
-  /* ===== LOADING OVERLAY ===== */
-  #loading-overlay {
-    position: absolute; inset: 0;
-    background: rgba(15,23,42,0.85);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    z-index: 50; gap: 16px;
-  }
-  #loading-overlay.hidden { display: none; }
-  .spinner-graph {
-    width: 48px; height: 48px; border: 3px solid rgba(59,130,246,0.2);
-    border-top-color: var(--blue); border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
+/* LOADING */
+#loading-overlay{position:absolute;inset:0;background:rgba(13,17,23,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:20;}
+#loading-overlay.hidden{display:none;}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
 
-  /* ===== SIDEBAR (INFO PANEL) ===== */
-  .info-panel {
-    width: 300px; background: var(--card);
-    border-left: 1px solid var(--border);
-    display: flex; flex-direction: column;
-    overflow: hidden; flex-shrink: 0;
-    transition: width 0.2s;
-  }
-  .info-panel.collapsed { width: 0; }
+/* VIEW CONTROLS */
+#vctrl{position:absolute;bottom:16px;left:16px;display:flex;gap:8px;z-index:5;}
+.vbtn{background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:12px;}
+.vbtn:hover,.vbtn.act{background:var(--blue);border-color:var(--blue);color:#fff;}
 
-  .panel-header {
-    padding: 16px; border-bottom: 1px solid var(--border);
-    font-size: 13px; font-weight: 800; display: flex; align-items: center; gap: 8px;
-  }
-  .panel-body { flex: 1; overflow-y: auto; padding: 16px; }
+/* SIDEBAR */
+#sidebar{width:var(--sidebar-w);background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;transition:width .2s;}
+#sidebar.collapsed{width:0;}
+.ss{border-bottom:1px solid var(--border);flex-shrink:0;}
+.ssh{padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;display:flex;align-items:center;gap:6px;cursor:pointer;}
+.ssh:hover{color:var(--text);}
+.ssb{padding:10px 14px;}
+.sscroll{overflow-y:auto;flex:1;}
 
-  /* ===== NODE DETAIL CARD ===== */
-  .node-detail { display: none; }
-  .node-detail.active { display: block; }
+/* NODE DETAILS */
+#nd{padding:14px;}
+.ndh{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.ndi{font-size:24px;}
+.ndn{font-size:16px;font-weight:700;}
+.ndt{font-size:11px;color:var(--text2);margin-top:2px;}
+.dr{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;}
+.dr:last-child{border-bottom:none;}
+.dk{color:var(--text2);}
+.dv{font-weight:500;}
+.ssot-b{background:var(--purple);color:#000;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;}
+.dep-l{margin-top:8px;}
+.dep-i{background:var(--bg3);border-radius:4px;padding:3px 8px;margin:3px 4px 3px 0;font-size:11px;color:var(--text2);display:inline-block;}
 
-  .node-header {
-    display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
-  }
-  .node-icon-big {
-    width: 52px; height: 52px; border-radius: 14px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 24px; flex-shrink: 0;
-  }
-  .node-icon-big.core   { background: rgba(59,130,246,0.2); border: 1px solid rgba(59,130,246,0.4); }
-  .node-icon-big.module { background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); }
-  .node-icon-big.data   { background: rgba(6,182,212,0.2);  border: 1px solid rgba(6,182,212,0.4); }
-  .node-name { font-size: 18px; font-weight: 800; }
-  .node-type-badge {
-    font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px;
-    text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; display: inline-block;
-  }
-  .node-type-badge.core   { background: rgba(59,130,246,0.2); color: var(--blue); }
-  .node-type-badge.module { background: rgba(139,92,246,0.2); color: var(--purple); }
-  .node-type-badge.data   { background: rgba(6,182,212,0.2);  color: var(--cyan); }
+/* SUMMARY */
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 14px;}
+.sc{background:var(--bg3);border-radius:6px;padding:8px 10px;}
+.sc .sl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;}
+.sc .sv{font-size:14px;font-weight:700;margin-top:2px;}
 
-  .metric-row {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
-    font-size: 13px;
-  }
-  .metric-row:last-child { border-bottom: none; }
-  .metric-label { color: var(--muted); font-size: 12px; }
-  .metric-value { font-weight: 700; }
-  .metric-value.ok      { color: var(--green); }
-  .metric-value.warning { color: var(--amber); }
-  .metric-value.error   { color: var(--red); }
+/* DIAGNOSTIC */
+#dp{padding:10px 14px;}
+.di{background:var(--bg3);border-radius:6px;padding:10px;margin-bottom:8px;border-left:3px solid var(--warn);}
+.di.critical{border-left-color:var(--err);}
+.dsev{font-size:10px;font-weight:700;text-transform:uppercase;margin-bottom:4px;}
+.dsev.critical{color:var(--err);}.dsev.warning{color:var(--warn);}
+.dprob{font-size:12px;font-weight:600;margin-bottom:4px;}
+.dcause{font-size:11px;color:var(--text2);margin-bottom:4px;}
+.dfix{font-size:11px;color:var(--cyan);}
+.dempty{color:var(--text2);font-size:12px;text-align:center;padding:16px 0;}
 
-  .trigger-list { margin-top: 12px; }
-  .trigger-item {
-    background: rgba(255,255,255,0.04); border-radius: 8px;
-    padding: 6px 10px; font-size: 11px; color: var(--muted);
-    margin-bottom: 4px; display: flex; align-items: center; gap: 6px;
-  }
-  .trigger-item i { color: var(--green); }
+/* HEALTH LOG */
+#hlp{padding:10px 14px;}
+.li{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;}
+.li:last-child{border-bottom:none;}
+.ls{font-weight:700;}
+.ls.HEALTHY{color:var(--ok);}.ls.DEGRADED{color:var(--warn);}.ls.CRITICAL{color:var(--err);}
+.lt{color:var(--text2);}
 
-  /* ===== LEGEND ===== */
-  .legend {
-    position: absolute; bottom: 16px; left: 16px;
-    background: rgba(30,41,59,0.9); border: 1px solid var(--border);
-    border-radius: 12px; padding: 12px 16px;
-    backdrop-filter: blur(8px); z-index: 10;
-  }
-  .legend-title { font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .legend-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; }
-  .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-  .legend-line { width: 24px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+/* LEGEND */
+#legend{padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px;}
+.lgi{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);}
+.lgd{width:10px;height:10px;border-radius:50%;}
+.lgl{width:20px;height:2px;}
 
-  /* ===== STATS BAR ===== */
-  .stats-bar {
-    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
-    display: flex; gap: 8px; z-index: 10;
-  }
-  .stat-chip {
-    background: rgba(30,41,59,0.9); border: 1px solid var(--border);
-    border-radius: 20px; padding: 5px 14px;
-    font-size: 12px; font-weight: 700;
-    backdrop-filter: blur(8px);
-    display: flex; align-items: center; gap: 6px;
-  }
-  .stat-chip .dot { width: 8px; height: 8px; border-radius: 50%; }
-  .stat-chip .dot.ok      { background: var(--green); }
-  .stat-chip .dot.warning { background: var(--amber); }
-  .stat-chip .dot.error   { background: var(--red); }
+/* SNAPSHOT */
+#snap-btn{margin:10px 14px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:8px;cursor:pointer;font-size:12px;width:calc(100% - 28px);text-align:center;}
+#snap-btn:hover{background:var(--blue);border-color:var(--blue);color:#fff;}
 
-  /* ===== REFRESH INDICATOR ===== */
-  .refresh-indicator {
-    position: absolute; bottom: 16px; right: 16px;
-    background: rgba(30,41,59,0.9); border: 1px solid var(--border);
-    border-radius: 20px; padding: 5px 12px;
-    font-size: 11px; color: var(--muted);
-    display: flex; align-items: center; gap: 6px;
-    backdrop-filter: blur(8px); z-index: 10;
-  }
-  .refresh-bar {
-    width: 60px; height: 3px; background: rgba(255,255,255,0.1);
-    border-radius: 2px; overflow: hidden;
-  }
-  .refresh-fill {
-    height: 100%; background: var(--blue); border-radius: 2px;
-    transition: width 1s linear;
-  }
+/* STATUS COLORS */
+.ok{color:var(--ok);}.warn{color:var(--warn);}.err{color:var(--err);}
 
-  /* ===== EMPTY STATE ===== */
-  .empty-state {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    height: 100%; color: var(--muted); gap: 12px;
-  }
-  .empty-state i { font-size: 48px; opacity: 0.3; }
-
-  /* ===== SCROLLBAR ===== */
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-  /* ===== RESPONSIVE ===== */
-  @media (max-width: 768px) {
-    .info-panel { width: 260px; }
-    .stats-bar { display: none; }
-  }
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 </style>
 </head>
 <body>
 
-<!-- ===== TOPBAR ===== -->
-<div class="topbar">
-  <div class="topbar-logo">🧠</div>
-  <div style="flex:1">
-    <div class="topbar-title">System Graph Dashboard</div>
-    <div class="topbar-sub" id="last-update">กำลังโหลด...</div>
+<!-- TOPBAR -->
+<div id="topbar">
+  <span class="logo">⚡ COMPHONE</span>
+  <span class="ver-badge" id="ver-badge">v5.5.8</span>
+  <div id="status-pill"><span id="status-dot"></span><span id="status-text">กำลังเชื่อมต่อ...</span></div>
+  <div id="health-badge">
+    <span class="hl">SYSTEM HEALTH</span>
+    <span id="score-num">—</span>
+    <span style="color:var(--text2);font-size:12px">%</span>
+    <div id="score-bar"><div id="score-fill" style="width:0%"></div></div>
   </div>
-  <div class="status-pill" id="health-pill">
-    <div class="status-dot"></div>
-    <span id="health-text">Connecting...</span>
-  </div>
-  <button class="btn-topbar" onclick="refreshGraph()" id="btn-refresh">
-    <i class="bi bi-arrow-clockwise"></i> รีเฟรช
-  </button>
-  <button class="btn-topbar" onclick="togglePanel()" id="btn-panel">
-    <i class="bi bi-layout-sidebar-reverse"></i>
-  </button>
-  <a class="btn-topbar" href="dashboard_pc.html">
-    <i class="bi bi-arrow-left"></i> Dashboard
-  </a>
+  <button class="tbtn" id="btn-refresh" onclick="doRefresh()">↻ รีเฟรช</button>
+  <button class="tbtn" id="btn-panel" onclick="togglePanel()">☰</button>
+  <a class="tbtn" href="dashboard_pc.html">← Dashboard</a>
 </div>
 
-<!-- ===== LAYOUT ===== -->
-<div class="layout">
+<!-- STATSBAR -->
+<div id="statsbar">
+  <div class="si"><span class="sd ok"></span><span class="sn" id="s-ok">0</span> OK</div>
+  <span class="sep">|</span>
+  <div class="si"><span class="sd warn"></span><span class="sn" id="s-warn">0</span> Warning</div>
+  <span class="sep">|</span>
+  <div class="si"><span class="sd err"></span><span class="sn" id="s-err">0</span> Error</div>
+  <span class="sep">|</span>
+  <div class="si">⚡ <span id="s-rt">—</span> ms</div>
+  <span class="sep">|</span>
+  <div class="si">🔄 Triggers: <span id="s-trig">—</span></div>
+  <span class="sep">|</span>
+  <div class="si">⚠ Failure Roots: <span id="s-fail">0</span></div>
+  <span id="lupd">—</span>
+</div>
 
+<!-- LAYOUT -->
+<div id="layout">
   <!-- GRAPH AREA -->
-  <div class="graph-area">
-    <!-- Loading Overlay -->
-    <div id="loading-overlay">
-      <div class="spinner-graph"></div>
-      <div style="font-size:14px;color:var(--muted)">กำลังโหลด System Graph...</div>
-    </div>
-
-    <!-- Graph Container -->
+  <div id="graph-area">
     <div id="graph-container"></div>
-
-    <!-- Stats Bar -->
-    <div class="stats-bar" id="stats-bar">
-      <div class="stat-chip"><div class="dot ok"></div><span id="stat-ok">0</span> OK</div>
-      <div class="stat-chip"><div class="dot warning"></div><span id="stat-warn">0</span> Warning</div>
-      <div class="stat-chip"><div class="dot error"></div><span id="stat-err">0</span> Error</div>
-      <div class="stat-chip"><i class="bi bi-lightning-fill" style="color:var(--blue)"></i><span id="stat-latency">—</span> ms</div>
+    <div id="loading-overlay">
+      <div class="spinner"></div>
+      <div style="color:var(--text2);font-size:13px">กำลังโหลด System Graph...</div>
     </div>
-
-    <!-- Legend -->
-    <div class="legend">
-      <div class="legend-title">Legend</div>
-      <div class="legend-row"><div class="legend-dot" style="background:#3b82f6"></div> Core</div>
-      <div class="legend-row"><div class="legend-dot" style="background:#8b5cf6"></div> Module</div>
-      <div class="legend-row"><div class="legend-dot" style="background:#06b6d4"></div> Data</div>
-      <div style="border-top:1px solid var(--border);margin:8px 0"></div>
-      <div class="legend-row"><div class="legend-dot" style="background:#22c55e"></div> OK</div>
-      <div class="legend-row"><div class="legend-dot" style="background:#f59e0b"></div> Warning</div>
-      <div class="legend-row"><div class="legend-dot" style="background:#ef4444"></div> Error</div>
-      <div style="border-top:1px solid var(--border);margin:8px 0"></div>
-      <div class="legend-row"><div class="legend-line" style="background:#3b82f6"></div> API Call</div>
-      <div class="legend-row"><div class="legend-line" style="background:#22c55e"></div> Data Flow</div>
-      <div class="legend-row"><div class="legend-line" style="background:#f59e0b;border-top:2px dashed #f59e0b;height:0"></div> Auth Flow</div>
-    </div>
-
-    <!-- Refresh Indicator -->
-    <div class="refresh-indicator">
-      <i class="bi bi-clock"></i>
-      <span>Auto refresh</span>
-      <div class="refresh-bar"><div class="refresh-fill" id="refresh-fill" style="width:100%"></div></div>
-      <span id="refresh-countdown">5s</span>
+    <!-- VIEW CONTROLS -->
+    <div id="vctrl">
+      <button class="vbtn act" id="v-normal"  onclick="setView('normal')">Normal</button>
+      <button class="vbtn"     id="v-latency" onclick="setView('latency')">Latency Heatmap</button>
+      <button class="vbtn"     id="v-failure" onclick="setView('failure')">Failure Chain</button>
+      <button class="vbtn"     id="v-ssot"    onclick="setView('ssot')">SSOT View</button>
     </div>
   </div>
 
-  <!-- INFO PANEL -->
-  <div class="info-panel" id="info-panel">
-    <div class="panel-header">
-      <i class="bi bi-info-circle-fill" style="color:var(--blue)"></i>
-      Node Details
-    </div>
-    <div class="panel-body">
-      <!-- Default state -->
-      <div id="panel-default" style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0">
-        <i class="bi bi-cursor-fill" style="font-size:32px;display:block;margin-bottom:12px;opacity:0.3"></i>
-        คลิกที่ node เพื่อดูรายละเอียด
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sscroll">
+
+      <!-- NODE DETAILS -->
+      <div class="ss">
+        <div class="ssh">🔍 Node Details</div>
+        <div id="nd"><div style="color:var(--text2);font-size:12px;padding:8px 0;text-align:center;">คลิกที่ node เพื่อดูรายละเอียด</div></div>
       </div>
 
-      <!-- Node detail -->
-      <div id="panel-node" class="node-detail">
-        <div class="node-header">
-          <div class="node-icon-big" id="detail-icon-box">
-            <span id="detail-icon">📊</span>
-          </div>
-          <div>
-            <div class="node-name" id="detail-name">—</div>
-            <span class="node-type-badge" id="detail-type-badge">—</span>
-          </div>
-        </div>
-
-        <div class="metric-row">
-          <span class="metric-label">สถานะ</span>
-          <span class="metric-value" id="detail-status">—</span>
-        </div>
-        <div class="metric-row">
-          <span class="metric-label">API Count</span>
-          <span class="metric-value" id="detail-api-count">—</span>
-        </div>
-        <div class="metric-row">
-          <span class="metric-label">Latency</span>
-          <span class="metric-value" id="detail-latency">—</span>
-        </div>
-        <div class="metric-row">
-          <span class="metric-label">Error Rate</span>
-          <span class="metric-value" id="detail-error-rate">—</span>
-        </div>
-        <div class="metric-row">
-          <span class="metric-label">Version</span>
-          <span class="metric-value" id="detail-version">—</span>
-        </div>
-
-        <div class="trigger-list" id="detail-triggers" style="display:none">
-          <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">
-            <i class="bi bi-alarm"></i> Triggers
-          </div>
-          <div id="detail-triggers-list"></div>
+      <!-- SYSTEM SUMMARY -->
+      <div class="ss">
+        <div class="ssh">📊 System Summary</div>
+        <div class="sgrid">
+          <div class="sc"><div class="sl">Health</div><div class="sv" id="sum-h">—</div></div>
+          <div class="sc"><div class="sl">Version</div><div class="sv" id="sum-v">—</div></div>
+          <div class="sc"><div class="sl">Triggers</div><div class="sv" id="sum-t">—</div></div>
+          <div class="sc"><div class="sl">Response</div><div class="sv" id="sum-r">—</div></div>
         </div>
       </div>
 
-      <!-- System Summary -->
-      <div id="panel-summary" style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px">
-          System Summary
-        </div>
-        <div class="metric-row">
-          <span class="metric-label">Health</span>
-          <span class="metric-value" id="sum-health">—</span>
-        </div>
-        <div class="metric-row">
-          <span class="metric-label">Version</span>
-          <span class="metric-value" id="sum-version">—</span>
-        </div>
-        <div class="metric-row">
-          <span class="metric-label">Triggers</span>
-          <span class="metric-value" id="sum-triggers">—</span>
-        </div>
-        <div class="metric-row">
-          <span class="metric-label">Response</span>
-          <span class="metric-value" id="sum-elapsed">—</span>
-        </div>
-        <div class="metric-row">
-          <span class="metric-label">Last Update</span>
-          <span class="metric-value" id="sum-ts" style="font-size:11px">—</span>
+      <!-- AUTO DIAGNOSTIC -->
+      <div class="ss">
+        <div class="ssh" onclick="toggleSec('dp')">🩺 Auto Diagnostic</div>
+        <div id="dp"><div class="dempty">กำลังวิเคราะห์...</div></div>
+      </div>
+
+      <!-- HEALTH LOG -->
+      <div class="ss">
+        <div class="ssh" onclick="toggleSec('hlp')">📋 Health Log</div>
+        <div id="hlp"><div style="color:var(--text2);font-size:12px;text-align:center;padding:8px 0;">กำลังโหลด...</div></div>
+      </div>
+
+      <!-- LEGEND -->
+      <div class="ss">
+        <div class="ssh">📌 Legend</div>
+        <div id="legend">
+          <div class="lgi"><span class="lgd" style="background:#58a6ff"></span>Core</div>
+          <div class="lgi"><span class="lgd" style="background:#bc8cff"></span>Module</div>
+          <div class="lgi"><span class="lgd" style="background:#39d353"></span>Data</div>
+          <div class="lgi"><span class="lgd" style="background:var(--ok)"></span>OK</div>
+          <div class="lgi"><span class="lgd" style="background:var(--warn)"></span>Warning</div>
+          <div class="lgi"><span class="lgd" style="background:var(--err)"></span>Error</div>
+          <div class="lgi"><span class="lgd" style="background:var(--purple);border-radius:2px"></span>SSOT</div>
+          <div class="lgi"><span class="lgl" style="background:#58a6ff"></span>API Call</div>
+          <div class="lgi"><span class="lgl" style="background:#3fb950"></span>Data Flow</div>
+          <div class="lgi"><span class="lgl" style="background:#d29922"></span>Auth Flow</div>
         </div>
       </div>
+
+      <!-- SNAPSHOT -->
+      <button id="snap-btn" onclick="saveSnapshot()">📸 Save Snapshot</button>
+
     </div>
   </div>
-
 </div>
 
 <script>
 'use strict';
+let network=null,nodesDS=null,edgesDS=null,graphData=null,curView='normal',refreshTimer=null;
+const REFRESH_MS=5000;
 
-// ===== CONFIG =====
-const REFRESH_INTERVAL = 5000; // 5 วินาที
-const GAS_URL_KEY = 'comphone_gas_url';
-const GAS_DEFAULT = 'https://script.google.com/macros/s/AKfycbzneqQ6znlP-LjnP8CM8K4MUVo5BhO6mIdUmxc8fXb29PNVYcLgy3oXts8k3txQh6lb/exec';
+// ── COLOR HELPERS ──
+function statusColor(s){return s==='ok'?'#3fb950':s==='warning'?'#d29922':s==='error'?'#f85149':'#8b949e';}
+function latColor(ms){if(!ms||ms<=0)return '#8b949e';if(ms<100)return '#3fb950';if(ms<300)return '#d29922';return '#f85149';}
 
-// ===== STATE =====
-let network = null;
-let nodesDS = null;
-let edgesDS = null;
-let lastGraphData = null;
-let refreshTimer = null;
-let countdownTimer = null;
-let refreshCountdown = REFRESH_INTERVAL / 1000;
-let panelOpen = true;
-
-// ===== COLOR MAP =====
-const STATUS_COLOR = {
-  ok:      { bg: '#22c55e', border: '#16a34a', font: '#fff' },
-  warning: { bg: '#f59e0b', border: '#d97706', font: '#fff' },
-  error:   { bg: '#ef4444', border: '#dc2626', font: '#fff' },
-  unknown: { bg: '#6b7280', border: '#4b5563', font: '#fff' },
-};
-const TYPE_COLOR = {
-  core:   { bg: '#1e3a5f', border: '#3b82f6', font: '#93c5fd' },
-  module: { bg: '#2e1065', border: '#8b5cf6', font: '#c4b5fd' },
-  data:   { bg: '#0c4a6e', border: '#06b6d4', font: '#67e8f9' },
-};
-const EDGE_COLOR = {
-  API_CALL:   { color: '#3b82f6', highlight: '#60a5fa' },
-  DATA_FLOW:  { color: '#22c55e', highlight: '#4ade80' },
-  AUTH_FLOW:  { color: '#f59e0b', highlight: '#fbbf24', dashes: true },
-};
-
-// ===== INIT =====
-async function initGraph() {
-  // expose as global for debugging
-  window._initGraphCalled = true;
-  showLoading(true);
-  // Fix: set explicit pixel height for vis-network
-  const container = document.getElementById('graph-container');
-  const availH = window.innerHeight - 56;
-  container.style.height = availH + 'px';
-  container.style.maxHeight = availH + 'px';
-
-  const graphData = await buildSystemGraph();
-  lastGraphData = graphData;
-
-  const { visNodes, visEdges } = convertToVis(graphData);
-
-  nodesDS = new vis.DataSet(visNodes);
-  edgesDS = new vis.DataSet(visEdges);
-
-  const options = getNetworkOptions();
-  network = new vis.Network(container, { nodes: nodesDS, edges: edgesDS }, options);
-
-  // ===== EVENTS =====
-  network.on('click', function(params) {
-    if (params.nodes.length > 0) {
-      const nodeId = params.nodes[0];
-      showNodeDetail(nodeId, graphData);
-    } else {
-      hideNodeDetail();
-    }
-  });
-
-  network.on('stabilizationIterationsDone', function() {
-    network.setOptions({ physics: { enabled: false } });
-    setTimeout(function() {
-      const ids = nodesDS.getIds();
-      const positions = network.getPositions(ids);
-      let sumX = 0, sumY = 0, count = 0;
-      Object.values(positions).forEach(function(p) { sumX += p.x; sumY += p.y; count++; });
-      const cx = count > 0 ? sumX / count : 0;
-      const cy = count > 0 ? sumY / count : 0;
-      network.moveTo({ position: { x: cx, y: cy }, scale: 0.6, animation: false });
-      setTimeout(function() {
-        network.fit({
-          nodes: ids,
-          animation: { duration: 500, easingFunction: 'easeInOutQuad' }
-        });
-        showLoading(false);
-      }, 100);
-    }, 300);
-  });
-
-  updateStats(graphData);
-  updateSummary(graphData);
-  updateHealthPill(graphData);
-}
-
-window.initGraph = initGraph;
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => { initGraph(); startAutoRefresh(); });
-} else {
-  initGraph(); startAutoRefresh();
-}
-
-// ===== CONVERT TO VIS FORMAT =====
-function convertToVis(graphData) {
-  const visNodes = graphData.nodes.map(node => {
-    const sc = STATUS_COLOR[node.status] || STATUS_COLOR.unknown;
-    const tc = TYPE_COLOR[node.type] || TYPE_COLOR.module;
-    const size = 20 + Math.min(node.load || 5, 30);
-
-    return {
-      id:    node.id,
-      label: node.icon + '\n' + node.label,
-      title: buildNodeTooltip(node),
-      shape: node.type === 'data' ? 'database' : (node.type === 'core' ? 'hexagon' : 'ellipse'),
-      size:  size,
-      color: {
-        background: tc.bg,
-        border:     sc.bg,
-        highlight:  { background: tc.bg, border: '#fff' },
-        hover:      { background: tc.bg, border: sc.bg },
-      },
-      borderWidth: node.status === 'error' ? 3 : 2,
-      borderWidthSelected: 4,
-      font: {
-        color: tc.font,
-        size:  13,
-        face:  'Segoe UI',
-        multi: true,
-        bold:  { color: '#fff', size: 14 },
-      },
-      shadow: node.status === 'error' ? {
-        enabled: true, color: 'rgba(239,68,68,0.5)', size: 12, x: 0, y: 0
-      } : {
-        enabled: true, color: 'rgba(0,0,0,0.4)', size: 8, x: 2, y: 2
-      },
-      // store extra data
-      _type:   node.type,
-      _status: node.status,
-      _load:   node.load,
-      _meta:   node.meta,
-    };
-  });
-
-  const visEdges = graphData.edges.map(edge => {
-    const ec = EDGE_COLOR[edge.type] || EDGE_COLOR.API_CALL;
-    const latColor = edge.latency > 1000 ? '#ef4444' : (edge.latency > 500 ? '#f59e0b' : ec.color);
-    return {
-      id:    edge.id,
-      from:  edge.from,
-      to:    edge.to,
-      label: edge.latency > 0 ? edge.latency + 'ms' : '',
-      title: `${edge.from} → ${edge.to}\nType: ${edge.type}\nLatency: ${edge.latency}ms\nStatus: ${edge.status}`,
-      arrows: { to: { enabled: true, scaleFactor: 0.6 } },
-      color:  { color: latColor, highlight: ec.highlight, hover: ec.highlight },
-      width:  edge.status === 'error' ? 3 : (edge.status === 'warning' ? 2 : 1.5),
-      dashes: edge.type === 'AUTH_FLOW',
-      smooth: { type: 'curvedCW', roundness: 0.15 },
-      font:   { color: '#94a3b8', size: 10, align: 'middle' },
-      // store extra
-      _type:    edge.type,
-      _latency: edge.latency,
-    };
-  });
-
-  return { visNodes, visEdges };
-}
-
-// ===== TOOLTIP =====
-function buildNodeTooltip(node) {
-  const div = document.createElement('div');
-  div.style.cssText = 'background:#1e293b;border:1px solid #334155;border-radius:8px;padding:10px 14px;font-size:12px;color:#f1f5f9;max-width:200px;';
-  div.innerHTML = `
-    <div style="font-weight:800;margin-bottom:6px">${node.icon} ${node.label}</div>
-    <div style="color:#94a3b8">Type: <b style="color:#f1f5f9">${node.type}</b></div>
-    <div style="color:#94a3b8">Status: <b style="color:${STATUS_COLOR[node.status]?.bg || '#fff'}">${node.status.toUpperCase()}</b></div>
-    <div style="color:#94a3b8">Load: <b style="color:#f1f5f9">${node.load}</b></div>
-    ${node.meta?.latency ? `<div style="color:#94a3b8">Latency: <b style="color:#f1f5f9">${Math.round(node.meta.latency)}ms</b></div>` : ''}
-  `;
-  return div;
-}
-
-// ===== DIFF UPDATE (ไม่ redraw ทั้ง graph) =====
-async function updateGraph() {
-  const graphData = await buildSystemGraph();
-  lastGraphData = graphData;
-
-  if (!nodesDS || !edgesDS) return;
-
-  const { visNodes, visEdges } = convertToVis(graphData);
-
-  // อัปเดตเฉพาะ nodes ที่เปลี่ยน
-  const updates = [];
-  visNodes.forEach(n => {
-    const existing = nodesDS.get(n.id);
-    if (existing && (existing._status !== n._status || existing._load !== n._load)) {
-      updates.push(n);
-    }
-  });
-  if (updates.length > 0) nodesDS.update(updates);
-
-  // อัปเดต edges
-  const edgeUpdates = [];
-  visEdges.forEach(e => {
-    const existing = edgesDS.get(e.id);
-    if (existing && existing._latency !== e._latency) {
-      edgeUpdates.push(e);
-    }
-  });
-  if (edgeUpdates.length > 0) edgesDS.update(edgeUpdates);
-
-  updateStats(graphData);
-  updateSummary(graphData);
-  updateHealthPill(graphData);
-
-  // อัปเดต node detail ถ้ากำลังแสดงอยู่
-  const activeNode = document.getElementById('panel-node');
-  if (activeNode && activeNode.classList.contains('active')) {
-    const nodeId = activeNode.dataset.nodeId;
-    if (nodeId) showNodeDetail(nodeId, graphData);
+function nodeColor(n,view){
+  if(view==='latency') return latColor(n.meta&&n.meta.latency_ms?n.meta.latency_ms:0);
+  if(view==='failure'){
+    if(n.isFailureRoot) return '#f85149';
+    if(n.isAffected)    return '#d29922';
+    return '#3fb950';
   }
+  if(view==='ssot') return n.isSSOT?'#bc8cff':'#30363d';
+  return statusColor(n.status);
 }
 
-// ===== REFRESH =====
-async function refreshGraph() {
-  const btn = document.getElementById('btn-refresh');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-clockwise spin-icon"></i> กำลังโหลด...'; }
-  showLoading(true);
-
-  try {
-    await updateGraph();
-  } finally {
-    showLoading(false);
-    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> รีเฟรช'; }
-    resetCountdown();
-  }
-}
-
-// ===== AUTO REFRESH =====
-function startAutoRefresh() {
-  refreshCountdown = REFRESH_INTERVAL / 1000;
-  refreshTimer = setInterval(async () => {
-    await updateGraph();
-    resetCountdown();
-  }, REFRESH_INTERVAL);
-
-  // Countdown bar
-  countdownTimer = setInterval(() => {
-    refreshCountdown = Math.max(0, refreshCountdown - 1);
-    const pct = (refreshCountdown / (REFRESH_INTERVAL / 1000)) * 100;
-    const fill = document.getElementById('refresh-fill');
-    const cd = document.getElementById('refresh-countdown');
-    if (fill) fill.style.width = pct + '%';
-    if (cd) cd.textContent = refreshCountdown + 's';
-  }, 1000);
-}
-
-function resetCountdown() {
-  refreshCountdown = REFRESH_INTERVAL / 1000;
-  const fill = document.getElementById('refresh-fill');
-  if (fill) fill.style.width = '100%';
-}
-
-// ===== SHOW NODE DETAIL =====
-function showNodeDetail(nodeId, graphData) {
-  const node = (graphData || lastGraphData)?.nodes?.find(n => n.id === nodeId);
-  if (!node) return;
-
-  document.getElementById('panel-default').style.display = 'none';
-  const panel = document.getElementById('panel-node');
-  panel.classList.add('active');
-  panel.dataset.nodeId = nodeId;
-
-  // icon
-  const iconBox = document.getElementById('detail-icon-box');
-  iconBox.className = 'node-icon-big ' + node.type;
-  document.getElementById('detail-icon').textContent = node.icon;
-
-  // name & type
-  document.getElementById('detail-name').textContent = node.label;
-  const typeBadge = document.getElementById('detail-type-badge');
-  typeBadge.textContent = node.type.toUpperCase();
-  typeBadge.className = 'node-type-badge ' + node.type;
-
-  // metrics
-  const sc = document.getElementById('detail-status');
-  sc.textContent = node.status.toUpperCase();
-  sc.className = 'metric-value ' + node.status;
-
-  document.getElementById('detail-api-count').textContent = (node.meta?.api_count || 0) + ' calls';
-  document.getElementById('detail-latency').textContent = node.meta?.latency ? Math.round(node.meta.latency) + ' ms' : '—';
-
-  const er = document.getElementById('detail-error-rate');
-  er.textContent = (node.meta?.error_rate || 0) + '%';
-  er.className = 'metric-value ' + (node.meta?.error_rate > 50 ? 'error' : node.meta?.error_rate > 0 ? 'warning' : 'ok');
-
-  document.getElementById('detail-version').textContent = node.meta?.version || '—';
-
-  // triggers
-  const triggers = node.meta?.trigger_fns || [];
-  const triggerSection = document.getElementById('detail-triggers');
-  if (triggers.length > 0) {
-    triggerSection.style.display = 'block';
-    document.getElementById('detail-triggers-list').innerHTML = triggers.map(fn =>
-      `<div class="trigger-item"><i class="bi bi-alarm-fill"></i>${fn}</div>`
-    ).join('');
-  } else {
-    triggerSection.style.display = 'none';
-  }
-}
-
-function hideNodeDetail() {
-  document.getElementById('panel-default').style.display = 'block';
-  document.getElementById('panel-node').classList.remove('active');
-}
-
-// ===== UPDATE UI =====
-function updateStats(graphData) {
-  const nodes = graphData.nodes || [];
-  const ok    = nodes.filter(n => n.status === 'ok').length;
-  const warn  = nodes.filter(n => n.status === 'warning').length;
-  const err   = nodes.filter(n => n.status === 'error').length;
-  const avgLat = Math.round(
-    graphData.edges.reduce((s, e) => s + (e.latency || 0), 0) / Math.max(graphData.edges.length, 1)
-  );
-
-  const el = id => document.getElementById(id);
-  if (el('stat-ok'))      el('stat-ok').textContent      = ok;
-  if (el('stat-warn'))    el('stat-warn').textContent    = warn;
-  if (el('stat-err'))     el('stat-err').textContent     = err;
-  if (el('stat-latency')) el('stat-latency').textContent = avgLat;
-}
-
-function updateSummary(graphData) {
-  const meta = graphData.meta || {};
-  const checks = meta.checks || {};
-  const el = id => document.getElementById(id);
-
-  if (el('sum-health')) {
-    el('sum-health').textContent = (meta.health || '—').toUpperCase();
-    el('sum-health').className = 'metric-value ' + (meta.health === 'healthy' ? 'ok' : 'warning');
-  }
-  if (el('sum-version'))  el('sum-version').textContent  = meta.version || '—';
-  if (el('sum-triggers')) el('sum-triggers').textContent = (checks.triggers?.count || '—') + ' active';
-  if (el('sum-elapsed'))  el('sum-elapsed').textContent  = meta.elapsed_ms ? meta.elapsed_ms + ' ms' : '—';
-  if (el('sum-ts'))       el('sum-ts').textContent       = meta.timestamp || '—';
-
-  if (el('last-update'))  el('last-update').textContent  = 'อัปเดตล่าสุด: ' + (meta.timestamp || '—');
-}
-
-function updateHealthPill(graphData) {
-  const pill = document.getElementById('health-pill');
-  const text = document.getElementById('health-text');
-  const h = graphData.meta?.health || 'unknown';
-  if (pill) {
-    pill.className = 'status-pill ' + (h === 'healthy' ? '' : h === 'unknown' ? 'warning' : 'error');
-  }
-  if (text) text.textContent = h.toUpperCase();
-}
-
-// ===== TOGGLE PANEL =====
-function togglePanel() {
-  panelOpen = !panelOpen;
-  const panel = document.getElementById('info-panel');
-  if (panel) panel.classList.toggle('collapsed', !panelOpen);
-}
-
-// ===== LOADING =====
-function showLoading(show) {
-  const overlay = document.getElementById('loading-overlay');
-  if (overlay) overlay.classList.toggle('hidden', !show);
-}
-
-// ===== NETWORK OPTIONS =====
-function getNetworkOptions() {
-  return {
-    physics: {
-      enabled: true,
-      solver: 'barnesHut',
-      barnesHut: {
-        gravitationalConstant: -3000,
-        centralGravity: 0.3,
-        springLength: 120,
-        springConstant: 0.04,
-        damping: 0.09,
-        avoidOverlap: 0.5,
-      },
-      stabilization: { enabled: true, iterations: 100, updateInterval: 10, fit: false },
-    },
-    interaction: {
-      hover: true,
-      tooltipDelay: 200,
-      zoomView: true,
-      dragView: true,
-      navigationButtons: false,
-      keyboard: { enabled: false },
-    },
-    layout: {
-      improvedLayout: false,
-      randomSeed: 42,
-    },
-    nodes: {
-      borderWidth: 2,
-      shadow: true,
-    },
-    edges: {
-      smooth: { type: 'dynamic' },
-      shadow: false,
-    },
+function buildVisNode(n,view){
+  const c=nodeColor(n,view);
+  const shape=n.type==='data'?'database':n.type==='core'?'hexagon':'ellipse';
+  const lbl=n.icon+' '+n.label+(n.isSSOT?' ★':'')+(n.isFailureRoot?' ⚠':'');
+  return{
+    id:n.id,label:lbl,shape,
+    color:{background:c+'33',border:c,highlight:{background:c+'66',border:c},hover:{background:c+'44',border:c}},
+    font:{color:'#e6edf3',size:12,face:'Segoe UI'},
+    borderWidth:n.isFailureRoot?3:n.isSSOT?2:1,
+    size:n.type==='core'?30:n.type==='data'?25:22,
+    shadow:{enabled:true,color:c+'44',size:8,x:0,y:0},
+    title:buildTooltip(n),_nd:n
   };
 }
+
+function buildTooltip(n){
+  const m=n.meta||{};
+  const c=statusColor(n.status);
+  return`<div style="background:#161b22;border:1px solid #30363d;border-radius:6px;padding:10px;font-size:12px;color:#e6edf3;min-width:180px">
+    <b>${n.icon} ${n.label}</b> ${n.isSSOT?'<span style="background:#bc8cff;color:#000;border-radius:3px;padding:1px 5px;font-size:10px">SSOT</span>':''}<br>
+    <span style="color:#8b949e">${n.type.toUpperCase()}</span><hr style="border-color:#30363d;margin:6px 0">
+    Status: <b style="color:${c}">${n.status.toUpperCase()}</b><br>
+    Version: ${m.version||'—'}<br>
+    Latency: ${m.latency_ms?m.latency_ms+'ms':'—'}<br>
+    Error Rate: ${m.error_rate||0}%<br>
+    Upstream: ${(m.upstream||[]).join(', ')||'—'}<br>
+    Downstream: ${(m.downstream||[]).join(', ')||'—'}
+  </div>`;
+}
+
+function buildVisEdge(e){
+  const tc={'API_CALL':'#58a6ff','DATA_FLOW':'#3fb950','AUTH_FLOW':'#d29922'};
+  const c=e.isFailing?'#f85149':(tc[e._type]||'#8b949e');
+  return{
+    id:e.id,from:e.from,to:e.to,label:'',
+    color:{color:c,highlight:c,hover:c,opacity:e.isFailing?1:0.6},
+    width:e.isFailing?2:1,
+    dashes:e._type==='AUTH_FLOW'?[4,4]:false,
+    arrows:{to:{enabled:true,scaleFactor:0.6}},
+    smooth:{type:'curvedCW',roundness:0.1},
+    title:e.label+(e.isFailing?' [FAILING]':'')
+  };
+}
+
+function getNetOpts(){
+  return{
+    physics:{enabled:true,solver:'forceAtlas2Based',
+      forceAtlas2Based:{gravitationalConstant:-60,centralGravity:0.01,springLength:120,springConstant:0.08,damping:0.4},
+      stabilization:{enabled:true,iterations:200,updateInterval:25,fit:false}},
+    interaction:{hover:true,tooltipDelay:200,navigationButtons:false,keyboard:false},
+    nodes:{borderWidth:1,borderWidthSelected:2},
+    edges:{selectionWidth:2},
+    layout:{randomSeed:42}
+  };
+}
+
+function initNet(data){
+  const cont=document.getElementById('graph-container');
+  cont.style.height=Math.max(400,window.innerHeight-88)+'px';
+  const vn=data.nodes.map(n=>buildVisNode(n,curView));
+  const ve=data.edges.map(e=>buildVisEdge(e));
+  nodesDS=new vis.DataSet(vn);
+  edgesDS=new vis.DataSet(ve);
+  if(network){network.destroy();network=null;}
+  network=new vis.Network(cont,{nodes:nodesDS,edges:edgesDS},getNetOpts());
+  network.once('stabilizationIterationsDone',()=>{
+    network.fit({animation:{duration:600,easingFunction:'easeInOutQuad'}});
+    document.getElementById('loading-overlay').classList.add('hidden');
+  });
+  network.on('click',p=>{
+    if(p.nodes.length>0){const n=data.nodes.find(x=>x.id===p.nodes[0]);if(n)showND(n);}
+    else clearND();
+  });
+  network.on('hoverNode',p=>{
+    const n=data.nodes.find(x=>x.id===p.node);
+    if(!n)return;
+    const rel=new Set([p.node,...(n.meta.upstream||[]),...(n.meta.downstream||[])]);
+    nodesDS.forEach(v=>nodesDS.update({id:v.id,opacity:rel.has(v.id)?1:0.25}));
+  });
+  network.on('blurNode',()=>nodesDS.forEach(v=>nodesDS.update({id:v.id,opacity:1})));
+}
+
+function updateNet(data){
+  if(!nodesDS||!edgesDS){initNet(data);return;}
+  data.nodes.forEach(n=>nodesDS.update(buildVisNode(n,curView)));
+  data.edges.forEach(e=>edgesDS.update(buildVisEdge(e)));
+}
+
+function setView(v){
+  curView=v;
+  document.querySelectorAll('.vbtn').forEach(b=>b.classList.remove('act'));
+  document.getElementById('v-'+v).classList.add('act');
+  if(!graphData)return;
+  graphData.nodes.forEach(n=>{
+    const vn=buildVisNode(n,v);
+    nodesDS.update({id:n.id,color:vn.color,label:vn.label});
+  });
+}
+
+function updateUI(data){
+  const meta=data.meta||{},nodes=data.nodes||[];
+  const ok=nodes.filter(n=>n.status==='ok').length;
+  const warn=nodes.filter(n=>n.status==='warning').length;
+  const err=nodes.filter(n=>n.status==='error').length;
+  document.getElementById('s-ok').textContent=ok;
+  document.getElementById('s-warn').textContent=warn;
+  document.getElementById('s-err').textContent=err;
+  document.getElementById('s-rt').textContent=meta.elapsed_ms||'—';
+  document.getElementById('s-trig').textContent=meta.triggers?(meta.triggers.count+(meta.triggers.active?' ✓':'')):' —';
+  document.getElementById('s-fail').textContent=(meta.failure_roots||[]).length;
+  document.getElementById('lupd').textContent='อัปเดต: '+new Date().toLocaleString('th-TH',{dateStyle:'short',timeStyle:'medium'});
+
+  const score=meta.health_score||0;
+  document.getElementById('score-num').textContent=score;
+  const fill=document.getElementById('score-fill');
+  fill.style.width=score+'%';
+  const sc=score>=80?'#3fb950':score>=50?'#d29922':'#f85149';
+  fill.style.background=sc;
+  document.getElementById('score-num').style.color=sc;
+
+  const hs=(meta.health_status||'unknown').toUpperCase();
+  document.getElementById('status-text').textContent=hs;
+  document.getElementById('status-dot').style.background=hs==='HEALTHY'?'#3fb950':hs==='DEGRADED'?'#d29922':hs==='CRITICAL'?'#f85149':'#8b949e';
+  document.getElementById('ver-badge').textContent='v'+(meta.version||'5.5.8');
+
+  document.getElementById('sum-h').textContent=hs;
+  document.getElementById('sum-h').className='sv '+(hs==='HEALTHY'?'ok':hs==='DEGRADED'?'warn':'err');
+  document.getElementById('sum-v').textContent=meta.version||'5.5.8';
+  document.getElementById('sum-t').textContent=meta.triggers?meta.triggers.count+' active':'—';
+  document.getElementById('sum-r').textContent=(meta.elapsed_ms||'—')+' ms';
+
+  renderDiag(meta.diagnostics||[]);
+  renderLogs(meta.recent_logs||[]);
+}
+
+function renderDiag(diags){
+  const el=document.getElementById('dp');
+  if(!diags.length){el.innerHTML='<div class="dempty">✅ ไม่พบปัญหา — ระบบทำงานปกติ</div>';return;}
+  el.innerHTML=diags.map(d=>`
+    <div class="di ${d.severity}">
+      <div class="dsev ${d.severity}">${d.severity==='critical'?'🔴':'🟡'} ${d.severity.toUpperCase()} — ${d.node}</div>
+      <div class="dprob">${d.problem}</div>
+      <div class="dcause">สาเหตุ: ${d.cause}</div>
+      <div class="dfix">วิธีแก้: ${d.fix}</div>
+    </div>`).join('');
+}
+
+function renderLogs(logs){
+  const el=document.getElementById('hlp');
+  if(!logs.length){el.innerHTML='<div style="color:var(--text2);font-size:12px;text-align:center;padding:8px 0;">ไม่มีข้อมูล log</div>';return;}
+  el.innerHTML=logs.map(l=>{
+    const ts=l.timestamp?new Date(l.timestamp).toLocaleTimeString('th-TH'):'—';
+    return`<div class="li"><span class="ls ${l.status}">${l.status}</span><span>${l.response_time_ms||'—'}ms</span><span class="lt">${ts}</span></div>`;
+  }).join('');
+}
+
+function showND(n){
+  const m=n.meta||{};
+  const c=statusColor(n.status);
+  const lc=latColor(m.latency_ms||0);
+  const up=(m.upstream||[]).map(id=>`<span class="dep-i">${id}</span>`).join('')||'<span style="color:var(--text2)">—</span>';
+  const dn=(m.downstream||[]).map(id=>`<span class="dep-i">${id}</span>`).join('')||'<span style="color:var(--text2)">—</span>';
+  document.getElementById('nd').innerHTML=`
+    <div class="ndh">
+      <span class="ndi">${n.icon}</span>
+      <div>
+        <div class="ndn">${n.label} ${n.isSSOT?'<span class="ssot-b">SSOT</span>':''}</div>
+        <div class="ndt">${n.type.toUpperCase()} · ${n.group.toUpperCase()}</div>
+      </div>
+    </div>
+    <div class="dr"><span class="dk">Status</span><span class="dv" style="color:${c}">${n.status.toUpperCase()}</span></div>
+    <div class="dr"><span class="dk">Version</span><span class="dv">${m.version||'—'}</span></div>
+    <div class="dr"><span class="dk">Latency</span><span class="dv" style="color:${lc}">${m.latency_ms?m.latency_ms+'ms':'—'}</span></div>
+    <div class="dr"><span class="dk">Error Rate</span><span class="dv">${m.error_rate||0}%</span></div>
+    ${m.users_count?`<div class="dr"><span class="dk">Users</span><span class="dv">${m.users_count}</span></div>`:''}
+    <div class="dr"><span class="dk">Failure Root</span><span class="dv">${n.isFailureRoot?'⚠ YES':'No'}</span></div>
+    <div class="dr"><span class="dk">Affected</span><span class="dv">${n.isAffected?'⚡ YES':'No'}</span></div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text2)">Upstream</div>
+    <div class="dep-l">${up}</div>
+    <div style="margin-top:8px;font-size:11px;color:var(--text2)">Downstream</div>
+    <div class="dep-l">${dn}</div>
+    <div style="margin-top:8px;font-size:10px;color:var(--text2)">Updated: ${m.last_updated?new Date(m.last_updated).toLocaleString('th-TH'):'—'}</div>`;
+}
+
+function clearND(){
+  document.getElementById('nd').innerHTML='<div style="color:var(--text2);font-size:12px;padding:8px 0;text-align:center;">คลิกที่ node เพื่อดูรายละเอียด</div>';
+}
+
+async function doRefresh(){
+  document.getElementById('btn-refresh').textContent='↻ กำลังโหลด...';
+  try{
+    const data=await buildSystemGraph();
+    graphData=data;
+    if(!network)initNet(data);else updateNet(data);
+    updateUI(data);
+  }catch(e){console.error('[doRefresh]',e);}
+  document.getElementById('btn-refresh').textContent='↻ รีเฟรช';
+}
+
+function togglePanel(){
+  document.getElementById('sidebar').classList.toggle('collapsed');
+  document.getElementById('btn-panel').classList.toggle('act');
+  setTimeout(()=>{if(network)network.fit({animation:true});},250);
+}
+
+function toggleSec(id){
+  const el=document.getElementById(id);
+  if(el)el.style.display=el.style.display==='none'?'':'none';
+}
+
+function saveSnapshot(){
+  if(!graphData){alert('ยังไม่มีข้อมูล graph');return;}
+  const snap={
+    timestamp:new Date().toISOString(),
+    version:graphData.meta.version,
+    health_score:graphData.meta.health_score,
+    health_status:graphData.meta.health_status,
+    nodes:graphData.nodes.map(n=>({id:n.id,status:n.status,version:n.meta.version,latency_ms:n.meta.latency_ms,error_rate:n.meta.error_rate,isSSOT:n.isSSOT,isFailureRoot:n.isFailureRoot})),
+    diagnostics:graphData.meta.diagnostics,
+    triggers:graphData.meta.triggers
+  };
+  const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='comphone_snapshot_'+new Date().toISOString().slice(0,19).replace(/:/g,'-')+'.json';
+  a.click();URL.revokeObjectURL(url);
+  const btn=document.getElementById('snap-btn');
+  btn.textContent='✅ Snapshot บันทึกแล้ว';
+  setTimeout(()=>{btn.textContent='📸 Save Snapshot';},3000);
+}
+
+document.addEventListener('DOMContentLoaded',async()=>{
+  document.getElementById('graph-container').style.height=Math.max(400,window.innerHeight-88)+'px';
+  await doRefresh();
+  refreshTimer=setInterval(doRefresh,REFRESH_MS);
+});
+
+window.addEventListener('resize',()=>{
+  document.getElementById('graph-container').style.height=Math.max(400,window.innerHeight-88)+'px';
+  if(network)network.fit();
+});
 </script>
 </body>
 </html>
