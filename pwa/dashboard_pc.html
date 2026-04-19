@@ -278,6 +278,7 @@
         <div class="user-role-sm" id="pc-role">Admin</div>
       </div>
     </div>
+    <div style="font-size:10px;color:#9ca3af;margin-top:8px;text-align:center" id="pc-version">v5.5.7</div>
   </div>
 </aside>
 
@@ -309,6 +310,10 @@
 <script>
 'use strict';
 
+// ===== VERSION (sync with app.js) =====
+const APP_VERSION = '5.5.7';
+const APP_BUILD   = '2026-04-19';
+
 // ===== CONFIG =====
 const GAS_URL = localStorage.getItem('comphone_gas_url') ||
   'https://script.google.com/macros/s/AKfycbzE5tyKNA-W6gDQEixw9VTDznTNn5FuToVeVuO_OQL75fDSrpW8U9BT3bhVn4kjKc37/exec';
@@ -331,18 +336,30 @@ window.addEventListener('load', () => {
     }
   } catch(e) {}
 
+  // Update version in footer
+  const vEl = document.getElementById('pc-version');
+  if (vEl) vEl.textContent = 'v' + APP_VERSION + ' (' + APP_BUILD + ')';
+
   loadDashboard();
 });
 
-// ===== API =====
+// ===== API (shared with app.js — cache busting + token auth) =====
 async function callGas(action, params) {
   const url = localStorage.getItem('comphone_gas_url') || GAS_URL;
-  const r = await fetch(url, {
+  // Cache busting: เพิ่ม timestamp เพื่อป้องกัน SW cache
+  const bustUrl = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  // Token auth: ดึง token จาก localStorage (เหมือนกันกับ app.js)
+  const token = localStorage.getItem('comphone_token') || '';
+  const payload = { action, ...(params || {}) };
+  if (token) payload.token = token;
+  const r = await fetch(bustUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action, ...params })
+    body: JSON.stringify(payload)
   });
-  return r.json();
+  const data = await r.json();
+  if (data && data._headers) delete data._headers;
+  return data;
 }
 
 // ===== LOAD DASHBOARD =====

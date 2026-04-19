@@ -1,9 +1,10 @@
 // ============================================================
-// COMPHONE SUPER APP V5.5 — Service Worker v5.6.0
+// COMPHONE SUPER APP V5.5 — Service Worker v5.5.7
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
+// Updated: 2026-04-19 — force update + cache busting
 // ============================================================
-const CACHE_V = 'comphone-v5.6.0';
+const CACHE_V = 'comphone-v5.5.7';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
 const ASSETS = [
@@ -53,18 +54,22 @@ self.addEventListener('install', e => {
           console.warn('[SW] Pre-cache skip:', url, err.message)
         ))
       ))
-      .then(() => { console.log('[SW] Installed:', CACHE_V); return self.skipWaiting(); })
+      .then(() => {
+        console.log('[SW] Installed:', CACHE_V);
+        return self.skipWaiting(); // force activate immediately
+      })
   );
 });
 
 // Activate: clear old caches
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
+    caches.keys().then(keys => {
+      const toDelete = keys.filter(k => k !== CACHE_NAME);
+      if (toDelete.length) console.log('[SW] Clearing old caches:', toDelete);
+      return Promise.all(toDelete.map(k => caches.delete(k)));
+    }).then(() => self.clients.claim()) // take control of all pages immediately
   );
-  self.clients.claim();
 });
 
 // Fetch: Route ตาม 3 strategies

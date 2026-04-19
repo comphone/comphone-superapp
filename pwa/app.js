@@ -1,6 +1,10 @@
 /* ===== COMPHONE SUPERAPP — app.js ===== */
 'use strict';
 
+// ===== VERSION =====
+const APP_VERSION = '5.5.7';
+const APP_BUILD   = '2026-04-19';
+
 // ===== STATE =====
 const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzE5tyKNA-W6gDQEixw9VTDznTNn5FuToVeVuO_OQL75fDSrpW8U9BT3bhVn4kjKc37/exec';
 
@@ -1147,8 +1151,10 @@ window.callApi = async function(payload) {
   if (!url) return { success: false, error: 'ไม่พบ Script URL' };
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+  // Cache busting: เพิ่ม timestamp เพื่อป้องกัน Service Worker cache API calls
+  const bustUrl = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
   try {
-    const res = await fetch(url, {
+    const res = await fetch(bustUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(payload),

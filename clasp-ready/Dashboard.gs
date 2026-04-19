@@ -30,14 +30,48 @@ function dashboardDoGetV55_(e) {
 }
 
 function getDashboardData() {
-  return {
+  var start = Date.now();
+  // ── CacheService: cache 60 วินาที ──
+  var CACHE_KEY = 'dashboard_data_v557';
+  var CACHE_TTL = 60; // seconds
+  try {
+    var cache = CacheService.getScriptCache();
+    var cached = cache.get(CACHE_KEY);
+    if (cached) {
+      var parsed = JSON.parse(cached);
+      parsed._cached = true;
+      parsed._elapsed_ms = Date.now() - start;
+      return parsed;
+    }
+  } catch(cacheErr) { /* cache miss — continue */ }
+
+  // ── Fetch fresh data ──
+  var jobs      = getDashboardJobs();
+  var inventory = getDashboardInventory();
+  var summary   = getDashboardSummary();
+  var statusDist = getJobStatusDistribution();
+  var alerts    = getAlerts();
+
+  var result = {
     success: true,
-    jobs: getDashboardJobs(),
-    inventory: getDashboardInventory(),
-    summary: getDashboardSummary(),
-    status_distribution: getJobStatusDistribution(),
-    alerts: getAlerts()
+    jobs: jobs,
+    inventory: inventory,
+    summary: summary,
+    status_distribution: statusDist,
+    alerts: alerts,
+    _cached: false,
+    _elapsed_ms: Date.now() - start,
+    _rows: { jobs: jobs.length, inventory: inventory.length }
   };
+
+  // ── Store in cache ──
+  try {
+    var cache2 = CacheService.getScriptCache();
+    cache2.put(CACHE_KEY, JSON.stringify(result), CACHE_TTL);
+  } catch(e2) { /* cache store failed — ok */ }
+
+  Logger.log('[getDashboardData] elapsed=' + result._elapsed_ms + 'ms jobs=' + jobs.length + ' inv=' + inventory.length);
+  return result;
 }
 
 // ============================================================

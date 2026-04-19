@@ -21,6 +21,11 @@ function doGet(e) {
       return jsonOutputV55_(healthCheckV55_());
     }
 
+    // getVersion Endpoint — GET ?action=getVersion
+    if (action === 'getversion' || action === 'version') {
+      return jsonOutputV55_(getVersionV55_());
+    }
+
     if (action === 'json' || action === 'getDashboardData') {
       return jsonOutputV55_(getDashboardData());
     }
@@ -697,9 +702,22 @@ function healthCheckV55_() {
 
   return {
     status:    overallOk ? 'healthy' : 'degraded',
-    version:   'V5.5.6',
+    version:   CONFIG.VERSION || 'V5.5.7',
     timestamp: Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss'),
     elapsed_ms: elapsed,
     checks:    checks
+  };
+}
+
+// ============================================================
+// 📌 getVersion — GET ?action=getVersion
+// ============================================================
+function getVersionV55_() {
+  return {
+    success: true,
+    version: CONFIG.VERSION || 'V5.5.7',
+    build:   CONFIG.BUILD   || '2026-04-19',
+    app:     CONFIG.APP_NAME,
+    timestamp: Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss')
   };
 }
