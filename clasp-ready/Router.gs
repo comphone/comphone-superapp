@@ -521,6 +521,22 @@ function dispatchActionV55_(action, payload, args) {
         return getWarrantyDue(payload);
 
       // ============================================================
+      // Executive Dashboard (KPI)
+      // ============================================================
+      case 'getExecutiveDashboard':
+        return getExecutiveDashboard(payload);
+      case 'getHealthMonitor':
+        return getHealthMonitor(payload);
+      case 'controlAction':
+        return controlAction(payload);
+      case 'storeSnapshot':
+        return storeSnapshot(payload);
+      case 'getSnapshots':
+        return getSnapshots(payload);
+      case 'getHealthTrend':
+        return getHealthTrend(payload);
+
+      // ============================================================
       // Health Monitoring (TASK 9)
       // ============================================================
       case 'healthCheck':
