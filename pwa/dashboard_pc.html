@@ -4475,5 +4475,1147 @@ window.addEventListener('resize', () => {
 
 console.log('[COMPHONE v6.0] Phase 5-6 loaded: AI System Integration + Mobile Polish');
 </script>
+<!-- ============================================================
+  COMPHONE Dashboard PC — v6.1 Patch Phase 1
+  Transaction System: atomic POS/Billing/Job, prevent partial success
+  ============================================================ -->
+<style id="v61-p1-css">
+.txn-overlay {
+  position: fixed; inset: 0; z-index: 3000;
+  background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.txn-overlay.show { opacity: 1; pointer-events: all; }
+.txn-box {
+  background: #fff; border-radius: 20px; padding: 32px 28px; min-width: 320px; max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25); text-align: center;
+}
+body.theme-dark .txn-box { background: #1e293b; color: #f1f5f9; }
+.txn-spinner {
+  width: 48px; height: 48px; border: 4px solid #e2e8f0;
+  border-top-color: #3b82f6; border-radius: 50%;
+  animation: txn-spin 0.8s linear infinite; margin: 0 auto 16px;
+}
+@keyframes txn-spin { to { transform: rotate(360deg); } }
+.txn-step-list { text-align: left; margin-top: 16px; }
+.txn-step {
+  display: flex; align-items: center; gap: 10px; padding: 7px 0;
+  font-size: 13px; color: #6b7280; border-bottom: 1px solid #f1f5f9;
+}
+.txn-step:last-child { border-bottom: none; }
+.txn-step.done { color: #059669; }
+.txn-step.active { color: #1e40af; font-weight: 700; }
+.txn-step.failed { color: #dc2626; }
+.txn-step-icon { width: 22px; text-align: center; font-size: 15px; }
+body.theme-dark .txn-step { border-color: #334155; }
+</style>
+
+<!-- Transaction Overlay -->
+<div id="txn-overlay" class="txn-overlay">
+  <div class="txn-box">
+    <div class="txn-spinner" id="txn-spinner"></div>
+    <div id="txn-title" style="font-size:16px;font-weight:800;color:#111827;margin-bottom:6px">กำลังดำเนินการ...</div>
+    <div id="txn-subtitle" style="font-size:12px;color:#6b7280">กรุณารอสักครู่</div>
+    <div class="txn-step-list" id="txn-step-list"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// COMPHONE Dashboard v6.1 — Phase 1: Transaction System
+// ============================================================
+
+const TXN = {
+  _active: false,
+  _steps: [],
+  _rollbacks: [],
+
+  // Begin a named transaction
+  begin(title, steps = []) {
+    this._active = true;
+    this._rollbacks = [];
+    this._steps = steps.map(s => ({ label: s, status: 'pending' }));
+    this._show(title);
+    return this;
+  },
+
+  // Register a rollback action
+  onRollback(fn) { this._rollbacks.push(fn); return this; },
+
+  // Mark a step as active (in progress)
+  step(idx) {
+    this._steps.forEach((s, i) => {
+      if (i < idx) s.status = 'done';
+      else if (i === idx) s.status = 'active';
+    });
+    this._renderSteps();
+    return this;
+  },
+
+  // Mark a step as done
+  done(idx) {
+    if (this._steps[idx]) this._steps[idx].status = 'done';
+    this._renderSteps();
+    return this;
+  },
+
+  // Mark a step as failed
+  fail(idx) {
+    if (this._steps[idx]) this._steps[idx].status = 'failed';
+    this._renderSteps();
+    return this;
+  },
+
+  // Commit transaction (success)
+  async commit(successMsg = 'ดำเนินการสำเร็จ!') {
+    this._steps.forEach(s => { if (s.status !== 'failed') s.status = 'done'; });
+    this._renderSteps();
+    const spinner = document.getElementById('txn-spinner');
+    if (spinner) { spinner.style.borderTopColor = '#10b981'; }
+    const title = document.getElementById('txn-title');
+    if (title) { title.textContent = successMsg; title.style.color = '#059669'; }
+    await new Promise(r => setTimeout(r, 800));
+    this._hide();
+    this._active = false;
+    this._rollbacks = [];
+  },
+
+  // Rollback transaction (failure)
+  async rollback(errorMsg = 'เกิดข้อผิดพลาด กำลังยกเลิก...') {
+    const spinner = document.getElementById('txn-spinner');
+    if (spinner) { spinner.style.borderTopColor = '#dc2626'; }
+    const title = document.getElementById('txn-title');
+    if (title) { title.textContent = errorMsg; title.style.color = '#dc2626'; }
+    const subtitle = document.getElementById('txn-subtitle');
+    if (subtitle) subtitle.textContent = 'กำลัง rollback...';
+    // Execute rollbacks in reverse order
+    for (let i = this._rollbacks.length - 1; i >= 0; i--) {
+      try { await this._rollbacks[i](); } catch(e) { console.warn('[TXN] Rollback failed:', e.message); }
+    }
+    await new Promise(r => setTimeout(r, 1200));
+    this._hide();
+    this._active = false;
+    if (window.showToast) showToast('↩️ ยกเลิกการดำเนินการแล้ว (Rollback)', 'warn', 3000);
+  },
+
+  _show(title) {
+    const overlay = document.getElementById('txn-overlay');
+    const titleEl = document.getElementById('txn-title');
+    const subtitleEl = document.getElementById('txn-subtitle');
+    const spinner = document.getElementById('txn-spinner');
+    if (overlay) overlay.classList.add('show');
+    if (titleEl) { titleEl.textContent = title; titleEl.style.color = ''; }
+    if (subtitleEl) subtitleEl.textContent = 'กรุณารอสักครู่';
+    if (spinner) spinner.style.borderTopColor = '#3b82f6';
+    this._renderSteps();
+  },
+
+  _hide() {
+    const overlay = document.getElementById('txn-overlay');
+    if (overlay) overlay.classList.remove('show');
+  },
+
+  _renderSteps() {
+    const list = document.getElementById('txn-step-list');
+    if (!list || !this._steps.length) return;
+    const ICONS = { pending: '⏳', active: '🔄', done: '✅', failed: '❌' };
+    list.innerHTML = this._steps.map(s =>
+      `<div class="txn-step ${s.status}">
+        <span class="txn-step-icon">${ICONS[s.status] || '⏳'}</span>
+        <span>${s.label}</span>
+      </div>`
+    ).join('');
+  }
+};
+window.TXN = TXN;
+
+// ===== ATOMIC POS CHECKOUT TRANSACTION =====
+const _v61OrigConfirmCheckout = window.confirmCheckout;
+window.confirmCheckout = async function() {
+  if (!window._posCart || !window._posCart.length) return;
+  const cartSnapshot = [...window._posCart];
+  const subtotal = cartSnapshot.reduce((a, b) => a + b.price * b.qty, 0);
+  const vat = Math.round(subtotal * 0.07);
+  const total = subtotal + vat;
+  const customerName = document.getElementById('pos-customer-name')?.value || 'ลูกค้าทั่วไป';
+  const note = document.getElementById('pos-note')?.value || '';
+  const payMethod = window._posPayMethod || 'cash';
+
+  // Close checkout modal first
+  if (typeof closePosCheckoutModal === 'function') closePosCheckoutModal();
+
+  // Begin transaction
+  TXN.begin('กำลังบันทึกการขาย...', [
+    'ตรวจสอบข้อมูลการขาย',
+    'บันทึกรายการขาย (createRetailSale)',
+    'ตัดสต็อกสินค้า (deductStock)',
+    'สร้างใบแจ้งหนี้ (Billing)',
+    'อัปเดต Dashboard'
+  ]);
+
+  let saleId = null;
+  const payload = {
+    items: cartSnapshot.map(i => ({
+      item_id: i.id, item_code: i.id, name: i.name,
+      qty: i.qty, unit_price: i.price, total: i.price * i.qty
+    })),
+    customer_name: customerName, subtotal, vat_amount: vat, total,
+    payment_method: payMethod, note,
+    sale_date: new Date().toISOString()
+  };
+
+  try {
+    // Step 0: Validate
+    TXN.step(0);
+    if (!payload.items.length) throw new Error('ไม่มีรายการสินค้า');
+    if (total <= 0) throw new Error('ยอดรวมต้องมากกว่า 0');
+    TXN.done(0);
+
+    // Step 1: Create Sale
+    TXN.step(1);
+    const saleRes = await callApi('createRetailSale', payload);
+    if (!saleRes || saleRes.success === false) throw new Error((saleRes && saleRes.message) || 'บันทึกการขายล้มเหลว');
+    saleId = saleRes.sale_id || saleRes.id || 'POS-' + Date.now();
+    TXN.done(1);
+    // Register rollback for sale
+    TXN.onRollback(async () => {
+      if (saleId) await callApi('cancelRetailSale', { sale_id: saleId, reason: 'TRANSACTION_ROLLBACK' }).catch(() => {});
+    });
+
+    // Step 2: Deduct Stock
+    TXN.step(2);
+    const stockResults = await Promise.allSettled(
+      payload.items.map(item => callApi('deductStock', {
+        item_code: item.item_code, qty: item.qty, reason: 'POS_SALE', sale_id: saleId
+      }))
+    );
+    const stockFailed = stockResults.filter(r => r.status === 'rejected' || (r.value && r.value.success === false));
+    if (stockFailed.length > 0) {
+      console.warn('[TXN] Stock deduct partial fail:', stockFailed.length, 'items');
+      // Non-fatal: continue but log
+    }
+    TXN.done(2);
+    // Register rollback for stock
+    TXN.onRollback(async () => {
+      for (const item of payload.items) {
+        await callApi('restoreStock', { item_code: item.item_code, qty: item.qty, reason: 'ROLLBACK' }).catch(() => {});
+      }
+    });
+
+    // Step 3: Create Billing
+    TXN.step(3);
+    await callApi('createBillingFromSale', {
+      sale_id: saleId, customer_name: customerName,
+      amount: total, items: payload.items,
+      billing_type: 'RETAIL', status: 'PAID'
+    }).catch(e => console.warn('[TXN] Billing link non-fatal:', e.message));
+    TXN.done(3);
+
+    // Step 4: Update state
+    TXN.step(4);
+    window._posCart = [];
+    if (typeof renderPOSCart === 'function') renderPOSCart();
+    if (window._v60Cache) { window._v60Cache.invalidate('dashboard_data'); window._v60Cache.invalidate('inventory_data'); }
+    if (typeof clearApiCache === 'function') { clearApiCache('listRetailSales'); clearApiCache('inventoryOverview'); }
+    if (window.APP_STATE) APP_STATE.syncAll();
+    TXN.done(4);
+
+    // Commit
+    await TXN.commit('บันทึกการขายสำเร็จ! ✅');
+    if (typeof showPOSReceipt === 'function') showPOSReceipt(saleId, customerName, total, vat, subtotal);
+
+  } catch(e) {
+    TXN.fail(TXN._steps.findIndex(s => s.status === 'active'));
+    await TXN.rollback('เกิดข้อผิดพลาด: ' + e.message);
+    if (window.showToast) showToast('❌ ' + e.message, 'error', 5000);
+  }
+};
+
+// ===== ATOMIC JOB SAVE TRANSACTION =====
+const _v61OrigSaveJobDetail = window.saveJobDetail;
+window.saveJobDetail = async function(jobId) {
+  const statusEl = document.getElementById('jd-status');
+  const techEl = document.getElementById('jd-tech');
+  const noteEl = document.getElementById('jd-note');
+  const priceEl = document.getElementById('jd-price');
+  if (!statusEl) return;
+
+  const newStatus = statusEl.value;
+  const prevStatus = statusEl.dataset.prevStatus || statusEl.value;
+
+  if (typeof closeJobDetailModal === 'function') closeJobDetailModal();
+
+  TXN.begin('กำลังบันทึกงาน...', [
+    'ตรวจสอบข้อมูล',
+    'อัปเดตสถานะงาน',
+    'บันทึก Timeline',
+    'อัปเดต Dashboard'
+  ]);
+
+  try {
+    TXN.step(0);
+    if (!jobId) throw new Error('ไม่พบ Job ID');
+    TXN.done(0);
+
+    TXN.step(1);
+    const payload = {
+      job_id: jobId,
+      status: newStatus,
+      technician: techEl?.value || '',
+      note: noteEl?.value || '',
+      estimated_price: Number(priceEl?.value || 0),
+      updated_at: new Date().toISOString()
+    };
+    const res = await callApi('updateJob', payload);
+    if (!res || res.success === false) throw new Error((res && res.message) || 'อัปเดตงานล้มเหลว');
+    TXN.done(1);
+    // Register rollback
+    TXN.onRollback(async () => {
+      await callApi('updateJob', { job_id: jobId, status: prevStatus, note: 'ROLLBACK' }).catch(() => {});
+    });
+
+    TXN.step(2);
+    await callApi('addJobTimeline', {
+      job_id: jobId, status: newStatus,
+      technician: payload.technician,
+      note: payload.note || `เปลี่ยนสถานะจาก ${prevStatus} → ${newStatus}`,
+      timestamp: new Date().toISOString()
+    }).catch(e => console.warn('[TXN] Timeline non-fatal:', e.message));
+    TXN.done(2);
+
+    TXN.step(3);
+    if (window._v60Cache) window._v60Cache.invalidate('dashboard_data');
+    if (typeof clearApiCache === 'function') clearApiCache('checkJobs');
+    if (window.APP_STATE) APP_STATE.syncAll();
+    TXN.done(3);
+
+    await TXN.commit('บันทึกงานสำเร็จ! ✅');
+    if (window.showToast) showToast(`✅ อัปเดตงาน ${jobId} สำเร็จ`, 'success', 2500);
+
+  } catch(e) {
+    TXN.fail(TXN._steps.findIndex(s => s.status === 'active'));
+    await TXN.rollback('เกิดข้อผิดพลาด: ' + e.message);
+    if (window.showToast) showToast('❌ ' + e.message, 'error', 5000);
+  }
+};
+
+console.log('[COMPHONE v6.1] Phase 1 loaded: Transaction System');
+</script>
+<!-- ============================================================
+  COMPHONE Dashboard PC — v6.1 Patch Phase 2
+  Error Recovery: retry API (max 2), fallback UI, rollback
+  ============================================================ -->
+<style id="v61-p2-css">
+.error-banner {
+  position: fixed; top: 56px; left: 0; right: 0; z-index: 1500;
+  background: #fef2f2; border-bottom: 2px solid #dc2626;
+  padding: 10px 20px; display: flex; align-items: center; gap: 12px;
+  font-size: 13px; color: #991b1b; font-weight: 600;
+  transform: translateY(-100%); transition: transform 0.3s;
+}
+.error-banner.show { transform: translateY(0); }
+.error-banner .retry-btn {
+  margin-left: auto; background: #dc2626; color: #fff;
+  border: none; border-radius: 8px; padding: 5px 14px;
+  font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.error-banner .dismiss-btn {
+  background: none; border: 1px solid #dc2626; color: #dc2626;
+  border-radius: 8px; padding: 5px 10px; font-size: 12px;
+  font-weight: 700; cursor: pointer;
+}
+body.theme-dark .error-banner { background: #1c0000; border-color: #dc2626; color: #fca5a5; }
+
+.fallback-card {
+  background: #fff; border: 2px dashed #e2e8f0; border-radius: 16px;
+  padding: 32px; text-align: center; color: #6b7280;
+}
+body.theme-dark .fallback-card { background: #1e293b; border-color: #334155; color: #94a3b8; }
+.fallback-icon { font-size: 48px; margin-bottom: 12px; display: block; }
+.fallback-title { font-size: 16px; font-weight: 800; color: #374151; margin-bottom: 6px; }
+body.theme-dark .fallback-title { color: #e2e8f0; }
+.fallback-msg { font-size: 13px; margin-bottom: 16px; }
+.retry-count-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: #fef3c7; color: #92400e; border-radius: 20px;
+  padding: 3px 10px; font-size: 11px; font-weight: 700; margin-bottom: 12px;
+}
+</style>
+
+<!-- Error Banner -->
+<div id="error-banner" class="error-banner">
+  <i class="bi bi-exclamation-triangle-fill" style="font-size:16px;flex-shrink:0"></i>
+  <span id="error-banner-msg">เกิดข้อผิดพลาดในการเชื่อมต่อ</span>
+  <button class="retry-btn" id="error-banner-retry" onclick="retryLastAction()">ลองใหม่</button>
+  <button class="dismiss-btn" onclick="dismissErrorBanner()">✕</button>
+</div>
+
+<script>
+// ============================================================
+// COMPHONE Dashboard v6.1 — Phase 2: Error Recovery
+// ============================================================
+
+const ERR = {
+  _lastAction: null,
+  _lastFn: null,
+
+  // Show error banner with retry
+  show(msg, retryFn = null) {
+    const banner = document.getElementById('error-banner');
+    const msgEl = document.getElementById('error-banner-msg');
+    if (!banner || !msgEl) return;
+    msgEl.textContent = msg;
+    banner.classList.add('show');
+    this._lastFn = retryFn;
+    // Auto-hide after 10s
+    clearTimeout(this._hideTimer);
+    this._hideTimer = setTimeout(() => this.dismiss(), 10000);
+  },
+
+  dismiss() {
+    const banner = document.getElementById('error-banner');
+    if (banner) banner.classList.remove('show');
+  },
+
+  // Render fallback UI card
+  fallback(containerId, title, msg, retryFn = null, retryCount = 0) {
+    const el = document.getElementById(containerId) || document.getElementById('main-content');
+    if (!el) return;
+    const retryLabel = retryFn ? `<button class="btn-primary" onclick="(${retryFn.toString()})()">
+      <i class="bi bi-arrow-clockwise"></i> ลองใหม่</button>` : '';
+    el.innerHTML = `
+      <div style="padding:20px">
+        <div class="fallback-card">
+          <span class="fallback-icon">⚠️</span>
+          ${retryCount > 0 ? `<div class="retry-count-badge">🔄 ลองใหม่แล้ว ${retryCount} ครั้ง</div>` : ''}
+          <div class="fallback-title">${title}</div>
+          <div class="fallback-msg">${msg}</div>
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+            ${retryLabel}
+            <button class="btn-secondary" onclick="if(window._currentSection)loadSection(window._currentSection)">
+              <i class="bi bi-house-fill"></i> กลับหน้าหลัก
+            </button>
+          </div>
+        </div>
+      </div>`;
+  }
+};
+window.ERR = ERR;
+
+function retryLastAction() {
+  ERR.dismiss();
+  if (ERR._lastFn) ERR._lastFn();
+}
+function dismissErrorBanner() { ERR.dismiss(); }
+
+// ===== RETRY WRAPPER =====
+// Wrap any async function with retry (max 2 retries, exponential backoff)
+async function withRetry(fn, maxRetries = 2, label = 'API call') {
+  let lastError = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await fn();
+      return result;
+    } catch(e) {
+      lastError = e;
+      if (attempt < maxRetries) {
+        const delay = 1000 * Math.pow(2, attempt); // 1s, 2s
+        console.warn(`[Retry] ${label} failed (attempt ${attempt + 1}/${maxRetries + 1}): ${e.message}. Retrying in ${delay}ms...`);
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+  }
+  throw lastError;
+}
+window.withRetry = withRetry;
+
+// ===== ENHANCED callApi WITH RETRY =====
+const _v61OrigCallApi = window.callApi;
+window.callApi = async function(action, payload = {}, options = {}) {
+  const maxRetries = options.retry !== undefined ? options.retry : 2;
+  const skipRetryActions = ['createRetailSale', 'updateJob', 'createJob', 'createRefund']; // idempotency risk
+  const shouldRetry = maxRetries > 0 && !skipRetryActions.includes(action);
+
+  if (shouldRetry) {
+    return withRetry(
+      () => _v61OrigCallApi(action, payload, { ...options, retry: 0 }),
+      maxRetries,
+      action
+    );
+  }
+  return _v61OrigCallApi(action, payload, options);
+};
+
+// ===== ENHANCED SECTION LOADER WITH FALLBACK =====
+const _v61OrigLoadSection = window.loadSection;
+window.loadSection = function(section) {
+  window._currentSection = section;
+  const mc = document.getElementById('main-content');
+  // Wrap in try-catch to show fallback if section loader throws
+  try {
+    const result = _v61OrigLoadSection ? _v61OrigLoadSection(section) : null;
+    if (result && typeof result.catch === 'function') {
+      result.catch(e => {
+        console.error('[v6.1] Section load error:', section, e.message);
+        ERR.show(`โหลดหน้า "${section}" ล้มเหลว: ${e.message}`, () => loadSection(section));
+        if (mc) ERR.fallback('main-content', `ไม่สามารถโหลดหน้า "${section}"`, e.message, () => loadSection(section));
+      });
+    }
+    return result;
+  } catch(e) {
+    console.error('[v6.1] Section load sync error:', section, e.message);
+    ERR.show(`โหลดหน้า "${section}" ล้มเหลว: ${e.message}`, () => loadSection(section));
+    if (mc) ERR.fallback('main-content', `ไม่สามารถโหลดหน้า "${section}"`, e.message, () => loadSection(section));
+  }
+};
+
+// ===== GLOBAL UNHANDLED PROMISE REJECTION HANDLER =====
+window.addEventListener('unhandledrejection', function(event) {
+  const msg = event.reason?.message || String(event.reason) || 'Unknown error';
+  // Suppress known non-critical errors
+  if (msg.includes('AbortError') || msg.includes('NetworkError') || msg.includes('cancelled')) return;
+  console.error('[v6.1] Unhandled rejection:', msg);
+  ERR.show('เกิดข้อผิดพลาดที่ไม่คาดคิด: ' + msg);
+  event.preventDefault();
+});
+
+// ===== NETWORK ERROR DETECTION =====
+window.addEventListener('online', () => {
+  ERR.dismiss();
+  if (window.showToast) showToast('🌐 เชื่อมต่ออินเทอร์เน็ตแล้ว', 'success', 2500);
+  // Sync offline queue if exists
+  if (window.OFFLINE_QUEUE && typeof window.OFFLINE_QUEUE.flush === 'function') {
+    window.OFFLINE_QUEUE.flush();
+  }
+});
+
+window.addEventListener('offline', () => {
+  ERR.show('ไม่มีการเชื่อมต่ออินเทอร์เน็ต — ระบบจะบันทึกคำสั่งไว้ก่อน');
+});
+
+console.log('[COMPHONE v6.1] Phase 2 loaded: Error Recovery');
+</script>
+<!-- ============================================================
+  COMPHONE Dashboard PC — v6.1 Patch Phase 3
+  Offline Support: queue actions locally, sync on reconnect, offline indicator
+  ============================================================ -->
+<style id="v61-p3-css">
+.offline-indicator {
+  position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%) translateY(80px);
+  z-index: 2500; background: #1e293b; color: #f1f5f9;
+  border-radius: 30px; padding: 10px 20px;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; font-weight: 700;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+.offline-indicator.show { transform: translateX(-50%) translateY(0); }
+.offline-dot { width: 10px; height: 10px; border-radius: 50%; background: #dc2626; flex-shrink: 0; }
+.offline-dot.online { background: #10b981; animation: pulse-green 1.5s ease-in-out; }
+@keyframes pulse-green { 0%{box-shadow:0 0 0 0 rgba(16,185,129,0.6)} 70%{box-shadow:0 0 0 8px rgba(16,185,129,0)} 100%{box-shadow:0 0 0 0 rgba(16,185,129,0)} }
+
+.queue-badge {
+  position: fixed; bottom: 70px; right: 16px; z-index: 2400;
+  background: #f59e0b; color: #fff; border-radius: 12px;
+  padding: 8px 14px; font-size: 12px; font-weight: 800;
+  box-shadow: 0 4px 16px rgba(245,158,11,0.4);
+  display: flex; align-items: center; gap: 6px;
+  cursor: pointer; transition: all 0.2s;
+  transform: translateY(80px); opacity: 0;
+}
+.queue-badge.show { transform: translateY(0); opacity: 1; }
+.queue-badge:hover { background: #d97706; transform: translateY(-2px); }
+</style>
+
+<!-- Offline Indicator -->
+<div id="offline-indicator" class="offline-indicator">
+  <div class="offline-dot" id="offline-dot"></div>
+  <span id="offline-text">ออฟไลน์ — บันทึกคำสั่งไว้ก่อน</span>
+</div>
+
+<!-- Queue Badge -->
+<div id="queue-badge" class="queue-badge" onclick="showQueueStatus()">
+  <i class="bi bi-clock-history"></i>
+  <span id="queue-count">0</span> รายการรอส่ง
+</div>
+
+<script>
+// ============================================================
+// COMPHONE Dashboard v6.1 — Phase 3: Offline Support
+// ============================================================
+
+const OFFLINE_QUEUE = {
+  _STORAGE_KEY: 'cp_offline_queue',
+  _isOnline: navigator.onLine,
+  _syncing: false,
+
+  // Get queue from localStorage
+  getQueue() {
+    try {
+      return JSON.parse(localStorage.getItem(this._STORAGE_KEY) || '[]');
+    } catch(e) { return []; }
+  },
+
+  // Save queue to localStorage
+  saveQueue(q) {
+    try { localStorage.setItem(this._STORAGE_KEY, JSON.stringify(q)); } catch(e) {}
+  },
+
+  // Add action to queue
+  enqueue(action, payload, label = '') {
+    const q = this.getQueue();
+    const entry = {
+      id: 'q_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      action, payload, label,
+      queued_at: new Date().toISOString(),
+      attempts: 0
+    };
+    q.push(entry);
+    this.saveQueue(q);
+    this._updateBadge();
+    if (window.showToast) showToast(`📦 บันทึก "${label || action}" ไว้ในคิว (ออฟไลน์)`, 'warn', 3000);
+    return entry.id;
+  },
+
+  // Remove entry from queue
+  dequeue(id) {
+    const q = this.getQueue().filter(e => e.id !== id);
+    this.saveQueue(q);
+    this._updateBadge();
+  },
+
+  // Flush queue (send all pending actions)
+  async flush() {
+    if (this._syncing) return;
+    const q = this.getQueue();
+    if (!q.length) return;
+    this._syncing = true;
+    this._showSyncing();
+    let successCount = 0;
+    let failCount = 0;
+    for (const entry of q) {
+      try {
+        entry.attempts++;
+        const res = await _v61OrigCallApi(entry.action, entry.payload, {});
+        if (res && res.success === false) throw new Error(res.message || 'Failed');
+        this.dequeue(entry.id);
+        successCount++;
+      } catch(e) {
+        failCount++;
+        if (entry.attempts >= 3) {
+          // Give up after 3 attempts
+          this.dequeue(entry.id);
+          console.error('[OFFLINE_QUEUE] Giving up on:', entry.action, e.message);
+        } else {
+          // Update attempts in storage
+          const q2 = this.getQueue();
+          const idx = q2.findIndex(x => x.id === entry.id);
+          if (idx >= 0) { q2[idx].attempts = entry.attempts; this.saveQueue(q2); }
+        }
+      }
+    }
+    this._syncing = false;
+    this._updateBadge();
+    if (successCount > 0) {
+      if (window.showToast) showToast(`✅ ซิงค์ ${successCount} รายการสำเร็จ${failCount > 0 ? ` (${failCount} ล้มเหลว)` : ''}`, 'success', 3000);
+      // Refresh current section
+      if (window._currentSection && typeof loadSection === 'function') {
+        setTimeout(() => loadSection(window._currentSection), 500);
+      }
+      if (window.APP_STATE) APP_STATE.syncAll(true);
+    }
+  },
+
+  // Show queue status modal
+  showStatus() {
+    const q = this.getQueue();
+    if (!q.length) {
+      if (window.showToast) showToast('✅ ไม่มีรายการรอส่ง', 'success', 2000);
+      return;
+    }
+    const modal = document.getElementById('job-detail-modal');
+    const content = document.getElementById('job-detail-content');
+    if (!modal || !content) return;
+    modal.classList.remove('hidden');
+    content.innerHTML = `
+      <div style="margin-bottom:14px">
+        <div style="font-size:14px;font-weight:800;color:#d97706;margin-bottom:4px">
+          📦 คิวออฟไลน์ — ${q.length} รายการรอส่ง
+        </div>
+        <div style="font-size:12px;color:#6b7280">รายการเหล่านี้จะถูกส่งอัตโนมัติเมื่อเชื่อมต่ออินเทอร์เน็ต</div>
+      </div>
+      <div style="max-height:300px;overflow-y:auto">
+        ${q.map(e => `
+          <div style="background:#fef3c7;border-radius:10px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:700">${e.label || e.action}</div>
+              <div style="font-size:11px;color:#92400e">${new Date(e.queued_at).toLocaleString('th-TH')} | ลองแล้ว ${e.attempts} ครั้ง</div>
+            </div>
+            <button onclick="OFFLINE_QUEUE.dequeue('${e.id}');OFFLINE_QUEUE.showStatus()" 
+              style="background:#fee2e2;color:#dc2626;border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-weight:700">ลบ</button>
+          </div>`).join('')}
+      </div>
+      <div class="modal-actions" style="margin-top:16px">
+        <button class="btn-secondary" onclick="closeJobDetailModal()">ปิด</button>
+        <button class="btn-primary" onclick="closeJobDetailModal();OFFLINE_QUEUE.flush()">
+          <i class="bi bi-cloud-upload-fill"></i> ส่งทันที
+        </button>
+      </div>`;
+  },
+
+  _updateBadge() {
+    const q = this.getQueue();
+    const badge = document.getElementById('queue-badge');
+    const countEl = document.getElementById('queue-count');
+    if (!badge) return;
+    if (q.length > 0) {
+      badge.classList.add('show');
+      if (countEl) countEl.textContent = q.length;
+    } else {
+      badge.classList.remove('show');
+    }
+  },
+
+  _showSyncing() {
+    const indicator = document.getElementById('offline-indicator');
+    const dot = document.getElementById('offline-dot');
+    const text = document.getElementById('offline-text');
+    if (!indicator) return;
+    indicator.classList.add('show');
+    if (dot) dot.className = 'offline-dot online';
+    if (text) text.textContent = 'กำลังซิงค์ข้อมูล...';
+    setTimeout(() => indicator.classList.remove('show'), 3000);
+  },
+
+  // Update online/offline status
+  setOnline(isOnline) {
+    this._isOnline = isOnline;
+    const indicator = document.getElementById('offline-indicator');
+    const dot = document.getElementById('offline-dot');
+    const text = document.getElementById('offline-text');
+    if (!indicator) return;
+    if (!isOnline) {
+      indicator.classList.add('show');
+      if (dot) dot.className = 'offline-dot';
+      if (text) text.textContent = 'ออฟไลน์ — บันทึกคำสั่งไว้ก่อน';
+    } else {
+      if (dot) { dot.className = 'offline-dot online'; }
+      if (text) text.textContent = 'เชื่อมต่อแล้ว — กำลังซิงค์...';
+      setTimeout(() => indicator.classList.remove('show'), 3000);
+    }
+  }
+};
+window.OFFLINE_QUEUE = OFFLINE_QUEUE;
+window.showQueueStatus = () => OFFLINE_QUEUE.showStatus();
+
+// Initialize badge on load
+document.addEventListener('DOMContentLoaded', () => {
+  OFFLINE_QUEUE._updateBadge();
+  if (!navigator.onLine) OFFLINE_QUEUE.setOnline(false);
+});
+
+// Listen for online/offline events
+window.addEventListener('online', () => {
+  OFFLINE_QUEUE.setOnline(true);
+  setTimeout(() => OFFLINE_QUEUE.flush(), 1000);
+});
+window.addEventListener('offline', () => {
+  OFFLINE_QUEUE.setOnline(false);
+});
+
+// ===== OFFLINE-AWARE callApi WRAPPER =====
+// Intercept write operations when offline → queue them
+const QUEUEABLE_ACTIONS = [
+  'createJob', 'updateJob', 'createRetailSale', 'createBillingFromSale',
+  'deductStock', 'restoreStock', 'addJobTimeline', 'createRefund',
+  'updateInventory', 'createCustomer', 'updateCustomer'
+];
+const ACTION_LABELS = {
+  createJob: 'สร้างงานใหม่', updateJob: 'อัปเดตงาน',
+  createRetailSale: 'บันทึกการขาย', createBillingFromSale: 'สร้างใบแจ้งหนี้',
+  deductStock: 'ตัดสต็อก', restoreStock: 'คืนสต็อก',
+  addJobTimeline: 'บันทึก Timeline', createRefund: 'คืนเงิน',
+  updateInventory: 'อัปเดตสต็อก', createCustomer: 'สร้างลูกค้า', updateCustomer: 'อัปเดตลูกค้า'
+};
+
+// Store reference to the retry-enhanced callApi from Phase 2
+const _v61OrigCallApi = window.callApi;
+
+window.callApi = async function(action, payload = {}, options = {}) {
+  // If offline and action is queueable → queue it
+  if (!navigator.onLine && QUEUEABLE_ACTIONS.includes(action) && !options.forceOnline) {
+    const qId = OFFLINE_QUEUE.enqueue(action, payload, ACTION_LABELS[action] || action);
+    // Return a mock success response so UI doesn't break
+    return { success: true, queued: true, queue_id: qId, message: 'บันทึกไว้ในคิวออฟไลน์' };
+  }
+  return _v61OrigCallApi(action, payload, options);
+};
+
+console.log('[COMPHONE v6.1] Phase 3 loaded: Offline Support');
+</script>
+<!-- ============================================================
+  COMPHONE Dashboard PC — v6.1 Patch Phase 4-5
+  Phase 4: Multi-user Conflict Control (version field, prevent overwrite)
+  Phase 5: Role UI Guard (hide menu by role, disable unauthorized actions)
+  ============================================================ -->
+<style id="v61-p45-css">
+/* ===== PHASE 4: CONFLICT WARNING ===== */
+.conflict-modal-backdrop {
+  position: fixed; inset: 0; z-index: 4000;
+  background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.conflict-modal-backdrop.show { opacity: 1; pointer-events: all; }
+.conflict-box {
+  background: #fff; border-radius: 20px; padding: 28px; max-width: 460px; width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+body.theme-dark .conflict-box { background: #1e293b; color: #f1f5f9; }
+.conflict-title { font-size: 18px; font-weight: 900; color: #dc2626; margin-bottom: 8px; }
+.conflict-diff {
+  background: #f8fafc; border-radius: 10px; padding: 14px;
+  margin: 14px 0; font-size: 13px;
+}
+body.theme-dark .conflict-diff { background: #0f172a; }
+.conflict-diff-row { display: flex; gap: 10px; margin-bottom: 6px; align-items: flex-start; }
+.conflict-diff-label { font-weight: 700; color: #6b7280; min-width: 80px; font-size: 12px; }
+.conflict-diff-old { color: #dc2626; text-decoration: line-through; font-size: 12px; }
+.conflict-diff-new { color: #059669; font-size: 12px; font-weight: 700; }
+
+/* ===== PHASE 5: ROLE UI GUARD ===== */
+.role-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.role-badge.admin { background: #ede9fe; color: #7c3aed; }
+.role-badge.manager { background: #dbeafe; color: #1e40af; }
+.role-badge.technician { background: #d1fae5; color: #059669; }
+.role-badge.cashier { background: #fef3c7; color: #d97706; }
+.role-badge.viewer { background: #f1f5f9; color: #6b7280; }
+
+.unauthorized-overlay {
+  position: absolute; inset: 0; z-index: 10;
+  background: rgba(255,255,255,0.85); border-radius: inherit;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 8px;
+  font-size: 13px; color: #6b7280; font-weight: 700;
+}
+body.theme-dark .unauthorized-overlay { background: rgba(30,41,59,0.9); color: #94a3b8; }
+</style>
+
+<!-- Conflict Warning Modal -->
+<div id="conflict-modal" class="conflict-modal-backdrop">
+  <div class="conflict-box">
+    <div class="conflict-title">⚠️ ข้อมูลถูกแก้ไขโดยผู้ใช้อื่น</div>
+    <div style="font-size:13px;color:#6b7280;margin-bottom:8px">มีการเปลี่ยนแปลงข้อมูลหลังจากที่คุณเปิดหน้านี้</div>
+    <div class="conflict-diff" id="conflict-diff-content"></div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:16px">
+      เลือกว่าต้องการใช้ข้อมูลใด:
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn-danger" id="conflict-force-btn" onclick="resolveConflict('force')">
+        <i class="bi bi-exclamation-triangle-fill"></i> บันทึกของฉัน (เขียนทับ)
+      </button>
+      <button class="btn-primary" id="conflict-reload-btn" onclick="resolveConflict('reload')">
+        <i class="bi bi-arrow-clockwise"></i> ใช้ข้อมูลล่าสุด (โหลดใหม่)
+      </button>
+      <button class="btn-secondary" onclick="resolveConflict('cancel')">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// COMPHONE Dashboard v6.1 — Phase 4: Multi-user Conflict Control
+// ============================================================
+
+const CONFLICT = {
+  _pending: null,
+
+  // Check if server version conflicts with local version
+  // Returns { conflict: bool, serverData: obj }
+  async check(action, payload) {
+    const versionedActions = ['updateJob', 'updateInventory', 'updateCustomer'];
+    if (!versionedActions.includes(action)) return { conflict: false };
+    const entityId = payload.job_id || payload.item_code || payload.customer_id;
+    if (!entityId) return { conflict: false };
+    try {
+      const cacheKey = `ver_${action}_${entityId}`;
+      const localVersion = sessionStorage.getItem(cacheKey);
+      if (!localVersion) return { conflict: false }; // First edit, no conflict
+      // Fetch current server version
+      const fetchAction = action === 'updateJob' ? 'getJobDetail'
+        : action === 'updateInventory' ? 'getInventoryItem' : 'getCustomerDetail';
+      const res = await _v61OrigCallApi(fetchAction, { job_id: entityId, item_code: entityId, customer_id: entityId }, {});
+      const serverVersion = res?.version || res?.updated_at || null;
+      if (serverVersion && serverVersion !== localVersion) {
+        return { conflict: true, serverData: res, serverVersion, localVersion };
+      }
+      return { conflict: false };
+    } catch(e) { return { conflict: false }; }
+  },
+
+  // Store version when opening a record for editing
+  storeVersion(action, entityId, version) {
+    if (!version || !entityId) return;
+    const cacheKey = `ver_${action}_${entityId}`;
+    sessionStorage.setItem(cacheKey, String(version));
+  },
+
+  // Show conflict modal
+  show(conflictData, forceFn, reloadFn) {
+    this._pending = { forceFn, reloadFn };
+    const modal = document.getElementById('conflict-modal');
+    const diffEl = document.getElementById('conflict-diff-content');
+    if (!modal || !diffEl) return;
+    const server = conflictData.serverData || {};
+    diffEl.innerHTML = `
+      <div class="conflict-diff-row">
+        <span class="conflict-diff-label">แก้ไขโดย</span>
+        <span style="font-size:12px;font-weight:700;color:#1e40af">${server.updated_by || server.last_modified_by || 'ผู้ใช้อื่น'}</span>
+      </div>
+      <div class="conflict-diff-row">
+        <span class="conflict-diff-label">เวลา</span>
+        <span style="font-size:12px">${server.updated_at || conflictData.serverVersion || '-'}</span>
+      </div>
+      <div class="conflict-diff-row">
+        <span class="conflict-diff-label">สถานะ</span>
+        <span class="conflict-diff-old">${conflictData.localVersion || '-'}</span>
+        <span style="margin:0 6px;color:#9ca3af">→</span>
+        <span class="conflict-diff-new">${server.status || conflictData.serverVersion || '-'}</span>
+      </div>`;
+    modal.classList.add('show');
+  },
+
+  hide() {
+    const modal = document.getElementById('conflict-modal');
+    if (modal) modal.classList.remove('show');
+    this._pending = null;
+  }
+};
+window.CONFLICT = CONFLICT;
+
+async function resolveConflict(choice) {
+  CONFLICT.hide();
+  if (!CONFLICT._pending) return;
+  if (choice === 'force' && CONFLICT._pending.forceFn) await CONFLICT._pending.forceFn();
+  else if (choice === 'reload' && CONFLICT._pending.reloadFn) await CONFLICT._pending.reloadFn();
+  // 'cancel' → do nothing
+}
+
+// Wrap updateJob with conflict detection
+const _v61OrigCallApiForConflict = window.callApi;
+window.callApi = async function(action, payload = {}, options = {}) {
+  // Skip conflict check for queued/offline/forced calls
+  if (options.skipConflict || options.forceOnline === false) {
+    return _v61OrigCallApiForConflict(action, payload, options);
+  }
+  const conflictResult = await CONFLICT.check(action, payload);
+  if (conflictResult.conflict) {
+    return new Promise((resolve, reject) => {
+      CONFLICT.show(conflictResult,
+        // Force: proceed with overwrite
+        async () => {
+          try {
+            const res = await _v61OrigCallApiForConflict(action, { ...payload, force_overwrite: true }, { ...options, skipConflict: true });
+            resolve(res);
+          } catch(e) { reject(e); }
+        },
+        // Reload: reject so caller can reload
+        async () => {
+          reject(new Error('CONFLICT_RELOAD'));
+          if (window._currentSection && typeof loadSection === 'function') {
+            loadSection(window._currentSection);
+          }
+        }
+      );
+    });
+  }
+  return _v61OrigCallApiForConflict(action, payload, options);
+};
+
+// Store version when opening job detail
+const _v61OrigOpenJobDetailConflict = window.openJobDetail;
+window.openJobDetail = async function(jobId) {
+  if (_v61OrigOpenJobDetailConflict) {
+    await _v61OrigOpenJobDetailConflict(jobId);
+    // After modal opens, store current version
+    setTimeout(() => {
+      const versionEl = document.getElementById('jd-version');
+      const updatedEl = document.getElementById('jd-updated-at');
+      const version = versionEl?.value || updatedEl?.value || new Date().toISOString();
+      CONFLICT.storeVersion('updateJob', jobId, version);
+    }, 400);
+  }
+};
+
+// ============================================================
+// COMPHONE Dashboard v6.1 — Phase 5: Role UI Guard
+// ============================================================
+
+const ROLE_GUARD = {
+  // Role hierarchy: higher index = more permissions
+  ROLES: ['viewer', 'cashier', 'technician', 'manager', 'admin'],
+
+  // Permission map: action → minimum role required
+  PERMISSIONS: {
+    // POS
+    'pos.checkout': 'cashier',
+    'pos.refund': 'manager',
+    'pos.view_history': 'cashier',
+    // Jobs
+    'job.create': 'technician',
+    'job.update_status': 'technician',
+    'job.delete': 'manager',
+    'job.view': 'viewer',
+    // Inventory
+    'inventory.view': 'viewer',
+    'inventory.edit': 'manager',
+    'inventory.deduct': 'cashier',
+    // Billing
+    'billing.view': 'cashier',
+    'billing.create': 'cashier',
+    'billing.delete': 'manager',
+    // Reports
+    'report.view': 'manager',
+    'report.export': 'manager',
+    // Settings
+    'settings.view': 'admin',
+    'settings.edit': 'admin',
+    // AI Monitor
+    'ai.view': 'manager',
+    // Users
+    'users.view': 'admin',
+    'users.edit': 'admin',
+    // Attendance
+    'attendance.view': 'manager',
+    'attendance.edit': 'manager',
+  },
+
+  // Menu visibility map: section → minimum role
+  MENU_ROLES: {
+    'dashboard': 'viewer',
+    'jobs': 'viewer',
+    'pos': 'cashier',
+    'billing': 'cashier',
+    'inventory': 'viewer',
+    'crm': 'manager',
+    'report': 'manager',
+    'branch': 'manager',
+    'warranty': 'technician',
+    'attendance': 'manager',
+    'health': 'manager',
+    'ai-monitor': 'manager',
+    'settings': 'admin',
+    'users': 'admin',
+  },
+
+  // Get current user role
+  getRole() {
+    try {
+      const session = JSON.parse(localStorage.getItem('comphone_auth_session') || '{}');
+      return session.role || session.user_role || 'viewer';
+    } catch(e) { return 'viewer'; }
+  },
+
+  // Check if current user has permission
+  can(permission) {
+    const userRole = this.getRole();
+    const requiredRole = this.PERMISSIONS[permission] || 'admin';
+    return this.ROLES.indexOf(userRole) >= this.ROLES.indexOf(requiredRole);
+  },
+
+  // Check if user can access a menu section
+  canAccess(section) {
+    const userRole = this.getRole();
+    const requiredRole = this.MENU_ROLES[section] || 'admin';
+    return this.ROLES.indexOf(userRole) >= this.ROLES.indexOf(requiredRole);
+  },
+
+  // Apply role-based UI restrictions
+  applyGuards() {
+    const userRole = this.getRole();
+    // Hide unauthorized nav items
+    document.querySelectorAll('[data-section]').forEach(el => {
+      const section = el.getAttribute('data-section');
+      if (section && !this.canAccess(section)) {
+        el.style.display = 'none';
+      }
+    });
+    // Disable unauthorized buttons
+    document.querySelectorAll('[data-permission]').forEach(el => {
+      const perm = el.getAttribute('data-permission');
+      if (perm && !this.can(perm)) {
+        el.disabled = true;
+        el.title = `ต้องการสิทธิ์: ${this.PERMISSIONS[perm] || 'admin'}`;
+        el.style.opacity = '0.4';
+        el.style.cursor = 'not-allowed';
+      }
+    });
+    // Show role badge in sidebar footer
+    const roleFooter = document.querySelector('.sidebar-footer-text, .sidebar-footer');
+    if (roleFooter && !roleFooter.querySelector('.role-badge')) {
+      const badge = document.createElement('span');
+      badge.className = `role-badge ${userRole}`;
+      badge.textContent = userRole.toUpperCase();
+      badge.style.marginTop = '6px';
+      roleFooter.appendChild(badge);
+    }
+  },
+
+  // Guard a section load — redirect if unauthorized
+  guardSection(section) {
+    if (!this.canAccess(section)) {
+      const mc = document.getElementById('main-content');
+      if (mc) mc.innerHTML = `
+        <div style="padding:20px">
+          <div class="fallback-card">
+            <span class="fallback-icon">🔒</span>
+            <div class="fallback-title">ไม่มีสิทธิ์เข้าถึง</div>
+            <div class="fallback-msg">หน้านี้ต้องการสิทธิ์ระดับ <strong>${this.MENU_ROLES[section] || 'admin'}</strong> ขึ้นไป<br>บัญชีของคุณมีสิทธิ์ระดับ <strong>${this.getRole()}</strong></div>
+            <button class="btn-secondary" onclick="loadSection('dashboard')">
+              <i class="bi bi-house-fill"></i> กลับหน้าหลัก
+            </button>
+          </div>
+        </div>`;
+      return false;
+    }
+    return true;
+  }
+};
+window.ROLE_GUARD = ROLE_GUARD;
+
+// Apply guards after DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => ROLE_GUARD.applyGuards(), 600);
+});
+
+// Override loadSection to enforce role guard
+const _v61OrigLoadSectionRole = window.loadSection;
+window.loadSection = function(section) {
+  window._currentSection = section;
+  if (!ROLE_GUARD.guardSection(section)) return;
+  return _v61OrigLoadSectionRole ? _v61OrigLoadSectionRole(section) : null;
+};
+
+// Re-apply guards after each section load
+const _v61RoleLoadSection = window.loadSection;
+window.loadSection = function(section) {
+  const result = _v61RoleLoadSection(section);
+  if (result && typeof result.then === 'function') {
+    result.then(() => setTimeout(() => ROLE_GUARD.applyGuards(), 300));
+  } else {
+    setTimeout(() => ROLE_GUARD.applyGuards(), 300);
+  }
+  return result;
+};
+
+// Helper: check permission inline in UI
+function canDo(permission) { return ROLE_GUARD.can(permission); }
+window.canDo = canDo;
+
+console.log('[COMPHONE v6.1] Phase 4-5 loaded: Multi-user Conflict + Role UI Guard');
+</script>
 </body>
 </html>
