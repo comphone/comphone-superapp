@@ -584,6 +584,34 @@ function dispatchActionV55_(action, payload, args) {
         return getVisionPipelineVersion();
 
       // ============================================================
+      // VisionLearning — Self-Learning System v1.0.0
+      // ============================================================
+      case 'processFeedbackLoop':
+        return processFeedbackLoop();
+      case 'getConfidenceCalibration':
+        return getConfidenceCalibration();
+      case 'getDynamicThreshold':
+        return { success: true, type: payload.type, threshold: getDynamicThreshold(payload.type || 'QC') };
+      case 'setManualThreshold':
+        return setManualThreshold(payload);
+      case 'analyzeErrorPatterns':
+        return analyzeErrorPatterns(payload);
+      case 'buildAdaptivePrompt':
+        return { success: true, prompt: buildAdaptivePrompt(payload.type || 'QC', payload.input || {}) };
+      case 'createRule':
+        return createRule(payload);
+      case 'getActiveRules':
+        return getActiveRules(payload);
+      case 'autoGenerateRulesFromPatterns':
+        return autoGenerateRulesFromPatterns(payload);
+      case 'getLearningDashboard':
+        return getLearningDashboard(payload);
+      case 'setupLearningTriggers':
+        return setupLearningTriggers();
+      case 'getVisionLearningVersion':
+        return getVisionLearningVersion();
+
+      // ============================================================
       // Tax Engine (TASK 1-2: VAT Flexible + WHT ภงด.)
       // ============================================================
       case 'calculateTax':

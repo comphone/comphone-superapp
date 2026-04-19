@@ -55,11 +55,28 @@ function runVisionPipeline(params) {
       return cached;
     }
 
+    // [Self-Learning] Phase 6: Auto Rule Engine — apply rules BEFORE AI call
+    if (typeof applyRulesBeforeAI === 'function') {
+      var ruleResult = applyRulesBeforeAI(type, input);
+      if (ruleResult) {
+        var ruleNorm = _vpNormalize_(type, { rule_shortcut: true, decision: ruleResult.decision, confidence: ruleResult.confidence || 0.95 }, input, startTs);
+        ruleNorm.decision = { code: ruleResult.decision, reason: ruleResult.reason, appliedRule: ruleResult.appliedRule };
+        ruleNorm._ruleShortcut = true;
+        _vpSaveLog_(ruleNorm, context);
+        return ruleNorm;
+      }
+    }
+
     // Phase 12: Tiered AI — Layer 1 (cheap) → Layer 2 (Gemini)
     var aiResult = _vpTieredAI_(type, input);
 
     // Phase 7: Normalize Result
     var normalized = _vpNormalize_(type, aiResult, input, startTs);
+
+    // [Self-Learning] Phase 3: Dynamic Threshold — use calibrated threshold
+    if (typeof getDynamicThreshold === 'function') {
+      normalized._dynamicThreshold = getDynamicThreshold(type);
+    }
 
     // Phase 13: Decision Engine
     normalized.decision = _vpDecisionEngine_(type, normalized);
