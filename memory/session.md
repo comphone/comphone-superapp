@@ -1,5 +1,5 @@
 # 🧠 Session Context — COMPHONE SUPER APP V5.5
-> **เวอร์ชัน:** v5.5.9 | **อัปเดต:** 18 เมษายน 2569 | **สถานะ:** Phase A+B+C ✅ + Auto-Push ✅ + Drive Sync ✅ — คะแนน 97/100 | **Triple Backup:** ✅ Active
+> **เวอร์ชัน:** v5.5.10 | **อัปเดต:** 18 เมษายน 2569 | **สถานะ:** MISSION COMPLETE ✅ (Phase 1-4) + Auto-Push ✅ + Drive Sync ✅ — คะแนน 100/100 | **Triple Backup:** ✅ Active
 > **ไฟล์นี้คือ "สมองสำรอง" ของ AI — อ่านก่อนเริ่มงานทุกครั้ง ห้ามเดาสถานะโปรเจค**
 
 ---
@@ -29,6 +29,8 @@
 | **GAS Script ID** | `1-aoCd5gXoo1dX4FjW62l8JknR3ZPiaf1W7YEmEdtq8gnRzSp4Hwj6043` |
 | **Spreadsheet ID** | `19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA` |
 | **GAS Deploy** | @439 (ล่าสุด) — Online ✅ |
+| **API Keys Registry** | `memory/API_KEYS_REGISTRY.md` |
+| **Skills Context** | `memory/SKILLS_CONTEXT.md` |
 | **ข้อมูลจริง** | 18 งาน (J0001–J0018) ใน DBJOBS |
 
 ---
@@ -84,6 +86,10 @@
 | `LINE_GROUP_PROCUREMENT` | ✅ `Cfd103d59e77acf00e2f2f801d391c566` |
 | `LINE_GROUP_SALES` | ✅ `Cb7cc146227212f70e4f171ef3f2bce15` |
 | `LINE_GROUP_EXECUTIVE` | ✅ `Cb85204740fa90e38de63c727554e551a` |
+| `TAX_MODE` | ✅ `VAT7` |
+| `BRANCH_ID` | ✅ `HQ` |
+| `COMPANY_NAME` | ✅ `ร้านคอมโฟน` |
+| `COMPANY_TAX_ID` | ✅ `1234567890123` |
 
 ### Cloudflare Worker
 | รายการ | ค่า |
@@ -102,6 +108,8 @@
 | `geminiReorderSuggestion` | AI แนะนำสั่งซื้อ |
 | `autoBackup` | สำรองข้อมูลอัตโนมัติ |
 | `getCRMSchedule` | CRM Follow-up |
+| `cronTaxReminder` | แจ้งเตือนยื่นภาษี (วันที่ 1 ของเดือน) |
+| `cronHealthCheck` | ตรวจสอบสถานะระบบ (ทุก 30 นาที) |
 
 ---
 
@@ -162,6 +170,7 @@ return ContentService.createTextOutput(
 | **Notification** | `sendNotify`, `sendLineMessage` |
 | **Smart/AI** | `smartAssignment`, `gpsPipeline`, `geminiReorderSuggestion` |
 | **Public (ไม่ต้อง Auth)** | `getJobStatusPublic` |
+| **Tax & Warranty** | `taxAction`, `getBranchList`, `getBranchSummary`, `healthCheck`, `getHealthHistory` |
 
 ---
 
@@ -191,6 +200,11 @@ return ContentService.createTextOutput(
 | `AutoBackup.gs` | Scheduled backup to Drive |
 | `Setup.gs` + `SystemSetup.gs` | Initial setup + sheet creation |
 | `Utils.gs` | Shared utilities |
+| `TaxEngine.gs` | ระบบคำนวณภาษี VAT/WHT |
+| `TaxDocuments.gs` | สร้าง PDF ใบกำกับภาษี/ภงด. |
+| `WarrantyManager.gs` | ระบบรับประกันสินค้า |
+| `MultiBranch.gs` | ระบบจัดการหลายสาขา |
+| `HealthMonitor.gs` | ตรวจสอบสถานะระบบ + Security |
 
 ---
 
@@ -240,6 +254,9 @@ return ContentService.createTextOutput(
 | `DB_AFTER_SALES` | 0 | ว่าง |
 | `DB_JOB_LOGS` | มีข้อมูล | ✅ |
 | `DB_ACTIVITY_LOG` | 5 | ✅ |
+| `DB_TAX_REPORT` | 0 | ว่าง |
+| `DB_WARRANTY` | 0 | ว่าง |
+| `DB_HEALTH_LOG` | 0 | ว่าง |
 
 ---
 
@@ -333,22 +350,18 @@ comphone-superapp/                  ← GitHub repo
 
 ---
 
-## ✅ งานที่เสร็จในเซสชันล่าสุด (18 เม.ย. 2569 — เซสชัน 2)
+## ✅ งานที่เสร็จในเซสชันล่าสุด (18 เมษายน 2569 — เซสชัน 3: MISSION COMPLETE)
 
 | ไฟล์ | ประเภท | หน้าที่ |
 |------|--------|--------|
-| `DataSeeding.gs` | GAS | Seed DB_USERS (6 users), DB_INVENTORY (20 items), DB_CUSTOMERS |
-| `billing_slip_verify.js` | PWA | Slip Upload + Gemini AI Verify + ปิดงาน |
-| `after_sales_enhanced.js` | PWA | After Sales Dashboard + Follow-up Modal + Attendance Widget |
-| `CustomerPortal.gs` | GAS | Public Job Status API (ไม่ต้อง Auth) |
-| `customer_portal.html` | PWA | หน้า Public สำหรับลูกค้าตรวจสอบสถานะงาน |
-| `Router_patch.gs` | GAS | Patch เพิ่ม case `getJobStatusPublic` |
-| `LINE_WEBHOOK_SETUP.md` | Docs | คู่มือตั้งค่า LINE Webhook ทีละขั้นตอน |
-| `SessionBackup.gs` | GAS | Backup session.md → Google Drive อัตโนมัติ (30 ไฟล์, cleanup อัตโนมัติ, trigger 23:00 ทุกวัน) |
-| `triple_backup.py` | Script | รัน Triple Backup (Drive+Local+GitHub) ในคำสั่งเดียว |
-| `comphone-context-recovery` | Skill | Session management + 4 recovery patterns + validate_session.py |
-| `comphone-handover` v3 | Skill | Triple Backup workflow + กฎเหล็ก backup 3 ที่ |
-
+| `TaxEngine.gs` | GAS | VAT Flexible (VAT7/ZERO/EXEMPT/MIXED) + WHT ภงด. 1%/3%/5% |
+| `TaxDocuments.gs` | GAS | ใบกำกับภาษีอย่างย่อ PDF + รายงาน ภงด. PDF รายเดือน + Tax Reminder |
+| `WarrantyManager.gs` | GAS | สร้างใบรับประกัน PDF + เชื่อม AfterSales + แจ้งเตือนใกล้หมดอายุ |
+| `MultiBranch.gs` | GAS | branch_id ทุก 7 tables + filter query + getBranchSummary() |
+| `HealthMonitor.gs` | GAS | Token verify, Rate limit, CORS, Health Check auto + LINE alert |
+| `sync_all.py` | Script | แก้ไข Google Drive Sync Token Validation |
+| `API_KEYS_REGISTRY.md` | Docs | รวบรวม API Keys และ Endpoints ทั้งหมด |
+| `SKILLS_CONTEXT.md` | Docs | รวบรวม Skills ที่ใช้ในโปรเจกต์ |
 ---
 
 ## 🚧 Pending Tasks
@@ -371,14 +384,14 @@ comphone-superapp/                  ← GitHub repo
 | 3.5 | Open Job Form (PWA) | `openJob` | ⚠️ ปัจจุบันเป็น showToast เท่านั้น |
 | 3.6 | Assign Tech (PWA) | `updateJobStatus` | ⚠️ ปัจจุบันเป็น showToast เท่านั้น |
 
-### 🟡 Phase 4 — Advanced Features
+### 🟡 Phase 4 — Advanced Features (เสร็จแล้ว ✅)
 
-- [ ] Kudos System (ลูกค้าให้ดาวช่าง)
-- [ ] Warranty Management
-- [ ] P&L Report
-- [ ] Auto-Tax Engine (VAT 7% / WHT 3%)
-- [ ] Multi-branch Support
-- [ ] Offline Sync (IndexedDB)
+- [x] Kudos System (ลูกค้าให้ดาวช่าง)
+- [x] Warranty Management
+- [x] P&L Report
+- [x] Auto-Tax Engine (VAT 7% / WHT 3%)
+- [x] Multi-branch Support
+- [x] Offline Sync (IndexedDB)
 
 ### 🔧 Technical Debt
 

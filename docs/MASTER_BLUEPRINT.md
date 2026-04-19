@@ -1,6 +1,6 @@
 # COMPHONE SUPER APP — MASTER BLUEPRINT v5.5.4
 
-> **อัปเดตล่าสุด:** 17 เมษายน 2569 | **สถานะ:** Production Ready  
+> **อัปเดตล่าสุด:** 18 เมษายน 2569 | **สถานะ:** Production Ready (MISSION COMPLETE)  
 > **ผู้พัฒนา:** Manus AI + comphone team  
 > **Repository:** https://github.com/comphone/comphone-superapp
 
@@ -70,7 +70,11 @@ User (PWA) → POST GAS_URL @439
 |-------------|-----|-------|
 | `DB_SS_ID` | `19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA` | ✅ ตั้งค่าแล้ว |
 | `ROOT_FOLDER_ID` | `1YRZRG9r1Y_jMHg2XFFKYjK4Hx-sW0Eq0` | ✅ ตั้งค่าแล้ว |
-| `WEB_APP_URL` | `https://script.google.com/macros/s/AKfycby-...@439.../exec` | ✅ @439 (อัปเดตแล้ว) |
+| `WEB_APP_URL` | `https://script.google.com/macros/s/AKfycby-IRTHbHMfCZ8TiXSAJ8zr_T6xQcmJNvGNYYI2X2VoAEMPwYtHwlCp1mf9f6IzWSSJfQ/exec` | ✅ @439 (อัปเดตแล้ว) |
+| `TAX_MODE` | `VAT7` (หรือ `ZERO`, `EXEMPT`, `MIXED`) | ✅ ตั้งค่าแล้ว |
+| `BRANCH_ID` | `HQ` | ✅ ตั้งค่าแล้ว |
+| `COMPANY_NAME` | `ร้านคอมโฟน` | ✅ ตั้งค่าแล้ว |
+| `COMPANY_TAX_ID` | `1234567890123` | ✅ ตั้งค่าแล้ว |
 | `LINE_CHANNEL_ACCESS_TOKEN` | `[ดูใน LINE Developers Console > Messaging API > Channel access token]` | ✅ ตั้งค่าแล้ว |
 | `GEMINI_API_KEY` | `[ดูใน Google AI Studio > API Keys]` | ✅ ตั้งค่าแล้ว |
 | `LINE_GROUP_TECHNICIAN` | `C8ad22a115f38c9ad3cb5ea5c2ff4863b` | ✅ ตั้งค่าแล้ว |
@@ -206,6 +210,11 @@ clasp deploy --description "v5.5.x"
 | `DeployGuide.gs` | initSystem(), setupTriggers() | ~200 บรรทัด |
 | `Utils.gs` | Utility functions | ~150 บรรทัด |
 | `ReceiptTemplate.html` | HTML template สำหรับ PDF ใบเสร็จ | ~100 บรรทัด |
+| `TaxEngine.gs` | ระบบคำนวณภาษี VAT/WHT | ~360 บรรทัด |
+| `TaxDocuments.gs` | สร้าง PDF ใบกำกับภาษี/ภงด. | ~340 บรรทัด |
+| `WarrantyManager.gs` | ระบบรับประกันสินค้า | ~460 บรรทัด |
+| `MultiBranch.gs` | ระบบจัดการหลายสาขา | ~180 บรรทัด |
+| `HealthMonitor.gs` | ตรวจสอบสถานะระบบ + Security | ~330 บรรทัด |
 
 ---
 
@@ -293,6 +302,15 @@ clasp deploy --description "v5.5.x"
 | `logAfterSalesFollowUp` | `{record_id, note, followup_by, next_action}` | `{success}` |
 | `getAfterSalesSummary` | — | `{success, summary}` |
 
+### Tax & Warranty Actions
+| Action | Parameters | Response |
+|--------|-----------|---------|
+| `taxAction` | `{subAction, ...}` | `{success, ...}` |
+| `getBranchList` | — | `{success, branches[], current}` |
+| `getBranchSummary` | `{branch_id}` | `{success, summary}` |
+| `healthCheck` | — | `{success, health}` |
+| `getHealthHistory` | `{limit}` | `{success, logs[]}` |
+
 ---
 
 ## 9. Database Schema (Google Sheets — 13 ตาราง)
@@ -312,6 +330,9 @@ clasp deploy --description "v5.5.x"
 | `DB_JOB_LOGS` | id, job_id, action, note, by, timestamp | 0 |
 | `DB_USERS` | id, name, role, username, password_hash, active, created | 1 |
 | `DB_ACTIVITY_LOG` | id, action, user, detail, timestamp | 3 |
+| `DB_TAX_REPORT` | id, period, records, summary | 0 |
+| `DB_WARRANTY` | id, job_id, customer, status, start, end | 0 |
+| `DB_HEALTH_LOG` | id, timestamp, status, errors | 0 |
 
 ---
 
@@ -325,6 +346,8 @@ clasp deploy --description "v5.5.x"
 | `geminiReorderSuggestion` | CLOCK | ทุกจันทร์ 08:00 | AI แนะนำสั่งซื้อสินค้า |
 | `autoBackup` | CLOCK | ทุกวัน 23:00 | Backup Google Sheets อัตโนมัติ |
 | `getCRMSchedule` | CLOCK | ทุกวัน 10:00 | ตรวจสอบนัดหมาย CRM |
+| `cronTaxReminder` | CLOCK | วันที่ 1 ของเดือน 09:00 | แจ้งเตือนยื่นภาษี (LINE) |
+| `cronHealthCheck` | CLOCK | ทุก 30 นาที | ตรวจสอบสถานะระบบ (LINE Alert) |
 
 ---
 
@@ -407,6 +430,7 @@ window.callApi(payload)  // ใช้ใน crm_attendance.js, purchase_order.js
 | v5.5.2 | @438 | ก่อนหน้า | FlexMessage templates |
 | v5.5.3 | @439 | 16 เม.ย. 69 | LINE Groups ครบ 5, Gemini AI |
 | v5.5.4 | @439 | 17 เม.ย. 69 | PWA Phase 1: Open Job, Assign, Timeline, Note |
+| v5.5.5 | @439 | 18 เม.ย. 69 | MISSION COMPLETE: Tax Engine, Warranty, Multi-branch, Health Monitor |
 
 ---
 
@@ -444,21 +468,21 @@ window.callApi(payload)  // ใช้ใน crm_attendance.js, purchase_order.js
 ## 17. ฟีเจอร์ที่ยังไม่ได้พัฒนา 🔲
 
 **Phase 2 — Financial & Billing:**
-- [ ] **สร้างบิล / ใบเสร็จ** — Form สร้างใบเสร็จใน PWA (`createBilling` API พร้อม)
-- [ ] **QR รับเงิน PromptPay** — แสดง QR Code ใน PWA (`getJobQRData` API พร้อม)
-- [ ] **Slip Verification** — ตรวจสอบสลิปโอนเงินอัตโนมัติ (AI)
+- [x] **สร้างบิล / ใบเสร็จ** — Form สร้างใบเสร็จใน PWA (`createBilling` API พร้อม)
+- [x] **QR รับเงิน PromptPay** — แสดง QR Code ใน PWA (`getJobQRData` API พร้อม)
+- [x] **Slip Verification** — ตรวจสอบสลิปโอนเงินอัตโนมัติ (AI)
 
 **Phase 3 — Customer Experience:**
-- [ ] **Customer Portal** — ลูกค้าตรวจสอบสถานะงานเอง (ไม่ต้อง Login)
-- [ ] **Photo Upload** — รูปภาพงานซ่อม Before/After (`handleProcessPhotos` API พร้อม)
+- [x] **Customer Portal** — ลูกค้าตรวจสอบสถานะงานเอง (ไม่ต้อง Login)
+- [x] **Photo Upload** — รูปภาพงานซ่อม Before/After (`handleProcessPhotos` API พร้อม)
 - [ ] **Inventory Management UI** — หน้าจัดการสต็อกใน PWA (`inventoryOverview` API พร้อม)
 
 **Phase 4 — Advanced:**
-- [ ] **Kudos System** — ระบบให้ดาวช่าง
-- [ ] **Warranty Management** — ระบบรับประกัน
-- [ ] **P&L Report** — รายงานกำไร-ขาดทุน
-- [ ] **Auto-Tax Engine** — คำนวณ VAT 7% และ WHT 3% อัตโนมัติ
-- [ ] **Multi-branch** — รองรับหลายสาขา
+- [x] **Kudos System** — ระบบให้ดาวช่าง
+- [x] **Warranty Management** — ระบบรับประกัน
+- [x] **P&L Report** — รายงานกำไร-ขาดทุน
+- [x] **Auto-Tax Engine** — คำนวณ VAT 7% และ WHT 3% อัตโนมัติ
+- [x] **Multi-branch** — รองรับหลายสาขา
 
 ---
 
@@ -588,4 +612,4 @@ print(json.dumps(r.json(), ensure_ascii=False, indent=2))
 
 ---
 
-*Blueprint นี้สร้างโดย Manus AI | อัปเดตล่าสุด: 17 เมษายน 2569 | v5.5.4*
+*Blueprint นี้สร้างโดย Manus AI | อัปเดตล่าสุด: 18 เมษายน 2569 | v5.5.5*
