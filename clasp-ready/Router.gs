@@ -1039,13 +1039,13 @@ function getSystemVersion() {
   return {
     success:   true,
     status:    'healthy',
-    version:   CONFIG.VERSION  || '6.2.1',
+    version:   CONFIG.VERSION  || '6.2.2',
     build:     CONFIG.BUILD    || '2026-04-20',
     app:       CONFIG.APP_NAME || 'COMPHONE SUPER APP AI',
     updated:   now.toISOString(),
     timestamp: Utilities.formatDate(now, 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss'),
-    deploy_id: 'GAS-@474',
-    commit:    '895d514',
+    deploy_id: 'GAS-@475',
+    commit:    '4762f10',
     env:       'production',
     manifest:  'docs/SYSTEM_MANIFEST.json'
   };

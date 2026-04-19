@@ -5,7 +5,7 @@
 
 var CONFIG = {
   APP_NAME: 'COMPHONE SUPER APP AI',
-  VERSION: '6.2.1',
+  VERSION: '6.2.2',
   BUILD: '2026-04-20',
   TIMEZONE: 'Asia/Bangkok',
 

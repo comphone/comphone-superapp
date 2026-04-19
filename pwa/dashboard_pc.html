@@ -6848,5 +6848,600 @@ const V621 = (() => {
 
 console.log('[COMPHONE v6.2.1] Version System patch loaded — Single Source + Auto Sync + Auto Recovery');
 </script>
+<!-- ============================================================
+     COMPHONE SUPER APP AI — v6.2.2 Full Release System Patch
+     Phase 1: Fallback Version (window.__APP_VERSION)
+     Phase 2: Safe Auto Update (user activity check)
+     Phase 3: Soft Update (data-only reload, no page reload)
+     Phase 4: Environment Control (production/staging/development)
+     Phase 5: Version History in SYSTEM_MANIFEST
+     Phase 6: Health + Version Link (error rate, health score)
+     ============================================================ -->
+<style id="v622-styles">
+/* ── Environment Badge ── */
+.env-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.env-production  { background: #064e3b; color: #34d399; }
+.env-staging     { background: #78350f; color: #fbbf24; }
+.env-development { background: #1e1b4b; color: #a78bfa; }
+
+/* ── Health-Version Panel ── */
+#v622-health-panel {
+  position: fixed; bottom: 20px; left: 20px; z-index: 9990;
+  background: #0f172a; border: 1px solid #1e3a5f; border-radius: 14px;
+  padding: 14px 18px; min-width: 260px; max-width: 320px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  font-size: 12px; font-family: 'Segoe UI', sans-serif;
+  display: none; animation: v622-slide-up 0.3s ease;
+}
+@keyframes v622-slide-up { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+#v622-health-panel.show { display: block; }
+.v622-panel-title { color: #60a5fa; font-weight: 800; font-size: 13px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.v622-metric-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #1e293b; }
+.v622-metric-row:last-child { border-bottom: none; }
+.v622-metric-key { color: #64748b; font-size: 11px; }
+.v622-metric-val { font-weight: 700; font-size: 12px; }
+.v622-good  { color: #34d399; }
+.v622-warn  { color: #fbbf24; }
+.v622-error { color: #f87171; }
+
+/* ── Soft Update Banner ── */
+#v622-soft-banner {
+  display: none; position: fixed; top: 70px; right: 20px; z-index: 9995;
+  background: #1e293b; border: 1px solid #3b82f6; border-radius: 12px;
+  padding: 12px 16px; max-width: 320px;
+  box-shadow: 0 8px 24px rgba(59,130,246,0.3);
+  animation: v622-slide-in-right 0.3s ease;
+}
+@keyframes v622-slide-in-right { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+#v622-soft-banner.show { display: flex; align-items: center; gap: 12px; }
+.v622-soft-icon { font-size: 24px; flex-shrink: 0; }
+.v622-soft-text { flex: 1; }
+.v622-soft-title { color: #f1f5f9; font-size: 13px; font-weight: 700; }
+.v622-soft-sub   { color: #64748b; font-size: 11px; margin-top: 2px; }
+.v622-soft-btn {
+  background: #3b82f6; color: #fff; border: none; border-radius: 8px;
+  padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; flex-shrink: 0;
+}
+.v622-soft-btn:hover { background: #2563eb; }
+.v622-soft-close { color: #475569; cursor: pointer; font-size: 16px; flex-shrink: 0; }
+
+/* ── Activity Guard Indicator ── */
+#v622-activity-guard {
+  display: none; position: fixed; bottom: 20px; right: 20px; z-index: 9991;
+  background: #78350f; border: 1px solid #d97706; border-radius: 10px;
+  padding: 8px 14px; font-size: 11px; color: #fbbf24; font-weight: 700;
+}
+#v622-activity-guard.show { display: flex; align-items: center; gap: 6px; }
+</style>
+
+<!-- Soft Update Banner -->
+<div id="v622-soft-banner">
+  <div class="v622-soft-icon">🔄</div>
+  <div class="v622-soft-text">
+    <div class="v622-soft-title">ข้อมูลใหม่พร้อมแล้ว</div>
+    <div class="v622-soft-sub" id="v622-soft-sub">อัปเดตข้อมูลโดยไม่ต้อง reload หน้า</div>
+  </div>
+  <button class="v622-soft-btn" onclick="V622.softUpdate()">อัปเดต</button>
+  <span class="v622-soft-close" onclick="V622.dismissSoftBanner()">✕</span>
+</div>
+
+<!-- Activity Guard Indicator -->
+<div id="v622-activity-guard">
+  <span>⚠️</span> กำลังทำงาน — เลื่อนอัปเดต
+</div>
+
+<!-- Health-Version Panel -->
+<div id="v622-health-panel">
+  <div class="v622-panel-title">
+    <span>🩺</span> Health + Version Status
+    <span style="margin-left:auto;cursor:pointer;color:#475569" onclick="V622.hideHealthPanel()">✕</span>
+  </div>
+  <div class="v622-metric-row">
+    <span class="v622-metric-key">Version</span>
+    <span class="v622-metric-val v622-good" id="v622-h-version">—</span>
+  </div>
+  <div class="v622-metric-row">
+    <span class="v622-metric-key">Deploy</span>
+    <span class="v622-metric-val" style="color:#a78bfa" id="v622-h-deploy">—</span>
+  </div>
+  <div class="v622-metric-row">
+    <span class="v622-metric-key">Environment</span>
+    <span class="v622-metric-val" id="v622-h-env">—</span>
+  </div>
+  <div class="v622-metric-row">
+    <span class="v622-metric-key">Health Score</span>
+    <span class="v622-metric-val" id="v622-h-health">—</span>
+  </div>
+  <div class="v622-metric-row">
+    <span class="v622-metric-key">Error Rate</span>
+    <span class="v622-metric-val" id="v622-h-errrate">—</span>
+  </div>
+  <div class="v622-metric-row">
+    <span class="v622-metric-key">Uptime</span>
+    <span class="v622-metric-val v622-good" id="v622-h-uptime">—</span>
+  </div>
+  <div class="v622-metric-row">
+    <span class="v622-metric-key">Last Check</span>
+    <span class="v622-metric-val" style="color:#64748b" id="v622-h-lastcheck">—</span>
+  </div>
+  <div style="margin-top:10px;display:flex;gap:8px">
+    <button onclick="V622.refreshHealth()" style="flex:1;background:#1e3a5f;color:#60a5fa;border:none;border-radius:8px;padding:6px;font-size:11px;cursor:pointer">🔄 Refresh</button>
+    <button onclick="V622.showVersionHistory()" style="flex:1;background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:8px;padding:6px;font-size:11px;cursor:pointer">📋 History</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   V622 — Full Release System
+   Phase 1: Fallback Version
+   Phase 2: Safe Auto Update
+   Phase 3: Soft Update
+   Phase 4: Environment Control
+   Phase 5: Version History
+   Phase 6: Health + Version Link
+   ============================================================ */
+'use strict';
+
+const V622 = (() => {
+
+  /* ── Phase 1: Fallback Version ──
+     window.__APP_VERSION is set immediately (no API wait)
+     Used as instant display before backend responds             */
+  window.__APP_VERSION = '6.2.2';  // Fallback — overridden by backend
+  window.__APP_ENV     = 'production';
+  window.__APP_DEPLOY  = 'GAS-@475';
+  window.__APP_COMMIT  = '4762f10';
+
+  // ── Phase 4: Environment Config ──
+  const ENV_CONFIG = {
+    production: {
+      label:          'production',
+      autoUpdateDelay: 30,      // seconds before auto reload
+      softUpdateInterval: 300,  // seconds between soft update checks
+      healthCheckInterval: 120, // seconds between health checks
+      showDebugPanel: false,
+      allowSkipUpdate: true,
+      errorThreshold: 0.05      // 5% error rate = warning
+    },
+    staging: {
+      label:          'staging',
+      autoUpdateDelay: 10,
+      softUpdateInterval: 60,
+      healthCheckInterval: 30,
+      showDebugPanel: true,
+      allowSkipUpdate: true,
+      errorThreshold: 0.10
+    },
+    development: {
+      label:          'development',
+      autoUpdateDelay: 5,
+      softUpdateInterval: 30,
+      healthCheckInterval: 15,
+      showDebugPanel: true,
+      allowSkipUpdate: true,
+      errorThreshold: 0.20
+    }
+  };
+
+  // ── Phase 2: User Activity Tracking ──
+  let _lastActivity    = Date.now();
+  let _isUserActive    = false;
+  let _pendingUpdate   = null;
+  let _activityTimeout = null;
+  const ACTIVITY_IDLE_MS = 30000; // 30s idle = safe to reload
+
+  function _trackActivity() {
+    _lastActivity  = Date.now();
+    _isUserActive  = true;
+    clearTimeout(_activityTimeout);
+    _activityTimeout = setTimeout(() => {
+      _isUserActive = false;
+      // If there's a pending update and user is now idle, apply it
+      if (_pendingUpdate) {
+        console.log('[V622] User idle — applying pending update');
+        _applyPendingUpdate();
+      }
+    }, ACTIVITY_IDLE_MS);
+  }
+
+  function _initActivityTracking() {
+    ['click','keydown','mousemove','scroll','touchstart','input'].forEach(evt => {
+      document.addEventListener(evt, _trackActivity, { passive: true });
+    });
+  }
+
+  function _isUserBusy() {
+    // Check if user is actively interacting or in a critical operation
+    if (_isUserActive) return true;
+    // Check if any modal/form is open
+    const openModal = document.querySelector('.modal.show, [data-modal="open"], .v621-modal-box');
+    if (openModal) return true;
+    // Check if POS cart has items
+    if (window.APP_STATE && window.APP_STATE.posCart && window.APP_STATE.posCart.length > 0) return true;
+    // Check if any form has unsaved data
+    const dirtyForm = document.querySelector('form[data-dirty="true"], input[data-changed="true"]');
+    if (dirtyForm) return true;
+    return false;
+  }
+
+  function _applyPendingUpdate() {
+    if (!_pendingUpdate) return;
+    const { type, data } = _pendingUpdate;
+    _pendingUpdate = null;
+    document.getElementById('v622-activity-guard')?.classList.remove('show');
+    if (type === 'soft') {
+      _doSoftUpdate(data);
+    } else if (type === 'hard') {
+      V621.forceUpdate && V621.forceUpdate();
+    }
+  }
+
+  /* ── Phase 2: Safe Auto Update ──
+     Replaces V621's immediate reload with activity-aware logic  */
+  function safeUpdate(type = 'soft', data = null) {
+    if (_isUserBusy()) {
+      console.log('[V622] User is busy — queuing update');
+      _pendingUpdate = { type, data };
+      // Show activity guard indicator
+      const guard = document.getElementById('v622-activity-guard');
+      if (guard) guard.classList.add('show');
+      // Show soft banner instead of hard reload
+      if (type === 'hard') {
+        _showSoftBanner('มีเวอร์ชันใหม่รอการอัปเดต (จะอัปเดตเมื่อคุณหยุดทำงาน)');
+      }
+      return false;
+    }
+    _applyPendingUpdate();
+    return true;
+  }
+
+  /* ── Phase 3: Soft Update ──
+     Reload data only — no page reload                           */
+  let _softUpdateTimer = null;
+
+  function _doSoftUpdate(data) {
+    console.log('[V622] Soft update — refreshing data only');
+    // Update version display
+    if (data && data.version) {
+      window.__APP_VERSION = data.version;
+      if (typeof V621 !== 'undefined' && V621.initApp) {
+        V621.initApp().catch(() => {});
+      }
+    }
+    // Refresh current section data
+    const activeSection = document.querySelector('.nav-item.active')?.dataset?.section;
+    if (activeSection && typeof window[`load${_capitalize(activeSection)}Section`] === 'function') {
+      window[`load${_capitalize(activeSection)}Section`]();
+    } else if (typeof loadDashboard === 'function') {
+      loadDashboard();
+    }
+    // Clear V61 cache for fresh data
+    if (window.V61_CACHE) window.V61_CACHE.clear();
+    // Update health panel
+    _refreshHealthMetrics();
+    dismissSoftBanner();
+    console.log('[V622] Soft update complete — page not reloaded');
+  }
+
+  function _showSoftBanner(msg) {
+    const banner = document.getElementById('v622-soft-banner');
+    const sub    = document.getElementById('v622-soft-sub');
+    if (banner) {
+      if (sub) sub.textContent = msg || 'ข้อมูลใหม่พร้อมแล้ว';
+      banner.classList.add('show');
+    }
+  }
+
+  function softUpdate() {
+    const banner = document.getElementById('v622-soft-banner');
+    if (banner) banner.classList.remove('show');
+    _doSoftUpdate({ version: window.__APP_VERSION });
+  }
+
+  function dismissSoftBanner() {
+    document.getElementById('v622-soft-banner')?.classList.remove('show');
+    document.getElementById('v622-activity-guard')?.classList.remove('show');
+  }
+
+  /* ── Phase 4: Environment Detection ──
+     Auto-detect from URL or meta tag                           */
+  function _detectEnv() {
+    // From meta tag
+    const metaEnv = document.querySelector('meta[name="app-env"]')?.content;
+    if (metaEnv && ENV_CONFIG[metaEnv]) return metaEnv;
+    // From URL
+    const host = location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') return 'development';
+    if (host.includes('staging') || host.includes('test')) return 'staging';
+    return 'production';
+  }
+
+  function _applyEnvConfig(env) {
+    const cfg = ENV_CONFIG[env] || ENV_CONFIG.production;
+    window.__APP_ENV = env;
+
+    // Inject env badge into sidebar
+    const logoSub = document.querySelector('.sidebar-logo .logo-sub');
+    if (logoSub && env !== 'production') {
+      const badge = document.createElement('span');
+      badge.className = `env-badge env-${env}`;
+      badge.textContent = env;
+      badge.style.marginLeft = '6px';
+      logoSub.appendChild(badge);
+    }
+
+    // Set soft update interval
+    if (cfg.softUpdateInterval > 0) {
+      _softUpdateTimer = setInterval(() => {
+        _checkForSoftUpdate();
+      }, cfg.softUpdateInterval * 1000);
+    }
+
+    // Show debug panel in non-production
+    if (cfg.showDebugPanel) {
+      setTimeout(() => showHealthPanel(), 2000);
+    }
+
+    return cfg;
+  }
+
+  async function _checkForSoftUpdate() {
+    try {
+      if (typeof callApi !== 'function') return;
+      const res = await callApi('getSystemVersion');
+      if (res && res.version && res.version !== window.__APP_VERSION) {
+        console.log('[V622] New version detected:', res.version);
+        _pendingUpdate = { type: 'soft', data: res };
+        if (!_isUserBusy()) {
+          _showSoftBanner(`เวอร์ชัน ${res.version} พร้อมแล้ว — คลิกเพื่ออัปเดตข้อมูล`);
+        }
+      }
+    } catch(e) { /* silent */ }
+  }
+
+  /* ── Phase 6: Health + Version Link ──
+     Connect version info to health score and error rate        */
+  let _healthData = {
+    score:     null,
+    errorRate: null,
+    uptime:    null,
+    lastCheck: null,
+    version:   null
+  };
+
+  let _errorCount   = 0;
+  let _requestCount = 0;
+  let _startTime    = Date.now();
+
+  function _trackApiCall(success) {
+    _requestCount++;
+    if (!success) _errorCount++;
+  }
+
+  function _getErrorRate() {
+    if (_requestCount === 0) return 0;
+    return (_errorCount / _requestCount);
+  }
+
+  function _getUptime() {
+    const ms = Date.now() - _startTime;
+    const h  = Math.floor(ms / 3600000);
+    const m  = Math.floor((ms % 3600000) / 60000);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+
+  function _calcHealthScore(errRate) {
+    if (errRate < 0.01) return { score: 100, label: '100%', cls: 'v622-good' };
+    if (errRate < 0.05) return { score: 90,  label: '90%',  cls: 'v622-good' };
+    if (errRate < 0.10) return { score: 75,  label: '75%',  cls: 'v622-warn' };
+    if (errRate < 0.20) return { score: 50,  label: '50%',  cls: 'v622-warn' };
+    return                     { score: 25,  label: '25%',  cls: 'v622-error' };
+  }
+
+  async function _refreshHealthMetrics() {
+    const errRate = _getErrorRate();
+    const health  = _calcHealthScore(errRate);
+    const env     = window.__APP_ENV || 'production';
+    const cfg     = ENV_CONFIG[env] || ENV_CONFIG.production;
+
+    _healthData = {
+      score:     health.score,
+      errorRate: errRate,
+      uptime:    _getUptime(),
+      lastCheck: new Date().toLocaleTimeString('th-TH'),
+      version:   window.__APP_VERSION
+    };
+
+    // Update panel UI
+    const set = (id, val, cls) => {
+      const el = document.getElementById(id);
+      if (el) { el.textContent = val; if (cls) el.className = `v622-metric-val ${cls}`; }
+    };
+    set('v622-h-version',   `v${_healthData.version}`,                'v622-good');
+    set('v622-h-deploy',    window.__APP_DEPLOY || '—');
+    set('v622-h-env',       env);
+    set('v622-h-health',    health.label,                              health.cls);
+    set('v622-h-errrate',   `${(errRate * 100).toFixed(1)}%`,
+        errRate > cfg.errorThreshold ? 'v622-warn' : 'v622-good');
+    set('v622-h-uptime',    _healthData.uptime,                        'v622-good');
+    set('v622-h-lastcheck', _healthData.lastCheck);
+
+    // Log health-version link
+    console.log('[V622 HEALTH]', {
+      version:   window.__APP_VERSION,
+      deploy:    window.__APP_DEPLOY,
+      env:       env,
+      health:    health.label,
+      errorRate: `${(errRate * 100).toFixed(1)}%`,
+      uptime:    _healthData.uptime
+    });
+
+    return _healthData;
+  }
+
+  function showHealthPanel() {
+    _refreshHealthMetrics();
+    document.getElementById('v622-health-panel')?.classList.add('show');
+  }
+
+  function hideHealthPanel() {
+    document.getElementById('v622-health-panel')?.classList.remove('show');
+  }
+
+  function refreshHealth() {
+    _refreshHealthMetrics();
+  }
+
+  /* ── Phase 5: Version History ──
+     Read from sessionStorage (populated from SYSTEM_MANIFEST)  */
+  function showVersionHistory() {
+    try {
+      const stored = sessionStorage.getItem('comphone_version_history');
+      const history = stored ? JSON.parse(stored) : _getDefaultHistory();
+      _renderHistoryModal(history);
+    } catch(e) {
+      _renderHistoryModal(_getDefaultHistory());
+    }
+  }
+
+  function _getDefaultHistory() {
+    return [
+      { version: '6.2.2', date: '2026-04-20', commit: '4762f10', notes: 'Full Release System: Safe Update, Soft Update, Env Control, Health Link' },
+      { version: '6.2.1', date: '2026-04-20', commit: '895d514', notes: 'Version System: Single Source, Auto Sync, Auto Recovery' },
+      { version: '6.2.0', date: '2026-04-19', commit: '8e9261e', notes: 'Header Update: COMPHONE SUPER APP AI' },
+      { version: '6.1.0', date: '2026-04-18', commit: 'ee19215', notes: 'Performance: Bundle API, Parallel Fetch, Cache Layer' },
+      { version: '6.0.0', date: '2026-04-17', commit: '3678c2e', notes: 'Production Grade: POS, Job Lifecycle, AI Integration' }
+    ];
+  }
+
+  function _renderHistoryModal(history) {
+    const existing = document.getElementById('v622-history-modal');
+    if (existing) existing.remove();
+
+    const rows = history.map(h => `
+      <tr>
+        <td style="color:#60a5fa;font-weight:700;padding:8px 12px">v${h.version}</td>
+        <td style="color:#94a3b8;padding:8px 12px;font-size:11px">${h.date}</td>
+        <td style="color:#34d399;padding:8px 12px;font-family:monospace;font-size:11px">${(h.commit||'—').substring(0,7)}</td>
+        <td style="color:#cbd5e1;padding:8px 12px;font-size:12px">${h.notes||'—'}</td>
+      </tr>`).join('');
+
+    const modal = document.createElement('div');
+    modal.id = 'v622-history-modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:20px';
+    modal.innerHTML = `
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:20px;padding:28px;max-width:700px;width:100%;max-height:80vh;overflow-y:auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div style="color:#f1f5f9;font-size:18px;font-weight:800">📋 Version History</div>
+          <button onclick="document.getElementById('v622-history-modal').remove()"
+            style="background:none;border:none;color:#64748b;font-size:20px;cursor:pointer">✕</button>
+        </div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="border-bottom:1px solid #334155">
+              <th style="text-align:left;padding:6px 12px;color:#64748b;font-size:11px;font-weight:700">VERSION</th>
+              <th style="text-align:left;padding:6px 12px;color:#64748b;font-size:11px;font-weight:700">DATE</th>
+              <th style="text-align:left;padding:6px 12px;color:#64748b;font-size:11px;font-weight:700">COMMIT</th>
+              <th style="text-align:left;padding:6px 12px;color:#64748b;font-size:11px;font-weight:700">NOTES</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  }
+
+  /* ── Intercept callApi for error tracking ── */
+  function _patchCallApi() {
+    if (typeof window.callApi !== 'function') return;
+    const _orig = window.callApi;
+    window.callApi = async function(...args) {
+      try {
+        const result = await _orig.apply(this, args);
+        _trackApiCall(true);
+        return result;
+      } catch(e) {
+        _trackApiCall(false);
+        throw e;
+      }
+    };
+  }
+
+  /* ── Helper ── */
+  function _capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+
+  /* ── Public Init ── */
+  function init() {
+    const env = _detectEnv();
+    const cfg = _applyEnvConfig(env);
+    _initActivityTracking();
+    _patchCallApi();
+
+    // Start health check interval
+    setInterval(() => {
+      _refreshHealthMetrics();
+    }, cfg.healthCheckInterval * 1000);
+
+    // Initial health check after 3s
+    setTimeout(_refreshHealthMetrics, 3000);
+
+    // Load version history from sessionStorage (set by V621)
+    window.addEventListener('comphone:version', (e) => {
+      const vd = e.detail;
+      if (vd && vd.version) {
+        window.__APP_VERSION = vd.version;
+        window.__APP_DEPLOY  = vd.deploy_id || window.__APP_DEPLOY;
+        window.__APP_COMMIT  = vd.commit    || window.__APP_COMMIT;
+        _refreshHealthMetrics();
+      }
+    });
+
+    console.log(`[V622] Full Release System initialized — env: ${env}`);
+  }
+
+  return {
+    init, safeUpdate, softUpdate, dismissSoftBanner,
+    showHealthPanel, hideHealthPanel, refreshHealth,
+    showVersionHistory, getHealthData: () => ({ ..._healthData })
+  };
+})();
+
+/* ── Auto-init V622 ── */
+(function() {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => V622.init());
+  } else {
+    V622.init();
+  }
+
+  // Add Health Panel toggle to topbar (after DOM ready)
+  function _addHealthToggle() {
+    const topbar = document.querySelector('.topbar');
+    if (!topbar || document.getElementById('v622-health-btn')) return;
+    const btn = document.createElement('button');
+    btn.id = 'v622-health-btn';
+    btn.className = 'btn-refresh';
+    btn.title = 'Health + Version Status';
+    btn.innerHTML = '<i class="bi bi-heart-pulse"></i>';
+    btn.onclick = () => V622.showHealthPanel();
+    // Insert before last button in topbar
+    const lastBtn = topbar.querySelector('button:last-child, a:last-child');
+    if (lastBtn) topbar.insertBefore(btn, lastBtn);
+    else topbar.appendChild(btn);
+  }
+
+  if (document.readyState === 'complete') {
+    _addHealthToggle();
+  } else {
+    window.addEventListener('load', _addHealthToggle);
+  }
+})();
+
+console.log('[COMPHONE v6.2.2] Full Release System patch loaded — Safe Update + Soft Update + Env Control + Health Link');
+</script>
 </body>
 </html>
