@@ -445,6 +445,33 @@ function dispatchActionV55_(action, payload, args) {
         return setCachedResponse(payload.key || '', payload.data || {}, payload.ttl || 300);
       case 'invalidateCache':
         return invalidateCache(payload.key || '');
+      // ── LINE Intelligent Notification (LineBotIntelligent.gs) ─────────
+      case 'queueAlertIntelligent':
+        return queueAlertIntelligent(payload.alertType || '', payload.data || {}, payload.options || {});
+      case 'getIntelAlertQueue':
+        return getIntelAlertQueue(payload.options || {});
+      case 'getPrioritizedAlerts':
+        return getPrioritizedAlerts(payload.role || '', payload.userId || '');
+      case 'getAlertsForRole':
+        return getAlertsForRole(payload.role || '');
+      case 'getAlertsForUser':
+        return getAlertsForUser(payload.userId || '');
+      case 'expireOldAlerts':
+        return expireOldAlerts();
+      case 'setAlertTTL':
+        return setAlertTTL(payload.alertId || '', payload.ttlMin || 120);
+      case 'acknowledgeAlert':
+        return acknowledgeAlert(payload.alertId || '', payload.lineUserId || '');
+      case 'bulkAcknowledge':
+        return bulkAcknowledge(payload.alertIds || [], payload.lineUserId || '');
+      case 'getGroupedAlerts':
+        return getGroupedAlerts(payload.options || {});
+      case 'buildGroupedFlexMessage':
+        return buildGroupedFlexMessage(payload.groupKey || '', payload.options || {});
+      case 'getAlertAnalytics':
+        return getAlertAnalytics(payload.days || 7);
+      case 'buildAnalyticsFlexMessage':
+        return buildAnalyticsFlexMessage(payload.days || 7);
       case 'nudgeTech':
         return nudgeTechAction_(payload);
       case 'addAppointment':
