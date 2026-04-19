@@ -250,6 +250,8 @@ function dispatchActionV55_(action, payload, args) {
         return setUserActive(payload.token || '', payload.username || '', payload.active !== false);
       case 'setupUserSheet':
         return setupUserSheet();
+      case 'forceResetAdmin':
+        return forceResetAdmin(payload.password || payload.newPassword || '');
 
       // ============================================================
       // System Setup & Health Check

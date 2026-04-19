@@ -264,6 +264,31 @@ function setupUserSheet() {
 }
 
 // ============================================================
+// 🔧 Force Reset Admin — ล้าง DB_USERS และสร้าง admin ใหม่
+// ============================================================
+function forceResetAdmin(newPassword) {
+  try {
+    var ss = getComphoneSheet();
+    var sh = findSheetByName(ss, AUTH_SHEET_NAME);
+    if (!sh) {
+      sh = ss.insertSheet(AUTH_SHEET_NAME);
+    }
+    // ล้างข้อมูลทั้งหมด
+    sh.clearContents();
+    // สร้าง header ใหม่
+    sh.appendRow(['username', 'password', 'role', 'full_name', 'active', 'created_at', 'created_by']);
+    sh.setFrozenRows(1);
+    sh.getRange(1, 1, 1, 7).setFontWeight('bold').setBackground('#1a73e8').setFontColor('#ffffff');
+    // สร้าง admin user ใหม่
+    var pw = newPassword || PropertiesService.getScriptProperties().getProperty('DEFAULT_ADMIN_PASSWORD') || 'Comphone@2025!';
+    sh.appendRow(['admin', hashPassword_(pw), 'OWNER', 'ผู้ดูแลระบบ', 'TRUE', getThaiTimestamp(), 'SYSTEM']);
+    return { success: true, message: 'รีเซ็ต DB_USERS สำเร็จ สร้าง admin user ใหม่แล้ว', username: 'admin' };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+// ============================================================
 // 🔒 Private Helpers
 // ============================================================
 function hashPassword_(password) {
