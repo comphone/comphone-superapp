@@ -522,6 +522,18 @@ function dispatchActionV55_(action, payload, args) {
       case 'ensureAllBranchIdColumns':
         return ensureAllBranchIdColumns();
 
+      // ============================================================
+      // Database Integrity (PART 2)
+      // ============================================================
+      case 'databaseMaintenance':
+        return jsonOutputV55_(runDatabaseMaintenance());
+      case 'validateSchema':
+        return jsonOutputV55_(validateSchema_(payload.sheetName || 'DBJOBS'));
+      case 'runIntegrityCheck':
+        return jsonOutputV55_(runIntegrityCheck());
+      case 'cleanAllData':
+        return jsonOutputV55_(cleanAllData());
+
       default:
         return invokeFunctionByNameV55_(action, args);
     }

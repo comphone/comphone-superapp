@@ -263,6 +263,67 @@ var SCHEMA = {
     ],
     color: '#5f6368',
     description: 'ตาราง Activity Log ทั่วไป'
+  },
+
+  DB_TAX_REPORT: {
+    sheetName: 'DB_TAX_REPORT',
+    headers: [
+      'Report_ID',
+      'Period',
+      'Bill_ID',
+      'Job_ID',
+      'Customer_Name',
+      'Subtotal',
+      'VAT_Amount',
+      'WHT_Amount',
+      'Net_Payable',
+      'Tax_Mode',
+      'Branch_ID',
+      'Created_At'
+    ],
+    color: '#e37400',
+    description: 'ตารางรายงานภาษีรายเดือน'
+  },
+
+  DB_WARRANTY: {
+    sheetName: 'DB_WARRANTY',
+    headers: [
+      'Warranty_ID',
+      'Job_ID',
+      'Customer_ID',
+      'Customer_Name',
+      'Phone',
+      'Device',
+      'Issue',
+      'Warranty_Type',
+      'Start_Date',
+      'End_Date',
+      'Duration_Days',
+      'Status',
+      'PDF_URL',
+      'Branch_ID',
+      'Created_At',
+      'Updated_At'
+    ],
+    color: '#1e8e3e',
+    description: 'ตารางใบรับประกันสินค้า/บริการ'
+  },
+
+  DB_HEALTH_LOG: {
+    sheetName: 'DB_HEALTH_LOG',
+    headers: [
+      'Log_ID',
+      'Timestamp',
+      'Overall_Status',
+      'Response_Time_Ms',
+      'Sheets_OK',
+      'Config_OK',
+      'Error_Count',
+      'Errors_Detail',
+      'Triggered_By'
+    ],
+    color: '#1967d2',
+    description: 'ตาราง Health Check Log'
   }
 };
 

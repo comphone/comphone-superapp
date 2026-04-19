@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>ตรวจสอบสถานะงานซ่อม — COMPHONE</title>
-  <meta name="description" content="ตรวจสอบสถานะงานซ่อมคอมพิวเตอร์และมือถือ COMPHONE">
+  <title>ตรวจสอบสถานะงานบริการ — COMPHONE</title>
+  <meta name="description" content="ตรวจสอบสถานะงานบริการ IT ของ COMPHONE">
   <meta name="theme-color" content="#1e40af">
 
   <!-- PWA Manifest -->
@@ -15,8 +15,8 @@
   <meta name="apple-mobile-web-app-title" content="COMPHONE">
 
   <!-- Open Graph (สำหรับแชร์ใน LINE/Facebook) -->
-  <meta property="og:title" content="ตรวจสอบสถานะงานซ่อม — COMPHONE">
-  <meta property="og:description" content="ดูสถานะงานซ่อมคอมและมือถือของคุณแบบ Real-time">
+  <meta property="og:title" content="ตรวจสอบสถานะงานบริการ — COMPHONE">
+  <meta property="og:description" content="ดูสถานะงานบริการ IT ของคุณแบบ Real-time">
   <meta property="og:image" content="icons/icon-512.png">
   <meta property="og:type" content="website">
 
@@ -127,7 +127,7 @@
     <div id="install-banner" class="install-banner hidden" onclick="installPWA()">
       <i class="bi bi-download" style="font-size:1.5rem;"></i>
       <div class="install-banner-text">
-        <strong>ติดตั้งแอปบนมือถือ</strong>
+        <strong>ติดตั้งแอปบนอุปกรณ์มือถือ</strong>
         ใช้งานได้แม้ไม่มีอินเทอร์เน็ต
       </div>
       <i class="bi bi-chevron-right"></i>
@@ -137,7 +137,7 @@
     <div class="logo-area">
       <div style="font-size:2.5rem;">🔧</div>
       <h1>COMPHONE</h1>
-      <p>ตรวจสอบสถานะงานซ่อมของคุณ</p>
+      <p>ตรวจสอบสถานะงานบริการของคุณ</p>
     </div>
 
     <!-- Search Form -->
@@ -171,7 +171,7 @@
   <div id="qr-modal" class="qr-modal hidden" onclick="closeQRModal()">
     <div class="qr-modal-box" onclick="event.stopPropagation()">
       <h3>QR Code สำหรับแชร์</h3>
-      <p>สแกนเพื่อดูสถานะงานซ่อม</p>
+      <p>สแกนเพื่อดูสถานะงานบริการ</p>
       <canvas id="qr-canvas"></canvas>
       <br><br>
       <button onclick="closeQRModal()" style="background:#f1f5f9;border:none;border-radius:8px;padding:0.5rem 1.5rem;cursor:pointer;">ปิด</button>
@@ -292,7 +292,7 @@
               renderJobResult(data);
               // แจ้งเตือนถ้าสถานะเปลี่ยน
               if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification('สถานะงานซ่อมอัปเดต!', {
+                new Notification('สถานะงานบริการอัปเดต!', {
                   body: 'Job ' + jobId + ': ' + (data.job.status_label || newStatus),
                   icon: 'icons/icon-192.png'
                 });

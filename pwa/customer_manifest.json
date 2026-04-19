@@ -1,7 +1,7 @@
 {
-  "name": "COMPHONE — ตรวจสอบงานซ่อม",
+  "name": "COMPHONE — ตรวจสอบงานบริการ",
   "short_name": "COMPHONE",
-  "description": "ตรวจสอบสถานะงานซ่อมคอมพิวเตอร์และมือถือ",
+  "description": "ตรวจสอบสถานะงานบริการ IT ของ COMPHONE",
   "start_url": "./customer_portal.html",
   "display": "standalone",
   "orientation": "portrait",

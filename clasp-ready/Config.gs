@@ -72,7 +72,7 @@ var CONFIG = {
     TAX_MODE:         'VAT7',
     LOW_STOCK_ALERT:  5,
     BRANCH_ID:        'HQ',
-    COMPANY_NAME:     'ร้านคอมโฟน',
+    COMPANY_NAME:     'Comphone SuperApp AI',
     COMPANY_TAX_ID:   '',
     COMPANY_ADDRESS:  '',
     COMPANY_PHONE:    ''

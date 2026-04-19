@@ -118,7 +118,7 @@ function filterTimelineEvents_(events) {
  * สร้าง HTML ของ timeline item
  */
 function buildTimelineItem_(ev, idx) {
-  const typeLabel = { job: 'งานซ่อม', followup: 'ติดตาม', payment: 'ชำระเงิน', line: 'LINE' };
+  const typeLabel = { job: 'งานบริการ', followup: 'ติดตาม', payment: 'ชำระเงิน', line: 'LINE' };
   const dateStr = ev.date ? new Date(ev.date).toLocaleDateString('th-TH', {
     year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
   }) : '';
@@ -152,7 +152,7 @@ function buildTimelineItem_(ev, idx) {
  * เปิด modal รายละเอียด event
  */
 function openEventDetail_(ev) {
-  const typeLabel = { job: 'งานซ่อม', followup: 'ติดตาม', payment: 'ชำระเงิน', line: 'LINE' };
+  const typeLabel = { job: 'งานบริการ', followup: 'ติดตาม', payment: 'ชำระเงิน', line: 'LINE' };
   const dateStr = ev.date ? new Date(ev.date).toLocaleString('th-TH') : '';
   let html = `<div style="padding:16px">
     <div style="font-size:13px;color:#6b7280;margin-bottom:12px">${dateStr}</div>
@@ -462,7 +462,7 @@ function buildTimelineModal_() {
       </div>
       <div class="modal-filter-bar" id="crm-timeline-filter-tabs">
         <button class="filter-tab active" data-type="all">ทั้งหมด</button>
-        <button class="filter-tab" data-type="job">งานซ่อม</button>
+        <button class="filter-tab" data-type="job">งานบริการ</button>
         <button class="filter-tab" data-type="followup">ติดตาม</button>
         <button class="filter-tab" data-type="payment">ชำระเงิน</button>
       </div>

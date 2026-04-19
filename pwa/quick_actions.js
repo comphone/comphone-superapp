@@ -69,7 +69,7 @@ function sendLine() {
   const customerName  = job ? job.customer : '';
   const customerPhone = job ? job.phone : '';
   const defaultMsg    = job
-    ? `สวัสดีครับ คุณ${customerName}\nงานซ่อมของท่าน (${jobId}) อัปเดตแล้วครับ 🔧\nสอบถามเพิ่มเติม: 02-xxx-xxxx`
+    ? `สวัสดีครับ คุณ${customerName}\nงานบริการของท่าน (${jobId}) อัปเดตแล้วครับ 🔧\nสอบถามเพิ่มเติม: 02-xxx-xxxx`
     : 'สวัสดีครับ ขอบคุณที่ใช้บริการ COMPHONE 🙏';
 
   document.getElementById('modal-send-line-content').innerHTML = `

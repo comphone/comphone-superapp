@@ -118,8 +118,8 @@ function showLoginScreen() {
         <div style="width:80px;height:80px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:24px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 8px 24px rgba(59,130,246,0.4)">
           <i class="bi bi-phone-fill" style="font-size:36px;color:#fff"></i>
         </div>
-        <h1 style="color:#fff;font-size:24px;font-weight:800;margin:0">Comphone SuperApp</h1>
-        <p style="color:#94a3b8;font-size:14px;margin:8px 0 0">ระบบจัดการร้านซ่อมมือถือ</p>
+        <h1 style="color:#fff;font-size:24px;font-weight:800;margin:0">Comphone SuperApp AI</h1>
+        <p style="color:#94a3b8;font-size:14px;margin:8px 0 0">ระบบบริหารงานบริการ IT และโซลูชันเทคโนโลยี</p>
       </div>
 
       <!-- Login Form -->
@@ -169,7 +169,7 @@ function showLoginScreen() {
 
       <!-- Version -->
       <div style="text-align:center;margin-top:24px;color:#334155;font-size:11px">
-        Comphone SuperApp v5.5 · PWA
+        Comphone SuperApp AI v5.5 · PWA
       </div>
     </div>
   `;

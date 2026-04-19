@@ -342,7 +342,22 @@ function buildBillingSnapshotFromJob_(jobId, options) {
     var laborCost = normalizeMoneyValue_(options.labor_cost, existing.success ? existing.billing.labor_cost : extractLaborCostFromText_(job.note || ''));
     var subtotal = roundMoney_(partsCost + laborCost);
     var discount = normalizeMoneyValue_(options.discount, existing.success ? existing.billing.discount : 0);
-    var totalAmount = normalizeMoneyValue_(options.total_amount, existing.success ? existing.billing.total_amount : roundMoney_(subtotal - discount));
+    var subtotalAfterDiscount = roundMoney_(subtotal - discount);
+
+    // ── Auto-Tax: เรียก TaxEngine คำนวณ VAT/WHT อัตโนมัติ ──
+    var taxResult = null;
+    if (typeof calculateTax === 'function') {
+      taxResult = calculateTax({
+        subtotal: subtotalAfterDiscount,
+        tax_mode: options.tax_mode || getConfigSafe_('TAX_MODE') || 'VAT7',
+        wht_rate: options.wht_rate ? parseFloat(options.wht_rate) : null,
+        apply_wht: options.apply_wht || false
+      });
+    }
+    var vatAmount = taxResult ? (taxResult.vat_amount || 0) : 0;
+    var whtAmount = taxResult ? (taxResult.wht_amount || 0) : 0;
+    var netPayable = taxResult ? (taxResult.net_payable || subtotalAfterDiscount) : subtotalAfterDiscount;
+    var totalAmount = normalizeMoneyValue_(options.total_amount, existing.success ? existing.billing.total_amount : netPayable);
     var amountPaid = normalizeMoneyValue_(options.amount_paid, existing.success ? existing.billing.amount_paid : 0);
     var balanceDue = roundMoney_(Math.max(0, totalAmount - amountPaid));
     var promptPayId = options.biller_id || options.promptpay_biller_id || getConfigSafe_('PROMPTPAY_BILLER_ID') || getConfigSafe_('PROMPTPAY_ID');
@@ -359,6 +374,8 @@ function buildBillingSnapshotFromJob_(jobId, options) {
       labor_cost: laborCost,
       subtotal: subtotal,
       discount: discount,
+      vat_amount: vatAmount,
+      wht_amount: whtAmount,
       total_amount: totalAmount,
       amount_paid: amountPaid,
       balance_due: balanceDue,
@@ -467,6 +484,8 @@ function getBillingSheetContext_(sh) {
     laborCost: findHeaderIndex_(headers, ['Labor_Cost', 'labor_cost', 'ค่าแรง']),
     subtotal: findHeaderIndex_(headers, ['Subtotal', 'subtotal']),
     discount: findHeaderIndex_(headers, ['Discount', 'discount', 'ส่วนลด']),
+    vatAmount: findHeaderIndex_(headers, ['VAT_Amount', 'vat_amount', 'VAT']),
+    whtAmount: findHeaderIndex_(headers, ['WHT_Amount', 'wht_amount', 'WHT']),
     totalAmount: findHeaderIndex_(headers, ['Total_Amount', 'total_amount', 'รวม', 'ยอดรวม']),
     amountPaid: findHeaderIndex_(headers, ['Amount_Paid', 'amount_paid', 'ยอดชำระ']),
     balanceDue: findHeaderIndex_(headers, ['Balance_Due', 'balance_due', 'คงเหลือ']),
@@ -500,6 +519,8 @@ function getBillingSheetContext_(sh) {
       Labor_Cost: indices.laborCost,
       Subtotal: indices.subtotal,
       Discount: indices.discount,
+      VAT_Amount: indices.vatAmount,
+      WHT_Amount: indices.whtAmount,
       Total_Amount: indices.totalAmount,
       Amount_Paid: indices.amountPaid,
       Balance_Due: indices.balanceDue,
@@ -564,6 +585,8 @@ function fillBillingRow_(row, indices, billing) {
   setIfIndex_(row, indices.laborCost, billing.labor_cost);
   setIfIndex_(row, indices.subtotal, billing.subtotal);
   setIfIndex_(row, indices.discount, billing.discount);
+  setIfIndex_(row, indices.vatAmount, billing.vat_amount || 0);
+  setIfIndex_(row, indices.whtAmount, billing.wht_amount || 0);
   setIfIndex_(row, indices.totalAmount, billing.total_amount);
   setIfIndex_(row, indices.amountPaid, billing.amount_paid);
   setIfIndex_(row, indices.balanceDue, billing.balance_due);
