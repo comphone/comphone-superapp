@@ -1373,27 +1373,9 @@ function setActiveNav(section) {
   });
 }
 
-// ===== SESSION CACHE =====
-const _apiCache = {};
-const _CACHE_TTL = 60000; // 60 seconds
-function cachedCallApi(action, payload = {}, ttl = _CACHE_TTL) {
-  const key = action + ':' + JSON.stringify(payload);
-  const now = Date.now();
-  if (_apiCache[key] && (now - _apiCache[key].ts) < ttl) {
-    return Promise.resolve(_apiCache[key].data);
-  }
-  return callApi(action, payload).then(data => {
-    _apiCache[key] = { data, ts: now };
-    return data;
-  });
-}
-function clearCache(action) {
-  if (action) {
-    Object.keys(_apiCache).filter(k => k.startsWith(action + ':')).forEach(k => delete _apiCache[k]);
-  } else {
-    Object.keys(_apiCache).forEach(k => delete _apiCache[k]);
-  }
-}
+// ===== SESSION CACHE (delegated to api_client.js — 15s TTL) =====
+// cachedCallApi, clearApiCache, startAutoRefresh, stopAutoRefresh defined in api_client.js
+function clearCache(action) { if (typeof clearApiCache === 'function') clearApiCache(action); }
 
 // ===== SKELETON LOADING =====
 function skeletonCard(n = 3) {
@@ -1564,13 +1546,14 @@ async function loadDashboard() {
   document.getElementById('main-content').innerHTML = skeletonCard(4) + skeletonTable(4);
   try {
     // Parallel API calls instead of sequential
-    const data = await cachedCallApi('getDashboardData', {}, 30000);
+    const data = await cachedCallApi('getDashboardData', {}, typeof COMPHONE_CACHE_TTL !== 'undefined' ? COMPHONE_CACHE_TTL : 15000, window._forceRefresh);
+    window._forceRefresh = false;
     DASHBOARD_DATA = data;
     renderDashboard(data);
     // Update badges in background
     Promise.all([
-      cachedCallApi('listBillings', { limit: 10 }, 30000),
-      cachedCallApi('getWarrantyDue', {}, 60000)
+      cachedCallApi('listBillings', { limit: 10 }, typeof COMPHONE_CACHE_TTL !== 'undefined' ? COMPHONE_CACHE_TTL : 15000),
+      cachedCallApi('getWarrantyDue', {}, typeof COMPHONE_CACHE_TTL_SLOW !== 'undefined' ? COMPHONE_CACHE_TTL_SLOW : 60000)
     ]).then(([billRes, warRes]) => {
       const unpaidBills = (billRes && billRes.billings ? billRes.billings : []).filter(b => b.status !== 'paid');
       if (unpaidBills.length > 0) {
@@ -1596,21 +1579,115 @@ async function loadDashboard() {
   }
 }
 
-// ===== UX: Add shimmer animation CSS =====
-(function addShimmerCSS() {
+// ===== UX: Toast + Shimmer + Fade + Auto Refresh =====
+(function addUXEnhancements() {
   const style = document.createElement('style');
   style.textContent = `
-    @keyframes shimmer {
-      0% { background-position: -200% 0; }
-      100% { background-position: 200% 0; }
-    }
+    @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes toastIn { from{opacity:0;transform:translateX(100%)} to{opacity:1;transform:translateX(0)} }
+    @keyframes toastOut { from{opacity:1;transform:translateX(0)} to{opacity:0;transform:translateX(100%)} }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
     .nav-item { transition: background 0.15s ease, color 0.15s ease; }
     #main-content { transition: opacity 0.2s ease; }
+    #main-content.content-fade { animation: fadeIn 0.25s ease; }
     .card-box { transition: box-shadow 0.2s ease; }
     .card-box:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
     .status-badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+    #toast-container { position:fixed; top:16px; right:16px; z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
+    .toast-msg { padding:10px 16px; border-radius:10px; font-size:13px; font-weight:600; color:#fff; min-width:220px; max-width:360px; box-shadow:0 4px 16px rgba(0,0,0,0.18); animation:toastIn 0.3s ease; pointer-events:auto; cursor:pointer; }
+    .toast-success{background:#10b981} .toast-error{background:#ef4444} .toast-warning{background:#f59e0b} .toast-info{background:#3b82f6}
+    #refresh-indicator { position:fixed; bottom:16px; right:16px; z-index:9998; background:#1e293b; color:#94a3b8; border-radius:20px; padding:6px 14px; font-size:12px; font-weight:600; display:none; box-shadow:0 2px 8px rgba(0,0,0,0.2); align-items:center; gap:6px; }
+    #refresh-indicator.visible { display:flex; }
+    .refresh-dot { width:8px; height:8px; border-radius:50%; background:#10b981; animation:pulse 1.5s infinite; }
+    .btn-refresh { background:#1e40af!important; color:#fff!important; border-color:#1e40af!important; }
+    .btn-refresh:hover { background:#1d4ed8!important; }
   `;
   document.head.appendChild(style);
+
+  // Toast container
+  const tc = document.createElement('div'); tc.id = 'toast-container';
+  document.body.appendChild(tc);
+
+  // Refresh indicator
+  const ind = document.createElement('div'); ind.id = 'refresh-indicator';
+  ind.innerHTML = '<span class="refresh-dot"></span><span id="ri-text">Auto Refresh: 30s</span>';
+  document.body.appendChild(ind);
+
+  // showToast global
+  window.showToast = function(msg, type, duration) {
+    type = type || 'info'; duration = duration || 3500;
+    const t = document.createElement('div');
+    t.className = 'toast-msg toast-' + type;
+    t.textContent = msg;
+    t.onclick = () => t.remove();
+    tc.appendChild(t);
+    setTimeout(() => { t.style.animation = 'toastOut 0.3s ease forwards'; setTimeout(() => t.remove(), 300); }, duration);
+  };
+
+  // Fade content after render
+  window.applyContentFade = function() {
+    const mc = document.getElementById('main-content');
+    if (!mc) return;
+    mc.classList.remove('content-fade');
+    void mc.offsetWidth; // reflow
+    mc.classList.add('content-fade');
+  };
+
+  // Force Refresh button
+  const refreshBtn = document.querySelector('.btn-refresh');
+  if (refreshBtn) {
+    refreshBtn.title = 'Force Refresh — bypass cache';
+    refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> รีเฟรช';
+    refreshBtn.onclick = function() {
+      window._forceRefresh = true;
+      if (typeof clearApiCache === 'function') clearApiCache();
+      loadDashboard();
+      if (window.showToast) showToast('🔄 Force Refresh — ล้าง cache แล้ว', 'info', 2000);
+    };
+  }
+
+  // Auto Refresh every 30s (silent)
+  function silentRefresh() {
+    const section = window._currentSection || 'dashboard';
+    if (section !== 'dashboard') return;
+    cachedCallApi('getDashboardData', {}, typeof COMPHONE_CACHE_TTL !== 'undefined' ? COMPHONE_CACHE_TTL : 15000)
+      .then(data => {
+        if (data && typeof renderDashboard === 'function') {
+          renderDashboard(data);
+          applyContentFade();
+          const dateEl = document.getElementById('topbar-date');
+          if (dateEl) dateEl.textContent = 'อัปเดต: ' + new Date().toLocaleTimeString('th-TH');
+        }
+      }).catch(() => {});
+  }
+
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      if (typeof startAutoRefresh === 'function') {
+        startAutoRefresh('dashboard', silentRefresh, 30000);
+      } else {
+        setInterval(silentRefresh, 30000);
+      }
+      ind.classList.add('visible');
+      let cd = 30;
+      setInterval(function() {
+        cd--; if (cd <= 0) cd = 30;
+        const txt = document.getElementById('ri-text');
+        if (txt) txt.textContent = 'Auto Refresh: ' + cd + 's';
+      }, 1000);
+    }, 3000);
+  });
+
+  // Track current section
+  const _origLS = window.loadSection;
+  if (_origLS) {
+    window.loadSection = function(section) {
+      window._currentSection = section;
+      return _origLS(section);
+    };
+  }
+
 })();
 
 </script>

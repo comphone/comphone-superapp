@@ -17,6 +17,8 @@ const COMPHONE_DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbzneqQ
 const COMPHONE_SESSION_KEY = 'comphone_auth_session';
 const COMPHONE_GAS_URL_KEY = 'comphone_gas_url';
 const COMPHONE_API_TIMEOUT = 30000; // 30s
+const COMPHONE_CACHE_TTL = 15000; // 15s frontend cache (real-time)
+const COMPHONE_CACHE_TTL_SLOW = 60000; // 60s for slow-changing data
 
 /**
  * getGasUrl() — ดึง GAS URL จาก localStorage หรือ default
@@ -65,6 +67,40 @@ function normalizeApiResponse(data) {
  * @param {object} options - { timeout, noAuth }
  * @returns {Promise<object>}
  */
+// ===== FRONTEND CACHE (15s TTL) =====
+const _apiCache = {};
+
+/**
+ * cachedCallApi(action, payload, ttl, force) — call with frontend cache
+ * @param {string} action
+ * @param {object} payload
+ * @param {number} ttl - cache TTL in ms (default 15s)
+ * @param {boolean} force - bypass cache if true
+ */
+async function cachedCallApi(action, payload = {}, ttl = COMPHONE_CACHE_TTL, force = false) {
+  const key = action + ':' + JSON.stringify(payload);
+  const now = Date.now();
+  if (!force && _apiCache[key] && (now - _apiCache[key].ts) < ttl) {
+    return Promise.resolve(_apiCache[key].data);
+  }
+  const data = await callApi(action, payload);
+  if (data && data.success !== false) {
+    _apiCache[key] = { data, ts: Date.now() };
+  }
+  return data;
+}
+
+/**
+ * clearApiCache(action) — ล้าง cache ทั้งหมดหรือเฉพาะ action
+ */
+function clearApiCache(action) {
+  if (action) {
+    Object.keys(_apiCache).filter(k => k.startsWith(action + ':')).forEach(k => delete _apiCache[k]);
+  } else {
+    Object.keys(_apiCache).forEach(k => delete _apiCache[k]);
+  }
+}
+
 async function callApi(action, payload = {}, options = {}) {
   const url = getGasUrl();
   const timeout = options.timeout || COMPHONE_API_TIMEOUT;
@@ -301,6 +337,39 @@ function normalizeInventoryItem(item) {
   };
 }
 
+// ===== AUTO REFRESH MANAGER =====
+const _autoRefreshHandlers = {};
+
+/**
+ * startAutoRefresh(key, fn, intervalMs) — เริ่ม auto refresh
+ * @param {string} key - unique key สำหรับ handler นี้
+ * @param {Function} fn - function ที่จะเรียกซ้ำ
+ * @param {number} intervalMs - ระยะเวลา (default 30s)
+ */
+function startAutoRefresh(key, fn, intervalMs = 30000) {
+  stopAutoRefresh(key); // clear เก่าก่อน
+  _autoRefreshHandlers[key] = setInterval(fn, intervalMs);
+  console.log('[AutoRefresh] ▶ ' + key + ' every ' + (intervalMs/1000) + 's');
+}
+
+/**
+ * stopAutoRefresh(key) — หยุด auto refresh
+ */
+function stopAutoRefresh(key) {
+  if (_autoRefreshHandlers[key]) {
+    clearInterval(_autoRefreshHandlers[key]);
+    delete _autoRefreshHandlers[key];
+    console.log('[AutoRefresh] ⏹ ' + key);
+  }
+}
+
+/**
+ * stopAllAutoRefresh() — หยุดทั้งหมด
+ */
+function stopAllAutoRefresh() {
+  Object.keys(_autoRefreshHandlers).forEach(k => stopAutoRefresh(k));
+}
+
 // ===== EXPORT สำหรับ PC Dashboard (ถ้าโหลดก่อน app.js) =====
 if (typeof window !== 'undefined') {
   window._comphone_api_client_loaded = true; // flag บอก app.js ว่า api_client.js โหลดแล้ว
@@ -316,6 +385,13 @@ if (typeof window !== 'undefined') {
   window.getGasUrl = getGasUrl;
   window.normalizeApiResponse = normalizeApiResponse;
   window.batchCallApi = batchCallApi;
+  window.cachedCallApi = cachedCallApi;
+  window.clearApiCache = clearApiCache;
+  window.startAutoRefresh = startAutoRefresh;
+  window.stopAutoRefresh = stopAutoRefresh;
+  window.stopAllAutoRefresh = stopAllAutoRefresh;
+  window.COMPHONE_CACHE_TTL = COMPHONE_CACHE_TTL;
+  window.COMPHONE_CACHE_TTL_SLOW = COMPHONE_CACHE_TTL_SLOW;
   window.checkApiVersion = checkApiVersion;
   window.normalizeJobData = normalizeJobData;
   window.normalizeInventoryItem = normalizeInventoryItem;
