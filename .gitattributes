@@ -1,0 +1,28 @@
+# COMPHONE SUPER APP V5.5 — Git Line Ending Config
+# บังคับให้ .sh และ .py ใช้ LF เสมอ ไม่ให้ Windows แปลงเป็น CRLF
+
+# Shell scripts — ต้องเป็น LF เสมอ (Windows Git Bash จะรันไม่ได้ถ้าเป็น CRLF)
+*.sh    text eol=lf
+*.bash  text eol=lf
+
+# Python scripts
+*.py    text eol=lf
+
+# GAS / JavaScript
+*.gs    text eol=lf
+*.js    text eol=lf
+
+# Web files
+*.html  text eol=lf
+*.css   text eol=lf
+*.json  text eol=lf
+
+# Docs
+*.md    text eol=lf
+*.txt   text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+
+# Windows batch files — ใช้ CRLF ตามปกติ
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
