@@ -701,3 +701,51 @@ function getSchemaInfo() {
   }
   return { success: true, total: info.length, schemas: info };
 }
+
+// ============================================================
+// 📊 getSystemMetrics() — Production Monitoring V5.5.8
+// ============================================================
+function getSystemMetrics() {
+  var cache = CacheService.getScriptCache();
+  var metrics = {
+    timestamp: new Date().toISOString(),
+    version:   CONFIG.VERSION || 'V5.5.8',
+    sessions: (function() {
+      try {
+        var count = parseInt(cache.get('METRIC_ACTIVE_SESSIONS') || '0', 10);
+        return { active: count, max_per_user: 3 };
+      } catch(e) { return { active: 'N/A', error: e.message }; }
+    })(),
+    security: (function() {
+      try {
+        var log = JSON.parse(cache.get('SEC_LOG_LATEST') || '[]');
+        return {
+          recent_events:       log.length,
+          rate_limit_exceeded: log.filter(function(e){ return e.event === 'RATE_LIMIT_EXCEEDED'; }).length,
+          invalid_token:       log.filter(function(e){ return e.event && e.event.indexOf('INVALID') >= 0; }).length,
+          last_event:          log.length > 0 ? log[0].timestamp : null
+        };
+      } catch(e) { return { error: e.message }; }
+    })(),
+    triggers: (function() {
+      try {
+        var t = ScriptApp.getProjectTriggers();
+        return { count: t.length, functions: t.map(function(x){ return x.getHandlerFunction(); }) };
+      } catch(e) { return { count: 0, error: e.message }; }
+    })(),
+    properties: (function() {
+      try {
+        var keys = Object.keys(PropertiesService.getScriptProperties().getProperties());
+        var sessionKeys = keys.filter(function(k){ return k.startsWith('SESSION_') && k !== 'SESSION_MD_CONTENT'; });
+        return { total: keys.length, session_keys: sessionKeys.length, warning: keys.length > 45 ? 'Approaching limit (50)' : null };
+      } catch(e) { return { error: e.message }; }
+    })(),
+    health: (function() {
+      try {
+        var h = healthCheckV55_();
+        return { status: h.status, elapsed_ms: h.elapsed_ms, spreadsheet: h.checks && h.checks.spreadsheet ? h.checks.spreadsheet.ok : false };
+      } catch(e) { return { status: 'error', error: e.message }; }
+    })()
+  };
+  return { success: true, metrics: metrics };
+}

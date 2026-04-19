@@ -254,6 +254,8 @@ function dispatchActionV55_(action, payload, args) {
         return initSystem();
       case 'systemStatus':
         return systemStatus();
+      case 'getSystemMetrics':
+        return getSystemMetrics();
       case 'setupTriggers':
       case 'setupAllTriggers':
         return setupAllTriggers();

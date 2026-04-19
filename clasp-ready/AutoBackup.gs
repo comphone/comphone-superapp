@@ -14,9 +14,16 @@ function autoBackup() {
     folder.addFile(copy);
     DriveApp.getRootFolder().removeFile(copy);
     Logger.log('Backup created: ' + copy.getUrl());
+    // Backup Lock: บันทึก log ทุกครั้งที่ backup สำเร็จ
+    try {
+      logActivity('BACKUP_SUCCESS', 'SYSTEM', 'Snapshot: COMPHONE_BACKUP_' + dateStr + ' | URL: ' + copy.getUrl());
+      var cache = CacheService.getScriptCache();
+      cache.put('LAST_BACKUP_SUCCESS', JSON.stringify({ date: dateStr, url: copy.getUrl(), ts: new Date().toISOString() }), 86400);
+    } catch(logErr) { Logger.log('Backup log failed: ' + logErr); }
     return { success: true, url: copy.getUrl(), date: dateStr };
   } catch(e) {
     Logger.log('Backup failed: ' + e);
+    try { logActivity('BACKUP_FAILED', 'SYSTEM', 'Error: ' + e.toString()); } catch(logErr) {}
     return { success: false, error: '' + e };
   }
 }

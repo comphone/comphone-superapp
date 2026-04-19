@@ -93,4 +93,43 @@
 - **Performance & Logging:** ใช้ `CacheService` ใน GAS สำหรับข้อมูลที่ถูกเรียกบ่อย และมีการจับเวลา (Timing) การเรียก API ทุกครั้งใน `api_client.js` (`callApi`) เพื่อตรวจสอบคอขวดของระบบ
 
 ---
-*อัปเดตล่าสุด: 19 เมษายน 2026 (V5.5.8 — API-Only Architecture + Session Final Lock)*
+
+## 🔒 PRODUCTION STATUS: LOCKED (V5.5.8)
+
+> **ระบบผ่าน Final Sign-Off แล้ว — พร้อมใช้งาน Production 100%**
+
+| Area | Status | รายละเอียด |
+|------|--------|------------|
+| **Backend** | ✅ API Only | GAS = JSON API เท่านั้น ไม่มี HtmlService |
+| **Frontend** | ✅ PWA Only | UI Source = `https://comphone.github.io/comphone-superapp/pwa/` |
+| **Session** | ✅ Hardened | CacheService + HMAC-SHA256 + max 3 sessions/user |
+| **Rate Limit** | ✅ Active | 60 req/min + burst 10/5s per token |
+| **Security Log** | ✅ Active | IP + endpoint + timestamp ใน CacheService |
+| **Trigger Safety** | ✅ Locked | `resetTriggers_()` ก่อนสร้างใหม่ ไม่มี duplicate |
+| **Backup** | ✅ Daily | Snapshot ทุกวัน 00:00 + log BACKUP_SUCCESS |
+| **Audit** | ✅ Daily | `auditSessionLeak_()` ทุกวัน 03:00 |
+| **Version Sync** | ✅ Locked | `APP_VERSION === CONFIG.VERSION === 5.5.8` |
+| **Monitoring** | ✅ Active | `getSystemMetrics()` — sessions, security, triggers, properties |
+| **Anti-Pattern** | ✅ 0 Issues | callAPI=0, callGas=0, AUTH.token=0, SESSION_*=0 |
+
+### Trigger Schedule (Production)
+
+| Function | Schedule | Handler |
+|----------|----------|---------|
+| `autoBackup` | ทุกวัน 00:00 | AutoBackup.gs |
+| `autoSyncToDrive` | ทุกวัน 02:00 | DriveSync.gs |
+| `auditSessionLeak_` | ทุกวัน 03:00 | Security.gs |
+| `cronMorningAlert` | ทุกวัน 06:00 | Alerts.gs |
+| `sendAfterSalesAlerts` | ทุกวัน 08:00 | AfterSales.gs |
+| `geminiReorderSuggestion` | ทุกวัน 09:00 | Inventory.gs |
+| `cleanupSessions` | ทุก 6 ชั่วโมง | Auth.gs |
+| `cronHealthCheck` | ทุก 30 นาที | HealthMonitor.gs |
+
+### Next Phase: Monitoring / SaaS
+
+- เพิ่ม `getSystemMetrics()` dashboard ใน PWA
+- Multi-tenant support
+- Advanced analytics
+
+---
+*อัปเดตล่าสุด: 19 เมษายน 2026 (V5.5.8 — Production Hardened + Final Sign-Off)*

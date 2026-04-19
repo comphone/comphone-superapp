@@ -204,7 +204,7 @@ async function batchCallApi(calls, options) {
  * ถ้า major version ไม่ตรงกัน → แจ้เตือนและ reload
  */
 async function checkApiVersion() {
-  var CLIENT_VERSION = (typeof APP_VERSION !== 'undefined') ? APP_VERSION : '5.5.7';
+  var CLIENT_VERSION = (typeof APP_VERSION !== 'undefined') ? APP_VERSION : '5.5.8'; // Version Lock V5.5.8
   try {
     var res = await callApi('getVersion', {}, { noAuth: true });
     var serverVersion = res && res.version ? String(res.version).replace(/^V/i, '') : null;
@@ -213,10 +213,23 @@ async function checkApiVersion() {
       var clientMajorMinor = CLIENT_VERSION.split('.').slice(0, 2).join('.');
       var serverMajorMinor = serverVersion.split('.').slice(0, 2).join('.');
       if (clientMajorMinor !== serverMajorMinor) {
-        console.warn('[COMPHONE] Version mismatch: client=' + CLIENT_VERSION + ' server=' + serverVersion);
-        // แจ้เตือนใน console และ toast (ไม่ force reload อัตโนมัติเพราะอาจทำให้ UX แย่)
+        console.warn('[COMPHONE] ⚠️ Version mismatch (major.minor): client=' + CLIENT_VERSION + ' server=' + serverVersion);
+        // major.minor ไม่ตรง → force reload หลัง 3 วินาที
         if (typeof showToast === 'function') {
-          showToast('⚠️ Version ไม่ตรงกัน: Client ' + CLIENT_VERSION + ' / Server ' + serverVersion + ' — กรุณา Deploy GAS ใหม่', 'warning');
+          showToast('⚠️ Version ไม่ตรงกัน: Client ' + CLIENT_VERSION + ' / Server ' + serverVersion + ' — กำลังโหลดใหม่...', 'warning');
+        }
+        setTimeout(function() {
+          console.warn('[COMPHONE] Force reload due to major.minor version mismatch');
+          if (typeof window !== 'undefined') window.location.reload(true);
+        }, 3000);
+      } else {
+        // ตรวจ patch version (5.5.x)
+        var clientPatch = CLIENT_VERSION.split('.')[2] || '0';
+        var serverPatch = serverVersion.split('.')[2] || '0';
+        if (clientPatch !== serverPatch) {
+          console.info('[COMPHONE] ℹ️ Patch version diff: client=' + CLIENT_VERSION + ' server=' + serverVersion + ' (OK — no reload)');
+        } else {
+          console.info('[COMPHONE] ✅ Version match: ' + CLIENT_VERSION);
         }
       }
     }
