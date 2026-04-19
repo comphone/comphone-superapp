@@ -131,7 +131,13 @@ function routeActionV55(action, payload) {
 function dispatchActionV55_(action, payload, args) {
   payload = payload || {};
   args = Array.isArray(args) ? args : [payload];
-
+  // Phase 5: RouterSplit fast path — O(1) lookup vs O(n) switch
+  try {
+    if (typeof routeByModule === 'function' && action !== 'help') {
+      var _fast = routeByModule(action, payload);
+      if (_fast !== null) return _fast;
+    }
+  } catch(_re) { /* fall through to switch */ }
   try {
     switch (action) {
       case 'help':
@@ -155,6 +161,10 @@ function dispatchActionV55_(action, payload, args) {
           ]
         };
 
+      case 'getDashboardBundle':
+        return getDashboardBundle(payload);
+      case 'invalidateBundleCache':
+        return invalidateBundleCache();
       case 'getDashboardData':
         return getDashboardData();
       case 'getJobStateConfig':
@@ -489,7 +499,8 @@ function dispatchActionV55_(action, payload, args) {
       // Reports
       // ============================================================
       case 'getReportData':
-        return getReportData_(payload.period || 'month');
+        // Phase 4: Use optimized SheetOptimizer version
+        return (typeof getReportData === 'function') ? getReportData(payload) : getReportData_(payload.period || 'month');
 
       // ============================================================
       // Drive Sync
