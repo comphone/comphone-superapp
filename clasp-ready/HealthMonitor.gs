@@ -475,3 +475,161 @@ function getHealthMonitor(data) {
     }
   };
 }
+
+// ============================================================
+// 🎛️ controlAction(data) — Action Panel: clearCache, restart, reFetch, sendAlert
+// data: { action: 'clearCache'|'restart'|'reFetch'|'sendAlert', module, message, severity }
+// ============================================================
+function controlAction(data) {
+  data = data || {};
+  var action = data.action || '';
+  var module = data.module || 'all';
+  var result = { success: false, action: action, module: module };
+
+  try {
+    if (action === 'clearCache') {
+      var cache = CacheService.getScriptCache();
+      var keysToDelete = ['dashboard_data_v557', 'dashboard_data_v55', 'health_check_v55', 'METRIC_ACTIVE_SESSIONS'];
+      if (module !== 'all') {
+        keysToDelete = keysToDelete.filter(function(k) { return k.indexOf(module.toLowerCase()) > -1; });
+      }
+      if (keysToDelete.length > 0) cache.removeAll(keysToDelete);
+      result.success = true;
+      result.message = 'Cache cleared: ' + keysToDelete.join(', ');
+      writeAuditLog('CONTROL_ACTION', 'API', 'clearCache module=' + module, { keys: keysToDelete });
+
+    } else if (action === 'restart') {
+      var cache2 = CacheService.getScriptCache();
+      cache2.removeAll(['dashboard_data_v557', 'health_check_v55', 'METRIC_ACTIVE_SESSIONS', 'SEC_LOG_LATEST']);
+      var props = PropertiesService.getScriptProperties();
+      props.deleteProperty('LAST_HEALTH_CHECK');
+      result.success = true;
+      result.message = 'Module ' + module + ' restarted (cache + props cleared)';
+      writeAuditLog('CONTROL_ACTION', 'API', 'restart module=' + module, {});
+      try {
+        sendLineNotify({ message: '🔄 [COMPHONE] Module restart: ' + module + '\nเวลา: ' + new Date().toLocaleString('th-TH'), room: 'TECHNICIAN' });
+      } catch(e) {}
+
+    } else if (action === 'reFetch') {
+      var cache3 = CacheService.getScriptCache();
+      cache3.removeAll(['dashboard_data_v557']);
+      result.success = true;
+      result.message = 'Re-fetch triggered for ' + module;
+      writeAuditLog('CONTROL_ACTION', 'API', 'reFetch module=' + module, {});
+
+    } else if (action === 'sendAlert') {
+      var msg = data.message || 'Manual alert from System Graph';
+      var severity = data.severity || 'warning';
+      var lineMsg = (severity === 'critical' ? '🚨' : '⚠️') + ' [COMPHONE ALERT]\n' + msg + '\nเวลา: ' + new Date().toLocaleString('th-TH');
+      try {
+        sendLineNotify({ message: lineMsg, room: 'TECHNICIAN' });
+        result.success = true;
+        result.message = 'Alert sent to LINE';
+      } catch(e) {
+        result.success = false;
+        result.error = 'LINE send failed: ' + e.toString();
+      }
+      writeAuditLog('CONTROL_ACTION', 'API', 'sendAlert severity=' + severity, { message: msg });
+
+    } else {
+      result.error = 'Unknown action: ' + action;
+    }
+  } catch (e) {
+    result.error = e.toString();
+  }
+  return result;
+}
+
+// ============================================================
+// 📸 storeSnapshot(data) — บันทึก Snapshot ลง Google Sheets
+// data: { label: string, snapshot: object }
+// ============================================================
+var SNAPSHOT_SHEET = 'SYSTEM_SNAPSHOTS';
+
+function storeSnapshot(data) {
+  data = data || {};
+  var label = data.label || ('snapshot_' + new Date().toISOString());
+  var snapshot = data.snapshot || {};
+  try {
+    var ss = getComphoneSheet();
+    if (!ss) return { success: false, error: 'Spreadsheet not found' };
+    var sh = findSheetByName(ss, SNAPSHOT_SHEET);
+    if (!sh) {
+      sh = ss.insertSheet(SNAPSHOT_SHEET);
+      sh.appendRow(['id', 'label', 'timestamp', 'health_score', 'ok_nodes', 'warn_nodes', 'error_nodes', 'version', 'snapshot_json']);
+    }
+    var id = 'snap_' + Date.now();
+    var ts = new Date().toISOString();
+    var healthScore = snapshot.health_score || 0;
+    var stats = snapshot.stats || {};
+    var version = (snapshot.version && snapshot.version.version) ? snapshot.version.version : '5.5.8';
+    var jsonStr = JSON.stringify(snapshot);
+    if (jsonStr.length > 50000) jsonStr = jsonStr.substring(0, 50000) + '...';
+    sh.appendRow([id, label, ts, healthScore, stats.ok_nodes || 0, stats.warn_nodes || 0, stats.error_nodes || 0, version, jsonStr]);
+    writeAuditLog('SNAPSHOT', 'API', 'storeSnapshot label=' + label, { id: id });
+    return { success: true, id: id, label: label, timestamp: ts };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+// ============================================================
+// 📋 getSnapshots(data) — ดึงรายการ Snapshots
+// data: { limit: number }
+// ============================================================
+function getSnapshots(data) {
+  data = data || {};
+  var limit = parseInt(data.limit || 20, 10);
+  try {
+    var ss = getComphoneSheet();
+    if (!ss) return { success: false, error: 'Spreadsheet not found' };
+    var sh = findSheetByName(ss, SNAPSHOT_SHEET);
+    if (!sh || sh.getLastRow() < 2) return { success: true, snapshots: [] };
+    var headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+    var lastRow = sh.getLastRow();
+    var startRow = Math.max(2, lastRow - limit + 1);
+    var rows = sh.getRange(startRow, 1, lastRow - startRow + 1, headers.length).getValues();
+    var snapshots = rows.map(function(row) {
+      var obj = {};
+      headers.forEach(function(h, i) { obj[h] = row[i]; });
+      delete obj.snapshot_json;
+      return obj;
+    }).reverse();
+    return { success: true, snapshots: snapshots };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+// ============================================================
+// 📈 getHealthTrend(data) — ดึงข้อมูล trend สำหรับ chart
+// data: { limit: number }
+// ============================================================
+function getHealthTrend(data) {
+  data = data || {};
+  var limit = parseInt(data.limit || 24, 10);
+  try {
+    var ss = getComphoneSheet();
+    if (!ss) return { success: false, error: 'Spreadsheet not found' };
+    var sh = findSheetByName(ss, HEALTH_SHEET);
+    if (!sh || sh.getLastRow() < 2) return { success: true, trend: [] };
+    var headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+    var lastRow = sh.getLastRow();
+    var startRow = Math.max(2, lastRow - limit + 1);
+    var rows = sh.getRange(startRow, 1, lastRow - startRow + 1, headers.length).getValues();
+    var trend = rows.map(function(row) {
+      var obj = {};
+      headers.forEach(function(h, i) { obj[h] = row[i]; });
+      var status = (obj['Status'] || obj['status'] || 'UNKNOWN').toString().toUpperCase();
+      return {
+        timestamp:       obj['Timestamp'] || obj['checked_at'] || '',
+        status:          status,
+        response_time_ms: Number(obj['Response_Time_ms'] || obj['response_time_ms'] || 0),
+        health_score:    status === 'HEALTHY' ? 100 : (status === 'DEGRADED' ? 70 : 30)
+      };
+    });
+    return { success: true, trend: trend };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}

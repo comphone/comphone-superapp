@@ -267,6 +267,14 @@ function dispatchActionV55_(action, payload, args) {
         return getSystemMetrics();
       case 'getHealthMonitor':
         return getHealthMonitor(payload);
+      case 'controlAction':
+        return (typeof controlAction === 'function') ? controlAction(payload) : { success: false, error: 'controlAction not available' };
+      case 'storeSnapshot':
+        return (typeof storeSnapshot === 'function') ? storeSnapshot(payload) : { success: false, error: 'storeSnapshot not available' };
+      case 'getSnapshots':
+        return (typeof getSnapshots === 'function') ? getSnapshots(payload) : { success: false, error: 'getSnapshots not available' };
+      case 'getHealthTrend':
+        return (typeof getHealthTrend === 'function') ? getHealthTrend(payload) : { success: false, error: 'getHealthTrend not available' };
       case 'getSecurityLog':
         var _sl = (typeof getSecurityLog === 'function') ? getSecurityLog() : [];
         return { success: true, data: _sl, count: _sl.length };
