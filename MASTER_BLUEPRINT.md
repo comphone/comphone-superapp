@@ -22,6 +22,21 @@
 - **RULE 1: Single Source of Truth** — ใช้ `callApi()` จาก `api_client.js` เท่านั้น ห้ามใช้ `fetch()` ตรงๆ
 - **RULE 2: Authentication** — เก็บ Token ไว้ที่ `localStorage['comphone_auth_session']` เท่านั้น เพื่อแชร์ระหว่าง PC และ Mobile
 - **RULE 3: UI Source** — **PWA ONLY** — ไม่มี GAS UI อีกต่อไป
+- **RULE 4: Session Storage** — **ห้ามใช้ `ScriptProperties` เก็บ session** — ใช้ `CacheService.getScriptCache()` เท่านั้น
+
+> **🔒 SESSION RULE (V5.5.8 — Final Lock)**
+>
+> | รายการ | กฎ | เหตุผล |
+> |--------|------|----------|
+> | `ScriptProperties.setProperty('SESSION_*')` | ❌ ห้าม | Session leak, เกิน 50 properties |
+> | `CacheService.getScriptCache()` | ✅ ใช้ | TTL 6h, auto-expire, ไม่ค้าง |
+> | `SESSION_MD_CONTENT` | ✅ ยกเว้น | ใช้สำหรับ DriveSync เท่านั้น |
+> | Token format | `<32hex>.<8hex_hmac>` | HMAC-SHA256 signed |
+>
+> **Guard Functions (Security.gs — V5.5.8):**
+> - `blockSessionPropertyUsage_()` — ตรวจและลบ SESSION_* ทันทีเมื่อพบ
+> - `auditSessionLeak_()` — ตรวจสอบทุกวัน 03:00 + auto-fix (trigger: daily)
+> - `cleanupSessions()` — ลบ SESSION_* ทุก 6 ชั่วโมง (trigger: hourly)
 
 ### 1.2. ส่วนประกอบหลัก (Core Components)
 1. **Backend (Google Apps Script)**
@@ -78,4 +93,4 @@
 - **Performance & Logging:** ใช้ `CacheService` ใน GAS สำหรับข้อมูลที่ถูกเรียกบ่อย และมีการจับเวลา (Timing) การเรียก API ทุกครั้งใน `api_client.js` (`callApi`) เพื่อตรวจสอบคอขวดของระบบ
 
 ---
-*อัปเดตล่าสุด: 19 เมษายน 2026 (V5.5.8 — API-Only Architecture)*
+*อัปเดตล่าสุด: 19 เมษายน 2026 (V5.5.8 — API-Only Architecture + Session Final Lock)*

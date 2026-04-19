@@ -135,6 +135,12 @@ function setupAllTriggers() {
      * handler: Auth.gs → cleanupSessions()
      */
     { fn: 'cleanupSessions',          type: 'hourly',  every: 6,         schedule: 'ทุก 6 ชั่วโมง' },
+    /**
+     * auditSessionLeak_ — ตรวจสอบ session leak ทุกวัน
+     * รันทุกวัน 03:00-04:00
+     * handler: Security.gs → auditSessionLeak_()
+     */
+    { fn: 'auditSessionLeak_',           type: 'daily',   hour: 3,          schedule: 'ทุกวัน 03:00-04:00' },
   ];
 
   // ── ดึง triggers ที่มีอยู่แล้ว (duplicate prevention) ──

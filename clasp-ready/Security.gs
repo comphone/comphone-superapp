@@ -352,3 +352,104 @@ function auditPasswordChange_(username, action) {
     }));
   } catch (e) {}
 }
+
+// ============================================================
+// 🔒 SESSION LOCK — Final Lock Phase V5.5.8
+// ============================================================
+
+/**
+ * blockSessionPropertyUsage_()
+ * Guard function: ตรวจสอบและลบ SESSION_* ใน ScriptProperties ทันที
+ * ยกเว้น SESSION_MD_CONTENT (ใช้สำหรับ DriveSync เท่านั้น)
+ */
+function blockSessionPropertyUsage_() {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var all   = props.getProperties();
+    var blocked = [];
+
+    Object.keys(all).forEach(function(key) {
+      if (key.startsWith('SESSION_') && key !== 'SESSION_MD_CONTENT') {
+        props.deleteProperty(key);
+        blocked.push(key);
+      }
+    });
+
+    if (blocked.length > 0) {
+      try {
+        logActivity('SESSION_BLOCK', 'SYSTEM',
+          '🚨 BLOCKED: ลบ SESSION_* ที่ไม่ควรมีใน ScriptProperties: ' + blocked.join(', '));
+      } catch(e) {}
+      Logger.log('🚨 [SESSION_BLOCK] Deleted ' + blocked.length + ' illegal SESSION_* properties: ' + blocked.join(', '));
+    }
+
+    return { blocked: blocked.length, keys: blocked };
+  } catch (e) {
+    Logger.log('⚠️ blockSessionPropertyUsage_ error: ' + e.message);
+    return { blocked: 0, error: e.message };
+  }
+}
+
+/**
+ * auditSessionLeak_()
+ * ตรวจสอบ session leak ทุกวัน:
+ * 1. ตรวจ SESSION_* ใน ScriptProperties
+ * 2. ตรวจ total properties count (warn ถ้า > 45)
+ * 3. Auto-fix + Log ผลการตรวจสอบ
+ */
+function auditSessionLeak_() {
+  var report = {
+    timestamp:           new Date().toISOString(),
+    scriptProps_illegal: [],
+    total_properties:    0,
+    verdict:             'CLEAN'
+  };
+
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var all   = props.getProperties();
+
+    // 1. ตรวจ SESSION_* ที่ไม่ควรมี
+    var illegalKeys = Object.keys(all).filter(function(k) {
+      return k.startsWith('SESSION_') && k !== 'SESSION_MD_CONTENT';
+    });
+
+    report.scriptProps_illegal = illegalKeys;
+
+    if (illegalKeys.length > 0) {
+      report.verdict = 'LEAK_DETECTED';
+      illegalKeys.forEach(function(k) { props.deleteProperty(k); });
+      report.auto_fixed = illegalKeys.length;
+      try {
+        logActivity('SESSION_AUDIT_LEAK', 'SYSTEM',
+          '🚨 AUDIT: พบ SESSION leak ' + illegalKeys.length + ' รายการ — auto-fixed');
+      } catch(e) {}
+    }
+
+    // 2. ตรวจ total properties count
+    var remaining = Object.keys(props.getProperties()).length;
+    report.total_properties = remaining;
+
+    if (remaining > 45) {
+      if (report.verdict === 'CLEAN') report.verdict = 'PROPS_HIGH';
+      try {
+        logActivity('SESSION_AUDIT_HIGH', 'SYSTEM',
+          '⚠️ AUDIT: Script Properties สูง (' + remaining + '/50)');
+      } catch(e) {}
+    }
+
+    // 3. Log ผลการตรวจสอบ
+    Logger.log('🔍 [SESSION_AUDIT] ' + JSON.stringify(report));
+    try {
+      logActivity('SESSION_AUDIT', 'SYSTEM',
+        'Audit: verdict=' + report.verdict +
+        ' | props=' + remaining +
+        ' | illegal=' + illegalKeys.length);
+    } catch(e) {}
+
+    return report;
+  } catch (e) {
+    Logger.log('⚠️ auditSessionLeak_ error: ' + e.message);
+    return { verdict: 'ERROR', error: e.message };
+  }
+}
