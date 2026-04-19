@@ -628,6 +628,59 @@ function dispatchActionV55_(action, payload, args) {
         return getAgentGatewayVersion();
 
       // ============================================================
+      // AI Operating System — Phase 1-6 (V5.5.8)
+      // ============================================================
+
+      // Phase 1: AgentMemory
+      case 'amStoreIncident':         return amStoreIncident(payload);
+      case 'amResolveIncident':        return amResolveIncident(payload);
+      case 'amGetIncidents':           return amGetIncidents(payload);
+      case 'amStorePattern':           return amStorePattern(payload);
+      case 'amGetPatterns':            return amGetPatterns(payload);
+      case 'amStoreRule':              return amStoreRule(payload);
+      case 'amGetRules':               return amGetRules(payload);
+      case 'amEvaluateRules':          return amEvaluateRules(payload);
+      case 'amSaveSnapshot':           return amSaveSnapshot(payload);
+      case 'amGetSnapshots':           return amGetSnapshots(payload);
+      case 'getAgentMemoryDashboard':  return getAgentMemoryDashboard(payload);
+      case 'getAgentMemoryVersion':    return getAgentMemoryVersion();
+
+      // Phase 2: SharedContext
+      case 'getSystemContext':         return getSystemContext(payload);
+      case 'getContextDiff':           return getContextDiff(payload);
+      case 'getSharedContextVersion':  return getSharedContextVersion();
+
+      // Phase 3: AgentCollaboration
+      case 'agentCall':                return agentCall(payload);
+      case 'agentBroadcast':           return agentBroadcast(payload);
+      case 'agentConsensus':           return agentConsensus(payload);
+      case 'agentDelegate':            return agentDelegate(payload);
+      case 'getSharedResults':         return getSharedResults(payload);
+      case 'getCollaborationStats':    return getCollaborationStats(payload);
+      case 'getAgentCollaborationVersion': return getAgentCollaborationVersion();
+
+      // Phase 4: WorkflowEngine
+      case 'triggerWorkflow':          return triggerWorkflow(payload);
+      case 'autoTriggerWorkflows':     return autoTriggerWorkflows(payload);
+      case 'defineWorkflow':           return defineWorkflow(payload);
+      case 'listWorkflows':            return listWorkflows(payload);
+      case 'getWorkflowRunLog':        return getWorkflowRunLog(payload);
+      case 'getWorkflowEngineVersion': return getWorkflowEngineVersion();
+
+      // Phase 5: DecisionLayer
+      case 'decide':                   return decide(payload);
+      case 'decideAndAct':             return decideAndAct(payload);
+      case 'getDecisionLayerVersion':  return getDecisionLayerVersion();
+
+      // Phase 6: LearningIntegration
+      case 'syncLearningToMemory':     return syncLearningToMemory(payload);
+      case 'syncIncidentsToLearning':  return syncIncidentsToLearning(payload);
+      case 'runLearningCycle':         return runLearningCycle(payload);
+      case 'getLearningMemoryBridge':  return getLearningMemoryBridge(payload);
+      case 'setupLearningIntegrationTrigger': return setupLearningIntegrationTrigger();
+      case 'getLearningIntegrationVersion':   return getLearningIntegrationVersion();
+
+      // ============================================================
       // Tax Engine (TASK 1-2: VAT Flexible + WHT ภงด.)
       // ============================================================
       case 'calculateTax':
