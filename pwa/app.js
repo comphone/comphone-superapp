@@ -2,7 +2,7 @@
 'use strict';
 
 // ===== VERSION =====
-const APP_VERSION = '5.5.7';
+const APP_VERSION = '5.5.8';
 const APP_BUILD   = '2026-04-19';
 
 // ===== STATE =====

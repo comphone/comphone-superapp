@@ -2,104 +2,68 @@
 // ============================================================
 // Router.gs - Main Router and API Dispatcher
 // ============================================================
+// ARCHITECTURE:
+//   GAS = API ONLY (JSON responses via ContentService)
+//   UI  = PWA ONLY → https://comphone.github.io/comphone-superapp/pwa/
+//   HtmlService ถูกลบออกทั้งหมด (V5.5.8 API-Only)
+// ============================================================
 
-function include(filename) {
-  return HtmlService.createHtmlOutputFromFile(filename).getContent();
-}
-
+/**
+ * doGet — API-Only JSON endpoint
+ * ไม่มี HtmlService อีกต่อไป
+ * ทุก GET request → JSON response
+ */
 function doGet(e) {
   try {
     var params = (e && e.parameter) || {};
     var action = normalizeActionV55_(params.action || '');
-    var jobId = params.jobId || params.job_id || '';
+    var jobId  = params.jobId || params.job_id || '';
 
-    // ============================================================
-    // Health Check Endpoint — GET ?action=health
-    // Returns: { status, version, timestamp, checks }
-    // ============================================================
+    // Health Check — GET ?action=health
     if (action === 'health' || action === 'ping' || action === 'healthcheck') {
       return jsonOutputV55_(healthCheckV55_());
     }
 
-    // getVersion Endpoint — GET ?action=getVersion
+    // Version — GET ?action=getVersion
     if (action === 'getversion' || action === 'version') {
       return jsonOutputV55_(getVersionV55_());
     }
 
-    if (action === 'json' || action === 'getDashboardData') {
+    // Dashboard Data — GET ?action=getDashboardData
+    if (action === 'json' || action === 'getDashboardData' || action === 'getdashboarddata') {
       return jsonOutputV55_(getDashboardData());
     }
 
-    if (action === 'getJobStateConfig') {
+    // Job State Config — GET ?action=getJobStateConfig
+    if (action === 'getjobstateconfig') {
       return jsonOutputV55_(getJobStateConfig());
     }
 
-    if (action === 'getJobQRData' || action === 'jobqrdata') {
+    // Job QR Data — GET ?action=getJobQRData&jobId=...
+    if (action === 'getjobqrdata' || action === 'jobqrdata') {
       return jsonOutputV55_(getJobWebAppPayload(jobId));
     }
 
-    if (action === 'getPhotoGalleryData' || action === 'photogallerydata') {
+    // Photo Gallery Data — GET ?action=getPhotoGalleryData&jobId=...
+    if (action === 'getphotogallerydata' || action === 'photogallerydata') {
       return jsonOutputV55_(getPhotoGalleryData(jobId));
     }
 
-    if (params.view === 'jobqr' || action === 'jobqr') {
-      var qrTemplate = HtmlService.createTemplateFromFile('JobQRView');
-      qrTemplate.jobId = jobId;
-      qrTemplate.apiBaseUrl = getWebAppBaseUrl_() || '';
-      return qrTemplate.evaluate()
-        .setTitle('COMPHONE SUPER APP V5.5 - Job QR')
-        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-        .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
-    }
-
-    if (params.view === 'photogallery' || action === 'photogallery') {
-      var galleryTemplate = HtmlService.createTemplateFromFile('PhotoGallery');
-      galleryTemplate.jobId = jobId;
-      galleryTemplate.apiBaseUrl = getWebAppBaseUrl_() || '';
-      return galleryTemplate.evaluate()
-        .setTitle('COMPHONE SUPER APP V5.5 - Photo Gallery')
-        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-        .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
-    }
-
-    var template = HtmlService.createTemplateFromFile('Index');
-    template.apiBaseUrl = getWebAppBaseUrl_() || '';
-    template.jobQrWebAppUrl = buildWebAppUrl_(getWebAppBaseUrl_() || '', { view: 'jobqr', jobId: jobId });
-    template.mode = params.mode || '';
-    template.jobId = jobId;
-    template.status = params.status || '';
-    template.customerName = params.customerName || '';
-    template.action = params.action || '';
-    template.view = params.view || '';
-    template.filter = params.filter || '';
-    template.search = params.search || '';
-    template.techName = params.techName || '';
-    template.date = params.date || '';
-    template.dateFrom = params.dateFrom || '';
-    template.dateTo = params.dateTo || '';
-    template.reportType = params.reportType || '';
-    template.editMode = params.editMode || '';
-    template.tab = params.tab || '';
-    template.page = params.page || '';
-    template.query = params.query || '';
-    template.type = params.type || '';
-    template.id = params.id || '';
-    template.name = params.name || '';
-    template.description = params.description || '';
-    template.callback = params.callback || '';
-    template.redirect = params.redirect || '';
-
-    return template.evaluate()
-      .setTitle('COMPHONE SUPER APP V5.5')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
+    // Default: API Ready response + redirect hint
+    return jsonOutputV55_({
+      status:       'ok',
+      version:      (typeof CONFIG !== 'undefined' ? CONFIG.VERSION : 'V5.5.8'),
+      message:      'COMPHONE API READY',
+      architecture: 'API-Only (V5.5.8)',
+      ui_url:       'https://comphone.github.io/comphone-superapp/pwa/',
+      note:         'UI อยู่ที่ PWA เท่านั้น — GAS เป็น API Backend เท่านั้น'
+    });
   } catch (error) {
-    return HtmlService.createHtmlOutput(
-      '<html><head><meta charset="UTF-8"><title>COMPHONE SUPER APP V5.5</title></head><body>' +
-      '<h2>COMPHONE SUPER APP V5.5 - Router Error</h2><pre>' +
-      sanitizeHtmlTextV55_(String(error)) + '\n' + sanitizeHtmlTextV55_(String(error && error.stack || '')) +
-      '</pre></body></html>'
-    );
+    return jsonOutputV55_({
+      status:  'error',
+      error:   error.toString(),
+      version: (typeof CONFIG !== 'undefined' ? CONFIG.VERSION : 'V5.5.8')
+    });
   }
 }
 

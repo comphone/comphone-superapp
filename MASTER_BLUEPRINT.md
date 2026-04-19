@@ -4,10 +4,24 @@
 
 ## 1. โครงสร้างระบบ (System Architecture)
 
+### 1.0. Architecture Principle (V5.5.8 — FINAL)
+
+| Layer | Technology | Role |
+|-------|-----------|------|
+| **Backend** | Google Apps Script | **API ONLY** — JSON responses เท่านั้น |
+| **Frontend** | PWA (GitHub Pages) | **UI Source — SINGLE SOURCE OF TRUTH** |
+| **Database** | Google Sheets | Data Storage |
+
+> ⚠️ **CRITICAL RULE: GAS เป็น API Backend เท่านั้น** — ไม่มี `HtmlService` อีกต่อไป (V5.5.8+)  
+> ✅ **UI Source = PWA ONLY** — `https://comphone.github.io/comphone-superapp/pwa/`  
+> ❌ ห้าม render HTML ผ่าน GAS ไม่ว่ากรณีใด  
+> ❌ ห้ามมี Dashboard ซ้ำซ้อนหลายที่
+
 ### 1.1. กฎเหล็ก (The Golden Rules)
 - **RULE 0: Triple Sync** — ทุกครั้งที่แก้โค้ด ต้อง Sync 3 ที่: GitHub, Google Drive, และ `session.md`
 - **RULE 1: Single Source of Truth** — ใช้ `callApi()` จาก `api_client.js` เท่านั้น ห้ามใช้ `fetch()` ตรงๆ
 - **RULE 2: Authentication** — เก็บ Token ไว้ที่ `localStorage['comphone_auth_session']` เท่านั้น เพื่อแชร์ระหว่าง PC และ Mobile
+- **RULE 3: UI Source** — **PWA ONLY** — ไม่มี GAS UI อีกต่อไป
 
 ### 1.2. ส่วนประกอบหลัก (Core Components)
 1. **Backend (Google Apps Script)**
@@ -64,4 +78,4 @@
 - **Performance & Logging:** ใช้ `CacheService` ใน GAS สำหรับข้อมูลที่ถูกเรียกบ่อย และมีการจับเวลา (Timing) การเรียก API ทุกครั้งใน `api_client.js` (`callApi`) เพื่อตรวจสอบคอขวดของระบบ
 
 ---
-*อัปเดตล่าสุด: 19 เมษายน 2026*
+*อัปเดตล่าสุด: 19 เมษายน 2026 (V5.5.8 — API-Only Architecture)*
