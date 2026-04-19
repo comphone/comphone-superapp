@@ -419,13 +419,9 @@ const EDGE_COLOR = {
 };
 
 // ===== INIT =====
-window.addEventListener('load', async () => {
-  await initGraph();
-  startAutoRefresh();
-});
-
-// ===== INIT GRAPH =====
 async function initGraph() {
+  // expose as global for debugging
+  window._initGraphCalled = true;
   showLoading(true);
   // Fix: set explicit pixel height for vis-network
   const container = document.getElementById('graph-container');
@@ -441,9 +437,7 @@ async function initGraph() {
   nodesDS = new vis.DataSet(visNodes);
   edgesDS = new vis.DataSet(visEdges);
 
-  const container = document.getElementById('graph-container');
   const options = getNetworkOptions();
-
   network = new vis.Network(container, { nodes: nodesDS, edges: edgesDS }, options);
 
   // ===== EVENTS =====
@@ -456,25 +450,15 @@ async function initGraph() {
     }
   });
 
-  network.on('hoverEdge', function(params) {
-    const edge = edgesDS.get(params.edge);
-    if (edge) {
-      const tooltip = `${edge.from} → ${edge.to}\nType: ${edge._type}\nLatency: ${edge._latency}ms`;
-      // vis-network จัดการ tooltip ผ่าน title attribute แล้ว
-    }
-  });
-
   network.on('stabilizationIterationsDone', function() {
     network.setOptions({ physics: { enabled: false } });
     setTimeout(function() {
-      // คำนวณ center ของ nodes ทั้งหมด
       const ids = nodesDS.getIds();
       const positions = network.getPositions(ids);
       let sumX = 0, sumY = 0, count = 0;
       Object.values(positions).forEach(function(p) { sumX += p.x; sumY += p.y; count++; });
       const cx = count > 0 ? sumX / count : 0;
       const cy = count > 0 ? sumY / count : 0;
-      // Move to center แล้ว fit
       network.moveTo({ position: { x: cx, y: cy }, scale: 0.6, animation: false });
       setTimeout(function() {
         network.fit({
@@ -489,6 +473,14 @@ async function initGraph() {
   updateStats(graphData);
   updateSummary(graphData);
   updateHealthPill(graphData);
+}
+
+window.initGraph = initGraph;
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => { initGraph(); startAutoRefresh(); });
+} else {
+  initGraph(); startAutoRefresh();
 }
 
 // ===== CONVERT TO VIS FORMAT =====
