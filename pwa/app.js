@@ -1101,8 +1101,15 @@ function startVoiceSearch() {
 }
 
 // ===== API CALL =====
-// callAPI(action, params) — ใช้ใน job_workflow.js
+// RULE 1: callAPI (uppercase) = alias ของ callApi (api_client.js)
+// Single Source of Truth: api_client.js เท่านั้น — ใช้ comphone_auth_session
+// callAPI ถูกเรียกจาก UI modules ทั้งหมด (tax_ui, warranty_ui, branch_health_ui ฯลฯ)
 async function callAPI(action, params = {}) {
+  // ถ้า api_client.js โหลดแล้ว → delegate ไปเลย (RULE 1)
+  if (typeof window.callApi === 'function' && window._comphone_api_client_loaded) {
+    return window.callApi(action, params);
+  }
+  // Fallback: ถ้า api_client.js ยังไม่โหลด (เช่น standalone)
   const url = APP.scriptUrl || DEFAULT_SCRIPT_URL;
   if (!url) return null;
   if (!navigator.onLine) {
@@ -1110,19 +1117,19 @@ async function callAPI(action, params = {}) {
     return null;
   }
   try {
-    // เพิ่ม auth token ถ้ามี
     const payload = { action, ...params };
-    if (typeof AUTH !== 'undefined' && AUTH.token) {
-      payload.token = AUTH.token;
-      payload.username = AUTH.username;
-    } else if (APP.user && APP.user.authToken) {
-      payload.token = APP.user.authToken;
-      payload.username = APP.user.username;
+    // RULE 2: ดึง token จาก comphone_auth_session เท่านั้น
+    if (!payload.token) {
+      try {
+        const sess = JSON.parse(localStorage.getItem('comphone_auth_session') || '{}');
+        if (sess.token) { payload.token = sess.token; payload.username = payload.username || sess.username; }
+      } catch(e2) {}
     }
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
     try {
-      const res = await fetch(url, {
+      const bustUrl = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
+      const res = await fetch(bustUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(payload),
@@ -1130,7 +1137,6 @@ async function callAPI(action, params = {}) {
         signal: controller.signal
       });
       const data = await res.json();
-      // กรอง _headers metadata ที่ GAS เพิ่มเข้ามาใน response body
       if (data && data._headers) delete data._headers;
       return data;
     } finally {

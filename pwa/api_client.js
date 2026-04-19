@@ -188,11 +188,26 @@ async function batchCallApi(calls, options) {
 
 /**
  * checkApiVersion() — ตรวจสอบ version ของ GAS Backend
+ * ถ้า major version ไม่ตรงกัน → แจ้เตือนและ reload
  */
 async function checkApiVersion() {
+  var CLIENT_VERSION = (typeof APP_VERSION !== 'undefined') ? APP_VERSION : '5.5.7';
   try {
     var res = await callApi('getVersion', {}, { noAuth: true });
-    return res && res.version ? res.version : null;
+    var serverVersion = res && res.version ? String(res.version).replace(/^V/i, '') : null;
+    if (serverVersion) {
+      // เปรียบ major.minor (5.5)
+      var clientMajorMinor = CLIENT_VERSION.split('.').slice(0, 2).join('.');
+      var serverMajorMinor = serverVersion.split('.').slice(0, 2).join('.');
+      if (clientMajorMinor !== serverMajorMinor) {
+        console.warn('[COMPHONE] Version mismatch: client=' + CLIENT_VERSION + ' server=' + serverVersion);
+        // แจ้เตือนใน console และ toast (ไม่ force reload อัตโนมัติเพราะอาจทำให้ UX แย่)
+        if (typeof showToast === 'function') {
+          showToast('⚠️ Version ไม่ตรงกัน: Client ' + CLIENT_VERSION + ' / Server ' + serverVersion + ' — กรุณา Deploy GAS ใหม่', 'warning');
+        }
+      }
+    }
+    return serverVersion;
   } catch(e) { return null; }
 }
 

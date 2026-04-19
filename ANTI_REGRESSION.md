@@ -45,7 +45,20 @@
 **ปัญหา:** หน้า Dashboard ยิง API 5-6 เส้นพร้อมกัน ทำให้ GAS Rate Limit (60 req/min) ทำงาน
 **วิธีป้องกัน:**
 - ใช้ `batchCallApi(calls)` ใน `api_client.js` เพื่อรวม request (ถ้าเป็นไปได้) หรือยิงแบบขนานอย่างปลอดภัย
+- ใช้ `CacheService` ใน GAS Backend เสมอสำหรับข้อมูลที่โหลดบ่อย (เช่น `getDashboardData`, `healthCheck`) เพื่อลดภาระการ Query Sheet
 - ตรวจสอบว่าไม่มีการเรียก API ซ้ำซ้อนใน `window.addEventListener('load')`
+
+### 1.7. UI ค้างเมื่อ API ล้มเหลว (Infinite Loading)
+**ปัญหา:** เมื่อ API error หรือ timeout หน้าจอจะแสดง Spinner ค้างไว้ตลอดไป
+**วิธีป้องกัน:**
+- ทุกครั้งที่มีการเรียก API และแสดง Spinner ต้องใช้ `try...finally` block เสมอ
+- ใน `finally` block ต้องลบ Spinner หรือเรียก `loadingState(false)` ทุกครั้ง ไม่ว่าจะสำเร็จหรือล้มเหลว
+
+### 1.8. Version Mismatch (Frontend ใหม่ แต่ Backend เก่า)
+**ปัญหา:** PWA อัปเดตแล้วเรียก API ใหม่ แต่ GAS ยังไม่ได้ Deploy ทำให้เกิด Error "Unknown Action"
+**วิธีป้องกัน:**
+- ใช้ `checkApiVersion()` ใน `api_client.js` เพื่อตรวจสอบ `CONFIG.VERSION` ของ GAS
+- หาก Major/Minor version ไม่ตรงกัน ระบบจะแจ้งเตือนผู้ใช้ให้ Deploy GAS ใหม่
 
 ## 2. ขั้นตอนการตรวจสอบก่อน Commit (Pre-Commit Checklist)
 

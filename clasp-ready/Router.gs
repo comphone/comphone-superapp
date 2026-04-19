@@ -149,7 +149,7 @@ function dispatchActionV55_(action, payload, args) {
         return {
           success: true,
           app: 'COMPHONE SUPER APP V5.5+',
-          version: CONFIG.VERSION || '5.5.2',
+          version: CONFIG.VERSION || 'V5.5.7',
           actions: [
             'getDashboardData', 'getJobStateConfig', 'getJobTimeline', 'transitionJob', 'updateJobById',
             'addQuickNote', 'checkJobs', 'listJobs', 'openJob', 'updateJobStatus', 'getPhotoGalleryData', 'generateJobQR',

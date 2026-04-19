@@ -23,14 +23,15 @@
    - โครงสร้าง: `{ token: "...", username: "...", role: "...", loginAt: 123456789 }`
    - ห้ามใช้ key อื่นเช่น `comphone_token` หรือ `APP.token` เด็ดขาด เพื่อให้ PC และ Mobile แชร์ Session กันได้
 
-4. **RULE 3: Safe DOM Manipulation**
+4. **RULE 3: Safe DOM Manipulation & Loading State**
    - ห้ามใช้ `document.getElementById('...').innerHTML = ...` โดยไม่เช็คว่า element มีอยู่จริง
-   - ใช้ Helper Functions จาก `api_client.js`:
-     - `safeRender(id, html)`
-     - `safeShow(id)`
-     - `safeHide(id)`
+   - ใช้ Helper Functions จาก `api_client.js`: `safeRender(id, html)`, `safeShow(id)`, `safeHide(id)`
    - การแสดงสถานะ: ใช้ `loadingState()`, `emptyState()`, `errorState()`
+   - **สำคัญมาก:** ทุกครั้งที่แสดง Spinner หรือ Loading State ต้องใช้ `try...finally` block เสมอ เพื่อให้แน่ใจว่า Spinner จะถูกซ่อนเมื่อ API ทำงานเสร็จ (ไม่ว่าจะสำเร็จหรือล้มเหลว)
 
+4. **Version Sync & CacheService**
+   - ใช้ `checkApiVersion()` เพื่อตรวจสอบว่า Frontend และ Backend (GAS) เป็นเวอร์ชันเดียวกัน
+   - ใน GAS Backend ต้องใช้ `CacheService` สำหรับข้อมูลที่ถูกเรียกบ่อย (เช่น `getDashboardData`, `healthCheck`) เพื่อลดภาระการ Query Sheet และป้องกัน Rate Limit
 ## 2. โครงสร้าง Backend (Google Apps Script)
 
 1. **Router.gs**
