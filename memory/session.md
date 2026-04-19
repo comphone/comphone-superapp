@@ -28,7 +28,7 @@
 | **GitHub** | https://github.com/comphone/comphone-superapp |
 | **GAS Script ID** | `1-aoCd5gXoo1dX4FjW62l8JknR3ZPiaf1W7YEmEdtq8gnRzSp4Hwj6043` |
 | **Spreadsheet ID** | `19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA` |
-| **GAS Deploy** | @439 (ล่าสุด) — Online ✅ |
+| **GAS Deploy** | @441 (ล่าสุด) — Online ✅ |
 | **API Keys Registry** | `memory/API_KEYS_REGISTRY.md` |
 | **Skills Context** | `memory/SKILLS_CONTEXT.md` |
 | **ข้อมูลจริง** | 18 งาน (J0001–J0018) ใน DBJOBS |
@@ -59,7 +59,7 @@
 
 | รายการ | URL |
 |--------|-----|
-| **GAS API @439 (หลัก)** | `https://script.google.com/macros/s/AKfycby-IRTHbHMfCZ8TiXSAJ8zr_T6xQcmJNvGNYYI2X2VoAEMPwYtHwlCp1mf9f6IzWSSJfQ/exec` |
+| **GAS API @441 (หลัก)** | `https://script.google.com/macros/s/AKfycbzE5tyKNA-W6gDQEixw9VTDznTNn5FuToVeVuO_OQL75fDSrpW8U9BT3bhVn4kjKc37/exec` |
 | **LINE Webhook** | `https://comphone-line-webhook.narinoutagit.workers.dev/line/webhook` |
 | **PWA Mobile** | `https://comphone.github.io/comphone-superapp/pwa/` |
 | **PC Dashboard** | `https://comphone.github.io/comphone-superapp/pwa/dashboard_pc.html` |
@@ -78,7 +78,7 @@
 |----------|-------|
 | `DB_SS_ID` | ✅ `19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA` |
 | `ROOT_FOLDER_ID` | ✅ `1YRZRG9r1Y_jMHg2XFFKYjK4Hx-sW0Eq0` |
-| `WEB_APP_URL` | ✅ ตั้งค่าแล้ว |
+| `WEB_APP_URL` | ✅ `https://script.google.com/macros/s/AKfycbzE5tyKNA-W6gDQEixw9VTDznTNn5FuToVeVuO_OQL75fDSrpW8U9BT3bhVn4kjKc37/exec` |
 | `LINE_CHANNEL_ACCESS_TOKEN` | ✅ ตั้งค่าแล้ว |
 | `GEMINI_API_KEY` | ✅ ตั้งค่าแล้ว |
 | `LINE_GROUP_TECHNICIAN` | ✅ `C8ad22a115f38c9ad3cb5ea5c2ff4863b` |

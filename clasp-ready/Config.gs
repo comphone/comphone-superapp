@@ -64,7 +64,7 @@ var CONFIG = {
   DEFAULTS: {
     ROOT_FOLDER_ID:   '',
     SPREADSHEET_ID:   '',
-    WEB_APP_URL:      '',
+    WEB_APP_URL:      'https://script.google.com/macros/s/AKfycbzE5tyKNA-W6gDQEixw9VTDznTNn5FuToVeVuO_OQL75fDSrpW8U9BT3bhVn4kjKc37/exec',
     PRIORITY_LEVELS:  ['ด่วนมาก', 'ด่วน', 'ปกติ'],
     SLA_HOURS:        { 'ด่วนมาก': 4, 'ด่วน': 24, 'ปกติ': 72 },
     VAT_RATE:         0.07,
