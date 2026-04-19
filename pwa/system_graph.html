@@ -457,12 +457,23 @@ async function initGraph() {
   network.on('stabilizationIterationsDone', function() {
     network.setOptions({ physics: { enabled: false } });
     setTimeout(function() {
-      network.fit({
-        nodes: nodesDS.getIds(),
-        animation: { duration: 600, easingFunction: 'easeInOutQuad' }
-      });
-      showLoading(false);
-    }, 200);
+      // คำนวณ center ของ nodes ทั้งหมด
+      const ids = nodesDS.getIds();
+      const positions = network.getPositions(ids);
+      let sumX = 0, sumY = 0, count = 0;
+      Object.values(positions).forEach(function(p) { sumX += p.x; sumY += p.y; count++; });
+      const cx = count > 0 ? sumX / count : 0;
+      const cy = count > 0 ? sumY / count : 0;
+      // Move to center แล้ว fit
+      network.moveTo({ position: { x: cx, y: cy }, scale: 0.6, animation: false });
+      setTimeout(function() {
+        network.fit({
+          nodes: ids,
+          animation: { duration: 500, easingFunction: 'easeInOutQuad' }
+        });
+        showLoading(false);
+      }, 100);
+    }, 300);
   });
 
   updateStats(graphData);
