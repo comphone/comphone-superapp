@@ -213,7 +213,7 @@ function buildTechPerformance_(jobs, billing) {
   var techMap = {};
   for (var i = 0; i < jobs.length; i++) {
     var j = jobs[i];
-    var tech = String(j['technician'] || j['ช่าง'] || j['assigned_to'] || 'ไม่ระบุ']);
+    var tech = String(j['technician'] || j['ช่าง'] || j['assigned_to'] || 'ไม่ระบุ');
     if (!techMap[tech]) techMap[tech] = { name: tech, total: 0, completed: 0, revenue: 0, days: [] };
     techMap[tech].total++;
     var status = String(j['status'] || j['สถานะ'] || '').toLowerCase();
@@ -284,7 +284,7 @@ function buildCategoryRevenue_(jobs) {
   var catMap = {};
   for (var i = 0; i < jobs.length; i++) {
     var j = jobs[i];
-    var cat = String(j['category'] || j['ประเภท'] || j['type'] || 'อื่นๆ']);
+    var cat = String(j['category'] || j['ประเภท'] || j['type'] || 'อื่นๆ');
     if (!catMap[cat]) catMap[cat] = 0;
     catMap[cat] += Number(j['price'] || j['ราคา'] || j['service_fee'] || 0);
   }
@@ -314,7 +314,7 @@ function buildTopCustomers_(billing) {
     var b = billing[i];
     var status = String(b['status'] || b['สถานะ'] || '').toLowerCase();
     if (status === 'cancelled' || status === 'ยกเลิก') continue;
-    var name = String(b['customer_name'] || b['ชื่อลูกค้า'] || b['customer'] || 'ไม่ระบุ']);
+    var name = String(b['customer_name'] || b['ชื่อลูกค้า'] || b['customer'] || 'ไม่ระบุ');
     if (!custMap[name]) custMap[name] = 0;
     custMap[name] += Number(b['total_amount'] || b['ยอดรวม'] || 0);
   }
@@ -331,7 +331,7 @@ function buildInventorySnapshot_(inventory) {
     var item = inventory[i];
     var qty   = Number(item['qty'] || item['จำนวน'] || item['quantity'] || 0);
     var price = Number(item['cost_price'] || item['ราคาทุน'] || item['price'] || 0);
-    var cat   = String(item['category'] || item['หมวดหมู่'] || item['type'] || 'อื่นๆ']);
+    var cat   = String(item['category'] || item['หมวดหมู่'] || item['type'] || 'อื่นๆ');
     var name  = String(item['name'] || item['ชื่อ'] || '');
     var code  = String(item['code'] || item['รหัส'] || '');
     var reorder = Number(item['reorder_point'] || item['จุดสั่งซื้อ'] || 5);
