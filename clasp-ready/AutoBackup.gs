@@ -108,6 +108,9 @@ function addQuickNote(jobId, note, user) {
  * @return {Object} { success, triggers, total, skipped }
  */
 function setupAllTriggers() {
+  // ── Phase 1: Reset triggers ก่อนสร้างใหม่ (Trigger Safety V5.5.8) ──
+  resetTriggers_();
+
   // ── Trigger definitions ──
   var TRIGGER_DEFS = [
     { fn: 'autoBackup',             type: 'daily',   hour: 0,  schedule: 'ทุกวัน 00:00-01:00' },
@@ -143,22 +146,11 @@ function setupAllTriggers() {
     { fn: 'auditSessionLeak_',           type: 'daily',   hour: 3,          schedule: 'ทุกวัน 03:00-04:00' },
   ];
 
-  // ── ดึง triggers ที่มีอยู่แล้ว (duplicate prevention) ──
-  var existing = {};
-  ScriptApp.getProjectTriggers().forEach(function(t) {
-    existing[t.getHandlerFunction()] = t;
-  });
-
+  // ── สร้าง triggers ใหม่ทั้งหมด (reset แล้วไม่มี duplicate) ──
   var results = [];
   var skipped = [];
 
   TRIGGER_DEFS.forEach(function(def) {
-    // ถ้ามี trigger นี้อยู่แล้ว ข้ามไป
-    if (existing[def.fn]) {
-      skipped.push(def.fn);
-      results.push({ fn: def.fn, schedule: def.schedule, status: '⏭️ skipped (already exists)' });
-      return;
-    }
     try {
       var builder = ScriptApp.newTrigger(def.fn).timeBased();
       if (def.type === 'daily') {
@@ -188,6 +180,27 @@ function setupAllTriggers() {
     total: results.length,
     skipped: skipped.length
   };
+}
+
+/**
+ * resetTriggers_() — ลบ triggers ทั้งหมดเพื่อป้องกัน duplicate (Trigger Safety V5.5.8)
+ * เรียกโดย setupAllTriggers() อัตโนมัติก่อนสร้าง triggers ใหม่
+ * @return {Object} { deleted, count }
+ */
+function resetTriggers_() {
+  var allTriggers = ScriptApp.getProjectTriggers();
+  var deleted = [];
+  allTriggers.forEach(function(t) {
+    var fn = t.getHandlerFunction();
+    try {
+      ScriptApp.deleteTrigger(t);
+      deleted.push(fn);
+    } catch(e) {
+      Logger.log('⚠️ resetTriggers_: ไม่สามารถลบ trigger ' + fn + ': ' + e.message);
+    }
+  });
+  Logger.log('🔄 [resetTriggers_] Deleted ' + deleted.length + ' triggers: ' + deleted.join(', '));
+  return { deleted: deleted, count: deleted.length };
 }
 
 /**

@@ -69,17 +69,33 @@ function doGet(e) {
 
 function doPost(e) {
   try {
-    // ── Rate Limiting: 60 requests/min per IP via CacheService ──
+    // ── Rate Limiting + Security Log (Production Hardening V5.5.8) ──
     try {
-      var ip = (e && e.parameter && e.parameter.ip) || 'global';
-      var cache = CacheService.getScriptCache();
-      var cacheKey = 'rl_' + ip.replace(/[^a-zA-Z0-9]/g, '_');
-      var count = parseInt(cache.get(cacheKey) || '0', 10);
-      if (count >= 60) {
-        return jsonOutputV55_({ success: false, error: 'Rate limit exceeded. Please retry in 60 seconds.', code: 429 });
+      var _p0     = parsePostPayloadV55_(e);
+      var _token0 = (_p0 && (_p0.token || _p0.auth_token)) || 'anon';
+      var _act0   = (_p0 && (_p0.action || _p0.route)) || 'unknown';
+      if (typeof rateLimit_ === 'function') {
+        var _rl = rateLimit_(_token0, _act0);
+        if (!_rl.allowed) {
+          return jsonOutputV55_({
+            success:  false,
+            error:    'Rate limit exceeded. Retry in ' + _rl.reset_in + 's.',
+            code:     429,
+            reason:   _rl.reason,
+            reset_in: _rl.reset_in
+          });
+        }
+      } else {
+        // Fallback: simple counter
+        var _cache0 = CacheService.getScriptCache();
+        var _ck0    = 'rl_' + _token0.substring(0, 20);
+        var _cnt0   = parseInt(_cache0.get(_ck0) || '0', 10);
+        if (_cnt0 >= 60) {
+          return jsonOutputV55_({ success: false, error: 'Rate limit exceeded.', code: 429 });
+        }
+        _cache0.put(_ck0, String(_cnt0 + 1), 60);
       }
-      cache.put(cacheKey, String(count + 1), 60);
-    } catch (rlErr) { /* rate limit ไม่ critical — ไม่ต้องหยุด */ }
+    } catch (rlErr) { /* rate limit ไม่ critical — fail open */ }
 
     var payload = parsePostPayloadV55_(e);
     // ── ตรวจจับ LINE Webhook (มี destination + events array) ──

@@ -25,6 +25,7 @@ var AUTH_SHEET_NAME    = 'DB_USERS';
 var SESSION_TTL_SEC    = 8 * 60 * 60;   // 8 ชั่วโมง (CacheService max = 21600 = 6h, fallback ใช้ 6h)
 var SESSION_CACHE_TTL  = 6 * 60 * 60;   // CacheService รองรับสูงสุด 6 ชั่วโมง
 var TOKEN_HMAC_SECRET  = 'COMPHONE_V5_HMAC_2026';  // ใช้ Script Property override ได้
+var MAX_SESSIONS_PER_USER = 3;          // Cache Harden V5.5.8: max concurrent sessions ต่อ user
 
 // ============================================================
 // 🔐 Login — ตรวจสอบ username/password
@@ -68,6 +69,20 @@ function loginUser(username, password) {
       var role     = String(row[colRole] || 'TECHNICIAN').toUpperCase();
       var roleInfo = AUTH_ROLES[role] || AUTH_ROLES.TECHNICIAN;
       var token    = generateSignedToken_(rowUser, role);
+
+      // ✅ Cache Harden: ตรวจ max sessions ต่อ user (MAX_SESSIONS_PER_USER = 3)
+      try {
+        var _userSessionKey = 'USR_SESS_' + rowUser;
+        var _existingSessions = JSON.parse(getCacheService_().get(_userSessionKey) || '[]');
+        if (_existingSessions.length >= MAX_SESSIONS_PER_USER) {
+          // ลบ session เก่าสุด (oldest first)
+          var _oldest = _existingSessions.shift();
+          getCacheService_().remove('SESSION_' + _oldest);
+          Logger.log('🔒 [Auth] Max sessions reached for ' + rowUser + ' — removed oldest: ' + _oldest.substring(0,8) + '...');
+        }
+        _existingSessions.push(token);
+        getCacheService_().put(_userSessionKey, JSON.stringify(_existingSessions), SESSION_CACHE_TTL);
+      } catch(e) { /* max session check ไม่ critical */ }
 
       // ✅ บันทึก session ลง CacheService (ไม่ใช้ ScriptProperties)
       var sessionData = JSON.stringify({

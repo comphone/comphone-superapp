@@ -453,3 +453,134 @@ function auditSessionLeak_() {
     return { verdict: 'ERROR', error: e.message };
   }
 }
+
+// ============================================================
+// 🚦 RATE LIMIT — Production Hardening V5.5.8
+// ============================================================
+
+var RATE_LIMIT_MAX     = 60;   // max requests ต่อ window
+var RATE_LIMIT_WINDOW  = 60;   // window size (วินาที)
+var RATE_LIMIT_BURST   = 10;   // max burst ใน 5 วินาที
+
+/**
+ * rateLimit_(token)
+ * ตรวจสอบ rate limit ต่อ token (CacheService)
+ * @param {string} token - user token หรือ IP identifier
+ * @param {string} endpoint - ชื่อ action ที่เรียก
+ * @return {Object} { allowed: bool, remaining: int, reset_in: int }
+ */
+function rateLimit_(token, endpoint) {
+  try {
+    var cache    = CacheService.getScriptCache();
+    var key      = 'RL_' + (token || 'anon').substring(0, 20);
+    var burstKey = 'RLB_' + (token || 'anon').substring(0, 20);
+    var now      = Math.floor(new Date().getTime() / 1000);
+
+    // ── Window counter ──
+    var raw  = cache.get(key);
+    var data = raw ? JSON.parse(raw) : { count: 0, window_start: now };
+
+    // Reset window ถ้าเกิน window size
+    if (now - data.window_start >= RATE_LIMIT_WINDOW) {
+      data = { count: 0, window_start: now };
+    }
+
+    data.count++;
+    var ttl = RATE_LIMIT_WINDOW - (now - data.window_start);
+    cache.put(key, JSON.stringify(data), RATE_LIMIT_WINDOW + 5);
+
+    // ── Burst counter (5 วินาที) ──
+    var burstRaw  = cache.get(burstKey);
+    var burstData = burstRaw ? JSON.parse(burstRaw) : { count: 0, start: now };
+    if (now - burstData.start >= 5) {
+      burstData = { count: 0, start: now };
+    }
+    burstData.count++;
+    cache.put(burstKey, JSON.stringify(burstData), 10);
+
+    // ── ตรวจสอบ limit ──
+    var burstBlocked  = burstData.count > RATE_LIMIT_BURST;
+    var windowBlocked = data.count > RATE_LIMIT_MAX;
+
+    if (burstBlocked || windowBlocked) {
+      // Log suspicious activity
+      logSecurityEvent_('RATE_LIMIT_EXCEEDED', token, endpoint, {
+        count: data.count,
+        burst: burstData.count,
+        window_start: data.window_start
+      });
+      return {
+        allowed:    false,
+        remaining:  0,
+        reset_in:   ttl,
+        reason:     burstBlocked ? 'burst_exceeded' : 'window_exceeded'
+      };
+    }
+
+    return {
+      allowed:   true,
+      remaining: RATE_LIMIT_MAX - data.count,
+      reset_in:  ttl
+    };
+  } catch (e) {
+    // ถ้า rateLimit_ error ให้ผ่านไปก่อน (fail open)
+    Logger.log('⚠️ rateLimit_ error: ' + e.message);
+    return { allowed: true, remaining: RATE_LIMIT_MAX, reset_in: RATE_LIMIT_WINDOW };
+  }
+}
+
+// ============================================================
+// 🔍 SECURITY EVENT LOG — Production Hardening V5.5.8
+// ============================================================
+
+/**
+ * logSecurityEvent_(event, token, endpoint, details)
+ * บันทึก security event พร้อม timestamp + endpoint + token prefix
+ * @param {string} event    - ชื่อ event เช่น RATE_LIMIT_EXCEEDED, INVALID_TOKEN
+ * @param {string} token    - token ของ user (เก็บแค่ 8 ตัวแรก)
+ * @param {string} endpoint - action ที่เรียก
+ * @param {Object} details  - ข้อมูลเพิ่มเติม
+ */
+function logSecurityEvent_(event, token, endpoint, details) {
+  try {
+    var entry = {
+      event:     event,
+      token:     token ? String(token).substring(0, 8) + '...' : 'anon',
+      endpoint:  endpoint || 'unknown',
+      timestamp: new Date().toISOString(),
+      details:   details || {}
+    };
+
+    // Log ใน GAS Logger
+    Logger.log('🔐 [SECURITY] ' + JSON.stringify(entry));
+
+    // บันทึกใน Activity Log (ถ้ามี)
+    try {
+      logActivity('SECURITY_EVENT_' + event, entry.token, endpoint + ' | ' + JSON.stringify(details));
+    } catch(e) {}
+
+    // เก็บ security events ล่าสุด 100 รายการใน CacheService
+    var cache    = CacheService.getScriptCache();
+    var logKey   = 'SEC_LOG_LATEST';
+    var existing = JSON.parse(cache.get(logKey) || '[]');
+    existing.unshift(entry);
+    if (existing.length > 100) existing = existing.slice(0, 100);
+    cache.put(logKey, JSON.stringify(existing), 21600); // 6h
+
+  } catch (e) {
+    Logger.log('⚠️ logSecurityEvent_ error: ' + e.message);
+  }
+}
+
+/**
+ * getSecurityLog() — ดู security events ล่าสุด
+ * @return {Array} รายการ security events ล่าสุด 100 รายการ
+ */
+function getSecurityLog() {
+  try {
+    var cache = CacheService.getScriptCache();
+    return JSON.parse(cache.get('SEC_LOG_LATEST') || '[]');
+  } catch(e) {
+    return [];
+  }
+}
