@@ -339,7 +339,7 @@
     <div style="text-align:center;margin-top:14px">
       <button class="login-setup-link" onclick="pcShowSetupUrl()">⚙️ ตั้งค่า Script URL</button>
     </div>
-    <div class="login-footer">COMPHONE SuperApp v5.5.7 · PC Dashboard</div>
+    <div class="login-footer">COMPHONE SuperApp v5.5.8 · PC Dashboard</div>
   </div>
 </div>
 
@@ -408,7 +408,7 @@
         <div class="user-role-sm" id="pc-role">Admin</div>
       </div>
     </div>
-    <div style="font-size:10px;color:#9ca3af;margin-top:8px;text-align:center" id="pc-version">v5.5.7</div>
+    <div style="font-size:10px;color:#9ca3af;margin-top:8px;text-align:center" id="pc-version">v5.5.8</div>
     <button class="btn-logout" onclick="pcLogout()">
       <i class="bi bi-box-arrow-left"></i> ออกจากระบบ
     </button>
@@ -444,12 +444,12 @@
 'use strict';
 
 // ===== VERSION (sync with app.js) =====
-const APP_VERSION = '5.5.7';
+const APP_VERSION = '5.5.8';
 const APP_BUILD   = '2026-04-19';
 
 // ===== CONFIG =====
 const GAS_URL = localStorage.getItem('comphone_gas_url') ||
-  'https://script.google.com/macros/s/AKfycbxbIBi05t_3e2dpLbOyHkQs9Ddzky_mFUYAs7y9jBJBcPc_s_ZnMuJp5i-IlzDfqdVgyg/exec';
+  'https://script.google.com/macros/s/AKfycbzneqQ6znlP-LjnP8CM8K4MUVo5BhO6mIdUmxc8fXb29PNVYcLgy3oXts8k3txQh6lb/exec';
 
 let CHARTS = {};
 let DASHBOARD_DATA = null;
