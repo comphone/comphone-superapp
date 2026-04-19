@@ -5,8 +5,8 @@
 
 var CONFIG = {
   APP_NAME: 'COMPHONE SUPER APP AI',
-  VERSION: '6.2.0',
-  BUILD: '2026-04-19',
+  VERSION: '6.2.1',
+  BUILD: '2026-04-20',
   TIMEZONE: 'Asia/Bangkok',
 
   // ── ชื่อ Sheet ทั้งหมดในระบบ ──

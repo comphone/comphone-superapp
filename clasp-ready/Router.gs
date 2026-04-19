@@ -1035,14 +1035,18 @@ function getVersionV55_() {
  */
 function getSystemVersion() {
   var now = new Date();
+  // Single Source: all values from Config.gs (v6.2.1)
   return {
     success:   true,
     status:    'healthy',
-    version:   CONFIG.VERSION  || '6.2.0',
-    build:     CONFIG.BUILD    || '2026-04-19',
+    version:   CONFIG.VERSION  || '6.2.1',
+    build:     CONFIG.BUILD    || '2026-04-20',
     app:       CONFIG.APP_NAME || 'COMPHONE SUPER APP AI',
     updated:   now.toISOString(),
     timestamp: Utilities.formatDate(now, 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss'),
-    deploy_id: 'GAS-@472'
+    deploy_id: 'GAS-@474',
+    commit:    '895d514',
+    env:       'production',
+    manifest:  'docs/SYSTEM_MANIFEST.json'
   };
 }

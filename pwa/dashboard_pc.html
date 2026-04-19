@@ -6429,5 +6429,424 @@ window.addEventListener('load', () => {
 
 console.log(`[COMPHONE v6.2] Header + Version System loaded — APP_NAME: "${APP_NAME}", VERSION: "${APP_VERSION}"`);
 </script>
+<!-- ============================================================
+     COMPHONE SUPER APP AI — v6.2.1 Version System Patch
+     Phase 1: Single Source of Truth (no hardcode)
+     Phase 2: initApp() Boot Flow
+     Phase 3: Version Display Upgrade (v • @deploy • commit)
+     Phase 4: Auto Update Modal on mismatch
+     Phase 5: SYSTEM_MANIFEST.json sync
+     Phase 6: [APP INIT] logging
+     ============================================================ -->
+<style id="v621-styles">
+/* ── Version Badge ── */
+.v621-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 10px; color: #94a3b8; font-family: 'Courier New', monospace;
+  line-height: 1.4;
+}
+.v621-badge .v-num  { color: #60a5fa; font-weight: 700; }
+.v621-badge .v-sep  { color: #334155; }
+.v621-badge .v-dep  { color: #a78bfa; }
+.v621-badge .v-com  { color: #34d399; }
+.v621-badge .v-dot  { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; display: inline-block; animation: v621-pulse 2s infinite; }
+@keyframes v621-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ── Auto Update Modal ── */
+#v621-update-modal {
+  display: none; position: fixed; inset: 0; z-index: 99999;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+  align-items: center; justify-content: center;
+}
+#v621-update-modal.show { display: flex; }
+.v621-modal-box {
+  background: #1e293b; border: 1px solid #334155; border-radius: 20px;
+  padding: 36px 40px; max-width: 440px; width: 90%; text-align: center;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+  animation: v621-slide-in 0.3s ease;
+}
+@keyframes v621-slide-in { from{transform:translateY(-20px);opacity:0} to{transform:translateY(0);opacity:1} }
+.v621-modal-icon { font-size: 48px; margin-bottom: 16px; }
+.v621-modal-title { color: #f1f5f9; font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+.v621-modal-body  { color: #94a3b8; font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
+.v621-modal-body code { background: #0f172a; color: #60a5fa; padding: 2px 8px; border-radius: 6px; font-size: 13px; }
+.v621-modal-actions { display: flex; gap: 12px; justify-content: center; }
+.v621-btn-reload {
+  background: #3b82f6; color: #fff; border: none; border-radius: 10px;
+  padding: 10px 24px; font-size: 14px; font-weight: 700; cursor: pointer;
+  transition: background 0.15s;
+}
+.v621-btn-reload:hover { background: #2563eb; }
+.v621-btn-skip {
+  background: transparent; color: #64748b; border: 1px solid #334155;
+  border-radius: 10px; padding: 10px 24px; font-size: 14px; cursor: pointer;
+}
+.v621-btn-skip:hover { color: #94a3b8; }
+.v621-countdown { font-size: 12px; color: #64748b; margin-top: 12px; }
+
+/* ── APP INIT Banner ── */
+#v621-init-banner {
+  position: fixed; bottom: 20px; right: 20px; z-index: 9998;
+  background: #0f172a; border: 1px solid #1e3a5f; border-radius: 12px;
+  padding: 12px 16px; font-size: 11px; font-family: monospace; color: #60a5fa;
+  max-width: 340px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  animation: v621-fade-in 0.3s ease;
+  display: none;
+}
+@keyframes v621-fade-in { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+#v621-init-banner.show { display: block; }
+#v621-init-banner .init-row { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 3px; }
+#v621-init-banner .init-key { color: #64748b; }
+#v621-init-banner .init-val { color: #34d399; }
+</style>
+
+<!-- Auto Update Modal -->
+<div id="v621-update-modal">
+  <div class="v621-modal-box">
+    <div class="v621-modal-icon">🔄</div>
+    <div class="v621-modal-title">มีเวอร์ชันใหม่</div>
+    <div class="v621-modal-body" id="v621-modal-body">
+      กำลังตรวจสอบ...
+    </div>
+    <div class="v621-modal-actions">
+      <button class="v621-btn-reload" onclick="V621.forceUpdate()">
+        <i class="bi bi-arrow-clockwise"></i> อัปเดตเดี๋ยวนี้
+      </button>
+      <button class="v621-btn-skip" onclick="V621.skipUpdate()">
+        ข้ามครั้งนี้
+      </button>
+    </div>
+    <div class="v621-countdown" id="v621-countdown"></div>
+  </div>
+</div>
+
+<!-- APP INIT Debug Banner -->
+<div id="v621-init-banner">
+  <div style="color:#60a5fa;font-weight:700;margin-bottom:6px">[APP INIT] ✓</div>
+  <div class="init-row"><span class="init-key">version</span><span class="init-val" id="v621-b-ver">—</span></div>
+  <div class="init-row"><span class="init-key">deploy</span><span class="init-val" id="v621-b-dep">—</span></div>
+  <div class="init-row"><span class="init-key">commit</span><span class="init-val" id="v621-b-com">—</span></div>
+  <div class="init-row"><span class="init-key">env</span><span class="init-val" id="v621-b-env">production</span></div>
+  <div class="init-row"><span class="init-key">latency</span><span class="init-val" id="v621-b-lat">—</span></div>
+  <div style="color:#334155;margin-top:6px;font-size:10px">คลิกเพื่อปิด</div>
+</div>
+
+<script>
+/* ============================================================
+   V621 — Version System Core
+   Single Source of Truth: Config.gs → getSystemVersion()
+   ============================================================ */
+'use strict';
+
+const V621 = (() => {
+  // ── Internal state (no hardcode) ──
+  let _version   = null;   // from backend only
+  let _deploy    = null;
+  let _commit    = null;
+  let _env       = 'production';
+  let _initTime  = null;
+  let _countdownTimer = null;
+  let _skipUpdate = false;
+
+  // ── Phase 1: Remove all hardcoded version references ──
+  function _patchHardcoded() {
+    // Neutralize old APP_VERSION constant — replace with getter
+    if (typeof window.APP_VERSION !== 'undefined') {
+      // Override with dynamic getter
+      Object.defineProperty(window, 'APP_VERSION', {
+        get: () => _version || '—',
+        configurable: true
+      });
+    }
+  }
+
+  // ── Phase 2: Boot Flow ──
+  async function initApp() {
+    _initTime = performance.now();
+    console.log('[APP INIT] Starting boot sequence...');
+
+    // Step 1: Load version from backend (Single Source)
+    const versionData = await _loadVersionFromBackend();
+    _version = versionData.version;
+    _deploy  = versionData.deploy_id  || '@—';
+    _commit  = versionData.commit     || '—';
+    _env     = versionData.env        || 'production';
+
+    // Step 2: Patch hardcoded references
+    _patchHardcoded();
+
+    // Step 3: Update all version displays
+    _updateAllDisplays();
+
+    // Step 4: Phase 6 — [APP INIT] log
+    const latency = Math.round(performance.now() - _initTime);
+    _logAppInit(latency);
+
+    // Step 5: Check mismatch (Phase 4)
+    _checkMismatch(versionData);
+
+    // Step 6: Sync manifest (Phase 5)
+    _syncManifestDisplay(versionData);
+
+    return versionData;
+  }
+
+  // ── Phase 1: Single Source — fetch from GAS ──
+  async function _loadVersionFromBackend() {
+    try {
+      // Use existing callApi from api_client.js
+      if (typeof callApi === 'function') {
+        const res = await callApi('getSystemVersion');
+        if (res && res.version) {
+          return {
+            version:   res.version,
+            app:       res.app       || 'COMPHONE SUPER APP AI',
+            deploy_id: res.deploy_id || '@—',
+            commit:    res.commit    || '—',
+            env:       res.env       || 'production',
+            updated:   res.updated   || new Date().toISOString(),
+            status:    res.status    || 'healthy',
+            _source:   'backend'
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('[APP INIT] Backend version fetch failed:', e.message);
+    }
+    // Fallback: read from meta tag or window constant
+    const fallback = document.querySelector('meta[name="app-version"]')?.content
+                  || window._APP_VERSION_FALLBACK
+                  || '6.2.1';
+    return {
+      version:   fallback,
+      app:       'COMPHONE SUPER APP AI',
+      deploy_id: '@—',
+      commit:    '—',
+      env:       'production',
+      status:    'offline',
+      _source:   'fallback'
+    };
+  }
+
+  // ── Phase 3: Version Display Upgrade ──
+  // Format: v6.2.1 • @473 • 895d514
+  function _formatVersionBadge(v, dep, com) {
+    const depShort = dep ? dep.replace('@', '') : '—';
+    const comShort = com && com !== '—' ? com.substring(0, 7) : '—';
+    return `<span class="v621-badge">
+      <span class="v-dot"></span>
+      <span class="v-num">v${v}</span>
+      <span class="v-sep">•</span>
+      <span class="v-dep">${dep || '@—'}</span>
+      <span class="v-sep">•</span>
+      <span class="v-com">${comShort}</span>
+    </span>`;
+  }
+
+  function _updateAllDisplays() {
+    const badge = _formatVersionBadge(_version, _deploy, _commit);
+    const plain = `v${_version} • ${_deploy} • ${(_commit||'—').substring(0,7)}`;
+
+    // Sidebar version
+    const sidebarVer = document.getElementById('sidebarVersion');
+    if (sidebarVer) sidebarVer.innerHTML = badge;
+
+    // Topbar appVersion
+    const appVer = document.getElementById('appVersion');
+    if (appVer) appVer.innerHTML = badge;
+
+    // Footer pc-version
+    const pcVer = document.getElementById('pc-version');
+    if (pcVer) pcVer.textContent = plain;
+
+    // Login footer (if still visible)
+    const loginFooter = document.querySelector('.login-footer-ver');
+    if (loginFooter) loginFooter.textContent = `COMPHONE SUPER APP AI ${plain}`;
+
+    // Page title
+    document.title = `COMPHONE SUPER APP AI ${_version} — PC Dashboard`;
+
+    // Meta tag for cache bust reference
+    let metaVer = document.querySelector('meta[name="app-version"]');
+    if (!metaVer) {
+      metaVer = document.createElement('meta');
+      metaVer.name = 'app-version';
+      document.head.appendChild(metaVer);
+    }
+    metaVer.content = _version;
+  }
+
+  // ── Phase 4: Auto Update Modal ──
+  function _checkMismatch(versionData) {
+    // Compare frontend fallback vs backend
+    const frontendVer = window._APP_VERSION_FALLBACK || '6.2.1';
+    const backendVer  = versionData.version;
+
+    console.log('[VERSION CHECK]', {
+      frontend:  frontendVer,
+      backend:   backendVer,
+      deploy:    versionData.deploy_id,
+      commit:    versionData.commit,
+      source:    versionData._source,
+      match:     frontendVer === backendVer
+    });
+
+    if (versionData._source === 'fallback') return; // offline, skip
+    if (_skipUpdate) return;
+
+    if (frontendVer !== backendVer) {
+      _showUpdateModal(frontendVer, backendVer, versionData.deploy_id);
+    }
+  }
+
+  function _showUpdateModal(oldVer, newVer, deployId) {
+    const modal = document.getElementById('v621-update-modal');
+    const body  = document.getElementById('v621-modal-body');
+    const countdown = document.getElementById('v621-countdown');
+    if (!modal) return;
+
+    body.innerHTML = `
+      Frontend ของคุณใช้ <code>v${oldVer}</code><br>
+      Backend ได้อัปเดตเป็น <code>v${newVer}</code> (${deployId || ''})<br><br>
+      กรุณาอัปเดตเพื่อใช้งานฟีเจอร์ล่าสุดและป้องกันข้อผิดพลาด
+    `;
+
+    modal.classList.add('show');
+
+    // Auto reload countdown: 30 seconds
+    let secs = 30;
+    countdown.textContent = `จะอัปเดตอัตโนมัติใน ${secs} วินาที...`;
+    _countdownTimer = setInterval(() => {
+      secs--;
+      if (secs <= 0) {
+        clearInterval(_countdownTimer);
+        forceUpdate();
+      } else {
+        countdown.textContent = `จะอัปเดตอัตโนมัติใน ${secs} วินาที...`;
+      }
+    }, 1000);
+  }
+
+  function forceUpdate() {
+    clearInterval(_countdownTimer);
+    // Clear all caches
+    if (window.V61_CACHE) window.V61_CACHE.clear();
+    if (window.APP_STATE) window.APP_STATE.clearCache && window.APP_STATE.clearCache();
+    // Clear localStorage cache keys (keep auth)
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith('cache_') || k.startsWith('v61_')) localStorage.removeItem(k);
+    });
+    // Reload with cache bust
+    const url = new URL(location.href);
+    url.searchParams.set('v', _version || '6.2.1');
+    url.searchParams.set('t', Date.now());
+    location.replace(url.toString());
+  }
+
+  function skipUpdate() {
+    clearInterval(_countdownTimer);
+    _skipUpdate = true;
+    const modal = document.getElementById('v621-update-modal');
+    if (modal) modal.classList.remove('show');
+    console.warn('[VERSION CHECK] User skipped update');
+  }
+
+  // ── Phase 5: Manifest Sync ──
+  function _syncManifestDisplay(versionData) {
+    // Update PWA manifest name dynamically
+    const manifestLink = document.querySelector('link[rel="manifest"]');
+    // Store version in sessionStorage for service worker
+    try {
+      sessionStorage.setItem('comphone_version', JSON.stringify({
+        version:   versionData.version,
+        deploy_id: versionData.deploy_id,
+        commit:    versionData.commit,
+        updated:   versionData.updated,
+        synced_at: new Date().toISOString()
+      }));
+    } catch(e) {}
+
+    // Dispatch custom event for service worker / other modules
+    window.dispatchEvent(new CustomEvent('comphone:version', {
+      detail: versionData
+    }));
+  }
+
+  // ── Phase 6: [APP INIT] Logging ──
+  function _logAppInit(latency) {
+    const info = {
+      version:   _version,
+      deploy:    _deploy,
+      commit:    _commit,
+      env:       _env,
+      latency:   `${latency}ms`,
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent.substring(0, 60) + '...',
+      online:    navigator.onLine
+    };
+
+    // Console log (always)
+    console.log('[APP INIT]', info);
+    console.log(`[APP INIT] %cCOMPHONE SUPER APP AI v${_version}`,
+      'color:#60a5fa;font-weight:bold;font-size:14px');
+    console.log(`[APP INIT] Deploy: ${_deploy} | Commit: ${_commit} | Latency: ${latency}ms`);
+
+    // Show debug banner (auto-hide after 5s in production)
+    const banner = document.getElementById('v621-init-banner');
+    if (banner) {
+      document.getElementById('v621-b-ver').textContent = _version || '—';
+      document.getElementById('v621-b-dep').textContent = _deploy  || '—';
+      document.getElementById('v621-b-com').textContent = (_commit||'—').substring(0,7);
+      document.getElementById('v621-b-env').textContent = _env;
+      document.getElementById('v621-b-lat').textContent = `${latency}ms`;
+      banner.classList.add('show');
+      banner.onclick = () => banner.classList.remove('show');
+      setTimeout(() => banner.classList.remove('show'), 5000);
+    }
+  }
+
+  // ── Public API ──
+  return { initApp, forceUpdate, skipUpdate,
+           getVersion: () => _version,
+           getDeploy:  () => _deploy,
+           getCommit:  () => _commit };
+})();
+
+/* ============================================================
+   BOOT SEQUENCE — Phase 2: Replace window.onload
+   ============================================================ */
+(function _installBootSequence() {
+  // Store fallback version (from old APP_VERSION constant if still set)
+  window._APP_VERSION_FALLBACK = (typeof APP_VERSION !== 'undefined') ? APP_VERSION : '6.2.1';
+
+  // Override the original window.addEventListener('load') behavior
+  // by wrapping pcCheckSession with initApp
+  const _origPcCheckSession = typeof pcCheckSession === 'function'
+    ? pcCheckSession
+    : null;
+
+  window.pcCheckSession = async function() {
+    // Run initApp first (loads version from backend)
+    try {
+      await V621.initApp();
+    } catch(e) {
+      console.warn('[APP INIT] initApp error (non-fatal):', e.message);
+    }
+    // Then run original session check
+    if (_origPcCheckSession) {
+      _origPcCheckSession.call(this);
+    }
+  };
+
+  // Also hook into the existing load listener
+  // If pcCheckSession was already called before this patch,
+  // run initApp immediately
+  if (document.readyState === 'complete') {
+    V621.initApp().catch(e => console.warn('[APP INIT] late init error:', e.message));
+  }
+})();
+
+console.log('[COMPHONE v6.2.1] Version System patch loaded — Single Source + Auto Sync + Auto Recovery');
+</script>
 </body>
 </html>
