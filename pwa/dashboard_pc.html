@@ -361,6 +361,14 @@
     <i class="bi bi-tools"></i><span>งานบริการ</span>
     <span class="nav-badge" id="nav-jobs-badge" style="display:none">0</span>
   </a>
+  <a class="nav-item" href="#" onclick="loadSection('pos')">
+    <i class="bi bi-shop"></i><span>ขายหน้าร้าน (POS)</span>
+    <span class="nav-badge" id="nav-pos-badge" style="display:none">0</span>
+  </a>
+  <a class="nav-item" href="#" onclick="loadSection('billing')">
+    <i class="bi bi-cash-coin"></i><span>Billing / รับชำระ</span>
+    <span class="nav-badge" id="nav-billing-badge" style="display:none">0</span>
+  </a>
   <a class="nav-item" href="#" onclick="loadSection('po')">
     <i class="bi bi-cart-fill"></i><span>ใบสั่งซื้อ</span>
   </a>
@@ -374,6 +382,9 @@
   </a>
   <a class="nav-item" href="#" onclick="loadSection('crm')">
     <i class="bi bi-people-fill"></i><span>ลูกค้า</span>
+  </a>
+  <a class="nav-item" href="#" onclick="loadSection('attendance')">
+    <i class="bi bi-person-check-fill"></i><span>พนักงาน</span>
   </a>
 
   <div class="nav-section">การเงิน</div>
@@ -726,13 +737,22 @@ function jobRow(j) {
     </tr>`;
 }
 
-function filterJobsPC(q) {
+// Debounce utility
+function debounce(fn, delay) {
+  let t;
+  return function(...args) {
+    clearTimeout(t);
+    t = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
+
+const filterJobsPC = debounce(function(q) {
   const rows = document.querySelectorAll('#jobs-tbody-pc tr');
   const lq = q.toLowerCase();
   rows.forEach(r => {
     r.style.display = r.textContent.toLowerCase().includes(lq) ? '' : 'none';
   });
-}
+}, 200);
 
 function drawRevenueChartPC(revenue) {
   const canvas = document.getElementById('revenue-chart-pc');
@@ -886,6 +906,9 @@ function loadSection(section) {
   if (section === 'warranty')   { loadWarrantySection(); return; }
   if (section === 'branch')     { loadBranchSection(); return; }
   if (section === 'health')     { loadHealthSection(); return; }
+  if (section === 'pos')        { loadPOSSection(); return; }
+  if (section === 'billing')    { loadBillingSection(); return; }
+  if (section === 'attendance') { loadAttendanceSection(); return; }
   // fallback
   document.getElementById('topbar-title').innerHTML =
     `<i class="bi bi-${sectionIcon(section)}" style="margin-right:8px"></i>${sectionLabel(section)}`;
@@ -1334,10 +1357,10 @@ async function loadHealthSection() {
 }
 
 function sectionIcon(s) {
-  return { jobs:'tools', po:'cart-fill', inventory:'box-seam-fill', revenue:'currency-exchange', crm:'people-fill', settings:'gear-fill', tax:'receipt-cutoff', warranty:'shield-check', branch:'diagram-3-fill', health:'heart-pulse-fill' }[s] || 'grid';
+  return { jobs:'tools', po:'cart-fill', inventory:'box-seam-fill', revenue:'currency-exchange', crm:'people-fill', settings:'gear-fill', tax:'receipt-cutoff', warranty:'shield-check', branch:'diagram-3-fill', health:'heart-pulse-fill', pos:'shop', billing:'cash-coin', attendance:'person-check-fill' }[s] || 'grid';
 }
 function sectionLabel(s) {
-  return { jobs:'งานบริการ', po:'ใบสั่งซื้อ', inventory:'สต็อค', revenue:'รายรับ', crm:'ลูกค้า', settings:'ตั้งค่า', tax:'ระบบภาษี', warranty:'ใบรับประกัน', branch:'สาขา', health:'สุขภาพระบบ' }[s] || s;
+  return { jobs:'งานบริการ', po:'ใบสั่งซื้อ', inventory:'สต็อค', revenue:'รายรับ', crm:'ลูกค้า', settings:'ตั้งค่า', tax:'ระบบภาษี', warranty:'ใบรับประกัน', branch:'สาขา', health:'สุขภาพระบบ', pos:'ขายหน้าร้าน (POS)', billing:'Billing / รับชำระ', attendance:'พนักงาน' }[s] || s;
 }
 
 function setActiveNav(section) {
@@ -1349,6 +1372,247 @@ function setActiveNav(section) {
     }
   });
 }
+
+// ===== SESSION CACHE =====
+const _apiCache = {};
+const _CACHE_TTL = 60000; // 60 seconds
+function cachedCallApi(action, payload = {}, ttl = _CACHE_TTL) {
+  const key = action + ':' + JSON.stringify(payload);
+  const now = Date.now();
+  if (_apiCache[key] && (now - _apiCache[key].ts) < ttl) {
+    return Promise.resolve(_apiCache[key].data);
+  }
+  return callApi(action, payload).then(data => {
+    _apiCache[key] = { data, ts: now };
+    return data;
+  });
+}
+function clearCache(action) {
+  if (action) {
+    Object.keys(_apiCache).filter(k => k.startsWith(action + ':')).forEach(k => delete _apiCache[k]);
+  } else {
+    Object.keys(_apiCache).forEach(k => delete _apiCache[k]);
+  }
+}
+
+// ===== SKELETON LOADING =====
+function skeletonCard(n = 3) {
+  return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;padding:16px">
+    ${Array(n).fill('<div class="card-box" style="height:100px;background:linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%);background-size:200% 100%;animation:shimmer 1.5s infinite"></div>').join('')}
+  </div>`;
+}
+function skeletonTable(rows = 5) {
+  return `<div style="padding:16px">
+    <div class="card-box">
+      ${Array(rows).fill('<div style="height:36px;margin-bottom:8px;background:linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px"></div>').join('')}
+    </div>
+  </div>`;
+}
+
+// ===== POS SECTION =====
+async function loadPOSSection() {
+  setActiveNav('pos');
+  document.getElementById('topbar-title').innerHTML = '<i class="bi bi-shop" style="margin-right:8px;color:#10b981"></i>ขายหน้าร้าน (POS)';
+  const mc = document.getElementById('main-content');
+  mc.innerHTML = skeletonTable(6);
+  try {
+    const [salesRes, invRes] = await Promise.all([
+      cachedCallApi('listRetailSales', { limit: 50 }, 30000),
+      cachedCallApi('inventoryOverview', {}, 60000)
+    ]);
+    const sales = (salesRes && salesRes.sales) ? salesRes.sales : (Array.isArray(salesRes) ? salesRes : []);
+    const items = (invRes && invRes.items) ? invRes.items : [];
+    const totalToday = sales.filter(s => {
+      const d = new Date(s.created_at || s.date || '');
+      return d.toDateString() === new Date().toDateString();
+    }).reduce((sum, s) => sum + Number(s.total || s.amount || 0), 0);
+    mc.innerHTML = `
+      <div style="padding:16px">
+        <div class="kpi-row">
+          ${kpiBox('bi-shop', '#d1fae5', '#059669', sales.length, 'ยอดขายทั้งหมด', 'รายการทั้งหมด')}
+          ${kpiBox('bi-currency-baht', '#dbeafe', '#1e40af', '\u0e3f' + totalToday.toLocaleString(), 'ยอดขายวันนี้', 'บาท')}
+          ${kpiBox('bi-box-seam-fill', '#fef3c7', '#d97706', items.length, 'สินค้าในคลัง', 'รายการ')}
+        </div>
+        <div class="card-box" style="margin-top:0">
+          <div class="card-title"><i class="bi bi-list-ul" style="color:#10b981"></i> รายการขายล่าสุด <span class="badge-count">${sales.length}</span></div>
+          ${sales.length === 0 ? '<p style="color:#9ca3af;text-align:center;padding:20px">ยังไม่มีรายการขาย</p>' : `
+          <table class="job-table">
+            <thead><tr><th>เลขที่</th><th>วันที่</th><th>ลูกค้า</th><th>ยอดรวม</th><th>ชำระโดย</th><th>สถานะ</th></tr></thead>
+            <tbody>${sales.slice(0, 50).map(s => `<tr>
+              <td><span class="job-id">${s.sale_id || s.id || '-'}</span></td>
+              <td style="font-size:12px;color:#6b7280">${s.created_at || s.date || '-'}</td>
+              <td>${s.customer_name || s.customer || 'ลูกค้าทั่วไป'}</td>
+              <td style="font-weight:700;color:#059669">฿${Number(s.total || s.amount || 0).toLocaleString()}</td>
+              <td>${s.payment_method || s.method || '-'}</td>
+              <td><span class="status-badge" style="background:${s.status==='paid'||s.status==='ชำระแล้ว'?'#d1fae5':'#fef3c7'};color:${s.status==='paid'||s.status==='ชำระแล้ว'?'#059669':'#d97706'}">${s.status || 'pending'}</span></td>
+            </tr>`).join('')}</tbody>
+          </table>`}
+        </div>
+      </div>`;
+  } catch(e) {
+    mc.innerHTML = errorState(e.message, 'loadPOSSection()');
+  }
+}
+
+// ===== BILLING SECTION =====
+async function loadBillingSection() {
+  setActiveNav('billing');
+  document.getElementById('topbar-title').innerHTML = '<i class="bi bi-cash-coin" style="margin-right:8px;color:#f59e0b"></i>Billing / รับชำระ';
+  const mc = document.getElementById('main-content');
+  mc.innerHTML = skeletonTable(6);
+  try {
+    const res = await cachedCallApi('listBillings', { limit: 50 }, 30000);
+    const billings = (res && res.billings) ? res.billings : (Array.isArray(res) ? res : []);
+    const unpaid = billings.filter(b => b.status !== 'paid' && b.status !== 'ชำระแล้ว');
+    const totalUnpaid = unpaid.reduce((sum, b) => sum + Number(b.amount || b.total || 0), 0);
+    const totalPaid = billings.filter(b => b.status === 'paid' || b.status === 'ชำระแล้ว')
+      .reduce((sum, b) => sum + Number(b.amount || b.total || 0), 0);
+    if (unpaid.length > 0) {
+      const badge = document.getElementById('nav-billing-badge');
+      if (badge) { badge.style.display = ''; badge.textContent = unpaid.length; }
+    }
+    mc.innerHTML = `
+      <div style="padding:16px">
+        <div class="kpi-row">
+          ${kpiBox('bi-cash-coin', '#fef3c7', '#d97706', unpaid.length, 'ยังไม่ชำระ', unpaid.length > 0 ? '⚠️ ต้องติดตาม' : 'ปกติ', unpaid.length > 0)}
+          ${kpiBox('bi-check-circle-fill', '#d1fae5', '#059669', '฿' + totalPaid.toLocaleString(), 'ชำระแล้ว', 'บาท')}
+          ${kpiBox('bi-exclamation-circle-fill', '#fee2e2', '#dc2626', '฿' + totalUnpaid.toLocaleString(), 'ค้างชำระ', 'บาท', totalUnpaid > 0)}
+        </div>
+        <div class="card-box" style="margin-top:0">
+          <div class="card-title"><i class="bi bi-receipt" style="color:#f59e0b"></i> รายการ Billing <span class="badge-count">${billings.length}</span></div>
+          ${billings.length === 0 ? '<p style="color:#9ca3af;text-align:center;padding:20px">ยังไม่มีรายการ</p>' : `
+          <table class="job-table">
+            <thead><tr><th>เลขบิลลิ่ง</th><th>งานซ่อม</th><th>ลูกค้า</th><th>ยอดเงิน</th><th>วันครบกำหนด</th><th>สถานะ</th></tr></thead>
+            <tbody>${billings.slice(0, 50).map(b => {
+              const isPaid = b.status === 'paid' || b.status === 'ชำระแล้ว';
+              return `<tr>
+                <td><span class="job-id">${b.billing_id || b.id || '-'}</span></td>
+                <td style="font-size:12px">${b.job_id || '-'}</td>
+                <td>${b.customer_name || b.customer || '-'}</td>
+                <td style="font-weight:700;color:${isPaid ? '#059669' : '#dc2626'}">฿${Number(b.amount || b.total || 0).toLocaleString()}</td>
+                <td style="font-size:12px;color:#6b7280">${b.due_date || b.created_at || '-'}</td>
+                <td><span class="status-badge" style="background:${isPaid ? '#d1fae5' : '#fee2e2'};color:${isPaid ? '#059669' : '#dc2626'}">${b.status || 'pending'}</span></td>
+              </tr>`;
+            }).join('')}</tbody>
+          </table>`}
+        </div>
+      </div>`;
+  } catch(e) {
+    mc.innerHTML = errorState(e.message, 'loadBillingSection()');
+  }
+}
+
+// ===== ATTENDANCE SECTION =====
+async function loadAttendanceSection() {
+  setActiveNav('attendance');
+  document.getElementById('topbar-title').innerHTML = '<i class="bi bi-person-check-fill" style="margin-right:8px;color:#8b5cf6"></i>พนักงาน';
+  const mc = document.getElementById('main-content');
+  mc.innerHTML = skeletonTable(5);
+  try {
+    const [attendRes, techRes] = await Promise.all([
+      cachedCallApi('getAttendanceReport', { date: new Date().toISOString().split('T')[0] }, 30000),
+      cachedCallApi('getAllTechsSummary', {}, 60000)
+    ]);
+    const records = (attendRes && attendRes.records) ? attendRes.records : (Array.isArray(attendRes) ? attendRes : []);
+    const techs = (techRes && techRes.techs) ? techRes.techs : (Array.isArray(techRes) ? techRes : []);
+    mc.innerHTML = `
+      <div style="padding:16px">
+        <div class="kpi-row">
+          ${kpiBox('bi-person-check-fill', '#ede9fe', '#7c3aed', records.filter(r => r.clock_in).length, 'เช็คอินวันนี้', 'คน')}
+          ${kpiBox('bi-person-x-fill', '#fee2e2', '#dc2626', techs.length - records.filter(r => r.clock_in).length, 'ยังไม่เช็คอิน', 'คน')}
+          ${kpiBox('bi-people-fill', '#dbeafe', '#1e40af', techs.length, 'ช่างทั้งหมด', 'คน')}
+        </div>
+        <div class="grid-3">
+          <div class="card-box" style="grid-column:span 2">
+            <div class="card-title"><i class="bi bi-clock-history" style="color:#8b5cf6"></i> บันทึกเวลาวันนี้ <span class="badge-count">${records.length}</span></div>
+            ${records.length === 0 ? '<p style="color:#9ca3af;text-align:center;padding:20px">ยังไม่มีบันทึกวันนี้</p>' : `
+            <table class="job-table">
+              <thead><tr><th>ชื่อ</th><th>เช็คอิน</th><th>เช็คออก</th><th>ชั่วโมง</th></tr></thead>
+              <tbody>${records.map(r => `<tr>
+                <td style="font-weight:600">${r.name || r.tech_name || '-'}</td>
+                <td style="color:#059669">${r.clock_in || '-'}</td>
+                <td style="color:#6b7280">${r.clock_out || 'ยังอยู่'}</td>
+                <td>${r.hours ? r.hours + ' ชม.' : '-'}</td>
+              </tr>`).join('')}</tbody>
+            </table>`}
+          </div>
+          <div class="card-box">
+            <div class="card-title"><i class="bi bi-bar-chart-fill" style="color:#8b5cf6"></i> สรุปช่าง</div>
+            ${techs.length === 0 ? '<p style="color:#9ca3af;text-align:center;padding:20px">ไม่มีข้อมูล</p>' : techs.slice(0, 8).map(t => `
+              <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f1f5f9">
+                <div style="width:32px;height:32px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;font-weight:700;color:#7c3aed;font-size:13px">${(t.name||'?')[0]}</div>
+                <div style="flex:1">
+                  <div style="font-size:13px;font-weight:600">${t.name||'-'}</div>
+                  <div style="font-size:11px;color:#9ca3af">งาน: ${t.total_jobs||0} | เสร็จ: ${t.completed_jobs||0}</div>
+                </div>
+              </div>`).join('')}
+          </div>
+        </div>
+      </div>`;
+  } catch(e) {
+    mc.innerHTML = errorState(e.message, 'loadAttendanceSection()');
+  }
+}
+
+// ===== PERFORMANCE: Optimize loadDashboard with parallel fetch =====
+// Override loadDashboard to use parallel API calls
+const _origLoadDashboard = loadDashboard;
+async function loadDashboard() {
+  setActiveNav('dashboard');
+  document.getElementById('topbar-title').innerHTML =
+    '<i class="bi bi-bar-chart-line-fill" style="color:#d97706;margin-right:8px"></i>Executive Dashboard';
+  document.getElementById('main-content').innerHTML = skeletonCard(4) + skeletonTable(4);
+  try {
+    // Parallel API calls instead of sequential
+    const data = await cachedCallApi('getDashboardData', {}, 30000);
+    DASHBOARD_DATA = data;
+    renderDashboard(data);
+    // Update badges in background
+    Promise.all([
+      cachedCallApi('listBillings', { limit: 10 }, 30000),
+      cachedCallApi('getWarrantyDue', {}, 60000)
+    ]).then(([billRes, warRes]) => {
+      const unpaidBills = (billRes && billRes.billings ? billRes.billings : []).filter(b => b.status !== 'paid');
+      if (unpaidBills.length > 0) {
+        const badge = document.getElementById('nav-billing-badge');
+        if (badge) { badge.style.display = ''; badge.textContent = unpaidBills.length; }
+      }
+      const warDue = (warRes && warRes.warranties ? warRes.warranties : []).filter(w => w.status === 'due');
+      if (warDue.length > 0) {
+        const badge = document.getElementById('nav-warranty-badge');
+        if (badge) { badge.style.display = ''; badge.textContent = warDue.length; }
+      }
+    }).catch(() => {});
+  } catch(e) {
+    document.getElementById('main-content').innerHTML = `
+      <div class="loading-state">
+        <i class="bi bi-wifi-off" style="font-size:48px;color:#d1d5db;display:block;margin-bottom:16px"></i>
+        <p style="font-size:16px;font-weight:700">ไม่สามารถเชื่อมต่อ GAS ได้</p>
+        <p style="color:#9ca3af;margin-top:8px">${e.message}</p>
+        <button class="btn-refresh" onclick="loadDashboard()" style="margin-top:16px">
+          <i class="bi bi-arrow-clockwise"></i> ลองใหม่
+        </button>
+      </div>`;
+  }
+}
+
+// ===== UX: Add shimmer animation CSS =====
+(function addShimmerCSS() {
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .nav-item { transition: background 0.15s ease, color 0.15s ease; }
+    #main-content { transition: opacity 0.2s ease; }
+    .card-box { transition: box-shadow 0.2s ease; }
+    .card-box:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .status-badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+  `;
+  document.head.appendChild(style);
+})();
+
 </script>
 </body>
 </html>
