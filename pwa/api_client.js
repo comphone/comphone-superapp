@@ -13,7 +13,7 @@
 'use strict';
 
 // ===== CONFIG =====
-const COMPHONE_DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbzE5tyKNA-W6gDQEixw9VTDznTNn5FuToVeVuO_OQL75fDSrpW8U9BT3bhVn4kjKc37/exec';
+const COMPHONE_DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxkUcq881X7DR6c9taQx9W-3uNc6vcqNQfvMHvx7pnotqZ044WFhQnRyTk9FzpbQcBvyQ/exec';
 const COMPHONE_SESSION_KEY = 'comphone_auth_session';
 const COMPHONE_GAS_URL_KEY = 'comphone_gas_url';
 const COMPHONE_API_TIMEOUT = 30000; // 30s
