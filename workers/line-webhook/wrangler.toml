@@ -1,0 +1,25 @@
+name = "comphone-line-webhook"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# ──────────────────────────────────────────────────────────────
+# Environment Variables (non-secret)
+# Secret values must be set via: wrangler secret put <KEY>
+# ──────────────────────────────────────────────────────────────
+[vars]
+# GAS_WEBHOOK_URL — ตั้งค่าผ่าน: wrangler secret put GAS_WEBHOOK_URL
+# LINE_CHANNEL_SECRET — ตั้งค่าผ่าน: wrangler secret put LINE_CHANNEL_SECRET
+
+# ──────────────────────────────────────────────────────────────
+# Cloudflare Queue (async event forwarding)
+# ──────────────────────────────────────────────────────────────
+[[queues.producers]]
+queue = "line-events"
+binding = "LINE_QUEUE"
+
+[[queues.consumers]]
+queue = "line-events"
+max_batch_size = 10
+max_batch_timeout = 5
+max_retries = 3
+dead_letter_queue = "line-events-dlq"
