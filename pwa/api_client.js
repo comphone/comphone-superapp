@@ -77,17 +77,34 @@ const _apiCache = {};
  * @param {number} ttl - cache TTL in ms (default 15s)
  * @param {boolean} force - bypass cache if true
  */
+// ===== LAST UPDATED TRACKER =====
+const _lastUpdated = {}; // { action: timestamp }
+
 async function cachedCallApi(action, payload = {}, ttl = COMPHONE_CACHE_TTL, force = false) {
   const key = action + ':' + JSON.stringify(payload);
   const now = Date.now();
   if (!force && _apiCache[key] && (now - _apiCache[key].ts) < ttl) {
     return Promise.resolve(_apiCache[key].data);
   }
-  const data = await callApi(action, payload);
+  // Hard mode: if force=true, also tell GAS to bypass its CacheService
+  const payload2 = force ? Object.assign({}, payload, { _nocache: 1, _t: Date.now() }) : payload;
+  const data = await callApi(action, payload2);
   if (data && data.success !== false) {
     _apiCache[key] = { data, ts: Date.now() };
+    _lastUpdated[action] = Date.now();
+    // Dispatch event for UI to update "Last Updated" display
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('comphone:data-updated', { detail: { action, ts: _lastUpdated[action] } }));
+    }
   }
   return data;
+}
+
+/**
+ * getLastUpdated(action) — ดึง timestamp ล่าสุดที่ fetch action นั้น
+ */
+function getLastUpdated(action) {
+  return _lastUpdated[action] || null;
 }
 
 /**
@@ -346,9 +363,42 @@ const _autoRefreshHandlers = {};
  * @param {Function} fn - function ที่จะเรียกซ้ำ
  * @param {number} intervalMs - ระยะเวลา (default 30s)
  */
+// ===== VISIBILITY PAUSE =====
+// pause all auto refresh when tab is hidden, resume when visible
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+      // Pause: store remaining time and clear intervals
+      Object.keys(_autoRefreshHandlers).forEach(k => {
+        if (_autoRefreshHandlers[k] && _autoRefreshHandlers[k]._fn) {
+          clearInterval(_autoRefreshHandlers[k]._id);
+          _autoRefreshHandlers[k]._paused = true;
+        }
+      });
+      console.log('[AutoRefresh] ⏸ Tab hidden — paused all');
+    } else {
+      // Resume: restart intervals
+      Object.keys(_autoRefreshHandlers).forEach(k => {
+        const h = _autoRefreshHandlers[k];
+        if (h && h._paused) {
+          h._id = setInterval(h._fn, h._ms);
+          h._paused = false;
+          console.log('[AutoRefresh] ▶ Resumed ' + k);
+        }
+      });
+    }
+  });
+}
+
 function startAutoRefresh(key, fn, intervalMs = 30000) {
-  stopAutoRefresh(key); // clear เก่าก่อน
-  _autoRefreshHandlers[key] = setInterval(fn, intervalMs);
+  stopAutoRefresh(key); // clear เก่าก่อน (no duplicate)
+  const handler = {
+    _fn: fn,
+    _ms: intervalMs,
+    _paused: false,
+    _id: setInterval(fn, intervalMs)
+  };
+  _autoRefreshHandlers[key] = handler;
   console.log('[AutoRefresh] ▶ ' + key + ' every ' + (intervalMs/1000) + 's');
 }
 
@@ -356,8 +406,9 @@ function startAutoRefresh(key, fn, intervalMs = 30000) {
  * stopAutoRefresh(key) — หยุด auto refresh
  */
 function stopAutoRefresh(key) {
-  if (_autoRefreshHandlers[key]) {
-    clearInterval(_autoRefreshHandlers[key]);
+  const h = _autoRefreshHandlers[key];
+  if (h) {
+    clearInterval(h._id || h); // support both object and raw id
     delete _autoRefreshHandlers[key];
     console.log('[AutoRefresh] ⏹ ' + key);
   }
@@ -387,6 +438,7 @@ if (typeof window !== 'undefined') {
   window.batchCallApi = batchCallApi;
   window.cachedCallApi = cachedCallApi;
   window.clearApiCache = clearApiCache;
+  window.getLastUpdated = getLastUpdated;
   window.startAutoRefresh = startAutoRefresh;
   window.stopAutoRefresh = stopAutoRefresh;
   window.stopAllAutoRefresh = stopAllAutoRefresh;

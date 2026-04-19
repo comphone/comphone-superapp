@@ -1614,9 +1614,17 @@ async function loadDashboard() {
   ind.innerHTML = '<span class="refresh-dot"></span><span id="ri-text">Auto Refresh: 30s</span>';
   document.body.appendChild(ind);
 
-  // showToast global
+  // showToast global — with debounce (max 1 toast per 2s per message)
+  const _toastDebounce = {};
   window.showToast = function(msg, type, duration) {
     type = type || 'info'; duration = duration || 3500;
+    // Debounce: skip if same message shown within 2s
+    const now = Date.now();
+    if (_toastDebounce[msg] && (now - _toastDebounce[msg]) < 2000) return;
+    _toastDebounce[msg] = now;
+    // Limit: max 4 toasts visible at once
+    const existing = tc.querySelectorAll('.toast-msg');
+    if (existing.length >= 4) existing[0].remove();
     const t = document.createElement('div');
     t.className = 'toast-msg toast-' + type;
     t.textContent = msg;
@@ -1687,6 +1695,32 @@ async function loadDashboard() {
       return _origLS(section);
     };
   }
+
+  // Last Updated — listen to comphone:data-updated event
+  window.addEventListener('comphone:data-updated', function(e) {
+    const action = e.detail && e.detail.action;
+    const ts = e.detail && e.detail.ts;
+    if (!ts) return;
+    const timeStr = new Date(ts).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    // Update topbar-date
+    const dateEl = document.getElementById('topbar-date');
+    if (dateEl) dateEl.textContent = 'อัปเดต: ' + timeStr;
+    // Update refresh indicator text briefly
+    const riText = document.getElementById('ri-text');
+    if (riText) {
+      const prev = riText.textContent;
+      riText.textContent = '✅ อัปเดตแล้ว ' + timeStr;
+      setTimeout(() => { if (riText.textContent.includes('อัปเดตแล้ว')) riText.textContent = 'Auto Refresh: 30s'; }, 3000);
+    }
+  });
+
+  // Validate: log interval count on load
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      const count = Object.keys(window._autoRefreshHandlers || {}).length;
+      console.log('[Stability] Active intervals: ' + count + ' (expected: 1)');
+    }, 5000);
+  });
 
 })();
 
