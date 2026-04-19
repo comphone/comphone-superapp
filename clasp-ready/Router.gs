@@ -612,6 +612,22 @@ function dispatchActionV55_(action, payload, args) {
         return getVisionLearningVersion();
 
       // ============================================================
+      // Agent Gateway — Multi-Agent Platform v1.0.0
+      // ============================================================
+      case 'agentDispatch':
+        return agentGatewayDispatch(payload);
+      case 'registerAgent':
+        return registerAgent(payload);
+      case 'listAgents':
+        return listAgents(payload);
+      case 'getAgentLogs':
+        return getAgentLogs(payload);
+      case 'getAgentStats':
+        return getAgentStats(payload);
+      case 'getAgentGatewayVersion':
+        return getAgentGatewayVersion();
+
+      // ============================================================
       // Tax Engine (TASK 1-2: VAT Flexible + WHT ภงด.)
       // ============================================================
       case 'calculateTax':
