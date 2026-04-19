@@ -6,25 +6,8 @@ let ALL_PO = [];
 let PO_FILTER = 'all';
 let PO_ITEMS = []; // รายการสินค้าในฟอร์มสร้าง PO
 
-// ===== callApi (POST) — shared helper =====
-// ถ้า crm_attendance.js ยังไม่ได้ define ให้ define ที่นี่
-if (typeof callApi === 'undefined') {
-  window.callApi = async function(payload) {
-    const url = APP.scriptUrl || DEFAULT_SCRIPT_URL;
-    if (!url) return { success: false, error: 'ไม่พบ Script URL' };
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        redirect: 'follow'
-      });
-      return await res.json();
-    } catch (e) {
-      return { success: false, error: e.message };
-    }
-  };
-}
+// RULE 1: callApi มาจาก api_client.js เสมอ — ไม่นิยามซ้ำที่นี่
+// (fallback ถูกลบออกเพื่อป้องกัน token leak และป้องกัน duplicate logic)
 
 // ===== LOAD PAGE =====
 function loadPurchaseOrderPage() {

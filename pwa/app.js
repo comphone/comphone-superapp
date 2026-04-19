@@ -1145,51 +1145,55 @@ async function callAPI(action, params = {}) {
     return null;
   }
 }
-// callApi(payload|action, params) — Unified API call (RULE 1: Single Source of Truth)
-// รองรับ 2 รูปแบบ: callApi({action,...}) และ callApi('action', {params})
-window.callApi = async function(payloadOrAction, params) {
-  let payload;
-  if (typeof payloadOrAction === 'string') {
-    payload = { action: payloadOrAction, ...(params || {}) };
-  } else {
-    payload = payloadOrAction || {};
-  }
-  const url = APP.scriptUrl || DEFAULT_SCRIPT_URL;
-  if (!url) return { success: false, error: 'ไม่พบ Script URL' };
-  // Token auth: ดึงจาก comphone_auth_session (RULE 2)
-  if (!payload.token) {
-    try {
-      const sess = JSON.parse(localStorage.getItem('comphone_auth_session') || '{}');
-      if (sess.token) { payload.token = sess.token; payload.username = payload.username || sess.username; }
-    } catch(e) {}
-    // fallback: AUTH object
-    if (!payload.token && typeof AUTH !== 'undefined' && AUTH.token) {
-      payload.token = AUTH.token;
-      payload.username = payload.username || AUTH.username;
+// ===== callApi (app.js fallback) =====
+// RULE 1: api_client.js เป็น Single Source of Truth
+// app.js จะ sync scriptUrl เข้า localStorage เพื่อให้ api_client.js ใช้ได้
+// ถ้า api_client.js ยังไม่ได้โหลด (fallback)
+if (typeof window.callApi !== 'function' || !window._comphone_api_client_loaded) {
+  window.callApi = async function(payloadOrAction, params) {
+    let payload;
+    if (typeof payloadOrAction === 'string') {
+      payload = { action: payloadOrAction, ...(params || {}) };
+    } else {
+      payload = payloadOrAction || {};
     }
-  }
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000);
-  // Cache busting
-  const bustUrl = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
-  try {
-    const res = await fetch(bustUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload),
-      redirect: 'follow',
-      signal: controller.signal
-    });
-    const data = await res.json();
-    if (data && data._headers) delete data._headers;
-    return data;
-  } catch (e) {
-    if (e.name === 'AbortError') return { success: false, error: 'Request timeout (30s)' };
-    return { success: false, error: e.message };
-  } finally {
-    clearTimeout(timeoutId);
-  }
-};
+    const url = (typeof getGasUrl === 'function' ? getGasUrl() : null)
+              || localStorage.getItem('comphone_gas_url')
+              || APP.scriptUrl || DEFAULT_SCRIPT_URL;
+    if (!url) return { success: false, error: 'ไม่พบ Script URL' };
+    // Token auth: ดึง token จาก comphone_auth_session (RULE 2)
+    if (!payload.token) {
+      try {
+        const sess = JSON.parse(localStorage.getItem('comphone_auth_session') || '{}');
+        if (sess.token) { payload.token = sess.token; payload.username = payload.username || sess.username; }
+      } catch(e) {}
+      if (!payload.token && typeof AUTH !== 'undefined' && AUTH.token) {
+        payload.token = AUTH.token;
+        payload.username = payload.username || AUTH.username;
+      }
+    }
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const bustUrl = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
+    try {
+      const res = await fetch(bustUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload),
+        redirect: 'follow',
+        signal: controller.signal
+      });
+      const data = await res.json();
+      if (data && data._headers) delete data._headers;
+      return data;
+    } catch (e) {
+      if (e.name === 'AbortError') return { success: false, error: 'Request timeout (30s)' };
+      return { success: false, error: e.message };
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
+}
 
 // ===== OFFLINE QUEUE =====
 function saveOfflineAction(action) {

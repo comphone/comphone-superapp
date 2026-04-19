@@ -15,6 +15,8 @@
    - **PWA Mobile & PC Dashboard**: ต้องใช้ `callApi()` จาก `api_client.js` หรือ `app.js` เท่านั้น
    - ห้ามใช้ `fetch()` ตรงๆ หรือสร้างฟังก์ชัน `callGas()` ซ้ำซ้อน
    - `callApi()` จัดการเรื่อง Timeout (30s), Cache Busting (`_t=Date.now()`), และ Token Auth ให้อัตโนมัติ
+   - ใช้ `batchCallApi(calls)` เมื่อต้องการเรียก API หลายเส้นพร้อมกันเพื่อลด Overhead
+   - ใช้ Data Normalization Helpers (`normalizeJobData`, `normalizeInventoryItem`) ก่อนนำข้อมูลไป render เสมอ
 
 3. **RULE 2: Authentication & Session**
    - เก็บ Token ไว้ที่ `localStorage['comphone_auth_session']` เท่านั้น

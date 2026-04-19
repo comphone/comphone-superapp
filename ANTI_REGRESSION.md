@@ -20,18 +20,32 @@
 - ห้ามใช้ key อื่นเช่น `comphone_token` หรือ `APP.token` เด็ดขาด
 - ฟังก์ชัน `callApi()` ต้องดึง Token จาก `comphone_auth_session` อัตโนมัติ
 
-### 1.3. UI พังจากการแก้ไข DOM (DOM Manipulation Errors)
+### 1.3. Data Mismatch (โครงสร้างข้อมูลจาก API ไม่ตรงกับที่ UI คาดหวัง)
+**ปัญหา:** GAS ส่งข้อมูลกลับมาเป็น `job_id` แต่ UI คาดหวัง `id` ทำให้ข้อมูลไม่แสดง
+**วิธีป้องกัน:**
+- ใช้ Data Normalization Helpers ใน `api_client.js` เสมอ:
+  - `normalizeJobData(j)` สำหรับงานบริการ
+  - `normalizeInventoryItem(item)` สำหรับคลังสินค้า
+- ห้ามใช้ raw data จาก API ตรงๆ ในการ render UI
+
+### 1.4. UI พังจากการแก้ไข DOM (DOM Manipulation Errors)
 **ปัญหา:** การใช้ `innerHTML` กับ Element ที่ไม่มีอยู่จริง ทำให้เกิด JavaScript Error และหยุดการทำงานของสคริปต์ทั้งหมด
 **วิธีป้องกัน:**
 - ใช้ Helper Functions จาก `api_client.js` เช่น `safeRender(id, html)`, `safeShow(id)`, `safeHide(id)`
 - ตรวจสอบว่า Element มีอยู่จริงก่อนแก้ไขเสมอ
 - จัดการสถานะ UI ให้ครบถ้วน: Loading (`loadingState()`), Empty (`emptyState()`), Error (`errorState()`)
 
-### 1.4. ปัญหา Cache ค้าง (Stale Cache)
+### 1.5. ปัญหา Cache ค้าง (Stale Cache)
 **ปัญหา:** ผู้ใช้ไม่เห็นการอัปเดตใหม่เนื่องจาก Service Worker (SW) หรือ Browser Cache เก็บไฟล์เก่าไว้
 **วิธีป้องกัน:**
 - การเรียก API ต้องต่อท้ายด้วย `_t=Date.now()` เสมอ (Cache Busting)
 - อัปเดต `APP_VERSION` และ `APP_BUILD` ในไฟล์หลัก (`app.js`, `dashboard_pc.html`) ทุกครั้งที่มีการแก้ไขสำคัญ
+
+### 1.6. API Request Overload (ยิง API ซ้ำซ้อน)
+**ปัญหา:** หน้า Dashboard ยิง API 5-6 เส้นพร้อมกัน ทำให้ GAS Rate Limit (60 req/min) ทำงาน
+**วิธีป้องกัน:**
+- ใช้ `batchCallApi(calls)` ใน `api_client.js` เพื่อรวม request (ถ้าเป็นไปได้) หรือยิงแบบขนานอย่างปลอดภัย
+- ตรวจสอบว่าไม่มีการเรียก API ซ้ำซ้อนใน `window.addEventListener('load')`
 
 ## 2. ขั้นตอนการตรวจสอบก่อน Commit (Pre-Commit Checklist)
 

@@ -171,9 +171,70 @@ function errorState(message = 'เกิดข้อผิดพลาด', retr
     </div>`;
 }
 
+/**
+ * batchCallApi(calls, options) — เรียก API หลายครั้งพร้อมกัน
+ * @param {Array<{action, ...payload}>} calls
+ * @returns {Promise<Array>}
+ */
+async function batchCallApi(calls, options) {
+  if (!Array.isArray(calls) || !calls.length) return [];
+  return Promise.all(calls.map(function(c) {
+    var action = c.action;
+    var payload = Object.assign({}, c);
+    delete payload.action;
+    return callApi(action, payload, options || {});
+  }));
+}
+
+/**
+ * checkApiVersion() — ตรวจสอบ version ของ GAS Backend
+ */
+async function checkApiVersion() {
+  try {
+    var res = await callApi('getVersion', {}, { noAuth: true });
+    return res && res.version ? res.version : null;
+  } catch(e) { return null; }
+}
+
+/**
+ * normalizeJobData(j) — normalize job object จาก GAS ให้เป็นมาตรฐาน
+ */
+function normalizeJobData(j) {
+  if (!j) return null;
+  return {
+    id: j.id || j.job_id || '-',
+    title: j.symptom || j.device || j.title || 'ไม่ระบุอาการ',
+    customer: j.customer || j.customer_name || '-',
+    phone: j.phone || j.customer_phone || '-',
+    status: j.status || j.status_label || '-',
+    tech: j.tech || j.technician || null,
+    price: j.price || j.estimated_price || 0,
+    created: j.created || j.created_at || '',
+    note: j.note || j.notes || j.remark || ''
+  };
+}
+
+/**
+ * normalizeInventoryItem(item) — normalize inventory item
+ */
+function normalizeInventoryItem(item) {
+  if (!item) return null;
+  return {
+    id: item.item_id || item.id || '-',
+    name: item.item_name || item.name || '-',
+    code: item.item_code || item.code || '-',
+    qty: parseInt(item.qty || item.quantity || 0, 10),
+    min_qty: parseInt(item.min_qty || item.reorder_point || 5, 10),
+    price: parseFloat(item.price || item.unit_price || 0),
+    location: item.location || item.branch_id || '-',
+    low_stock: parseInt(item.qty || 0, 10) <= parseInt(item.min_qty || 5, 10)
+  };
+}
+
 // ===== EXPORT สำหรับ PC Dashboard (ถ้าโหลดก่อน app.js) =====
 if (typeof window !== 'undefined') {
-  window.callApi = window.callApi || callApi;
+  window._comphone_api_client_loaded = true; // flag บอก app.js ว่า api_client.js โหลดแล้ว
+  window.callApi = callApi; // api_client.js เป็น Single Source of Truth เสมอ
   window.safeHide = safeHide;
   window.safeShow = safeShow;
   window.safeRender = safeRender;
@@ -184,4 +245,8 @@ if (typeof window !== 'undefined') {
   window.getAuthToken = getAuthToken;
   window.getGasUrl = getGasUrl;
   window.normalizeApiResponse = normalizeApiResponse;
+  window.batchCallApi = batchCallApi;
+  window.checkApiVersion = checkApiVersion;
+  window.normalizeJobData = normalizeJobData;
+  window.normalizeInventoryItem = normalizeInventoryItem;
 }

@@ -376,7 +376,23 @@
     <i class="bi bi-people-fill"></i><span>ลูกค้า</span>
   </a>
 
+  <div class="nav-section">การเงิน</div>
+  <a class="nav-item" href="#" onclick="loadSection('tax')">
+    <i class="bi bi-receipt-cutoff"></i><span>ระบบภาษี</span>
+    <span class="nav-badge" id="nav-tax-badge" style="display:none">!</span>
+  </a>
+  <a class="nav-item" href="#" onclick="loadSection('warranty')">
+    <i class="bi bi-shield-check"></i><span>ใบรับประกัน</span>
+    <span class="nav-badge" id="nav-warranty-badge" style="display:none">0</span>
+  </a>
   <div class="nav-section">ระบบ</div>
+  <a class="nav-item" href="#" onclick="loadSection('branch')">
+    <i class="bi bi-diagram-3-fill"></i><span>สาขา</span>
+  </a>
+  <a class="nav-item" href="#" onclick="loadSection('health')">
+    <i class="bi bi-heart-pulse-fill"></i><span>สุขภาพระบบ</span>
+    <span class="nav-badge" id="nav-health-badge" style="display:none">!</span>
+  </a>
   <a class="nav-item" href="index.html">
     <i class="bi bi-phone-fill"></i><span>เปิด Mobile App</span>
   </a>
@@ -862,6 +878,10 @@ function loadSection(section) {
   if (section === 'revenue')   { loadRevenueSection(); return; }
   if (section === 'crm')       { loadCRMSection(); return; }
   if (section === 'settings')  { loadSettingsSection(); return; }
+  if (section === 'tax')        { loadTaxSection(); return; }
+  if (section === 'warranty')   { loadWarrantySection(); return; }
+  if (section === 'branch')     { loadBranchSection(); return; }
+  if (section === 'health')     { loadHealthSection(); return; }
   // fallback
   document.getElementById('topbar-title').innerHTML =
     `<i class="bi bi-${sectionIcon(section)}" style="margin-right:8px"></i>${sectionLabel(section)}`;
@@ -1119,11 +1139,201 @@ function filterCRMPC(q) {
   });
 }
 
+// ===== TAX SECTION =====
+async function loadTaxSection() {
+  setActiveNav('tax');
+  document.getElementById('topbar-title').innerHTML = '<i class="bi bi-receipt-cutoff" style="margin-right:8px"></i>ระบบภาษี';
+  const mc = document.getElementById('main-content');
+  mc.innerHTML = loadingState('กำลังโหลดรายงานภาษี...');
+  try {
+    const res = await callApi('getTaxReport', { period: new Date().toISOString().slice(0,7) });
+    const summary = (res && res.summary) ? res.summary : {};
+    const items = (res && res.items) ? res.items : [];
+    const vatDue = summary.vat_due || 0;
+    const whtDue = summary.wht_due || 0;
+    const vatTotal = summary.vat_total || 0;
+    mc.innerHTML = `
+      <div style="padding:16px">
+        <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+          <div class="kpi-box">
+            <div class="kpi-icon-box" style="background:#dbeafe;color:#1e40af"><i class="bi bi-receipt"></i></div>
+            <div><div class="kpi-num" style="color:#1e40af">฿${Number(vatTotal).toLocaleString()}</div><div class="kpi-lbl">VAT 7% เดือนนี้</div></div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-icon-box" style="background:#fef3c7;color:#d97706"><i class="bi bi-file-earmark-text"></i></div>
+            <div><div class="kpi-num" style="color:#d97706">฿${Number(whtDue).toLocaleString()}</div><div class="kpi-lbl">ภงด. WHT ค้างจ่าย</div></div>
+          </div>
+          <div class="kpi-box ${vatDue > 0 ? 'kpi-alert-pulse' : ''}">
+            <div class="kpi-icon-box" style="background:${vatDue>0?'#fee2e2':'#d1fae5'};color:${vatDue>0?'#dc2626':'#059669'}"><i class="bi bi-exclamation-triangle"></i></div>
+            <div><div class="kpi-num" style="color:${vatDue>0?'#dc2626':'#059669'}">฿${Number(vatDue).toLocaleString()}</div><div class="kpi-lbl">ภ..พ.30 ค้างจ่าย</div></div>
+          </div>
+        </div>
+        ${items.length > 0 ? `
+        <div class="card-box" style="overflow:auto">
+          <div class="card-title"><i class="bi bi-table" style="color:#1e40af"></i> รายการภาษี <span class="badge-count">${items.length}</span></div>
+          <table class="job-table">
+            <thead><tr><th>เลขใบแจ้ง</th><th>ลูกค้า</th><th>ยอดก่อนภาษี</th><th>VAT 7%</th><th>ยอดรวม</th><th>ประเภท</th><th>วันที่</th></tr></thead>
+            <tbody>${items.map(t => `<tr>
+              <td><span class="job-id">${t.invoice_no||t.billing_id||'-'}</span></td>
+              <td style="font-weight:600">${t.customer_name||'-'}</td>
+              <td style="text-align:right">฿${Number(t.subtotal||t.amount_before_tax||0).toLocaleString()}</td>
+              <td style="text-align:right;color:#1e40af;font-weight:700">฿${Number(t.vat_amount||0).toLocaleString()}</td>
+              <td style="text-align:right;font-weight:700">฿${Number(t.total||t.grand_total||0).toLocaleString()}</td>
+              <td><span class="status-badge" style="background:${t.tax_type==='VAT7'?'#dbeafe':'#f3f4f6'};color:${t.tax_type==='VAT7'?'#1e40af':'#6b7280'}">${t.tax_type||'EXEMPT'}</span></td>
+              <td style="font-size:12px;color:#6b7280">${t.date||t.created_date||'-'}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>` : `<div class="card-box">${emptyState('bi-receipt', 'ยังไม่มีข้อมูลภาษีเดือนนี้', '')}</div>`}
+      </div>`;
+  } catch(e) {
+    mc.innerHTML = errorState(e.message, 'loadTaxSection()');
+  }
+}
+
+// ===== WARRANTY SECTION =====
+async function loadWarrantySection() {
+  setActiveNav('warranty');
+  document.getElementById('topbar-title').innerHTML = '<i class="bi bi-shield-check" style="margin-right:8px"></i>ใบรับประกัน';
+  const mc = document.getElementById('main-content');
+  mc.innerHTML = loadingState('กำลังโหลดรายการรับประกัน...');
+  try {
+    const [listRes, dueRes] = await Promise.all([
+      callApi('listWarranties', { limit: 100 }),
+      callApi('getWarrantyDue', { days: 7 })
+    ]);
+    const warranties = (listRes && listRes.warranties) ? listRes.warranties : (Array.isArray(listRes) ? listRes : []);
+    const due = (dueRes && dueRes.warranties) ? dueRes.warranties : [];
+    const statusColor = { ACTIVE:'#059669', EXPIRED:'#dc2626', CLAIMED:'#d97706', VOIDED:'#6b7280' };
+    const statusBg = { ACTIVE:'#d1fae5', EXPIRED:'#fee2e2', CLAIMED:'#fef3c7', VOIDED:'#f3f4f6' };
+    if (due.length > 0) {
+      const badge = document.getElementById('nav-warranty-badge');
+      if (badge) { badge.textContent = due.length; badge.style.display = ''; }
+    }
+    mc.innerHTML = `
+      <div style="padding:16px">
+        ${due.length > 0 ? `<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+          <i class="bi bi-exclamation-triangle-fill" style="color:#d97706;font-size:18px"></i>
+          <div><strong style="color:#92400e">ใบรับประกันใกล้หมดอายุ ${due.length} รายการ</strong> (ภายใน 7 วัน)</div>
+        </div>` : ''}
+        <div class="kpi-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+          ${[['ACTIVE','ใช้งาน'],['EXPIRED','หมดอายุ'],['CLAIMED','เคลมแล้ว'],['VOIDED','ยกเลิก']].map(([s,l]) => {
+            const cnt = warranties.filter(w => (w.status||'ACTIVE') === s).length;
+            return `<div class="kpi-box"><div class="kpi-icon-box" style="background:${statusBg[s]||'#f3f4f6'};color:${statusColor[s]||'#6b7280'}"><i class="bi bi-shield"></i></div><div><div class="kpi-num" style="color:${statusColor[s]||'#6b7280'}">${cnt}</div><div class="kpi-lbl">${l}</div></div></div>`;
+          }).join('')}
+        </div>
+        ${warranties.length > 0 ? `
+        <div class="card-box" style="overflow:auto">
+          <div class="card-title"><i class="bi bi-shield-check" style="color:#059669"></i> ใบรับประกัน <span class="badge-count">${warranties.length}</span></div>
+          <table class="job-table">
+            <thead><tr><th>Warranty ID</th><th>Job ID</th><th>ลูกค้า</th><th>สินค้า/บริการ</th><th>สิ้นสุด</th><th>สถานะ</th></tr></thead>
+            <tbody>${warranties.map(w => `<tr>
+              <td><span class="job-id">${w.warranty_id||'-'}</span></td>
+              <td style="color:#1e40af;font-weight:600">${w.job_id||'-'}</td>
+              <td style="font-weight:600">${w.customer_name||'-'}</td>
+              <td style="font-size:12px;color:#374151">${w.item_description||w.service_description||'-'}</td>
+              <td style="font-size:12px;color:${new Date(w.expire_date) < new Date() ? '#dc2626':'#059669'}">${w.expire_date||'-'}</td>
+              <td><span class="status-badge" style="background:${statusBg[w.status]||'#f3f4f6'};color:${statusColor[w.status]||'#6b7280'}">${w.status||'ACTIVE'}</span></td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>` : `<div class="card-box">${emptyState('bi-shield', 'ยังไม่มีใบรับประกัน', '')}</div>`}
+      </div>`;
+  } catch(e) {
+    mc.innerHTML = errorState(e.message, 'loadWarrantySection()');
+  }
+}
+
+// ===== BRANCH SECTION =====
+async function loadBranchSection() {
+  setActiveNav('branch');
+  document.getElementById('topbar-title').innerHTML = '<i class="bi bi-diagram-3-fill" style="margin-right:8px"></i>สาขา';
+  const mc = document.getElementById('main-content');
+  mc.innerHTML = loadingState('กำลังโหลดข้อมูลสาขา...');
+  try {
+    const res = await callApi('getBranchSummary', {});
+    const branches = (res && res.branches) ? res.branches : (Array.isArray(res) ? res : []);
+    mc.innerHTML = `
+      <div style="padding:16px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">
+          ${branches.length > 0 ? branches.map(b => `
+          <div class="card-box">
+            <div class="card-title"><i class="bi bi-building" style="color:#1e40af"></i> ${b.branch_name||b.branch_id||'-'}</div>
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+              <div style="display:flex;justify-content:space-between"><span style="color:#6b7280">งานทั้งหมด</span><strong>${b.total_jobs||0}</strong></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:#6b7280">งานเปิดอยู่</span><strong style="color:#d97706">${b.open_jobs||0}</strong></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:#6b7280">รายรับเดือน</span><strong style="color:#059669">฿${Number(b.revenue_month||0).toLocaleString()}</strong></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:#6b7280">สต็อครายการ</span><strong>${b.inventory_count||0}</strong></div>
+            </div>
+          </div>`).join('') : `<div class="card-box" style="grid-column:1/-1">${emptyState('bi-diagram-3', 'ยังไม่มีข้อมูลสาขา', 'ตั้งค่า BRANCH_LIST ใน GAS Script Properties')}</div>`}
+        </div>
+      </div>`;
+  } catch(e) {
+    mc.innerHTML = errorState(e.message, 'loadBranchSection()');
+  }
+}
+
+// ===== HEALTH MONITOR SECTION =====
+async function loadHealthSection() {
+  setActiveNav('health');
+  document.getElementById('topbar-title').innerHTML = '<i class="bi bi-heart-pulse-fill" style="margin-right:8px"></i>สุขภาพระบบ';
+  const mc = document.getElementById('main-content');
+  mc.innerHTML = loadingState('กำลังตรวจสอบสุขภาพระบบ...');
+  try {
+    const [checkRes, histRes] = await Promise.all([
+      callApi('healthCheck', {}),
+      callApi('getHealthHistory', { limit: 10 })
+    ]);
+    const checks = (checkRes && checkRes.checks) ? checkRes.checks : {};
+    const overall = checkRes && checkRes.overall_status;
+    const history = (histRes && histRes.history) ? histRes.history : [];
+    const statusIcon = { ok:'bi-check-circle-fill', warn:'bi-exclamation-triangle-fill', error:'bi-x-circle-fill' };
+    const statusColor = { ok:'#059669', warn:'#d97706', error:'#dc2626' };
+    const statusBg = { ok:'#d1fae5', warn:'#fef3c7', error:'#fee2e2' };
+    if (overall === 'error' || overall === 'warn') {
+      const badge = document.getElementById('nav-health-badge');
+      if (badge) { badge.style.display = ''; badge.textContent = overall === 'error' ? '!' : '⚠'; }
+    }
+    mc.innerHTML = `
+      <div style="padding:16px">
+        <div style="background:${statusBg[overall]||'#f3f4f6'};border:1px solid ${statusColor[overall]||'#e2e8f0'};border-radius:14px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+          <i class="bi ${statusIcon[overall]||'bi-question-circle'}" style="font-size:24px;color:${statusColor[overall]||'#6b7280'}"></i>
+          <div><strong style="font-size:16px;color:${statusColor[overall]||'#374151'}">สถานะระบบ: ${overall === 'ok' ? 'ปกติ' : overall === 'warn' ? 'คำเตือน' : 'ผิดปกติ'}</strong><div style="font-size:12px;color:#6b7280;margin-top:2px">ตรวจสอบล่าสุด: ${checkRes && checkRes.checked_at ? checkRes.checked_at : 'เพิ่งตรวจ'}</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:16px">
+          ${Object.entries(checks).map(([k,v]) => {
+            const s = v.status || 'ok';
+            return `<div class="card-box" style="padding:14px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <i class="bi ${statusIcon[s]||'bi-circle'}" style="color:${statusColor[s]||'#6b7280'}"></i>
+                <span style="font-weight:700;font-size:13px">${k}</span>
+              </div>
+              <div style="font-size:12px;color:#6b7280">${v.message||v.msg||''}</div>
+              ${v.latency ? `<div style="font-size:11px;color:#9ca3af;margin-top:4px">ตอบสนอง: ${v.latency}ms</div>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+        ${history.length > 0 ? `
+        <div class="card-box">
+          <div class="card-title"><i class="bi bi-clock-history" style="color:#6b7280"></i> ประวัติ Health Check</div>
+          <table class="job-table">
+            <thead><tr><th>เวลา</th><th>สถานะ</th><th>รายละเอียด</th></tr></thead>
+            <tbody>${history.map(h => `<tr>
+              <td style="font-size:12px;color:#6b7280">${h.checked_at||h.timestamp||'-'}</td>
+              <td><span class="status-badge" style="background:${statusBg[h.status]||'#f3f4f6'};color:${statusColor[h.status]||'#6b7280'}">${h.status||'-'}</span></td>
+              <td style="font-size:12px">${h.summary||h.message||'-'}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>` : ''}
+      </div>`;
+  } catch(e) {
+    mc.innerHTML = errorState(e.message, 'loadHealthSection()');
+  }
+}
+
 function sectionIcon(s) {
-  return { jobs:'tools', po:'cart-fill', inventory:'box-seam-fill', revenue:'currency-exchange', crm:'people-fill', settings:'gear-fill' }[s] || 'grid';
+  return { jobs:'tools', po:'cart-fill', inventory:'box-seam-fill', revenue:'currency-exchange', crm:'people-fill', settings:'gear-fill', tax:'receipt-cutoff', warranty:'shield-check', branch:'diagram-3-fill', health:'heart-pulse-fill' }[s] || 'grid';
 }
 function sectionLabel(s) {
-  return { jobs:'งานบริการ', po:'ใบสั่งซื้อ', inventory:'สต็อก', revenue:'รายรับ', crm:'ลูกค้า', settings:'ตั้งค่า' }[s] || s;
+  return { jobs:'งานบริการ', po:'ใบสั่งซื้อ', inventory:'สต็อค', revenue:'รายรับ', crm:'ลูกค้า', settings:'ตั้งค่า', tax:'ระบบภาษี', warranty:'ใบรับประกัน', branch:'สาขา', health:'สุขภาพระบบ' }[s] || s;
 }
 
 function setActiveNav(section) {

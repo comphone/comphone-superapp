@@ -544,11 +544,25 @@ function dispatchActionV55_(action, payload, args) {
       case 'cleanAllData':
         return jsonOutputV55_(cleanAllData());
 
-      // ── Kudos / Customer Rating ──────────────────────────────
+      // ── Kudos / Customer Rating ────────────────────────────────────────────
       case 'submitCustomerRating':
         return jsonOutputV55_(submitCustomerRating_(payload));
       case 'getCustomerRatings':
         return jsonOutputV55_(getCustomerRatings_(payload));
+
+      // ── POS / Retail Sale (ขายหน้าร้าน) ────────────────────────────────
+      case 'createSale':
+      case 'createRetailSale':
+        if (typeof createRetailSale_ === 'function') return createRetailSale_(payload);
+        // fallback: ใช้ createBilling แทนจนกว่าจะมี POS module
+        return autoGenerateBillingForJob(payload.job_id || '', Object.assign({ sale_type: 'retail' }, payload));
+      case 'listSales':
+      case 'listRetailSales':
+        if (typeof listRetailSales_ === 'function') return listRetailSales_(payload);
+        return listAllBillings_(Object.assign({ type: 'retail' }, payload));
+      case 'getSaleSummary':
+        if (typeof getRetailSaleSummary_ === 'function') return getRetailSaleSummary_(payload);
+        return getReportData(Object.assign({ type: 'sale' }, payload));
 
       default:
         return invokeFunctionByNameV55_(action, args);
