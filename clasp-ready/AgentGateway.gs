@@ -65,7 +65,8 @@ function agentGatewayDispatch(params) {
   var startTs = Date.now();
   var agentId = params.agentId || params.agent_id || '';
   var apiKey  = params.apiKey  || params.api_key  || '';
-  var action  = params.action  || '';
+  // รองรับทั้ง agentAction (recommended) และ action (ใน payload ที่ส่งมาจาก Router)
+  var action  = params.agentAction || params.innerAction || params.action  || '';
   var payload = params.payload || params.data || {};
   var chain   = params.chain   || null; // Phase 6: Orchestration
 
@@ -154,24 +155,57 @@ function _agAuth_(agentId, apiKey, action) {
 
 // ─── PHASE 4: ROUTING ENGINE ───────────────────────────────
 
+// Explicit function registry (GAS V8 ไม่รองรับ dynamic eval)
+var AG_FN_REGISTRY = null;
+
+function _agGetRegistry_() {
+  if (AG_FN_REGISTRY) return AG_FN_REGISTRY;
+  // GAS V8: ต้อง reference function โดยตรง ไม่ใช้ typeof check สำหรับ cross-file functions
+  AG_FN_REGISTRY = {
+    // Vision (VisionPipeline.gs)
+    'runVisionPipeline':         runVisionPipeline,
+    'runSlipVerifyPipeline':     runSlipVerifyPipeline,
+    'runQCPipeline':             runQCPipeline,
+    'submitHumanReview':         submitHumanReview,
+    'getVisionDashboardStats':   getVisionDashboardStats,
+    // Learning (VisionLearning.gs)
+    'getLearningDashboard':      getLearningDashboard,
+    'getConfidenceCalibration':  getConfidenceCalibration,
+    'analyzeErrorPatterns':      analyzeErrorPatterns,
+    'getActiveRules':            getActiveRules,
+    'processFeedbackLoop':       processFeedbackLoop,
+    // Alert (LineBotIntelligent.gs)
+    'getIntelAlertQueue':        getIntelAlertQueue,
+    'queueAlertIntelligent':     queueAlertIntelligent,
+    'acknowledgeAlert':          acknowledgeAlert,
+    'getAlertAnalytics':         getAlertAnalytics,
+    // Incident (JobManager.gs — optional, graceful null if not present)
+    'openJob':                   (typeof openJob                   !== 'undefined') ? openJob                   : null,
+    'updateJobById':             (typeof updateJobById             !== 'undefined') ? updateJobById             : null,
+    'checkJobs':                 (typeof checkJobs                 !== 'undefined') ? checkJobs                 : null,
+    'transitionJob':             (typeof transitionJob             !== 'undefined') ? transitionJob             : null,
+    // Dashboard (Dashboard.gs / ExecutiveDashboard.gs — optional)
+    'getDashboardData':          (typeof getDashboardData          !== 'undefined') ? getDashboardData          : null,
+    'getExecutiveDashboard':     (typeof getExecutiveDashboard     !== 'undefined') ? getExecutiveDashboard     : null,
+    // Admin (self)
+    'registerAgent':             registerAgent,
+    'listAgents':                listAgents,
+    'getAgentLogs':              getAgentLogs,
+    'getAgentStats':             getAgentStats
+  };
+  return AG_FN_REGISTRY;
+}
+
 /**
- * _agRoute_ — map action → function call
+ * _agRoute_ — map action → function call via explicit registry
  */
 function _agRoute_(action, payload, actionDef) {
   var fn = actionDef.fn;
+  var registry = _agGetRegistry_();
+  var fnRef = registry[fn];
 
-  // Direct function call by name
-  if (typeof this[fn] === 'function') {
-    return this[fn](payload);
-  }
-
-  // GAS global scope lookup
-  var globalFn = (function() {
-    try { return eval(fn); } catch(e) { return null; }
-  })();
-
-  if (typeof globalFn === 'function') {
-    return globalFn(payload);
+  if (typeof fnRef === 'function') {
+    return fnRef(payload);
   }
 
   return { success: false, error: 'Function not found: ' + fn, module: actionDef.module };
@@ -491,7 +525,8 @@ function getAgentGatewayVersion() {
     success: true,
     version: AG_VERSION,
     agents: Object.keys(AG_AGENTS),
-    actions: Object.keys(AG_ACTION_MAP).length,
+    actions: Object.keys(AG_ACTION_MAP),   // return array (not count) for discoverability
+    actionCount: Object.keys(AG_ACTION_MAP).length,
     features: ['standard-api', 'auth-per-agent', 'routing-engine', 'activity-logging', 'chain-orchestration']
   };
 }
