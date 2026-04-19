@@ -165,23 +165,25 @@ window.syncOfflineQueue = async function() {
         ? { action: item.action, ...(item.params || {}) }
         : item;
 
-      // เพิ่ม auth token ถ้ามี
-      if (typeof AUTH !== 'undefined' && AUTH.token) {
-        payload.token    = AUTH.token;
-        payload.username = AUTH.username;
-      } else if (typeof APP !== 'undefined' && APP.user?.authToken) {
-        payload.token    = APP.user.authToken;
-        payload.username = APP.user.username;
+      // RULE 2: ดึง token จาก comphone_auth_session (Single Source of Truth)
+      try {
+        const sess = JSON.parse(localStorage.getItem('comphone_auth_session') || '{}');
+        if (sess.token) { payload.token = sess.token; payload.username = payload.username || sess.username; }
+      } catch(e2) {}
+
+      // RULE 1: ใช้ callApi() แทน fetch() ตรงๆ
+      let data;
+      if (typeof window.callApi === 'function') {
+        data = await window.callApi(payload);
+      } else {
+        const res = await fetch(url, {
+          method:   'POST',
+          headers:  { 'Content-Type': 'text/plain' },
+          body:     JSON.stringify(payload),
+          redirect: 'follow'
+        });
+        data = await res.json();
       }
-
-      const res = await fetch(url, {
-        method:   'POST',
-        headers:  { 'Content-Type': 'text/plain' },
-        body:     JSON.stringify(payload),
-        redirect: 'follow'
-      });
-
-      const data = await res.json();
       if (data && data.success) {
         successCount++;
       } else {

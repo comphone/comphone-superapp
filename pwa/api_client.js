@@ -249,7 +249,8 @@ function normalizeInventoryItem(item) {
 // ===== EXPORT สำหรับ PC Dashboard (ถ้าโหลดก่อน app.js) =====
 if (typeof window !== 'undefined') {
   window._comphone_api_client_loaded = true; // flag บอก app.js ว่า api_client.js โหลดแล้ว
-  window.callApi = callApi; // api_client.js เป็น Single Source of Truth เสมอ
+  window.callApi  = callApi; // api_client.js เป็น Single Source of Truth เสมอ
+  window.callAPI  = callApi; // ALIAS: uppercase — ใช้ใน tax_ui.js, warranty_ui.js, branch_health_ui.js, crm_ui.js, job_workflow.js
   window.safeHide = safeHide;
   window.safeShow = safeShow;
   window.safeRender = safeRender;

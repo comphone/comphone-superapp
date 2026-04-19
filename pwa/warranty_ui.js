@@ -125,6 +125,10 @@ async function loadWarrantyList() {
       data = await callAPI('listWarranties', { filter: status, page: 1, limit: 100 });
     }
 
+    if (!data || !data.success) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-red-400">ไม่สามารถเชื่อมต่อ API ได้</td></tr>';
+      return;
+    }
     const warranties = data.warranties || data.rows || [];
 
     if (warranties.length === 0) {

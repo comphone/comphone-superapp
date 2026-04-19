@@ -253,20 +253,26 @@ function startMainApp() {
 
 async function loadLiveData() {
   try {
-    const url = APP.scriptUrl || DEFAULT_SCRIPT_URL;
-    const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 20000); // 20s startup timeout
+    // RULE 1: ใช้ callApi() แทน fetch() ตรงๆ (api_client.js = Single Source of Truth)
     let data;
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'getDashboardData' }),
-        signal: ctrl.signal
-      });
-      data = await res.json();
-    } finally {
-      clearTimeout(tid);
+    if (typeof window.callApi === 'function') {
+      data = await window.callApi('getDashboardData');
+    } else {
+      // Fallback เพื่อความเข้ากันได้เมื่อ api_client.js ยังไม่โหลด
+      const url = APP.scriptUrl || DEFAULT_SCRIPT_URL;
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 20000);
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({ action: 'getDashboardData' }),
+          signal: ctrl.signal
+        });
+        data = await res.json();
+      } finally {
+        clearTimeout(tid);
+      }
     }
     if (!data || !data.success) return;
 
