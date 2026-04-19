@@ -2852,5 +2852,1628 @@ document.addEventListener('DOMContentLoaded', function() {
 
 console.log('[COMPHONE Dashboard] Production Patch v5.6 loaded — 8 Phases active');
 </script>
+<!-- ============================================================
+  COMPHONE Dashboard PC — v6.0 Patch Phase 1-2
+  Phase 1: UX Performance (preload KPI, memory cache, instant render)
+  Phase 2: POS Complete Flow (deduct stock, link billing, refund, sales history)
+  ============================================================ -->
+
+<style id="v60-p12-css">
+/* ===== PHASE 1: PERFORMANCE STYLES ===== */
+.kpi-skeleton {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+  border-radius: 12px; height: 90px;
+}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+.instant-kpi-bar {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  margin-bottom: 12px;
+}
+@media (max-width: 900px) { .instant-kpi-bar { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 500px) { .instant-kpi-bar { grid-template-columns: 1fr 1fr; } }
+
+.kpi-instant-card {
+  background: #fff; border: 1.5px solid #e2e8f0; border-radius: 16px;
+  padding: 16px; display: flex; align-items: center; gap: 12px;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.kpi-instant-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
+.kpi-instant-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+}
+.kpi-instant-num { font-size: 28px; font-weight: 900; line-height: 1; }
+.kpi-instant-lbl { font-size: 11px; color: #6b7280; font-weight: 600; margin-top: 2px; }
+.kpi-instant-sub { font-size: 11px; color: #9ca3af; }
+
+/* Dark mode */
+body.theme-dark .kpi-instant-card { background: #1e293b; border-color: #334155; }
+body.theme-dark .kpi-skeleton { background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%); background-size: 200% 100%; }
+
+/* ===== PHASE 2: POS COMPLETE FLOW ===== */
+.pos-history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.pos-history-table th { background: #f8fafc; color: #6b7280; font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 8px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+.pos-history-table td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.pos-history-table tr:last-child td { border-bottom: none; }
+.pos-history-table tr:hover td { background: #f8fafc; }
+body.theme-dark .pos-history-table th { background: #0f172a; color: #94a3b8; border-color: #334155; }
+body.theme-dark .pos-history-table td { border-color: #334155; color: #e2e8f0; }
+body.theme-dark .pos-history-table tr:hover td { background: #0f172a; }
+
+.refund-badge { background: #fee2e2; color: #dc2626; border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+.sale-badge { background: #d1fae5; color: #059669; border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+.partial-badge { background: #fef3c7; color: #d97706; border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+
+.pos-tab-bar { display: flex; gap: 4px; background: #f1f5f9; border-radius: 12px; padding: 4px; margin-bottom: 16px; }
+.pos-tab { flex: 1; padding: 8px 12px; border-radius: 8px; border: none; background: none; font-size: 13px; font-weight: 700; color: #6b7280; cursor: pointer; transition: all 0.15s; text-align: center; }
+.pos-tab.active { background: #fff; color: #1e40af; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+body.theme-dark .pos-tab-bar { background: #0f172a; }
+body.theme-dark .pos-tab.active { background: #1e293b; color: #60a5fa; }
+
+.stock-deduct-indicator {
+  position: fixed; bottom: 20px; right: 20px; z-index: 2000;
+  background: #059669; color: #fff; border-radius: 12px;
+  padding: 12px 18px; font-size: 13px; font-weight: 700;
+  box-shadow: 0 8px 24px rgba(5,150,105,0.3);
+  display: flex; align-items: center; gap: 8px;
+  transform: translateY(100px); transition: transform 0.3s;
+}
+.stock-deduct-indicator.show { transform: translateY(0); }
+</style>
+
+<script>
+// ============================================================
+// COMPHONE Dashboard v6.0 — Phase 1-2 Patch
+// ============================================================
+
+// ===== PHASE 1: MEMORY CACHE LAYER =====
+const _v60Cache = {
+  _store: {},
+  set(key, data, ttl = 300000) { // default 5 min
+    this._store[key] = { data, exp: Date.now() + ttl };
+  },
+  get(key) {
+    const entry = this._store[key];
+    if (!entry) return null;
+    if (Date.now() > entry.exp) { delete this._store[key]; return null; }
+    return entry.data;
+  },
+  invalidate(key) { delete this._store[key]; },
+  invalidateAll() { this._store = {}; },
+  has(key) { return this.get(key) !== null; }
+};
+
+// ===== PHASE 1: PRELOAD KPI ON PAGE LOAD =====
+// Preload dashboard data immediately when page loads (before user navigates)
+let _v60PreloadPromise = null;
+let _v60PreloadData = null;
+
+function preloadDashboardData() {
+  if (_v60PreloadPromise) return _v60PreloadPromise;
+  // Check memory cache first
+  const cached = _v60Cache.get('dashboard_data');
+  if (cached) { _v60PreloadData = cached; return Promise.resolve(cached); }
+  _v60PreloadPromise = cachedCallApi('getDashboardData', {}, 30000)
+    .then(data => {
+      _v60PreloadData = data;
+      _v60Cache.set('dashboard_data', data, 30000);
+      return data;
+    })
+    .catch(e => { console.warn('[v6.0] Preload failed:', e.message); return null; });
+  return _v60PreloadPromise;
+}
+
+// ===== PHASE 1: INSTANT KPI RENDER (skeleton → data) =====
+function renderInstantKPI(data) {
+  const kpis = (data && data.kpis) ? data.kpis : {};
+  const kpiItems = [
+    { icon: '📋', bg: '#dbeafe', color: '#1e40af', num: kpis.total_jobs || 0, lbl: 'งานทั้งหมด', sub: 'รายการ' },
+    { icon: '⚙️', bg: '#fef3c7', color: '#d97706', num: kpis.in_progress || 0, lbl: 'กำลังดำเนินการ', sub: 'งาน', pulse: (kpis.in_progress || 0) > 10 },
+    { icon: '🚨', bg: '#fee2e2', color: '#dc2626', num: kpis.urgent || 0, lbl: 'งานด่วน', sub: 'รายการ', pulse: (kpis.urgent || 0) > 0 },
+    { icon: '✅', bg: '#d1fae5', color: '#059669', num: kpis.done_today || 0, lbl: 'เสร็จวันนี้', sub: 'งาน' },
+  ];
+  return `<div class="instant-kpi-bar">
+    ${kpiItems.map(k => `
+      <div class="kpi-instant-card ${k.pulse ? 'kpi-alert-pulse' : ''}">
+        <div class="kpi-instant-icon" style="background:${k.bg}">
+          <span style="font-size:22px">${k.icon}</span>
+        </div>
+        <div>
+          <div class="kpi-instant-num" style="color:${k.color}">${k.num}</div>
+          <div class="kpi-instant-lbl">${k.lbl}</div>
+          <div class="kpi-instant-sub">${k.sub}</div>
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+
+// Override loadDashboard to use preloaded data
+const _v60OrigLoadDashboard = window.loadDashboard;
+window.loadDashboard = async function() {
+  setActiveNav('dashboard');
+  document.getElementById('topbar-title').innerHTML = '<i class="bi bi-speedometer2" style="margin-right:8px"></i>ภาพรวมระบบ';
+  const mc = document.getElementById('main-content');
+
+  // INSTANT: Show preloaded KPI immediately (no spinner)
+  if (_v60PreloadData) {
+    mc.innerHTML = `<div style="padding:20px">
+      ${renderInstantKPI(_v60PreloadData)}
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
+        ${[1,2,3].map(() => `<div class="kpi-skeleton"></div>`).join('')}
+      </div>
+      <div class="kpi-skeleton" style="height:200px;margin-bottom:12px"></div>
+    </div>`;
+  } else {
+    // First load: show skeleton
+    mc.innerHTML = `<div style="padding:20px">
+      <div class="instant-kpi-bar">${[1,2,3,4].map(() => `<div class="kpi-skeleton"></div>`).join('')}</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:12px">
+        <div class="kpi-skeleton" style="height:150px"></div>
+        <div class="kpi-skeleton" style="height:150px"></div>
+      </div>
+      <div class="kpi-skeleton" style="height:300px"></div>
+    </div>`;
+  }
+
+  // Fetch fresh data
+  try {
+    const data = await cachedCallApi('getDashboardData', {}, 30000);
+    _v60PreloadData = data;
+    _v60Cache.set('dashboard_data', data, 30000);
+    if (typeof window.renderDashboard === 'function') window.renderDashboard(data);
+  } catch(e) {
+    if (_v60PreloadData) {
+      // Use stale data with warning
+      if (typeof window.renderDashboard === 'function') window.renderDashboard(_v60PreloadData);
+      if (window.showToast) showToast('⚠️ ใช้ข้อมูลแคช (ออฟไลน์)', 'warn', 3000);
+    } else {
+      mc.innerHTML = `<div style="padding:20px">${typeof errorState === 'function' ? errorState(e.message, 'loadDashboard()') : `<p style="color:red">${e.message}</p>`}</div>`;
+    }
+  }
+};
+
+// Start preloading after login check
+document.addEventListener('DOMContentLoaded', function() {
+  // Preload after 500ms (after auth check completes)
+  setTimeout(() => {
+    if (typeof getAuthToken === 'function' && getAuthToken()) {
+      preloadDashboardData();
+    }
+  }, 500);
+});
+
+// ===== PHASE 2: POS COMPLETE FLOW =====
+
+// --- 2A: DEDUCT STOCK AFTER SALE ---
+async function deductStockAfterSale(items) {
+  const results = [];
+  for (const item of items) {
+    try {
+      const res = await callApi('deductStock', {
+        item_code: item.item_code || item.id,
+        qty: item.qty,
+        reason: 'POS_SALE'
+      });
+      results.push({ id: item.id, success: res && res.success !== false });
+    } catch(e) {
+      results.push({ id: item.id, success: false, error: e.message });
+    }
+  }
+  // Invalidate inventory cache
+  if (typeof clearApiCache === 'function') clearApiCache('inventoryOverview');
+  _v60Cache.invalidate('inventory_data');
+  // Show indicator
+  const indicator = document.getElementById('stock-deduct-indicator');
+  if (indicator) {
+    const failed = results.filter(r => !r.success).length;
+    indicator.innerHTML = failed === 0
+      ? `<i class="bi bi-check-circle-fill"></i> ตัดสต็อก ${results.length} รายการ สำเร็จ`
+      : `<i class="bi bi-exclamation-triangle-fill"></i> ตัดสต็อกสำเร็จ ${results.length - failed}/${results.length}`;
+    indicator.style.background = failed === 0 ? '#059669' : '#d97706';
+    indicator.classList.add('show');
+    setTimeout(() => indicator.classList.remove('show'), 3000);
+  }
+  return results;
+}
+
+// --- 2B: LINK SALE → BILLING ---
+async function linkSaleToBilling(saleId, customer, total, items) {
+  try {
+    const res = await callApi('createBillingFromSale', {
+      sale_id: saleId,
+      customer_name: customer,
+      amount: total,
+      items: items,
+      billing_type: 'RETAIL',
+      status: 'PAID'
+    });
+    return res;
+  } catch(e) {
+    console.warn('[v6.0] Link billing failed:', e.message);
+    return null;
+  }
+}
+
+// Override confirmCheckout to add deduct stock + link billing
+const _v60OrigConfirmCheckout = window.confirmCheckout;
+window.confirmCheckout = async function() {
+  if (!_posCart || !_posCart.length) return;
+  const btn = document.getElementById('pos-confirm-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner-pc" style="width:16px;height:16px;border-width:2px;margin:0 auto"></div>'; }
+  const subtotal = _posCart.reduce((a, b) => a + b.price * b.qty, 0);
+  const vat = Math.round(subtotal * 0.07);
+  const total = subtotal + vat;
+  const customerName = document.getElementById('pos-customer-name')?.value || 'ลูกค้าทั่วไป';
+  const note = document.getElementById('pos-note')?.value || '';
+  const cartSnapshot = [..._posCart];
+  const payload = {
+    items: cartSnapshot.map(i => ({ item_id: i.id, item_code: i.id, name: i.name, qty: i.qty, unit_price: i.price, total: i.price * i.qty })),
+    customer_name: customerName,
+    subtotal, vat_amount: vat, total,
+    payment_method: window._posPayMethod || 'cash',
+    note,
+    sale_date: new Date().toISOString()
+  };
+  try {
+    const res = await callApi('createRetailSale', payload);
+    if (res && res.success !== false) {
+      const saleId = res.sale_id || res.id || 'POS-' + Date.now();
+      closePosCheckoutModal();
+      // 1. Show receipt
+      if (typeof showPOSReceipt === 'function') showPOSReceipt(saleId, customerName, total, vat, subtotal);
+      // 2. Deduct stock (background)
+      deductStockAfterSale(payload.items).catch(e => console.warn('[v6.0] Stock deduct error:', e));
+      // 3. Link to billing (background)
+      linkSaleToBilling(saleId, customerName, total, payload.items).catch(e => console.warn('[v6.0] Billing link error:', e));
+      // 4. Clear cart
+      window._posCart = [];
+      if (typeof renderPOSCart === 'function') renderPOSCart();
+      // 5. Invalidate caches
+      _v60Cache.invalidate('dashboard_data');
+      if (typeof clearApiCache === 'function') { clearApiCache('listRetailSales'); clearApiCache('listBillings'); }
+      if (window.showToast) showToast('✅ บันทึกการขายสำเร็จ! กำลังตัดสต็อก...', 'success', 3000);
+    } else {
+      throw new Error((res && res.message) || 'บันทึกไม่สำเร็จ');
+    }
+  } catch(e) {
+    if (window.showToast) showToast('❌ ' + e.message, 'error', 4000);
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> ยืนยันชำระเงิน'; }
+  }
+};
+
+// --- 2C: REFUND SYSTEM ---
+async function openRefundModal(saleId) {
+  const modal = document.getElementById('pos-refund-modal');
+  const content = document.getElementById('pos-refund-content');
+  if (!modal || !content) return;
+  modal.classList.remove('hidden');
+  content.innerHTML = '<div class="loading-state"><div class="spinner-pc"></div>กำลังโหลดข้อมูลการขาย...</div>';
+  try {
+    const res = await callApi('getRetailSaleDetail', { sale_id: saleId });
+    const sale = (res && res.sale) ? res.sale : res;
+    if (!sale || !sale.sale_id) throw new Error('ไม่พบข้อมูลการขาย');
+    const items = sale.items || [];
+    content.innerHTML = `
+      <div style="background:#fef3c7;border-radius:10px;padding:12px;margin-bottom:16px">
+        <div style="font-size:12px;color:#92400e;font-weight:700">⚠️ การคืนเงินจะตัดออกจากรายรับและคืนสต็อก</div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:#6b7280;margin-bottom:4px">เลขที่ใบเสร็จ: <strong>${sale.sale_id}</strong></div>
+        <div style="font-size:12px;color:#6b7280">ลูกค้า: <strong>${sale.customer_name || '-'}</strong></div>
+        <div style="font-size:12px;color:#6b7280">ยอดรวม: <strong style="color:#059669">฿${Number(sale.total || 0).toLocaleString()}</strong></div>
+      </div>
+      <div class="modal-field">
+        <label>รายการที่คืน</label>
+        <div style="border:1.5px solid #e2e8f0;border-radius:10px;overflow:hidden">
+          ${items.map((item, idx) => `
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #f1f5f9">
+              <input type="checkbox" id="refund-item-${idx}" value="${idx}" style="width:16px;height:16px;cursor:pointer">
+              <label for="refund-item-${idx}" style="flex:1;cursor:pointer;font-size:13px">${item.name || item.item_code} ×${item.qty}</label>
+              <span style="font-weight:700;color:#1e40af">฿${Number(item.total || 0).toLocaleString()}</span>
+            </div>`).join('')}
+        </div>
+      </div>
+      <div class="modal-field">
+        <label>เหตุผลการคืน</label>
+        <select id="refund-reason">
+          <option value="DEFECTIVE">สินค้าชำรุด/บกพร่อง</option>
+          <option value="WRONG_ITEM">สินค้าผิดรายการ</option>
+          <option value="CUSTOMER_CANCEL">ลูกค้าเปลี่ยนใจ</option>
+          <option value="OTHER">อื่นๆ</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>หมายเหตุ</label>
+        <input type="text" id="refund-note" placeholder="หมายเหตุเพิ่มเติม...">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeRefundModal()">ยกเลิก</button>
+        <button class="btn-danger" onclick="processRefund('${sale.sale_id}', ${JSON.stringify(items).replace(/'/g, "\\'")})">
+          <i class="bi bi-arrow-counterclockwise"></i> ยืนยันคืนเงิน
+        </button>
+      </div>`;
+  } catch(e) {
+    content.innerHTML = `<div style="text-align:center;padding:30px;color:#dc2626">
+      <i class="bi bi-exclamation-circle" style="font-size:40px;display:block;margin-bottom:12px"></i>
+      <p>${e.message}</p>
+      <button class="btn-secondary" onclick="closeRefundModal()">ปิด</button>
+    </div>`;
+  }
+}
+
+function closeRefundModal() {
+  const modal = document.getElementById('pos-refund-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function processRefund(saleId, allItems) {
+  const checkedItems = [];
+  allItems.forEach((item, idx) => {
+    const cb = document.getElementById(`refund-item-${idx}`);
+    if (cb && cb.checked) checkedItems.push(item);
+  });
+  if (!checkedItems.length) { if (window.showToast) showToast('⚠️ เลือกรายการที่ต้องการคืนก่อน', 'warn', 2000); return; }
+  const reason = document.getElementById('refund-reason')?.value || 'OTHER';
+  const note = document.getElementById('refund-note')?.value || '';
+  const refundTotal = checkedItems.reduce((a, b) => a + Number(b.total || 0), 0);
+  const btn = document.querySelector('#pos-refund-modal .btn-danger');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner-pc" style="width:16px;height:16px;border-width:2px;margin:0 auto"></div>'; }
+  try {
+    const res = await callApi('createRefund', {
+      sale_id: saleId, items: checkedItems,
+      reason, note, refund_amount: refundTotal,
+      refund_date: new Date().toISOString()
+    });
+    if (res && res.success !== false) {
+      closeRefundModal();
+      // Restore stock for refunded items
+      for (const item of checkedItems) {
+        callApi('restoreStock', { item_code: item.item_code || item.id, qty: item.qty, reason: 'REFUND' }).catch(() => {});
+      }
+      if (typeof clearApiCache === 'function') { clearApiCache('listRetailSales'); clearApiCache('inventoryOverview'); }
+      _v60Cache.invalidateAll();
+      if (window.showToast) showToast(`✅ คืนเงิน ฿${refundTotal.toLocaleString()} สำเร็จ`, 'success', 3000);
+      // Reload sales history if visible
+      if (window._posActiveTab === 'history') loadPOSSalesHistory();
+    } else {
+      throw new Error((res && res.message) || 'คืนเงินไม่สำเร็จ');
+    }
+  } catch(e) {
+    if (window.showToast) showToast('❌ ' + e.message, 'error', 4000);
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i> ยืนยันคืนเงิน'; }
+  }
+}
+
+// --- 2D: SALES HISTORY SEARCH ---
+window._posActiveTab = 'pos';
+window._posSalesHistory = [];
+
+function switchPOSTab(tab) {
+  window._posActiveTab = tab;
+  document.querySelectorAll('.pos-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  const posPanel = document.getElementById('pos-main-panel');
+  const histPanel = document.getElementById('pos-history-panel');
+  if (posPanel) posPanel.style.display = tab === 'pos' ? '' : 'none';
+  if (histPanel) histPanel.style.display = tab === 'history' ? '' : 'none';
+  if (tab === 'history') loadPOSSalesHistory();
+}
+
+async function loadPOSSalesHistory(q = '') {
+  const container = document.getElementById('pos-history-list');
+  if (!container) return;
+  container.innerHTML = '<div class="loading-state"><div class="spinner-pc"></div>กำลังโหลดประวัติการขาย...</div>';
+  try {
+    const res = await cachedCallApi('listRetailSales', { search: q, limit: 50 }, 30000);
+    const sales = (res && res.sales) ? res.sales : (Array.isArray(res) ? res : []);
+    window._posSalesHistory = sales;
+    renderPOSSalesHistory(sales);
+  } catch(e) {
+    container.innerHTML = `<div style="text-align:center;padding:30px;color:#dc2626">
+      <i class="bi bi-wifi-off" style="font-size:36px;display:block;margin-bottom:8px"></i>
+      <p>${e.message}</p>
+      <button class="btn-secondary" onclick="loadPOSSalesHistory()">ลองใหม่</button>
+    </div>`;
+  }
+}
+
+function renderPOSSalesHistory(sales) {
+  const container = document.getElementById('pos-history-list');
+  if (!container) return;
+  if (!sales.length) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af"><i class="bi bi-receipt" style="font-size:40px;display:block;margin-bottom:8px"></i>ยังไม่มีประวัติการขาย</div>';
+    return;
+  }
+  const PAY_ICONS = { cash: '💵', transfer: '🏦', card: '💳', qr: '📱', credit: '🔖', other: '🔹' };
+  container.innerHTML = `
+    <div style="overflow-x:auto">
+      <table class="pos-history-table">
+        <thead><tr>
+          <th>เลขที่</th><th>วันที่</th><th>ลูกค้า</th><th>รายการ</th><th>ยอด</th><th>ชำระ</th><th>สถานะ</th><th>จัดการ</th>
+        </tr></thead>
+        <tbody>
+          ${sales.map(s => {
+            const isRefund = s.type === 'REFUND' || s.status === 'REFUNDED';
+            const isPartial = s.status === 'PARTIAL_REFUND';
+            const badge = isRefund ? '<span class="refund-badge">คืนเงิน</span>'
+              : isPartial ? '<span class="partial-badge">คืนบางส่วน</span>'
+              : '<span class="sale-badge">ขายแล้ว</span>';
+            const itemCount = (s.items || []).length || s.item_count || '-';
+            const payIcon = PAY_ICONS[s.payment_method] || '💰';
+            return `<tr>
+              <td style="font-weight:700;color:#1e40af;font-size:12px">${s.sale_id || s.id || '-'}</td>
+              <td style="font-size:12px;color:#6b7280;white-space:nowrap">${s.sale_date ? new Date(s.sale_date).toLocaleString('th-TH', {dateStyle:'short',timeStyle:'short'}) : '-'}</td>
+              <td style="font-size:13px">${s.customer_name || '-'}</td>
+              <td style="font-size:12px;color:#6b7280">${itemCount} รายการ</td>
+              <td style="font-weight:800;color:${isRefund?'#dc2626':'#059669'}">฿${Number(s.total || 0).toLocaleString()}</td>
+              <td style="font-size:13px">${payIcon} ${s.payment_method || '-'}</td>
+              <td>${badge}</td>
+              <td>
+                <div style="display:flex;gap:4px">
+                  <button onclick="viewSaleDetail('${s.sale_id || s.id}')" style="background:#dbeafe;color:#1e40af;border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-weight:700">ดู</button>
+                  ${!isRefund ? `<button onclick="openRefundModal('${s.sale_id || s.id}')" style="background:#fee2e2;color:#dc2626;border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-weight:700">คืน</button>` : ''}
+                </div>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function filterPOSHistory(q) {
+  const filtered = q
+    ? window._posSalesHistory.filter(s =>
+        (s.sale_id || '').toLowerCase().includes(q.toLowerCase()) ||
+        (s.customer_name || '').toLowerCase().includes(q.toLowerCase()))
+    : window._posSalesHistory;
+  renderPOSSalesHistory(filtered);
+}
+
+async function viewSaleDetail(saleId) {
+  // Reuse job detail modal for sale detail
+  const modal = document.getElementById('job-detail-modal');
+  const content = document.getElementById('job-detail-content');
+  if (!modal || !content) return;
+  modal.classList.remove('hidden');
+  content.innerHTML = '<div class="loading-state"><div class="spinner-pc"></div>กำลังโหลดรายละเอียด...</div>';
+  try {
+    const res = await callApi('getRetailSaleDetail', { sale_id: saleId });
+    const s = (res && res.sale) ? res.sale : res;
+    if (!s) throw new Error('ไม่พบข้อมูล');
+    const items = s.items || [];
+    content.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div><div style="font-size:11px;color:#6b7280;font-weight:700;text-transform:uppercase;margin-bottom:3px">เลขที่ใบเสร็จ</div>
+          <div style="font-size:16px;font-weight:800;color:#1e40af">${s.sale_id || '-'}</div></div>
+        <div><div style="font-size:11px;color:#6b7280;font-weight:700;text-transform:uppercase;margin-bottom:3px">วันที่</div>
+          <div style="font-size:13px">${s.sale_date ? new Date(s.sale_date).toLocaleString('th-TH') : '-'}</div></div>
+        <div><div style="font-size:11px;color:#6b7280;font-weight:700;text-transform:uppercase;margin-bottom:3px">ลูกค้า</div>
+          <div style="font-weight:700">${s.customer_name || '-'}</div></div>
+        <div><div style="font-size:11px;color:#6b7280;font-weight:700;text-transform:uppercase;margin-bottom:3px">วิธีชำระ</div>
+          <div style="font-weight:700">${s.payment_method || '-'}</div></div>
+      </div>
+      <div style="background:#f8fafc;border-radius:10px;padding:12px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px">รายการสินค้า</div>
+        ${items.map(i => `<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+          <span>${i.name || i.item_code} ×${i.qty}</span><span style="font-weight:700">฿${Number(i.total||0).toLocaleString()}</span>
+        </div>`).join('')}
+        <hr style="border:none;border-top:1px solid #e2e8f0;margin:8px 0">
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#6b7280"><span>ราคารวม</span><span>฿${Number(s.subtotal||0).toLocaleString()}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#6b7280"><span>VAT 7%</span><span>฿${Number(s.vat_amount||0).toLocaleString()}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:18px;font-weight:900;margin-top:6px"><span>ยอดสุทธิ</span><span style="color:#059669">฿${Number(s.total||0).toLocaleString()}</span></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeJobDetailModal()">ปิด</button>
+        <button class="btn-secondary" onclick="window.print()"><i class="bi bi-printer"></i> พิมพ์</button>
+        ${s.status !== 'REFUNDED' ? `<button class="btn-danger" onclick="closeJobDetailModal();openRefundModal('${s.sale_id}')"><i class="bi bi-arrow-counterclockwise"></i> คืนเงิน</button>` : ''}
+      </div>`;
+  } catch(e) {
+    content.innerHTML = `<div style="text-align:center;padding:30px;color:#dc2626"><p>${e.message}</p>
+      <button class="btn-secondary" onclick="closeJobDetailModal()">ปิด</button></div>`;
+  }
+}
+
+// Override loadPOSSection to add tabs (POS + History)
+const _v60OrigLoadPOS = window.loadPOSSection;
+window.loadPOSSection = async function() {
+  setActiveNav('pos');
+  document.getElementById('topbar-title').innerHTML = '<i class="bi bi-shop" style="margin-right:8px;color:#10b981"></i>ขายหน้าร้าน (POS)';
+  const mc = document.getElementById('main-content');
+  mc.innerHTML = '<div style="padding:16px"><div class="loading-state"><div class="spinner-pc"></div>กำลังโหลดสินค้า...</div></div>';
+  try {
+    const invRes = await cachedCallApi('inventoryOverview', {}, 60000);
+    const items = (invRes && invRes.items) ? invRes.items : [];
+    window._posProducts = items.length > 0 ? items.map(i => ({
+      id: i.code || i.item_code || i.id || Math.random().toString(36).slice(2),
+      name: i.name || i.item_name || '-',
+      price: Number(i.price || i.unit_price || i.selling_price || 0),
+      stock: Number(i.qty || i.quantity || 0),
+      icon: '📦', cat: i.category || i.cat || 'สินค้า'
+    })).filter(p => p.price > 0) : (window.POS_PRODUCTS_DEFAULT || []);
+  } catch(e) {
+    window._posProducts = window.POS_PRODUCTS_DEFAULT || [];
+  }
+
+  // Render with tabs
+  mc.innerHTML = `
+    <div style="padding:16px">
+      <!-- Tab Bar -->
+      <div class="pos-tab-bar">
+        <button class="pos-tab active" data-tab="pos" onclick="switchPOSTab('pos')">🛒 ขายสินค้า</button>
+        <button class="pos-tab" data-tab="history" onclick="switchPOSTab('history')">📋 ประวัติการขาย</button>
+      </div>
+      <!-- POS Panel -->
+      <div id="pos-main-panel"></div>
+      <!-- History Panel -->
+      <div id="pos-history-panel" style="display:none">
+        <div style="display:flex;gap:10px;margin-bottom:14px">
+          <input type="text" placeholder="🔍 ค้นหาเลขที่ใบเสร็จ หรือชื่อลูกค้า..."
+            oninput="filterPOSHistory(this.value)"
+            style="flex:1;padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;outline:none">
+          <button onclick="loadPOSSalesHistory()" class="btn-refresh" style="white-space:nowrap">
+            <i class="bi bi-arrow-clockwise"></i> รีเฟรช
+          </button>
+        </div>
+        <div class="card-box" style="overflow:hidden">
+          <div id="pos-history-list"><div style="text-align:center;padding:40px;color:#9ca3af">คลิก "ประวัติการขาย" เพื่อโหลดข้อมูล</div></div>
+        </div>
+      </div>
+    </div>`;
+
+  // Render POS layout inside pos-main-panel
+  const posPanel = document.getElementById('pos-main-panel');
+  if (posPanel && typeof renderPOSLayout === 'function') {
+    // Temporarily point main-content to pos-main-panel for renderPOSLayout
+    const origInnerHTML = mc.innerHTML;
+    posPanel.innerHTML = '';
+    // Call renderPOSLayout which writes to main-content — we need to capture it
+    // Instead, rebuild POS layout directly
+    const cats = ['ทั้งหมด', ...new Set((window._posProducts || []).map(p => p.cat).filter(Boolean))];
+    posPanel.innerHTML = `
+      <div class="pos-layout" style="height:calc(100vh - 180px)">
+        <div class="pos-left">
+          <div class="pos-search-bar">
+            <input type="text" id="pos-search" placeholder="🔍 ค้นหาสินค้า..." oninput="filterPOSProducts(this.value)">
+          </div>
+          <div class="pos-cat-tabs" id="pos-cat-tabs">
+            ${cats.map((c,i) => `<button class="pos-cat-tab ${i===0?'active':''}" onclick="filterPOSCat('${c}',this)">${c}</button>`).join('')}
+          </div>
+          <div class="pos-product-grid" id="pos-product-grid">
+            ${typeof renderPOSProducts === 'function' ? renderPOSProducts(window._posProducts || []) : ''}
+          </div>
+        </div>
+        <div class="pos-cart-panel">
+          <div class="pos-cart-header">🛒 ตะกร้าสินค้า
+            <span id="pos-cart-count" style="margin-left:auto;background:#1e40af;color:#fff;border-radius:20px;padding:2px 10px;font-size:12px">0 รายการ</span>
+          </div>
+          <div class="pos-cart-items" id="pos-cart-items">
+            <div style="text-align:center;color:#9ca3af;padding:40px 0;font-size:13px">
+              <div style="font-size:40px;margin-bottom:8px">🛒</div>คลิกสินค้าเพื่อเพิ่มในตะกร้า
+            </div>
+          </div>
+          <div class="pos-cart-summary">
+            <div class="pos-summary-row"><span>ราคารวม</span><span id="pos-subtotal">฿0</span></div>
+            <div class="pos-summary-row"><span>VAT 7%</span><span id="pos-vat">฿0</span></div>
+            <div class="pos-summary-total"><span>ยอดสุทธิ</span><span id="pos-total">฿0</span></div>
+            <button class="pos-checkout-btn" id="pos-checkout-btn" onclick="openPosCheckout()" disabled>
+              <i class="bi bi-bag-check-fill"></i> ชำระเงิน
+            </button>
+            <button class="pos-clear-btn" onclick="clearPOSCart()">🗑️ ล้างตะกร้า</button>
+          </div>
+        </div>
+      </div>`;
+    // Re-render cart if has items
+    if (window._posCart && window._posCart.length && typeof renderPOSCart === 'function') renderPOSCart();
+  }
+  window._posActiveTab = 'pos';
+};
+
+console.log('[COMPHONE v6.0] Phase 1-2 loaded: UX Performance + POS Complete Flow');
+</script>
+
+<!-- Refund Modal -->
+<div id="pos-refund-modal" class="modal-backdrop hidden" onclick="if(event.target===this)closeRefundModal()">
+  <div class="modal-box" style="max-width:520px">
+    <button class="modal-close" onclick="closeRefundModal()">✕</button>
+    <div class="modal-title"><i class="bi bi-arrow-counterclockwise" style="color:#dc2626"></i> คืนเงิน / Refund</div>
+    <div id="pos-refund-content"><div class="loading-state"><div class="spinner-pc"></div>กำลังโหลด...</div></div>
+  </div>
+</div>
+
+<!-- Stock Deduct Indicator -->
+<div id="stock-deduct-indicator" class="stock-deduct-indicator">
+  <i class="bi bi-check-circle-fill"></i> ตัดสต็อกสำเร็จ
+</div>
+<!-- ============================================================
+  COMPHONE Dashboard PC — v6.0 Patch Phase 3-4
+  Phase 3: Job Lifecycle (create job UI, timeline, status workflow)
+  Phase 4: Global APP_STATE Manager
+  ============================================================ -->
+
+<style id="v60-p34-css">
+/* ===== PHASE 3: JOB LIFECYCLE ===== */
+.job-timeline { position: relative; padding-left: 28px; }
+.job-timeline::before {
+  content: ''; position: absolute; left: 10px; top: 0; bottom: 0;
+  width: 2px; background: #e2e8f0;
+}
+body.theme-dark .job-timeline::before { background: #334155; }
+
+.timeline-item { position: relative; margin-bottom: 16px; }
+.timeline-dot {
+  position: absolute; left: -22px; top: 4px;
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid #fff; box-shadow: 0 0 0 2px #e2e8f0;
+  z-index: 1;
+}
+body.theme-dark .timeline-dot { border-color: #1e293b; box-shadow: 0 0 0 2px #334155; }
+.timeline-dot.active { box-shadow: 0 0 0 3px rgba(59,130,246,0.3); }
+.timeline-content {
+  background: #f8fafc; border-radius: 10px; padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+}
+body.theme-dark .timeline-content { background: #0f172a; border-color: #334155; }
+.timeline-time { font-size: 11px; color: #9ca3af; margin-top: 3px; }
+
+/* Status workflow badges */
+.workflow-step {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 12px; border-radius: 10px;
+  border: 1.5px solid #e2e8f0; background: #f8fafc;
+  font-size: 12px; font-weight: 700; color: #6b7280;
+  transition: all 0.15s; cursor: pointer;
+}
+.workflow-step.active { border-color: #3b82f6; background: #eff6ff; color: #1e40af; }
+.workflow-step.done { border-color: #10b981; background: #d1fae5; color: #059669; }
+.workflow-step.blocked { border-color: #f59e0b; background: #fef3c7; color: #d97706; }
+.workflow-arrow { color: #9ca3af; font-size: 14px; }
+
+/* Create Job Form */
+.create-job-form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 600px) { .create-job-form { grid-template-columns: 1fr; } }
+
+/* ===== PHASE 4: APP_STATE ===== */
+.state-indicator {
+  position: fixed; top: 60px; right: 16px; z-index: 500;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+  padding: 8px 12px; font-size: 11px; color: #6b7280;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  display: flex; align-items: center; gap: 6px;
+  opacity: 0; transition: opacity 0.3s;
+}
+.state-indicator.show { opacity: 1; }
+.state-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; }
+.state-dot.syncing { background: #f59e0b; animation: pulse-dot 1s infinite; }
+.state-dot.error { background: #dc2626; }
+@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+body.theme-dark .state-indicator { background: #1e293b; border-color: #334155; color: #94a3b8; }
+</style>
+
+<!-- State Indicator -->
+<div id="app-state-indicator" class="state-indicator">
+  <div class="state-dot" id="state-dot"></div>
+  <span id="state-text">พร้อมใช้งาน</span>
+</div>
+
+<!-- Create Job Modal -->
+<div id="create-job-modal" class="modal-backdrop hidden" onclick="if(event.target===this)closeCreateJobModal()">
+  <div class="modal-box" style="max-width:640px">
+    <button class="modal-close" onclick="closeCreateJobModal()">✕</button>
+    <div class="modal-title"><i class="bi bi-plus-circle-fill" style="color:#059669"></i> สร้างงานใหม่</div>
+    <div class="create-job-form">
+      <div class="modal-field">
+        <label>ชื่อลูกค้า *</label>
+        <input type="text" id="cj-customer" placeholder="ชื่อลูกค้า" required>
+      </div>
+      <div class="modal-field">
+        <label>เบอร์โทร</label>
+        <input type="tel" id="cj-phone" placeholder="0xx-xxx-xxxx">
+      </div>
+      <div class="modal-field">
+        <label>อุปกรณ์ *</label>
+        <input type="text" id="cj-device" placeholder="เช่น iPhone 15 Pro, Samsung S24" required>
+      </div>
+      <div class="modal-field">
+        <label>IMEI / Serial</label>
+        <input type="text" id="cj-serial" placeholder="หมายเลขเครื่อง (ถ้ามี)">
+      </div>
+      <div class="modal-field" style="grid-column:1/-1">
+        <label>อาการ / ปัญหา *</label>
+        <textarea id="cj-symptom" placeholder="อธิบายอาการที่พบ..." required style="min-height:80px"></textarea>
+      </div>
+      <div class="modal-field">
+        <label>ช่างรับผิดชอบ</label>
+        <input type="text" id="cj-tech" placeholder="ชื่อช่าง" list="cj-tech-list">
+        <datalist id="cj-tech-list"></datalist>
+      </div>
+      <div class="modal-field">
+        <label>ราคาประเมิน (บาท)</label>
+        <input type="number" id="cj-price" placeholder="0" min="0">
+      </div>
+      <div class="modal-field">
+        <label>ความเร่งด่วน</label>
+        <select id="cj-urgency">
+          <option value="normal">ปกติ</option>
+          <option value="urgent">ด่วน</option>
+          <option value="very_urgent">ด่วนมาก</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>รับประกัน (วัน)</label>
+        <input type="number" id="cj-warranty" placeholder="90" value="90" min="0">
+      </div>
+      <div class="modal-field" style="grid-column:1/-1">
+        <label>หมายเหตุ</label>
+        <input type="text" id="cj-note" placeholder="หมายเหตุเพิ่มเติม...">
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn-secondary" onclick="closeCreateJobModal()">ยกเลิก</button>
+      <button class="btn-primary" onclick="submitCreateJob()" id="cj-submit-btn">
+        <i class="bi bi-plus-circle-fill"></i> สร้างงาน
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Job Timeline Modal -->
+<div id="job-timeline-modal" class="modal-backdrop hidden" onclick="if(event.target===this)closeJobTimelineModal()">
+  <div class="modal-box" style="max-width:560px">
+    <button class="modal-close" onclick="closeJobTimelineModal()">✕</button>
+    <div class="modal-title"><i class="bi bi-clock-history" style="color:#7c3aed"></i> ประวัติงาน</div>
+    <div id="job-timeline-content"><div class="loading-state"><div class="spinner-pc"></div>กำลังโหลด...</div></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// COMPHONE Dashboard v6.0 — Phase 3-4 Patch
+// ============================================================
+
+// ===== PHASE 4: GLOBAL APP_STATE MANAGER =====
+const APP_STATE = {
+  _state: {
+    jobs: null,
+    inventory: null,
+    user: null,
+    health: null,
+    alerts: [],
+    lastSync: null,
+    syncStatus: 'idle' // 'idle' | 'syncing' | 'error'
+  },
+  _listeners: {},
+
+  get(key) { return this._state[key]; },
+
+  set(key, value) {
+    const old = this._state[key];
+    this._state[key] = value;
+    this._state.lastSync = Date.now();
+    this._notify(key, value, old);
+    this._updateIndicator();
+  },
+
+  update(updates) {
+    Object.entries(updates).forEach(([k, v]) => {
+      this._state[k] = v;
+      this._notify(k, v, null);
+    });
+    this._state.lastSync = Date.now();
+    this._updateIndicator();
+  },
+
+  on(key, fn) {
+    if (!this._listeners[key]) this._listeners[key] = [];
+    this._listeners[key].push(fn);
+    return () => { this._listeners[key] = this._listeners[key].filter(f => f !== fn); };
+  },
+
+  _notify(key, value, old) {
+    (this._listeners[key] || []).forEach(fn => { try { fn(value, old); } catch(e) {} });
+    (this._listeners['*'] || []).forEach(fn => { try { fn(key, value, old); } catch(e) {} });
+  },
+
+  setSyncStatus(status) {
+    this._state.syncStatus = status;
+    this._updateIndicator();
+  },
+
+  _updateIndicator() {
+    const indicator = document.getElementById('app-state-indicator');
+    const dot = document.getElementById('state-dot');
+    const text = document.getElementById('state-text');
+    if (!indicator || !dot || !text) return;
+    const status = this._state.syncStatus;
+    dot.className = 'state-dot' + (status === 'syncing' ? ' syncing' : status === 'error' ? ' error' : '');
+    const syncTime = this._state.lastSync ? new Date(this._state.lastSync).toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '-';
+    text.textContent = status === 'syncing' ? 'กำลังซิงค์...' : status === 'error' ? 'ซิงค์ล้มเหลว' : `อัปเดต ${syncTime}`;
+    indicator.classList.add('show');
+    if (status === 'idle') setTimeout(() => indicator.classList.remove('show'), 3000);
+  },
+
+  // Sync all data
+  async syncAll(force = false) {
+    this.setSyncStatus('syncing');
+    try {
+      const [dashRes, invRes] = await Promise.allSettled([
+        cachedCallApi('getDashboardData', {}, force ? 0 : 30000),
+        cachedCallApi('inventoryOverview', {}, force ? 0 : 60000)
+      ]);
+      const updates = {};
+      if (dashRes.status === 'fulfilled' && dashRes.value) {
+        const d = dashRes.value;
+        updates.jobs = d.jobs || [];
+        updates.alerts = d.alerts || [];
+        updates.health = d.health || null;
+        // Update preload cache
+        window._v60PreloadData = d;
+        if (window._v60Cache) window._v60Cache.set('dashboard_data', d, 30000);
+      }
+      if (invRes.status === 'fulfilled' && invRes.value) {
+        updates.inventory = invRes.value.items || [];
+      }
+      this.update(updates);
+      this.setSyncStatus('idle');
+    } catch(e) {
+      this.setSyncStatus('error');
+      console.warn('[APP_STATE] syncAll failed:', e.message);
+    }
+  }
+};
+
+// Make APP_STATE globally accessible
+window.APP_STATE = APP_STATE;
+
+// Auto-sync every 60 seconds
+setInterval(() => {
+  if (typeof getAuthToken === 'function' && getAuthToken()) {
+    APP_STATE.syncAll();
+  }
+}, 60000);
+
+// Sync on section load
+const _v60OrigLoadSection = window.loadSection;
+window.loadSection = function(section) {
+  window._currentSection = section;
+  APP_STATE.setSyncStatus('syncing');
+  const result = _v60OrigLoadSection ? _v60OrigLoadSection(section) : null;
+  // Mark idle after 3s (approximate)
+  setTimeout(() => APP_STATE.setSyncStatus('idle'), 3000);
+  return result;
+};
+
+// ===== PHASE 3: JOB LIFECYCLE =====
+
+// --- 3A: CREATE JOB UI ---
+function openCreateJobModal() {
+  const modal = document.getElementById('create-job-modal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  // Populate tech list
+  const techList = document.getElementById('cj-tech-list');
+  if (techList && window._techList) {
+    techList.innerHTML = (window._techList || []).map(t => `<option value="${t.name || t}">`).join('');
+  }
+  // Clear form
+  ['cj-customer','cj-phone','cj-device','cj-serial','cj-symptom','cj-tech','cj-note'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const priceEl = document.getElementById('cj-price');
+  if (priceEl) priceEl.value = '';
+  const warrantyEl = document.getElementById('cj-warranty');
+  if (warrantyEl) warrantyEl.value = '90';
+}
+
+function closeCreateJobModal() {
+  const modal = document.getElementById('create-job-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function submitCreateJob() {
+  const customer = document.getElementById('cj-customer')?.value?.trim();
+  const device = document.getElementById('cj-device')?.value?.trim();
+  const symptom = document.getElementById('cj-symptom')?.value?.trim();
+  if (!customer || !device || !symptom) {
+    if (window.showToast) showToast('⚠️ กรุณากรอกข้อมูลที่จำเป็น (ลูกค้า, อุปกรณ์, อาการ)', 'warn', 3000);
+    return;
+  }
+  const btn = document.getElementById('cj-submit-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner-pc" style="width:16px;height:16px;border-width:2px;margin:0 auto"></div>'; }
+  const payload = {
+    customer_name: customer,
+    phone: document.getElementById('cj-phone')?.value?.trim() || '',
+    device_model: device,
+    serial: document.getElementById('cj-serial')?.value?.trim() || '',
+    symptom,
+    technician: document.getElementById('cj-tech')?.value?.trim() || '',
+    estimated_price: Number(document.getElementById('cj-price')?.value || 0),
+    urgency: document.getElementById('cj-urgency')?.value || 'normal',
+    warranty_days: Number(document.getElementById('cj-warranty')?.value || 90),
+    note: document.getElementById('cj-note')?.value?.trim() || '',
+    status: 'รับงาน',
+    created_date: new Date().toISOString()
+  };
+  try {
+    const res = await callApi('createJob', payload);
+    if (res && res.success !== false) {
+      closeCreateJobModal();
+      const jobId = res.job_id || res.id || '-';
+      if (window.showToast) showToast(`✅ สร้างงาน ${jobId} สำเร็จ!`, 'success', 3000);
+      // Invalidate caches
+      if (typeof clearApiCache === 'function') clearApiCache('checkJobs');
+      if (window._v60Cache) window._v60Cache.invalidate('dashboard_data');
+      APP_STATE.setSyncStatus('syncing');
+      // Reload current section
+      const section = window._currentSection || 'jobs';
+      if (typeof loadSection === 'function') setTimeout(() => loadSection(section), 500);
+    } else {
+      throw new Error((res && res.message) || 'สร้างงานไม่สำเร็จ');
+    }
+  } catch(e) {
+    if (window.showToast) showToast('❌ ' + e.message, 'error', 4000);
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-plus-circle-fill"></i> สร้างงาน'; }
+  }
+}
+
+// --- 3B: JOB TIMELINE VIEW ---
+async function openJobTimeline(jobId) {
+  const modal = document.getElementById('job-timeline-modal');
+  const content = document.getElementById('job-timeline-content');
+  if (!modal || !content) return;
+  modal.classList.remove('hidden');
+  content.innerHTML = '<div class="loading-state"><div class="spinner-pc"></div>กำลังโหลดประวัติงาน...</div>';
+  try {
+    const res = await callApi('getJobTimeline', { job_id: jobId });
+    const timeline = (res && res.timeline) ? res.timeline : (res && res.history) ? res.history : [];
+    const job = (res && res.job) ? res.job : {};
+    const STATUS_COLORS = window.STATUS_COLORS || {};
+    // Build workflow visualization
+    const WORKFLOW = ['รับงาน','กำลังซ่อม','รอชิ้นส่วน','รอลูกค้า','เสร็จแล้ว','ส่งคืน'];
+    const currentIdx = WORKFLOW.indexOf(job.status || '');
+    const workflowHtml = `
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:20px">
+        ${WORKFLOW.map((step, i) => {
+          const isDone = i < currentIdx;
+          const isActive = i === currentIdx;
+          const color = STATUS_COLORS[step] || '#6b7280';
+          return `
+            ${i > 0 ? `<div class="workflow-arrow">→</div>` : ''}
+            <div class="workflow-step ${isDone ? 'done' : isActive ? 'active' : ''}"
+              style="${isActive ? `border-color:${color};background:${color}20;color:${color}` : ''}">
+              ${isDone ? '✓ ' : ''}${step}
+            </div>`;
+        }).join('')}
+      </div>`;
+    // Timeline entries
+    const timelineHtml = timeline.length === 0
+      ? '<p style="color:#9ca3af;text-align:center;padding:20px">ยังไม่มีประวัติการเปลี่ยนแปลง</p>'
+      : `<div class="job-timeline">
+          ${timeline.map(entry => {
+            const color = STATUS_COLORS[entry.status || entry.to_status] || '#6b7280';
+            return `<div class="timeline-item">
+              <div class="timeline-dot" style="background:${color}"></div>
+              <div class="timeline-content">
+                <div style="font-size:13px;font-weight:700;color:${color}">${entry.status || entry.to_status || entry.action || '-'}</div>
+                ${entry.note || entry.comment ? `<div style="font-size:12px;color:#374151;margin-top:3px">${entry.note || entry.comment}</div>` : ''}
+                ${entry.technician || entry.by ? `<div style="font-size:11px;color:#6b7280;margin-top:2px">โดย: ${entry.technician || entry.by}</div>` : ''}
+                <div class="timeline-time">${entry.timestamp || entry.created_at || entry.date || '-'}</div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>`;
+    content.innerHTML = `
+      <div style="margin-bottom:12px">
+        <span style="font-size:13px;font-weight:700;color:#374151">Job: </span>
+        <span style="font-size:13px;color:#1e40af;font-weight:800">${jobId}</span>
+        ${job.customer ? `<span style="font-size:12px;color:#6b7280;margin-left:8px">| ${job.customer}</span>` : ''}
+      </div>
+      ${workflowHtml}
+      <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:10px;text-transform:uppercase">ประวัติการเปลี่ยนแปลง</div>
+      ${timelineHtml}
+      <div class="modal-actions" style="margin-top:16px">
+        <button class="btn-secondary" onclick="closeJobTimelineModal()">ปิด</button>
+        <button class="btn-primary" onclick="closeJobTimelineModal();openJobDetail('${jobId}')">
+          <i class="bi bi-pencil-fill"></i> แก้ไขงาน
+        </button>
+      </div>`;
+  } catch(e) {
+    content.innerHTML = `<div style="text-align:center;padding:30px;color:#dc2626">
+      <i class="bi bi-wifi-off" style="font-size:40px;display:block;margin-bottom:12px"></i>
+      <p>${e.message}</p>
+      <button class="btn-secondary" onclick="closeJobTimelineModal()">ปิด</button>
+    </div>`;
+  }
+}
+
+function closeJobTimelineModal() {
+  const modal = document.getElementById('job-timeline-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+// --- 3C: STATUS WORKFLOW ENFORCEMENT ---
+const JOB_STATUS_WORKFLOW = {
+  'รับงาน':     ['กำลังซ่อม', 'ด่วน', 'ยกเลิก'],
+  'กำลังซ่อม': ['รอชิ้นส่วน', 'รอลูกค้า', 'เสร็จแล้ว', 'ยกเลิก'],
+  'รอชิ้นส่วน': ['กำลังซ่อม', 'ยกเลิก'],
+  'รอลูกค้า':   ['กำลังซ่อม', 'เสร็จแล้ว', 'ยกเลิก'],
+  'เสร็จแล้ว':  ['ส่งคืน', 'กำลังซ่อม'],
+  'ส่งคืน':     [],
+  'ยกเลิก':     ['รับงาน'],
+  'ด่วน':       ['กำลังซ่อม', 'ยกเลิก']
+};
+
+function getValidNextStatuses(currentStatus) {
+  return JOB_STATUS_WORKFLOW[currentStatus] || Object.keys(JOB_STATUS_WORKFLOW);
+}
+
+// Enhance job detail modal status dropdown with workflow enforcement
+const _v60OrigOpenJobDetail = window.openJobDetail;
+window.openJobDetail = async function(jobId) {
+  if (_v60OrigOpenJobDetail) await _v60OrigOpenJobDetail(jobId);
+  // After modal opens, enhance status dropdown
+  setTimeout(() => {
+    const statusSelect = document.getElementById('jd-status');
+    if (!statusSelect) return;
+    const currentStatus = statusSelect.value;
+    const validNext = getValidNextStatuses(currentStatus);
+    // Add visual hint to valid options
+    Array.from(statusSelect.options).forEach(opt => {
+      const isValid = opt.value === currentStatus || validNext.includes(opt.value);
+      opt.style.color = isValid ? '' : '#9ca3af';
+      opt.title = isValid ? '' : 'ไม่สามารถเปลี่ยนจาก ' + currentStatus + ' ไปได้โดยตรง';
+    });
+    // Add timeline button
+    const actions = statusSelect.closest('.modal-box')?.querySelector('.modal-actions');
+    if (actions && !actions.querySelector('.timeline-btn')) {
+      const timelineBtn = document.createElement('button');
+      timelineBtn.className = 'btn-secondary timeline-btn';
+      timelineBtn.innerHTML = '<i class="bi bi-clock-history"></i> ประวัติ';
+      timelineBtn.onclick = () => { closeJobDetailModal(); openJobTimeline(jobId); };
+      actions.insertBefore(timelineBtn, actions.firstChild);
+    }
+  }, 300);
+};
+
+// Add "สร้างงานใหม่" button to Jobs section
+const _v60OrigLoadJobsSection = window.loadJobsSection;
+window.loadJobsSection = async function() {
+  if (_v60OrigLoadJobsSection) await _v60OrigLoadJobsSection();
+  // Inject "สร้างงานใหม่" button after section loads
+  setTimeout(() => {
+    const mc = document.getElementById('main-content');
+    if (!mc) return;
+    const searchBar = mc.querySelector('#pc-jobs-search');
+    if (searchBar && !mc.querySelector('.create-job-btn')) {
+      const btn = document.createElement('button');
+      btn.className = 'btn-primary create-job-btn';
+      btn.innerHTML = '<i class="bi bi-plus-circle-fill"></i> สร้างงานใหม่';
+      btn.style.cssText = 'white-space:nowrap;padding:9px 16px;font-size:13px';
+      btn.onclick = openCreateJobModal;
+      searchBar.parentElement.insertBefore(btn, searchBar.nextSibling);
+    }
+  }, 200);
+};
+
+// Also add button to job detail modal
+const _v60OrigSaveJobDetail = window.saveJobDetail;
+window.saveJobDetail = async function(jobId) {
+  // Validate status transition
+  const statusSelect = document.getElementById('jd-status');
+  if (statusSelect) {
+    const newStatus = statusSelect.value;
+    // Get current status from the modal's displayed value (before change)
+    // We allow all transitions but warn on invalid ones
+    const validStatuses = Object.keys(JOB_STATUS_WORKFLOW);
+    if (!validStatuses.includes(newStatus)) {
+      if (window.showToast) showToast('⚠️ สถานะไม่ถูกต้อง', 'warn', 2000);
+      return;
+    }
+  }
+  if (_v60OrigSaveJobDetail) return _v60OrigSaveJobDetail(jobId);
+};
+
+// Update APP_STATE when jobs data changes
+APP_STATE.on('jobs', (jobs) => {
+  // Update job count in nav badge if exists
+  const jobBadge = document.querySelector('[data-section="jobs"] .badge-count');
+  if (jobBadge && jobs) jobBadge.textContent = jobs.length;
+});
+
+console.log('[COMPHONE v6.0] Phase 3-4 loaded: Job Lifecycle + APP_STATE Manager');
+</script>
+<!-- ============================================================
+  COMPHONE Dashboard PC — v6.0 Patch Phase 5-6
+  Phase 5: AI System Integration (Health Score, AI alerts, system_graph)
+  Phase 6: Mobile Polish (responsive grid, touch-friendly, compact mode)
+  ============================================================ -->
+
+<style id="v60-p56-css">
+/* ===== PHASE 5: AI SYSTEM INTEGRATION ===== */
+.ai-health-widget {
+  background: linear-gradient(135deg, #1e3a5f, #1e40af);
+  border-radius: 16px; padding: 20px; color: #fff;
+  position: relative; overflow: hidden;
+}
+.ai-health-widget::before {
+  content: ''; position: absolute; top: -30px; right: -30px;
+  width: 120px; height: 120px; border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+}
+.ai-health-score {
+  font-size: 56px; font-weight: 900; line-height: 1;
+  background: linear-gradient(135deg, #60a5fa, #a78bfa);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.ai-health-label { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 4px; }
+.ai-health-bar-wrap {
+  background: rgba(255,255,255,0.15); border-radius: 20px;
+  height: 8px; margin: 12px 0; overflow: hidden;
+}
+.ai-health-bar {
+  height: 100%; border-radius: 20px;
+  background: linear-gradient(90deg, #60a5fa, #a78bfa);
+  transition: width 0.8s ease;
+}
+.ai-health-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,0.15); border-radius: 20px;
+  padding: 4px 12px; font-size: 12px; font-weight: 700;
+}
+.ai-health-status.healthy { background: rgba(16,185,129,0.3); color: #6ee7b7; }
+.ai-health-status.warning { background: rgba(245,158,11,0.3); color: #fcd34d; }
+.ai-health-status.critical { background: rgba(239,68,68,0.3); color: #fca5a5; }
+
+/* AI Alert Cards */
+.ai-alert-card {
+  background: #fff; border-radius: 12px; padding: 14px;
+  border-left: 4px solid #3b82f6; margin-bottom: 10px;
+  transition: box-shadow 0.15s;
+}
+.ai-alert-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.ai-alert-card.critical { border-color: #dc2626; }
+.ai-alert-card.warning { border-color: #f59e0b; }
+.ai-alert-card.info { border-color: #3b82f6; }
+.ai-alert-card.success { border-color: #10b981; }
+body.theme-dark .ai-alert-card { background: #1e293b; }
+
+.ai-alert-type { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.ai-alert-msg { font-size: 13px; font-weight: 700; color: #111827; }
+body.theme-dark .ai-alert-msg { color: #f1f5f9; }
+.ai-alert-time { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+.ai-alert-action { font-size: 11px; font-weight: 700; color: #3b82f6; cursor: pointer; margin-top: 6px; display: inline-block; }
+.ai-alert-action:hover { text-decoration: underline; }
+
+/* System Graph */
+.system-graph-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  margin-top: 12px;
+}
+@media (max-width: 700px) { .system-graph-grid { grid-template-columns: 1fr 1fr; } }
+.system-node {
+  background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px;
+  padding: 12px; text-align: center; transition: all 0.15s;
+}
+.system-node:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.system-node.healthy { border-color: #10b981; background: #f0fdf4; }
+.system-node.warning { border-color: #f59e0b; background: #fffbeb; }
+.system-node.error { border-color: #dc2626; background: #fef2f2; }
+body.theme-dark .system-node { background: #0f172a; border-color: #334155; }
+body.theme-dark .system-node.healthy { background: #052e16; border-color: #10b981; }
+body.theme-dark .system-node.warning { background: #1c1400; border-color: #f59e0b; }
+body.theme-dark .system-node.error { background: #1c0000; border-color: #dc2626; }
+.system-node-icon { font-size: 24px; margin-bottom: 6px; }
+.system-node-name { font-size: 11px; font-weight: 700; color: #374151; }
+body.theme-dark .system-node-name { color: #e2e8f0; }
+.system-node-status { font-size: 10px; font-weight: 700; margin-top: 3px; }
+
+/* AI Dashboard Panel */
+.ai-panel { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 20px; }
+body.theme-dark .ai-panel { background: #1e293b; border-color: #334155; }
+.ai-panel-title { font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+body.theme-dark .ai-panel-title { color: #f1f5f9; }
+
+/* ===== PHASE 6: MOBILE POLISH ===== */
+@media (max-width: 768px) {
+  /* Compact sidebar */
+  .sidebar { width: 56px !important; }
+  .sidebar .nav-label { display: none !important; }
+  .sidebar .sidebar-logo-text { display: none !important; }
+  .sidebar .sidebar-footer-text { display: none !important; }
+  .nav-item { padding: 12px 0 !important; justify-content: center !important; }
+  .nav-item i { font-size: 20px !important; margin: 0 !important; }
+  .main-content-wrap { margin-left: 56px !important; }
+
+  /* Touch-friendly buttons */
+  .btn-primary, .btn-secondary, .btn-danger { min-height: 44px; font-size: 15px; }
+  .pos-qty-btn { width: 36px !important; height: 36px !important; font-size: 18px !important; }
+  .pos-checkout-btn { min-height: 52px; font-size: 16px; }
+
+  /* Compact KPI */
+  .instant-kpi-bar { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+  .kpi-instant-num { font-size: 22px !important; }
+
+  /* Full-width modals */
+  .modal-box { margin: 0 !important; border-radius: 20px 20px 0 0 !important; position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; max-width: 100% !important; max-height: 90vh !important; }
+  .modal-backdrop { align-items: flex-end !important; padding: 0 !important; }
+
+  /* POS responsive */
+  .pos-layout { grid-template-columns: 1fr !important; height: auto !important; }
+  .pos-product-grid { grid-template-columns: repeat(2, 1fr) !important; max-height: 300px; overflow-y: auto; }
+  .pos-cart-panel { max-height: 400px; }
+
+  /* Jobs table */
+  .job-table th:nth-child(5),
+  .job-table td:nth-child(5),
+  .job-table th:nth-child(6),
+  .job-table td:nth-child(6) { display: none; }
+
+  /* Topbar compact */
+  .topbar { padding: 8px 12px !important; }
+  .topbar-title { font-size: 14px !important; }
+  #theme-toggle-btn span, #font-toggle-btn span { display: none; }
+  #theme-toggle-btn, #font-toggle-btn { padding: 6px 8px !important; }
+}
+
+@media (max-width: 480px) {
+  /* Extra compact for small phones */
+  .instant-kpi-bar { grid-template-columns: 1fr 1fr !important; }
+  .kpi-instant-card { padding: 10px !important; }
+  .kpi-instant-icon { width: 36px !important; height: 36px !important; }
+  .kpi-instant-num { font-size: 20px !important; }
+  .pos-product-grid { grid-template-columns: 1fr 1fr !important; }
+  .pos-product-card { padding: 10px !important; }
+  .pos-product-card .p-icon { font-size: 24px !important; }
+  .create-job-form { grid-template-columns: 1fr !important; }
+  .system-graph-grid { grid-template-columns: 1fr 1fr !important; }
+}
+
+/* Compact Mode Toggle */
+body.compact-mode .kpi-instant-card { padding: 10px !important; }
+body.compact-mode .kpi-instant-num { font-size: 22px !important; }
+body.compact-mode .card-box { padding: 12px !important; }
+body.compact-mode .job-table td, body.compact-mode .job-table th { padding: 6px 10px !important; font-size: 12px !important; }
+body.compact-mode .collapsible-header { padding: 10px 14px !important; font-size: 13px !important; }
+body.compact-mode .nav-item { padding: 8px 16px !important; font-size: 13px !important; }
+
+/* Touch feedback */
+@media (hover: none) {
+  .pos-product-card:active { transform: scale(0.96); }
+  .btn-primary:active, .btn-secondary:active { opacity: 0.8; }
+  .nav-item:active { background: rgba(255,255,255,0.15) !important; }
+}
+
+/* Swipe hint for mobile */
+.mobile-swipe-hint {
+  display: none;
+  text-align: center; font-size: 11px; color: #9ca3af;
+  padding: 4px; margin-top: -8px; margin-bottom: 8px;
+}
+@media (max-width: 768px) { .mobile-swipe-hint { display: block; } }
+</style>
+
+<script>
+// ============================================================
+// COMPHONE Dashboard v6.0 — Phase 5-6 Patch
+// ============================================================
+
+// ===== PHASE 5: AI SYSTEM INTEGRATION =====
+
+// AI Health Score Widget
+function renderAIHealthWidget(healthData) {
+  if (!healthData) return '';
+  const score = Number(healthData.score || healthData.health_score || 85);
+  const statusClass = score >= 90 ? 'healthy' : score >= 70 ? 'warning' : 'critical';
+  const statusText = score >= 90 ? '✅ ระบบปกติ' : score >= 70 ? '⚠️ ต้องตรวจสอบ' : '🚨 วิกฤต';
+  const modules = healthData.modules || [];
+  return `
+    <div class="ai-health-widget">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
+        <div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.6);font-weight:700;text-transform:uppercase;margin-bottom:4px">
+            🤖 AI System Health
+          </div>
+          <div class="ai-health-score">${score}</div>
+          <div class="ai-health-label">Health Score</div>
+        </div>
+        <div style="text-align:right">
+          <div class="ai-health-status ${statusClass}">${statusText}</div>
+          ${healthData.last_check ? `<div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:6px">ตรวจล่าสุด: ${healthData.last_check}</div>` : ''}
+        </div>
+      </div>
+      <div class="ai-health-bar-wrap">
+        <div class="ai-health-bar" style="width:${Math.min(100, score)}%"></div>
+      </div>
+      <div style="display:flex;gap:16px;font-size:11px;color:rgba(255,255,255,0.6)">
+        <span>🔄 Uptime: ${healthData.uptime || '-'}</span>
+        <span>⚡ Latency: ${healthData.avg_latency || healthData.latency || '-'}ms</span>
+        <span>📊 Requests: ${healthData.total_requests || '-'}</span>
+      </div>
+    </div>`;
+}
+
+// AI Alert Cards
+function renderAIAlerts(alerts) {
+  if (!alerts || !alerts.length) {
+    return '<div style="text-align:center;padding:20px;color:#9ca3af;font-size:13px">✅ ไม่มีการแจ้งเตือนจาก AI</div>';
+  }
+  const ALERT_COLORS = { critical: '#dc2626', warning: '#f59e0b', info: '#3b82f6', success: '#10b981' };
+  return alerts.slice(0, 8).map(a => {
+    const type = a.type || a.severity || 'info';
+    const color = ALERT_COLORS[type] || '#3b82f6';
+    return `
+      <div class="ai-alert-card ${type}">
+        <div class="ai-alert-type" style="color:${color}">${type.toUpperCase()} — ${a.source || a.module || 'AI System'}</div>
+        <div class="ai-alert-msg">${a.message || a.msg || '-'}</div>
+        ${a.detail ? `<div style="font-size:12px;color:#6b7280;margin-top:3px">${a.detail}</div>` : ''}
+        <div class="ai-alert-time">${a.timestamp || a.created_at || '-'}</div>
+        ${a.action_label ? `<span class="ai-alert-action" onclick="${a.action_fn || ''}">${a.action_label}</span>` : ''}
+      </div>`;
+  }).join('');
+}
+
+// System Graph (module status visualization)
+function renderSystemGraph(modules) {
+  const defaultModules = [
+    { name: 'AgentGateway', status: 'healthy', icon: '🤖' },
+    { name: 'AgentMemory', status: 'healthy', icon: '🧠' },
+    { name: 'DecisionLayer', status: 'healthy', icon: '⚡' },
+    { name: 'WorkflowEngine', status: 'healthy', icon: '🔄' },
+    { name: 'SharedContext', status: 'healthy', icon: '🌐' },
+    { name: 'LearningIntegration', status: 'healthy', icon: '📚' },
+    { name: 'MemoryControl', status: 'healthy', icon: '🗄️' },
+    { name: 'DecisionGuard', status: 'healthy', icon: '🛡️' },
+    { name: 'AgentScoring', status: 'healthy', icon: '🏆' },
+  ];
+  const mods = (modules && modules.length) ? modules : defaultModules;
+  return `
+    <div class="system-graph-grid">
+      ${mods.map(m => {
+        const statusClass = m.status === 'healthy' || m.status === 'ok' ? 'healthy'
+          : m.status === 'warning' || m.status === 'warn' ? 'warning' : 'error';
+        const statusColor = statusClass === 'healthy' ? '#059669' : statusClass === 'warning' ? '#d97706' : '#dc2626';
+        const statusText = statusClass === 'healthy' ? '● ปกติ' : statusClass === 'warning' ? '● เฝ้าระวัง' : '● ผิดปกติ';
+        return `
+          <div class="system-node ${statusClass}">
+            <div class="system-node-icon">${m.icon || '📦'}</div>
+            <div class="system-node-name">${m.name}</div>
+            <div class="system-node-status" style="color:${statusColor}">${statusText}</div>
+            ${m.latency ? `<div style="font-size:10px;color:#9ca3af;margin-top:2px">${m.latency}ms</div>` : ''}
+          </div>`;
+      }).join('')}
+    </div>`;
+}
+
+// Load AI Dashboard Section
+async function loadAISystemSection() {
+  setActiveNav('health');
+  document.getElementById('topbar-title').innerHTML = '<i class="bi bi-robot" style="margin-right:8px;color:#7c3aed"></i>AI System Monitor';
+  const mc = document.getElementById('main-content');
+  mc.innerHTML = `<div style="padding:16px">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
+      ${[1,2,3].map(() => `<div class="kpi-skeleton" style="height:80px"></div>`).join('')}
+    </div>
+    <div class="kpi-skeleton" style="height:160px;margin-bottom:12px"></div>
+    <div class="kpi-skeleton" style="height:300px"></div>
+  </div>`;
+  try {
+    const [healthRes, alertRes, graphRes] = await Promise.allSettled([
+      cachedCallApi('healthCheck', {}, 30000),
+      cachedCallApi('getSystemContext', {}, 30000),
+      cachedCallApi('getAgentGatewayVersion', {}, 60000)
+    ]);
+    const health = (healthRes.status === 'fulfilled' && healthRes.value) ? healthRes.value : {};
+    const context = (alertRes.status === 'fulfilled' && alertRes.value) ? alertRes.value : {};
+    const gateway = (graphRes.status === 'fulfilled' && graphRes.value) ? graphRes.value : {};
+    const aiAlerts = context.alerts || health.alerts || [];
+    const modules = context.modules || gateway.modules || [];
+    // Update APP_STATE
+    if (window.APP_STATE) {
+      APP_STATE.update({ health: health, alerts: aiAlerts });
+    }
+    // KPI row
+    const kpiRow = `
+      <div class="instant-kpi-bar" style="margin-bottom:12px">
+        <div class="kpi-instant-card">
+          <div class="kpi-instant-icon" style="background:#ede9fe"><span style="font-size:22px">🤖</span></div>
+          <div>
+            <div class="kpi-instant-num" style="color:#7c3aed">${gateway.agents || 3}</div>
+            <div class="kpi-instant-lbl">Active Agents</div>
+          </div>
+        </div>
+        <div class="kpi-instant-card">
+          <div class="kpi-instant-icon" style="background:#d1fae5"><span style="font-size:22px">✅</span></div>
+          <div>
+            <div class="kpi-instant-num" style="color:#059669">${health.success_rate || health.uptime || '99.9'}%</div>
+            <div class="kpi-instant-lbl">Success Rate</div>
+          </div>
+        </div>
+        <div class="kpi-instant-card">
+          <div class="kpi-instant-icon" style="background:#fef3c7"><span style="font-size:22px">⚡</span></div>
+          <div>
+            <div class="kpi-instant-num" style="color:#d97706">${health.avg_latency || health.latency || '-'}</div>
+            <div class="kpi-instant-lbl">Avg Latency (ms)</div>
+          </div>
+        </div>
+        <div class="kpi-instant-card">
+          <div class="kpi-instant-icon" style="background:#fee2e2"><span style="font-size:22px">🚨</span></div>
+          <div>
+            <div class="kpi-instant-num" style="color:#dc2626">${aiAlerts.filter(a => a.type === 'critical').length}</div>
+            <div class="kpi-instant-lbl">Critical Alerts</div>
+          </div>
+        </div>
+      </div>`;
+    mc.innerHTML = `<div style="padding:16px">
+      ${kpiRow}
+      <div class="grid-2" style="margin-bottom:12px">
+        <div>${renderAIHealthWidget(health)}</div>
+        <div class="ai-panel">
+          <div class="ai-panel-title"><i class="bi bi-bell-fill" style="color:#ef4444"></i> AI Alerts
+            ${aiAlerts.length > 0 ? `<span style="background:#fee2e2;color:#dc2626;border-radius:20px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:auto">${aiAlerts.length}</span>` : ''}
+          </div>
+          <div style="max-height:280px;overflow-y:auto">${renderAIAlerts(aiAlerts)}</div>
+        </div>
+      </div>
+      <div class="ai-panel">
+        <div class="ai-panel-title"><i class="bi bi-diagram-3-fill" style="color:#7c3aed"></i> System Graph — Module Status</div>
+        ${renderSystemGraph(modules)}
+        <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn-refresh" onclick="loadAISystemSection()"><i class="bi bi-arrow-clockwise"></i> รีเฟรช</button>
+          <button class="btn-secondary" onclick="loadSection('health')"><i class="bi bi-heart-pulse-fill"></i> Health Detail</button>
+          <button class="btn-secondary" onclick="if(window.APP_STATE)APP_STATE.syncAll(true);loadAISystemSection()">
+            <i class="bi bi-lightning-fill"></i> Force Sync
+          </button>
+        </div>
+      </div>
+    </div>`;
+  } catch(e) {
+    mc.innerHTML = `<div style="padding:16px">${typeof errorState === 'function' ? errorState(e.message, 'loadAISystemSection()') : `<p style="color:red">${e.message}</p>`}</div>`;
+  }
+}
+
+// Inject AI Health Score into main Dashboard
+const _v60OrigRenderDashboard = window.renderDashboard;
+window.renderDashboard = function(data) {
+  if (_v60OrigRenderDashboard) _v60OrigRenderDashboard(data);
+  // Inject AI health widget after KPI section
+  setTimeout(() => {
+    const mc = document.getElementById('main-content');
+    if (!mc) return;
+    // Check if health data available
+    const healthData = (data && data.health) ? data.health : APP_STATE.get('health');
+    const aiAlerts = (data && data.ai_alerts) ? data.ai_alerts : (data && data.alerts ? data.alerts.filter(a => a.source === 'ai' || a.type === 'ai') : []);
+    if (!healthData && !aiAlerts.length) return; // No AI data to show
+    // Find or create AI widget container
+    let aiContainer = mc.querySelector('#ai-dashboard-widget');
+    if (!aiContainer) {
+      aiContainer = document.createElement('div');
+      aiContainer.id = 'ai-dashboard-widget';
+      aiContainer.style.cssText = 'padding:0 20px 12px';
+      const firstCard = mc.querySelector('.collapsible-wrap, .card-box, .grid-2');
+      if (firstCard) firstCard.parentElement.insertBefore(aiContainer, firstCard.nextSibling);
+    }
+    if (healthData || aiAlerts.length) {
+      aiContainer.innerHTML = `
+        <div class="ai-panel" style="margin-bottom:12px">
+          <div class="ai-panel-title">
+            <i class="bi bi-robot" style="color:#7c3aed"></i> AI System Status
+            <button onclick="loadAISystemSection()" style="margin-left:auto;background:none;border:1px solid #e2e8f0;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer;color:#6b7280">ดูทั้งหมด</button>
+          </div>
+          <div class="grid-2" style="gap:12px">
+            <div>${renderAIHealthWidget(healthData || { score: 85 })}</div>
+            <div style="max-height:160px;overflow-y:auto">${renderAIAlerts(aiAlerts)}</div>
+          </div>
+        </div>`;
+    }
+  }, 200);
+};
+
+// Add AI Monitor to navigation
+(function addAINavItem() {
+  const tryAdd = () => {
+    const nav = document.querySelector('.nav-list, .sidebar nav ul, nav');
+    if (!nav) return;
+    if (nav.querySelector('[data-section="ai-monitor"]')) return;
+    const healthItem = nav.querySelector('[data-section="health"], [onclick*="health"]');
+    if (!healthItem) return;
+    const aiItem = document.createElement('li');
+    aiItem.className = 'nav-item';
+    aiItem.setAttribute('data-section', 'ai-monitor');
+    aiItem.setAttribute('onclick', "loadSection('ai-monitor')");
+    aiItem.innerHTML = `<i class="bi bi-robot"></i><span class="nav-label">AI Monitor</span>`;
+    healthItem.parentElement.insertBefore(aiItem, healthItem.nextSibling);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tryAdd);
+  else setTimeout(tryAdd, 500);
+})();
+
+// Route ai-monitor section
+const _v60OrigLoadSectionFinal = window.loadSection;
+window.loadSection = function(section) {
+  window._currentSection = section;
+  if (section === 'ai-monitor') return loadAISystemSection();
+  return _v60OrigLoadSectionFinal ? _v60OrigLoadSectionFinal(section) : null;
+};
+
+// ===== PHASE 6: MOBILE POLISH =====
+
+// Compact Mode Toggle
+function toggleCompactMode() {
+  const isCompact = document.body.classList.toggle('compact-mode');
+  localStorage.setItem('cp_compact_mode', isCompact ? '1' : '0');
+  if (window.showToast) showToast(isCompact ? '📦 Compact Mode เปิดแล้ว' : '📐 Normal Mode', 'info', 2000);
+}
+
+// Apply compact mode on load
+document.addEventListener('DOMContentLoaded', function() {
+  if (localStorage.getItem('cp_compact_mode') === '1') {
+    document.body.classList.add('compact-mode');
+  }
+  // Add compact toggle to theme buttons area
+  setTimeout(() => {
+    const themeBtn = document.getElementById('theme-toggle-btn');
+    if (themeBtn && !document.getElementById('compact-toggle-btn')) {
+      const compactBtn = document.createElement('button');
+      compactBtn.id = 'compact-toggle-btn';
+      compactBtn.onclick = toggleCompactMode;
+      compactBtn.title = 'Compact Mode';
+      compactBtn.style.cssText = 'background:none;border:1px solid #e2e8f0;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;color:#374151;display:flex;align-items:center;gap:6px;transition:all 0.15s';
+      compactBtn.innerHTML = '<i class="bi bi-layout-text-sidebar-reverse"></i> <span>Compact</span>';
+      themeBtn.parentElement.insertBefore(compactBtn, themeBtn);
+    }
+  }, 300);
+});
+
+// Touch swipe support for sidebar (mobile)
+(function addSwipeSupport() {
+  let startX = 0, startY = 0;
+  document.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) < Math.abs(dy) * 2) return; // More vertical than horizontal
+    if (Math.abs(dx) < 60) return; // Too short
+    const sidebar = document.querySelector('.sidebar');
+    if (!sidebar) return;
+    if (dx > 0 && startX < 30) {
+      // Swipe right from left edge → open sidebar
+      sidebar.style.transform = 'translateX(0)';
+      sidebar.style.zIndex = '200';
+    } else if (dx < 0) {
+      // Swipe left → close sidebar (mobile)
+      if (window.innerWidth <= 768) {
+        sidebar.style.transform = 'translateX(-100%)';
+      }
+    }
+  }, { passive: true });
+})();
+
+// Responsive grid helper
+function getGridCols() {
+  const w = window.innerWidth;
+  if (w >= 1200) return 4;
+  if (w >= 900) return 3;
+  if (w >= 600) return 2;
+  return 1;
+}
+
+// Update APP_STATE with viewport info
+window.addEventListener('resize', () => {
+  if (window.APP_STATE) {
+    APP_STATE.set('viewport', { width: window.innerWidth, height: window.innerHeight, cols: getGridCols() });
+  }
+});
+
+console.log('[COMPHONE v6.0] Phase 5-6 loaded: AI System Integration + Mobile Polish');
+</script>
 </body>
 </html>
