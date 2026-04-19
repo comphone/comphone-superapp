@@ -35,6 +35,9 @@ function getExecutiveDashboard(params) {
   var system     = _getExecSystem_();
   var alerts     = _getExecAlerts_(revenue, operations, inventory, system);
   var trends     = _getExecTrends_();
+  var comparison = _getExecComparison_(revenue, operations);
+  var targets    = _getExecTargets_(revenue, operations);
+  var forecast   = _getExecForecast_(trends);
 
   var result = {
     success: true,
@@ -46,6 +49,9 @@ function getExecutiveDashboard(params) {
     system: system,
     alerts: alerts,
     trends: trends,
+    comparison: comparison,
+    targets: targets,
+    forecast: forecast,
     _cached: false,
     _elapsed_ms: Date.now() - start
   };
@@ -326,6 +332,171 @@ function _getExecAlerts_(revenue, operations, inventory, system) {
     alerts.push({ type: 'warning', category: 'revenue', message: 'ยอดค้างชำระวันนี้: ฿' + revenue.today_unpaid.toLocaleString(), value: revenue.today_unpaid });
   }
   return alerts;
+}
+
+// ============================================================
+// Comparison Section — vs yesterday / last week / last month
+// ============================================================
+function _getExecComparison_(revenue, operations) {
+  try {
+    // Revenue comparison
+    var yesterday = 0, lastWeekRev = 0, lastMonthRev = 0;
+    try {
+      var yd = getRevenueReport('yesterday');
+      yesterday = yd ? (yd.paid_revenue || 0) : 0;
+    } catch(e) {}
+    try {
+      var lw = getRevenueReport('last_week');
+      lastWeekRev = lw ? (lw.paid_revenue || 0) : 0;
+    } catch(e) {}
+    try {
+      var lm = getRevenueReport('last_month');
+      lastMonthRev = lm ? (lm.paid_revenue || 0) : 0;
+    } catch(e) {}
+
+    var todayRev = revenue.today_revenue || 0;
+    var weekRev  = revenue.week_revenue  || 0;
+    var monthRev = revenue.month_revenue || 0;
+
+    function pctChange(current, previous) {
+      if (!previous || previous === 0) return current > 0 ? 100 : 0;
+      return Math.round(((current - previous) / previous) * 100);
+    }
+
+    // Jobs comparison — use trend data
+    var ss = getComphoneSheet();
+    var sh = findSheetByName(ss, 'DBJOBS');
+    var todayJobs = operations.today_jobs || 0;
+    var yesterdayJobs = 0;
+    try {
+      if (sh && sh.getLastRow() > 1) {
+        var rows = sh.getDataRange().getValues();
+        var headers = rows[0];
+        var iCreated = findHeaderIndex_(headers, ['Created_At', 'created_at', 'วันที่รับ']);
+        var now = new Date();
+        var ydStr = Utilities.formatDate(new Date(now.getTime() - 86400000), 'Asia/Bangkok', 'yyyy-MM-dd');
+        if (iCreated > -1) {
+          for (var i = 1; i < rows.length; i++) {
+            var cr = rows[i][iCreated];
+            if (cr instanceof Date) {
+              var crStr = Utilities.formatDate(cr, 'Asia/Bangkok', 'yyyy-MM-dd');
+              if (crStr === ydStr) yesterdayJobs++;
+            }
+          }
+        }
+      }
+    } catch(e) {}
+
+    return {
+      revenue_vs_yesterday:  { value: pctChange(todayRev, yesterday),  direction: todayRev >= yesterday ? 'up' : 'down' },
+      revenue_vs_last_week:  { value: pctChange(weekRev, lastWeekRev), direction: weekRev >= lastWeekRev ? 'up' : 'down' },
+      revenue_vs_last_month: { value: pctChange(monthRev, lastMonthRev), direction: monthRev >= lastMonthRev ? 'up' : 'down' },
+      jobs_vs_yesterday:     { value: pctChange(todayJobs, yesterdayJobs), direction: todayJobs >= yesterdayJobs ? 'up' : 'down' },
+      yesterday_revenue:     yesterday,
+      yesterday_jobs:        yesterdayJobs
+    };
+  } catch(e) {
+    return { revenue_vs_yesterday: { value: 0, direction: 'flat' }, jobs_vs_yesterday: { value: 0, direction: 'flat' } };
+  }
+}
+
+// ============================================================
+// Targets Section — monthly targets
+// ============================================================
+function _getExecTargets_(revenue, operations) {
+  // Default targets — สามารถ override ได้จาก Config sheet
+  var targets = {
+    monthly_revenue: 500000,
+    monthly_jobs:    200,
+    sla_pct:         90,
+    health_score:    95
+  };
+  try {
+    var ss = getComphoneSheet();
+    var sh = findSheetByName(ss, 'CONFIG') || findSheetByName(ss, 'DBCONFIG');
+    if (sh) {
+      var rows = sh.getDataRange().getValues();
+      for (var i = 0; i < rows.length; i++) {
+        var key = String(rows[i][0] || '').toLowerCase();
+        var val = Number(rows[i][1] || 0);
+        if (key === 'target_monthly_revenue' && val > 0) targets.monthly_revenue = val;
+        if (key === 'target_monthly_jobs'    && val > 0) targets.monthly_jobs    = val;
+        if (key === 'target_sla_pct'         && val > 0) targets.sla_pct         = val;
+        if (key === 'target_health_score'    && val > 0) targets.health_score    = val;
+      }
+    }
+  } catch(e) {}
+
+  var monthRev  = revenue.month_revenue  || 0;
+  var monthJobs = operations.total_jobs  || 0;
+  var sla       = operations.sla_pct     || 100;
+
+  function progress(current, target) {
+    return target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+  }
+
+  return {
+    monthly_revenue: { target: targets.monthly_revenue, current: monthRev,  progress: progress(monthRev, targets.monthly_revenue) },
+    monthly_jobs:    { target: targets.monthly_jobs,    current: monthJobs, progress: progress(monthJobs, targets.monthly_jobs) },
+    sla_pct:         { target: targets.sla_pct,         current: sla,       progress: progress(sla, targets.sla_pct) }
+  };
+}
+
+// ============================================================
+// Forecast Section — simple linear regression on 7-day trend
+// ============================================================
+function _getExecForecast_(trends) {
+  try {
+    var revData  = trends.revenue || [];
+    var jobData  = trends.jobs    || [];
+    var labels   = trends.labels  || [];
+
+    function linearForecast(data, steps) {
+      var n = data.length;
+      if (n < 2) return data.concat(Array(steps).fill(0));
+      var sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+      for (var i = 0; i < n; i++) {
+        sumX  += i;
+        sumY  += data[i];
+        sumXY += i * data[i];
+        sumX2 += i * i;
+      }
+      var slope     = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+      var intercept = (sumY - slope * sumX) / n;
+      var result = data.slice();
+      for (var s = 0; s < steps; s++) {
+        var pred = Math.max(0, Math.round(slope * (n + s) + intercept));
+        result.push(pred);
+      }
+      return result;
+    }
+
+    var FORECAST_DAYS = 3;
+    var now = new Date();
+    var forecastLabels = labels.slice();
+    for (var d = 1; d <= FORECAST_DAYS; d++) {
+      var dt = new Date(now.getTime() + d * 86400000);
+      forecastLabels.push(Utilities.formatDate(dt, 'Asia/Bangkok', 'dd/MM') + '*');
+    }
+
+    var revForecast  = linearForecast(revData,  FORECAST_DAYS);
+    var jobForecast  = linearForecast(jobData,  FORECAST_DAYS);
+
+    // Monthly forecast
+    var avgDailyRev  = revData.reduce(function(a,b){ return a+b; }, 0) / Math.max(1, revData.filter(function(v){ return v>0; }).length);
+    var daysLeft     = 30 - (new Date().getDate());
+    var monthForecast = Math.round(avgDailyRev * daysLeft);
+
+    return {
+      labels:           forecastLabels,
+      revenue:          revForecast,
+      jobs:             jobForecast,
+      month_revenue_forecast: monthForecast,
+      forecast_days:    FORECAST_DAYS
+    };
+  } catch(e) {
+    return { labels: [], revenue: [], jobs: [], month_revenue_forecast: 0, forecast_days: 3 };
+  }
 }
 
 // ============================================================
