@@ -125,7 +125,7 @@ async function searchJobStatus_() {
   `;
 
   try {
-    const res = await callAPI('getJobStatusPublic', { job_id: jobId, phone: phone });
+    const res = await callApi('getJobStatusPublic', { job_id: jobId, phone: phone });
 
     if (!res || !res.success) {
       resultDiv.innerHTML = renderPortalError_(res?.error || 'ไม่พบข้อมูลงาน กรุณาตรวจสอบหมายเลขงานและเบอร์โทร');

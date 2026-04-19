@@ -38,7 +38,7 @@ async function refreshUserList_() {
   if (!container) return;
 
   ADMIN.loading = true;
-  const res = await callAPI('listUsers', {});
+  const res = await callApi('listUsers', {});
   ADMIN.loading = false;
 
   if (!res || !res.success) {
@@ -188,7 +188,7 @@ async function submitCreateUser() {
   }
 
   showToast('⏳ กำลังสร้างบัญชี...');
-  const res = await callAPI('createUser', { username, full_name: fullName, password: pin, role });
+  const res = await callApi('createUser', { username, full_name: fullName, password: pin, role });
 
   if (res && res.success) {
     showToast(`✅ สร้างบัญชี @${username} สำเร็จ`);
@@ -240,7 +240,7 @@ async function submitEditUser(username) {
   showToast('⏳ กำลังบันทึก...');
 
   // อัปเดต Role
-  const roleRes = await callAPI('updateUserRole', { username, newRole });
+  const roleRes = await callApi('updateUserRole', { username, newRole });
   if (!roleRes || !roleRes.success) {
     showToast('❌ อัปเดต Role ไม่สำเร็จ: ' + ((roleRes && roleRes.error) || ''));
     return;
@@ -255,7 +255,7 @@ async function submitEditUser(username) {
 async function toggleUserActive(username, currentlyInactive) {
   const newActive = currentlyInactive; // ถ้า inactive อยู่ → set active = true
   showToast(`⏳ ${newActive ? 'เปิด' : 'ปิด'}ใช้งาน @${username}...`);
-  const res = await callAPI('setUserActive', { username, active: newActive });
+  const res = await callApi('setUserActive', { username, active: newActive });
   if (res && res.success) {
     showToast(`✅ ${newActive ? 'เปิด' : 'ปิด'}ใช้งาน @${username} แล้ว`);
     await refreshUserList_();
@@ -268,7 +268,7 @@ async function toggleUserActive(username, currentlyInactive) {
 async function runSeedData() {
   if (!confirm('รัน Seed ข้อมูลเริ่มต้น? (จะข้ามถ้ามีข้อมูลแล้ว)')) return;
   showToast('⏳ กำลัง Seed ข้อมูล...');
-  const res = await callAPI('seedAllData', {});
+  const res = await callApi('seedAllData', {});
   if (res && res.success) {
     showToast('✅ Seed สำเร็จ: Users=' + (res.data && res.data.users && res.data.users.inserted || 0) +
       ', Inventory=' + (res.data && res.data.inventory && res.data.inventory.inserted || 0));
@@ -279,7 +279,7 @@ async function runSeedData() {
 
 async function runSystemStatus() {
   showToast('⏳ ตรวจสอบระบบ...');
-  const res = await callAPI('systemStatus', {});
+  const res = await callApi('systemStatus', {});
   if (res && res.success) {
     const d = res.data || {};
     showToast(`✅ ระบบ OK | GAS: ${d.gasVersion || 'V8'} | Sheets: ${d.sheetsCount || '?'} tables`);
@@ -291,7 +291,7 @@ async function runSystemStatus() {
 async function runSetupTriggers() {
   if (!confirm('ตั้งค่า Scheduled Triggers ทั้งหมด?')) return;
   showToast('⏳ กำลังตั้ง Triggers...');
-  const res = await callAPI('setupAllTriggers', {});
+  const res = await callApi('setupAllTriggers', {});
   if (res && res.success) {
     showToast('✅ ตั้ง Triggers สำเร็จ');
   } else {

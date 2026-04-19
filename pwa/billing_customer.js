@@ -51,7 +51,7 @@ async function saveNewCustomer() {
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> กำลังบันทึก...'; }
 
   try {
-    var res = await callAPI('createCustomer', {
+    var res = await callApi('createCustomer', {
       customer_name: name.trim(),
       phone: phone.trim(),
       address: address.trim(),
@@ -99,14 +99,14 @@ function openBillingModal(jobId) {
 async function loadBillingData(jobId) {
   try {
     // ดึง job detail ก่อน
-    var dashRes = await callAPI('getDashboardData', {});
+    var dashRes = await callApi('getDashboardData', {});
     var job = null;
     if (dashRes && dashRes.jobs) {
       job = dashRes.jobs.find(function(j) { return j.job_id === jobId || j.id === jobId; });
     }
 
     // ดึง billing ที่มีอยู่
-    var billingRes = await callAPI('getBilling', { job_id: jobId });
+    var billingRes = await callApi('getBilling', { job_id: jobId });
     if (billingRes && billingRes.success) {
       BC.currentBilling = billingRes.billing;
     }
@@ -255,7 +255,7 @@ async function saveBilling() {
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> กำลังบันทึก...'; }
 
   try {
-    var res = await callAPI('createBilling', {
+    var res = await callApi('createBilling', {
       job_id: BC.currentJobId,
       parts: partsDesc.trim() || '-',
       parts_cost: partsCost,
@@ -308,12 +308,12 @@ async function openQRPayment(jobIdOverride) {
 
   try {
     // ดึง job detail ก่อน (ถ้ายังไม่ได้บันทึก)
-    var billingRes = await callAPI('getBilling', { job_id: jobId });
+    var billingRes = await callApi('getBilling', { job_id: jobId });
     var billing = billingRes && billingRes.success ? billingRes.billing : null;
 
     // ถ้ายังไม่มี billing → สร้างใหม่จาก job
     if (!billing) {
-      var createRes = await callAPI('createBilling', { job_id: jobId });
+      var createRes = await callApi('createBilling', { job_id: jobId });
       if (createRes && createRes.success) billing = createRes.billing;
     }
 
@@ -336,7 +336,7 @@ async function openQRPayment(jobIdOverride) {
     }
 
     // สร้าง QR URL
-    var qrRes = await callAPI('generatePromptPayQR', {
+    var qrRes = await callApi('generatePromptPayQR', {
       job_id: jobId,
       biller_id: promptPayId,
       amount: amount
@@ -406,7 +406,7 @@ async function markAsPaid(jobId, amount) {
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> กำลังบันทึก...'; }
 
   try {
-    var res = await callAPI('updatePayment', {
+    var res = await callApi('updatePayment', {
       job_id: jobId,
       amount_paid: amount,
       generate_receipt: true
@@ -459,7 +459,7 @@ async function openInventoryPage() {
   page.innerHTML = '<div style="text-align:center;padding:3rem;"><i class="bi bi-hourglass-split" style="font-size:2rem;"></i><br>กำลังโหลดสต็อก...</div>';
 
   try {
-    var res = await callAPI('inventoryOverview', {});
+    var res = await callApi('inventoryOverview', {});
     if (res && res.success) {
       renderInventoryPage(res);
     } else {
@@ -545,7 +545,7 @@ async function saveNewInventoryItem() {
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> กำลังบันทึก...'; }
 
   try {
-    var res = await callAPI('addInventoryItem', {
+    var res = await callApi('addInventoryItem', {
       item_code: code.trim(),
       item_name: name.trim(),
       qty: qty,

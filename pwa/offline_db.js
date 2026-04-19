@@ -164,7 +164,7 @@ async function syncOfflineQueue() {
         await updateActionStatus_(item.id, 'syncing');
 
         // เรียก GAS API
-        const res = await callAPI(item.action, item.params || {});
+        const res = await callApi(item.action, item.params || {});
 
         if (res && res.success) {
           await updateActionStatus_(item.id, 'done');

@@ -634,12 +634,21 @@ function parsePostPayloadV55_(e) {
 function jsonOutputV55_(data) {
   // GAS ไม่รองรับ custom HTTP headers — เพิ่ม _headers metadata ใน response
   // เพื่อให้ Cloudflare Worker หรือ proxy สามารถอ่านและเพิ่ม headers ได้
-  if (data && typeof data === 'object' && !data._headers) {
-    data._headers = {
-      'X-Content-Type-Options': 'nosniff',
-      'X-Frame-Options': 'DENY',
-      'Cache-Control': 'no-store, no-cache, must-revalidate'
-    };
+  if (data && typeof data === 'object') {
+    if (!data._headers) {
+      data._headers = {
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'Cache-Control': 'no-store, no-cache, must-revalidate'
+      };
+    }
+    // เพิ่ม meta.version ในทุก response — Frontend ใช้ตรวจสอบ version mismatch
+    if (!data.meta) {
+      data.meta = {
+        version: (typeof CONFIG !== 'undefined' && CONFIG.VERSION) || 'V5.5.7',
+        ts: Date.now()
+      };
+    }
   }
   return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
 }

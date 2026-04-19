@@ -418,7 +418,7 @@ async function cancelPO(poId) {
   if (btn) { btn.disabled = true; btn.textContent = 'กำลังยกเลิก...'; }
 
   try {
-    const result = await callAPI('cancelPurchaseOrder', { po_id: poId });
+    const result = await callApi('cancelPurchaseOrder', { po_id: poId });
     if (!result || !result.success) {
       throw new Error(result?.error || 'ยกเลิกไม่สำเร็จ');
     }

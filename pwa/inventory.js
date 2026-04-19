@@ -68,7 +68,7 @@ async function loadInventoryPage() {
   `;
 
   try {
-    const res = await callAPI('inventoryOverview', {});
+    const res = await callApi('inventoryOverview', {});
     if (res && res.success) {
       INV.items = res.items || [];
       INV.filtered = INV.items;
@@ -310,7 +310,7 @@ async function submitAdjustStock() {
   try {
     // ใช้ transferStock หรือ updateInventoryItem
     const newQty = type === 'add' ? currentQty + qty : currentQty - qty;
-    const res = await callAPI('updateInventoryItem', {
+    const res = await callApi('updateInventoryItem', {
       item_code: item.item_code,
       qty: newQty,
       notes: note || `${type === 'add' ? 'เพิ่ม' : 'ลด'} ${qty} ชิ้น โดย ${(APP.user && APP.user.name) || 'PWA'}`,
@@ -359,7 +359,7 @@ async function saveNewInventoryItem() {
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> กำลังบันทึก...'; }
 
   try {
-    const res = await callAPI('addInventoryItem', {
+    const res = await callApi('addInventoryItem', {
       item_code: code.trim(),
       item_name: name.trim(),
       qty: qty,

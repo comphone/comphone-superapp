@@ -59,7 +59,7 @@ async function loadDashboardPage() {
     await _loadChartJS_();
 
     // ดึงข้อมูลจาก GAS
-    const result = await callAPI('getDashboardData');
+    const result = await callApi('getDashboardData');
 
     if (!result || !result.success) {
       throw new Error(result?.error || 'โหลดข้อมูลไม่สำเร็จ');

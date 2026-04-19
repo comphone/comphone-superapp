@@ -35,7 +35,7 @@ const JOB_STATUS_LABELS = {
 async function loadTechList() {
   if (JW.techList.length > 0) return;
   try {
-    const res = await callAPI('getAllTechsSummary');
+    const res = await callApi('getAllTechsSummary');
     if (res && res.success && res.techs) {
       JW.techList = res.techs.map(t => t.name).filter(n => n && n !== 'ไม่ระบุ');
     }
@@ -139,7 +139,7 @@ async function submitNewJob() {
   btn.innerHTML = '<i class="bi bi-hourglass-split"></i> กำลังสร้างงาน...';
 
   try {
-    const res = await callAPI('openJob', {
+    const res = await callApi('openJob', {
       customer_name: customer,
       symptom: symptom + (device ? ` [${device}]` : ''),
       phone: phone,
@@ -242,7 +242,7 @@ async function submitAssignJob() {
 
   try {
     // ใช้ transitionJob (ไม่ใช่ updateJobStatus)
-    const res = await callAPI('transitionJob', {
+    const res = await callApi('transitionJob', {
       job_id: JW.currentJobId,
       new_status: 'มอบหมายแล้ว',
       technician: tech,
@@ -259,7 +259,7 @@ async function submitAssignJob() {
       }
     } else {
       // ถ้า transition ไม่ได้ (เช่น status ไม่ใช่ 1) ลองใช้ updateJobById แทน
-      const fallback = await callAPI('updateJobById', {
+      const fallback = await callApi('updateJobById', {
         job_id: JW.currentJobId,
         technician: tech,
         note: note || `มอบหมายให้ ${tech}`,
@@ -306,7 +306,7 @@ async function showJobTimeline(jobId) {
   document.getElementById('modal-timeline').classList.remove('hidden');
 
   try {
-    const res = await callAPI('getJobTimeline', { job_id: jobId });
+    const res = await callApi('getJobTimeline', { job_id: jobId });
     const list = document.getElementById('timeline-list');
     if (!list) return;
 
@@ -383,7 +383,7 @@ async function submitQuickNote() {
   btn.innerHTML = '<i class="bi bi-hourglass-split"></i> กำลังบันทึก...';
 
   try {
-    const res = await callAPI('addQuickNote', {
+    const res = await callApi('addQuickNote', {
       job_id: JW.currentJobId,
       note: note,
       user: (APP.user && APP.user.name) || APP.user || 'PWA',
@@ -427,7 +427,7 @@ async function markJobDoneV2(jobId) {
   showToast('⏳ กำลังอัปเดตสถานะ...');
 
   try {
-    const res = await callAPI('transitionJob', {
+    const res = await callApi('transitionJob', {
       job_id: jobId,
       new_status: 'งานเสร็จ',
       changed_by: (APP.user && APP.user.name) || APP.user || 'PWA',
@@ -467,7 +467,7 @@ async function markJobDoneV2(jobId) {
 async function advanceJobStatus(jobId, targetStatus) {
   showToast('⏳ กำลังอัปเดตสถานะ...');
   try {
-    const res = await callAPI('transitionJob', {
+    const res = await callApi('transitionJob', {
       job_id: jobId,
       new_status: targetStatus,
       changed_by: (APP.user && APP.user.name) || APP.user || 'PWA',

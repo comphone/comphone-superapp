@@ -44,7 +44,7 @@ async function subscribePushNotifications() {
     PUSH.subscription = subscription;
 
     // ส่ง subscription ไปเก็บที่ GAS
-    const res = await callAPI('savePushSubscription', {
+    const res = await callApi('savePushSubscription', {
       endpoint: subscription.endpoint,
       keys: {
         p256dh: arrayBufferToBase64_(subscription.getKey('p256dh')),
@@ -78,7 +78,7 @@ async function unsubscribePushNotifications() {
 
     if (subscription) {
       // แจ้ง GAS ให้ลบ subscription
-      await callAPI('removePushSubscription', { endpoint: subscription.endpoint });
+      await callApi('removePushSubscription', { endpoint: subscription.endpoint });
       await subscription.unsubscribe();
     }
 

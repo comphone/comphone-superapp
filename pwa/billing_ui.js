@@ -8,7 +8,7 @@
  *   2c. Payment Confirmation Modal (ยืนยันรับเงิน + slip upload)
  *
  * กฎ: ห้าม onclick inline — ใช้ addEventListener เท่านั้น
- *     ทุก API call ผ่าน callAPI() เท่านั้น
+ *     ทุก API call ผ่าน callApi() เท่านั้น
  */
 
 'use strict';
@@ -35,7 +35,7 @@ async function loadBillingListPage() {
   container.innerHTML = '<div class="loading-spinner-sm" style="margin:24px auto"></div>';
 
   try {
-    const res = await callAPI('listBillings', { status: BILLING_UI.filter.status === 'all' ? '' : BILLING_UI.filter.status });
+    const res = await callApi('listBillings', { status: BILLING_UI.filter.status === 'all' ? '' : BILLING_UI.filter.status });
     if (!res.success) throw new Error(res.error || 'โหลดข้อมูลไม่สำเร็จ');
     BILLING_UI.allBillings = res.billings || [];
     renderBillingList_();
@@ -294,7 +294,7 @@ function openPaymentConfirmModal_(billing) {
  */
 async function loadPromptPayQR_(billing, container) {
   try {
-    const res = await callAPI('generatePromptPayQR', {
+    const res = await callApi('generatePromptPayQR', {
       job_id: billing.job_id,
       amount: billing.balance_due || billing.total_amount || 0
     });
@@ -343,7 +343,7 @@ async function submitPaymentConfirm_() {
   btn.innerHTML = '<i class="bi bi-hourglass-split"></i> กำลังบันทึก...';
 
   try {
-    const res = await callAPI('markBillingPaid', {
+    const res = await callApi('markBillingPaid', {
       job_id:         billing.job_id,
       amount_paid:    amount,
       payment_method: method,

@@ -12,9 +12,9 @@
    - ห้ามจบงานโดยไม่ทำ RULE 0 เด็ดขาด
 
 2. **RULE 1: Single Source of Truth สำหรับ API**
-   - **PWA Mobile & PC Dashboard**: ต้องใช้ `callApi()` จาก `api_client.js` หรือ `app.js` เท่านั้น
-   - ห้ามใช้ `fetch()` ตรงๆ หรือสร้างฟังก์ชัน `callGas()` ซ้ำซ้อน
-   - `callApi()` จัดการเรื่อง Timeout (30s), Cache Busting (`_t=Date.now()`), และ Token Auth ให้อัตโนมัติ
+   - **PWA Mobile & PC Dashboard**: ต้องใช้ `callApi()` (ตัวพิมพ์เล็ก i) จาก `api_client.js` เท่านั้น
+   - ห้ามใช้ `callAPI()` (ตัวพิมพ์ใหญ่ I), `callGas()`, หรือ `fetch()` ตรงๆ เด็ดขาด
+   - `callApi()` จัดการเรื่อง Timeout (30s), Cache Busting (`_t=Date.now()`), Token Auth, และ **API Logging** (จับเวลาและ error) ให้อัตโนมัติ
    - ใช้ `batchCallApi(calls)` เมื่อต้องการเรียก API หลายเส้นพร้อมกันเพื่อลด Overhead
    - ใช้ Data Normalization Helpers (`normalizeJobData`, `normalizeInventoryItem`) ก่อนนำข้อมูลไป render เสมอ
 
@@ -29,8 +29,9 @@
    - การแสดงสถานะ: ใช้ `loadingState()`, `emptyState()`, `errorState()`
    - **สำคัญมาก:** ทุกครั้งที่แสดง Spinner หรือ Loading State ต้องใช้ `try...finally` block เสมอ เพื่อให้แน่ใจว่า Spinner จะถูกซ่อนเมื่อ API ทำงานเสร็จ (ไม่ว่าจะสำเร็จหรือล้มเหลว)
 
-4. **Version Sync & CacheService**
+5. **Version Sync & CacheService**
    - ใช้ `checkApiVersion()` เพื่อตรวจสอบว่า Frontend และ Backend (GAS) เป็นเวอร์ชันเดียวกัน
+   - Backend จะส่ง `meta.version` กลับมาในทุก Response ผ่าน `jsonOutputV55_()` เพื่อให้ Frontend ตรวจสอบ Mismatch ได้ทันที
    - ใน GAS Backend ต้องใช้ `CacheService` สำหรับข้อมูลที่ถูกเรียกบ่อย (เช่น `getDashboardData`, `healthCheck`) เพื่อลดภาระการ Query Sheet และป้องกัน Rate Limit
 ## 2. โครงสร้าง Backend (Google Apps Script)
 

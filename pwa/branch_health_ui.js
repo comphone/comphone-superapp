@@ -10,7 +10,7 @@
  * Rules:
  *   - Branch Selector เฉพาะ admin/exec
  *   - Health Dashboard เฉพาะ admin/exec
- *   - ทุก API call ผ่าน callAPI(action, payload)
+ *   - ทุก API call ผ่าน callApi(action, payload)
  *   - canAccess ครอบทุก component
  */
 
@@ -36,7 +36,7 @@ async function initBranchSelector() {
   if (!canAccess('manage_branch')) return;
 
   try {
-    const data = await callAPI('getBranchList', {});
+    const data = await callApi('getBranchList', {});
     BranchState.branches = data.branches || data.rows || [];
 
     if (BranchState.branches.length <= 1) return; // ไม่แสดงถ้ามีสาขาเดียว
@@ -228,7 +228,7 @@ async function runHealthCheck() {
   if (overview) overview.innerHTML = '<div class="text-gray-400 text-sm animate-pulse">กำลังตรวจสอบ...</div>';
 
   try {
-    const result = await callAPI('healthCheck', { triggered_by: 'pwa_dashboard' });
+    const result = await callApi('healthCheck', { triggered_by: 'pwa_dashboard' });
     BranchState.lastHealthCheck = result;
 
     const isOk = result.status === 'OK' || result.overall === 'OK';
@@ -290,7 +290,7 @@ async function loadHealthHistory() {
   tbody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-gray-400">กำลังโหลด...</td></tr>';
 
   try {
-    const data = await callAPI('getHealthHistory', { limit });
+    const data = await callApi('getHealthHistory', { limit });
     const history = data.history || data.rows || [];
 
     if (history.length === 0) {

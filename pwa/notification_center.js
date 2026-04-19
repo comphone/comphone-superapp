@@ -259,7 +259,7 @@ function renderLINESettings_(container) {
     btn.innerHTML = '<i class="bi bi-hourglass-split"></i> กำลังส่ง...';
 
     try {
-      const res = await callAPI('sendLineMessage', { room, message: msg });
+      const res = await callApi('sendLineMessage', { room, message: msg });
       showToast(res.success ? '✅ ส่ง LINE สำเร็จ' : '❌ ' + (res.error || 'ส่งไม่สำเร็จ'));
     } catch (e) {
       showToast('❌ ' + e.message);
@@ -279,7 +279,7 @@ async function renderDailyBriefing_(container) {
 
   try {
     /* ดึง Dashboard data เพื่อสรุป */
-    const res = await callAPI('getDashboardData', {});
+    const res = await callApi('getDashboardData', {});
     const d   = (res.success && res.data) ? res.data : {};
 
     const now = new Date();
@@ -354,7 +354,7 @@ async function sendMorningAlert_() {
   btn.disabled = true;
   btn.innerHTML = '<i class="bi bi-hourglass-split"></i> กำลังส่ง...';
   try {
-    const res = await callAPI('cronMorningAlert', {});
+    const res = await callApi('cronMorningAlert', {});
     showToast(res.success ? '✅ ส่งสรุปเช้าไป LINE แล้ว' : '❌ ' + (res.error || 'ไม่สำเร็จ'));
   } catch (e) {
     showToast('❌ ' + e.message);

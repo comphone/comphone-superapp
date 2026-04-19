@@ -78,7 +78,7 @@ async function loadReportData_() {
     return;
   }
 
-  const res = await callAPI('getReportData', { period: REPORTS.period });
+  const res = await callApi('getReportData', { period: REPORTS.period });
   if (res && res.success) {
     REPORTS.data = res.data;
     await cacheAPIResponse(cacheKey, res.data, 15); // cache 15 นาที

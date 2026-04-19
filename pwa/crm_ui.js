@@ -8,7 +8,7 @@
  *   1c. After-Sales Status Dashboard (Metric cards + overdue list)
  *
  * กฎ: ห้าม onclick inline — ใช้ addEventListener เท่านั้น
- *     ทุก API call ผ่าน callAPI() เท่านั้น
+ *     ทุก API call ผ่าน callApi() เท่านั้น
  *     modal ปิดด้วย Escape และกดนอก modal ได้
  */
 
@@ -66,7 +66,7 @@ async function openCustomerTimeline(customerId, customerName) {
  */
 async function fetchAndRenderTimeline_() {
   try {
-    const res = await callAPI('getCustomerHistoryFull', {
+    const res = await callApi('getCustomerHistoryFull', {
       customer_id:   CRM_UI.currentCustomer.id,
       customer_name: CRM_UI.currentCustomer.name
     });
@@ -208,7 +208,7 @@ async function loadFollowUpCalendar_() {
     const to   = new Date(from.getTime() + 7 * 24 * 60 * 60 * 1000);
     const fmt  = d => d.toISOString().split('T')[0];
 
-    const res = await callAPI('getCRMFollowUpSchedule', {
+    const res = await callApi('getCRMFollowUpSchedule', {
       from_date: fmt(from),
       to_date:   fmt(to)
     });
@@ -315,7 +315,7 @@ async function submitFollowUpResult_() {
 
   try {
     showToast('💾 กำลังบันทึก...');
-    const res = await callAPI('logFollowUpResult', {
+    const res = await callApi('logFollowUpResult', {
       customer_id:   customerId,
       result,
       note,
@@ -347,7 +347,7 @@ async function submitScheduleFollowUp_() {
 
   try {
     showToast('💾 กำลังบันทึก...');
-    const res = await callAPI('scheduleFollowUp', {
+    const res = await callApi('scheduleFollowUp', {
       customer_id:   cid,
       customer_name: cname,
       scheduled_date: date,
@@ -372,7 +372,7 @@ async function submitScheduleFollowUp_() {
  */
 async function loadCRMMetrics_() {
   try {
-    const res = await callAPI('getCRMMetrics', {});
+    const res = await callApi('getCRMMetrics', {});
     if (!res.success) throw new Error(res.error);
     CRM_UI.metricsData = res;
     renderCRMMetrics_(res);
@@ -435,7 +435,7 @@ function renderCRMMetrics_(data) {
 async function nudgeSalesTeam_() {
   try {
     showToast('📢 กำลังส่งแจ้งเตือนทีมขาย...');
-    const res = await callAPI('nudgeSalesTeam', { requested_by: APP.user?.username || 'PWA' });
+    const res = await callApi('nudgeSalesTeam', { requested_by: APP.user?.username || 'PWA' });
     if (!res.success) throw new Error(res.error);
     showToast(`✅ ส่ง LINE ทีมขายแล้ว (${res.sent} ราย)`);
   } catch (e) {

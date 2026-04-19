@@ -9,7 +9,7 @@
 //   1c. renderReorderBanner()   — แสดง banner สินค้าใกล้หมด
 //   1d. openAddInventoryForm()  — form เพิ่มสินค้าใหม่ (full)
 // ============================================================
-// กฎ: ห้าม onclick inline, ทุก API ผ่าน callAPI(), modal ปิดด้วย Escape
+// กฎ: ห้าม onclick inline, ทุก API ผ่าน callApi(), modal ปิดด้วย Escape
 // ============================================================
 
 'use strict';
@@ -179,7 +179,7 @@ async function _onBarcodeDetected_(barcode) {
   } catch (_) { /* ไม่มีเสียงก็ไม่เป็นไร */ }
 
   try {
-    const result = await callAPI('barcodeLookup', { barcode });
+    const result = await callApi('barcodeLookup', { barcode });
     _renderScanResult_(barcode, result);
   } catch (err) {
     if (status) status.textContent = `เกิดข้อผิดพลาด: ${err.message}`;
@@ -445,7 +445,7 @@ async function submitStockTransfer() {
   if (btn) { btn.disabled = true; btn.textContent = 'กำลังโอน...'; }
 
   try {
-    const result = await callAPI('transferStock', {
+    const result = await callApi('transferStock', {
       item_id:       item.item_code || item.id,
       item_code:     item.item_code,
       from_location: from,
@@ -756,7 +756,7 @@ async function submitAddInventoryItem() {
   if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
 
   try {
-    const result = await callAPI('addInventoryItem', {
+    const result = await callApi('addInventoryItem', {
       item_name:    fields.name,
       category:     fields.category,
       qty:          fields.qty,

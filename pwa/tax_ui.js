@@ -9,7 +9,7 @@
  *
  * Rules:
  *   - ห้าม onclick inline — ใช้ addEventListener เท่านั้น
- *   - ทุก API call ผ่าน callAPI(action, payload)
+ *   - ทุก API call ผ่าน callApi(action, payload)
  *   - canAccess('view_tax') ครอบทุก component
  *   - แสดงเฉพาะ role: admin, acct, exec
  */
@@ -114,7 +114,7 @@ async function generateTaxInvoiceUI(billingId) {
   if (btn) { btn.disabled = true; btn.textContent = 'กำลังสร้าง...'; }
 
   try {
-    const result = await callAPI('generateTaxInvoice', { billing_id: billingId });
+    const result = await callApi('generateTaxInvoice', { billing_id: billingId });
     showToast('✅ สร้างใบกำกับภาษีสำเร็จ');
     if (result.pdf_url) {
       openPdfLink(result.pdf_url, 'ใบกำกับภาษี ' + billingId);
@@ -135,7 +135,7 @@ async function generateWhtDocUI(billingId) {
   if (btn) { btn.disabled = true; btn.textContent = 'กำลังสร้าง...'; }
 
   try {
-    const result = await callAPI('generateWhtDocument', { billing_id: billingId });
+    const result = await callApi('generateWhtDocument', { billing_id: billingId });
     showToast('✅ สร้างเอกสาร ภงด. สำเร็จ');
     if (result.pdf_url) {
       openPdfLink(result.pdf_url, 'ภงด. ' + billingId);
@@ -239,7 +239,7 @@ async function loadTaxReport() {
   tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-400">กำลังโหลด...</td></tr>';
 
   try {
-    const data = await callAPI('taxAction', { sub: 'report', period });
+    const data = await callApi('taxAction', { sub: 'report', period });
     const records = data.records || [];
     const summary = data.summary || {};
 
@@ -309,7 +309,7 @@ async function loadTaxReport() {
 async function exportTaxReportPdf() {
   const period = document.getElementById('tax-report-period')?.value || '';
   try {
-    const result = await callAPI('generateTaxInvoice', { period, type: 'monthly_report' });
+    const result = await callApi('generateTaxInvoice', { period, type: 'monthly_report' });
     if (result.pdf_url) openPdfLink(result.pdf_url, 'รายงานภาษี ' + period);
     else showToast('✅ ส่งรายงานไปยัง Google Drive แล้ว');
   } catch (err) {
@@ -322,7 +322,7 @@ async function exportTaxReportPdf() {
  */
 async function sendTaxReminderNow() {
   try {
-    await callAPI('getTaxReminder', { force: true });
+    await callApi('getTaxReminder', { force: true });
     showToast('✅ ส่งแจ้งเตือนภาษีทาง LINE สำเร็จ');
   } catch (err) {
     showToast(`❌ ส่งแจ้งเตือนไม่สำเร็จ: ${err.message}`);
@@ -346,7 +346,7 @@ async function loadTaxSummaryCard(containerId) {
   try {
     const now = new Date();
     const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const data = await callAPI('taxAction', { sub: 'report', period });
+    const data = await callApi('taxAction', { sub: 'report', period });
     const summary = data.summary || {};
 
     const cardHtml = `

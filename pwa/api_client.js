@@ -76,6 +76,7 @@ async function callApi(action, payload = {}, options = {}) {
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
+  const _t0 = Date.now(); // เริ่ม timing
 
   try {
     const res = await fetch(bustUrl, {
@@ -86,11 +87,23 @@ async function callApi(action, payload = {}, options = {}) {
       signal: controller.signal
     });
     const data = await res.json();
+    const _elapsed = Date.now() - _t0;
+    // API Logging: action, elapsed time, success/fail
+    if (typeof console !== 'undefined') {
+      if (data && data.success === false) {
+        console.warn('[callApi] ❌ ' + action + ' | ' + _elapsed + 'ms | error: ' + (data.error || 'unknown'));
+      } else {
+        console.log('[callApi] ✅ ' + action + ' | ' + _elapsed + 'ms');
+      }
+    }
     return normalizeApiResponse(data);
   } catch (e) {
+    const _elapsed = Date.now() - _t0;
     if (e.name === 'AbortError') {
+      console.error('[callApi] ⏱ ' + action + ' | TIMEOUT ' + _elapsed + 'ms');
       return { success: false, error: 'Request timeout (' + (timeout / 1000) + 's)' };
     }
+    console.error('[callApi] ❌ ' + action + ' | ' + _elapsed + 'ms | ' + e.message);
     return { success: false, error: e.message };
   } finally {
     clearTimeout(timeoutId);
@@ -250,7 +263,6 @@ function normalizeInventoryItem(item) {
 if (typeof window !== 'undefined') {
   window._comphone_api_client_loaded = true; // flag บอก app.js ว่า api_client.js โหลดแล้ว
   window.callApi  = callApi; // api_client.js เป็น Single Source of Truth เสมอ
-  window.callAPI  = callApi; // ALIAS: uppercase — ใช้ใน tax_ui.js, warranty_ui.js, branch_health_ui.js, crm_ui.js, job_workflow.js
   window.safeHide = safeHide;
   window.safeShow = safeShow;
   window.safeRender = safeRender;

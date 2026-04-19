@@ -166,7 +166,7 @@ async function verifySlipWithAI() {
   resultDiv.innerHTML = '<div style="text-align:center;padding:1rem;color:#7c3aed;">AI กำลังวิเคราะห์สลิป...</div>';
 
   try {
-    var res = await callAPI('verifyPaymentSlip', {
+    var res = await callApi('verifyPaymentSlip', {
       job_id: BSV.currentJobId,
       billing_id: BSV.currentBillingId,
       slip_base64: BSV.slipBase64,
@@ -241,7 +241,7 @@ async function confirmPaymentManual() {
       payload.slip_mime_type = BSV.slipMimeType;
     }
 
-    var res = await callAPI('markBillingPaid', payload);
+    var res = await callApi('markBillingPaid', payload);
     if (res && res.success) {
       showToast('✅ บันทึกการชำระเงินเรียบร้อย — ปิดงานแล้ว');
       closeSlipUploadModal();

@@ -57,7 +57,7 @@ async function loadAttendancePage() {
     ATT.currentMonth = month;
 
     const [reportResult] = await Promise.all([
-      callAPI('getAttendanceReport', { tech: techName, month }),
+      callApi('getAttendanceReport', { tech: techName, month }),
     ]);
 
     // วิเคราะห์สถานะวันนี้
@@ -108,7 +108,7 @@ async function clockIn() {
     }
 
     const techName = (APP && APP.user && APP.user.name) || '';
-    const result = await callAPI('clockIn', {
+    const result = await callApi('clockIn', {
       tech:      techName,
       tech_name: techName,
       note:      gpsNote,
@@ -161,7 +161,7 @@ async function clockOut() {
     }
 
     const techName = (APP && APP.user && APP.user.name) || '';
-    const result = await callAPI('clockOut', {
+    const result = await callApi('clockOut', {
       tech:      techName,
       tech_name: techName,
       note:      gpsNote,

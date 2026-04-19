@@ -60,8 +60,8 @@
 - **การเพิ่มฟีเจอร์ใหม่:** ต้องอัปเดต `Router.gs` ให้รองรับ Action ใหม่เสมอ
 - **การแก้ไข UI:** ต้องทดสอบทั้งบนมือถือ (PWA) และคอมพิวเตอร์ (PC Dashboard)
 - **การจัดการ Error:** ใช้ `error_boundary.js` เพื่อป้องกันแอปพลิเคชันค้างเมื่อเกิดข้อผิดพลาด
-- **Version Sync:** ต้องอัปเดต `APP_VERSION` ใน `app.js` และ `CONFIG.VERSION` ใน `Router.gs` ให้ตรงกันเสมอ
-- **Performance:** ใช้ `CacheService` ใน GAS สำหรับข้อมูลที่ถูกเรียกบ่อย (เช่น Dashboard) เพื่อลดภาระการ Query Sheet
+- **Version Sync:** ต้องอัปเดต `APP_VERSION` ใน `app.js` และ `CONFIG.VERSION` ใน `Router.gs` ให้ตรงกันเสมอ โดย Backend จะส่ง `meta.version` กลับมาในทุก Response ผ่าน `jsonOutputV55_()` เพื่อให้ Frontend ตรวจสอบ Mismatch ได้ทันที
+- **Performance & Logging:** ใช้ `CacheService` ใน GAS สำหรับข้อมูลที่ถูกเรียกบ่อย และมีการจับเวลา (Timing) การเรียก API ทุกครั้งใน `api_client.js` (`callApi`) เพื่อตรวจสอบคอขวดของระบบ
 
 ---
 *อัปเดตล่าสุด: 19 เมษายน 2026*

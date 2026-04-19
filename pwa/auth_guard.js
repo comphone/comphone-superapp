@@ -321,7 +321,7 @@ async function submitForcePasswordChange() {
   if (btn) { btn.disabled = true; btn.textContent = 'กำลังเปลี่ยน...'; }
 
   try {
-    const result = await callAPI('changePassword', {
+    const result = await callApi('changePassword', {
       username:     (APP && APP.user && APP.user.username) || '',
       old_password: oldPw,
       new_password: newPw,

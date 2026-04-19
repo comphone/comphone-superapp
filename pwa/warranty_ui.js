@@ -10,7 +10,7 @@
  *
  * Rules:
  *   - ห้าม onclick inline — ใช้ addEventListener เท่านั้น
- *   - ทุก API call ผ่าน callAPI(action, payload)
+ *   - ทุก API call ผ่าน callApi(action, payload)
  *   - ทุก async function มี try/catch + showToast() แสดง error
  *   - modal ปิดด้วย Escape key และกดนอก modal ได้
  *   - canAccess ครอบ updateWarrantyStatus (admin/manager เท่านั้น)
@@ -120,9 +120,9 @@ async function loadWarrantyList() {
   try {
     let data;
     if (dueFilter) {
-      data = await callAPI('getWarrantyDue', { days_ahead: parseInt(dueFilter) });
+      data = await callApi('getWarrantyDue', { days_ahead: parseInt(dueFilter) });
     } else {
-      data = await callAPI('listWarranties', { filter: status, page: 1, limit: 100 });
+      data = await callApi('listWarranties', { filter: status, page: 1, limit: 100 });
     }
 
     if (!data || !data.success) {
@@ -275,7 +275,7 @@ async function submitCreateWarranty(jobId) {
   btn.textContent = 'กำลังสร้าง...';
 
   try {
-    const result = await callAPI('createWarranty', {
+    const result = await callApi('createWarranty', {
       job_id: jobId,
       duration_days: duration,
       terms: terms
@@ -314,7 +314,7 @@ async function submitCreateWarranty(jobId) {
  */
 async function showWarrantyDetail(warrantyId) {
   try {
-    const data = await callAPI('getWarrantyByJobId', { warranty_id: warrantyId });
+    const data = await callApi('getWarrantyByJobId', { warranty_id: warrantyId });
     const w = data.warranty || data;
 
     const canUpdate = canAccess('manage_warranty');
@@ -389,7 +389,7 @@ async function showWarrantyDetail(warrantyId) {
     // ส่ง LINE
     document.getElementById('btn-send-warranty-line')?.addEventListener('click', async () => {
       try {
-        await callAPI('sendWarrantyLine', { warranty_id: warrantyId });
+        await callApi('sendWarrantyLine', { warranty_id: warrantyId });
         showToast('✅ ส่ง LINE ลูกค้าสำเร็จ');
       } catch (err) {
         showToast(`❌ ส่ง LINE ไม่สำเร็จ: ${err.message}`);
@@ -402,7 +402,7 @@ async function showWarrantyDetail(warrantyId) {
         const newStatus = document.getElementById('warranty-update-status')?.value;
         if (!newStatus) return;
         try {
-          await callAPI('updateWarrantyStatus', { warranty_id: warrantyId, status: newStatus });
+          await callApi('updateWarrantyStatus', { warranty_id: warrantyId, status: newStatus });
           closeWarrantyModal('modal-warranty-detail');
           showToast('✅ อัปเดตสถานะสำเร็จ');
           if (document.getElementById('warranty-list-body')) await loadWarrantyList();
@@ -430,7 +430,7 @@ async function loadWarrantyAlertBanner() {
   if (!bannerContainer) return;
 
   try {
-    const data = await callAPI('getWarrantyDue', { days_ahead: 7 });
+    const data = await callApi('getWarrantyDue', { days_ahead: 7 });
     const dueWarranties = data.warranties || data.rows || [];
 
     if (dueWarranties.length === 0) {

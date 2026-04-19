@@ -111,7 +111,7 @@ async function submitSendLine(jobId) {
   _setButtonLoading('btn-send-line', true);
 
   try {
-    const res = await callAPI('sendLineMessage', {
+    const res = await callApi('sendLineMessage', {
       message: msg,
       room: 'TECHNICIAN',
       job_id: jobId,
@@ -146,7 +146,7 @@ async function nudgeTech() {
     if (typeof JW !== 'undefined' && JW.techList && JW.techList.length > 0) {
       techOptions += JW.techList.map(t => `<option value="${t}">${t}</option>`).join('');
     } else {
-      const res = await callAPI('getAllTechsSummary');
+      const res = await callApi('getAllTechsSummary');
       if (res && res.success && res.techs) {
         const techs = res.techs.map(t => t.name).filter(Boolean);
         techOptions += techs.map(t => `<option value="${t}">${t}</option>`).join('');
@@ -196,7 +196,7 @@ async function submitNudgeTech() {
   _setButtonLoading('btn-nudge', true);
 
   try {
-    const res = await callAPI('nudgeTech', {
+    const res = await callApi('nudgeTech', {
       tech_name: techName,
       job_id: jobId,
       message: extraMsg || null,
@@ -286,7 +286,7 @@ async function submitAppointment() {
     };
     if (jobId) payload.job_id = jobId;
 
-    const res = await callAPI('addAppointment', payload);
+    const res = await callApi('addAppointment', payload);
 
     if (res && res.success) {
       showToast('📅 บันทึกนัดหมายแล้ว');
@@ -331,7 +331,7 @@ async function markDone() {
   showToast('⏳ กำลังอัปเดตสถานะ...');
 
   try {
-    const res = await callAPI('markJobStatus', {
+    const res = await callApi('markJobStatus', {
       job_id: jobId,
       new_status: 'งานเสร็จ',
       changed_by: APP.user?.name || APP.user?.username || 'PWA',
@@ -372,7 +372,7 @@ async function markWaiting() {
   showToast('⏳ กำลังอัปเดตสถานะ...');
 
   try {
-    const res = await callAPI('markJobStatus', {
+    const res = await callApi('markJobStatus', {
       job_id: jobId,
       new_status: 'รอชิ้นส่วน',
       changed_by: APP.user?.name || APP.user?.username || 'PWA',

@@ -93,8 +93,8 @@ async function renderSecurityDashboard_(container) {
   container.innerHTML = '<div class="loading-spinner-sm" style="margin:24px auto"></div>';
   try {
     const [secRes, auditRes] = await Promise.all([
-      callAPI('getSecurityStatus', {}),
-      callAPI('getAuditLog', { limit: 5 })
+      callApi('getSecurityStatus', {}),
+      callApi('getAuditLog', { limit: 5 })
     ]);
 
     if (!secRes.success) throw new Error(secRes.error);
@@ -174,14 +174,14 @@ async function renderSecurityDashboard_(container) {
 
 async function unlockAllAccounts_() {
   if (!confirm('ปลดล็อคบัญชีที่ถูกล็อคทั้งหมด?')) return;
-  const res = await callAPI('unlockAccount', { all: true });
+  const res = await callApi('unlockAccount', { all: true });
   showToast(res.success ? '✅ ปลดล็อคสำเร็จ' : '❌ ' + (res.error || 'ไม่สำเร็จ'));
   if (res.success) renderSecurityDashboard_(document.getElementById('admin-tab-content'));
 }
 
 async function runHealthCheck_() {
   showToast('⏳ กำลังตรวจสอบระบบ...');
-  const res = await callAPI('health', {});
+  const res = await callApi('health', {});
   if (res && res.status === 'ok') {
     showToast(`✅ ระบบปกติ | DB: ${res.db_sheets || '?'} sheets | Uptime: ${res.uptime_days || '?'} วัน`);
   } else {
@@ -196,7 +196,7 @@ async function runHealthCheck_() {
 async function renderUserManagement_(container) {
   container.innerHTML = '<div class="loading-spinner-sm" style="margin:24px auto"></div>';
   try {
-    const res = await callAPI('listUsers', {});
+    const res = await callApi('listUsers', {});
     if (!res.success) throw new Error(res.error || 'โหลดไม่สำเร็จ');
     ADMIN_PANEL.users = res.data || [];
     renderUserList_(container);
@@ -261,7 +261,7 @@ function renderUserList_(container) {
 
 async function toggleUserActive_(username, isLocked) {
   const newActive = isLocked; /* ถ้าล็อคอยู่ → set active=true */
-  const res = await callAPI('setUserActive', { username, active: newActive });
+  const res = await callApi('setUserActive', { username, active: newActive });
   showToast(res.success ? `✅ ${newActive ? 'เปิด' : 'ปิด'}ใช้งาน @${username}` : '❌ ' + (res.error || ''));
   if (res.success) renderUserManagement_(document.getElementById('admin-tab-content'));
 }
@@ -289,7 +289,7 @@ async function submitCreateUser_() {
   btn.innerHTML = '<i class="bi bi-hourglass-split"></i> กำลังสร้าง...';
 
   try {
-    const res = await callAPI('createUser', { username, full_name: fullName, role, password });
+    const res = await callApi('createUser', { username, full_name: fullName, role, password });
     if (!res.success) throw new Error(res.error);
     showToast(`✅ สร้างผู้ใช้ @${username} สำเร็จ`);
     document.getElementById('modal-admin-create-user').classList.add('hidden');
@@ -324,11 +324,11 @@ async function submitEditUser_() {
   btn.innerHTML = '<i class="bi bi-hourglass-split"></i> กำลังบันทึก...';
 
   try {
-    const res = await callAPI('updateUserRole', { username, newRole: role, full_name: fullName });
+    const res = await callApi('updateUserRole', { username, newRole: role, full_name: fullName });
     if (!res.success) throw new Error(res.error);
 
     if (newPw) {
-      const pwRes = await callAPI('forcePasswordChange', { username, new_password: newPw, changed_by: APP.user?.username });
+      const pwRes = await callApi('forcePasswordChange', { username, new_password: newPw, changed_by: APP.user?.username });
       if (!pwRes.success) throw new Error(pwRes.error);
     }
 
@@ -428,14 +428,14 @@ function renderConfigPanel_(container) {
   document.getElementById('btn-cfg-seed').addEventListener('click', async () => {
     if (!confirm('รัน Seed ข้อมูลเริ่มต้น?')) return;
     showToast('⏳ กำลัง Seed...');
-    const res = await callAPI('seedAllData', {});
+    const res = await callApi('seedAllData', {});
     showToast(res.success ? '✅ Seed สำเร็จ' : '❌ ' + (res.error || ''));
   });
 
   document.getElementById('btn-cfg-triggers').addEventListener('click', async () => {
     if (!confirm('ตั้ง Triggers ทั้งหมด?')) return;
     showToast('⏳ กำลังตั้ง Triggers...');
-    const res = await callAPI('setupAllTriggers', {});
+    const res = await callApi('setupAllTriggers', {});
     showToast(res.success ? '✅ ตั้ง Triggers สำเร็จ' : '❌ ' + (res.error || ''));
   });
 
@@ -443,7 +443,7 @@ function renderConfigPanel_(container) {
 
   document.getElementById('btn-cfg-backup').addEventListener('click', async () => {
     showToast('⏳ กำลัง Backup...');
-    const res = await callAPI('runBackup', {});
+    const res = await callApi('runBackup', {});
     showToast(res.success ? '✅ Backup สำเร็จ' : '❌ ' + (res.error || ''));
   });
 }
@@ -455,7 +455,7 @@ function renderConfigPanel_(container) {
 async function renderAuditLogViewer_(container) {
   container.innerHTML = '<div class="loading-spinner-sm" style="margin:24px auto"></div>';
   try {
-    const res = await callAPI('getAuditLog', {
+    const res = await callApi('getAuditLog', {
       limit: ADMIN_PANEL.auditPerPage,
       offset: ADMIN_PANEL.auditPage * ADMIN_PANEL.auditPerPage
     });

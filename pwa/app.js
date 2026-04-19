@@ -793,7 +793,7 @@ function markJobDone(jobId) {
     const job = APP.jobs.find(j => j.id === jobId);
     if (job) { job.status = 'done'; renderHome(); renderJobsBadge(); }
     showToast('✅ บันทึกงานเสร็จแล้ว');
-    callAPI('transitionJob', { job_id: jobId, new_status: 'งานเสร็จ', changed_by: (APP.user && APP.user.name) || APP.user || 'PWA' });
+    callApi('transitionJob', { job_id: jobId, new_status: 'งานเสร็จ', changed_by: (APP.user && APP.user.name) || APP.user || 'PWA' });
   }
 }
 
@@ -821,7 +821,7 @@ function callForHelp() {
   if (typeof QA !== 'undefined' && typeof QA.nudgeTech === 'function') {
     QA.nudgeTech({ jobId, techName: user.display_name || user.username || 'ช่าง', message: '🆘 ต้องการความช่วยเหลือ' });
   } else {
-    callAPI('sendLineMessage', {
+    callApi('sendLineMessage', {
       message: `🆘 [ขอความช่วยเหลือ] ช่าง ${user.display_name || user.username || 'ช่าง'} ต้องการความช่วยเหลือ${jobId ? ' งาน #' + jobId : ''}`,
       room: 'OWNER',
       sent_by: user.username || 'system'
@@ -965,7 +965,7 @@ function handlePhoto(input) {
     showToast('☁️ กำลังอัปโหลด...');
 
     try {
-      const res = await callAPI('handleProcessPhotos', {
+      const res = await callApi('handleProcessPhotos', {
         base64: base64Data,
         mimeType,
         fileName,
@@ -1026,7 +1026,7 @@ async function loadRecentPhotos_(jobId) {
   if (!grid) return;
   if (!jobId) { grid.innerHTML = '<p style="color:#9ca3af;font-size:13px;">เลือกงานก่อนเพื่อดูรูป</p>'; return; }
   grid.innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
-  const res = await callAPI('getPhotoGalleryData', { jobId });
+  const res = await callApi('getPhotoGalleryData', { jobId });
   if (res && res.success && res.data && res.data.photos) {
     const photos = res.data.photos.slice(0, 12);
     grid.innerHTML = photos.map(p =>
@@ -1107,10 +1107,10 @@ function startVoiceSearch() {
 }
 
 // ===== API CALL =====
-// RULE 1: callAPI (uppercase) = alias ของ callApi (api_client.js)
-// Single Source of Truth: api_client.js เท่านั้น — ใช้ comphone_auth_session
-// callAPI ถูกเรียกจาก UI modules ทั้งหมด (tax_ui, warranty_ui, branch_health_ui ฯลฯ)
-async function callAPI(action, params = {}) {
+// RULE 1: callApi() = Single Source of Truth (api_client.js)
+// UI modules ทั้งหมดใช้ callApi() (lowercase) — ไม่มี alias callAPI อีกต่อไป
+// Fallback นี้ทำงานเมื่อ api_client.js ยังไม่โหลด (standalone mode)
+async function callApi(action, params = {}) {
   // ถ้า api_client.js โหลดแล้ว → delegate ไปเลย (RULE 1)
   if (typeof window.callApi === 'function' && window._comphone_api_client_loaded) {
     return window.callApi(action, params);
@@ -1179,10 +1179,7 @@ if (typeof window.callApi !== 'function' || !window._comphone_api_client_loaded)
         const sess = JSON.parse(localStorage.getItem('comphone_auth_session') || '{}');
         if (sess.token) { payload.token = sess.token; payload.username = payload.username || sess.username; }
       } catch(e) {}
-      if (!payload.token && typeof AUTH !== 'undefined' && AUTH.token) {
-        payload.token = AUTH.token;
-        payload.username = payload.username || AUTH.username;
-      }
+      // NOTE: ไม่ใช้ AUTH.token — ใช้เฉพาะ comphone_auth_session (RULE 1)
     }
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);

@@ -17,8 +17,8 @@ async function loadAfterSalesDashboard() {
     '<i class="bi bi-hourglass-split" style="font-size:2rem;"></i><br>กำลังโหลด...</div>';
 
   try {
-    var res = await callAPI('getAfterSalesSummary');
-    var dueRes = await callAPI('getAfterSalesDue', { days: 7 });
+    var res = await callApi('getAfterSalesSummary');
+    var dueRes = await callApi('getAfterSalesDue', { days: 7 });
 
     var summary = (res && res.success && res.data) ? res.data : {};
     var dueItems = (dueRes && dueRes.success && dueRes.records) ? dueRes.records : [];
@@ -147,7 +147,7 @@ async function loadClosedJobsForAfterSales_() {
   var list = document.getElementById('closed-jobs-list');
   if (!list) return;
   try {
-    var res = await callAPI('getJobs', { status: 11, limit: 20 });
+    var res = await callApi('getJobs', { status: 11, limit: 20 });
     var jobs = (res && res.success && res.jobs) ? res.jobs : [];
     if (jobs.length === 0) {
       list.innerHTML = '<div style="text-align:center;padding:1rem;color:#94a3b8;">ไม่มีงานที่ปิดแล้ว</div>';
@@ -178,7 +178,7 @@ async function loadClosedJobsForAfterSales_() {
 
 async function createAfterSalesFromJob(jobId) {
   try {
-    var res = await callAPI('createAfterSalesRecord', { job_id: jobId });
+    var res = await callApi('createAfterSalesRecord', { job_id: jobId });
     if (res && res.success) {
       showToast('✅ สร้าง After Sales Record สำเร็จ');
       closeCreateAfterSalesModal();
@@ -265,7 +265,7 @@ async function saveAfterSalesFollowUp() {
   if (!note.trim()) { showToast('กรุณากรอกบันทึกการติดตาม'); return; }
 
   try {
-    var res = await callAPI('logAfterSalesFollowUp', {
+    var res = await callApi('logAfterSalesFollowUp', {
       record_id: jobId,
       note: note.trim(),
       followup_by: user,
@@ -294,7 +294,7 @@ async function renderAttendanceWidget(containerId) {
   if (!user || user.role !== 'tech') return; // แสดงเฉพาะช่าง
 
   try {
-    var res = await callAPI('getTechHistory', {
+    var res = await callApi('getTechHistory', {
       tech: user.name || user.username,
       days: 1
     });
@@ -341,7 +341,7 @@ async function doClockAction(type) {
   var label = type === 'in' ? 'เช็คอิน' : 'เช็คเอาท์';
 
   try {
-    var res = await callAPI(action, { tech: user.name || user.username, note: '' });
+    var res = await callApi(action, { tech: user.name || user.username, note: '' });
     if (res && res.success) {
       showToast('✅ ' + label + 'สำเร็จ — ' + new Date().toLocaleTimeString('th-TH'));
       // รีเฟรช widget
