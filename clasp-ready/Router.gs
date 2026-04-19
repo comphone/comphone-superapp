@@ -568,6 +568,22 @@ function dispatchActionV55_(action, payload, args) {
         return verifyPaymentSlip_(payload);
 
       // ============================================================
+      // Vision Pipeline v1.0.0 (Production)
+      // ============================================================
+      case 'runVisionPipeline':
+        return runVisionPipeline(payload);
+      case 'runSlipVerifyPipeline':
+        return runSlipVerifyPipeline(payload);
+      case 'runQCPipeline':
+        return runQCPipeline(payload);
+      case 'submitHumanReview':
+        return submitHumanReview(payload);
+      case 'getVisionDashboardStats':
+        return getVisionDashboardStats(payload);
+      case 'getVisionPipelineVersion':
+        return getVisionPipelineVersion();
+
+      // ============================================================
       // Tax Engine (TASK 1-2: VAT Flexible + WHT ภงด.)
       // ============================================================
       case 'calculateTax':
