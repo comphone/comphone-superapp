@@ -1,5 +1,5 @@
 # 🧠 Session Context — COMPHONE SUPER APP V5.5
-> **เวอร์ชัน:** v5.5.10 | **อัปเดต:** 18 เมษายน 2569 | **สถานะ:** MISSION COMPLETE ✅ (Phase 1-4) + Auto-Push ✅ + Drive Sync ✅ — คะแนน 100/100 | **Triple Backup:** ✅ Active
+> **เวอร์ชัน:** v5.5.11 | **อัปเดต:** 19 เมษายน 2569 | **สถานะ:** MISSION COMPLETE ✅ (Phase 1-4) + Auto-Push ✅ + Drive Sync ✅ — คะแนน 100/100 | **Triple Backup:** ✅ Active | **API Test:** ✅ Passed
 > **ไฟล์นี้คือ "สมองสำรอง" ของ AI — อ่านก่อนเริ่มงานทุกครั้ง ห้ามเดาสถานะโปรเจค**
 
 ---
@@ -31,7 +31,7 @@
 | **GAS Deploy** | @441 (ล่าสุด) — Online ✅ |
 | **API Keys Registry** | `memory/API_KEYS_REGISTRY.md` |
 | **Skills Context** | `memory/SKILLS_CONTEXT.md` |
-| **ข้อมูลจริง** | 18 งาน (J0001–J0018) ใน DBJOBS |
+| **ข้อมูลจริง** | 19+ งาน (J0001–J0020) ใน DBJOBS |
 
 ---
 
@@ -350,7 +350,35 @@ comphone-superapp/                  ← GitHub repo
 
 ---
 
-## ✅ งานที่เสร็จในเซสชันล่าสุด (18 เมษายน 2569 — เซสชัน 3: MISSION COMPLETE)
+## ✅ งานที่เสร็จในเซสชันล่าสุด (19 เมษายน 2569 — เซสชัน 4: URL Update + API Test)
+
+| ไฟล์ | ประเภท | สิ่งที่ทำ |
+|------|--------|--------|
+| `Config.gs` | GAS | อัปเดต WEB_APP_URL default เป็น @441 |
+| `pwa/app.js` | PWA | อัปเดต DEFAULT_SCRIPT_URL เป็น @441 |
+| `pwa/index.html` | PWA | อัปเดต setup-url default เป็น @441 |
+| `pwa/dashboard_pc.html` | PWA | อัปเดต GAS URL เป็น @441 |
+| `docs/MASTER_BLUEPRINT.md` | Docs | อัปเดต URL ทั้งหมดเป็น @441 |
+| `memory/API_KEYS_REGISTRY.md` | Docs | อัปเดต URL เป็น @441 |
+| `scripts/test_api.py` | Script | สร้าง API Test Suite ทดสอบ 10 endpoints |
+
+### ผลการทดสอบ API (19 เมษายน 2569)
+
+| Endpoint | สถานะ | หมายเหตุ |
+|----------|-------|--------|
+| GET `?action=health` | ✅ healthy | Version V5.5.6, 9 triggers active |
+| POST `loginUser` | ✅ success | Token ✅, Role: OWNER |
+| POST `getDashboardData` | ✅ success | 19+ jobs |
+| POST `openJob` | ✅ success | สร้าง J0020 สำเร็จ |
+| POST `inventoryOverview` | ✅ success | สต็อกโหลดได้ |
+| POST `listCustomers` | ✅ success | ลูกค้าโหลดได้ |
+| POST `systemStatus` | ✅ OK | overall: OK |
+| POST `getComphoneConfig` | ✅ OK | Config ครบ |
+| POST `verifySession` | ✅ valid | Session ใช้งานได้ |
+
+---
+
+## ✅ งานที่เสร็จในเซสชันก่อนหน้า (18 เมษายน 2569 — เซสชัน 3: MISSION COMPLETE)
 
 | ไฟล์ | ประเภท | หน้าที่ |
 |------|--------|--------|
