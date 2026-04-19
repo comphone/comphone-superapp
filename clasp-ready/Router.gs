@@ -681,6 +681,60 @@ function dispatchActionV55_(action, payload, args) {
       case 'getLearningIntegrationVersion':   return getLearningIntegrationVersion();
 
       // ============================================================
+      // AI-OS Stabilization — Phase 1: MemoryControl
+      // ============================================================
+      case 'getMemoryControlVersion':   return getMemoryControlVersion();
+      case 'runRetentionPolicy':        return runRetentionPolicy(payload);
+      case 'prunePatterns':             return prunePatterns(payload);
+      case 'getMemoryHealth':           return getMemoryHealth(payload);
+      case 'getArchivedIncidents':      return getArchivedIncidents(payload);
+      case 'setupMemoryControlTrigger': return setupMemoryControlTrigger();
+
+      // ============================================================
+      // AI-OS Stabilization — Phase 2: DecisionGuard
+      // ============================================================
+      case 'getDecisionGuardVersion':   return getDecisionGuardVersion();
+      case 'checkGuard':                return checkGuard(payload);
+      case 'checkGuardAndDecide':       return checkGuardAndDecide(payload);
+      case 'checkGuardAndTrigger':      return checkGuardAndTrigger(payload);
+      case 'resetCooldown':             return resetCooldown(payload);
+      case 'getGuardStatus':            return getGuardStatus(payload);
+      case 'getGuardLog':               return getGuardLog(payload);
+
+      // ============================================================
+      // AI-OS Stabilization — Phase 3: WorkflowSafety
+      // ============================================================
+      case 'getWorkflowSafetyVersion':  return getWorkflowSafetyVersion();
+      case 'safeTriggerWorkflow':       return safeTriggerWorkflow(payload);
+      case 'dryRunWorkflow':            return dryRunWorkflow(payload);
+      case 'getWorkflowSafetyStatus':   return getWorkflowSafetyStatus(payload);
+      case 'getSafetyLog':              return getSafetyLog(payload);
+
+      // ============================================================
+      // AI-OS Stabilization — Phase 4: AgentScoring
+      // ============================================================
+      case 'getAgentScoringVersion':    return getAgentScoringVersion();
+      case 'recordOutcome':             return recordOutcome(payload);
+      case 'weightedConsensus':         return weightedConsensus(payload);
+      case 'getAgentScore':             return getAgentScore(payload);
+      case 'getAgentLeaderboard':       return getAgentLeaderboard(payload);
+      case 'resetAgentScore':           return resetAgentScore(payload);
+
+      // ============================================================
+      // AI-OS Stabilization — Phase 5: AIAuditLog
+      // ============================================================
+      case 'getAIAuditLogVersion':      return getAIAuditLogVersion();
+      case 'logAIDecision':             return logAIDecision(payload);
+      case 'getAIDecisionLog':          return getAIDecisionLog(payload);
+      case 'logWorkflowExecution':      return logWorkflowExecution(payload);
+      case 'getWorkflowExecutionLog':   return getWorkflowExecutionLog(payload);
+      case 'logAgentAction':            return logAgentAction(payload);
+      case 'getAgentActionLog':         return getAgentActionLog(payload);
+      case 'logAIAuditEvent':           return logAIAuditEvent(payload);
+      case 'getAIAuditTrail':           return getAIAuditTrail(payload);
+      case 'getAIAuditDashboard':       return getAIAuditDashboard(payload);
+
+      // ============================================================
       // Tax Engine (TASK 1-2: VAT Flexible + WHT ภงด.)
       // ============================================================
       case 'calculateTax':
