@@ -125,11 +125,23 @@
 | `cleanupSessions` | ทุก 6 ชั่วโมง | Auth.gs |
 | `cronHealthCheck` | ทุก 30 นาที | HealthMonitor.gs |
 
-### Next Phase: Monitoring / SaaS
+### Monitoring Dashboard (V5.5.8)
 
-- เพิ่ม `getSystemMetrics()` dashboard ใน PWA
-- Multi-tenant support
-- Advanced analytics
+ระบบมี Real-time Monitoring Dashboard สำหรับผู้ดูแลระบบ:
+- **URL:** `https://comphone.github.io/comphone-superapp/pwa/monitoring_dashboard.html`
+- **Features:** 
+  - 8 Metric Cards (Health, Latency, Sessions, Rate Limit, Errors, Triggers, Properties, Version)
+  - API Latency History Chart (20 ค่าล่าสุด)
+  - Security Events Chart (Rate Limit vs Invalid Token)
+  - Trigger Schedule Table
+  - Security Log Viewer พร้อม Filter
+  - Auto-refresh ทุก 5 วินาที
+
+### Next Phase: SaaS & Multi-tenant
+
+- Multi-tenant support (รองรับหลายร้านค้าในระบบเดียว)
+- Advanced analytics & Business Intelligence
+- Role-based Access Control (RBAC) ขั้นสูง
 
 ---
 *อัปเดตล่าสุด: 19 เมษายน 2026 (V5.5.8 — Production Hardened + Final Sign-Off)*
