@@ -24,7 +24,7 @@
 | ชื่อ | URL |
 |------|-----|
 | **PWA Dashboard (Production)** | `https://comphone.github.io/comphone-superapp/pwa/` |
-| **GAS API Endpoint** | `https://script.google.com/macros/s/AKfycbxkUcq881X7DR6c9taQx9W-3uNc6vcqNQfvMHvx7pnotqZ044WFhQnRyTk9FzpbQcBvyQ/exec` |
+| **GAS API Endpoint** | `https://script.google.com/macros/s/AKfycbxbIBi05t_3e2dpLbOyHkQs9Ddzky_mFUYAs7y9jBJBcPc_s_ZnMuJp5i-IlzDfqdVgyg/exec` |
 
 ---
 

@@ -65,7 +65,7 @@ var CONFIG = {
   DEFAULTS: {
     ROOT_FOLDER_ID:   '',
     SPREADSHEET_ID:   '',
-    WEB_APP_URL:      'https://script.google.com/macros/s/AKfycbxkUcq881X7DR6c9taQx9W-3uNc6vcqNQfvMHvx7pnotqZ044WFhQnRyTk9FzpbQcBvyQ/exec',
+    WEB_APP_URL:      'https://script.google.com/macros/s/AKfycbxbIBi05t_3e2dpLbOyHkQs9Ddzky_mFUYAs7y9jBJBcPc_s_ZnMuJp5i-IlzDfqdVgyg/exec',
     PRIORITY_LEVELS:  ['ด่วนมาก', 'ด่วน', 'ปกติ'],
     SLA_HOURS:        { 'ด่วนมาก': 4, 'ด่วน': 24, 'ปกติ': 72 },
     VAT_RATE:         0.07,

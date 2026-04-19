@@ -6,7 +6,7 @@ const APP_VERSION = '5.5.8';
 const APP_BUILD   = '2026-04-19';
 
 // ===== STATE =====
-const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxkUcq881X7DR6c9taQx9W-3uNc6vcqNQfvMHvx7pnotqZ044WFhQnRyTk9FzpbQcBvyQ/exec';
+const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxbIBi05t_3e2dpLbOyHkQs9Ddzky_mFUYAs7y9jBJBcPc_s_ZnMuJp5i-IlzDfqdVgyg/exec';
 
 const APP = {
   user: null,
