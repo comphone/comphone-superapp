@@ -206,6 +206,82 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* ===== LOGIN SCREEN ===== */
+  #pc-login-screen {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999; padding: 20px;
+  }
+  #pc-login-screen.hidden { display: none; }
+  .login-card {
+    width: 100%; max-width: 420px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 24px; padding: 40px;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+  }
+  .login-logo {
+    text-align: center; margin-bottom: 32px;
+  }
+  .login-logo-icon {
+    width: 80px; height: 80px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    border-radius: 22px; display: flex; align-items: center;
+    justify-content: center; margin: 0 auto 16px;
+    box-shadow: 0 8px 32px rgba(59,130,246,0.4);
+    font-size: 36px;
+  }
+  .login-title { color: #fff; font-size: 22px; font-weight: 800; margin: 0; }
+  .login-sub { color: #94a3b8; font-size: 13px; margin: 6px 0 0; }
+  .login-field { margin-bottom: 16px; }
+  .login-field label { color: #94a3b8; font-size: 12px; font-weight: 700; display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .login-input-wrap { position: relative; }
+  .login-input-wrap i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 16px; pointer-events: none; }
+  .login-input {
+    width: 100%; padding: 13px 14px 13px 44px;
+    background: rgba(255,255,255,0.08);
+    border: 1.5px solid rgba(255,255,255,0.15);
+    border-radius: 12px; color: #fff; font-size: 15px;
+    outline: none; box-sizing: border-box;
+    transition: border-color 0.2s;
+    font-family: 'Segoe UI','Sarabun',sans-serif;
+  }
+  .login-input:focus { border-color: #3b82f6; background: rgba(59,130,246,0.08); }
+  .login-input::placeholder { color: #475569; }
+  .login-btn {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: #fff; border: none; border-radius: 14px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    letter-spacing: 0.5px; transition: opacity 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-family: 'Segoe UI','Sarabun',sans-serif;
+    margin-top: 8px;
+  }
+  .login-btn:hover { opacity: 0.9; }
+  .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .login-error {
+    display: none; margin-top: 12px;
+    padding: 10px 14px;
+    background: rgba(239,68,68,0.15);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 10px; color: #fca5a5;
+    font-size: 13px; text-align: center;
+  }
+  .login-footer { text-align: center; margin-top: 20px; color: #334155; font-size: 11px; }
+  .login-setup-link { background: none; border: none; color: #475569; font-size: 12px; cursor: pointer; text-decoration: underline; margin-top: 12px; }
+  /* Logout button in sidebar */
+  .btn-logout {
+    width: 100%; margin-top: 8px; padding: 8px 12px;
+    background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.25);
+    border-radius: 8px; color: #fca5a5; font-size: 12px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: background 0.15s; font-family: 'Segoe UI','Sarabun',sans-serif;
+  }
+  .btn-logout:hover { background: rgba(239,68,68,0.22); }
+
   /* ===== RESPONSIVE ===== */
   @media (max-width: 1200px) {
     .kpi-row { grid-template-columns: repeat(2, 1fr); }
@@ -228,6 +304,43 @@
 </style>
 </head>
 <body>
+
+<!-- ===== LOGIN SCREEN ===== -->
+<div id="pc-login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">📱</div>
+      <h1 class="login-title">COMPHONE SuperApp</h1>
+      <p class="login-sub">ระบบบริหารงานบริการ IT · PC Dashboard</p>
+    </div>
+    <div class="login-field">
+      <label for="pc-login-user"><i class="bi bi-person-fill" style="margin-right:4px"></i>ชื่อผู้ใช้</label>
+      <div class="login-input-wrap">
+        <i class="bi bi-person-fill"></i>
+        <input type="text" id="pc-login-user" class="login-input" placeholder="username"
+          autocomplete="username" autocapitalize="none"
+          onkeydown="if(event.key==='Enter')document.getElementById('pc-login-pass').focus()">
+      </div>
+    </div>
+    <div class="login-field">
+      <label for="pc-login-pass"><i class="bi bi-lock-fill" style="margin-right:4px"></i>รหัสผ่าน</label>
+      <div class="login-input-wrap">
+        <i class="bi bi-lock-fill"></i>
+        <input type="password" id="pc-login-pass" class="login-input" placeholder="password"
+          autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')pcSubmitLogin()">
+      </div>
+    </div>
+    <button id="pc-login-btn" class="login-btn" onclick="pcSubmitLogin()">
+      <i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ
+    </button>
+    <div id="pc-login-error" class="login-error"></div>
+    <div style="text-align:center;margin-top:14px">
+      <button class="login-setup-link" onclick="pcShowSetupUrl()">⚙️ ตั้งค่า Script URL</button>
+    </div>
+    <div class="login-footer">COMPHONE SuperApp v5.5.7 · PC Dashboard</div>
+  </div>
+</div>
 
 <!-- ===== SIDEBAR ===== -->
 <aside class="sidebar" id="sidebar">
@@ -279,6 +392,9 @@
       </div>
     </div>
     <div style="font-size:10px;color:#9ca3af;margin-top:8px;text-align:center" id="pc-version">v5.5.7</div>
+    <button class="btn-logout" onclick="pcLogout()">
+      <i class="bi bi-box-arrow-left"></i> ออกจากระบบ
+    </button>
   </div>
 </aside>
 
@@ -323,24 +439,14 @@ let DASHBOARD_DATA = null;
 
 // ===== INIT =====
 window.addEventListener('load', () => {
-  // Load user from PWA localStorage
-  try {
-    const saved = JSON.parse(localStorage.getItem('comphone_user') || '{}');
-    if (saved.name) {
-      document.getElementById('pc-avatar').textContent = saved.name[0].toUpperCase();
-      document.getElementById('pc-username').textContent = saved.name;
-      document.getElementById('pc-role').textContent = saved.role || 'user';
-    }
-    if (saved.scriptUrl) {
-      localStorage.setItem('comphone_gas_url', saved.scriptUrl);
-    }
-  } catch(e) {}
-
   // Update version in footer
   const vEl = document.getElementById('pc-version');
   if (vEl) vEl.textContent = 'v' + APP_VERSION + ' (' + APP_BUILD + ')';
-
-  loadDashboard();
+  // Update topbar date
+  const dEl = document.getElementById('topbar-date');
+  if (dEl) dEl.textContent = new Date().toLocaleDateString('th-TH', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  // Check session before loading dashboard
+  pcCheckSession();
 });
 
 // ===== API (shared with app.js — cache busting + token auth) =====
@@ -348,8 +454,12 @@ async function callGas(action, params) {
   const url = localStorage.getItem('comphone_gas_url') || GAS_URL;
   // Cache busting: เพิ่ม timestamp เพื่อป้องกัน SW cache
   const bustUrl = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
-  // Token auth: ดึง token จาก localStorage (เหมือนกันกับ app.js)
-  const token = localStorage.getItem('comphone_token') || '';
+  // Token auth: ดึง token จาก comphone_auth_session (เหมือนกันกับ PWA Mobile)
+  let token = '';
+  try {
+    const sess = JSON.parse(localStorage.getItem('comphone_auth_session') || '{}');
+    token = sess.token || '';
+  } catch(e) {}
   const payload = { action, ...(params || {}) };
   if (token) payload.token = token;
   const r = await fetch(bustUrl, {
@@ -651,6 +761,113 @@ function drawRevenueChartPC(revenue) {
       }
     }
   });
+}
+
+// ===== PC AUTH =====
+const PC_SESSION_KEY = 'comphone_auth_session';
+
+async function pcCheckSession() {
+  const loginScreen = document.getElementById('pc-login-screen');
+  try {
+    const saved = JSON.parse(localStorage.getItem(PC_SESSION_KEY) || '{}');
+    if (!saved || !saved.token) {
+      loginScreen.classList.remove('hidden');
+      setTimeout(() => { const u = document.getElementById('pc-login-user'); if(u) u.focus(); }, 300);
+      return;
+    }
+    const res = await callGas('verifySession', { token: saved.token });
+    if (res && res.valid) {
+      pcUpdateSidebarUser(saved);
+      loginScreen.classList.add('hidden');
+      loadDashboard();
+    } else {
+      localStorage.removeItem(PC_SESSION_KEY);
+      loginScreen.classList.remove('hidden');
+      setTimeout(() => { const u = document.getElementById('pc-login-user'); if(u) u.focus(); }, 300);
+    }
+  } catch(e) {
+    console.warn('pcCheckSession error:', e);
+    loginScreen.classList.remove('hidden');
+    setTimeout(() => { const u = document.getElementById('pc-login-user'); if(u) u.focus(); }, 300);
+  }
+}
+
+async function pcSubmitLogin() {
+  const userEl = document.getElementById('pc-login-user');
+  const passEl = document.getElementById('pc-login-pass');
+  const errEl  = document.getElementById('pc-login-error');
+  const btn    = document.getElementById('pc-login-btn');
+  const username = (userEl.value || '').trim();
+  const password = passEl.value || '';
+  errEl.style.display = 'none';
+  if (!username || !password) {
+    errEl.textContent = 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน';
+    errEl.style.display = 'block';
+    return;
+  }
+  btn.disabled = true;
+  btn.innerHTML = '<span style="display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:8px"></span>กำลังเข้าสู่ระบบ...';
+  try {
+    const res = await callGas('loginUser', { username, password });
+    if (res && res.success && res.token) {
+      const session = {
+        token: res.token,
+        username: res.username || username,
+        full_name: res.full_name || res.name || username,
+        name: res.full_name || res.name || username,
+        role: res.role || 'USER',
+        loginAt: Date.now()
+      };
+      localStorage.setItem(PC_SESSION_KEY, JSON.stringify(session));
+      pcUpdateSidebarUser(session);
+      document.getElementById('pc-login-screen').classList.add('hidden');
+      loadDashboard();
+    } else {
+      errEl.textContent = (res && res.message) ? res.message : 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
+      errEl.style.display = 'block';
+      passEl.value = '';
+      passEl.focus();
+    }
+  } catch(e) {
+    errEl.textContent = 'เชื่อมต่อ GAS ไม่ได้ กรุณาตรวจสอบ Script URL';
+    errEl.style.display = 'block';
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ';
+}
+
+function pcLogout() {
+  localStorage.removeItem(PC_SESSION_KEY);
+  const loginScreen = document.getElementById('pc-login-screen');
+  loginScreen.classList.remove('hidden');
+  const u = document.getElementById('pc-login-user');
+  const p = document.getElementById('pc-login-pass');
+  const e = document.getElementById('pc-login-error');
+  if (u) { u.value = ''; }
+  if (p) { p.value = ''; }
+  if (e) { e.style.display = 'none'; }
+  setTimeout(() => { if(u) u.focus(); }, 300);
+}
+
+function pcUpdateSidebarUser(session) {
+  const name = session.full_name || session.name || session.username || 'User';
+  const role = session.role || 'USER';
+  const avatarEl = document.getElementById('pc-avatar');
+  const nameEl   = document.getElementById('pc-username');
+  const roleEl   = document.getElementById('pc-role');
+  if (avatarEl) avatarEl.textContent = name[0].toUpperCase();
+  if (nameEl)   nameEl.textContent = name;
+  if (roleEl)   roleEl.textContent = role;
+}
+
+function pcShowSetupUrl() {
+  const current = localStorage.getItem('comphone_gas_url') || GAS_URL;
+  const newUrl = prompt('กรุณาใส่ GAS Script URL:', current);
+  if (newUrl && newUrl.startsWith('https://')) {
+    localStorage.setItem('comphone_gas_url', newUrl);
+    alert('บันทึก URL แล้ว กรุณา Refresh หน้า');
+    location.reload();
+  }
 }
 
 // ===== SECTION LOADER =====
