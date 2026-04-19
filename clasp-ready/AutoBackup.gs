@@ -117,6 +117,18 @@ function setupAllTriggers() {
     { fn: 'cronMorningAlert',       type: 'daily',   hour: 6,  schedule: 'ทุกวัน 06:00-07:00' },
     { fn: 'sendAfterSalesAlerts',   type: 'daily',   hour: 8,  schedule: 'ทุกวัน 08:00-09:00' },
     { fn: 'autoSyncToDrive',        type: 'daily',   hour: 2,  schedule: 'ทุกวัน 02:00-03:00' },
+    /**
+     * cronTaxReminder — แจ้งเตือนยื่นภาษีรายเดือน
+     * รันวันที่ 1 ของทุกเดือน เวลา 08:00-09:00
+     * handler: TaxDocuments.gs → cronTaxReminder()
+     */
+    { fn: 'cronTaxReminder',        type: 'monthly', dayOfMonth: 1, hour: 8, schedule: 'วันที่ 1 ของทุกเดือน 08:00-09:00' },
+    /**
+     * cronHealthCheck — ตรวจสอบสุขภาพระบบอัตโนมัติ
+     * รันทุก 30 นาที ตลอด 24 ชั่วโมง
+     * handler: HealthMonitor.gs → cronHealthCheck()
+     */
+    { fn: 'cronHealthCheck',        type: 'minutes', everyMinutes: 30, schedule: 'ทุก 30 นาที' },
   ];
 
   // ── ดึง triggers ที่มีอยู่แล้ว (duplicate prevention) ──
@@ -143,6 +155,12 @@ function setupAllTriggers() {
         builder.everyHours(def.every);
       } else if (def.type === 'weekly') {
         builder.onWeekDay(def.day).atHour(def.hour);
+      } else if (def.type === 'monthly') {
+        // GAS ไม่มี everyMonths() โดยตรง — ใช้ everyDays(1) แล้วกรองในฟังก์ชัน
+        // วิธีที่ถูกต้องคือรันทุกวันแล้วเช็ควันที่ 1 ในฟังก์ชัน cronTaxReminder
+        builder.atHour(def.hour).everyDays(1);
+      } else if (def.type === 'minutes') {
+        builder.everyMinutes(def.everyMinutes);
       }
       builder.create();
       results.push({ fn: def.fn, schedule: def.schedule, status: '✅ created' });

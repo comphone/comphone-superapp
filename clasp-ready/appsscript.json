@@ -38,6 +38,12 @@
     { "name": "PushNotifications","type": "SERVER_JS" },
     { "name": "DriveSync",        "type": "SERVER_JS" },
     { "name": "DeployGuide",      "type": "SERVER_JS" },
+    { "name": "TaxEngine",        "type": "SERVER_JS" },
+    { "name": "TaxDocuments",     "type": "SERVER_JS" },
+    { "name": "WarrantyManager",  "type": "SERVER_JS" },
+    { "name": "MultiBranch",      "type": "SERVER_JS" },
+    { "name": "HealthMonitor",    "type": "SERVER_JS" },
+    { "name": "DatabaseIntegrity","type": "SERVER_JS" },
     { "name": "Router",           "type": "SERVER_JS" }
   ]
 }
