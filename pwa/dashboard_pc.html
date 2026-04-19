@@ -311,7 +311,7 @@
   <div class="login-card">
     <div class="login-logo">
       <div class="login-logo-icon">📱</div>
-      <h1 class="login-title">COMPHONE SuperApp</h1>
+      <h1 class="login-title">COMPHONE SUPER APP AI</h1>
       <p class="login-sub">ระบบบริหารงานบริการ IT · PC Dashboard</p>
     </div>
     <div class="login-field">
@@ -339,7 +339,7 @@
     <div style="text-align:center;margin-top:14px">
       <button class="login-setup-link" onclick="pcShowSetupUrl()">⚙️ ตั้งค่า Script URL</button>
     </div>
-    <div class="login-footer">COMPHONE SuperApp v5.5.8 · PC Dashboard</div>
+    <div class="login-footer">COMPHONE SUPER APP AI · PC Dashboard</div>
   </div>
 </div>
 
@@ -349,7 +349,7 @@
     <div class="logo-icon">📱</div>
     <div>
       <div class="logo-text">COMPHONE</div>
-      <div class="logo-sub">SUPER APP v5.5</div>
+      <div class="logo-sub">SUPER APP AI</div>
     </div>
   </div>
 
@@ -423,7 +423,7 @@
         <div class="user-role-sm" id="pc-role">Admin</div>
       </div>
     </div>
-    <div style="font-size:10px;color:#9ca3af;margin-top:8px;text-align:center" id="pc-version">v5.5.8</div>
+    <div style="font-size:10px;color:#9ca3af;margin-top:8px;text-align:center" id="pc-version">v6.2.0</div>
     <button class="btn-logout" onclick="pcLogout()">
       <i class="bi bi-box-arrow-left"></i> ออกจากระบบ
     </button>
@@ -459,7 +459,8 @@
 'use strict';
 
 // ===== VERSION (sync with app.js) =====
-const APP_VERSION = '5.5.8';
+// v6.2: Updated by Header Patch — DO NOT hardcode in UI, use loadAppVersion()
+const APP_VERSION = '6.2.0';
 const APP_BUILD   = '2026-04-19';
 
 // ===== CONFIG =====
@@ -6124,5 +6125,309 @@ document.addEventListener('keydown', function(e) {
 console.log('[COMPHONE v6.1] Performance patch loaded: Bundle+Parallel+Cache+Health');
 </script>
 
+<!-- ============================================================
+     COMPHONE SUPER APP AI — v6.2 Header + Version Patch
+     Phase 1: UI Header Update
+     Phase 2: Version Source (frontend + backend + manifest)
+     Phase 3: loadAppVersion + mismatch check
+     Phase 4: Version Validation + console debug
+     Phase 5: Force Refresh Button
+     Phase 6: Cache Bust
+     ============================================================ -->
+<script>
+'use strict';
+// ============================================================
+// PHASE 2: VERSION SOURCE — Single Source of Truth
+// ============================================================
+const APP_VERSION  = '6.2.0';          // Frontend canonical version
+const APP_NAME     = 'COMPHONE SUPER APP AI';
+const APP_BUILD    = '2026-04-19';
+const APP_DEPLOY   = 'GAS-@472';       // Updated on each deploy
+
+// ============================================================
+// PHASE 1: HEADER UPDATE — Patch sidebar logo + topbar
+// ============================================================
+(function _patchHeaderUI() {
+  // Run after DOM is ready
+  function doHeaderPatch() {
+    // 1. Sidebar logo: replace old text with "COMPHONE SUPER APP AI"
+    const logoText = document.querySelector('.sidebar-logo .logo-text');
+    const logoSub  = document.querySelector('.sidebar-logo .logo-sub');
+    if (logoText) logoText.textContent = 'COMPHONE';
+    if (logoSub) {
+      logoSub.innerHTML = `
+        <span style="display:block;font-size:9px;font-weight:600;letter-spacing:.5px;opacity:.8">SUPER APP AI</span>
+        <span id="sidebarVersion" style="display:block;font-size:9px;opacity:.5;margin-top:1px">v${APP_VERSION}</span>
+      `;
+    }
+
+    // 2. Sidebar footer version badge
+    const pcVer = document.getElementById('pc-version');
+    if (pcVer) {
+      pcVer.innerHTML = `
+        <span id="appVersion" style="font-size:10px;color:#9ca3af">v${APP_VERSION}</span>
+        <span id="versionStatus" style="font-size:9px;margin-left:4px"></span>
+      `;
+    }
+
+    // 3. Login screen title
+    const loginTitle = document.querySelector('.login-title');
+    if (loginTitle) loginTitle.textContent = APP_NAME;
+    const loginFooter = document.querySelector('.login-footer');
+    if (loginFooter) loginFooter.textContent = `${APP_NAME} ${APP_VERSION} · PC Dashboard`;
+
+    // 4. Page title
+    document.title = `${APP_NAME} — PC Dashboard`;
+
+    // 5. Add Force Refresh button to topbar (Phase 5)
+    _injectForceRefreshButton();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', doHeaderPatch);
+  } else {
+    doHeaderPatch();
+  }
+})();
+
+// ============================================================
+// PHASE 5: FORCE REFRESH BUTTON
+// ============================================================
+function _injectForceRefreshButton() {
+  const topbar = document.querySelector('.topbar');
+  if (!topbar || document.getElementById('btn-force-reload')) return;
+
+  const btn = document.createElement('button');
+  btn.id = 'btn-force-reload';
+  btn.title = 'Force Reload (ล้าง cache + โหลดใหม่)';
+  btn.innerHTML = '↻';
+  btn.style.cssText = `
+    background: none;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 14px;
+    cursor: pointer;
+    color: #6b7280;
+    margin-left: 6px;
+    transition: all .15s;
+  `;
+  btn.onmouseenter = () => { btn.style.background = '#f3f4f6'; btn.style.color = '#111827'; };
+  btn.onmouseleave = () => { btn.style.background = 'none'; btn.style.color = '#6b7280'; };
+  btn.onclick = () => forceReloadV62();
+
+  // Insert before the last button in topbar
+  const lastBtn = topbar.querySelector('a.btn-pwa');
+  if (lastBtn) {
+    topbar.insertBefore(btn, lastBtn);
+  } else {
+    topbar.appendChild(btn);
+  }
+}
+
+// ============================================================
+// PHASE 5: FORCE RELOAD FUNCTION
+// ============================================================
+function forceReloadV62() {
+  // Clear all caches
+  if (typeof V61_CACHE !== 'undefined' && V61_CACHE.clear) V61_CACHE.clear();
+  if (typeof APP_STATE !== 'undefined') {
+    APP_STATE.jobs = [];
+    APP_STATE.inventory = [];
+    APP_STATE.alerts = [];
+    APP_STATE.health = {};
+    APP_STATE.lastUpdated = null;
+  }
+  // Clear localStorage cache keys (keep auth session)
+  const keysToKeep = ['comphone_auth_session', 'comphone_gas_url', 'comphone_ui_config', 'comphone_theme'];
+  const allKeys = Object.keys(localStorage);
+  allKeys.forEach(k => {
+    if (!keysToKeep.includes(k) && (k.startsWith('comphone_cache_') || k.startsWith('v61_cache_'))) {
+      localStorage.removeItem(k);
+    }
+  });
+  // Phase 6: Cache bust — reload with version param
+  const url = new URL(location.href);
+  url.searchParams.set('v', APP_VERSION);
+  url.searchParams.set('t', Date.now());
+  location.replace(url.toString());
+}
+
+// ============================================================
+// PHASE 3: LOAD APP VERSION FROM BACKEND
+// ============================================================
+async function loadAppVersion() {
+  const versionEl  = document.getElementById('appVersion');
+  const statusEl   = document.getElementById('versionStatus');
+  const sidebarVer = document.getElementById('sidebarVersion');
+
+  // Show loading state
+  if (versionEl) versionEl.textContent = `v${APP_VERSION}`;
+
+  try {
+    const res = await callApi('getSystemVersion');
+    const backendVersion = res?.version || APP_VERSION;
+    const backendApp     = res?.app || APP_NAME;
+    const backendBuild   = res?.build || APP_BUILD;
+
+    // Phase 4: VERSION VALIDATION — console debug
+    console.log('[VERSION CHECK]', {
+      frontend:        APP_VERSION,
+      backend:         backendVersion,
+      frontend_app:    APP_NAME,
+      backend_app:     backendApp,
+      frontend_build:  APP_BUILD,
+      backend_build:   backendBuild,
+      deploy_id:       res?.deploy_id || 'unknown',
+      match:           APP_VERSION === backendVersion
+    });
+
+    // Update version display
+    const displayVersion = backendVersion || APP_VERSION;
+    if (versionEl)  versionEl.textContent  = `v${displayVersion}`;
+    if (sidebarVer) sidebarVer.textContent = `v${displayVersion}`;
+
+    // Phase 4: MISMATCH WARNING
+    if (APP_VERSION !== backendVersion) {
+      const msg = `⚠️ Version mismatch: Frontend v${APP_VERSION} ≠ Backend v${backendVersion}`;
+      console.warn('[VERSION MISMATCH]', msg);
+
+      if (statusEl) {
+        statusEl.innerHTML = `<span style="color:#f59e0b;font-size:9px" title="${msg}">⚠️ mismatch</span>`;
+      }
+
+      if (typeof showToast === 'function') {
+        showToast(msg, 'warning');
+      } else {
+        // Fallback toast
+        _showVersionToast(msg, 'warning');
+      }
+    } else {
+      if (statusEl) {
+        statusEl.innerHTML = `<span style="color:#10b981;font-size:9px" title="Version synced">✓</span>`;
+      }
+      console.log('[VERSION CHECK] ✅ Frontend and Backend versions match:', displayVersion);
+    }
+
+    return { frontend: APP_VERSION, backend: backendVersion, match: APP_VERSION === backendVersion };
+
+  } catch (e) {
+    console.warn('[VERSION CHECK] Backend unreachable, using frontend version:', e.message);
+    if (versionEl)  versionEl.textContent  = `v${APP_VERSION}`;
+    if (sidebarVer) sidebarVer.textContent = `v${APP_VERSION}`;
+    if (statusEl) {
+      statusEl.innerHTML = `<span style="color:#9ca3af;font-size:9px" title="Backend unreachable">offline</span>`;
+    }
+    return { frontend: APP_VERSION, backend: null, match: false };
+  }
+}
+
+// ============================================================
+// PHASE 4: VERSION TOAST (fallback if showToast not available)
+// ============================================================
+function _showVersionToast(msg, type) {
+  const existing = document.getElementById('version-toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'version-toast';
+  toast.style.cssText = `
+    position: fixed;
+    top: 70px;
+    right: 20px;
+    z-index: 9999;
+    background: ${type === 'warning' ? '#fef3c7' : '#d1fae5'};
+    border: 1px solid ${type === 'warning' ? '#f59e0b' : '#10b981'};
+    color: ${type === 'warning' ? '#92400e' : '#065f46'};
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
+    max-width: 360px;
+    animation: slideInRight .2s ease;
+  `;
+  toast.textContent = msg;
+
+  // Add close button
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = '×';
+  closeBtn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:16px;margin-left:8px;opacity:.7;';
+  closeBtn.onclick = () => toast.remove();
+  toast.appendChild(closeBtn);
+
+  document.body.appendChild(toast);
+  setTimeout(() => { if (toast.parentNode) toast.remove(); }, 8000);
+}
+
+// ============================================================
+// PHASE 6: CACHE BUST — Add version param to API calls
+// ============================================================
+(function _cacheBustInit() {
+  // Remove stale version param from URL after load
+  window.addEventListener('load', () => {
+    const url = new URL(location.href);
+    if (url.searchParams.has('v') || url.searchParams.has('t')) {
+      url.searchParams.delete('v');
+      url.searchParams.delete('t');
+      history.replaceState({}, '', url.toString());
+    }
+  });
+})();
+
+// ============================================================
+// PHASE 3: CALL loadAppVersion on window.onload
+// ============================================================
+window.addEventListener('load', () => {
+  // Delay slightly to let auth check run first
+  setTimeout(() => {
+    loadAppVersion().catch(e => console.warn('[loadAppVersion] Error:', e.message));
+  }, 2000);
+});
+
+// ============================================================
+// PHASE 6: CSS for new header elements
+// ============================================================
+(function _injectHeaderCSS() {
+  const style = document.createElement('style');
+  style.id = 'v62-header-styles';
+  style.textContent = `
+    /* v6.2 Header Styles */
+    .sidebar-logo .logo-sub {
+      font-size: 9px !important;
+      line-height: 1.4 !important;
+    }
+    #appVersion {
+      cursor: pointer;
+      transition: color .15s;
+    }
+    #appVersion:hover {
+      color: #6366f1 !important;
+    }
+    #btn-force-reload:active {
+      transform: rotate(180deg);
+      transition: transform .3s;
+    }
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to   { transform: translateX(0);   opacity: 1; }
+    }
+    /* Version badge in sidebar */
+    #sidebarVersion {
+      font-family: monospace;
+    }
+    /* Topbar version info */
+    .topbar-version-info {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: #9ca3af;
+    }
+  `;
+  document.head.appendChild(style);
+})();
+
+console.log(`[COMPHONE v6.2] Header + Version System loaded — APP_NAME: "${APP_NAME}", VERSION: "${APP_VERSION}"`);
+</script>
 </body>
 </html>

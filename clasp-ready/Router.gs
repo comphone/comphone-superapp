@@ -1022,9 +1022,27 @@ function healthCheckV55_() {
 function getVersionV55_() {
   return {
     success: true,
-    version: CONFIG.VERSION || 'V5.5.7',
+    version: CONFIG.VERSION || '6.2.0',
     build:   CONFIG.BUILD   || '2026-04-19',
-    app:     CONFIG.APP_NAME,
+    app:     CONFIG.APP_NAME || 'COMPHONE SUPER APP AI',
     timestamp: Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss')
+  };
+}
+
+/**
+ * getSystemVersion — Public API for frontend version check
+ * Returns version info for mismatch detection
+ */
+function getSystemVersion() {
+  var now = new Date();
+  return {
+    success:   true,
+    status:    'healthy',
+    version:   CONFIG.VERSION  || '6.2.0',
+    build:     CONFIG.BUILD    || '2026-04-19',
+    app:       CONFIG.APP_NAME || 'COMPHONE SUPER APP AI',
+    updated:   now.toISOString(),
+    timestamp: Utilities.formatDate(now, 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss'),
+    deploy_id: 'GAS-@472'
   };
 }

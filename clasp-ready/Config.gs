@@ -1,11 +1,11 @@
-// COMPHONE SUPER APP V5.5
+// COMPHONE SUPER APP AI v6.2.0
 // ============================================================
 // Config.gs - Script Properties Based Configuration
 // ============================================================
 
 var CONFIG = {
-  APP_NAME: 'COMPHONE SUPER APP V5.5+',
-  VERSION: '5.5.8',
+  APP_NAME: 'COMPHONE SUPER APP AI',
+  VERSION: '6.2.0',
   BUILD: '2026-04-19',
   TIMEZONE: 'Asia/Bangkok',
 

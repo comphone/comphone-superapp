@@ -69,6 +69,14 @@ var MODULE_ROUTER = {
     return (typeof getReportData === 'function') ? getReportData(p) : getReportData_(p.period || 'month');
   },
 
+  // Version
+  'getSystemVersion': function(p) {
+    return (typeof getSystemVersion === 'function') ? getSystemVersion() : getVersionV55_();
+  },
+  'getVersion': function(p) {
+    return (typeof getVersionV55_ === 'function') ? getVersionV55_() : { success: true, version: '6.2.0' };
+  },
+
   // System Health (Phase 6: always return status: 'healthy')
   'getSystemHealth': function(p) {
     var result = (typeof getSystemHealth === 'function') ? getSystemHealth(p) : { success: true };
