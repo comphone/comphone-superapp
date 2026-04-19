@@ -295,9 +295,12 @@
     var lookup = {};
     (distribution || []).forEach(function (item) {
       if (!item) return;
+      // รองรับทั้ง {code, count, label} และ {status_code, job_count, status_label}
+      var count = Number(item.count || item.job_count || 0);
       var label = String(item.label || item.status || item.status_label || '');
-      lookup[label] = Number(item.count || 0);
-      if (item.code !== undefined && item.code !== null) lookup[String(item.code)] = Number(item.count || 0);
+      if (label) lookup[label] = count;
+      var code = item.code !== undefined ? item.code : item.status_code;
+      if (code !== undefined && code !== null) lookup[String(code)] = count;
     });
     return lookup;
   }

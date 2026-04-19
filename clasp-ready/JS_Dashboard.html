@@ -44,8 +44,8 @@
     var inProgressLabels = ['มอบหมายแล้ว', 'รับงานแล้ว', 'เดินทาง', 'ถึงหน้างาน', 'เริ่มงาน', 'รอชิ้นส่วน', 'งานเสร็จ', 'ลูกค้าตรวจรับ', 'รอเก็บเงิน'];
     var completedLabels = ['เก็บเงินแล้ว', 'ปิดงาน'];
     dist.forEach(function(item) {
-      var label = String(item.label || item.status || '');
-      var count = Number(item.count || 0);
+      var label = String(item.label || item.status || item.status_label || '');
+      var count = Number(item.count || item.job_count || 0);
       if (inProgressLabels.indexOf(label) > -1) inProgressCount += count;
       if (completedLabels.indexOf(label) > -1) completedCount += count;
     });
@@ -262,6 +262,11 @@
 
     APP.dashboard = result;
     APP.summary = result.summary || {};
+    // รวม status_distribution จาก top-level (ถ้ามี) เข้า summary เพื่อให้ renderStatusBoard อ่านได้
+    if (!APP.summary.status_distribution && result.status_distribution) {
+      var sd = result.status_distribution;
+      APP.summary.status_distribution = Array.isArray(sd) ? sd : (sd.statuses || []);
+    }
     APP.jobs = result.jobs || APP.summary.recentJobs || [];
     APP.inventory = result.inventory || [];
 
