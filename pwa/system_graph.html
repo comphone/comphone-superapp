@@ -756,42 +756,36 @@ function getNetworkOptions() {
   return {
     physics: {
       enabled: true,
-      solver: 'forceAtlas2Based',
-      forceAtlas2Based: {
-        gravitationalConstant: -60,
-        centralGravity: 0.05,
-        springLength: 100,
-        springConstant: 0.1,
-        damping: 0.5,
-        avoidOverlap: 1.0,
+      solver: 'barnesHut',
+      barnesHut: {
+        gravitationalConstant: -3000,
+        centralGravity: 0.3,
+        springLength: 120,
+        springConstant: 0.04,
+        damping: 0.09,
+        avoidOverlap: 0.5,
       },
-      stabilization: { iterations: 150, updateInterval: 20, fit: true },
+      stabilization: { enabled: true, iterations: 100, updateInterval: 10, fit: false },
     },
     interaction: {
       hover: true,
       tooltipDelay: 200,
       zoomView: true,
       dragView: true,
-      navigationButtons: true,
-      keyboard: { enabled: true },
-      zoomSpeed: 0.5,
+      navigationButtons: false,
+      keyboard: { enabled: false },
     },
-    configure: { enabled: false },
     layout: {
-      improvedLayout: true,
+      improvedLayout: false,
+      randomSeed: 42,
     },
     nodes: {
       borderWidth: 2,
       shadow: true,
     },
     edges: {
-      smooth: { type: 'curvedCW', roundness: 0.15 },
+      smooth: { type: 'dynamic' },
       shadow: false,
-    },
-    groups: {
-      core:   { shape: 'hexagon' },
-      module: { shape: 'ellipse' },
-      data:   { shape: 'database' },
     },
   };
 }
