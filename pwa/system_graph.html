@@ -456,8 +456,13 @@ async function initGraph() {
 
   network.on('stabilizationIterationsDone', function() {
     network.setOptions({ physics: { enabled: false } });
-    network.fit({ animation: { duration: 800, easingFunction: 'easeInOutQuad' } });
-    showLoading(false);
+    setTimeout(function() {
+      network.fit({
+        nodes: nodesDS.getIds(),
+        animation: { duration: 600, easingFunction: 'easeInOutQuad' }
+      });
+      showLoading(false);
+    }, 200);
   });
 
   updateStats(graphData);
@@ -756,9 +761,11 @@ function getNetworkOptions() {
       tooltipDelay: 200,
       zoomView: true,
       dragView: true,
-      navigationButtons: false,
+      navigationButtons: true,
       keyboard: { enabled: true },
+      zoomSpeed: 0.5,
     },
+    configure: { enabled: false },
     layout: {
       improvedLayout: true,
     },
