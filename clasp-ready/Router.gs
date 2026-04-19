@@ -162,7 +162,7 @@ function dispatchActionV55_(action, payload, args) {
             'getStockMovementHistory', 'createPurchaseOrder', 'listPurchaseOrders', 'receivePurchaseOrder',
             'checkStock', 'barcodeLookup', 'scanWithdrawStock', 'geminiReorderSuggestion',
             'createBilling', 'getBilling', 'generatePromptPayQR', 'updatePayment', 'listBillings',
-            'initSystem', 'systemStatus', 'setupAllTriggers', 'getSchemaInfo', 'validateConfig', 'getComphoneConfig', 'setScriptProperties'
+            'initSystem', 'systemStatus', 'setupAllTriggers', 'cleanupSessions', 'verifyToken', 'getSchemaInfo', 'validateConfig', 'getComphoneConfig', 'setScriptProperties'
           ]
         };
 
@@ -260,6 +260,10 @@ function dispatchActionV55_(action, payload, args) {
         return setupUserSheet();
       case 'forceResetAdmin':
         return forceResetAdmin(payload.password || payload.newPassword || '');
+      case 'cleanupSessions':
+        return cleanupSessions();
+      case 'verifyToken':
+        return verifyToken(payload.token || '');
 
       // ============================================================
       // System Setup & Health Check

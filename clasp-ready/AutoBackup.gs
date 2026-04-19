@@ -129,6 +129,12 @@ function setupAllTriggers() {
      * handler: HealthMonitor.gs → cronHealthCheck()
      */
     { fn: 'cronHealthCheck',        type: 'minutes', everyMinutes: 30, schedule: 'ทุก 30 นาที' },
+    /**
+     * cleanupSessions — ลบ SESSION_* ที่ค้างใน ScriptProperties (migration + safety)
+     * รันทุก 6 ชั่วโมง
+     * handler: Auth.gs → cleanupSessions()
+     */
+    { fn: 'cleanupSessions',          type: 'hourly',  every: 6,         schedule: 'ทุก 6 ชั่วโมง' },
   ];
 
   // ── ดึง triggers ที่มีอยู่แล้ว (duplicate prevention) ──

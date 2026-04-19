@@ -141,13 +141,30 @@ function guardAction(action) {
  */
 function requireAuth() {
   const user = typeof APP !== 'undefined' ? APP.user : null;
-  if (user && (user.authToken || user.username)) return true;
+  if (user && (user.authToken || user.username)) {
+    // ตรวจ token format และ expiry (client-side pre-check)
+    const token = user.authToken || user.token || '';
+    if (token && typeof validateToken === 'function' && !validateToken(token)) {
+      console.warn('[requireAuth] Token format invalid — forcing logout');
+      if (typeof APP !== 'undefined') APP.user = null;
+      localStorage.removeItem('comphone_auth_session');
+      if (typeof goPage === 'function') goPage('login', null);
+      return false;
+    }
+    if (typeof isSessionExpired === 'function' && isSessionExpired()) {
+      console.warn('[requireAuth] Session expired — forcing logout');
+      if (typeof APP !== 'undefined') APP.user = null;
+      localStorage.removeItem('comphone_auth_session');
+      if (typeof goPage === 'function') goPage('login', null);
+      return false;
+    }
+    return true;
+  }
 
   // ยังไม่ login
   if (typeof goPage === 'function') {
     goPage('login', null);
   } else {
-    // Fallback: reload
     window.location.reload();
   }
   return false;

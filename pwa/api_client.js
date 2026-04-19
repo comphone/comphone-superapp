@@ -225,6 +225,35 @@ async function checkApiVersion() {
 }
 
 /**
+ * validateToken(token) — ตรวจ format ของ token (HMAC-signed: 32hex.8hex)
+ * ใช้ client-side pre-check ก่อนส่งไป GAS
+ */
+function validateToken(token) {
+  if (!token || typeof token !== 'string') return false;
+  const parts = token.split('.');
+  if (parts.length !== 2) return false;
+  const [random, sig] = parts;
+  return random.length === 32 && sig.length === 8 && /^[0-9a-f]+$/.test(random) && /^[0-9a-f]+$/.test(sig);
+}
+
+/**
+ * isSessionExpired() — ตรวจว่า session หมดอายุหรือยัง (client-side)
+ */
+function isSessionExpired() {
+  try {
+    const sess = getAuthSession();
+    if (!sess || !sess.token) return true;
+    if (!validateToken(sess.token)) return true;
+    if (sess.expires_at) {
+      return new Date() > new Date(sess.expires_at);
+    }
+    return false;
+  } catch (e) {
+    return true;
+  }
+}
+
+/**
  * normalizeJobData(j) — normalize job object จาก GAS ให้เป็นมาตรฐาน
  */
 function normalizeJobData(j) {
@@ -277,4 +306,6 @@ if (typeof window !== 'undefined') {
   window.checkApiVersion = checkApiVersion;
   window.normalizeJobData = normalizeJobData;
   window.normalizeInventoryItem = normalizeInventoryItem;
+  window.validateToken = validateToken;
+  window.isSessionExpired = isSessionExpired;
 }
