@@ -152,7 +152,7 @@ function dispatchActionV55_(action, payload, args) {
           version: CONFIG.VERSION || '5.5.2',
           actions: [
             'getDashboardData', 'getJobStateConfig', 'getJobTimeline', 'transitionJob', 'updateJobById',
-            'addQuickNote', 'openJob', 'updateJobStatus', 'getPhotoGalleryData', 'generateJobQR',
+            'addQuickNote', 'checkJobs', 'listJobs', 'openJob', 'updateJobStatus', 'getPhotoGalleryData', 'generateJobQR',
             'getJobQRData', 'handleProcessPhotos', 'sendDashboardSummary', 'inventoryOverview',
             'transferStock', 'createCustomer', 'updateCustomer', 'getCustomer', 'listCustomers',
             'loginUser', 'logoutUser', 'verifySession', 'listUsers', 'createUser', 'updateUserRole', 'setUserActive', 'setupUserSheet',
@@ -181,6 +181,9 @@ function dispatchActionV55_(action, payload, args) {
       case 'addQuickNote':
         if (args.length >= 3) return invokeFunctionByNameV55_('addQuickNote', args);
         return addQuickNote(payload.job_id || payload.jobId || '', payload.note || '', payload.user || payload.changed_by || 'SYSTEM');
+      case 'checkJobs':
+      case 'listJobs':
+        return checkJobs(payload);
       case 'openJob':
       case 'createJob':
         return openJob(payload);

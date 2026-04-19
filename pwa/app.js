@@ -1145,13 +1145,32 @@ async function callAPI(action, params = {}) {
     return null;
   }
 }
-// callApi(payload) — alias สำหรับ crm_attendance.js, purchase_order.js, dashboard.js
-window.callApi = async function(payload) {
+// callApi(payload|action, params) — Unified API call (RULE 1: Single Source of Truth)
+// รองรับ 2 รูปแบบ: callApi({action,...}) และ callApi('action', {params})
+window.callApi = async function(payloadOrAction, params) {
+  let payload;
+  if (typeof payloadOrAction === 'string') {
+    payload = { action: payloadOrAction, ...(params || {}) };
+  } else {
+    payload = payloadOrAction || {};
+  }
   const url = APP.scriptUrl || DEFAULT_SCRIPT_URL;
   if (!url) return { success: false, error: 'ไม่พบ Script URL' };
+  // Token auth: ดึงจาก comphone_auth_session (RULE 2)
+  if (!payload.token) {
+    try {
+      const sess = JSON.parse(localStorage.getItem('comphone_auth_session') || '{}');
+      if (sess.token) { payload.token = sess.token; payload.username = payload.username || sess.username; }
+    } catch(e) {}
+    // fallback: AUTH object
+    if (!payload.token && typeof AUTH !== 'undefined' && AUTH.token) {
+      payload.token = AUTH.token;
+      payload.username = payload.username || AUTH.username;
+    }
+  }
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
-  // Cache busting: เพิ่ม timestamp เพื่อป้องกัน Service Worker cache API calls
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  // Cache busting
   const bustUrl = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
   try {
     const res = await fetch(bustUrl, {
