@@ -49,6 +49,15 @@ function doGet(e) {
       return jsonOutputV55_(getPhotoGalleryData(jobId));
     }
 
+    // Security Log — GET ?action=getSecurityLog (admin monitoring)
+    if (action === 'getsecuritylog' || action === 'securitylog') {
+      var _log = (typeof getSecurityLog === 'function') ? getSecurityLog() : [];
+      return jsonOutputV55_({ success: true, data: _log, count: _log.length });
+    }
+    // System Metrics — GET ?action=getSystemMetrics (admin monitoring)
+    if (action === 'getsystemmetrics' || action === 'systemmetrics') {
+      return jsonOutputV55_((typeof getSystemMetrics === 'function') ? getSystemMetrics() : { success: false, error: 'not available' });
+    }
     // Default: API Ready response + redirect hint
     return jsonOutputV55_({
       status:       'ok',
@@ -256,6 +265,9 @@ function dispatchActionV55_(action, payload, args) {
         return systemStatus();
       case 'getSystemMetrics':
         return getSystemMetrics();
+      case 'getSecurityLog':
+        var _sl = (typeof getSecurityLog === 'function') ? getSecurityLog() : [];
+        return { success: true, data: _sl, count: _sl.length };
       case 'setupTriggers':
       case 'setupAllTriggers':
         return setupAllTriggers();

@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>COMPHONE System Monitor — V5.5.8</title>
+  <style>
+    :root {
+      --bg:       #0d1117;
+      --surface:  #161b22;
+      --border:   #30363d;
+      --text:     #e6edf3;
+      --muted:    #8b949e;
+      --green:    #3fb950;
+      --yellow:   #d29922;
+      --red:      #f85149;
+      --blue:     #58a6ff;
+      --purple:   #bc8cff;
+      --orange:   #ffa657;
+      --font:     'Segoe UI', 'Noto Sans Thai', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ─── Header ─────────────────────────────────────────── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .logo { font-size: 18px; font-weight: 700; color: var(--blue); letter-spacing: 0.5px; }
+    .version-badge {
+      background: #1f2937;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2px 10px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    #status-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s infinite;
+    }
+    #status-dot.error { background: var(--red); box-shadow: 0 0 8px var(--red); }
+    #status-dot.loading { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    #last-update { font-size: 12px; color: var(--muted); }
+    #refresh-btn {
+      background: #21262d;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.15s;
+    }
+    #refresh-btn:hover { background: #30363d; }
+    #countdown {
+      font-size: 12px;
+      color: var(--muted);
+      min-width: 50px;
+      text-align: right;
+    }
+
+    /* ─── GAS URL Setup ──────────────────────────────────── */
+    #setup-bar {
+      background: #1c2128;
+      border-bottom: 1px solid var(--border);
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #setup-bar label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+    #gas-url-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: monospace;
+    }
+    #gas-url-input:focus { outline: none; border-color: var(--blue); }
+    #save-url-btn {
+      background: var(--blue);
+      border: none;
+      color: #000;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    #save-url-btn:hover { opacity: 0.85; }
+
+    /* ─── Main Layout ────────────────────────────────────── */
+    main { padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
+
+    /* ─── Metric Cards ───────────────────────────────────── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s;
+    }
+    .card.alert { border-color: var(--red); }
+    .card.warn  { border-color: var(--yellow); }
+    .card.ok    { border-color: var(--green); }
+    .card-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .card-value {
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .card-value.green  { color: var(--green); }
+    .card-value.yellow { color: var(--yellow); }
+    .card-value.red    { color: var(--red); }
+    .card-value.blue   { color: var(--blue); }
+    .card-value.purple { color: var(--purple); }
+    .card-sub {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .card-icon {
+      position: absolute;
+      right: 16px;
+      top: 16px;
+      font-size: 28px;
+      opacity: 0.15;
+    }
+
+    /* ─── Charts Row ─────────────────────────────────────── */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+    }
+    .chart-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    canvas { width: 100% !important; }
+
+    /* ─── Trigger Table ──────────────────────────────────── */
+    .section-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--muted);
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #21262d;
+      font-size: 13px;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #1c2128; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-green  { background: #0d2a1a; color: var(--green); border: 1px solid #1a4a2a; }
+    .badge-red    { background: #2a0d0d; color: var(--red);   border: 1px solid #4a1a1a; }
+    .badge-yellow { background: #2a200d; color: var(--yellow);border: 1px solid #4a3a1a; }
+    .badge-blue   { background: #0d1a2a; color: var(--blue);  border: 1px solid #1a2a4a; }
+
+    /* ─── Log Viewer ─────────────────────────────────────── */
+    #log-container {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      height: 320px;
+      overflow-y: auto;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 12px;
+      padding: 12px;
+    }
+    .log-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid #1c2128;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .log-entry:last-child { border-bottom: none; }
+    .log-time { color: var(--muted); white-space: nowrap; min-width: 140px; }
+    .log-event { font-weight: 600; min-width: 200px; }
+    .log-event.rate  { color: var(--orange); }
+    .log-event.token { color: var(--red); }
+    .log-event.login { color: var(--green); }
+    .log-event.other { color: var(--blue); }
+    .log-detail { color: var(--muted); word-break: break-all; }
+    .log-filter {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      background: #21262d;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 4px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.15s;
+    }
+    .filter-btn.active { background: var(--blue); color: #000; border-color: var(--blue); font-weight: 600; }
+    .empty-log { color: var(--muted); text-align: center; padding: 40px; }
+
+    /* ─── Properties Section ─────────────────────────────── */
+    .props-bar {
+      background: var(--bg);
+      border-radius: 6px;
+      height: 12px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+    .props-fill {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 0.5s, background 0.3s;
+    }
+
+    /* ─── Loading Skeleton ───────────────────────────────── */
+    .skeleton {
+      background: linear-gradient(90deg, #21262d 25%, #30363d 50%, #21262d 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+      height: 32px;
+    }
+    @keyframes shimmer { 0%{background-position:200%} 100%{background-position:-200%} }
+
+    /* ─── Error Banner ───────────────────────────────────── */
+    #error-banner {
+      display: none;
+      background: #2a0d0d;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      color: var(--red);
+      font-size: 13px;
+    }
+    #error-banner.show { display: flex; align-items: center; gap: 10px; }
+
+    /* ─── Scrollbar ──────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="header-left">
+    <span class="logo">⚡ COMPHONE Monitor</span>
+    <span class="version-badge" id="sys-version">V5.5.8</span>
+    <div id="status-dot" class="loading"></div>
+  </div>
+  <div class="header-right">
+    <span id="last-update">กำลังโหลด...</span>
+    <span id="countdown">5s</span>
+    <button id="refresh-btn" onclick="fetchAll()">↻ Refresh</button>
+  </div>
+</header>
+
+<!-- GAS URL Setup -->
+<div id="setup-bar">
+  <label>GAS URL:</label>
+  <input type="text" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec" />
+  <button id="save-url-btn" onclick="saveGasUrl()">บันทึก</button>
+</div>
+
+<main>
+  <!-- Error Banner -->
+  <div id="error-banner">
+    <span>⚠️</span>
+    <span id="error-msg">ไม่สามารถเชื่อมต่อ GAS API ได้</span>
+  </div>
+
+  <!-- Metric Cards -->
+  <div class="cards-grid">
+    <div class="card" id="card-health">
+      <div class="card-icon">💚</div>
+      <div class="card-label">System Health</div>
+      <div class="card-value green" id="val-health">—</div>
+      <div class="card-sub" id="sub-health">กำลังตรวจสอบ...</div>
+    </div>
+    <div class="card" id="card-latency">
+      <div class="card-icon">⚡</div>
+      <div class="card-label">API Latency</div>
+      <div class="card-value blue" id="val-latency">—</div>
+      <div class="card-sub" id="sub-latency">ms (health check)</div>
+    </div>
+    <div class="card" id="card-sessions">
+      <div class="card-icon">👤</div>
+      <div class="card-label">Active Sessions</div>
+      <div class="card-value purple" id="val-sessions">—</div>
+      <div class="card-sub" id="sub-sessions">max 3 per user</div>
+    </div>
+    <div class="card" id="card-ratelimit">
+      <div class="card-icon">🚫</div>
+      <div class="card-label">Rate Limit Hits</div>
+      <div class="card-value orange" id="val-ratelimit" style="color:var(--orange)">—</div>
+      <div class="card-sub" id="sub-ratelimit">ใน 100 events ล่าสุด</div>
+    </div>
+    <div class="card" id="card-errors">
+      <div class="card-icon">❌</div>
+      <div class="card-label">Error Events</div>
+      <div class="card-value red" id="val-errors">—</div>
+      <div class="card-sub" id="sub-errors">invalid token + errors</div>
+    </div>
+    <div class="card" id="card-triggers">
+      <div class="card-icon">⏰</div>
+      <div class="card-label">Active Triggers</div>
+      <div class="card-value blue" id="val-triggers">—</div>
+      <div class="card-sub" id="sub-triggers">GAS scheduled triggers</div>
+    </div>
+    <div class="card" id="card-props">
+      <div class="card-icon">🗄️</div>
+      <div class="card-label">Script Properties</div>
+      <div class="card-value" id="val-props">—</div>
+      <div class="props-bar"><div class="props-fill" id="props-fill" style="width:0%;background:var(--green)"></div></div>
+      <div class="card-sub" id="sub-props">limit: 50</div>
+    </div>
+    <div class="card" id="card-version">
+      <div class="card-icon">🔖</div>
+      <div class="card-label">Version</div>
+      <div class="card-value green" id="val-version">—</div>
+      <div class="card-sub" id="sub-version">Backend version</div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title">📈 API Latency History (ms)</div>
+      <canvas id="latency-chart" height="140"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">🔐 Security Events (ล่าสุด 20 รอบ)</div>
+      <canvas id="security-chart" height="140"></canvas>
+    </div>
+  </div>
+
+  <!-- Trigger Table -->
+  <div class="section-card">
+    <div class="section-title">⏰ Trigger Schedule</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Function</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="trigger-table-body">
+        <tr><td colspan="2" style="color:var(--muted);text-align:center;padding:20px">กำลังโหลด...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Security Log Viewer -->
+  <div class="section-card">
+    <div class="section-title">🔍 Security Log Viewer</div>
+    <div class="log-filter">
+      <button class="filter-btn active" onclick="setFilter('ALL')">ทั้งหมด</button>
+      <button class="filter-btn" onclick="setFilter('RATE_LIMIT_EXCEEDED')">Rate Limit</button>
+      <button class="filter-btn" onclick="setFilter('INVALID')">Invalid Token</button>
+      <button class="filter-btn" onclick="setFilter('LOGIN')">Login</button>
+      <button class="filter-btn" onclick="setFilter('OTHER')">อื่นๆ</button>
+    </div>
+    <div id="log-container">
+      <div class="empty-log">กำลังโหลด security log...</div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ─── Config ───────────────────────────────────────────────────────────────────
+const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxbIBi05t_3e2dpLbOyHkQs9Ddzky_mFUYAs7y9jBJBcPc_s_ZnMuJp5i-IlzDfqdVgyg/exec';
+const STORAGE_KEY     = 'comphone_monitor_gas_url';
+const REFRESH_INTERVAL = 5000; // 5 วินาที
+
+let gasUrl       = localStorage.getItem(STORAGE_KEY) || DEFAULT_GAS_URL;
+let logFilter    = 'ALL';
+let allLogs      = [];
+let latencyHistory   = [];
+let securityHistory  = [];
+let countdownVal = 5;
+let countdownTimer;
+let refreshTimer;
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('gas-url-input').value = gasUrl;
+  initCharts();
+  fetchAll();
+  startCountdown();
+});
+
+function saveGasUrl() {
+  const val = document.getElementById('gas-url-input').value.trim();
+  if (!val) return;
+  gasUrl = val;
+  localStorage.setItem(STORAGE_KEY, val);
+  fetchAll();
+}
+
+// ─── Fetch All ────────────────────────────────────────────────────────────────
+async function fetchAll() {
+  setStatusDot('loading');
+  clearTimeout(refreshTimer);
+  clearInterval(countdownTimer);
+
+  try {
+    const [metricsRes, secLogRes] = await Promise.allSettled([
+      fetchMetrics(),
+      fetchSecurityLog()
+    ]);
+
+    if (metricsRes.status === 'fulfilled') {
+      updateMetricCards(metricsRes.value);
+      hideError();
+    } else {
+      showError('getSystemMetrics: ' + metricsRes.reason);
+    }
+
+    if (secLogRes.status === 'fulfilled') {
+      allLogs = secLogRes.value;
+      renderLogs();
+    }
+
+    setStatusDot('ok');
+    document.getElementById('last-update').textContent = 'อัปเดต: ' + new Date().toLocaleTimeString('th-TH');
+  } catch(e) {
+    setStatusDot('error');
+    showError(e.message);
+  }
+
+  // restart countdown
+  countdownVal = 5;
+  startCountdown();
+}
+
+async function fetchMetrics() {
+  const t0  = Date.now();
+  const url = gasUrl + '?action=getSystemMetrics';
+  const res = await fetch(url, { method: 'GET' });
+  const elapsed = Date.now() - t0;
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  data._latency = elapsed;
+  return data;
+}
+
+async function fetchSecurityLog() {
+  const url = gasUrl + '?action=getSecurityLog';
+  const res = await fetch(url, { method: 'GET' });
+  if (!res.ok) return [];
+  const data = await res.json();
+  // getSecurityLog ส่งกลับ array โดยตรง หรือ { success, data }
+  if (Array.isArray(data)) return data;
+  if (data.success && Array.isArray(data.data)) return data.data;
+  return [];
+}
+
+// ─── Update UI ────────────────────────────────────────────────────────────────
+function updateMetricCards(data) {
+  const m = data.metrics || {};
+  const latency = data._latency || 0;
+
+  // Version
+  const ver = m.version || data.version || 'N/A';
+  setText('val-version', ver);
+  setText('sys-version', ver);
+
+  // Health
+  const health = m.health || {};
+  const healthStatus = health.status || 'unknown';
+  const healthEl = document.getElementById('val-health');
+  healthEl.textContent = healthStatus === 'healthy' ? 'Healthy' : healthStatus === 'degraded' ? 'Degraded' : 'Error';
+  healthEl.className = 'card-value ' + (healthStatus === 'healthy' ? 'green' : healthStatus === 'degraded' ? 'yellow' : 'red');
+  setCardState('card-health', healthStatus === 'healthy' ? 'ok' : healthStatus === 'degraded' ? 'warn' : 'alert');
+  setText('sub-health', 'elapsed: ' + (health.elapsed_ms || latency) + 'ms');
+
+  // Latency
+  const latencyMs = health.elapsed_ms || latency;
+  const latencyEl = document.getElementById('val-latency');
+  latencyEl.textContent = latencyMs;
+  latencyEl.className = 'card-value ' + (latencyMs < 1000 ? 'green' : latencyMs < 3000 ? 'yellow' : 'red');
+  setCardState('card-latency', latencyMs < 1000 ? 'ok' : latencyMs < 3000 ? 'warn' : 'alert');
+  setText('sub-latency', 'ms (health check round-trip)');
+
+  // Track latency history
+  latencyHistory.push(latencyMs);
+  if (latencyHistory.length > 20) latencyHistory.shift();
+  updateLatencyChart();
+
+  // Sessions
+  const sess = m.sessions || {};
+  const sessActive = sess.active !== undefined ? sess.active : 'N/A';
+  setText('val-sessions', sessActive);
+  setText('sub-sessions', 'max ' + (sess.max_per_user || 3) + ' per user');
+
+  // Security
+  const sec = m.security || {};
+  const rateLimitHits = sec.rate_limit_exceeded || 0;
+  const invalidToken  = sec.invalid_token || 0;
+  const errTotal      = rateLimitHits + invalidToken;
+
+  setText('val-ratelimit', rateLimitHits);
+  setCardState('card-ratelimit', rateLimitHits > 5 ? 'alert' : rateLimitHits > 0 ? 'warn' : 'ok');
+  setText('sub-ratelimit', 'ใน ' + (sec.recent_events || 0) + ' events ล่าสุด');
+
+  setText('val-errors', errTotal);
+  const errEl = document.getElementById('val-errors');
+  errEl.className = 'card-value ' + (errTotal > 5 ? 'red' : errTotal > 0 ? 'yellow' : 'green');
+  setCardState('card-errors', errTotal > 5 ? 'alert' : errTotal > 0 ? 'warn' : 'ok');
+  setText('sub-errors', 'rate_limit:' + rateLimitHits + ' + invalid:' + invalidToken);
+
+  // Track security history
+  securityHistory.push({ rate: rateLimitHits, invalid: invalidToken });
+  if (securityHistory.length > 20) securityHistory.shift();
+  updateSecurityChart();
+
+  // Triggers
+  const trig = m.triggers || {};
+  const trigCount = trig.count || 0;
+  setText('val-triggers', trigCount);
+  setCardState('card-triggers', trigCount >= 8 ? 'ok' : trigCount >= 4 ? 'warn' : 'alert');
+  renderTriggerTable(trig.functions || []);
+
+  // Properties
+  const props = m.properties || {};
+  const propsTotal = props.total || 0;
+  const propsEl = document.getElementById('val-props');
+  propsEl.textContent = propsTotal + ' / 50';
+  propsEl.className = 'card-value ' + (propsTotal > 45 ? 'red' : propsTotal > 35 ? 'yellow' : 'green');
+  setCardState('card-props', propsTotal > 45 ? 'alert' : propsTotal > 35 ? 'warn' : 'ok');
+  const pct = Math.min(100, Math.round(propsTotal / 50 * 100));
+  const fill = document.getElementById('props-fill');
+  fill.style.width = pct + '%';
+  fill.style.background = propsTotal > 45 ? 'var(--red)' : propsTotal > 35 ? 'var(--yellow)' : 'var(--green)';
+  const sessKeys = props.session_keys || 0;
+  setText('sub-props', 'SESSION_* keys: ' + sessKeys + (props.warning ? ' ⚠️ ' + props.warning : ''));
+}
+
+function renderTriggerTable(functions) {
+  const tbody = document.getElementById('trigger-table-body');
+  if (!functions || functions.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="2" style="color:var(--muted);text-align:center;padding:20px">ไม่พบ trigger</td></tr>';
+    return;
+  }
+  const known = {
+    'autoBackup':              { schedule: 'ทุกวัน 00:00', badge: 'badge-green' },
+    'autoSyncToDrive':         { schedule: 'ทุกวัน 02:00', badge: 'badge-green' },
+    'auditSessionLeak_':       { schedule: 'ทุกวัน 03:00', badge: 'badge-green' },
+    'cronMorningAlert':        { schedule: 'ทุกวัน 06:00', badge: 'badge-green' },
+    'sendAfterSalesAlerts':    { schedule: 'ทุกวัน 08:00', badge: 'badge-green' },
+    'geminiReorderSuggestion': { schedule: 'ทุกวัน 09:00', badge: 'badge-green' },
+    'cleanupSessions':         { schedule: 'ทุก 6 ชั่วโมง', badge: 'badge-blue'  },
+    'cronHealthCheck':         { schedule: 'ทุก 30 นาที',  badge: 'badge-blue'  },
+  };
+  tbody.innerHTML = functions.map(fn => {
+    const info = known[fn] || { schedule: 'Custom', badge: 'badge-yellow' };
+    return `<tr>
+      <td><code style="color:var(--blue);font-size:12px">${fn}()</code></td>
+      <td><span class="badge ${info.badge}">${info.schedule}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── Log Viewer ───────────────────────────────────────────────────────────────
+function setFilter(f) {
+  logFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.trim() === f ||
+      (f === 'ALL' && b.textContent.trim() === 'ทั้งหมด') ||
+      (f === 'RATE_LIMIT_EXCEEDED' && b.textContent.trim() === 'Rate Limit') ||
+      (f === 'INVALID' && b.textContent.trim() === 'Invalid Token') ||
+      (f === 'LOGIN' && b.textContent.trim() === 'Login') ||
+      (f === 'OTHER' && b.textContent.trim() === 'อื่นๆ')
+    );
+  });
+  renderLogs();
+}
+
+function renderLogs() {
+  const container = document.getElementById('log-container');
+  let filtered = allLogs;
+  if (logFilter !== 'ALL') {
+    filtered = allLogs.filter(e => {
+      const ev = (e.event || '').toUpperCase();
+      if (logFilter === 'RATE_LIMIT_EXCEEDED') return ev.includes('RATE_LIMIT');
+      if (logFilter === 'INVALID') return ev.includes('INVALID');
+      if (logFilter === 'LOGIN') return ev.includes('LOGIN');
+      if (logFilter === 'OTHER') return !ev.includes('RATE_LIMIT') && !ev.includes('INVALID') && !ev.includes('LOGIN');
+      return true;
+    });
+  }
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty-log">ไม่มี security events ในช่วงนี้ ✅</div>';
+    return;
+  }
+  container.innerHTML = filtered.slice(0, 100).map(e => {
+    const ev = (e.event || 'UNKNOWN').toUpperCase();
+    let evClass = 'other';
+    if (ev.includes('RATE_LIMIT')) evClass = 'rate';
+    else if (ev.includes('INVALID') || ev.includes('ERROR')) evClass = 'token';
+    else if (ev.includes('LOGIN')) evClass = 'login';
+    const ts = e.timestamp ? new Date(e.timestamp).toLocaleString('th-TH') : '—';
+    const detail = e.endpoint ? `[${e.endpoint}]` + (e.details ? ' ' + JSON.stringify(e.details) : '') : (e.details ? JSON.stringify(e.details) : '');
+    return `<div class="log-entry">
+      <span class="log-time">${ts}</span>
+      <span class="log-event ${evClass}">${ev}</span>
+      <span class="log-detail">${detail}</span>
+    </div>`;
+  }).join('');
+}
+
+// ─── Charts (Mini Canvas) ─────────────────────────────────────────────────────
+let latencyCtx, securityCtx;
+let latencyChart, securityChart;
+
+function initCharts() {
+  latencyCtx  = document.getElementById('latency-chart').getContext('2d');
+  securityCtx = document.getElementById('security-chart').getContext('2d');
+}
+
+function updateLatencyChart() {
+  const canvas = document.getElementById('latency-chart');
+  const ctx = latencyCtx;
+  const data = latencyHistory;
+  const W = canvas.offsetWidth || 400;
+  const H = 140;
+  canvas.width  = W;
+  canvas.height = H;
+  ctx.clearRect(0, 0, W, H);
+
+  if (data.length < 2) return;
+  const max = Math.max(...data, 500);
+  const step = W / (data.length - 1);
+
+  // Grid lines
+  ctx.strokeStyle = '#21262d';
+  ctx.lineWidth = 1;
+  [0.25, 0.5, 0.75].forEach(r => {
+    ctx.beginPath();
+    ctx.moveTo(0, H * r);
+    ctx.lineTo(W, H * r);
+    ctx.stroke();
+  });
+
+  // Fill gradient
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, 'rgba(88,166,255,0.3)');
+  grad.addColorStop(1, 'rgba(88,166,255,0)');
+  ctx.beginPath();
+  data.forEach((v, i) => {
+    const x = i * step;
+    const y = H - (v / max) * (H - 10) - 5;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.lineTo((data.length - 1) * step, H);
+  ctx.lineTo(0, H);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = '#58a6ff';
+  ctx.lineWidth = 2;
+  data.forEach((v, i) => {
+    const x = i * step;
+    const y = H - (v / max) * (H - 10) - 5;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Last value label
+  const last = data[data.length - 1];
+  ctx.fillStyle = '#58a6ff';
+  ctx.font = 'bold 12px monospace';
+  ctx.fillText(last + 'ms', W - 60, 16);
+}
+
+function updateSecurityChart() {
+  const canvas = document.getElementById('security-chart');
+  const ctx = securityCtx;
+  const data = securityHistory;
+  const W = canvas.offsetWidth || 400;
+  const H = 140;
+  canvas.width  = W;
+  canvas.height = H;
+  ctx.clearRect(0, 0, W, H);
+
+  if (data.length < 1) return;
+  const maxVal = Math.max(...data.map(d => d.rate + d.invalid), 1);
+  const barW   = Math.max(4, (W / data.length) - 2);
+
+  data.forEach((d, i) => {
+    const x = i * (W / data.length);
+    // Rate limit (orange)
+    if (d.rate > 0) {
+      const h = (d.rate / maxVal) * (H - 20);
+      ctx.fillStyle = 'rgba(255,166,87,0.8)';
+      ctx.fillRect(x, H - h - 10, barW, h);
+    }
+    // Invalid token (red)
+    if (d.invalid > 0) {
+      const h = (d.invalid / maxVal) * (H - 20);
+      ctx.fillStyle = 'rgba(248,81,73,0.8)';
+      ctx.fillRect(x + barW * 0.5, H - h - 10, barW * 0.5, h);
+    }
+  });
+
+  // Legend
+  ctx.fillStyle = 'rgba(255,166,87,0.8)';
+  ctx.fillRect(8, 8, 12, 12);
+  ctx.fillStyle = '#e6edf3';
+  ctx.font = '11px sans-serif';
+  ctx.fillText('Rate Limit', 24, 18);
+  ctx.fillStyle = 'rgba(248,81,73,0.8)';
+  ctx.fillRect(100, 8, 12, 12);
+  ctx.fillStyle = '#e6edf3';
+  ctx.fillText('Invalid Token', 116, 18);
+}
+
+// ─── Countdown ────────────────────────────────────────────────────────────────
+function startCountdown() {
+  countdownVal = 5;
+  document.getElementById('countdown').textContent = countdownVal + 's';
+  countdownTimer = setInterval(() => {
+    countdownVal--;
+    document.getElementById('countdown').textContent = countdownVal + 's';
+    if (countdownVal <= 0) {
+      clearInterval(countdownTimer);
+      fetchAll();
+    }
+  }, 1000);
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+function setCardState(id, state) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('ok', 'warn', 'alert');
+  el.classList.add(state);
+}
+function setStatusDot(state) {
+  const dot = document.getElementById('status-dot');
+  dot.className = state === 'error' ? 'error' : state === 'loading' ? 'loading' : '';
+}
+function showError(msg) {
+  const banner = document.getElementById('error-banner');
+  document.getElementById('error-msg').textContent = msg;
+  banner.classList.add('show');
+  setStatusDot('error');
+}
+function hideError() {
+  document.getElementById('error-banner').classList.remove('show');
+}
+</script>
+</body>
+</html>
