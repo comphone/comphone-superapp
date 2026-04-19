@@ -684,9 +684,21 @@ function showJobDetail(jobId) {
       <button class="job-act-btn btn-gray-sm" style="width:100%;margin-top:8px;padding:12px" onclick="callCustomer('${job.phone}')">
         <i class="bi bi-telephone-fill"></i> โทร ${job.customer}
       </button>
+      ${job.status === 'done' ? `
+      <button class="job-act-btn" style="width:100%;margin-top:8px;padding:12px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:12px;font-weight:700;cursor:pointer" id="btn-create-warranty-${job.id}">
+        <i class="bi bi-shield-check"></i> สร้างใบรับประกัน
+      </button>` : ''}
     </div>
   `;
   document.getElementById('modal-job').classList.remove('hidden');
+  // เพิ่ม event listener ปุ่มรับประกัน (ถ้ามี)
+  const warrantyBtn = document.getElementById('btn-create-warranty-' + jobId);
+  if (warrantyBtn && typeof createWarrantyModal === 'function') {
+    warrantyBtn.addEventListener('click', () => {
+      closeModal('modal-job');
+      createWarrantyModal(job.id, { customer_name: job.customer, description: job.title });
+    });
+  }
 }
 
 function closeModal(id) {
