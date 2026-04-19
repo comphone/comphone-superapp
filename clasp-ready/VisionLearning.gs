@@ -433,7 +433,7 @@ function createRule(params) {
       id: ruleId,
       type: type,
       condition: params.condition || '',
-      action: params.action || 'flag_for_review',
+      action: params.ruleAction || params.action || 'flag_for_review',
       description: params.description || '',
       source: params.source || 'manual',
       accuracy: parseFloat(params.accuracy || 0),
@@ -701,6 +701,7 @@ function setupLearningTriggers() {
  */
 function getVisionLearningVersion() {
   return {
+    success: true,
     version: VL_VERSION,
     features: ['feedback-loop', 'confidence-calibration', 'dynamic-threshold', 'pattern-analysis', 'prompt-optimization', 'auto-rule-engine', 'learning-dashboard']
   };
