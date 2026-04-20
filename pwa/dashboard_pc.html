@@ -11041,5 +11041,1037 @@ body.theme-dark .sg-detail-close { background: #334155; color: #94a3b8; }
 })();
 
 </script>
+<script>
+/* ============================================================
+ * COMPHONE Dashboard v9.0.0 — Anti-Fragile System Patch
+ * Phase 24: Priority Queue (P0-P3)
+ * Phase 25: Per-Action Circuit Breaker
+ * Phase 26: Critical Path Recovery
+ * Phase 27: State Consistency Guard
+ * Phase 28: Multi-Tab Sync (BroadcastChannel)
+ * Phase 29: Intelligent Throttle (adaptive)
+ * Phase 30: Self-Healing Action
+ * ============================================================ */
+/**
+ * COMPHONE Dashboard v9.0.0 — Anti-Fragile System Patch
+ * Phase 24: Priority Queue (P0-P3)
+ * Phase 25: Per-Action Circuit Breaker
+ * Phase 26: Critical Path Recovery
+ * Phase 27: State Consistency Guard
+ * Phase 28: Multi-Tab Sync (BroadcastChannel)
+ * Phase 29: Intelligent Throttle (adaptive)
+ * Phase 30: Self-Healing Action
+ *
+ * Principle: "ยิ่งโดน stress ยิ่งฉลาดขึ้น"
+ */
+
+(function() {
+  'use strict';
+
+  const _V900_VERSION = '9.0.0';
+  const _V900_BUILD   = 'anti-fragile';
+
+  function _LOG(msg)  { console.log(`%c[v${_V900_VERSION}] ${msg}`, 'color:#0891b2;font-weight:bold'); }
+  function _WARN(msg) { console.warn(`[v${_V900_VERSION}] ⚠️ ${msg}`); }
+  function _ERR(msg)  { console.error(`[v${_V900_VERSION}] ❌ ${msg}`); }
+  function _HEAL(msg) { console.log(`%c[v${_V900_VERSION}] 🔧 ${msg}`, 'color:#16a34a;font-weight:bold'); }
+
+  _LOG('=== Anti-Fragile System Patch Loading ===');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 24: PRIORITY QUEUE
+  // ─────────────────────────────────────────────────────────
+  // เปลี่ยน FIFO → Priority Queue
+  // P0 = auth/session/health (ไม่รอ)
+  // P1 = dashboard/jobs
+  // P2 = inventory/report
+  // P3 = background/analytics
+  // ═══════════════════════════════════════════════════════════
+
+  const _ACTION_PRIORITY = {
+    // P0 — Critical (ไม่เข้า queue เลย)
+    getAuthToken: 0, checkSession: 0, pcCheckSession: 0,
+    getSystemVersion: 0, ping: 0, checkAuth: 0, logout: 0,
+
+    // P1 — High
+    getDashboardBundle: 1, loadDashboard: 1, getJobList: 1,
+    updateJobStatus: 1, getJobDetail: 1, posCheckout: 1,
+    posGetCart: 1, posAddItem: 1,
+
+    // P2 — Normal
+    getStockList: 2, getStockDetail: 2, updateStock: 2,
+    getPOList: 2, createPO: 2, getReportSummary: 2,
+    getCustomerList: 2, getEmployeeList: 2,
+
+    // P3 — Background
+    getAnalytics: 3, syncOfflineQueue: 3, updateCache: 3,
+    getActivityLog: 3, refreshHealthMetrics: 3,
+  };
+
+  function _getPriority(action) {
+    if (_ACTION_PRIORITY[action] !== undefined) return _ACTION_PRIORITY[action];
+    // Heuristic: ชื่อที่มี auth/session/check → P0
+    if (/auth|session|check|ping|version/i.test(action)) return 0;
+    // ชื่อที่มี dashboard/job → P1
+    if (/dashboard|job|pos|checkout/i.test(action)) return 1;
+    // ชื่อที่มี stock/report/po → P2
+    if (/stock|report|po|purchase|customer|employee/i.test(action)) return 2;
+    return 3; // default P3
+  }
+
+  window.__PRIORITY_QUEUE = {
+    // _heap: min-heap sorted by (priority, insertOrder)
+    _heap: [],
+    _insertCounter: 0,
+    _MAX_TOTAL: 50,
+
+    enqueue: function(action, payload, options, priority) {
+      if (priority === undefined) priority = _getPriority(action);
+
+      if (this._heap.length >= this._MAX_TOTAL) {
+        // Drop lowest priority item
+        const maxIdx = this._heap.reduce((maxI, item, i, arr) =>
+          item.priority > arr[maxI].priority ? i : maxI, 0);
+        const dropped = this._heap.splice(maxIdx, 1)[0];
+        _WARN(`Priority Queue: full — dropped P${dropped.priority} ${dropped.action}`);
+        if (dropped.reject) dropped.reject(new Error(`Queue full: ${dropped.action}`));
+      }
+
+      return new Promise((resolve, reject) => {
+        const item = {
+          action, payload, options, priority,
+          order: this._insertCounter++,
+          resolve, reject, ts: Date.now()
+        };
+        this._heap.push(item);
+        this._heap.sort((a, b) => a.priority !== b.priority
+          ? a.priority - b.priority
+          : a.order - b.order);
+        _LOG(`Priority Queue: P${priority} ${action} enqueued (depth: ${this._heap.length})`);
+      });
+    },
+
+    dequeue: function() {
+      return this._heap.shift() || null;
+    },
+
+    peek: function() {
+      return this._heap[0] || null;
+    },
+
+    hasQueued: function(action) {
+      return this._heap.some(item => item.action === action);
+    },
+
+    size: function() { return this._heap.length; },
+
+    stats: function() {
+      const byPriority = { P0: 0, P1: 0, P2: 0, P3: 0 };
+      this._heap.forEach(item => { byPriority[`P${item.priority}`]++; });
+      return { total: this._heap.length, byPriority };
+    }
+  };
+
+  _LOG('Phase 24: Priority Queue initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 25: PER-ACTION CIRCUIT BREAKER
+  // ─────────────────────────────────────────────────────────
+  // เปลี่ยนจาก global → per action
+  // API พังเฉพาะตัว → block เฉพาะตัว
+  // ═══════════════════════════════════════════════════════════
+
+  window.__PER_ACTION_CIRCUIT = {
+    _circuits: {},  // { [action]: { state, errorCount, openedAt, resetTimer } }
+    THRESHOLD: 3,   // per-action threshold (ต่ำกว่า global เพราะ specific)
+    RESET_MS: 20000, // 20s per-action reset (เร็วกว่า global)
+
+    _get: function(action) {
+      if (!this._circuits[action]) {
+        this._circuits[action] = {
+          state: 'CLOSED',  // CLOSED | OPEN | HALF-OPEN
+          errorCount: 0,
+          openedAt: null,
+          resetTimer: null,
+          successCount: 0
+        };
+      }
+      return this._circuits[action];
+    },
+
+    isBlocked: function(action) {
+      const c = this._get(action);
+      return c.state === 'OPEN';
+    },
+
+    trip: function(action, error) {
+      const c = this._get(action);
+      c.errorCount++;
+      _WARN(`Per-Action CB: ${action} error #${c.errorCount}: ${error}`);
+
+      if (c.errorCount >= this.THRESHOLD && c.state !== 'OPEN') {
+        c.state = 'OPEN';
+        c.openedAt = Date.now();
+        _ERR(`Per-Action CB: ${action} OPEN (${c.errorCount} errors)`);
+
+        if (c.resetTimer) clearTimeout(c.resetTimer);
+        c.resetTimer = setTimeout(() => {
+          c.state = 'HALF-OPEN';
+          c.errorCount = Math.floor(c.errorCount / 2);
+          _LOG(`Per-Action CB: ${action} → HALF-OPEN (auto-reset)`);
+        }, this.RESET_MS);
+      }
+    },
+
+    success: function(action) {
+      const c = this._get(action);
+      c.successCount++;
+      if (c.state === 'HALF-OPEN') {
+        // 2 consecutive successes → CLOSED
+        if (c.successCount >= 2) {
+          c.state = 'CLOSED';
+          c.errorCount = 0;
+          c.successCount = 0;
+          if (c.resetTimer) { clearTimeout(c.resetTimer); c.resetTimer = null; }
+          _HEAL(`Per-Action CB: ${action} → CLOSED (recovered)`);
+        }
+      } else if (c.state === 'CLOSED' && c.errorCount > 0) {
+        c.errorCount = Math.max(0, c.errorCount - 1);
+      }
+    },
+
+    reset: function(action) {
+      if (this._circuits[action]) {
+        if (this._circuits[action].resetTimer) clearTimeout(this._circuits[action].resetTimer);
+        delete this._circuits[action];
+        _LOG(`Per-Action CB: ${action} manually reset`);
+      }
+    },
+
+    resetAll: function() {
+      Object.values(this._circuits).forEach(c => {
+        if (c.resetTimer) clearTimeout(c.resetTimer);
+      });
+      this._circuits = {};
+      _LOG('Per-Action CB: all circuits reset');
+    },
+
+    status: function(action) {
+      if (action) {
+        const c = this._get(action);
+        return { action, state: c.state, errorCount: c.errorCount,
+                 openedAt: c.openedAt ? new Date(c.openedAt).toLocaleTimeString() : null };
+      }
+      // All circuits
+      return Object.entries(this._circuits)
+        .filter(([, c]) => c.state !== 'CLOSED' || c.errorCount > 0)
+        .map(([action, c]) => ({
+          action, state: c.state,
+          errorCount: c.errorCount,
+          openedAt: c.openedAt ? new Date(c.openedAt).toLocaleTimeString() : null
+        }));
+    }
+  };
+
+  _LOG('Phase 25: Per-Action Circuit Breaker initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 26: CRITICAL PATH RECOVERY
+  // ─────────────────────────────────────────────────────────
+  // เมื่อ Safe Mode: เปิดเฉพาะ critical path
+  // ระบบยัง "ใช้งานได้บางส่วน" ไม่ freeze ทั้งระบบ
+  // ═══════════════════════════════════════════════════════════
+
+  const _CRITICAL_PATH = new Set([
+    'getSystemVersion', 'checkSession', 'pcCheckSession',
+    'getDashboardBundle', 'getAuthToken', 'ping', 'checkAuth'
+  ]);
+
+  const _DEGRADED_PATH = new Set([
+    // ใน degraded mode เปิดเพิ่ม
+    'getJobList', 'updateJobStatus', 'posCheckout'
+  ]);
+
+  window.__RECOVERY_MODE = {
+    level: 'NORMAL',  // NORMAL | DEGRADED | CRITICAL | FROZEN
+
+    setLevel: function(level, reason) {
+      const prev = this.level;
+      this.level = level;
+      _LOG(`Recovery Mode: ${prev} → ${level} (${reason || 'manual'})`);
+
+      if (level === 'CRITICAL') {
+        _WARN('Critical Path Recovery: only auth/session/dashboard allowed');
+      } else if (level === 'DEGRADED') {
+        _WARN('Degraded Mode: limited functionality');
+      } else if (level === 'FROZEN') {
+        _ERR('FROZEN: all API blocked — manual intervention required');
+      }
+    },
+
+    isAllowed: function(action) {
+      switch (this.level) {
+        case 'NORMAL': return true;
+        case 'DEGRADED': return _CRITICAL_PATH.has(action) || _DEGRADED_PATH.has(action);
+        case 'CRITICAL': return _CRITICAL_PATH.has(action);
+        case 'FROZEN': return false;
+        default: return true;
+      }
+    },
+
+    autoDetect: function(circuitStats) {
+      const openCount = circuitStats.filter(c => c.state === 'OPEN').length;
+      const halfOpenCount = circuitStats.filter(c => c.state === 'HALF-OPEN').length;
+
+      if (openCount >= 5) {
+        this.setLevel('CRITICAL', `${openCount} circuits OPEN`);
+      } else if (openCount >= 3 || halfOpenCount >= 5) {
+        this.setLevel('DEGRADED', `${openCount} OPEN, ${halfOpenCount} HALF-OPEN`);
+      } else if (openCount === 0 && halfOpenCount === 0 && this.level !== 'NORMAL') {
+        this.setLevel('NORMAL', 'all circuits recovered');
+      }
+    }
+  };
+
+  _LOG('Phase 26: Critical Path Recovery initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 27: STATE CONSISTENCY GUARD
+  // ─────────────────────────────────────────────────────────
+  // ป้องกัน UI overwrite data ใหม่ด้วยของเก่า
+  // ตรวจ version mismatch
+  // ═══════════════════════════════════════════════════════════
+
+  window.__STATE_GUARD = {
+    _versions: {},   // { [stateKey]: { version, ts, checksum } }
+    _rejectCount: 0,
+
+    // สร้าง simple checksum จาก JSON
+    _checksum: function(data) {
+      const str = JSON.stringify(data) || '';
+      let hash = 0;
+      for (let i = 0; i < Math.min(str.length, 1000); i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash |= 0;
+      }
+      return hash.toString(16);
+    },
+
+    // บันทึก state version
+    commit: function(stateKey, data, version) {
+      const ts = Date.now();
+      const checksum = this._checksum(data);
+      version = version || ts;
+      this._versions[stateKey] = { version, ts, checksum };
+      return { version, checksum };
+    },
+
+    // ตรวจว่า update ใหม่กว่า state ปัจจุบัน
+    canUpdate: function(stateKey, newVersion) {
+      const current = this._versions[stateKey];
+      if (!current) return true;  // ยังไม่มี state → อนุญาต
+
+      if (newVersion !== undefined && newVersion < current.version) {
+        this._rejectCount++;
+        _WARN(`State Guard: REJECT ${stateKey} — new version ${newVersion} < current ${current.version}`);
+        return false;
+      }
+      return true;
+    },
+
+    // ตรวจ response ก่อน apply
+    validateResponse: function(action, response) {
+      if (!response || typeof response !== 'object') return true;
+
+      const stateKey = action;
+      const newVersion = response.version || response.dataVersion || response.ts;
+      const current = this._versions[stateKey];
+
+      if (current && newVersion && newVersion < current.version) {
+        this._rejectCount++;
+        _WARN(`State Guard: STALE response for ${action} — v${newVersion} < v${current.version}`);
+        return false;
+      }
+
+      // Commit new version
+      if (newVersion) {
+        this.commit(stateKey, response, newVersion);
+      }
+      return true;
+    },
+
+    stats: function() {
+      return {
+        trackedStates: Object.keys(this._versions).length,
+        rejectCount: this._rejectCount,
+        states: Object.entries(this._versions).map(([key, v]) => ({
+          key,
+          version: v.version,
+          age: Math.round((Date.now() - v.ts) / 1000) + 's'
+        }))
+      };
+    }
+  };
+
+  _LOG('Phase 27: State Consistency Guard initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 28: MULTI-TAB SYNC (BroadcastChannel)
+  // ─────────────────────────────────────────────────────────
+  // sync: login/logout, POS sale, job update, cache invalidate
+  // ═══════════════════════════════════════════════════════════
+
+  window.__TAB_SYNC = (function() {
+    const CHANNEL_NAME = 'comphone_v900';
+    let _channel = null;
+    let _tabId = 'tab_' + Math.random().toString(36).substr(2, 6);
+    let _handlers = {};
+    let _messageCount = 0;
+
+    // Events ที่ต้อง broadcast
+    const _BROADCAST_EVENTS = new Set([
+      'login', 'logout', 'posCheckout', 'posAddItem',
+      'updateJobStatus', 'invalidateCache', 'updateStock',
+      'createPO', 'updateCustomer'
+    ]);
+
+    function _init() {
+      if (!window.BroadcastChannel) {
+        _WARN('Tab Sync: BroadcastChannel not supported — single tab mode');
+        return null;
+      }
+      try {
+        const ch = new BroadcastChannel(CHANNEL_NAME);
+        ch.onmessage = function(event) {
+          const msg = event.data;
+          if (!msg || msg.sourceTab === _tabId) return; // ignore own messages
+
+          _messageCount++;
+          _LOG(`Tab Sync: received [${msg.type}] from ${msg.sourceTab}`);
+
+          const handler = _handlers[msg.type];
+          if (handler) {
+            try { handler(msg.payload, msg.sourceTab); }
+            catch(e) { _WARN(`Tab Sync: handler error for ${msg.type}: ${e.message}`); }
+          }
+
+          // Default handlers
+          if (msg.type === 'logout') {
+            _WARN('Tab Sync: logout received — reloading...');
+            setTimeout(() => window.location.reload(), 500);
+          } else if (msg.type === 'invalidateCache') {
+            if (window.__V800_CACHE) {
+              window.__V800_CACHE.clear && window.__V800_CACHE.clear();
+              _LOG('Tab Sync: cache invalidated');
+            }
+          }
+        };
+        ch.onmessageerror = function(e) {
+          _WARN(`Tab Sync: message error: ${e}`);
+        };
+        return ch;
+      } catch(e) {
+        _WARN(`Tab Sync: init failed: ${e.message}`);
+        return null;
+      }
+    }
+
+    _channel = _init();
+
+    return {
+      tabId: _tabId,
+      supported: !!_channel,
+
+      broadcast: function(type, payload) {
+        if (!_channel) return false;
+        try {
+          _channel.postMessage({ type, payload, sourceTab: _tabId, ts: Date.now() });
+          _LOG(`Tab Sync: broadcast [${type}]`);
+          return true;
+        } catch(e) {
+          _WARN(`Tab Sync: broadcast failed: ${e.message}`);
+          return false;
+        }
+      },
+
+      on: function(type, handler) {
+        _handlers[type] = handler;
+      },
+
+      shouldBroadcast: function(action) {
+        return _BROADCAST_EVENTS.has(action);
+      },
+
+      stats: function() {
+        return {
+          tabId: _tabId,
+          supported: !!_channel,
+          messagesReceived: _messageCount,
+          broadcastEvents: Array.from(_BROADCAST_EVENTS)
+        };
+      }
+    };
+  })();
+
+  _LOG(`Phase 28: Multi-Tab Sync initialized (tabId: ${window.__TAB_SYNC.tabId}) ✅`);
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 29: INTELLIGENT THROTTLE
+  // ─────────────────────────────────────────────────────────
+  // ปรับ API rate ตาม latency, error rate, device performance
+  // ระบบ "ปรับตัวเอง"
+  // ═══════════════════════════════════════════════════════════
+
+  window.__INTELLIGENT_THROTTLE = {
+    // Current adaptive state
+    _state: {
+      baseDelay: 0,        // ms delay ระหว่าง API calls
+      maxConcurrent: 3,    // max concurrent calls
+      rateLimit: 30,       // calls per 60s
+      lastAdjusted: 0
+    },
+
+    // Performance history (sliding window 10 calls)
+    _history: [],
+    _MAX_HISTORY: 10,
+
+    record: function(elapsed, success) {
+      this._history.push({ elapsed, success, ts: Date.now() });
+      if (this._history.length > this._MAX_HISTORY) this._history.shift();
+      this._adapt();
+    },
+
+    _adapt: function() {
+      if (this._history.length < 3) return;
+      const now = Date.now();
+      if (now - this._state.lastAdjusted < 5000) return; // adapt ทุก 5s
+
+      const latencies = this._history.map(h => h.elapsed).filter(Boolean);
+      const avgLatency = latencies.reduce((a, b) => a + b, 0) / latencies.length;
+      const errorRate = this._history.filter(h => !h.success).length / this._history.length;
+
+      let newDelay = 0;
+      let newRate = 30;
+      let reason = '';
+
+      if (avgLatency > 5000 || errorRate > 0.5) {
+        // Very bad: slow down significantly
+        newDelay = 2000;
+        newRate = 10;
+        reason = `avg latency ${Math.round(avgLatency)}ms, error rate ${Math.round(errorRate*100)}%`;
+        _WARN(`Intelligent Throttle: SLOW DOWN — ${reason}`);
+      } else if (avgLatency > 2000 || errorRate > 0.3) {
+        // Bad: slow down
+        newDelay = 500;
+        newRate = 20;
+        reason = `avg latency ${Math.round(avgLatency)}ms`;
+        _WARN(`Intelligent Throttle: MODERATE — ${reason}`);
+      } else if (avgLatency < 500 && errorRate < 0.1) {
+        // Good: speed up
+        newDelay = 0;
+        newRate = 30;
+        if (this._state.baseDelay > 0) {
+          reason = 'performance improved';
+          _HEAL(`Intelligent Throttle: SPEED UP — ${reason}`);
+        }
+      }
+
+      if (newDelay !== this._state.baseDelay || newRate !== this._state.rateLimit) {
+        this._state.baseDelay = newDelay;
+        this._state.rateLimit = newRate;
+        this._state.lastAdjusted = now;
+
+        // Update Runtime Guard rate limit
+        if (window.__RUNTIME_GUARD) {
+          window.__RUNTIME_GUARD._RATE_LIMIT = newRate;
+        }
+      }
+    },
+
+    getDelay: function() {
+      return this._state.baseDelay;
+    },
+
+    stats: function() {
+      const latencies = this._history.map(h => h.elapsed).filter(Boolean);
+      const avg = latencies.length ? Math.round(latencies.reduce((a,b)=>a+b,0)/latencies.length) : 0;
+      const errorRate = this._history.length
+        ? Math.round(this._history.filter(h=>!h.success).length / this._history.length * 100)
+        : 0;
+      return {
+        baseDelay: this._state.baseDelay + 'ms',
+        maxConcurrent: this._state.maxConcurrent,
+        rateLimit: this._state.rateLimit + '/min',
+        avgLatency: avg + 'ms',
+        errorRate: errorRate + '%',
+        sampleSize: this._history.length
+      };
+    }
+  };
+
+  _LOG('Phase 29: Intelligent Throttle initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 30: SELF-HEALING ACTION
+  // ─────────────────────────────────────────────────────────
+  // เมื่อ error pattern ซ้ำ:
+  // - auto retry with delay
+  // - switch fallback API
+  // - downgrade feature
+  // ═══════════════════════════════════════════════════════════
+
+  window.__SELF_HEALER = {
+    _patterns: {},  // { [action]: { errors: [], retryCount, lastHealed } }
+    _healCount: 0,
+
+    // Fallback actions mapping
+    _fallbacks: {
+      getDashboardBundle: 'getDashboardBundleLight',
+      getJobList: 'getJobListSimple',
+      getStockList: 'getStockListSimple',
+      getReportSummary: 'getReportSummaryCache',
+    },
+
+    // Feature downgrade mapping
+    _downgrades: {
+      getDashboardBundle: { disableCharts: true, disableRealtime: true },
+      getJobList: { pageSize: 20, disableSearch: true },
+    },
+
+    record: function(action, error) {
+      if (!this._patterns[action]) {
+        this._patterns[action] = { errors: [], retryCount: 0, lastHealed: null, degraded: false };
+      }
+      const p = this._patterns[action];
+      p.errors.push({ error, ts: Date.now() });
+      // Keep last 10 errors
+      if (p.errors.length > 10) p.errors.shift();
+    },
+
+    shouldHeal: function(action) {
+      const p = this._patterns[action];
+      if (!p || p.errors.length < 2) return false;
+
+      // ตรวจว่า error เกิดซ้ำใน 30s
+      const now = Date.now();
+      const recentErrors = p.errors.filter(e => now - e.ts < 30000);
+      return recentErrors.length >= 2;
+    },
+
+    heal: async function(action, payload, options) {
+      const p = this._patterns[action];
+      if (!p) return null;
+
+      p.retryCount++;
+      p.lastHealed = Date.now();
+      this._healCount++;
+
+      // Strategy 1: Retry with exponential backoff
+      const delay = Math.min(1000 * Math.pow(2, Math.min(p.retryCount - 1, 4)), 16000);
+      _HEAL(`Self-Heal: ${action} — retry #${p.retryCount} with ${delay}ms delay`);
+
+      await new Promise(resolve => setTimeout(resolve, delay));
+
+      // Strategy 2: Try fallback action
+      const fallback = this._fallbacks[action];
+      if (fallback && p.retryCount >= 2) {
+        _HEAL(`Self-Heal: ${action} → fallback to ${fallback}`);
+        try {
+          const result = await window.callApi(fallback, payload, options);
+          if (result && result.success !== false) {
+            _HEAL(`Self-Heal: ${fallback} succeeded ✅`);
+            p.errors = [];
+            p.retryCount = 0;
+            return result;
+          }
+        } catch(e) {
+          _WARN(`Self-Heal: fallback ${fallback} also failed: ${e.message}`);
+        }
+      }
+
+      // Strategy 3: Downgrade feature
+      const downgrade = this._downgrades[action];
+      if (downgrade && p.retryCount >= 3 && !p.degraded) {
+        p.degraded = true;
+        _HEAL(`Self-Heal: ${action} — downgrading feature (${JSON.stringify(downgrade)})`);
+        const degradedPayload = Object.assign({}, payload, downgrade);
+        try {
+          const result = await window.callApi(action, degradedPayload, options);
+          if (result && result.success !== false) {
+            _HEAL(`Self-Heal: ${action} succeeded in degraded mode ✅`);
+            return result;
+          }
+        } catch(e) {
+          _WARN(`Self-Heal: degraded ${action} failed: ${e.message}`);
+        }
+      }
+
+      return null; // healing failed
+    },
+
+    stats: function() {
+      return {
+        totalHeals: this._healCount,
+        patterns: Object.entries(this._patterns)
+          .filter(([, p]) => p.errors.length > 0)
+          .map(([action, p]) => ({
+            action,
+            recentErrors: p.errors.filter(e => Date.now() - e.ts < 60000).length,
+            retryCount: p.retryCount,
+            degraded: p.degraded
+          }))
+      };
+    }
+  };
+
+  _LOG('Phase 30: Self-Healing Action initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // CORE: UPGRADE API_CONTROLLER.call() → v9.0.0
+  // รวม Phase 24-30 เข้าด้วยกัน
+  // ═══════════════════════════════════════════════════════════
+
+  _LOG('Upgrading API_CONTROLLER.call() to v9.0.0...');
+
+  window.API_CONTROLLER.call = async function _v900ControllerCall(action, payload, options) {
+    payload = payload || {};
+    options = options || {};
+    const source = options.source || 'UserAction';
+    const priority = options.priority !== undefined ? options.priority : _getPriority(action);
+
+    // ── Phase 26: Recovery Mode check ──
+    if (!window.__RECOVERY_MODE.isAllowed(action) && !options.forceRecovery) {
+      _WARN(`Recovery Mode [${window.__RECOVERY_MODE.level}]: ${action} BLOCKED`);
+      return { success: false, error: 'RECOVERY_MODE',
+               message: `ระบบอยู่ใน ${window.__RECOVERY_MODE.level} mode — ${action} ถูก block` };
+    }
+
+    // ── Phase 22: Safe Mode (from v8.1.0) ──
+    if (window.__SAFE_MODE && !window.SAFE_MODE.isCritical(action) && !options.forceSafeMode) {
+      _WARN(`Safe Mode: ${action} BLOCKED`);
+      return { success: false, error: 'SAFE_MODE', message: `Safe Mode — ${action} blocked` };
+    }
+
+    // ── Phase 25: Per-Action Circuit Breaker ──
+    if (window.__PER_ACTION_CIRCUIT.isBlocked(action) && !options.forceCircuit) {
+      _ERR(`Per-Action CB: ${action} OPEN — BLOCKED`);
+      return { success: false, error: 'CIRCUIT_OPEN_ACTION',
+               message: `${action} ถูก block ชั่วคราว (per-action circuit open)` };
+    }
+
+    // ── Phase 20: Global Circuit Breaker (from v8.1.0) ──
+    if (window.__CIRCUIT_BREAKER && window.__CIRCUIT_BREAKER.BLOCK_API
+        && priority > 0 && !options.forceCircuit) {
+      _ERR(`Global CB OPEN: ${action} BLOCKED`);
+      return { success: false, error: 'CIRCUIT_OPEN',
+               message: `Global circuit open — API blocked` };
+    }
+
+    // ── Phase 21: Rate Throttle (from v8.1.0) ──
+    if (window.__RUNTIME_GUARD && window.__RUNTIME_GUARD.isThrottled() && priority > 1) {
+      _WARN(`Runtime Guard: ${action} throttled`);
+      return { success: false, error: 'THROTTLED', message: 'Rate limit — กรุณารอสักครู่' };
+    }
+
+    // ── Phase 17: Duplicate Call Guard (from v8.1.0) ──
+    const lockKey = action + (options.lockKey || '');
+    if (window.__IN_FLIGHT && window.__IN_FLIGHT[lockKey] && !options.force) {
+      if (window.__RUNTIME_GUARD) window.__RUNTIME_GUARD.recordDuplicate(action);
+
+      // ── Phase 24: Priority Queue (replaces FIFO) ──
+      if (options.queue !== false) {
+        return window.__PRIORITY_QUEUE.enqueue(action, payload, options, priority);
+      }
+      return { success: false, error: 'IN_PROGRESS', message: `${action} กำลังดำเนินการอยู่` };
+    }
+
+    // Set in-flight
+    if (window.__IN_FLIGHT) {
+      window.__IN_FLIGHT[lockKey] = { action, source, priority, ts: Date.now() };
+    }
+
+    // ── Phase 18: Auto Lock Timeout ──
+    const _lockTimeout = setTimeout(function() {
+      if (window.__IN_FLIGHT && window.__IN_FLIGHT[lockKey]) {
+        _WARN(`Auto Lock Timeout: ${action} released after 10s`);
+        delete window.__IN_FLIGHT[lockKey];
+        const next = window.__PRIORITY_QUEUE.dequeue();
+        if (next) {
+          window.API_CONTROLLER.call(next.action, next.payload, next.options)
+            .then(next.resolve).catch(next.reject);
+        }
+      }
+    }, 10000);
+
+    // ── Phase 29: Intelligent Throttle delay ──
+    const throttleDelay = window.__INTELLIGENT_THROTTLE.getDelay();
+    if (throttleDelay > 0 && priority > 0) {
+      await new Promise(r => setTimeout(r, throttleDelay));
+    }
+
+    const t0 = performance.now();
+
+    // Trace
+    if (!window.__CALL_COUNTS) window.__CALL_COUNTS = {};
+    window.__CALL_COUNTS[action] = (window.__CALL_COUNTS[action] || 0) + 1;
+    console.log(
+      `%c[TRACE] P${priority} ${action} #${window.__CALL_COUNTS[action]} | ${source}`,
+      'color:#0891b2'
+    );
+
+    try {
+      const result = await window.callApi(action, payload,
+        Object.assign({}, options, { _fromController: true }));
+      const elapsed = Math.round(performance.now() - t0);
+      const success = result?.success !== false;
+
+      // ── Phase 27: State Consistency Guard ──
+      if (success && result) {
+        const valid = window.__STATE_GUARD.validateResponse(action, result);
+        if (!valid) {
+          _WARN(`State Guard: ${action} response rejected (stale)`);
+          return { success: false, error: 'STALE_RESPONSE',
+                   message: `${action} response เก่ากว่า state ปัจจุบัน` };
+        }
+      }
+
+      // ── Phase 29: Record to Intelligent Throttle ──
+      window.__INTELLIGENT_THROTTLE.record(elapsed, success);
+
+      // ── Phase 25: Per-Action CB ──
+      if (success) {
+        window.__PER_ACTION_CIRCUIT.success(action);
+        window.__SELF_HEALER._patterns[action] && (window.__SELF_HEALER._patterns[action].errors = []);
+      } else {
+        window.__PER_ACTION_CIRCUIT.trip(action, result?.error || 'unknown');
+        window.__SELF_HEALER.record(action, result?.error || 'unknown');
+      }
+
+      // ── Phase 20: Global CB ──
+      if (window.__CIRCUIT_BREAKER) {
+        success ? window.__CIRCUIT_BREAKER.success() : window.__CIRCUIT_BREAKER.trip(action, result?.error);
+      }
+
+      // ── Phase 21: Runtime Guard ──
+      if (window.__RUNTIME_GUARD) {
+        window.__RUNTIME_GUARD.record(action, elapsed, success);
+      }
+
+      // ── Phase 26: Auto-detect recovery level ──
+      const circuitStats = window.__PER_ACTION_CIRCUIT.status();
+      window.__RECOVERY_MODE.autoDetect(circuitStats);
+
+      // ── Phase 28: Multi-Tab Sync ──
+      if (success && window.__TAB_SYNC.shouldBroadcast(action)) {
+        window.__TAB_SYNC.broadcast(action, { action, result: result?.data || null });
+      }
+
+      // Trace log
+      if (!window.__V800_TRACE) window.__V800_TRACE = [];
+      window.__V800_TRACE.push({ action, source, priority, ts: Date.now(), elapsed, success });
+      if (window.__V800_TRACE.length > 200) window.__V800_TRACE.shift();
+
+      console.log(
+        `%c[TRACE] ${action} → ${success ? '✅' : '❌'} (${elapsed}ms | P${priority})`,
+        success ? 'color:green' : 'color:red'
+      );
+
+      // ── Phase 30: Self-Healing ──
+      if (!success && window.__SELF_HEALER.shouldHeal(action) && !options._healing) {
+        _HEAL(`Self-Heal: triggering for ${action}`);
+        const healed = await window.__SELF_HEALER.heal(action, payload,
+          Object.assign({}, options, { _healing: true }));
+        if (healed) return healed;
+      }
+
+      return result;
+
+    } catch(err) {
+      const elapsed = Math.round(performance.now() - t0);
+      _ERR(`API_CONTROLLER: ${action} threw: ${err.message}`);
+      window.__PER_ACTION_CIRCUIT.trip(action, err.message);
+      window.__SELF_HEALER.record(action, err.message);
+      if (window.__CIRCUIT_BREAKER) window.__CIRCUIT_BREAKER.trip(action, err.message);
+      if (window.__RUNTIME_GUARD) window.__RUNTIME_GUARD.record(action, elapsed, false);
+      window.__INTELLIGENT_THROTTLE.record(elapsed, false);
+      return { success: false, error: err.message, message: err.message };
+
+    } finally {
+      clearTimeout(_lockTimeout);
+      if (window.__IN_FLIGHT) delete window.__IN_FLIGHT[lockKey];
+
+      // ── Phase 24: Process next from Priority Queue ──
+      const next = window.__PRIORITY_QUEUE.dequeue();
+      if (next) {
+        _LOG(`Priority Queue: processing P${next.priority} ${next.action}`);
+        window.API_CONTROLLER.call(next.action, next.payload, next.options)
+          .then(next.resolve).catch(next.reject);
+      }
+    }
+  };
+
+  window.API_CONTROLLER._version = _V900_VERSION;
+
+  // ── เพิ่ม methods ใหม่ ──
+  window.API_CONTROLLER.perCircuit = function(action) {
+    const s = action
+      ? window.__PER_ACTION_CIRCUIT.status(action)
+      : window.__PER_ACTION_CIRCUIT.status();
+    console.group('[API_CONTROLLER] Per-Action Circuit Breaker');
+    if (action) {
+      console.log(`${s.action}: ${s.state} (errors: ${s.errorCount})`);
+    } else {
+      if (s.length === 0) console.log('All circuits CLOSED ✅');
+      else console.table(s);
+    }
+    console.groupEnd();
+    return s;
+  };
+
+  window.API_CONTROLLER.priorityQueue = function() {
+    const s = window.__PRIORITY_QUEUE.stats();
+    console.group('[API_CONTROLLER] Priority Queue');
+    console.log(`Total: ${s.total}`);
+    console.table(s.byPriority);
+    console.groupEnd();
+    return s;
+  };
+
+  window.API_CONTROLLER.recoveryMode = function() {
+    const level = window.__RECOVERY_MODE.level;
+    console.log(`[API_CONTROLLER] Recovery Mode: ${level}`);
+    return level;
+  };
+
+  _LOG('API_CONTROLLER.call() upgraded to v9.0.0 ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // V900 DEBUG TOOLS
+  // ═══════════════════════════════════════════════════════════
+
+  window.V900 = {
+    version: _V900_VERSION,
+
+    report: function() {
+      console.group('%c[V900] Anti-Fragile System Report', 'color:#0891b2;font-size:14px;font-weight:bold');
+
+      console.group('1. Priority Queue');
+      const pq = window.__PRIORITY_QUEUE.stats();
+      console.log(`Total queued: ${pq.total}`);
+      console.table(pq.byPriority);
+      console.groupEnd();
+
+      console.group('2. Per-Action Circuit Breakers');
+      const circuits = window.__PER_ACTION_CIRCUIT.status();
+      if (circuits.length === 0) console.log('All circuits CLOSED ✅');
+      else console.table(circuits);
+      console.groupEnd();
+
+      console.group('3. Recovery Mode');
+      console.log(`Level: ${window.__RECOVERY_MODE.level}`);
+      console.groupEnd();
+
+      console.group('4. State Consistency Guard');
+      const sg = window.__STATE_GUARD.stats();
+      console.log(`Tracked states: ${sg.trackedStates} | Rejects: ${sg.rejectCount}`);
+      console.groupEnd();
+
+      console.group('5. Multi-Tab Sync');
+      const ts = window.__TAB_SYNC.stats();
+      console.log(`Tab: ${ts.tabId} | Supported: ${ts.supported} | Received: ${ts.messagesReceived}`);
+      console.groupEnd();
+
+      console.group('6. Intelligent Throttle');
+      console.table([window.__INTELLIGENT_THROTTLE.stats()]);
+      console.groupEnd();
+
+      console.group('7. Self-Healer');
+      const sh = window.__SELF_HEALER.stats();
+      console.log(`Total heals: ${sh.totalHeals}`);
+      if (sh.patterns.length > 0) console.table(sh.patterns);
+      else console.log('No healing patterns ✅');
+      console.groupEnd();
+
+      // Pass/Fail
+      const circuits2 = window.__PER_ACTION_CIRCUIT.status();
+      const openCircuits = circuits2.filter(c => c.state === 'OPEN').length;
+      const checks = {
+        'Recovery Mode NORMAL': window.__RECOVERY_MODE.level === 'NORMAL',
+        'No OPEN circuits': openCircuits === 0,
+        'Priority Queue empty': window.__PRIORITY_QUEUE.size() === 0,
+        'Tab Sync supported': window.__TAB_SYNC.supported,
+        'Throttle delay = 0': window.__INTELLIGENT_THROTTLE._state.baseDelay === 0,
+        'State rejects = 0': window.__STATE_GUARD._rejectCount === 0,
+      };
+
+      console.group('Pass/Fail Summary');
+      let pass = 0, fail = 0;
+      Object.entries(checks).forEach(([name, result]) => {
+        if (result) { console.log(`✅ ${name}`); pass++; }
+        else { console.warn(`⚠️ ${name}`); fail++; }
+      });
+      console.log(`\nResult: ${pass}/${pass+fail}`);
+      if (fail === 0) {
+        console.log('%c🎉 ANTI-FRAGILE SYSTEM: FULLY OPERATIONAL', 'color:#0891b2;font-size:16px;font-weight:bold');
+      }
+      console.groupEnd();
+      console.groupEnd();
+    },
+
+    // Simulate stress test
+    simulateStress: async function(level) {
+      level = level || 'medium';
+      _LOG(`Stress test: ${level}`);
+      const counts = { low: 3, medium: 6, high: 10 };
+      const n = counts[level] || 6;
+
+      // Trip per-action circuits
+      for (let i = 0; i < n; i++) {
+        window.__PER_ACTION_CIRCUIT.trip('getStockList', 'stress test');
+        window.__PER_ACTION_CIRCUIT.trip('getAnalytics', 'stress test');
+      }
+
+      // Record bad latency
+      for (let i = 0; i < n; i++) {
+        window.__INTELLIGENT_THROTTLE.record(6000, false);
+      }
+
+      _LOG(`Stress test done — check V900.report()`);
+    },
+
+    // Simulate recovery
+    simulateRecovery: async function() {
+      _LOG('Simulating recovery...');
+      window.__PER_ACTION_CIRCUIT.resetAll();
+      window.__CIRCUIT_BREAKER && window.__CIRCUIT_BREAKER.reset();
+      window.__RECOVERY_MODE.setLevel('NORMAL', 'manual recovery');
+      window.__INTELLIGENT_THROTTLE._history = [];
+      window.__INTELLIGENT_THROTTLE._state.baseDelay = 0;
+      _HEAL('Recovery simulation complete ✅');
+    },
+
+    priorityQueue: window.__PRIORITY_QUEUE,
+    perCircuit: window.__PER_ACTION_CIRCUIT,
+    recoveryMode: window.__RECOVERY_MODE,
+    stateGuard: window.__STATE_GUARD,
+    tabSync: window.__TAB_SYNC,
+    throttle: window.__INTELLIGENT_THROTTLE,
+    healer: window.__SELF_HEALER,
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // MARK VERSION
+  // ═══════════════════════════════════════════════════════════
+
+  window.__COMPHONE_VERSION = _V900_VERSION;
+  window.__COMPHONE_BUILD   = _V900_BUILD;
+
+  _LOG('=== v9.0.0 Anti-Fragile System LOADED ===');
+  _LOG('Commands: V900.report() | V900.simulateStress() | V900.simulateRecovery()');
+  _LOG('         API_CONTROLLER.perCircuit() | API_CONTROLLER.priorityQueue() | API_CONTROLLER.recoveryMode()');
+
+})();
+
+</script>
 </body>
 </html>
