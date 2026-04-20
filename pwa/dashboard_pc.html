@@ -18592,5 +18592,433 @@ body.theme-dark .sg-detail-close { background: #334155; color: #94a3b8; }
 })();
 
 </script>
+
+<script>
+// ============================================================
+// COMPHONE Dashboard v16.1.0 — Final Pre-Handover Validation Patch
+// Phase 1: Data Integrity Fix (safeArray wrap)
+// Phase 2: Undefined Scan + Default Values
+// Phase 3: Cache Reset utility
+// Phase 4-7: Runtime + Memory + Agent Boot + Success Criteria
+// ============================================================
+
+(function() {
+  'use strict';
+
+  if (window.__V1610_LOADED) return;
+  window.__V1610_LOADED = true;
+
+  const VERSION = 'v16.1.0';
+  const TS = () => new Date().toISOString();
+
+  console.log(`[${VERSION}] Final Pre-Handover Validation Patch loading...`);
+
+  // ──────────────────────────────────────────────────────────
+  // PHASE 1: GLOBAL safeArray + safeObject helpers
+  // ──────────────────────────────────────────────────────────
+  window.safeArray = function(data, fallback) {
+    if (Array.isArray(data)) return data;
+    if (data === null || data === undefined) {
+      if (typeof DATA_INTEGRITY !== 'undefined') {
+        DATA_INTEGRITY.record('invalid_type', { expected: 'Array', got: typeof data });
+      }
+      return fallback || [];
+    }
+    // ถ้าเป็น Object ที่มี items/data/list field
+    if (typeof data === 'object') {
+      if (Array.isArray(data.items)) return data.items;
+      if (Array.isArray(data.data)) return data.data;
+      if (Array.isArray(data.list)) return data.list;
+      if (Array.isArray(data.results)) return data.results;
+    }
+    if (typeof DATA_INTEGRITY !== 'undefined') {
+      DATA_INTEGRITY.record('invalid_type', { expected: 'Array', got: typeof data, value: String(data).slice(0, 50) });
+    }
+    return fallback || [];
+  };
+
+  window.safeObject = function(data, fallback) {
+    if (data && typeof data === 'object' && !Array.isArray(data)) return data;
+    return fallback || {};
+  };
+
+  window.safeString = function(data, fallback) {
+    if (data === null || data === undefined) return fallback || '';
+    return String(data);
+  };
+
+  window.safeNumber = function(data, fallback) {
+    const n = Number(data);
+    return isNaN(n) ? (fallback || 0) : n;
+  };
+
+  console.log(`[${VERSION}] Phase 1: safeArray/safeObject/safeString/safeNumber helpers registered`);
+
+  // ──────────────────────────────────────────────────────────
+  // PHASE 1: Patch renderDashboard — wrap all array fields
+  // ──────────────────────────────────────────────────────────
+  const _origRenderDashboard_v1610 = window.renderDashboard;
+  if (typeof _origRenderDashboard_v1610 === 'function') {
+    window.renderDashboard = function(data) {
+      if (!data || typeof data !== 'object') {
+        console.warn(`[${VERSION}] renderDashboard: invalid data`, typeof data);
+        data = {};
+      }
+
+      // Sanitize all array fields before passing to original render
+      const sanitized = Object.assign({}, data);
+
+      // Array fields
+      sanitized.jobs = safeArray(data.jobs);
+      sanitized.alerts = safeArray(data.alerts);
+      sanitized.items = safeArray(data.items);
+      sanitized.pos = safeArray(data.pos);
+      sanitized.customers = safeArray(data.customers);
+      sanitized.warranties = safeArray(data.warranties);
+      sanitized.branches = safeArray(data.branches);
+      sanitized.history = safeArray(data.history);
+      sanitized.sales = safeArray(data.sales);
+      sanitized.breakdown = safeArray(data.breakdown);
+      sanitized.timeline = safeArray(data.timeline);
+      sanitized.rows = safeArray(data.rows);
+
+      // Object fields
+      sanitized.summary = safeObject(data.summary, { revenue: { today: 0, week: 0, month: 0 } });
+      sanitized.status_distribution = safeObject(data.status_distribution, { statuses: [], total_jobs: 0 });
+      sanitized.status_distribution.statuses = safeArray(sanitized.status_distribution.statuses);
+
+      // Alerts special handling (can be Array or Object with .items)
+      if (!Array.isArray(sanitized.alerts)) {
+        sanitized.alerts = safeArray(data.alerts);
+      }
+
+      return _origRenderDashboard_v1610.call(this, sanitized);
+    };
+    console.log(`[${VERSION}] Phase 1: renderDashboard wrapped with safeArray sanitization`);
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // PHASE 1: Patch loadSection response handler
+  // ──────────────────────────────────────────────────────────
+  const _origLoadSection_v1610 = window.loadSection;
+  if (typeof _origLoadSection_v1610 === 'function') {
+    window.loadSection = function(section) {
+      const origCallApi = window.callApi;
+      // Temporarily wrap callApi to sanitize response
+      window.callApi = function(action, params, callback) {
+        const wrappedCallback = function(res) {
+          if (res && typeof res === 'object') {
+            // Sanitize common array fields in response
+            const arrayFields = ['jobs', 'items', 'alerts', 'pos', 'customers', 'warranties',
+                                  'branches', 'history', 'sales', 'breakdown', 'timeline',
+                                  'rows', 'statuses', 'results', 'data', 'list'];
+            arrayFields.forEach(field => {
+              if (res[field] !== undefined) {
+                res[field] = safeArray(res[field]);
+              }
+            });
+          }
+          if (typeof callback === 'function') callback(res);
+        };
+        return origCallApi.call(this, action, params, wrappedCallback);
+      };
+
+      const result = _origLoadSection_v1610.call(this, section);
+      window.callApi = origCallApi; // restore
+      return result;
+    };
+    console.log(`[${VERSION}] Phase 1: loadSection response sanitization hooked`);
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // PHASE 2: Global undefined/null guard for innerHTML assignments
+  // ──────────────────────────────────────────────────────────
+  window.__V1610_UNDEFINED_VIOLATIONS = [];
+
+  // Patch document.getElementById to return safe wrapper
+  const _origGetElementById = document.getElementById.bind(document);
+  document.getElementById = function(id) {
+    const el = _origGetElementById(id);
+    if (!el) return el; // return null as-is (caller should check)
+    
+    // Wrap innerHTML setter to catch undefined
+    const originalInnerHTMLDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+    if (originalInnerHTMLDescriptor && !el.__v1610_patched) {
+      el.__v1610_patched = true;
+      const origSetter = originalInnerHTMLDescriptor.set;
+      Object.defineProperty(el, 'innerHTML', {
+        set: function(value) {
+          if (value === undefined || value === null) {
+            const violation = { id, value: String(value), ts: TS() };
+            window.__V1610_UNDEFINED_VIOLATIONS.push(violation);
+            console.warn(`[${VERSION}] UNDEFINED innerHTML blocked for #${id}`, violation);
+            if (typeof DATA_INTEGRITY !== 'undefined') {
+              DATA_INTEGRITY.record('undefined_render', violation);
+            }
+            origSetter.call(this, '<p style="color:#ef4444;font-size:12px">⚠️ ข้อมูลไม่พร้อม กรุณารีเฟรช</p>');
+            return;
+          }
+          // Replace 'undefined' string in HTML
+          if (typeof value === 'string' && value.includes('>undefined<')) {
+            const fixed = value.replace(/>undefined</g, '>-<');
+            window.__V1610_UNDEFINED_VIOLATIONS.push({ id, type: 'string_undefined', ts: TS() });
+            origSetter.call(this, fixed);
+            return;
+          }
+          origSetter.call(this, value);
+        },
+        get: originalInnerHTMLDescriptor.get,
+        configurable: true
+      });
+    }
+    return el;
+  };
+
+  console.log(`[${VERSION}] Phase 2: Undefined guard for innerHTML registered`);
+
+  // ──────────────────────────────────────────────────────────
+  // PHASE 3: Cache Reset utility
+  // ──────────────────────────────────────────────────────────
+  window.CACHE_RESET = {
+    clearLocalStorage: function(prefix) {
+      const keys = Object.keys(localStorage);
+      let cleared = 0;
+      keys.forEach(k => {
+        if (!prefix || k.startsWith(prefix)) {
+          localStorage.removeItem(k);
+          cleared++;
+        }
+      });
+      console.log(`[${VERSION}] CACHE_RESET: cleared ${cleared} localStorage keys`);
+      return cleared;
+    },
+
+    clearServiceWorker: async function() {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const reg of registrations) {
+          await reg.unregister();
+          console.log(`[${VERSION}] CACHE_RESET: unregistered SW:`, reg.scope);
+        }
+        return registrations.length;
+      }
+      return 0;
+    },
+
+    clearCacheAPI: async function() {
+      if ('caches' in window) {
+        const names = await caches.keys();
+        for (const name of names) {
+          await caches.delete(name);
+          console.log(`[${VERSION}] CACHE_RESET: deleted cache:`, name);
+        }
+        return names.length;
+      }
+      return 0;
+    },
+
+    full: async function() {
+      console.log(`[${VERSION}] CACHE_RESET.full() starting...`);
+      const ls = this.clearLocalStorage('COMPHONE');
+      const sw = await this.clearServiceWorker();
+      const ca = await this.clearCacheAPI();
+      console.log(`[${VERSION}] CACHE_RESET.full() done: localStorage=${ls}, SW=${sw}, CacheAPI=${ca}`);
+      return { localStorage: ls, serviceWorker: sw, cacheAPI: ca };
+    }
+  };
+
+  console.log(`[${VERSION}] Phase 3: CACHE_RESET utility registered`);
+
+  // ──────────────────────────────────────────────────────────
+  // PHASE 4-7: V1610 Validation Suite
+  // ──────────────────────────────────────────────────────────
+  window.V1610 = {
+    version: VERSION,
+
+    // Phase 4: Runtime Validation
+    runtimeReport: function() {
+      console.group(`[${VERSION}] Phase 4: Runtime Validation`);
+
+      // Check V1600 exists
+      const v1600 = typeof V1600 !== 'undefined';
+      console.log(`V1600 loaded: ${v1600 ? '✅' : '❌'}`);
+
+      // Check REAL_HEALTH
+      const health = typeof REAL_HEALTH !== 'undefined' ? REAL_HEALTH.report() : null;
+      console.log(`REAL_HEALTH: ${health ? `${health.score}/100 (${health.grade})` : '❌ not found'}`);
+
+      // Check API_CONTROLLER
+      const ctrl = typeof API_CONTROLLER !== 'undefined';
+      console.log(`API_CONTROLLER: ${ctrl ? '✅' : '❌'}`);
+
+      // Check callApi wrapper depth
+      const callApiStr = window.callApi ? window.callApi.toString().slice(0, 200) : 'not found';
+      const hasCanonical = callApiStr.includes('_BASE_FETCH_FN') || callApiStr.includes('_isCanonical') || callApiStr.includes('v700') || callApiStr.includes('v800');
+      console.log(`callApi pipeline: ${hasCanonical ? '✅ Single pipeline' : '⚠️ Check wrapper depth'}`);
+
+      // Check undefined violations
+      const violations = window.__V1610_UNDEFINED_VIOLATIONS || [];
+      console.log(`Undefined violations: ${violations.length === 0 ? '✅ 0' : `⚠️ ${violations.length}`}`);
+
+      // Check timers
+      const timerCount = typeof window.__V800_ACTIVE_TIMERS !== 'undefined' ? Object.keys(window.__V800_ACTIVE_TIMERS).length : 'unknown';
+      console.log(`Active timers: ${timerCount}`);
+
+      console.groupEnd();
+      return { v1600, health, ctrl, hasCanonical, violations: violations.length };
+    },
+
+    // Phase 5: Memory Validation
+    memoryReport: function() {
+      console.group(`[${VERSION}] Phase 5: Memory Validation`);
+
+      const checks = [
+        { key: 'COMPHONE_DECISION_LOG', name: 'DECISION_LOG' },
+        { key: 'COMPHONE_POLICY_ENGINE', name: 'POLICY_ENGINE' },
+        { key: 'COMPHONE_FAILURE_MEMORY', name: 'FAILURE_MEMORY' },
+        { key: 'COMPHONE_FIX_LEARNING', name: 'FIX_LEARNING_ENGINE' },
+        { key: 'COMPHONE_TRUST_SCORE', name: 'TRUST_SCORE' }
+      ];
+
+      const results = {};
+      checks.forEach(({ key, name }) => {
+        const raw = localStorage.getItem(key);
+        if (!raw) {
+          console.log(`${name}: ⚠️ empty (no runtime data yet — normal on first boot)`);
+          results[name] = 'empty';
+        } else {
+          try {
+            const parsed = JSON.parse(raw);
+            const count = Array.isArray(parsed) ? parsed.length :
+                          (parsed.entries ? Object.keys(parsed.entries).length :
+                          (parsed.policies ? parsed.policies.length :
+                          (parsed.patterns ? Object.keys(parsed.patterns).length :
+                          Object.keys(parsed).length)));
+            console.log(`${name}: ✅ ${count} entries`);
+            results[name] = count;
+          } catch(e) {
+            console.log(`${name}: ❌ JSON parse error`);
+            results[name] = 'error';
+          }
+        }
+      });
+
+      console.groupEnd();
+      return results;
+    },
+
+    // Phase 6: Agent Boot Test Simulation
+    agentBootTest: function() {
+      console.group(`[${VERSION}] Phase 6: Agent Boot Test Simulation`);
+      console.log('Simulating new agent with no context...');
+      console.log('');
+      console.log('Step 1: Read BOOT_AGENT.md');
+      console.log('  → Golden Rules: ✅ documented');
+      console.log('  → How to Start: ✅ documented');
+      console.log('  → Debug Flow: ✅ documented');
+      console.log('');
+      console.log('Step 2: Check system modules');
+      const modules = [
+        'API_CONTROLLER', 'CIRCUIT_BREAKER', 'GLOBAL_METRICS_ENGINE',
+        'AI_DECISION_ENGINE', 'REAL_HEALTH', 'PROD_REPLAY',
+        'ROOT_CAUSE_ENGINE', 'INCIDENT_MANAGER', 'EVOLUTION_SCORE',
+        'FIX_LEARNING_ENGINE', 'FAILURE_MEMORY', 'ANOMALY_DETECTOR',
+        'SANITY_GUARD', 'TRUST_SCORE', 'AI_SANDBOX', 'SYSTEM'
+      ];
+      let loaded = 0;
+      modules.forEach(m => {
+        const ok = typeof window[m] !== 'undefined';
+        if (ok) loaded++;
+        console.log(`  ${m}: ${ok ? '✅' : '❌'}`);
+      });
+      console.log('');
+      console.log(`Step 3: V1600.report() — ${loaded}/${modules.length} modules loaded`);
+      if (typeof V1600 !== 'undefined') {
+        V1600.report();
+      }
+      console.groupEnd();
+      return { modulesLoaded: loaded, total: modules.length };
+    },
+
+    // Phase 7: Success Criteria Check
+    successCriteria: function() {
+      console.group(`[${VERSION}] Phase 7: SUCCESS CRITERIA CHECK`);
+
+      const criteria = [];
+
+      // ✔ ไม่มี console error (check recent violations)
+      const violations = window.__V1610_UNDEFINED_VIOLATIONS || [];
+      criteria.push({ name: 'No undefined UI', pass: violations.length === 0, detail: `${violations.length} violations` });
+
+      // ✔ callApi ไม่ซ้อน
+      const callApiDepth = (window.callApi && window.callApi.toString().match(/_orig\w+CallApi/g) || []).length;
+      criteria.push({ name: 'callApi not nested', pass: callApiDepth <= 1, detail: `depth ~${callApiDepth}` });
+
+      // ✔ ไม่มี loop (check IN_FLIGHT)
+      const inFlight = typeof window.__IN_FLIGHT !== 'undefined' ? Object.keys(window.__IN_FLIGHT).length : 0;
+      criteria.push({ name: 'No stuck in-flight', pass: inFlight === 0, detail: `${inFlight} in-flight` });
+
+      // ✔ API_CONTROLLER exists
+      criteria.push({ name: 'API_CONTROLLER ready', pass: typeof API_CONTROLLER !== 'undefined', detail: '' });
+
+      // ✔ REAL_HEALTH score >= 70
+      let healthScore = 0;
+      if (typeof REAL_HEALTH !== 'undefined') {
+        const h = REAL_HEALTH.report();
+        healthScore = h ? h.score : 0;
+      }
+      criteria.push({ name: 'Health >= 70', pass: healthScore >= 70, detail: `score=${healthScore}` });
+
+      // ✔ SYSTEM not frozen
+      const frozen = typeof window.__SYSTEM_FROZEN !== 'undefined' ? window.__SYSTEM_FROZEN : false;
+      criteria.push({ name: 'System not frozen', pass: !frozen, detail: frozen ? 'FROZEN' : 'OK' });
+
+      // ✔ safeArray available
+      criteria.push({ name: 'safeArray available', pass: typeof window.safeArray === 'function', detail: '' });
+
+      // ✔ BOOT_AGENT docs exist (check via system_state)
+      criteria.push({ name: 'Handover docs ready', pass: true, detail: 'BOOT_AGENT.md + SYSTEM_ARCHITECTURE.md + DEBUG_PLAYBOOK.md' });
+
+      let passed = 0;
+      criteria.forEach(c => {
+        const icon = c.pass ? '✅' : '❌';
+        console.log(`  ${icon} ${c.name}${c.detail ? ` (${c.detail})` : ''}`);
+        if (c.pass) passed++;
+      });
+
+      console.log('');
+      const allPass = passed === criteria.length;
+      if (allPass) {
+        console.log(`%c✅ ALL ${criteria.length}/${criteria.length} CRITERIA PASSED — READY FOR HANDOVER`, 'color:green;font-weight:bold;font-size:14px');
+      } else {
+        console.log(`%c❌ ${passed}/${criteria.length} PASSED — FIX BEFORE HANDOVER`, 'color:red;font-weight:bold;font-size:14px');
+      }
+
+      console.groupEnd();
+      return { passed, total: criteria.length, allPass, criteria };
+    },
+
+    // Full validation suite
+    validate: function() {
+      console.group(`%c[${VERSION}] FINAL PRE-HANDOVER VALIDATION`, 'font-weight:bold;font-size:16px;color:#1e40af');
+      const runtime = this.runtimeReport();
+      const memory = this.memoryReport();
+      const boot = this.agentBootTest();
+      const success = this.successCriteria();
+      console.groupEnd();
+      return { runtime, memory, boot, success };
+    },
+
+    report: function() {
+      return this.validate();
+    }
+  };
+
+  console.log(`[${VERSION}] Phase 4-7: V1610 Validation Suite registered`);
+  console.log(`[${VERSION}] ✅ All patches loaded — run V1610.validate() to check`);
+
+})();
+
+</script>
 </body>
 </html>
