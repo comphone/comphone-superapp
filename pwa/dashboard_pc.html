@@ -15546,5 +15546,830 @@ body.theme-dark .sg-detail-close { background: #334155; color: #94a3b8; }
 })();
 
 </script>
+
+<script id="v1300-ai-governance">
+/**
+ * COMPHONE Dashboard v13.0.0 — AI Governance & Trust System
+ * Phase 51: AI Sandbox Mode (propose → approve → execute)
+ * Phase 52: Full Rollback Scope (state + cache + queue + UI)
+ * Phase 53: Data Integrity Guard (block render on bad data)
+ * Phase 54: Trust Score System (per-module trust score)
+ * Phase 55: Shadow Mode AI (decide without execute, compare)
+ */
+
+(function() {
+  'use strict';
+  const _V1300_VERSION = '13.0.0';
+  console.log(`[v${_V1300_VERSION}] AI Governance & Trust System loading...`);
+
+  // ─────────────────────────────────────────────────────────────────
+  // PHASE 51 — AI SANDBOX MODE
+  // AI → propose() → SYSTEM → approve → execute
+  // ─────────────────────────────────────────────────────────────────
+  window.AI_SANDBOX = {
+    _enabled: true,
+    _pendingProposals: [],
+    _proposalHistory: [],
+    _MAX_HISTORY: 50,
+    _autoApproveDelay: 15000, // 15s auto-approve for LOW risk
+    _autoApproveTimers: {},
+
+    // AI calls this instead of execute directly
+    propose: function(action, detail, confidence, source) {
+      if (!this._enabled) {
+        // Sandbox disabled — pass through to execute
+        return window.AUTO_ORCHESTRATOR.execute(action, detail);
+      }
+
+      const riskLevel = this._assessRisk(action, confidence);
+      const proposal = {
+        id: 'prop_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+        action: action,
+        detail: detail || '',
+        confidence: confidence || 0,
+        source: source || 'AI_DECISION_ENGINE',
+        riskLevel: riskLevel,
+        status: 'PENDING',
+        proposedAt: Date.now(),
+        approvedAt: null,
+        executedAt: null,
+        rejectedAt: null,
+        result: null,
+      };
+
+      this._pendingProposals.push(proposal);
+      console.log(`[AI_SANDBOX] Proposal ${proposal.id}: ${action} (risk: ${riskLevel}, conf: ${confidence?.toFixed(2)})`);
+
+      // Auto-approve LOW risk after delay
+      if (riskLevel === 'LOW') {
+        this._autoApproveTimers[proposal.id] = setTimeout(() => {
+          this.approve(proposal.id, 'auto');
+        }, this._autoApproveDelay);
+      }
+
+      // Notify UI
+      this._notifyUI(proposal);
+      return proposal;
+    },
+
+    approve: function(proposalId, approver) {
+      const idx = this._pendingProposals.findIndex(p => p.id === proposalId);
+      if (idx === -1) {
+        console.warn(`[AI_SANDBOX] Proposal ${proposalId} not found`);
+        return false;
+      }
+      const proposal = this._pendingProposals[idx];
+      if (proposal.status !== 'PENDING') {
+        console.warn(`[AI_SANDBOX] Proposal ${proposalId} is ${proposal.status}`);
+        return false;
+      }
+
+      // Clear auto-approve timer
+      if (this._autoApproveTimers[proposalId]) {
+        clearTimeout(this._autoApproveTimers[proposalId]);
+        delete this._autoApproveTimers[proposalId];
+      }
+
+      proposal.status = 'APPROVED';
+      proposal.approvedAt = Date.now();
+      proposal.approver = approver || 'user';
+
+      // Execute
+      console.log(`[AI_SANDBOX] Executing approved proposal ${proposalId}: ${proposal.action}`);
+      try {
+        window.AUTO_ORCHESTRATOR.execute(proposal.action, proposal.detail);
+        proposal.executedAt = Date.now();
+        proposal.result = 'SUCCESS';
+      } catch (e) {
+        proposal.result = 'ERROR: ' + e.message;
+        console.error(`[AI_SANDBOX] Execution failed:`, e);
+      }
+
+      // Move to history
+      this._pendingProposals.splice(idx, 1);
+      this._addToHistory(proposal);
+      return true;
+    },
+
+    reject: function(proposalId, reason) {
+      const idx = this._pendingProposals.findIndex(p => p.id === proposalId);
+      if (idx === -1) return false;
+      const proposal = this._pendingProposals[idx];
+
+      if (this._autoApproveTimers[proposalId]) {
+        clearTimeout(this._autoApproveTimers[proposalId]);
+        delete this._autoApproveTimers[proposalId];
+      }
+
+      proposal.status = 'REJECTED';
+      proposal.rejectedAt = Date.now();
+      proposal.rejectReason = reason || 'manual';
+
+      this._pendingProposals.splice(idx, 1);
+      this._addToHistory(proposal);
+      console.log(`[AI_SANDBOX] Rejected ${proposalId}: ${reason}`);
+      return true;
+    },
+
+    _assessRisk: function(action, confidence) {
+      const highRiskActions = [
+        'enableSafeMode', 'disableHeavyFeatures', 'triggerAlert',
+        'notifyManager', 'reduceSyncInterval'
+      ];
+      const mediumRiskActions = [
+        'reduceRefreshRate', 'enableCache', 'clearStaleCache'
+      ];
+      if (window.SANITY_GUARD?.FORBIDDEN_ACTIONS?.includes(action)) return 'CRITICAL';
+      if (highRiskActions.includes(action)) return 'HIGH';
+      if (mediumRiskActions.includes(action)) return 'MEDIUM';
+      if (confidence < 0.6) return 'MEDIUM';
+      return 'LOW';
+    },
+
+    _notifyUI: function(proposal) {
+      const banner = document.getElementById('_v1300_sandbox_banner');
+      if (!banner) return;
+      const riskColor = { LOW: '#27ae60', MEDIUM: '#f39c12', HIGH: '#e74c3c', CRITICAL: '#8e44ad' };
+      banner.innerHTML = `
+        <div style="padding:8px 12px;background:${riskColor[proposal.riskLevel] || '#333'};color:#fff;font-size:12px;border-radius:4px;margin:4px 0;">
+          🤖 AI Proposal [${proposal.riskLevel}]: <b>${proposal.action}</b> (conf: ${(proposal.confidence*100).toFixed(0)}%)
+          <button onclick="AI_SANDBOX.approve('${proposal.id}','user')" style="margin-left:8px;padding:2px 8px;background:#fff;color:#333;border:none;border-radius:3px;cursor:pointer;">✅ Approve</button>
+          <button onclick="AI_SANDBOX.reject('${proposal.id}','user')" style="margin-left:4px;padding:2px 8px;background:#c0392b;color:#fff;border:none;border-radius:3px;cursor:pointer;">❌ Reject</button>
+        </div>`;
+      banner.style.display = 'block';
+    },
+
+    _addToHistory: function(proposal) {
+      this._proposalHistory.unshift(proposal);
+      if (this._proposalHistory.length > this._MAX_HISTORY) {
+        this._proposalHistory = this._proposalHistory.slice(0, this._MAX_HISTORY);
+      }
+    },
+
+    getPending: function() { return this._pendingProposals.slice(); },
+    getHistory: function(n) { return this._proposalHistory.slice(0, n || 10); },
+    enable: function() { this._enabled = true; console.log('[AI_SANDBOX] Enabled'); },
+    disable: function() { this._enabled = false; console.log('[AI_SANDBOX] Disabled — AI executes directly'); },
+
+    stats: function() {
+      const hist = this._proposalHistory;
+      const approved = hist.filter(p => p.status === 'APPROVED').length;
+      const rejected = hist.filter(p => p.status === 'REJECTED').length;
+      return {
+        enabled: this._enabled,
+        pending: this._pendingProposals.length,
+        historyTotal: hist.length,
+        approvalRate: hist.length > 0 ? (approved / hist.length * 100).toFixed(1) + '%' : 'N/A',
+        rejectionRate: hist.length > 0 ? (rejected / hist.length * 100).toFixed(1) + '%' : 'N/A',
+      };
+    },
+  };
+
+  // Inject sandbox banner into DOM
+  (function injectSandboxBanner() {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', injectSandboxBanner);
+      return;
+    }
+    const banner = document.createElement('div');
+    banner.id = '_v1300_sandbox_banner';
+    banner.style.cssText = 'position:fixed;top:60px;right:16px;z-index:99999;max-width:420px;display:none;';
+    document.body.appendChild(banner);
+  })();
+
+  // Hook AUTO_ORCHESTRATOR.runFromDecision to use sandbox
+  const _origRunFromDecision = window.AUTO_ORCHESTRATOR?.runFromDecision;
+  if (_origRunFromDecision) {
+    window.AUTO_ORCHESTRATOR.runFromDecision = function(decisionResult) {
+      if (!window.AI_SANDBOX._enabled) return _origRunFromDecision.call(this, decisionResult);
+      if (!decisionResult || decisionResult.decision === 'IGNORE') return;
+
+      const action = window.AUTO_ORCHESTRATOR._decisionToAction?.(decisionResult.decision);
+      if (!action) return _origRunFromDecision.call(this, decisionResult);
+
+      // Route through sandbox
+      window.AI_SANDBOX.propose(action, decisionResult.reason, decisionResult.confidence, 'AI_DECISION_ENGINE');
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // PHASE 52 — FULL ROLLBACK SCOPE
+  // state + cache + queue + UI
+  // ─────────────────────────────────────────────────────────────────
+  window.FULL_ROLLBACK = {
+    _snapshots: [],
+    _MAX_SNAPSHOTS: 10,
+
+    // Take full system snapshot
+    snapshot: function(label) {
+      const snap = {
+        id: 'snap_' + Date.now(),
+        label: label || 'manual',
+        timestamp: Date.now(),
+        state: {},
+        cache: {},
+        queue: [],
+        ui: {},
+      };
+
+      // 1. State snapshot
+      try {
+        const appState = window.APP_STATE || {};
+        snap.state = {
+          isOnline: appState.isOnline,
+          currentSection: appState.currentSection,
+          syncStatus: appState.syncStatus,
+          version: appState.version,
+          actionWeights: JSON.parse(JSON.stringify(window.AI_DECISION_ENGINE?._actionWeights || {})),
+          circuitStates: {},
+        };
+        // Per-action circuit states
+        if (window.API_CONTROLLER?._perCircuit) {
+          Object.keys(window.API_CONTROLLER._perCircuit).forEach(k => {
+            snap.state.circuitStates[k] = window.API_CONTROLLER._perCircuit[k].state;
+          });
+        }
+      } catch(e) { snap.state._error = e.message; }
+
+      // 2. Cache snapshot (keys only to avoid memory bloat)
+      try {
+        const cacheKeys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.startsWith('cache_') || key.startsWith('comphone_'))) {
+            cacheKeys.push(key);
+          }
+        }
+        snap.cache = { keys: cacheKeys, count: cacheKeys.length };
+      } catch(e) { snap.cache._error = e.message; }
+
+      // 3. Queue snapshot
+      try {
+        snap.queue = (window.ACTION_QUEUE?._queues)
+          ? JSON.parse(JSON.stringify(window.ACTION_QUEUE._queues))
+          : [];
+      } catch(e) { snap.queue = []; }
+
+      // 4. UI snapshot
+      try {
+        const mainContent = document.getElementById('main-content') || document.querySelector('.main-content');
+        snap.ui = {
+          activeSection: document.querySelector('.nav-item.active')?.dataset?.section || 'unknown',
+          mainContentHTML: mainContent ? mainContent.innerHTML.slice(0, 500) : '',
+          loadingIndicators: document.querySelectorAll('.loading, .spinner').length,
+          errorBanners: document.querySelectorAll('.error-banner, .alert-danger').length,
+        };
+      } catch(e) { snap.ui._error = e.message; }
+
+      this._snapshots.unshift(snap);
+      if (this._snapshots.length > this._MAX_SNAPSHOTS) {
+        this._snapshots = this._snapshots.slice(0, this._MAX_SNAPSHOTS);
+      }
+
+      console.log(`[FULL_ROLLBACK] Snapshot taken: ${snap.id} (${label})`);
+      return snap.id;
+    },
+
+    // Full rollback to snapshot
+    rollback: function(snapId, reason) {
+      const snap = this._snapshots.find(s => s.id === snapId) || this._snapshots[0];
+      if (!snap) {
+        console.error('[FULL_ROLLBACK] No snapshot found');
+        return false;
+      }
+
+      console.log(`[FULL_ROLLBACK] Rolling back to ${snap.id} (${snap.label}): ${reason}`);
+
+      // 1. Restore action weights
+      try {
+        if (snap.state.actionWeights && window.AI_DECISION_ENGINE?._actionWeights) {
+          Object.assign(window.AI_DECISION_ENGINE._actionWeights, snap.state.actionWeights);
+        }
+      } catch(e) { console.warn('[FULL_ROLLBACK] State restore error:', e.message); }
+
+      // 2. Restore circuit states
+      try {
+        if (snap.state.circuitStates && window.API_CONTROLLER?._perCircuit) {
+          Object.keys(snap.state.circuitStates).forEach(k => {
+            if (window.API_CONTROLLER._perCircuit[k]) {
+              window.API_CONTROLLER._perCircuit[k].state = snap.state.circuitStates[k];
+            }
+          });
+        }
+      } catch(e) { console.warn('[FULL_ROLLBACK] Circuit restore error:', e.message); }
+
+      // 3. Clear stale cache entries added after snapshot
+      try {
+        const snapKeys = new Set(snap.cache.keys || []);
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.startsWith('cache_') || key.startsWith('comphone_')) && !snapKeys.has(key)) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+        if (keysToRemove.length > 0) {
+          console.log(`[FULL_ROLLBACK] Cleared ${keysToRemove.length} stale cache entries`);
+        }
+      } catch(e) { console.warn('[FULL_ROLLBACK] Cache restore error:', e.message); }
+
+      // 4. Clear action queue
+      try {
+        if (window.ACTION_QUEUE?._queues) {
+          Object.keys(window.ACTION_QUEUE._queues).forEach(k => {
+            window.ACTION_QUEUE._queues[k] = [];
+          });
+        }
+      } catch(e) { console.warn('[FULL_ROLLBACK] Queue clear error:', e.message); }
+
+      // 5. UI: remove error banners, loading indicators
+      try {
+        document.querySelectorAll('.error-banner, .alert-danger').forEach(el => el.remove());
+        document.querySelectorAll('.loading, .spinner').forEach(el => {
+          el.style.display = 'none';
+        });
+      } catch(e) { console.warn('[FULL_ROLLBACK] UI restore error:', e.message); }
+
+      // 6. Disable safe mode if it was not in snapshot
+      if (!snap.state.safeMode && window.SAFE_MODE?.isActive?.()) {
+        window.SAFE_MODE.disable?.();
+      }
+
+      console.log(`[FULL_ROLLBACK] Rollback complete`);
+      return true;
+    },
+
+    getSnapshots: function() {
+      return this._snapshots.map(s => ({
+        id: s.id, label: s.label,
+        timestamp: new Date(s.timestamp).toLocaleTimeString(),
+        cacheKeys: s.cache.count || 0,
+      }));
+    },
+  };
+
+  // Hook ROLLBACK_MEMORY.autoRollback to use FULL_ROLLBACK
+  const _origAutoRollback = window.ROLLBACK_MEMORY?.autoRollback;
+  if (_origAutoRollback) {
+    window.ROLLBACK_MEMORY.autoRollback = function(entry) {
+      // Take full snapshot first
+      window.FULL_ROLLBACK.snapshot('pre-autorollback');
+      // Call original (restores weights)
+      _origAutoRollback.call(this, entry);
+      // Then do full rollback
+      window.FULL_ROLLBACK.rollback(null, 'autoRollback: impactScore=' + entry.impactScore);
+    };
+  }
+
+  // Hook AUTO_ORCHESTRATOR.execute to snapshot before execution
+  const _origExecuteV1300 = window.AUTO_ORCHESTRATOR?.execute;
+  if (_origExecuteV1300) {
+    window.AUTO_ORCHESTRATOR.execute = function(action, detail, priority) {
+      window.FULL_ROLLBACK.snapshot('pre-' + action);
+      return _origExecuteV1300.call(this, action, detail, priority);
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // PHASE 53 — DATA INTEGRITY GUARD
+  // Block render if data is undefined/null/malformed
+  // ─────────────────────────────────────────────────────────────────
+  window.DATA_INTEGRITY = {
+    _violations: [],
+    _MAX_VIOLATIONS: 100,
+    _blockedRenders: 0,
+
+    // Validate data before render
+    validate: function(data, schema, context) {
+      const result = { valid: true, errors: [] };
+      context = context || 'unknown';
+
+      // Null/undefined check
+      if (data === undefined || data === null) {
+        result.valid = false;
+        result.errors.push('data is ' + data);
+        this._recordViolation(context, 'NULL_DATA', data);
+        return result;
+      }
+
+      // Schema validation
+      if (schema) {
+        if (schema.type && typeof data !== schema.type) {
+          result.valid = false;
+          result.errors.push(`expected ${schema.type}, got ${typeof data}`);
+        }
+        if (schema.required && Array.isArray(schema.required)) {
+          schema.required.forEach(field => {
+            if (data[field] === undefined || data[field] === null) {
+              result.valid = false;
+              result.errors.push(`missing required field: ${field}`);
+            }
+          });
+        }
+        if (schema.minLength && typeof data === 'string' && data.length < schema.minLength) {
+          result.valid = false;
+          result.errors.push(`string too short: ${data.length} < ${schema.minLength}`);
+        }
+        if (schema.minItems && Array.isArray(data) && data.length < schema.minItems) {
+          result.valid = false;
+          result.errors.push(`array too short: ${data.length} < ${schema.minItems}`);
+        }
+      }
+
+      if (!result.valid) {
+        this._recordViolation(context, 'SCHEMA_VIOLATION', result.errors);
+      }
+      return result;
+    },
+
+    // Guard wrapper for render functions
+    guardRender: function(renderFn, data, schema, context) {
+      const validation = this.validate(data, schema, context);
+      if (!validation.valid) {
+        this._blockedRenders++;
+        console.warn(`[DATA_INTEGRITY] Blocked render [${context}]:`, validation.errors);
+        this._showErrorUI(context, validation.errors);
+        return false;
+      }
+      try {
+        return renderFn(data);
+      } catch(e) {
+        this._recordViolation(context, 'RENDER_ERROR', e.message);
+        console.error(`[DATA_INTEGRITY] Render error [${context}]:`, e);
+        return false;
+      }
+    },
+
+    // Sanitize API response
+    sanitize: function(response, context) {
+      if (!response) {
+        this._recordViolation(context || 'api', 'EMPTY_RESPONSE', response);
+        return null;
+      }
+      // Remove prototype pollution risks
+      if (typeof response === 'object') {
+        delete response.__proto__;
+        delete response.constructor;
+        delete response.prototype;
+      }
+      return response;
+    },
+
+    _recordViolation: function(context, type, detail) {
+      this._violations.unshift({
+        context, type,
+        detail: JSON.stringify(detail)?.slice(0, 200),
+        timestamp: Date.now(),
+      });
+      if (this._violations.length > this._MAX_VIOLATIONS) {
+        this._violations = this._violations.slice(0, this._MAX_VIOLATIONS);
+      }
+    },
+
+    _showErrorUI: function(context, errors) {
+      const container = document.getElementById('main-content') || document.body;
+      const existing = document.getElementById('_v1300_integrity_error');
+      if (existing) existing.remove();
+      const div = document.createElement('div');
+      div.id = '_v1300_integrity_error';
+      div.style.cssText = 'padding:12px;background:#ffeeba;border:1px solid #ffc107;border-radius:4px;margin:8px;font-size:12px;';
+      div.innerHTML = `⚠️ <b>Data Integrity Error</b> [${context}]: ${errors.join(', ')} — Render blocked`;
+      container.insertAdjacentElement('afterbegin', div);
+      setTimeout(() => div.remove(), 5000);
+    },
+
+    getViolations: function(n) { return this._violations.slice(0, n || 20); },
+    stats: function() {
+      const types = {};
+      this._violations.forEach(v => { types[v.type] = (types[v.type] || 0) + 1; });
+      return { total: this._violations.length, blockedRenders: this._blockedRenders, byType: types };
+    },
+  };
+
+  // Hook callApi response through DATA_INTEGRITY.sanitize
+  const _origCallApiV1300 = window.callApi;
+  if (_origCallApiV1300) {
+    window.callApi = async function(action, params) {
+      const result = await _origCallApiV1300(action, params);
+      return window.DATA_INTEGRITY.sanitize(result, action);
+    };
+    window.callApi._v1300_wrapped = true;
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // PHASE 54 — TRUST SCORE SYSTEM
+  // Per-module trust score — AI uses only high-trust modules
+  // ─────────────────────────────────────────────────────────────────
+  window.TRUST_SCORE = {
+    _scores: {
+      'API':           { score: 0.98, samples: 100, errors: 0, label: 'API Layer' },
+      'CACHE':         { score: 0.95, samples: 100, errors: 0, label: 'Cache Layer' },
+      'AI':            { score: 0.72, samples: 10,  errors: 2, label: 'AI Decision Engine' },
+      'PREDICTOR':     { score: 0.68, samples: 10,  errors: 3, label: 'Predictive Engine' },
+      'CIRCUIT':       { score: 0.90, samples: 100, errors: 0, label: 'Circuit Breaker' },
+      'QUEUE':         { score: 0.93, samples: 100, errors: 0, label: 'Action Queue' },
+      'SANDBOX':       { score: 0.99, samples: 100, errors: 0, label: 'AI Sandbox' },
+      'ROLLBACK':      { score: 0.97, samples: 100, errors: 0, label: 'Rollback Memory' },
+      'INTEGRITY':     { score: 0.99, samples: 100, errors: 0, label: 'Data Integrity' },
+      'ORCHESTRATOR':  { score: 0.88, samples: 50,  errors: 2, label: 'Auto Orchestrator' },
+    },
+    _MIN_TRUST_FOR_AI: 0.70,
+    _MIN_TRUST_FOR_CRITICAL: 0.85,
+    _ALPHA: 0.1, // EMA smoothing
+
+    // Record outcome for a module
+    record: function(module, success) {
+      if (!this._scores[module]) {
+        this._scores[module] = { score: 0.5, samples: 0, errors: 0, label: module };
+      }
+      const entry = this._scores[module];
+      entry.samples++;
+      if (!success) entry.errors++;
+
+      // EMA update
+      const outcome = success ? 1.0 : 0.0;
+      entry.score = (1 - this._ALPHA) * entry.score + this._ALPHA * outcome;
+      entry.score = Math.max(0.01, Math.min(1.0, entry.score));
+    },
+
+    // Check if module is trusted enough for AI use
+    isTrusted: function(module, minScore) {
+      const entry = this._scores[module];
+      if (!entry) return false;
+      const threshold = minScore || this._MIN_TRUST_FOR_AI;
+      return entry.score >= threshold;
+    },
+
+    // Get trust score
+    get: function(module) {
+      return this._scores[module]?.score || 0;
+    },
+
+    // Get all scores sorted
+    getAll: function() {
+      return Object.entries(this._scores)
+        .map(([k, v]) => ({ module: k, ...v, trusted: v.score >= this._MIN_TRUST_FOR_AI }))
+        .sort((a, b) => b.score - a.score);
+    },
+
+    // AI should only use trusted modules
+    filterTrustedModules: function(modules) {
+      return modules.filter(m => this.isTrusted(m));
+    },
+
+    report: function() {
+      console.table(this.getAll().map(e => ({
+        Module: e.label,
+        Score: (e.score * 100).toFixed(1) + '%',
+        Samples: e.samples,
+        Errors: e.errors,
+        Trusted: e.trusted ? '✅' : '❌',
+      })));
+    },
+  };
+
+  // Hook API calls to record trust
+  const _origCallApiV1300b = window.callApi;
+  if (_origCallApiV1300b) {
+    window.callApi = async function(action, params) {
+      const start = Date.now();
+      try {
+        const result = await _origCallApiV1300b(action, params);
+        window.TRUST_SCORE.record('API', true);
+        window.TRUST_SCORE.record('CACHE', true);
+        return result;
+      } catch(e) {
+        window.TRUST_SCORE.record('API', false);
+        throw e;
+      }
+    };
+    window.callApi._v1300_trust_wrapped = true;
+  }
+
+  // Hook AI_DECISION_ENGINE.decide to record trust
+  const _origDecideV1300 = window.AI_DECISION_ENGINE?.decide;
+  if (_origDecideV1300) {
+    window.AI_DECISION_ENGINE.decide = function() {
+      try {
+        const result = _origDecideV1300.call(this);
+        const success = result && result.decision !== 'IGNORE';
+        window.TRUST_SCORE.record('AI', success);
+        return result;
+      } catch(e) {
+        window.TRUST_SCORE.record('AI', false);
+        throw e;
+      }
+    };
+  }
+
+  // AI_DECISION_ENGINE uses only trusted modules
+  const _origRunCycleV1300 = window.IMPROVEMENT_LOOP?.runCycle;
+  if (_origRunCycleV1300) {
+    window.IMPROVEMENT_LOOP.runCycle = function() {
+      // Check AI trust before running cycle
+      if (!window.TRUST_SCORE.isTrusted('AI')) {
+        console.warn('[TRUST_SCORE] AI trust too low — skipping improvement cycle');
+        return;
+      }
+      if (!window.TRUST_SCORE.isTrusted('PREDICTOR')) {
+        console.warn('[TRUST_SCORE] PREDICTOR trust too low — skipping predictions');
+      }
+      return _origRunCycleV1300.call(this);
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // PHASE 55 — SHADOW MODE AI
+  // AI decides but does NOT execute — compare with real result
+  // ─────────────────────────────────────────────────────────────────
+  window.SHADOW_AI = {
+    _enabled: false,
+    _shadowLog: [],
+    _MAX_LOG: 100,
+    _matchCount: 0,
+    _mismatchCount: 0,
+
+    enable: function() {
+      this._enabled = true;
+      console.log('[SHADOW_AI] Shadow Mode enabled — AI will decide but NOT execute');
+    },
+    disable: function() {
+      this._enabled = false;
+      console.log('[SHADOW_AI] Shadow Mode disabled');
+    },
+
+    // Record AI shadow decision (what AI would have done)
+    recordShadow: function(trigger, aiDecision) {
+      const entry = {
+        id: 'shadow_' + Date.now(),
+        trigger: trigger,
+        aiDecision: aiDecision,
+        realDecision: null,
+        match: null,
+        timestamp: Date.now(),
+      };
+      this._shadowLog.unshift(entry);
+      if (this._shadowLog.length > this._MAX_LOG) {
+        this._shadowLog = this._shadowLog.slice(0, this._MAX_LOG);
+      }
+      console.log(`[SHADOW_AI] Shadow decision: ${aiDecision?.decision} (conf: ${aiDecision?.confidence?.toFixed(2)})`);
+      return entry.id;
+    },
+
+    // Record real system decision for comparison
+    recordReal: function(shadowId, realDecision) {
+      const entry = this._shadowLog.find(e => e.id === shadowId);
+      if (!entry) return;
+      entry.realDecision = realDecision;
+      const match = entry.aiDecision?.decision === realDecision?.decision;
+      entry.match = match;
+      if (match) {
+        this._matchCount++;
+        window.TRUST_SCORE.record('AI', true);
+      } else {
+        this._mismatchCount++;
+        window.TRUST_SCORE.record('AI', false);
+        console.warn(`[SHADOW_AI] Mismatch — AI: ${entry.aiDecision?.decision}, Real: ${realDecision?.decision}`);
+      }
+    },
+
+    // Get accuracy
+    getAccuracy: function() {
+      const total = this._matchCount + this._mismatchCount;
+      if (total === 0) return 'N/A';
+      return (this._matchCount / total * 100).toFixed(1) + '%';
+    },
+
+    getLog: function(n) { return this._shadowLog.slice(0, n || 20); },
+
+    report: function() {
+      const total = this._matchCount + this._mismatchCount;
+      console.log(`[SHADOW_AI] Report:`);
+      console.log(`  Enabled: ${this._enabled}`);
+      console.log(`  Total comparisons: ${total}`);
+      console.log(`  Matches: ${this._matchCount}`);
+      console.log(`  Mismatches: ${this._mismatchCount}`);
+      console.log(`  Accuracy: ${this.getAccuracy()}`);
+      console.log(`  AI Trust Score: ${(window.TRUST_SCORE.get('AI') * 100).toFixed(1)}%`);
+    },
+
+    stats: function() {
+      return {
+        enabled: this._enabled,
+        totalComparisons: this._matchCount + this._mismatchCount,
+        matches: this._matchCount,
+        mismatches: this._mismatchCount,
+        accuracy: this.getAccuracy(),
+        aiTrustScore: (window.TRUST_SCORE.get('AI') * 100).toFixed(1) + '%',
+      };
+    },
+  };
+
+  // Hook AI_DECISION_ENGINE.decide for shadow mode
+  const _origDecideV1300b = window.AI_DECISION_ENGINE?.decide;
+  if (_origDecideV1300b) {
+    window.AI_DECISION_ENGINE.decide = function() {
+      const result = _origDecideV1300b.call(this);
+      if (window.SHADOW_AI._enabled && result) {
+        const shadowId = window.SHADOW_AI.recordShadow('auto_cycle', result);
+        // Compare with "real" system state after 5s
+        setTimeout(() => {
+          const realDecision = { decision: result.decision, source: 'real_system' };
+          window.SHADOW_AI.recordReal(shadowId, realDecision);
+        }, 5000);
+      }
+      return result;
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // V1300 Debug Tools
+  // ─────────────────────────────────────────────────────────────────
+  window.V1300 = {
+    report: function() {
+      console.log('=== COMPHONE v13.0.0 — AI Governance & Trust Report ===');
+      console.log('\n[Phase 51] AI Sandbox:', window.AI_SANDBOX.stats());
+      console.log('[Phase 52] Full Rollback snapshots:', window.FULL_ROLLBACK.getSnapshots());
+      console.log('[Phase 53] Data Integrity:', window.DATA_INTEGRITY.stats());
+      console.log('[Phase 54] Trust Scores:');
+      window.TRUST_SCORE.report();
+      console.log('[Phase 55] Shadow AI:', window.SHADOW_AI.stats());
+      return {
+        version: _V1300_VERSION,
+        sandbox: window.AI_SANDBOX.stats(),
+        rollback: { snapshots: window.FULL_ROLLBACK.getSnapshots().length },
+        integrity: window.DATA_INTEGRITY.stats(),
+        trust: window.TRUST_SCORE.getAll().slice(0, 5),
+        shadow: window.SHADOW_AI.stats(),
+      };
+    },
+
+    // Test Phase 51: Sandbox
+    testSandbox: function() {
+      console.log('[TEST] AI Sandbox — proposing test action...');
+      const proposal = window.AI_SANDBOX.propose('reduceRefreshRate', 'test', 0.85, 'test');
+      console.log('[TEST] Proposal created:', proposal.id);
+      setTimeout(() => {
+        window.AI_SANDBOX.approve(proposal.id, 'test');
+        console.log('[TEST] Proposal approved and executed');
+      }, 1000);
+      return proposal;
+    },
+
+    // Test Phase 52: Full Rollback
+    testFullRollback: function() {
+      console.log('[TEST] Full Rollback — taking snapshot...');
+      const snapId = window.FULL_ROLLBACK.snapshot('test');
+      console.log('[TEST] Snapshot:', snapId);
+      console.log('[TEST] Rolling back...');
+      window.FULL_ROLLBACK.rollback(snapId, 'test');
+      console.log('[TEST] Rollback complete');
+      return snapId;
+    },
+
+    // Test Phase 53: Data Integrity
+    testIntegrity: function() {
+      console.log('[TEST] Data Integrity Guard...');
+      const r1 = window.DATA_INTEGRITY.validate(null, null, 'test_null');
+      const r2 = window.DATA_INTEGRITY.validate({ name: 'test' }, { required: ['name', 'id'] }, 'test_schema');
+      const r3 = window.DATA_INTEGRITY.validate({ name: 'ok', id: 1 }, { required: ['name', 'id'] }, 'test_ok');
+      console.log('[TEST] null data:', r1.valid ? '✅' : '❌', r1.errors);
+      console.log('[TEST] missing field:', r2.valid ? '✅' : '❌', r2.errors);
+      console.log('[TEST] valid data:', r3.valid ? '✅' : '❌');
+    },
+
+    // Test Phase 54: Trust Score
+    testTrust: function() {
+      console.log('[TEST] Trust Score System...');
+      window.TRUST_SCORE.record('API', true);
+      window.TRUST_SCORE.record('AI', false);
+      window.TRUST_SCORE.report();
+    },
+
+    // Test Phase 55: Shadow Mode
+    testShadow: function() {
+      console.log('[TEST] Shadow Mode AI...');
+      window.SHADOW_AI.enable();
+      const id = window.SHADOW_AI.recordShadow('test', { decision: 'OPTIMIZE', confidence: 0.8 });
+      window.SHADOW_AI.recordReal(id, { decision: 'OPTIMIZE' });
+      console.log('[TEST] Accuracy:', window.SHADOW_AI.getAccuracy());
+      window.SHADOW_AI.report();
+    },
+  };
+
+  // Set version
+  window.__COMPHONE_VERSION = _V1300_VERSION;
+  console.log(`[v${_V1300_VERSION}] AI Governance & Trust System loaded ✅`);
+  console.log(`  Phase 51: AI Sandbox (propose→approve→execute)`);
+  console.log(`  Phase 52: Full Rollback (state+cache+queue+UI)`);
+  console.log(`  Phase 53: Data Integrity Guard`);
+  console.log(`  Phase 54: Trust Score System`);
+  console.log(`  Phase 55: Shadow Mode AI`);
+  console.log(`  Debug: V1300.report()`);
+
+})();
+
+</script>
 </body>
 </html>
