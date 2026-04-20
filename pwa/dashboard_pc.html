@@ -14625,5 +14625,926 @@ body.theme-dark .sg-detail-close { background: #334155; color: #94a3b8; }
 })();
 
 </script>
+
+<script id="v1200-ai-safety">
+/**
+ * COMPHONE Dashboard v12.0.0 — AI Safety & Learning Quality
+ * Phase 45: Context-Aware Learning
+ * Phase 46: Policy Expiry (TTL)
+ * Phase 47: Confidence Gating
+ * Phase 48: Anti-Overfitting (minSamples)
+ * Phase 49: Rollback Memory
+ * Phase 50: Sanity Guard
+ *
+ * Principle: "AI ที่ปลอดภัย ไม่ใช่แค่ฉลาด แต่ต้องรู้ว่าตัวเองไม่รู้อะไร"
+ */
+
+(function() {
+  'use strict';
+
+  const _V1200_VERSION = '12.0.0';
+  const _V1200_BUILD   = 'ai-safety';
+
+  function _LOG(msg)    { console.log(`%c[v${_V1200_VERSION}] ${msg}`, 'color:#0284c7;font-weight:bold'); }
+  function _WARN(msg)   { console.warn(`[v${_V1200_VERSION}] ⚠️ ${msg}`); }
+  function _SAFETY(msg) { console.log(`%c[SAFETY] ${msg}`, 'color:#dc2626;font-weight:bold'); }
+  function _GATE(msg)   { console.log(`%c[GATE] ${msg}`, 'color:#d97706;font-weight:bold'); }
+  function _ROLLBACK(msg) { console.log(`%c[ROLLBACK] ${msg}`, 'color:#7c3aed;font-weight:bold'); }
+
+  _LOG('=== AI Safety & Learning Quality Loading ===');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 45: CONTEXT-AWARE LEARNING
+  // เพิ่ม context ทุก decision: device, time, userActive, network
+  // ═══════════════════════════════════════════════════════════
+
+  window.CONTEXT_COLLECTOR = {
+    // ── Collect current context ──
+    collect: function() {
+      const now = new Date();
+      const hour = now.getHours();
+
+      // Time classification
+      let timeSlot = 'off-peak';
+      if (hour >= 8 && hour < 12)  timeSlot = 'morning-peak';
+      else if (hour >= 12 && hour < 14) timeSlot = 'lunch';
+      else if (hour >= 14 && hour < 18) timeSlot = 'afternoon-peak';
+      else if (hour >= 18 && hour < 21) timeSlot = 'evening';
+
+      // Device classification
+      const ua = navigator.userAgent || '';
+      let device = 'desktop';
+      if (/Mobile|Android|iPhone|iPad/.test(ua)) device = 'mobile';
+      else if (/Tablet/.test(ua)) device = 'tablet';
+
+      // User activity (from GLOBAL_METRICS_ENGINE if available)
+      const activity = window.GLOBAL_METRICS_ENGINE
+        ? window.GLOBAL_METRICS_ENGINE.getSystemMetrics()?.userActivity || {}
+        : {};
+      const userActive = (activity.last10m || 0) > 0;
+
+      // Network quality (from ping stats if available)
+      const metrics = window.GLOBAL_METRICS_ENGINE
+        ? window.GLOBAL_METRICS_ENGINE.getSystemMetrics()
+        : null;
+      let networkQuality = 'unknown';
+      if (metrics) {
+        const lat = metrics.api?.avgLatency || 0;
+        if (lat < 300)       networkQuality = 'excellent';
+        else if (lat < 800)  networkQuality = 'good';
+        else if (lat < 2000) networkQuality = 'fair';
+        else                 networkQuality = 'poor';
+      }
+
+      // Day type
+      const dayOfWeek = now.getDay();
+      const dayType = (dayOfWeek === 0 || dayOfWeek === 6) ? 'weekend' : 'weekday';
+
+      return {
+        ts: Date.now(),
+        timeSlot,
+        device,
+        userActive,
+        networkQuality,
+        dayType,
+        hour,
+        dayOfWeek
+      };
+    },
+
+    // ── Context key for grouping ──
+    toKey: function(ctx) {
+      return `${ctx.device}:${ctx.timeSlot}:${ctx.networkQuality}`;
+    },
+
+    // ── Describe context in human-readable form ──
+    describe: function(ctx) {
+      return `${ctx.device} | ${ctx.timeSlot} | network:${ctx.networkQuality} | user:${ctx.userActive ? 'active' : 'idle'}`;
+    }
+  };
+
+  // ── Extend DECISION_LOG.record() to include context ──
+  if (window.DECISION_LOG) {
+    const _origRecord = window.DECISION_LOG.record.bind(window.DECISION_LOG);
+    window.DECISION_LOG.record = function(decision, action, beforeMetrics) {
+      const id = _origRecord(decision, action, beforeMetrics);
+
+      // Attach context to the entry
+      const entry = this._log[this._log.length - 1];
+      if (entry) {
+        entry.context = window.CONTEXT_COLLECTOR.collect();
+        entry.contextKey = window.CONTEXT_COLLECTOR.toKey(entry.context);
+      }
+
+      return id;
+    };
+
+    // ── Context-aware stats: group by contextKey ──
+    window.DECISION_LOG.statsByContext = function() {
+      const byCtx = {};
+      this._log.filter(e => e.context && e.success !== null).forEach(e => {
+        const key = e.contextKey || 'unknown';
+        if (!byCtx[key]) byCtx[key] = { total: 0, success: 0, actions: {} };
+        byCtx[key].total++;
+        if (e.success) byCtx[key].success++;
+        if (!byCtx[key].actions[e.action]) byCtx[key].actions[e.action] = { total: 0, success: 0 };
+        byCtx[key].actions[e.action].total++;
+        if (e.success) byCtx[key].actions[e.action].success++;
+      });
+
+      return Object.entries(byCtx).map(([ctx, s]) => ({
+        context: ctx,
+        successRate: Math.round(s.success / s.total * 100),
+        total: s.total,
+        bestAction: Object.entries(s.actions)
+          .sort((a,b) => (b[1].success/b[1].total) - (a[1].success/a[1].total))[0]?.[0] || 'none'
+      }));
+    };
+
+    _LOG('Phase 45: Context-Aware Learning initialized ✅');
+  }
+
+  // ── Extend POLICY_ENGINE to include context ──
+  if (window.POLICY_ENGINE) {
+    const _origIngest = window.POLICY_ENGINE.ingest.bind(window.POLICY_ENGINE);
+    window.POLICY_ENGINE.ingest = function(entry) {
+      // Add context to evidence key
+      if (entry.context) {
+        const ctxKey = entry.contextKey || window.CONTEXT_COLLECTOR.toKey(entry.context);
+        const conditions = this._extractConditions(entry.before || {});
+        const key = `${conditions.join('+')}:${entry.action}:ctx:${ctxKey}`;
+
+        if (!this._evidence[key]) this._evidence[key] = [];
+        this._evidence[key].push({
+          impactScore: entry.impactScore || 0,
+          success: entry.success,
+          ts: entry.ts,
+          context: ctxKey
+        });
+
+        if (this._evidence[key].length >= this._MIN_EVIDENCE) {
+          this._tryCreatePolicy(key, conditions, entry.action, ctxKey);
+        }
+      }
+      // Also run original (context-free) ingestion
+      _origIngest(entry);
+    };
+
+    // ── Context-aware query ──
+    window.POLICY_ENGINE.queryWithContext = function(metrics, context) {
+      const ctxKey = context ? window.CONTEXT_COLLECTOR.toKey(context) : null;
+      const conditions = this._extractConditions(metrics);
+
+      // First try context-specific policies
+      if (ctxKey) {
+        const ctxPolicies = this._policies.filter(p =>
+          p.contextKey === ctxKey &&
+          p.conditions.some(c => conditions.includes(c))
+        );
+        if (ctxPolicies.length > 0) return ctxPolicies.sort((a,b) => b.confidence - a.confidence);
+      }
+
+      // Fall back to context-free policies
+      return this.query(metrics);
+    };
+
+    // Extend _tryCreatePolicy to accept contextKey
+    const _origTryCreate = window.POLICY_ENGINE._tryCreatePolicy.bind(window.POLICY_ENGINE);
+    window.POLICY_ENGINE._tryCreatePolicy = function(key, conditions, action, contextKey) {
+      _origTryCreate(key, conditions, action);
+      // Tag last policy with contextKey
+      if (contextKey && this._policies.length > 0) {
+        const last = this._policies[this._policies.length - 1];
+        if (last.key === key) last.contextKey = contextKey;
+      }
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 46: POLICY EXPIRY (TTL)
+  // ทุก policy มี TTL — expired policies ถูกลบอัตโนมัติ
+  // ═══════════════════════════════════════════════════════════
+
+  window.POLICY_TTL = {
+    DEFAULT_TTL_MS: 24 * 60 * 60 * 1000,  // 24 hours
+    SHORT_TTL_MS:    4 * 60 * 60 * 1000,  // 4 hours (for low-confidence)
+    LONG_TTL_MS:    72 * 60 * 60 * 1000,  // 72 hours (for high-confidence)
+    _pruneInterval: null,
+
+    // ── Assign TTL to policy ──
+    assignTTL: function(policy) {
+      let ttl = this.DEFAULT_TTL_MS;
+      if (policy.confidence >= 0.9)      ttl = this.LONG_TTL_MS;
+      else if (policy.confidence < 0.6)  ttl = this.SHORT_TTL_MS;
+
+      policy.ttl = ttl;
+      policy.expiresAt = (policy.createdAt || Date.now()) + ttl;
+      policy.expiresIn = Math.round(ttl / 3600000) + 'h';
+      return policy;
+    },
+
+    // ── Check if policy is expired ──
+    isExpired: function(policy) {
+      return policy.expiresAt && Date.now() > policy.expiresAt;
+    },
+
+    // ── Prune expired policies ──
+    prune: function() {
+      if (!window.POLICY_ENGINE) return 0;
+      const before = window.POLICY_ENGINE._policies.length;
+      window.POLICY_ENGINE._policies = window.POLICY_ENGINE._policies.filter(
+        p => !this.isExpired(p)
+      );
+      const removed = before - window.POLICY_ENGINE._policies.length;
+      if (removed > 0) {
+        _LOG(`Policy TTL: pruned ${removed} expired policies`);
+      }
+      return removed;
+    },
+
+    // ── Start auto-prune (every 30 min) ──
+    startAutoPrune: function() {
+      if (this._pruneInterval) clearInterval(this._pruneInterval);
+      this._pruneInterval = setInterval(() => this.prune(), 30 * 60 * 1000);
+      _LOG('Policy TTL: auto-prune started (every 30 min)');
+    },
+
+    stats: function() {
+      if (!window.POLICY_ENGINE) return {};
+      const now = Date.now();
+      const policies = window.POLICY_ENGINE._policies;
+      return {
+        total: policies.length,
+        expired: policies.filter(p => this.isExpired(p)).length,
+        expiringSoon: policies.filter(p => p.expiresAt && p.expiresAt - now < 3600000).length,
+        avgTTLHours: policies.length
+          ? Math.round(policies.reduce((s,p) => s + (p.ttl||0), 0) / policies.length / 3600000)
+          : 0
+      };
+    }
+  };
+
+  // Hook POLICY_ENGINE._upsertPolicy to assign TTL
+  if (window.POLICY_ENGINE) {
+    const _origUpsert = window.POLICY_ENGINE._upsertPolicy.bind(window.POLICY_ENGINE);
+    window.POLICY_ENGINE._upsertPolicy = function(policy) {
+      window.POLICY_TTL.assignTTL(policy);
+      _origUpsert(policy);
+    };
+
+    // Override query to filter expired
+    const _origQuery = window.POLICY_ENGINE.query.bind(window.POLICY_ENGINE);
+    window.POLICY_ENGINE.query = function(metrics) {
+      return _origQuery(metrics).filter(p => !window.POLICY_TTL.isExpired(p));
+    };
+  }
+
+  // Start auto-prune
+  window.POLICY_TTL.startAutoPrune();
+
+  _LOG('Phase 46: Policy Expiry (TTL) initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 47: CONFIDENCE GATING
+  // if (confidence < 0.7) { do NOT learn }
+  // ═══════════════════════════════════════════════════════════
+
+  window.CONFIDENCE_GATE = {
+    MIN_LEARN_CONFIDENCE: 0.70,   // ต่ำกว่านี้ → ไม่เรียนรู้
+    MIN_ACT_CONFIDENCE:   0.55,   // ต่ำกว่านี้ → ไม่ execute
+    MIN_POLICY_CONFIDENCE: 0.65,  // ต่ำกว่านี้ → ไม่สร้าง policy
+    _gateLog: [],
+    _MAX_LOG: 50,
+
+    // ── Check if should learn ──
+    shouldLearn: function(confidence) {
+      const pass = confidence >= this.MIN_LEARN_CONFIDENCE;
+      if (!pass) {
+        this._log('LEARN_BLOCKED', confidence, this.MIN_LEARN_CONFIDENCE);
+        _GATE(`Learning blocked: confidence ${confidence} < ${this.MIN_LEARN_CONFIDENCE}`);
+      }
+      return pass;
+    },
+
+    // ── Check if should act ──
+    shouldAct: function(confidence) {
+      const pass = confidence >= this.MIN_ACT_CONFIDENCE;
+      if (!pass) {
+        this._log('ACT_BLOCKED', confidence, this.MIN_ACT_CONFIDENCE);
+        _GATE(`Action blocked: confidence ${confidence} < ${this.MIN_ACT_CONFIDENCE}`);
+      }
+      return pass;
+    },
+
+    // ── Check if should create policy ──
+    shouldCreatePolicy: function(confidence) {
+      const pass = confidence >= this.MIN_POLICY_CONFIDENCE;
+      if (!pass) {
+        this._log('POLICY_BLOCKED', confidence, this.MIN_POLICY_CONFIDENCE);
+      }
+      return pass;
+    },
+
+    _log: function(type, confidence, threshold) {
+      this._gateLog.push({ ts: Date.now(), type, confidence, threshold });
+      if (this._gateLog.length > this._MAX_LOG) this._gateLog.shift();
+    },
+
+    stats: function() {
+      const blocked = this._gateLog.length;
+      const byType = {};
+      this._gateLog.forEach(e => {
+        byType[e.type] = (byType[e.type] || 0) + 1;
+      });
+      return { totalBlocked: blocked, byType };
+    }
+  };
+
+  // Hook DECISION_LOG._evaluate to gate learning
+  if (window.DECISION_LOG) {
+    const _origEval = window.DECISION_LOG._evaluate.bind(window.DECISION_LOG);
+    window.DECISION_LOG._evaluate = function(id) {
+      const entry = this._pendingEval[id];
+      if (!entry) return _origEval(id);
+
+      // Get decision confidence from AI_DECISION_ENGINE history
+      const decisionHistory = window.AI_DECISION_ENGINE?._decisions || [];
+      const matchingDecision = decisionHistory
+        .filter(d => Math.abs(d.ts - entry.ts) < 5000)
+        .sort((a,b) => Math.abs(a.ts - entry.ts) - Math.abs(b.ts - entry.ts))[0];
+
+      const confidence = matchingDecision?.confidence || 1.0;
+
+      if (!window.CONFIDENCE_GATE.shouldLearn(confidence)) {
+        // Skip learning but still evaluate
+        entry.gated = true;
+        entry.gateReason = `confidence ${confidence} < ${window.CONFIDENCE_GATE.MIN_LEARN_CONFIDENCE}`;
+        delete this._pendingEval[id];
+        return;
+      }
+
+      _origEval(id);
+    };
+  }
+
+  // Hook AUTO_ORCHESTRATOR.runFromDecision to gate action
+  if (window.AUTO_ORCHESTRATOR) {
+    const _origRun = window.AUTO_ORCHESTRATOR.runFromDecision.bind(window.AUTO_ORCHESTRATOR);
+    window.AUTO_ORCHESTRATOR.runFromDecision = function(decisionResult) {
+      if (!window.CONFIDENCE_GATE.shouldAct(decisionResult.confidence || 1.0)) {
+        _GATE(`Action gated: ${decisionResult.decision} (confidence: ${decisionResult.confidence})`);
+        return { gated: true, reason: 'confidence too low' };
+      }
+      return _origRun(decisionResult);
+    };
+  }
+
+  // Hook POLICY_ENGINE._tryCreatePolicy to gate policy creation
+  if (window.POLICY_ENGINE) {
+    const _origTryCreate2 = window.POLICY_ENGINE._tryCreatePolicy.bind(window.POLICY_ENGINE);
+    window.POLICY_ENGINE._tryCreatePolicy = function(key, conditions, action, contextKey) {
+      const evidence = this._evidence[key] || [];
+      const successCount = evidence.filter(e => e.success).length;
+      const successRate = evidence.length ? successCount / evidence.length : 0;
+      const confidence = Math.min(0.95, evidence.length / 10);
+
+      if (!window.CONFIDENCE_GATE.shouldCreatePolicy(confidence)) {
+        _GATE(`Policy creation gated: ${key} (confidence: ${confidence})`);
+        return;
+      }
+
+      _origTryCreate2(key, conditions, action, contextKey);
+    };
+  }
+
+  _LOG('Phase 47: Confidence Gating initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 48: ANTI-OVERFITTING
+  // minSamples = 5-10 ก่อนสร้าง policy / ปรับ weight
+  // ═══════════════════════════════════════════════════════════
+
+  window.ANTI_OVERFITTING = {
+    MIN_SAMPLES_POLICY:  5,   // ต้องมี ≥5 samples ก่อนสร้าง policy
+    MIN_SAMPLES_WEIGHT: 10,   // ต้องมี ≥10 samples ก่อนปรับ weight อย่างมีนัยสำคัญ
+    _sampleCounts: {},        // { action: count }
+    _blocked: [],
+
+    // ── Record sample ──
+    recordSample: function(action) {
+      this._sampleCounts[action] = (this._sampleCounts[action] || 0) + 1;
+    },
+
+    // ── Check if enough samples for policy ──
+    hasEnoughForPolicy: function(action) {
+      const count = this._sampleCounts[action] || 0;
+      return count >= this.MIN_SAMPLES_POLICY;
+    },
+
+    // ── Check if enough samples for weight adjustment ──
+    hasEnoughForWeight: function(action) {
+      const count = this._sampleCounts[action] || 0;
+      return count >= this.MIN_SAMPLES_WEIGHT;
+    },
+
+    // ── Get weight dampening factor (less data = more conservative) ──
+    getDampeningFactor: function(action) {
+      const count = this._sampleCounts[action] || 0;
+      // Scale from 0.2 (1 sample) to 1.0 (≥10 samples)
+      return Math.min(1.0, 0.2 + (count / this.MIN_SAMPLES_WEIGHT) * 0.8);
+    },
+
+    stats: function() {
+      return {
+        sampleCounts: Object.entries(this._sampleCounts)
+          .map(([action, count]) => ({ action, count,
+            readyForPolicy: count >= this.MIN_SAMPLES_POLICY,
+            readyForWeight: count >= this.MIN_SAMPLES_WEIGHT
+          }))
+          .sort((a,b) => b.count - a.count),
+        blocked: this._blocked.length
+      };
+    }
+  };
+
+  // Hook POLICY_ENGINE._MIN_EVIDENCE to use anti-overfitting
+  if (window.POLICY_ENGINE) {
+    window.POLICY_ENGINE._MIN_EVIDENCE = window.ANTI_OVERFITTING.MIN_SAMPLES_POLICY;
+
+    const _origIngest2 = window.POLICY_ENGINE.ingest.bind(window.POLICY_ENGINE);
+    window.POLICY_ENGINE.ingest = function(entry) {
+      if (entry.action) {
+        window.ANTI_OVERFITTING.recordSample(entry.action);
+
+        // Block policy creation if not enough samples
+        if (!window.ANTI_OVERFITTING.hasEnoughForPolicy(entry.action)) {
+          const count = window.ANTI_OVERFITTING._sampleCounts[entry.action] || 0;
+          _GATE(`Anti-overfitting: ${entry.action} needs ${window.ANTI_OVERFITTING.MIN_SAMPLES_POLICY - count} more samples`);
+          // Still ingest to evidence but don't create policy yet
+          const conditions = this._extractConditions(entry.before || {});
+          const key = `${conditions.join('+')}:${entry.action}`;
+          if (!this._evidence[key]) this._evidence[key] = [];
+          this._evidence[key].push({
+            impactScore: entry.impactScore || 0,
+            success: entry.success,
+            ts: entry.ts
+          });
+          return;
+        }
+      }
+      _origIngest2(entry);
+    };
+  }
+
+  // Hook AI_DECISION_ENGINE.updateWeights to apply dampening
+  if (window.AI_DECISION_ENGINE && window.AI_DECISION_ENGINE.updateWeights) {
+    const _origUpdateWeights = window.AI_DECISION_ENGINE.updateWeights.bind(window.AI_DECISION_ENGINE);
+    window.AI_DECISION_ENGINE.updateWeights = function(entry) {
+      if (!entry.action) return _origUpdateWeights(entry);
+
+      window.ANTI_OVERFITTING.recordSample(entry.action);
+      const dampening = window.ANTI_OVERFITTING.getDampeningFactor(entry.action);
+
+      // Apply dampening to delta
+      const action = entry.action;
+      const currentWeight = this._actionWeights[action] || 1.0;
+      const rawDelta = entry.success ? 0.1 : -0.15;
+      const dampenedDelta = rawDelta * dampening;
+      const newWeight = Math.max(0.1, Math.min(2.0,
+        Math.round((currentWeight + dampenedDelta) * 100) / 100
+      ));
+      this._actionWeights[action] = newWeight;
+
+      if (dampening < 1.0) {
+        _GATE(`Anti-overfitting dampening: ${action} delta=${rawDelta.toFixed(2)} → ${dampenedDelta.toFixed(2)} (factor=${dampening.toFixed(2)})`);
+      }
+    };
+  }
+
+  _LOG('Phase 48: Anti-Overfitting initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 49: ROLLBACK MEMORY
+  // ถ้า action ทำให้แย่ → rollback(action) + บันทึก
+  // ═══════════════════════════════════════════════════════════
+
+  window.ROLLBACK_MEMORY = {
+    _snapshots: [],   // system state snapshots
+    _MAX_SNAPSHOTS: 10,
+    _rollbacks: [],   // rollback history
+    _MAX_ROLLBACKS: 50,
+
+    // ── Take snapshot before action ──
+    snapshot: function(action, reason) {
+      const metrics = window.GLOBAL_METRICS_ENGINE
+        ? window.GLOBAL_METRICS_ENGINE.getSystemMetrics()
+        : null;
+
+      const snap = {
+        id: `SNAP_${Date.now()}`,
+        ts: Date.now(),
+        action,
+        reason: reason || 'pre-action',
+        state: {
+          healthScore: metrics?.healthScore || 100,
+          latency: metrics?.api?.avgLatency || 0,
+          errorRate: metrics?.api?.errorRate60s || 0,
+          syncInterval: window._v800SyncTimer ? 'active' : 'inactive',
+          safeMode: window.SAFE_MODE?._active || false,
+          heavyFeaturesDisabled: window.__HEAVY_FEATURES_DISABLED || false,
+          actionWeights: window.AI_DECISION_ENGINE?._actionWeights
+            ? { ...window.AI_DECISION_ENGINE._actionWeights }
+            : {}
+        }
+      };
+
+      this._snapshots.push(snap);
+      if (this._snapshots.length > this._MAX_SNAPSHOTS) this._snapshots.shift();
+
+      _ROLLBACK(`Snapshot taken: ${action} (id: ${snap.id})`);
+      return snap.id;
+    },
+
+    // ── Rollback to last snapshot before action ──
+    rollback: function(action, reason) {
+      const snap = this._snapshots
+        .filter(s => s.action === action)
+        .sort((a,b) => b.ts - a.ts)[0];
+
+      if (!snap) {
+        _WARN(`ROLLBACK: no snapshot found for action "${action}"`);
+        return false;
+      }
+
+      const rollbackRecord = {
+        ts: Date.now(),
+        action,
+        reason: reason || 'bad outcome',
+        snapId: snap.id,
+        restoredState: snap.state
+      };
+
+      // Restore action weights
+      if (snap.state.actionWeights && window.AI_DECISION_ENGINE) {
+        Object.assign(window.AI_DECISION_ENGINE._actionWeights, snap.state.actionWeights);
+        _ROLLBACK(`Action weights restored to pre-${action} state`);
+      }
+
+      // Restore safe mode state
+      if (!snap.state.safeMode && window.SAFE_MODE?._active) {
+        window.SAFE_MODE.disable();
+        _ROLLBACK('Safe mode disabled (rollback)');
+      }
+
+      // Restore heavy features
+      if (!snap.state.heavyFeaturesDisabled && window.__HEAVY_FEATURES_DISABLED) {
+        window.__HEAVY_FEATURES_DISABLED = false;
+        _ROLLBACK('Heavy features re-enabled (rollback)');
+      }
+
+      this._rollbacks.push(rollbackRecord);
+      if (this._rollbacks.length > this._MAX_ROLLBACKS) this._rollbacks.shift();
+
+      // Mark action as bad in POLICY_ENGINE
+      if (window.POLICY_ENGINE) {
+        window.POLICY_ENGINE.ingest({
+          action,
+          before: snap.state,
+          after: null,
+          success: false,
+          impactScore: -50,  // Strong negative signal
+          ts: Date.now(),
+          source: 'rollback'
+        });
+      }
+
+      // Reduce action weight significantly
+      if (window.AI_DECISION_ENGINE?._actionWeights) {
+        const currentWeight = window.AI_DECISION_ENGINE._actionWeights[action] || 1.0;
+        window.AI_DECISION_ENGINE._actionWeights[action] = Math.max(0.1, currentWeight - 0.3);
+        _ROLLBACK(`Weight penalized: ${action} → ${window.AI_DECISION_ENGINE._actionWeights[action]}`);
+      }
+
+      _ROLLBACK(`Rollback complete: ${action} (reason: ${reason})`);
+      return true;
+    },
+
+    // ── Auto-rollback if outcome is very bad ──
+    autoRollback: function(entry) {
+      if (entry.impactScore !== null && entry.impactScore < -30) {
+        _ROLLBACK(`Auto-rollback triggered: ${entry.action} (impact: ${entry.impactScore})`);
+        return this.rollback(entry.action, `bad outcome: impactScore=${entry.impactScore}`);
+      }
+      return false;
+    },
+
+    getSnapshots: function() { return this._snapshots; },
+    getRollbacks: function(n) { return this._rollbacks.slice(-(n || 10)); },
+
+    stats: function() {
+      return {
+        snapshots: this._snapshots.length,
+        rollbacks: this._rollbacks.length,
+        recentRollbacks: this._rollbacks.slice(-3)
+      };
+    }
+  };
+
+  // Hook DECISION_LOG._evaluate to trigger auto-rollback
+  if (window.DECISION_LOG) {
+    const _origEval2 = window.DECISION_LOG._evaluate.bind(window.DECISION_LOG);
+    window.DECISION_LOG._evaluate = function(id) {
+      _origEval2(id);
+      // Check if rollback needed
+      const entry = this._log.find(e => e.id === id);
+      if (entry && entry.impactScore !== null) {
+        window.ROLLBACK_MEMORY.autoRollback(entry);
+      }
+    };
+  }
+
+  // Hook AUTO_ORCHESTRATOR.execute to take snapshot before action
+  if (window.AUTO_ORCHESTRATOR) {
+    const _origExecute = window.AUTO_ORCHESTRATOR.execute.bind(window.AUTO_ORCHESTRATOR);
+    window.AUTO_ORCHESTRATOR.execute = function(action, detail, priority) {
+      // Take snapshot before executing
+      window.ROLLBACK_MEMORY.snapshot(action, 'pre-execution');
+      return _origExecute(action, detail, priority);
+    };
+  }
+
+  _LOG('Phase 49: Rollback Memory initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 50: SANITY GUARD
+  // ห้าม AI ทำสิ่งที่อันตราย: disable core, kill dashboard, infinite loop
+  // ═══════════════════════════════════════════════════════════
+
+  window.SANITY_GUARD = {
+    // ── Forbidden actions (NEVER execute) ──
+    FORBIDDEN_ACTIONS: [
+      'disableCore',
+      'killDashboard',
+      'clearAllData',
+      'deleteLocalStorage',
+      'disableCallApi',
+      'stopAllTimers',
+      'destroyApp',
+      'resetToFactory',
+      'disableAuth',
+      'bypassSecurity'
+    ],
+
+    // ── Actions requiring extra confirmation ──
+    RESTRICTED_ACTIONS: [
+      'disableHeavyFeatures',
+      'enableSafeMode',
+      'notifyManager'
+    ],
+
+    // ── Max consecutive same-action executions ──
+    MAX_CONSECUTIVE: 3,
+    _consecutiveCounts: {},
+    _violations: [],
+    _MAX_VIOLATIONS: 100,
+
+    // ── Check if action is safe ──
+    isSafe: function(action) {
+      // Check forbidden
+      if (this.FORBIDDEN_ACTIONS.includes(action)) {
+        this._recordViolation('FORBIDDEN', action);
+        _SAFETY(`FORBIDDEN action blocked: ${action}`);
+        return false;
+      }
+
+      // Check consecutive repetition (infinite loop guard)
+      const count = this._consecutiveCounts[action] || 0;
+      if (count >= this.MAX_CONSECUTIVE) {
+        this._recordViolation('CONSECUTIVE_LIMIT', action, `count=${count}`);
+        _SAFETY(`Consecutive limit reached: ${action} (${count} times) — possible loop`);
+        return false;
+      }
+
+      return true;
+    },
+
+    // ── Record action execution ──
+    recordExecution: function(action) {
+      // Reset other actions' consecutive counts
+      Object.keys(this._consecutiveCounts).forEach(a => {
+        if (a !== action) this._consecutiveCounts[a] = 0;
+      });
+      this._consecutiveCounts[action] = (this._consecutiveCounts[action] || 0) + 1;
+    },
+
+    // ── Reset consecutive count after successful completion ──
+    recordCompletion: function(action) {
+      this._consecutiveCounts[action] = 0;
+    },
+
+    _recordViolation: function(type, action, detail) {
+      this._violations.push({ ts: Date.now(), type, action, detail: detail || '' });
+      if (this._violations.length > this._MAX_VIOLATIONS) this._violations.shift();
+    },
+
+    // ── Validate AI decision before execution ──
+    validateDecision: function(decisionResult) {
+      if (!decisionResult || !decisionResult.suggestedActions) return true;
+
+      const forbidden = decisionResult.suggestedActions.filter(
+        a => this.FORBIDDEN_ACTIONS.includes(a.action)
+      );
+
+      if (forbidden.length > 0) {
+        _SAFETY(`Decision contains forbidden actions: ${forbidden.map(a=>a.action).join(', ')}`);
+        // Remove forbidden actions
+        decisionResult.suggestedActions = decisionResult.suggestedActions.filter(
+          a => !this.FORBIDDEN_ACTIONS.includes(a.action)
+        );
+        decisionResult.sanitized = true;
+        decisionResult.removedActions = forbidden.map(a => a.action);
+        this._recordViolation('DECISION_SANITIZED', 'AI_DECISION', forbidden.map(a=>a.action).join(','));
+      }
+
+      // Check confidence floor
+      if (decisionResult.confidence < 0.3) {
+        _SAFETY(`Decision confidence too low: ${decisionResult.confidence} — forcing IGNORE`);
+        decisionResult.decision = 'IGNORE';
+        decisionResult.sanitized = true;
+        decisionResult.originalDecision = decisionResult.decision;
+        this._recordViolation('LOW_CONFIDENCE_FORCED_IGNORE', decisionResult.decision);
+      }
+
+      return decisionResult;
+    },
+
+    getViolations: function(n) { return this._violations.slice(-(n || 20)); },
+
+    stats: function() {
+      const byType = {};
+      this._violations.forEach(v => {
+        byType[v.type] = (byType[v.type] || 0) + 1;
+      });
+      return {
+        totalViolations: this._violations.length,
+        byType,
+        consecutiveCounts: { ...this._consecutiveCounts }
+      };
+    }
+  };
+
+  // Hook AUTO_ORCHESTRATOR.execute to check sanity
+  if (window.AUTO_ORCHESTRATOR) {
+    const _origExecuteSanity = window.AUTO_ORCHESTRATOR.execute.bind(window.AUTO_ORCHESTRATOR);
+    window.AUTO_ORCHESTRATOR.execute = function(action, detail, priority) {
+      if (!window.SANITY_GUARD.isSafe(action)) {
+        _SAFETY(`Execution blocked by Sanity Guard: ${action}`);
+        return { blocked: true, reason: 'sanity_guard', action };
+      }
+      window.SANITY_GUARD.recordExecution(action);
+      const result = _origExecuteSanity(action, detail, priority);
+      window.SANITY_GUARD.recordCompletion(action);
+      return result;
+    };
+  }
+
+  // Hook AI_DECISION_ENGINE.decide to sanitize output
+  if (window.AI_DECISION_ENGINE) {
+    const _origDecideSanity = window.AI_DECISION_ENGINE.decide.bind(window.AI_DECISION_ENGINE);
+    window.AI_DECISION_ENGINE.decide = function(systemMetrics, businessMetrics) {
+      const result = _origDecideSanity(systemMetrics, businessMetrics);
+      return window.SANITY_GUARD.validateDecision(result);
+    };
+  }
+
+  _LOG('Phase 50: Sanity Guard initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // V1200 DEBUG TOOLS
+  // ═══════════════════════════════════════════════════════════
+
+  window.V1200 = {
+    version: _V1200_VERSION,
+
+    report: function() {
+      console.group('%c[V1200] AI Safety & Learning Quality Report', 'color:#0284c7;font-size:14px;font-weight:bold');
+
+      console.group('Phase 45: Context-Aware Learning');
+      const ctxStats = window.DECISION_LOG?.statsByContext?.() || [];
+      console.log(`Context groups: ${ctxStats.length}`);
+      if (ctxStats.length > 0) console.table(ctxStats);
+      console.log('Current context:', window.CONTEXT_COLLECTOR.collect());
+      console.groupEnd();
+
+      console.group('Phase 46: Policy TTL');
+      const ttlStats = window.POLICY_TTL.stats();
+      console.log(`Total: ${ttlStats.total} | Expired: ${ttlStats.expired} | Expiring soon: ${ttlStats.expiringSoon}`);
+      console.groupEnd();
+
+      console.group('Phase 47: Confidence Gating');
+      const gateStats = window.CONFIDENCE_GATE.stats();
+      console.log(`Total blocked: ${gateStats.totalBlocked}`);
+      console.table(gateStats.byType);
+      console.groupEnd();
+
+      console.group('Phase 48: Anti-Overfitting');
+      const aoStats = window.ANTI_OVERFITTING.stats();
+      console.log(`Blocked: ${aoStats.blocked}`);
+      if (aoStats.sampleCounts.length > 0) console.table(aoStats.sampleCounts);
+      console.groupEnd();
+
+      console.group('Phase 49: Rollback Memory');
+      const rbStats = window.ROLLBACK_MEMORY.stats();
+      console.log(`Snapshots: ${rbStats.snapshots} | Rollbacks: ${rbStats.rollbacks}`);
+      if (rbStats.recentRollbacks.length > 0) console.table(rbStats.recentRollbacks);
+      console.groupEnd();
+
+      console.group('Phase 50: Sanity Guard');
+      const sgStats = window.SANITY_GUARD.stats();
+      console.log(`Total violations: ${sgStats.totalViolations}`);
+      console.table(sgStats.byType);
+      console.groupEnd();
+
+      // Pass/Fail
+      const checks = {
+        'CONTEXT_COLLECTOR defined': !!window.CONTEXT_COLLECTOR,
+        'DECISION_LOG.statsByContext': !!window.DECISION_LOG?.statsByContext,
+        'POLICY_TTL defined': !!window.POLICY_TTL,
+        'POLICY_TTL auto-prune running': !!window.POLICY_TTL._pruneInterval,
+        'CONFIDENCE_GATE defined': !!window.CONFIDENCE_GATE,
+        'ANTI_OVERFITTING defined': !!window.ANTI_OVERFITTING,
+        'ROLLBACK_MEMORY defined': !!window.ROLLBACK_MEMORY,
+        'SANITY_GUARD defined': !!window.SANITY_GUARD,
+        'FORBIDDEN_ACTIONS list': window.SANITY_GUARD?.FORBIDDEN_ACTIONS?.length >= 5,
+        'Version 12.0.0': window.__COMPHONE_VERSION === _V1200_VERSION
+      };
+
+      console.group('Pass/Fail Summary');
+      let pass = 0, fail = 0;
+      Object.entries(checks).forEach(([name, result]) => {
+        if (result) { console.log(`✅ ${name}`); pass++; }
+        else { console.warn(`⚠️ ${name}`); fail++; }
+      });
+      console.log(`\nResult: ${pass}/${pass+fail}`);
+      if (fail === 0) {
+        console.log('%c🎉 AI SAFETY & LEARNING QUALITY: FULLY OPERATIONAL', 'color:#0284c7;font-size:16px;font-weight:bold');
+      }
+      console.groupEnd();
+      console.groupEnd();
+    },
+
+    // Test forbidden action blocking
+    testSanity: function() {
+      _LOG('Testing Sanity Guard...');
+      const blocked = [];
+      window.SANITY_GUARD.FORBIDDEN_ACTIONS.forEach(action => {
+        const safe = window.SANITY_GUARD.isSafe(action);
+        if (!safe) blocked.push(action);
+      });
+      _LOG(`Sanity Guard blocked ${blocked.length}/${window.SANITY_GUARD.FORBIDDEN_ACTIONS.length} forbidden actions ✅`);
+      return blocked;
+    },
+
+    // Test rollback
+    testRollback: function(action) {
+      action = action || 'enableSafeMode';
+      const snapId = window.ROLLBACK_MEMORY.snapshot(action, 'test');
+      _LOG(`Snapshot taken: ${snapId}`);
+      const result = window.ROLLBACK_MEMORY.rollback(action, 'test rollback');
+      _LOG(`Rollback result: ${result}`);
+      return result;
+    },
+
+    // Test confidence gate
+    testGate: function(confidence) {
+      confidence = confidence || 0.5;
+      const learn = window.CONFIDENCE_GATE.shouldLearn(confidence);
+      const act = window.CONFIDENCE_GATE.shouldAct(confidence);
+      _LOG(`Confidence ${confidence}: learn=${learn} act=${act}`);
+      return { learn, act };
+    },
+
+    context: window.CONTEXT_COLLECTOR,
+    ttl: window.POLICY_TTL,
+    gate: window.CONFIDENCE_GATE,
+    antiOverfit: window.ANTI_OVERFITTING,
+    rollback: window.ROLLBACK_MEMORY,
+    sanity: window.SANITY_GUARD
+  };
+
+  // ── Update version ──
+  window.__COMPHONE_VERSION = _V1200_VERSION;
+  window.__COMPHONE_BUILD   = _V1200_BUILD;
+
+  _LOG('=== v12.0.0 AI Safety & Learning Quality LOADED ===');
+  _LOG('Commands: V1200.report() | V1200.testSanity() | V1200.testRollback()');
+  _LOG('         V1200.testGate(0.5) | CONTEXT_COLLECTOR.collect()');
+  _LOG('         POLICY_TTL.stats() | CONFIDENCE_GATE.stats()');
+  _LOG('         ANTI_OVERFITTING.stats() | ROLLBACK_MEMORY.stats()');
+  _LOG('         SANITY_GUARD.stats() | SANITY_GUARD.getViolations()');
+
+})();
+
+</script>
 </body>
 </html>
