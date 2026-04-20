@@ -10448,5 +10448,598 @@ body.theme-dark .sg-detail-close { background: #334155; color: #94a3b8; }
 })();
 
 </script>
+<script>
+/* ============================================================
+ * COMPHONE Dashboard v8.1.0 — Self-Defending System Patch
+ * Phase 17: Duplicate Call Guard (__IN_FLIGHT)
+ * Phase 18: Auto Lock Timeout (10s)
+ * Phase 19: Action Queue (FIFO, no drop)
+ * Phase 20: Circuit Breaker (error > 5 → BLOCK)
+ * Phase 21: Global Runtime Guard (rate/error/latency)
+ * Phase 22: Safe Mode (__SAFE_MODE)
+ * ============================================================ */
+/**
+ * COMPHONE Dashboard v8.1.0 — Self-Defending System Patch
+ * Phase 17: Duplicate Call Guard (__IN_FLIGHT)
+ * Phase 18: Auto Lock Timeout (10s)
+ * Phase 19: Action Queue (FIFO, no drop)
+ * Phase 20: Circuit Breaker (error > 5 → BLOCK)
+ * Phase 21: Global Runtime Guard (rate/error/latency monitor)
+ * Phase 22: Safe Mode (__SAFE_MODE)
+ */
+
+(function() {
+  'use strict';
+
+  const _V810_VERSION = '8.1.0';
+  const _V810_BUILD   = 'self-defending';
+
+  function _LOG(msg)  { console.log(`%c[v${_V810_VERSION}] ${msg}`, 'color:#7c3aed;font-weight:bold'); }
+  function _WARN(msg) { console.warn(`[v${_V810_VERSION}] ⚠️ ${msg}`); }
+  function _ERR(msg)  { console.error(`[v${_V810_VERSION}] ❌ ${msg}`); }
+
+  _LOG('=== Self-Defending System Patch Loading ===');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 17: DUPLICATE CALL GUARD — __IN_FLIGHT
+  // ─────────────────────────────────────────────────────────
+  // ปัญหา: v8.0.0 ใช้ __CALL_IN_PROGRESS แต่ไม่มี timeout
+  // v8.1.0: เปลี่ยนเป็น __IN_FLIGHT พร้อม metadata + timeout
+  // ═══════════════════════════════════════════════════════════
+
+  window.__IN_FLIGHT = {};
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 20: CIRCUIT BREAKER
+  // ─────────────────────────────────────────────────────────
+  // ถ้า error ต่อเนื่อง > 5 ครั้ง → BLOCK_API = true
+  // reset อัตโนมัติหลัง 30s
+  // ═══════════════════════════════════════════════════════════
+
+  window.__CIRCUIT_BREAKER = {
+    errorCount: 0,
+    BLOCK_API: false,
+    lastError: null,
+    openedAt: null,
+    THRESHOLD: 5,
+    RESET_MS: 30000,
+    _resetTimer: null,
+
+    trip: function(action, error) {
+      this.errorCount++;
+      this.lastError = { action, error, ts: Date.now() };
+      _WARN(`Circuit Breaker: error #${this.errorCount} on ${action}: ${error}`);
+
+      if (this.errorCount >= this.THRESHOLD && !this.BLOCK_API) {
+        this.BLOCK_API = true;
+        this.openedAt = Date.now();
+        _ERR(`Circuit Breaker OPEN — API blocked after ${this.errorCount} errors`);
+
+        // Auto reset after 30s
+        if (this._resetTimer) clearTimeout(this._resetTimer);
+        this._resetTimer = setTimeout(() => {
+          this.reset();
+          _LOG('Circuit Breaker: auto-reset after 30s — HALF-OPEN');
+        }, this.RESET_MS);
+      }
+    },
+
+    success: function() {
+      if (this.errorCount > 0) {
+        this.errorCount = Math.max(0, this.errorCount - 1);
+      }
+      if (this.BLOCK_API && this.errorCount === 0) {
+        this.reset();
+      }
+    },
+
+    reset: function() {
+      this.errorCount = 0;
+      this.BLOCK_API = false;
+      this.openedAt = null;
+      if (this._resetTimer) { clearTimeout(this._resetTimer); this._resetTimer = null; }
+      _LOG('Circuit Breaker: CLOSED (reset)');
+    },
+
+    status: function() {
+      const state = this.BLOCK_API ? 'OPEN' : (this.errorCount > 0 ? 'HALF-OPEN' : 'CLOSED');
+      return {
+        state,
+        errorCount: this.errorCount,
+        threshold: this.THRESHOLD,
+        blocked: this.BLOCK_API,
+        lastError: this.lastError,
+        openedAt: this.openedAt ? new Date(this.openedAt).toLocaleTimeString() : null
+      };
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 21: GLOBAL RUNTIME GUARD
+  // ─────────────────────────────────────────────────────────
+  // Monitor: API rate, error rate, duplicate call, latency spike
+  // ═══════════════════════════════════════════════════════════
+
+  window.__RUNTIME_GUARD = {
+    // Sliding window: last 60s
+    _window: [],
+    _WINDOW_MS: 60000,
+    _RATE_LIMIT: 30,      // max 30 API calls per 60s
+    _LATENCY_WARN: 3000,  // warn if > 3s
+    _LATENCY_SPIKE: 8000, // throttle if > 8s
+    _duplicateCount: 0,
+    _throttleUntil: 0,
+
+    record: function(action, elapsed, success) {
+      const now = Date.now();
+      // Evict old entries
+      this._window = this._window.filter(e => now - e.ts < this._WINDOW_MS);
+      this._window.push({ action, elapsed, success, ts: now });
+
+      // Rate check
+      if (this._window.length > this._RATE_LIMIT) {
+        _WARN(`Runtime Guard: API rate ${this._window.length} calls/60s — throttling`);
+        this._throttleUntil = now + 5000; // throttle 5s
+      }
+
+      // Latency check
+      if (elapsed > this._LATENCY_SPIKE) {
+        _ERR(`Runtime Guard: LATENCY SPIKE ${elapsed}ms on ${action}`);
+      } else if (elapsed > this._LATENCY_WARN) {
+        _WARN(`Runtime Guard: slow API ${elapsed}ms on ${action}`);
+      }
+
+      // Error rate check
+      const recent = this._window.slice(-10);
+      const errorRate = recent.filter(e => !e.success).length / recent.length;
+      if (recent.length >= 5 && errorRate >= 0.5) {
+        _WARN(`Runtime Guard: high error rate ${Math.round(errorRate*100)}% in last ${recent.length} calls`);
+      }
+    },
+
+    recordDuplicate: function(action) {
+      this._duplicateCount++;
+      _WARN(`[BLOCK DUPLICATE] ${action} — total blocked: ${this._duplicateCount}`);
+    },
+
+    isThrottled: function() {
+      return Date.now() < this._throttleUntil;
+    },
+
+    stats: function() {
+      const now = Date.now();
+      const recent = this._window.filter(e => now - e.ts < this._WINDOW_MS);
+      const latencies = recent.map(e => e.elapsed).filter(Boolean);
+      const avgLatency = latencies.length ? Math.round(latencies.reduce((a,b) => a+b, 0) / latencies.length) : 0;
+      const errorCount = recent.filter(e => !e.success).length;
+      return {
+        callsPerMinute: recent.length,
+        avgLatency: avgLatency + 'ms',
+        errorCount,
+        errorRate: recent.length ? Math.round(errorCount/recent.length*100) + '%' : '0%',
+        duplicatesBlocked: this._duplicateCount,
+        throttled: this.isThrottled()
+      };
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 19: ACTION QUEUE
+  // ─────────────────────────────────────────────────────────
+  // ถ้า action ซ้อน → queue แทนที่จะ drop
+  // FIFO, max depth 10 ต่อ action
+  // ═══════════════════════════════════════════════════════════
+
+  window.__ACTION_QUEUE = {
+    _queues: {},   // { [action]: [{resolve, reject, payload, options}] }
+    _MAX_DEPTH: 10,
+
+    enqueue: function(action, payload, options) {
+      if (!this._queues[action]) this._queues[action] = [];
+      if (this._queues[action].length >= this._MAX_DEPTH) {
+        _WARN(`Action Queue: ${action} queue full (${this._MAX_DEPTH}) — dropping oldest`);
+        const dropped = this._queues[action].shift();
+        if (dropped) dropped.reject(new Error(`Queue overflow: ${action}`));
+      }
+      return new Promise((resolve, reject) => {
+        this._queues[action].push({ resolve, reject, payload, options });
+        _LOG(`Action Queue: ${action} queued (depth: ${this._queues[action].length})`);
+      });
+    },
+
+    next: function(action) {
+      if (!this._queues[action] || this._queues[action].length === 0) return null;
+      return this._queues[action].shift();
+    },
+
+    hasQueued: function(action) {
+      return (this._queues[action] || []).length > 0;
+    },
+
+    depth: function(action) {
+      return (this._queues[action] || []).length;
+    },
+
+    stats: function() {
+      const result = {};
+      for (const [action, q] of Object.entries(this._queues)) {
+        if (q.length > 0) result[action] = q.length;
+      }
+      return result;
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 22: SAFE MODE
+  // ─────────────────────────────────────────────────────────
+  // window.__SAFE_MODE = true → ปิด auto refresh, non-critical API
+  // ═══════════════════════════════════════════════════════════
+
+  window.__SAFE_MODE = false;
+
+  // Critical actions ที่ยังทำงานใน Safe Mode
+  const _CRITICAL_ACTIONS = new Set([
+    'getAuthToken', 'checkSession', 'pcCheckSession',
+    'getSystemVersion', 'ping', 'checkAuth'
+  ]);
+
+  window.SAFE_MODE = {
+    enable: function(reason) {
+      window.__SAFE_MODE = true;
+      window.__SAFE_MODE_REASON = reason || 'manual';
+      window.__SAFE_MODE_AT = Date.now();
+
+      // ปิด sync timer
+      if (window._v800SyncTimer) {
+        clearInterval(window._v800SyncTimer);
+        window._v800SyncTimer = null;
+        _LOG('Safe Mode: sync timer stopped');
+      }
+
+      _WARN(`Safe Mode ENABLED — reason: ${reason || 'manual'}`);
+      _WARN('Safe Mode: auto-refresh OFF, non-critical API BLOCKED, cache ONLY');
+    },
+
+    disable: function() {
+      window.__SAFE_MODE = false;
+      window.__SAFE_MODE_REASON = null;
+
+      // Restart sync timer
+      if (!window._v800SyncTimer && typeof window._v800StartSync === 'function') {
+        window._v800StartSync();
+        _LOG('Safe Mode: sync timer restarted');
+      }
+
+      _LOG('Safe Mode DISABLED — system back to normal');
+    },
+
+    isCritical: function(action) {
+      return _CRITICAL_ACTIONS.has(action);
+    },
+
+    status: function() {
+      return {
+        enabled: window.__SAFE_MODE,
+        reason: window.__SAFE_MODE_REASON || null,
+        since: window.__SAFE_MODE_AT ? new Date(window.__SAFE_MODE_AT).toLocaleTimeString() : null
+      };
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // CORE: UPGRADE API_CONTROLLER.call() → v8.1.0
+  // รวม Phase 17-22 เข้าด้วยกัน
+  // ═══════════════════════════════════════════════════════════
+
+  _LOG('Upgrading API_CONTROLLER.call() to v8.1.0...');
+
+  const _v810OrigControllerCall = window.API_CONTROLLER
+    ? window.API_CONTROLLER.call.bind(window.API_CONTROLLER)
+    : null;
+
+  if (!window.API_CONTROLLER) {
+    window.API_CONTROLLER = {};
+  }
+
+  window.API_CONTROLLER.call = async function _v810ControllerCall(action, payload, options) {
+    payload = payload || {};
+    options = options || {};
+    const source = options.source || 'UserAction';
+
+    // ── Phase 22: Safe Mode ──
+    if (window.__SAFE_MODE && !SAFE_MODE.isCritical(action) && !options.forceSafeMode) {
+      _WARN(`Safe Mode: ${action} BLOCKED (non-critical)`);
+      return { success: false, error: 'SAFE_MODE', message: `ระบบอยู่ใน Safe Mode — ${action} ถูก block` };
+    }
+
+    // ── Phase 20: Circuit Breaker ──
+    if (window.__CIRCUIT_BREAKER.BLOCK_API && !options.forceCircuit) {
+      const cb = window.__CIRCUIT_BREAKER.status();
+      _ERR(`Circuit Breaker OPEN: ${action} BLOCKED (errors: ${cb.errorCount}/${cb.threshold})`);
+      return { success: false, error: 'CIRCUIT_OPEN', message: `API ถูก block ชั่วคราว (${cb.errorCount} errors)` };
+    }
+
+    // ── Phase 21: Rate Throttle ──
+    if (window.__RUNTIME_GUARD.isThrottled() && !options.forceThrottle) {
+      _WARN(`Runtime Guard: ${action} throttled (rate limit)`);
+      return { success: false, error: 'THROTTLED', message: 'API rate limit — กรุณารอสักครู่' };
+    }
+
+    // ── Phase 17: Duplicate Call Guard ──
+    const lockKey = action + (options.lockKey || '');
+    if (window.__IN_FLIGHT[lockKey] && !options.force) {
+      window.__RUNTIME_GUARD.recordDuplicate(action);
+
+      // ── Phase 19: Action Queue ──
+      if (options.queue !== false) {
+        _LOG(`Action Queue: ${action} queued (in-flight)`);
+        return window.__ACTION_QUEUE.enqueue(action, payload, options);
+      }
+      return { success: false, error: 'IN_PROGRESS', message: `${action} กำลังดำเนินการอยู่` };
+    }
+
+    // Set in-flight
+    window.__IN_FLIGHT[lockKey] = { action, source, ts: Date.now() };
+
+    // ── Phase 18: Auto Lock Timeout ──
+    const _lockTimeout = setTimeout(function() {
+      if (window.__IN_FLIGHT[lockKey]) {
+        _WARN(`Auto Lock Timeout: ${action} lock released after 10s`);
+        delete window.__IN_FLIGHT[lockKey];
+        // Process next in queue
+        const next = window.__ACTION_QUEUE.next(action);
+        if (next) {
+          _LOG(`Action Queue: processing next ${action} after timeout`);
+          window.API_CONTROLLER.call(action, next.payload, next.options)
+            .then(next.resolve).catch(next.reject);
+        }
+      }
+    }, 10000);
+
+    const t0 = performance.now();
+
+    // Trace
+    if (!window.__CALL_COUNTS) window.__CALL_COUNTS = {};
+    window.__CALL_COUNTS[action] = (window.__CALL_COUNTS[action] || 0) + 1;
+    console.log(
+      `%c[TRACE] ${action} called ${window.__CALL_COUNTS[action]} time(s) | source: ${source}`,
+      'color:#7c3aed'
+    );
+
+    try {
+      // เรียก callApi โดยตรง (ไม่ผ่าน v8.0.0 controller อีกชั้น)
+      const result = await window.callApi(action, payload, Object.assign({}, options, { _fromController: true }));
+      const elapsed = Math.round(performance.now() - t0);
+      const success = result?.success !== false;
+
+      // ── Phase 21: Record to Runtime Guard ──
+      window.__RUNTIME_GUARD.record(action, elapsed, success);
+
+      // ── Phase 20: Circuit Breaker success ──
+      if (success) {
+        window.__CIRCUIT_BREAKER.success();
+      } else {
+        window.__CIRCUIT_BREAKER.trip(action, result?.error || result?.message || 'unknown');
+      }
+
+      // Trace log
+      if (!window.__V800_TRACE) window.__V800_TRACE = [];
+      window.__V800_TRACE.push({ action, source, ts: Date.now(), elapsed, success, lockKey });
+      if (window.__V800_TRACE.length > 200) window.__V800_TRACE.shift();
+
+      console.log(
+        `%c[TRACE] ${action} → ${success ? '✅' : '❌'} (${elapsed}ms)`,
+        success ? 'color:green' : 'color:red'
+      );
+
+      return result;
+
+    } catch(err) {
+      const elapsed = Math.round(performance.now() - t0);
+      _ERR(`API_CONTROLLER: ${action} threw: ${err.message}`);
+      window.__CIRCUIT_BREAKER.trip(action, err.message);
+      window.__RUNTIME_GUARD.record(action, elapsed, false);
+      return { success: false, error: err.message, message: err.message };
+
+    } finally {
+      clearTimeout(_lockTimeout);
+      delete window.__IN_FLIGHT[lockKey];
+
+      // ── Phase 19: Process next in queue ──
+      const next = window.__ACTION_QUEUE.next(action);
+      if (next) {
+        _LOG(`Action Queue: processing queued ${action}`);
+        window.API_CONTROLLER.call(action, next.payload, next.options)
+          .then(next.resolve).catch(next.reject);
+      }
+    }
+  };
+
+  window.API_CONTROLLER._version = _V810_VERSION;
+
+  // ── เพิ่ม methods ใหม่ ──
+  window.API_CONTROLLER.circuitBreaker = function() {
+    const s = window.__CIRCUIT_BREAKER.status();
+    console.group('[API_CONTROLLER] Circuit Breaker Status');
+    console.log(`State: ${s.state}`);
+    console.log(`Errors: ${s.errorCount}/${s.threshold}`);
+    if (s.lastError) console.log(`Last Error: ${s.lastError.action} — ${s.lastError.error}`);
+    console.groupEnd();
+    return s;
+  };
+
+  window.API_CONTROLLER.queue = function() {
+    const q = window.__ACTION_QUEUE.stats();
+    console.group('[API_CONTROLLER] Action Queue');
+    if (Object.keys(q).length === 0) {
+      console.log('Queue empty ✅');
+    } else {
+      console.table(q);
+    }
+    console.groupEnd();
+    return q;
+  };
+
+  window.API_CONTROLLER.inFlight = function() {
+    const f = window.__IN_FLIGHT;
+    console.group('[API_CONTROLLER] In-Flight Requests');
+    if (Object.keys(f).length === 0) {
+      console.log('No in-flight requests ✅');
+    } else {
+      console.table(Object.entries(f).map(([k, v]) => ({
+        lockKey: k,
+        action: v.action,
+        source: v.source,
+        age: Math.round((Date.now() - v.ts) / 1000) + 's'
+      })));
+    }
+    console.groupEnd();
+    return f;
+  };
+
+  _LOG('API_CONTROLLER.call() upgraded to v8.1.0 ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // V810 DEBUG TOOLS
+  // ═══════════════════════════════════════════════════════════
+
+  window.V810 = {
+    version: _V810_VERSION,
+
+    /**
+     * Full Self-Defending System Report
+     */
+    report: function() {
+      console.group('%c[V810] Self-Defending System Report', 'color:#7c3aed;font-size:14px;font-weight:bold');
+
+      // 1. Circuit Breaker
+      console.group('1. Circuit Breaker');
+      const cb = window.__CIRCUIT_BREAKER.status();
+      console.log(`State: ${cb.state === 'CLOSED' ? '✅ CLOSED' : cb.state === 'OPEN' ? '❌ OPEN' : '⚠️ HALF-OPEN'}`);
+      console.log(`Errors: ${cb.errorCount}/${cb.threshold}`);
+      console.groupEnd();
+
+      // 2. Runtime Guard Stats
+      console.group('2. Runtime Guard');
+      const rg = window.__RUNTIME_GUARD.stats();
+      console.table([rg]);
+      console.groupEnd();
+
+      // 3. In-Flight
+      console.group('3. In-Flight Requests');
+      window.API_CONTROLLER.inFlight();
+      console.groupEnd();
+
+      // 4. Action Queue
+      console.group('4. Action Queue');
+      window.API_CONTROLLER.queue();
+      console.groupEnd();
+
+      // 5. Safe Mode
+      console.group('5. Safe Mode');
+      const sm = window.SAFE_MODE.status();
+      console.log(`Enabled: ${sm.enabled ? '⚠️ YES' : '✅ NO'}`);
+      if (sm.enabled) console.log(`Reason: ${sm.reason} | Since: ${sm.since}`);
+      console.groupEnd();
+
+      // 6. Duplicate Blocks
+      console.group('6. Duplicate Call Blocks');
+      console.log(`Total blocked: ${window.__RUNTIME_GUARD._duplicateCount}`);
+      console.groupEnd();
+
+      // Pass/Fail
+      const checks = {
+        'Circuit Breaker CLOSED': cb.state === 'CLOSED',
+        'No in-flight stuck > 10s': Object.values(window.__IN_FLIGHT || {}).every(v => Date.now() - v.ts < 10000),
+        'API rate < 30/min': rg.callsPerMinute < 30,
+        'Error rate < 50%': parseInt(rg.errorRate) < 50,
+        'Safe Mode OFF': !window.__SAFE_MODE,
+        'Queue empty': Object.keys(window.__ACTION_QUEUE.stats()).length === 0,
+      };
+
+      console.group('Pass/Fail Summary');
+      let pass = 0, fail = 0;
+      Object.entries(checks).forEach(([name, result]) => {
+        if (result) { console.log(`✅ ${name}`); pass++; }
+        else { console.warn(`⚠️ ${name}`); fail++; }
+      });
+      console.log(`\nResult: ${pass}/${pass+fail}`);
+      if (fail === 0) {
+        console.log('%c🎉 SELF-DEFENDING SYSTEM: FULLY OPERATIONAL', 'color:#7c3aed;font-size:16px;font-weight:bold');
+      }
+      console.groupEnd();
+      console.groupEnd();
+    },
+
+    /**
+     * Simulate network failure scenario
+     */
+    simulateNetworkFail: async function(times) {
+      times = times || 6;
+      _LOG(`Simulating ${times} consecutive errors...`);
+      for (let i = 0; i < times; i++) {
+        window.__CIRCUIT_BREAKER.trip('simulatedError', 'network timeout');
+      }
+      _LOG(`Circuit Breaker state: ${window.__CIRCUIT_BREAKER.status().state}`);
+    },
+
+    /**
+     * Simulate rapid clicks (duplicate call test)
+     */
+    simulateRapidClick: async function(action, times) {
+      times = times || 5;
+      _LOG(`Simulating ${times} rapid clicks on ${action}...`);
+      const promises = [];
+      for (let i = 0; i < times; i++) {
+        promises.push(API_CONTROLLER.call(action, {}, { source: 'RapidClickTest', queue: true }));
+      }
+      const results = await Promise.allSettled(promises);
+      const blocked = results.filter(r => r.value?.error === 'IN_PROGRESS').length;
+      const queued = results.filter(r => r.status === 'fulfilled' && !r.value?.error).length;
+      _LOG(`Rapid click test: ${times} clicks → ${queued} queued, ${blocked} blocked`);
+      return results;
+    },
+
+    safeMode: window.SAFE_MODE,
+    circuitBreaker: window.__CIRCUIT_BREAKER,
+    runtimeGuard: window.__RUNTIME_GUARD,
+    actionQueue: window.__ACTION_QUEUE,
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // AUTO SAFE MODE: เปิด Safe Mode อัตโนมัติเมื่อ Circuit Breaker เปิด
+  // ═══════════════════════════════════════════════════════════
+
+  // Override circuit breaker trip to auto-enable safe mode
+  const _origTrip = window.__CIRCUIT_BREAKER.trip.bind(window.__CIRCUIT_BREAKER);
+  window.__CIRCUIT_BREAKER.trip = function(action, error) {
+    _origTrip(action, error);
+    if (this.BLOCK_API && !window.__SAFE_MODE) {
+      window.SAFE_MODE.enable('circuit-breaker-auto');
+    }
+  };
+
+  // Override circuit breaker reset to auto-disable safe mode
+  const _origReset = window.__CIRCUIT_BREAKER.reset.bind(window.__CIRCUIT_BREAKER);
+  window.__CIRCUIT_BREAKER.reset = function() {
+    _origReset();
+    if (window.__SAFE_MODE && window.__SAFE_MODE_REASON === 'circuit-breaker-auto') {
+      window.SAFE_MODE.disable();
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // MARK VERSION
+  // ═══════════════════════════════════════════════════════════
+
+  window.__COMPHONE_VERSION = _V810_VERSION;
+  window.__COMPHONE_BUILD   = _V810_BUILD;
+
+  _LOG('=== v8.1.0 Self-Defending System LOADED ===');
+  _LOG('Commands: V810.report() | V810.simulateNetworkFail() | V810.simulateRapidClick(action) | SAFE_MODE.enable() | SAFE_MODE.disable()');
+
+})();
+
+</script>
 </body>
 </html>
