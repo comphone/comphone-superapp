@@ -8692,5 +8692,460 @@ body.theme-dark .sg-detail-close { background: #334155; color: #94a3b8; }
 })();
 </script>
 
+<!-- ============================================================
+     COMPHONE v6.2.6 — Production Recovery Patch
+     Phase 1: Global Call Lock (loop detection)
+     Phase 2: API Unification (single canonical callApi)
+     Phase 3: Disable Offline Queue (bypass navigator.onLine)
+     Phase 4: Real Ping Online Detection
+     Phase 5: Auto Update Loop Guard
+     ============================================================ -->
+<script>
+/* ============================================================
+   COMPHONE v6.2.6 — Production Recovery Patch
+   Stop infinite loop → Restore system stability
+   ============================================================ */
+(function() {
+  'use strict';
+
+  // ──────────────────────────────────────────────────────────
+  // PHASE 1: Global Call Lock — prevent recursive callApi calls
+  // ──────────────────────────────────────────────────────────
+  const _CALL_LOCK = {
+    _depth: 0,
+    _maxDepth: 10,
+    _callMap: {},
+    _callCount: 0,
+    _blocked: 0,
+
+    enter: function(action) {
+      this._depth++;
+      this._callCount++;
+      this._callMap[action] = (this._callMap[action] || 0) + 1;
+      if (this._depth > this._maxDepth) {
+        this._blocked++;
+        console.error('[CALL_LOCK] ❌ Max depth exceeded for:', action,
+          '| depth:', this._depth, '| total blocked:', this._blocked);
+        this._depth--;
+        return false; // blocked
+      }
+      return true; // allowed
+    },
+
+    exit: function() {
+      this._depth = Math.max(0, this._depth - 1);
+    },
+
+    reset: function() {
+      this._depth = 0;
+      console.log('[CALL_LOCK] Reset — depth cleared');
+    },
+
+    stats: function() {
+      return {
+        depth: this._depth,
+        callCount: this._callCount,
+        blocked: this._blocked,
+        topActions: Object.entries(this._callMap)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+      };
+    }
+  };
+  window._CALL_LOCK = _CALL_LOCK;
+
+  // ──────────────────────────────────────────────────────────
+  // PHASE 2: API Unification
+  // Replace ALL callApi wrappers with a single canonical version
+  // that calls the BASE GAS fetch directly (no wrapper chain)
+  // ──────────────────────────────────────────────────────────
+
+  // Step 1: Find the original BASE callApi (before any patches)
+  // The original is defined early in the file and uses fetch() directly
+  // We'll reconstruct it to ensure no wrapper chain issues
+
+  // Get GAS URL from existing config
+  const _GAS_URL = (function() {
+    // Try to get from existing window config
+    if (window.GAS_URL) return window.GAS_URL;
+    if (window.API_URL) return window.API_URL;
+    // Try to find from script tags or meta
+    const meta = document.querySelector('meta[name="gas-url"]');
+    if (meta) return meta.content;
+    // Try to find from existing callApi source (look for scriptUrl)
+    if (window._GAS_SCRIPT_URL) return window._GAS_SCRIPT_URL;
+    return null;
+  })();
+
+  // Step 2: Get auth token function
+  function _getAuthToken() {
+    try {
+      const session = JSON.parse(localStorage.getItem('comphone_auth_session') || '{}');
+      return session.token || session.access_token || '';
+    } catch(e) { return ''; }
+  }
+
+  // Step 3: Create canonical callApi with loop protection
+  // This wraps the CURRENT window.callApi (whatever it is) but adds:
+  // - Call depth guard
+  // - Timeout (15s max)
+  // - No recursive retry that calls itself
+
+  const _CANONICAL_BASE = window.callApi; // snapshot current state
+
+  window.callApi = async function _canonicalCallApi(action, payload, options) {
+    payload  = payload  || {};
+    options  = options  || {};
+
+    // Phase 1: Call depth guard
+    if (!_CALL_LOCK.enter(action)) {
+      console.error('[v6.2.6] callApi BLOCKED (loop guard):', action);
+      return { success: false, error: 'LOOP_GUARD', message: 'Call depth exceeded — possible infinite loop detected' };
+    }
+
+    try {
+      // Phase 4: Use real online status (not navigator.onLine)
+      const isOnline = window._V626_IS_ONLINE !== undefined ? window._V626_IS_ONLINE : true;
+
+      // Phase 3: Bypass offline queue — always attempt real API
+      // (offline queue disabled in v6.2.6 for stability)
+      if (!isOnline && !options.forceOnline) {
+        console.warn('[v6.2.6] callApi: offline detected, skipping queue (disabled)', action);
+        return { success: false, error: 'OFFLINE', message: 'ระบบออฟไลน์ชั่วคราว กรุณาลองใหม่' };
+      }
+
+      // Call the base function with timeout
+      const timeoutMs = options.timeout || 15000;
+      const result = await Promise.race([
+        _CANONICAL_BASE.call(this, action, payload, { ...options, skipConflict: true, forceOnline: true }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('API timeout after ' + timeoutMs + 'ms')), timeoutMs)
+        )
+      ]);
+
+      return result;
+    } catch(err) {
+      console.error('[v6.2.6] callApi error:', action, err.message);
+      return { success: false, error: err.message || 'UNKNOWN', message: err.message || 'เกิดข้อผิดพลาด' };
+    } finally {
+      _CALL_LOCK.exit();
+    }
+  };
+
+  // Mark as canonical to prevent further wrapping
+  window.callApi._isCanonical = true;
+  window.callApi._version = '6.2.6';
+
+  // Also fix cachedCallApi to use new canonical
+  if (typeof window.cachedCallApi === 'function') {
+    const _origCached = window.cachedCallApi;
+    window.cachedCallApi = async function _canonicalCachedCallApi(action, params, ttl) {
+      if (!_CALL_LOCK.enter('cached:' + action)) {
+        return { success: false, error: 'LOOP_GUARD', message: 'Cache call depth exceeded' };
+      }
+      try {
+        return await _origCached.call(this, action, params, ttl);
+      } finally {
+        _CALL_LOCK.exit();
+      }
+    };
+  }
+
+  console.log('[v6.2.6] Phase 1-2: Call Lock + Canonical callApi installed');
+
+  // ──────────────────────────────────────────────────────────
+  // PHASE 3: Disable Offline Queue
+  // Override OFFLINE_QUEUE to be a no-op
+  // ──────────────────────────────────────────────────────────
+  if (window.OFFLINE_QUEUE) {
+    // Disable auto-sync
+    window.OFFLINE_QUEUE._syncEnabled = false;
+    window.OFFLINE_QUEUE.sync = function() {
+      console.log('[v6.2.6] Offline queue sync DISABLED');
+      return Promise.resolve();
+    };
+    window.OFFLINE_QUEUE.enqueue = function(action, payload, label) {
+      console.warn('[v6.2.6] Offline queue DISABLED — action not queued:', action);
+      return null;
+    };
+    console.log('[v6.2.6] Phase 3: Offline queue disabled');
+  }
+
+  // Override navigator.onLine checks — force online
+  // (real check is done via ping in Phase 4)
+  window._V626_IS_ONLINE = true; // default assume online
+
+  // Intercept any code that checks navigator.onLine
+  // by overriding the QUEUEABLE_ACTIONS check
+  if (window.QUEUEABLE_ACTIONS) {
+    window.QUEUEABLE_ACTIONS = []; // empty = nothing gets queued
+    console.log('[v6.2.6] Phase 3: QUEUEABLE_ACTIONS cleared');
+  }
+
+  console.log('[v6.2.6] Phase 3: Offline mode disabled');
+
+  // ──────────────────────────────────────────────────────────
+  // PHASE 4: Real Ping Online Detection
+  // Replace navigator.onLine with actual GAS endpoint ping
+  // ──────────────────────────────────────────────────────────
+  const _PING_INTERVAL_MS = 30000; // 30s
+  let _pingTimer = null;
+  let _pingFailCount = 0;
+  const _PING_FAIL_THRESHOLD = 3; // 3 consecutive fails = offline
+
+  async function _pingCheck() {
+    try {
+      // Use a lightweight GAS action that returns fast
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+
+      // Try to ping GAS URL or a known endpoint
+      const gasUrl = window.GAS_URL || window.API_URL || window._GAS_SCRIPT_URL;
+      if (!gasUrl) {
+        // Fallback: try fetch to google.com
+        const res = await fetch('https://www.google.com/generate_204', {
+          method: 'HEAD',
+          mode: 'no-cors',
+          signal: controller.signal
+        });
+        clearTimeout(timeout);
+        _pingFailCount = 0;
+        window._V626_IS_ONLINE = true;
+        return;
+      }
+
+      // Ping GAS with minimal payload
+      const res = await fetch(gasUrl + '?action=ping&t=' + Date.now(), {
+        method: 'GET',
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+
+      if (res.ok || res.status === 302 || res.type === 'opaqueredirect') {
+        _pingFailCount = 0;
+        if (!window._V626_IS_ONLINE) {
+          window._V626_IS_ONLINE = true;
+          console.log('[v6.2.6] Ping: ONLINE restored');
+          _showOnlineIndicator(true);
+        }
+        window._V626_IS_ONLINE = true;
+      } else {
+        _pingFailCount++;
+      }
+    } catch(e) {
+      if (e.name === 'AbortError') {
+        _pingFailCount++;
+        console.warn('[v6.2.6] Ping timeout — fail count:', _pingFailCount);
+      } else {
+        // Network error
+        _pingFailCount++;
+      }
+    }
+
+    if (_pingFailCount >= _PING_FAIL_THRESHOLD) {
+      if (window._V626_IS_ONLINE) {
+        window._V626_IS_ONLINE = false;
+        console.warn('[v6.2.6] Ping: OFFLINE detected after', _pingFailCount, 'failures');
+        _showOnlineIndicator(false);
+      }
+    }
+  }
+
+  function _showOnlineIndicator(isOnline) {
+    // Update any existing online indicator
+    const indicator = document.getElementById('v626-online-indicator');
+    if (indicator) {
+      indicator.textContent = isOnline ? '● ออนไลน์' : '● ออฟไลน์';
+      indicator.style.color = isOnline ? '#22c55e' : '#ef4444';
+    }
+    // Show toast
+    if (typeof window.showToast === 'function') {
+      showToast(isOnline ? '✅ เชื่อมต่อแล้ว' : '⚠️ ขาดการเชื่อมต่อ', isOnline ? 'success' : 'warning');
+    }
+  }
+
+  // Start ping check after page load
+  function _startPingCheck() {
+    // Initial ping
+    _pingCheck();
+    // Periodic ping
+    _pingTimer = setInterval(_pingCheck, _PING_INTERVAL_MS);
+    console.log('[v6.2.6] Phase 4: Real ping check started (interval:', _PING_INTERVAL_MS / 1000, 's)');
+  }
+
+  // Also listen to native online/offline events as supplement
+  window.addEventListener('online',  () => { window._V626_IS_ONLINE = true;  _pingFailCount = 0; _showOnlineIndicator(true);  });
+  window.addEventListener('offline', () => { _pingFailCount++; /* don't immediately set offline, wait for ping */ });
+
+  // ──────────────────────────────────────────────────────────
+  // PHASE 5: Stop Auto Update Loop Guard
+  // Add guards to V622 soft update system
+  // ──────────────────────────────────────────────────────────
+  let _softUpdateInProgress = false;
+  let _lastSoftUpdateTime = 0;
+  const _SOFT_UPDATE_MIN_INTERVAL = 60000; // minimum 60s between soft updates
+
+  // Guard _checkForSoftUpdate to prevent rapid-fire calls
+  function _guardSoftUpdate() {
+    if (!window.V622) return;
+
+    const origSoftUpdate = window.V622.softUpdate;
+    if (typeof origSoftUpdate === 'function' && !origSoftUpdate._guarded) {
+      window.V622.softUpdate = function _guardedSoftUpdate() {
+        const now = Date.now();
+        if (_softUpdateInProgress) {
+          console.warn('[v6.2.6] softUpdate BLOCKED — already in progress');
+          return;
+        }
+        if (now - _lastSoftUpdateTime < _SOFT_UPDATE_MIN_INTERVAL) {
+          console.warn('[v6.2.6] softUpdate THROTTLED — too soon since last update');
+          return;
+        }
+        _softUpdateInProgress = true;
+        _lastSoftUpdateTime = now;
+        try {
+          origSoftUpdate.call(this);
+        } finally {
+          setTimeout(() => { _softUpdateInProgress = false; }, 5000);
+        }
+      };
+      window.V622.softUpdate._guarded = true;
+      console.log('[v6.2.6] Phase 5: V622.softUpdate guarded');
+    }
+
+    // Also guard refreshHealth to prevent rapid calls
+    const origRefreshHealth = window.V622.refreshHealth;
+    if (typeof origRefreshHealth === 'function' && !origRefreshHealth._guarded) {
+      let _lastHealthCheck = 0;
+      window.V622.refreshHealth = function _guardedRefreshHealth() {
+        const now = Date.now();
+        if (now - _lastHealthCheck < 5000) return; // max once per 5s
+        _lastHealthCheck = now;
+        return origRefreshHealth.call(this);
+      };
+      window.V622.refreshHealth._guarded = true;
+    }
+  }
+
+  // Guard setInterval to detect runaway timers
+  const _origSetInterval = window.setInterval;
+  const _activeIntervals = [];
+  window.setInterval = function _guardedSetInterval(fn, delay) {
+    // Prevent intervals shorter than 5s for non-critical timers
+    const safeDelay = (delay && delay < 5000 && typeof fn === 'function') ? 5000 : delay;
+    if (safeDelay !== delay) {
+      console.warn('[v6.2.6] setInterval throttled:', delay, '→', safeDelay, 'ms');
+    }
+    const id = _origSetInterval.apply(this, [fn, safeDelay, ...Array.prototype.slice.call(arguments, 2)]);
+    _activeIntervals.push({ id, delay: safeDelay, fn: fn.name || 'anonymous' });
+    return id;
+  };
+  window._V626_INTERVALS = _activeIntervals;
+
+  // ──────────────────────────────────────────────────────────
+  // ONLINE INDICATOR UI
+  // ──────────────────────────────────────────────────────────
+  function _injectOnlineIndicator() {
+    if (document.getElementById('v626-online-indicator')) return;
+    const el = document.createElement('div');
+    el.id = 'v626-online-indicator';
+    el.style.cssText = [
+      'position:fixed',
+      'bottom:12px',
+      'left:12px',
+      'font-size:11px',
+      'font-weight:600',
+      'color:#22c55e',
+      'background:rgba(0,0,0,0.6)',
+      'padding:4px 10px',
+      'border-radius:20px',
+      'z-index:99999',
+      'pointer-events:none',
+      'transition:opacity 0.3s',
+      'opacity:0.7'
+    ].join(';');
+    el.textContent = '● ออนไลน์';
+    document.body.appendChild(el);
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // EXPOSE DEBUG TOOLS
+  // ──────────────────────────────────────────────────────────
+  window.V626 = {
+    version: '6.2.6',
+
+    // Show loop stats
+    stats: function() {
+      const s = _CALL_LOCK.stats();
+      console.table(s.topActions.map(([a, c]) => ({ action: a, calls: c })));
+      console.log('[V626] Call stats:', s);
+      return s;
+    },
+
+    // Force online
+    forceOnline: function() {
+      window._V626_IS_ONLINE = true;
+      _pingFailCount = 0;
+      _showOnlineIndicator(true);
+      console.log('[V626] Forced online');
+    },
+
+    // Reset call lock (use if stuck)
+    resetLock: function() {
+      _CALL_LOCK.reset();
+      _softUpdateInProgress = false;
+      console.log('[V626] Lock reset');
+    },
+
+    // Emergency stop all intervals
+    stopAllIntervals: function() {
+      _activeIntervals.forEach(({ id }) => {
+        try { clearInterval(id); } catch(e) {}
+      });
+      if (_pingTimer) clearInterval(_pingTimer);
+      console.log('[V626] All intervals stopped');
+    },
+
+    // Restart ping check
+    restartPing: function() {
+      if (_pingTimer) clearInterval(_pingTimer);
+      _startPingCheck();
+    },
+
+    isOnline: function() { return window._V626_IS_ONLINE; },
+    lockDepth: function() { return _CALL_LOCK._depth; }
+  };
+
+  // ──────────────────────────────────────────────────────────
+  // INIT
+  // ──────────────────────────────────────────────────────────
+  function _init() {
+    _injectOnlineIndicator();
+    _startPingCheck();
+    _guardSoftUpdate();
+
+    // Reset call lock every 5 minutes (safety net)
+    _origSetInterval(() => {
+      if (_CALL_LOCK._depth > 0) {
+        console.warn('[v6.2.6] Auto-reset stuck call lock, depth was:', _CALL_LOCK._depth);
+        _CALL_LOCK.reset();
+      }
+    }, 300000);
+
+    console.log('[COMPHONE v6.2.6] Production Recovery Patch loaded ✅');
+    console.log('[v6.2.6] callApi version:', window.callApi._version);
+    console.log('[v6.2.6] Online status:', window._V626_IS_ONLINE);
+    console.log('[v6.2.6] Debug: window.V626.stats(), V626.resetLock(), V626.forceOnline()');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _init);
+  } else {
+    // Already loaded — run after a tick to ensure all patches are applied
+    setTimeout(_init, 100);
+  }
+
+})();
+</script>
 </body>
 </html>
