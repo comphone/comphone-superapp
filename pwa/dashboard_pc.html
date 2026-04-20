@@ -8013,5 +8013,684 @@ console.log('[COMPHONE v6.2.2] Full Release System patch loaded — Safe Update 
 
 })();
 </script>
+<style>
+/* ============================================================
+   COMPHONE v6.2.5 — System Graph Tooltip + Detail Panel CSS
+   Phase 2: Custom tooltip (dark theme, smooth animation)
+   Phase 5: Style improvement (padding, spacing, icon+label)
+   ============================================================ */
+
+/* ── Tooltip container ── */
+.sg-tooltip {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px) scale(0.97);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  max-width: 260px;
+  min-width: 180px;
+}
+.sg-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.sg-tooltip-inner {
+  background: #1e293b;
+  color: #f1f5f9;
+  border-radius: 10px;
+  padding: 12px 14px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.28), 0 2px 6px rgba(0,0,0,0.16);
+  font-size: 12px;
+  line-height: 1.55;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.sg-tooltip-arrow {
+  width: 0; height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 7px solid #1e293b;
+  position: absolute;
+  bottom: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.15));
+}
+.sg-tooltip-arrow.arrow-up {
+  border-top: none;
+  border-bottom: 7px solid #1e293b;
+  bottom: auto;
+  top: -7px;
+}
+
+/* ── Tooltip content rows ── */
+.sg-tt-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.sg-tt-icon { font-size: 20px; line-height: 1; }
+.sg-tt-title { font-size: 13px; font-weight: 700; color: #f8fafc; }
+.sg-tt-subtitle { font-size: 10px; color: #94a3b8; margin-top: 1px; }
+.sg-tt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 0;
+}
+.sg-tt-label { color: #94a3b8; font-size: 11px; }
+.sg-tt-value { font-size: 11px; font-weight: 600; color: #e2e8f0; }
+.sg-tt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+}
+.sg-tt-badge.healthy { background: #052e16; color: #10b981; border: 1px solid #10b981; }
+.sg-tt-badge.warning { background: #1c1400; color: #f59e0b; border: 1px solid #f59e0b; }
+.sg-tt-badge.error   { background: #1c0000; color: #ef4444; border: 1px solid #ef4444; }
+.sg-tt-hint {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  color: #64748b;
+  font-size: 10px;
+  text-align: center;
+}
+
+/* ── System Node: clickable cursor + hover ring ── */
+.system-node {
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.system-node:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12) !important;
+}
+.system-node:active { transform: translateY(0); }
+.system-node.sg-active {
+  outline: 2px solid #7c3aed;
+  outline-offset: 2px;
+}
+
+/* ── Detail Panel (Phase 4) ── */
+.sg-detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 10000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.sg-detail-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+@media (min-width: 640px) {
+  .sg-detail-overlay { align-items: center; }
+}
+.sg-detail-panel {
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  padding: 20px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 80vh;
+  overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 -4px 32px rgba(0,0,0,0.18);
+}
+@media (min-width: 640px) {
+  .sg-detail-panel {
+    border-radius: 16px;
+    transform: scale(0.95);
+    transition: transform 0.2s ease;
+    max-height: 70vh;
+  }
+}
+.sg-detail-overlay.open .sg-detail-panel {
+  transform: translateY(0);
+}
+@media (min-width: 640px) {
+  .sg-detail-overlay.open .sg-detail-panel { transform: scale(1); }
+}
+body.theme-dark .sg-detail-panel {
+  background: #1e293b;
+  color: #f1f5f9;
+}
+.sg-detail-handle {
+  width: 40px; height: 4px;
+  background: #e2e8f0;
+  border-radius: 2px;
+  margin: 0 auto 16px;
+}
+body.theme-dark .sg-detail-handle { background: #475569; }
+.sg-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.sg-detail-icon { font-size: 36px; }
+.sg-detail-title { font-size: 18px; font-weight: 700; color: #111827; }
+body.theme-dark .sg-detail-title { color: #f8fafc; }
+.sg-detail-desc { font-size: 12px; color: #6b7280; margin-top: 2px; }
+body.theme-dark .sg-detail-desc { color: #94a3b8; }
+.sg-detail-section {
+  margin-top: 14px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 10px;
+}
+body.theme-dark .sg-detail-section { background: #0f172a; }
+.sg-detail-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+body.theme-dark .sg-detail-section-title { color: #94a3b8; }
+.sg-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+body.theme-dark .sg-detail-row { border-bottom-color: #1e293b; }
+.sg-detail-row:last-child { border-bottom: none; }
+.sg-detail-key { font-size: 12px; color: #6b7280; }
+body.theme-dark .sg-detail-key { color: #94a3b8; }
+.sg-detail-val { font-size: 12px; font-weight: 600; color: #111827; }
+body.theme-dark .sg-detail-val { color: #e2e8f0; }
+.sg-detail-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.sg-detail-btn {
+  flex: 1;
+  min-width: 100px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: opacity 0.15s;
+}
+.sg-detail-btn:hover { opacity: 0.85; }
+.sg-detail-btn-primary { background: #7c3aed; color: #fff; }
+.sg-detail-btn-secondary { background: #f1f5f9; color: #374151; }
+body.theme-dark .sg-detail-btn-secondary { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; }
+.sg-detail-close {
+  position: absolute;
+  top: 14px; right: 14px;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #6b7280;
+}
+body.theme-dark .sg-detail-close { background: #334155; color: #94a3b8; }
+
+/* ── Mobile tap feedback ── */
+@media (hover: none) {
+  .system-node:active { background: rgba(124,58,237,0.08) !important; }
+}
+</style>
+
+<script>
+// ============================================================
+// COMPHONE v6.2.5 — System Graph Tooltip + Detail Panel
+// Phase 1: Remove raw HTML tooltip (node.title = "<div>...")
+// Phase 2: Custom tooltip system (dark theme, smooth animation)
+// Phase 3: formatNodeTooltip(data) — UI-friendly output
+// Phase 4: Click → full detail panel (hover → preview)
+// Phase 5: Style improvement (padding, icon+label, mobile tap)
+// Remove → Replace → Style → Upgrade UX
+// ============================================================
+(function() {
+  'use strict';
+
+  // ──────────────────────────────────────────────────────────
+  // Phase 3: formatNodeTooltip(data) — clean data formatter
+  // ──────────────────────────────────────────────────────────
+
+  /**
+   * Format module data into tooltip-friendly HTML.
+   * @param {object} data — module data object
+   * @returns {string} HTML string for tooltip inner content
+   */
+  function formatNodeTooltip(data) {
+    const statusClass = _sgStatusClass(data.status);
+    const statusLabel = _sgStatusLabel(data.status);
+    const statusDot   = statusClass === 'healthy' ? '●' : statusClass === 'warning' ? '●' : '●';
+
+    const rows = [];
+    if (data.latency != null) {
+      const latMs = Number(data.latency);
+      const latColor = latMs < 300 ? '#10b981' : latMs < 800 ? '#f59e0b' : '#ef4444';
+      rows.push({ label: 'Latency', value: `<span style="color:${latColor}">${latMs}ms</span>` });
+    }
+    if (data.uptime != null) rows.push({ label: 'Uptime', value: `${data.uptime}%` });
+    if (data.requests != null) rows.push({ label: 'Requests', value: Number(data.requests).toLocaleString() });
+    if (data.errors != null) {
+      const errColor = data.errors > 0 ? '#ef4444' : '#10b981';
+      rows.push({ label: 'Errors', value: `<span style="color:${errColor}">${data.errors}</span>` });
+    }
+    if (data.version) rows.push({ label: 'Version', value: data.version });
+    if (data.last_check) rows.push({ label: 'Last Check', value: _sgTimeAgo(data.last_check) });
+
+    const rowsHtml = rows.map(r => `
+      <div class="sg-tt-row">
+        <span class="sg-tt-label">${r.label}</span>
+        <span class="sg-tt-value">${r.value}</span>
+      </div>`).join('');
+
+    return `
+      <div class="sg-tt-header">
+        <span class="sg-tt-icon">${data.icon || '📦'}</span>
+        <div>
+          <div class="sg-tt-title">${data.name || 'Module'}</div>
+          <div class="sg-tt-subtitle">${data.description || data.type || 'GAS Module'}</div>
+        </div>
+      </div>
+      <div class="sg-tt-row" style="margin-bottom:4px">
+        <span class="sg-tt-label">Status</span>
+        <span class="sg-tt-badge ${statusClass}">${statusDot} ${statusLabel}</span>
+      </div>
+      ${rowsHtml}
+      <div class="sg-tt-hint">คลิกเพื่อดูรายละเอียด</div>`;
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Phase 2: Custom Tooltip System
+  // ──────────────────────────────────────────────────────────
+
+  let _sgTooltipEl = null;
+  let _sgTooltipTimeout = null;
+
+  function _sgCreateTooltip() {
+    if (_sgTooltipEl) return _sgTooltipEl;
+    const el = document.createElement('div');
+    el.className = 'sg-tooltip';
+    el.setAttribute('role', 'tooltip');
+    el.setAttribute('aria-hidden', 'true');
+    el.innerHTML = '<div class="sg-tooltip-inner"></div><div class="sg-tooltip-arrow"></div>';
+    document.body.appendChild(el);
+    _sgTooltipEl = el;
+    return el;
+  }
+
+  function _sgShowTooltip(anchorEl, html) {
+    clearTimeout(_sgTooltipTimeout);
+    const tt = _sgCreateTooltip();
+    tt.querySelector('.sg-tooltip-inner').innerHTML = html;
+    tt.style.display = 'block';
+
+    // Position calculation
+    const rect = anchorEl.getBoundingClientRect();
+    const ttW = 260, ttH = 160; // estimated
+    const viewW = window.innerWidth, viewH = window.innerHeight;
+
+    let top, left, arrowUp = false;
+
+    // Prefer above, fallback below
+    if (rect.top - ttH - 12 > 0) {
+      top = rect.top - ttH - 12 + window.scrollY;
+    } else {
+      top = rect.bottom + 12 + window.scrollY;
+      arrowUp = true;
+    }
+
+    // Center horizontally
+    left = rect.left + rect.width / 2 - ttW / 2 + window.scrollX;
+    left = Math.max(8, Math.min(left, viewW - ttW - 8));
+
+    tt.style.top  = `${top}px`;
+    tt.style.left = `${left}px`;
+    tt.style.width = `${ttW}px`;
+
+    const arrow = tt.querySelector('.sg-tooltip-arrow');
+    arrow.className = 'sg-tooltip-arrow' + (arrowUp ? ' arrow-up' : '');
+
+    // Arrow horizontal position relative to anchor center
+    const anchorCenterX = rect.left + rect.width / 2 + window.scrollX;
+    const arrowLeft = anchorCenterX - parseFloat(tt.style.left);
+    arrow.style.left = `${Math.max(14, Math.min(arrowLeft, ttW - 14))}px`;
+    arrow.style.transform = 'none';
+
+    requestAnimationFrame(() => tt.classList.add('visible'));
+  }
+
+  function _sgHideTooltip(delay) {
+    delay = delay || 0;
+    _sgTooltipTimeout = setTimeout(() => {
+      if (_sgTooltipEl) {
+        _sgTooltipEl.classList.remove('visible');
+        setTimeout(() => {
+          if (_sgTooltipEl) _sgTooltipEl.style.display = 'none';
+        }, 200);
+      }
+    }, delay);
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Phase 4: Click Detail Panel
+  // ──────────────────────────────────────────────────────────
+
+  let _sgDetailOverlay = null;
+
+  function _sgCreateDetailOverlay() {
+    if (_sgDetailOverlay) return _sgDetailOverlay;
+    const el = document.createElement('div');
+    el.className = 'sg-detail-overlay';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    el.innerHTML = `
+      <div class="sg-detail-panel" style="position:relative">
+        <div class="sg-detail-handle"></div>
+        <button class="sg-detail-close" onclick="window._sgCloseDetail()" aria-label="ปิด">✕</button>
+        <div id="sg-detail-content"></div>
+      </div>`;
+    el.addEventListener('click', function(e) {
+      if (e.target === el) window._sgCloseDetail();
+    });
+    document.body.appendChild(el);
+    _sgDetailOverlay = el;
+    return el;
+  }
+
+  function _sgOpenDetail(data) {
+    _sgHideTooltip(0);
+    const overlay = _sgCreateDetailOverlay();
+    const content = overlay.querySelector('#sg-detail-content');
+
+    const statusClass = _sgStatusClass(data.status);
+    const statusLabel = _sgStatusLabel(data.status);
+    const statusColor = statusClass === 'healthy' ? '#059669' : statusClass === 'warning' ? '#d97706' : '#dc2626';
+
+    // Build metrics rows
+    const metrics = [];
+    if (data.latency != null) {
+      const latMs = Number(data.latency);
+      const latColor = latMs < 300 ? '#059669' : latMs < 800 ? '#d97706' : '#dc2626';
+      metrics.push({ key: 'Latency', val: `<span style="color:${latColor};font-weight:700">${latMs}ms</span>` });
+    }
+    if (data.uptime != null) metrics.push({ key: 'Uptime', val: `${data.uptime}%` });
+    if (data.requests != null) metrics.push({ key: 'Total Requests', val: Number(data.requests).toLocaleString() });
+    if (data.errors != null) {
+      const ec = data.errors > 0 ? '#dc2626' : '#059669';
+      metrics.push({ key: 'Errors', val: `<span style="color:${ec}">${data.errors}</span>` });
+    }
+    if (data.version) metrics.push({ key: 'Version', val: data.version });
+    if (data.env) metrics.push({ key: 'Environment', val: data.env });
+    if (data.last_check) metrics.push({ key: 'Last Check', val: _sgTimeAgo(data.last_check) });
+    if (data.deploy_id) metrics.push({ key: 'Deploy ID', val: data.deploy_id });
+
+    const metricsHtml = metrics.length > 0 ? `
+      <div class="sg-detail-section">
+        <div class="sg-detail-section-title">📊 Metrics</div>
+        ${metrics.map(m => `
+          <div class="sg-detail-row">
+            <span class="sg-detail-key">${m.key}</span>
+            <span class="sg-detail-val">${m.val}</span>
+          </div>`).join('')}
+      </div>` : '';
+
+    // Dependencies
+    const depsHtml = (data.dependencies && data.dependencies.length) ? `
+      <div class="sg-detail-section">
+        <div class="sg-detail-section-title">🔗 Dependencies</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+          ${data.dependencies.map(d => `<span style="background:#ede9fe;color:#7c3aed;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600">${d}</span>`).join('')}
+        </div>
+      </div>` : '';
+
+    content.innerHTML = `
+      <div class="sg-detail-header">
+        <span class="sg-detail-icon">${data.icon || '📦'}</span>
+        <div>
+          <div class="sg-detail-title">${data.name || 'Module'}</div>
+          <div class="sg-detail-desc">${data.description || data.type || 'GAS Module'}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span style="font-size:13px;color:#6b7280">Status:</span>
+        <span style="background:${statusColor}22;color:${statusColor};border:1px solid ${statusColor};border-radius:20px;padding:2px 12px;font-size:12px;font-weight:700">● ${statusLabel}</span>
+      </div>
+      ${data.message ? `<div style="font-size:12px;color:#6b7280;margin-top:6px;padding:8px;background:#f8fafc;border-radius:8px">${data.message}</div>` : ''}
+      ${metricsHtml}
+      ${depsHtml}
+      <div class="sg-detail-actions">
+        <button class="sg-detail-btn sg-detail-btn-primary" onclick="window._sgCloseDetail();loadAISystemSection()">
+          <i class="bi bi-arrow-clockwise"></i> รีเฟรช
+        </button>
+        <button class="sg-detail-btn sg-detail-btn-secondary" onclick="window._sgCloseDetail()">
+          ปิด
+        </button>
+      </div>`;
+
+    requestAnimationFrame(() => overlay.classList.add('open'));
+
+    // Keyboard: Escape to close
+    const _escHandler = (e) => { if (e.key === 'Escape') { window._sgCloseDetail(); document.removeEventListener('keydown', _escHandler); } };
+    document.addEventListener('keydown', _escHandler);
+  }
+
+  window._sgCloseDetail = function() {
+    if (_sgDetailOverlay) {
+      _sgDetailOverlay.classList.remove('open');
+    }
+  };
+
+  // ──────────────────────────────────────────────────────────
+  // Phase 1: Override renderSystemGraph to attach tooltip + click
+  // ──────────────────────────────────────────────────────────
+
+  /**
+   * Override renderSystemGraph to use data-* attributes
+   * instead of node.title = "<div>...</div>"
+   */
+  const _origRenderSystemGraph = window.renderSystemGraph;
+  window.renderSystemGraph = function(modules) {
+    const defaultModules = [
+      { name: 'AgentGateway', status: 'healthy', icon: '🤖', description: 'Entry point for all AI agents', type: 'Gateway' },
+      { name: 'AgentMemory', status: 'healthy', icon: '🧠', description: 'Long-term memory storage', type: 'Storage' },
+      { name: 'DecisionLayer', status: 'healthy', icon: '⚡', description: 'Central decision function', type: 'Core' },
+      { name: 'WorkflowEngine', status: 'healthy', icon: '🔄', description: 'QC_FAIL / PAYMENT_ERROR / SLA_LOW', type: 'Engine' },
+      { name: 'SharedContext', status: 'healthy', icon: '🌐', description: 'System-wide context provider', type: 'Context' },
+      { name: 'LearningIntegration', status: 'healthy', icon: '📚', description: 'VisionLearning ↔ AgentMemory', type: 'ML' },
+      { name: 'MemoryControl', status: 'healthy', icon: '🗄️', description: 'Retention policy & archive', type: 'Control' },
+      { name: 'DecisionGuard', status: 'healthy', icon: '🛡️', description: 'Cooldown & deduplication', type: 'Guard' },
+      { name: 'AgentScoring', status: 'healthy', icon: '🏆', description: 'Accuracy tracking & consensus', type: 'Scoring' },
+    ];
+    const mods = (modules && modules.length) ? modules : defaultModules;
+
+    return `
+      <div class="system-graph-grid" id="sg-grid-${Date.now()}">
+        ${mods.map((m, idx) => {
+          const statusClass = _sgStatusClass(m.status);
+          const statusColor = statusClass === 'healthy' ? '#059669' : statusClass === 'warning' ? '#d97706' : '#dc2626';
+          const statusText  = _sgStatusLabel(m.status);
+          // Phase 1: Use data-sg-idx instead of node.title
+          const dataAttr = `data-sg-idx="${idx}"`;
+          return `
+            <div class="system-node ${statusClass}" ${dataAttr}
+                 role="button" tabindex="0"
+                 aria-label="${m.name}: ${statusText}">
+              <div class="system-node-icon">${m.icon || '📦'}</div>
+              <div class="system-node-name">${m.name}</div>
+              <div class="system-node-status" style="color:${statusColor}">● ${statusText}</div>
+              ${m.latency ? `<div style="font-size:10px;color:#9ca3af;margin-top:2px">${m.latency}ms</div>` : ''}
+            </div>`;
+        }).join('')}
+      </div>`;
+  };
+
+  // Store module data for tooltip/detail access
+  window._sgModuleData = [];
+
+  // ──────────────────────────────────────────────────────────
+  // Event delegation: attach tooltip + click to system-graph-grid
+  // ──────────────────────────────────────────────────────────
+
+  function _sgAttachEvents(container, modules) {
+    if (!container) return;
+    const mods = modules || window._sgModuleData || [];
+
+    container.addEventListener('mouseenter', function(e) {
+      const node = e.target.closest('.system-node');
+      if (!node) return;
+      const idx = parseInt(node.getAttribute('data-sg-idx'), 10);
+      const data = mods[idx];
+      if (!data) return;
+      _sgShowTooltip(node, formatNodeTooltip(data));
+    }, true);
+
+    container.addEventListener('mouseleave', function(e) {
+      const node = e.target.closest('.system-node');
+      if (!node) return;
+      _sgHideTooltip(120);
+    }, true);
+
+    container.addEventListener('click', function(e) {
+      const node = e.target.closest('.system-node');
+      if (!node) return;
+      const idx = parseInt(node.getAttribute('data-sg-idx'), 10);
+      const data = mods[idx];
+      if (!data) return;
+      // Remove active state from siblings
+      container.querySelectorAll('.system-node.sg-active').forEach(n => n.classList.remove('sg-active'));
+      node.classList.add('sg-active');
+      _sgOpenDetail(data);
+    });
+
+    // Keyboard: Enter/Space to open detail
+    container.addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const node = e.target.closest('.system-node');
+      if (!node) return;
+      e.preventDefault();
+      node.click();
+    });
+
+    // Mobile: touchstart → show tooltip briefly
+    container.addEventListener('touchstart', function(e) {
+      const node = e.target.closest('.system-node');
+      if (!node) return;
+      const idx = parseInt(node.getAttribute('data-sg-idx'), 10);
+      const data = mods[idx];
+      if (!data) return;
+      _sgShowTooltip(node, formatNodeTooltip(data));
+      setTimeout(() => _sgHideTooltip(0), 1500);
+    }, { passive: true });
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Patch loadAISystemSection to store module data + attach events
+  // ──────────────────────────────────────────────────────────
+
+  const _origLoadAISystemSection = window.loadAISystemSection;
+  window.loadAISystemSection = async function() {
+    const result = await _origLoadAISystemSection.apply(this, arguments);
+    // After render, find the grid and attach events
+    setTimeout(() => {
+      const grid = document.querySelector('.system-graph-grid');
+      if (grid) {
+        _sgAttachEvents(grid, window._sgModuleData);
+      }
+    }, 100);
+    return result;
+  };
+
+  // Also patch renderSystemGraph to capture modules
+  const _v625RenderSG = window.renderSystemGraph;
+  window.renderSystemGraph = function(modules) {
+    const defaultModules = [
+      { name: 'AgentGateway', status: 'healthy', icon: '🤖', description: 'Entry point for all AI agents', type: 'Gateway' },
+      { name: 'AgentMemory', status: 'healthy', icon: '🧠', description: 'Long-term memory storage', type: 'Storage' },
+      { name: 'DecisionLayer', status: 'healthy', icon: '⚡', description: 'Central decision function', type: 'Core' },
+      { name: 'WorkflowEngine', status: 'healthy', icon: '🔄', description: 'QC_FAIL / PAYMENT_ERROR / SLA_LOW', type: 'Engine' },
+      { name: 'SharedContext', status: 'healthy', icon: '🌐', description: 'System-wide context provider', type: 'Context' },
+      { name: 'LearningIntegration', status: 'healthy', icon: '📚', description: 'VisionLearning ↔ AgentMemory', type: 'ML' },
+      { name: 'MemoryControl', status: 'healthy', icon: '🗄️', description: 'Retention policy & archive', type: 'Control' },
+      { name: 'DecisionGuard', status: 'healthy', icon: '🛡️', description: 'Cooldown & deduplication', type: 'Guard' },
+      { name: 'AgentScoring', status: 'healthy', icon: '🏆', description: 'Accuracy tracking & consensus', type: 'Scoring' },
+    ];
+    const mods = (modules && modules.length) ? modules : defaultModules;
+    window._sgModuleData = mods; // store for event delegation
+    return _v625RenderSG(mods);
+  };
+
+  // ──────────────────────────────────────────────────────────
+  // Utility helpers
+  // ──────────────────────────────────────────────────────────
+
+  function _sgStatusClass(status) {
+    if (!status) return 'healthy';
+    const s = String(status).toLowerCase();
+    if (s === 'healthy' || s === 'ok' || s === 'good' || s === 'up') return 'healthy';
+    if (s === 'warning' || s === 'warn' || s === 'degraded') return 'warning';
+    return 'error';
+  }
+
+  function _sgStatusLabel(status) {
+    const c = _sgStatusClass(status);
+    if (c === 'healthy') return 'ปกติ';
+    if (c === 'warning') return 'เฝ้าระวัง';
+    return 'ผิดปกติ';
+  }
+
+  function _sgTimeAgo(ts) {
+    if (!ts) return '-';
+    try {
+      const d = new Date(ts);
+      const diff = Math.floor((Date.now() - d.getTime()) / 1000);
+      if (diff < 60)  return `${diff}s ago`;
+      if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+      if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+      return d.toLocaleDateString('th-TH');
+    } catch(e) { return String(ts); }
+  }
+
+  // Expose for external use
+  window.formatNodeTooltip = formatNodeTooltip;
+  window._sgShowTooltip    = _sgShowTooltip;
+  window._sgHideTooltip    = _sgHideTooltip;
+  window._sgOpenDetail     = _sgOpenDetail;
+  window._sgAttachEvents   = _sgAttachEvents;
+
+  console.log('[COMPHONE v6.2.5] System Graph Tooltip + Detail Panel loaded');
+  console.log('[SG TOOLTIP v6.2.5] formatNodeTooltip(), _sgShowTooltip(), _sgOpenDetail() ready');
+
+})();
+</script>
+
 </body>
 </html>
