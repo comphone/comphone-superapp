@@ -13554,5 +13554,1076 @@ body.theme-dark .sg-detail-close { background: #334155; color: #94a3b8; }
 })();
 
 </script>
+
+<script id="v1100-self-learning">
+/**
+ * COMPHONE Dashboard v11.0.0 — Self-Learning System
+ * Phase 38: Decision Memory (DECISION_LOG)
+ * Phase 39: Outcome Evaluation
+ * Phase 40: Policy Engine (auto-create rules)
+ * Phase 41: Adaptive Decision (bias toward success)
+ * Phase 42: Agent Feedback Loop
+ * Phase 43: Risk-Aware AI (requireApproval for HIGH risk)
+ * Phase 44: Continuous Improvement Loop
+ *
+ * Principle: "จำสิ่งที่เคยทำ และไม่ทำพลาดซ้ำ"
+ */
+
+(function() {
+  'use strict';
+
+  const _V1100_VERSION = '11.0.0';
+  const _V1100_BUILD   = 'self-learning';
+
+  function _LOG(msg)    { console.log(`%c[v${_V1100_VERSION}] ${msg}`, 'color:#0891b2;font-weight:bold'); }
+  function _WARN(msg)   { console.warn(`[v${_V1100_VERSION}] ⚠️ ${msg}`); }
+  function _LEARN(msg)  { console.log(`%c[LEARN] ${msg}`, 'color:#16a34a;font-weight:bold'); }
+  function _POLICY(msg) { console.log(`%c[POLICY] ${msg}`, 'color:#7c3aed;font-weight:bold'); }
+  function _RISK(msg)   { console.log(`%c[RISK] ${msg}`, 'color:#dc2626;font-weight:bold'); }
+
+  _LOG('=== Self-Learning System Loading ===');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 38: DECISION MEMORY (DECISION_LOG)
+  // บันทึก before/after state ของทุก decision
+  // ═══════════════════════════════════════════════════════════
+
+  window.DECISION_LOG = {
+    _log: [],
+    _MAX_LOG: 200,
+    _pendingEval: {},  // decisions awaiting outcome evaluation
+
+    // ── Record decision with before-state snapshot ──
+    record: function(decision, action, beforeMetrics) {
+      const id = `DL_${Date.now()}_${Math.random().toString(36).substr(2,6)}`;
+      const entry = {
+        id,
+        ts: Date.now(),
+        decision,
+        action,
+        before: {
+          latency: parseInt(beforeMetrics?.api?.avgLatency) || 0,
+          errorRate: parseInt(beforeMetrics?.api?.errorRate60s) || 0,
+          healthScore: beforeMetrics?.healthScore || 100,
+          queueDepth: beforeMetrics?.queue?.depth || 0
+        },
+        after: null,
+        success: null,
+        impactScore: null,
+        evalTs: null
+      };
+
+      this._log.push(entry);
+      if (this._log.length > this._MAX_LOG) this._log.shift();
+
+      // Mark as pending evaluation (evaluate after 30s)
+      this._pendingEval[id] = entry;
+      setTimeout(() => this._evaluate(id), 30000);
+
+      _LOG(`Decision recorded: [${decision}] → ${action} (id: ${id})`);
+      return id;
+    },
+
+    // ── Evaluate outcome after delay ──
+    _evaluate: function(id) {
+      const entry = this._pendingEval[id];
+      if (!entry) return;
+
+      // Collect after-state
+      const afterMetrics = window.GLOBAL_METRICS_ENGINE
+        ? window.GLOBAL_METRICS_ENGINE.getSystemMetrics()
+        : null;
+
+      if (afterMetrics) {
+        entry.after = {
+          latency: parseInt(afterMetrics.api?.avgLatency) || 0,
+          errorRate: parseInt(afterMetrics.api?.errorRate60s) || 0,
+          healthScore: afterMetrics.healthScore || 100,
+          queueDepth: afterMetrics.queue?.depth || 0
+        };
+
+        // Calculate impact score (-100 to +100)
+        const latencyDelta  = entry.before.latency - entry.after.latency;
+        const healthDelta   = entry.after.healthScore - entry.before.healthScore;
+        const errorDelta    = entry.before.errorRate - entry.after.errorRate;
+
+        // Positive = improvement
+        entry.impactScore = Math.round(
+          (latencyDelta / 100) * 0.4 +
+          healthDelta * 0.4 +
+          errorDelta * 0.2
+        );
+        entry.impactScore = Math.max(-100, Math.min(100, entry.impactScore));
+        entry.success = entry.impactScore > 0;
+        entry.evalTs = Date.now();
+
+        _LEARN(`Outcome [${entry.action}]: ${entry.success ? '✅' : '❌'} impact=${entry.impactScore} (latency: ${entry.before.latency}→${entry.after.latency}ms)`);
+
+        // Feed into Policy Engine
+        if (window.POLICY_ENGINE) {
+          window.POLICY_ENGINE.ingest(entry);
+        }
+
+        // Feed into Adaptive Decision
+        if (window.AI_DECISION_ENGINE && window.AI_DECISION_ENGINE.updateWeights) {
+          window.AI_DECISION_ENGINE.updateWeights(entry);
+        }
+      }
+
+      delete this._pendingEval[id];
+    },
+
+    // ── Manual evaluation (for testing) ──
+    forceEval: function(id) {
+      this._evaluate(id);
+    },
+
+    // ── Get stats ──
+    stats: function() {
+      const evaluated = this._log.filter(e => e.success !== null);
+      const successCount = evaluated.filter(e => e.success).length;
+      const avgImpact = evaluated.length
+        ? Math.round(evaluated.reduce((s,e) => s + (e.impactScore||0), 0) / evaluated.length)
+        : 0;
+
+      // Per-action stats
+      const byAction = {};
+      evaluated.forEach(e => {
+        if (!byAction[e.action]) byAction[e.action] = { total: 0, success: 0, totalImpact: 0 };
+        byAction[e.action].total++;
+        if (e.success) byAction[e.action].success++;
+        byAction[e.action].totalImpact += (e.impactScore || 0);
+      });
+
+      return {
+        total: this._log.length,
+        evaluated: evaluated.length,
+        pending: Object.keys(this._pendingEval).length,
+        successRate: evaluated.length ? Math.round(successCount / evaluated.length * 100) : 0,
+        avgImpact,
+        byAction: Object.entries(byAction).map(([action, s]) => ({
+          action,
+          successRate: Math.round(s.success / s.total * 100),
+          avgImpact: Math.round(s.totalImpact / s.total),
+          total: s.total
+        })).sort((a,b) => b.successRate - a.successRate)
+      };
+    },
+
+    getRecent: function(n) {
+      return this._log.slice(-(n || 10));
+    }
+  };
+
+  _LOG('Phase 38: Decision Memory initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 39: OUTCOME EVALUATION (integrated in DECISION_LOG)
+  // + standalone evaluator for manual assessment
+  // ═══════════════════════════════════════════════════════════
+
+  window.OUTCOME_EVALUATOR = {
+    // ── Evaluate a completed decision manually ──
+    evaluate: function(decisionId, afterMetrics) {
+      const entry = window.DECISION_LOG._log.find(e => e.id === decisionId);
+      if (!entry) {
+        _WARN(`OUTCOME_EVALUATOR: decision ${decisionId} not found`);
+        return null;
+      }
+
+      afterMetrics = afterMetrics || (window.GLOBAL_METRICS_ENGINE
+        ? window.GLOBAL_METRICS_ENGINE.getSystemMetrics()
+        : null);
+
+      if (!afterMetrics) return null;
+
+      entry.after = {
+        latency: parseInt(afterMetrics.api?.avgLatency) || 0,
+        errorRate: parseInt(afterMetrics.api?.errorRate60s) || 0,
+        healthScore: afterMetrics.healthScore || 100,
+        queueDepth: afterMetrics.queue?.depth || 0
+      };
+
+      const latencyDelta = entry.before.latency - entry.after.latency;
+      const healthDelta  = entry.after.healthScore - entry.before.healthScore;
+      const errorDelta   = entry.before.errorRate - entry.after.errorRate;
+
+      entry.impactScore = Math.max(-100, Math.min(100, Math.round(
+        (latencyDelta / 100) * 0.4 + healthDelta * 0.4 + errorDelta * 0.2
+      )));
+      entry.success = entry.impactScore > 0;
+      entry.evalTs = Date.now();
+
+      _LEARN(`Manual eval [${entry.action}]: impact=${entry.impactScore} success=${entry.success}`);
+
+      if (window.POLICY_ENGINE) window.POLICY_ENGINE.ingest(entry);
+      if (window.AI_DECISION_ENGINE?.updateWeights) window.AI_DECISION_ENGINE.updateWeights(entry);
+
+      return entry;
+    },
+
+    // ── Batch evaluate all pending ──
+    evaluateAll: function() {
+      const pending = Object.keys(window.DECISION_LOG._pendingEval);
+      pending.forEach(id => window.DECISION_LOG._evaluate(id));
+      return pending.length;
+    }
+  };
+
+  _LOG('Phase 39: Outcome Evaluator initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 40: POLICY ENGINE
+  // ระบบสร้าง rule เองจาก pattern ที่เคยสำเร็จ
+  // if (latency > 3000 && action === reduceRefreshRate && success)
+  //   → create policy
+  // ═══════════════════════════════════════════════════════════
+
+  window.POLICY_ENGINE = {
+    _policies: [],     // auto-generated policies
+    _MAX_POLICIES: 50,
+    _MIN_EVIDENCE: 3,  // ต้องมี evidence ≥ 3 ครั้งก่อนสร้าง policy
+    _evidence: {},     // { "condition:action": [impactScore, ...] }
+
+    // ── Ingest outcome from DECISION_LOG ──
+    ingest: function(entry) {
+      if (!entry.success && entry.impactScore === null) return;
+
+      // Build condition key from before-state
+      const conditions = this._extractConditions(entry.before);
+      const key = `${conditions.join('+')}:${entry.action}`;
+
+      if (!this._evidence[key]) this._evidence[key] = [];
+      this._evidence[key].push({
+        impactScore: entry.impactScore || 0,
+        success: entry.success,
+        ts: entry.ts
+      });
+
+      // Try to create policy if enough evidence
+      if (this._evidence[key].length >= this._MIN_EVIDENCE) {
+        this._tryCreatePolicy(key, conditions, entry.action);
+      }
+    },
+
+    _extractConditions: function(metrics) {
+      const conditions = [];
+      if (metrics.latency > 3000) conditions.push('latency>3000');
+      else if (metrics.latency > 1500) conditions.push('latency>1500');
+      if (metrics.errorRate > 20) conditions.push('errorRate>20');
+      else if (metrics.errorRate > 5) conditions.push('errorRate>5');
+      if (metrics.healthScore < 70) conditions.push('health<70');
+      else if (metrics.healthScore < 90) conditions.push('health<90');
+      if (metrics.queueDepth > 5) conditions.push('queue>5');
+      return conditions.length > 0 ? conditions : ['normal'];
+    },
+
+    _tryCreatePolicy: function(key, conditions, action) {
+      const evidence = this._evidence[key];
+      const successCount = evidence.filter(e => e.success).length;
+      const successRate = successCount / evidence.length;
+      const avgImpact = evidence.reduce((s,e) => s + e.impactScore, 0) / evidence.length;
+
+      // Only create policy if success rate >= 70%
+      if (successRate < 0.7) {
+        // Create negative policy (avoid this action)
+        this._upsertPolicy({
+          key,
+          conditions,
+          action,
+          type: 'AVOID',
+          successRate: Math.round(successRate * 100),
+          avgImpact: Math.round(avgImpact),
+          evidence: evidence.length,
+          confidence: Math.min(0.95, evidence.length / 10),
+          createdAt: Date.now()
+        });
+        return;
+      }
+
+      // Create positive policy (prefer this action)
+      this._upsertPolicy({
+        key,
+        conditions,
+        action,
+        type: 'PREFER',
+        successRate: Math.round(successRate * 100),
+        avgImpact: Math.round(avgImpact),
+        evidence: evidence.length,
+        confidence: Math.min(0.95, evidence.length / 10),
+        createdAt: Date.now()
+      });
+    },
+
+    _upsertPolicy: function(policy) {
+      const existing = this._policies.findIndex(p => p.key === policy.key);
+      if (existing >= 0) {
+        this._policies[existing] = policy;
+        _POLICY(`Policy updated: [${policy.type}] ${policy.conditions.join('+')} → ${policy.action} (${policy.successRate}% success)`);
+      } else {
+        this._policies.push(policy);
+        if (this._policies.length > this._MAX_POLICIES) this._policies.shift();
+        _POLICY(`Policy created: [${policy.type}] ${policy.conditions.join('+')} → ${policy.action} (${policy.successRate}% success)`);
+      }
+    },
+
+    // ── Query policies for given metrics ──
+    query: function(metrics) {
+      const conditions = this._extractConditions(metrics);
+      return this._policies.filter(p =>
+        p.conditions.some(c => conditions.includes(c))
+      ).sort((a,b) => b.confidence - a.confidence);
+    },
+
+    // ── Get preferred action for given metrics ──
+    getPreferredAction: function(metrics) {
+      const matching = this.query(metrics).filter(p => p.type === 'PREFER');
+      return matching.length > 0 ? matching[0] : null;
+    },
+
+    // ── Get avoided actions for given metrics ──
+    getAvoidedActions: function(metrics) {
+      return this.query(metrics)
+        .filter(p => p.type === 'AVOID')
+        .map(p => p.action);
+    },
+
+    getPolicies: function() { return this._policies; },
+
+    stats: function() {
+      return {
+        total: this._policies.length,
+        prefer: this._policies.filter(p => p.type === 'PREFER').length,
+        avoid: this._policies.filter(p => p.type === 'AVOID').length,
+        evidenceKeys: Object.keys(this._evidence).length,
+        topPolicies: this._policies
+          .sort((a,b) => b.confidence - a.confidence)
+          .slice(0, 5)
+      };
+    }
+  };
+
+  _LOG('Phase 40: Policy Engine initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 41: ADAPTIVE DECISION
+  // Extend AI_DECISION_ENGINE ให้ bias ไปทาง action ที่เคยสำเร็จ
+  // ลด weight ของ action ที่ fail
+  // ═══════════════════════════════════════════════════════════
+
+  if (window.AI_DECISION_ENGINE) {
+    // ── Action weight table (adaptive) ──
+    window.AI_DECISION_ENGINE._actionWeights = {
+      enableSafeMode:       1.0,
+      reduceRefreshRate:    1.0,
+      disableHeavyFeatures: 1.0,
+      triggerAlert:         1.0,
+      throttleRequests:     1.0,
+      notifyManager:        1.0,
+      restoreRefreshRate:   1.0,
+      enableHeavyFeatures:  1.0
+    };
+
+    // ── Update weights based on outcome ──
+    window.AI_DECISION_ENGINE.updateWeights = function(entry) {
+      if (!entry.action || entry.impactScore === null) return;
+
+      const action = entry.action;
+      const currentWeight = this._actionWeights[action] || 1.0;
+
+      // Exponential moving average: success → increase, fail → decrease
+      const delta = entry.success ? 0.1 : -0.15;
+      const newWeight = Math.max(0.1, Math.min(2.0,
+        Math.round((currentWeight + delta) * 100) / 100
+      ));
+      this._actionWeights[action] = newWeight;
+
+      _LEARN(`Weight updated: ${action} ${currentWeight} → ${newWeight} (${entry.success ? '✅' : '❌'})`);
+    };
+
+    // ── Override decide() to use adaptive weights + policies ──
+    const _origDecide = window.AI_DECISION_ENGINE.decide.bind(window.AI_DECISION_ENGINE);
+    window.AI_DECISION_ENGINE.decide = function(systemMetrics, businessMetrics) {
+      const result = _origDecide(systemMetrics, businessMetrics);
+
+      // Apply policy engine recommendations
+      if (window.POLICY_ENGINE && systemMetrics) {
+        const preferred = window.POLICY_ENGINE.getPreferredAction(
+          window.GLOBAL_METRICS_ENGINE ? window.GLOBAL_METRICS_ENGINE.getSystemMetrics() : {}
+        );
+        const avoided = window.POLICY_ENGINE.getAvoidedActions(
+          window.GLOBAL_METRICS_ENGINE ? window.GLOBAL_METRICS_ENGINE.getSystemMetrics() : {}
+        );
+
+        if (preferred && result.suggestedActions) {
+          // Boost preferred action to front
+          const alreadyIncluded = result.suggestedActions.some(a => a.action === preferred.action);
+          if (!alreadyIncluded) {
+            result.suggestedActions.unshift({
+              action: preferred.action,
+              priority: 'P1',
+              source: 'policy',
+              confidence: preferred.confidence
+            });
+            result.policyBoost = preferred.action;
+          }
+        }
+
+        if (avoided.length > 0) {
+          // Remove avoided actions
+          result.suggestedActions = (result.suggestedActions || []).filter(
+            a => !avoided.includes(a.action)
+          );
+          result.policyAvoid = avoided;
+        }
+
+        // Apply action weight to confidence
+        const topAction = result.suggestedActions?.[0]?.action;
+        if (topAction && this._actionWeights[topAction]) {
+          const weightFactor = this._actionWeights[topAction];
+          result.confidence = Math.min(0.99,
+            Math.round(result.confidence * weightFactor * 100) / 100
+          );
+          result.adaptiveWeight = weightFactor;
+        }
+      }
+
+      result.version = _V1100_VERSION;
+      return result;
+    };
+
+    _LOG('Phase 41: Adaptive Decision Engine initialized ✅');
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 42: AGENT FEEDBACK LOOP
+  // Manus / Hermes / OpenClaw report outcome กลับ
+  // ═══════════════════════════════════════════════════════════
+
+  window.AGENT_FEEDBACK = {
+    _feedbacks: [],
+    _MAX_FEEDBACKS: 100,
+
+    // ── Agent reports outcome ──
+    report: function(agentName, taskType, success, detail, impactScore) {
+      const feedback = {
+        ts: Date.now(),
+        agent: agentName,
+        taskType,
+        success,
+        detail: detail || '',
+        impactScore: impactScore || (success ? 10 : -10)
+      };
+
+      this._feedbacks.push(feedback);
+      if (this._feedbacks.length > this._MAX_FEEDBACKS) this._feedbacks.shift();
+
+      _LEARN(`Agent feedback: ${agentName} [${taskType}] ${success ? '✅' : '❌'} impact=${feedback.impactScore}`);
+
+      // Update agent accuracy in SYSTEM_BRAIN
+      if (window.SYSTEM_BRAIN && window.SYSTEM_BRAIN.updateAccuracy) {
+        window.SYSTEM_BRAIN.updateAccuracy(agentName, success);
+      }
+
+      // Feed into Policy Engine if relevant
+      if (window.POLICY_ENGINE && taskType) {
+        window.POLICY_ENGINE.ingest({
+          action: taskType,
+          before: { latency: 0, errorRate: 0, healthScore: 100, queueDepth: 0 },
+          after: { latency: 0, errorRate: 0, healthScore: 100, queueDepth: 0 },
+          success,
+          impactScore: feedback.impactScore,
+          ts: feedback.ts
+        });
+      }
+
+      return feedback;
+    },
+
+    // ── Contribute learning to Decision Engine ──
+    contribute: function(agentName, condition, action, worked) {
+      _LEARN(`Agent contribution: ${agentName} says "${action}" ${worked ? 'works' : 'fails'} when "${condition}"`);
+
+      // Synthesize a fake decision log entry for learning
+      const syntheticEntry = {
+        id: `AF_${Date.now()}`,
+        ts: Date.now(),
+        decision: 'AGENT_CONTRIBUTION',
+        action,
+        before: this._parseCondition(condition),
+        after: null,
+        success: worked,
+        impactScore: worked ? 20 : -20,
+        evalTs: Date.now(),
+        source: agentName
+      };
+
+      if (window.DECISION_LOG) {
+        window.DECISION_LOG._log.push(syntheticEntry);
+      }
+      if (window.POLICY_ENGINE) {
+        window.POLICY_ENGINE.ingest(syntheticEntry);
+      }
+      if (window.AI_DECISION_ENGINE?.updateWeights) {
+        window.AI_DECISION_ENGINE.updateWeights(syntheticEntry);
+      }
+    },
+
+    _parseCondition: function(condStr) {
+      const metrics = { latency: 0, errorRate: 0, healthScore: 100, queueDepth: 0 };
+      if (condStr.includes('latency>3000')) metrics.latency = 3500;
+      else if (condStr.includes('latency>1500')) metrics.latency = 2000;
+      if (condStr.includes('errorRate>20')) metrics.errorRate = 25;
+      if (condStr.includes('health<70')) metrics.healthScore = 60;
+      if (condStr.includes('queue>5')) metrics.queueDepth = 8;
+      return metrics;
+    },
+
+    stats: function() {
+      const byAgent = {};
+      this._feedbacks.forEach(f => {
+        if (!byAgent[f.agent]) byAgent[f.agent] = { total: 0, success: 0 };
+        byAgent[f.agent].total++;
+        if (f.success) byAgent[f.agent].success++;
+      });
+      return {
+        total: this._feedbacks.length,
+        byAgent: Object.entries(byAgent).map(([agent, s]) => ({
+          agent,
+          successRate: Math.round(s.success / s.total * 100),
+          total: s.total
+        }))
+      };
+    },
+
+    getRecent: function(n) {
+      return this._feedbacks.slice(-(n || 10));
+    }
+  };
+
+  // Hook SYSTEM_BRAIN.route() to auto-collect feedback
+  if (window.SYSTEM_BRAIN) {
+    const _origRoute = window.SYSTEM_BRAIN.route.bind(window.SYSTEM_BRAIN);
+    window.SYSTEM_BRAIN.route = function(task) {
+      const result = _origRoute(task);
+      if (result.success && result.agent) {
+        // Schedule feedback collection after 15s
+        setTimeout(() => {
+          // Auto-report based on system health improvement
+          const metrics = window.GLOBAL_METRICS_ENGINE
+            ? window.GLOBAL_METRICS_ENGINE.getSystemMetrics()
+            : null;
+          const systemOk = metrics ? metrics.healthScore >= 70 : true;
+          window.AGENT_FEEDBACK.report(
+            result.agent,
+            task.type,
+            systemOk,
+            `Auto-feedback: system health ${metrics?.healthScore || '?'}%`
+          );
+        }, 15000);
+      }
+      return result;
+    };
+  }
+
+  _LOG('Phase 42: Agent Feedback Loop initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 43: RISK-AWARE AI
+  // if (risk === HIGH) { requireApproval() }
+  // ═══════════════════════════════════════════════════════════
+
+  window.RISK_AWARE_AI = {
+    _pendingApprovals: {},
+    _MAX_PENDING: 20,
+    _autoApproveTimeout: 30000,  // 30s timeout → auto-approve
+    _approvalHistory: [],
+
+    // ── Risk levels ──
+    RISK_LEVELS: {
+      CRITICAL: { requireApproval: true,  autoApproveMs: 0     },  // never auto
+      HIGH:     { requireApproval: true,  autoApproveMs: 30000 },  // 30s
+      MEDIUM:   { requireApproval: false, autoApproveMs: 0     },  // no approval needed
+      LOW:      { requireApproval: false, autoApproveMs: 0     }
+    },
+
+    // ── Assess risk of a decision ──
+    assessRisk: function(decision, suggestedActions) {
+      let riskLevel = 'LOW';
+
+      // HIGH risk actions
+      const highRiskActions = ['enableSafeMode', 'notifyManager', 'triggerAlert'];
+      const criticalActions = [];  // reserved for future
+
+      const topAction = suggestedActions?.[0]?.action;
+      if (criticalActions.includes(topAction)) riskLevel = 'CRITICAL';
+      else if (highRiskActions.includes(topAction)) riskLevel = 'HIGH';
+      else if (decision === 'ALERT' || decision === 'SAFE_MODE') riskLevel = 'HIGH';
+      else if (decision === 'OPTIMIZE') riskLevel = 'MEDIUM';
+
+      return riskLevel;
+    },
+
+    // ── Request approval ──
+    requireApproval: function(decisionResult, onApprove, onReject) {
+      const id = `RA_${Date.now()}`;
+      const riskLevel = this.assessRisk(decisionResult.decision, decisionResult.suggestedActions);
+      const riskConfig = this.RISK_LEVELS[riskLevel];
+
+      if (!riskConfig.requireApproval) {
+        // No approval needed → auto-proceed
+        if (onApprove) onApprove(decisionResult);
+        return { id, approved: true, riskLevel, reason: 'auto-approved (low risk)' };
+      }
+
+      _RISK(`Approval required: [${riskLevel}] ${decisionResult.decision} — ${decisionResult.reason}`);
+
+      const pending = {
+        id,
+        ts: Date.now(),
+        decisionResult,
+        riskLevel,
+        onApprove,
+        onReject,
+        status: 'PENDING'
+      };
+
+      this._pendingApprovals[id] = pending;
+      if (Object.keys(this._pendingApprovals).length > this._MAX_PENDING) {
+        const oldest = Object.keys(this._pendingApprovals)[0];
+        delete this._pendingApprovals[oldest];
+      }
+
+      // Show approval UI
+      this._showApprovalUI(pending);
+
+      // Auto-approve after timeout (if configured)
+      if (riskConfig.autoApproveMs > 0) {
+        setTimeout(() => {
+          if (this._pendingApprovals[id]?.status === 'PENDING') {
+            _RISK(`Auto-approving [${id}] after ${riskConfig.autoApproveMs/1000}s timeout`);
+            this.approve(id, 'auto-timeout');
+          }
+        }, riskConfig.autoApproveMs);
+      }
+
+      return { id, approved: null, riskLevel, status: 'PENDING' };
+    },
+
+    // ── Approve ──
+    approve: function(id, approvedBy) {
+      const pending = this._pendingApprovals[id];
+      if (!pending || pending.status !== 'PENDING') return false;
+
+      pending.status = 'APPROVED';
+      pending.approvedBy = approvedBy || 'user';
+      pending.approvedAt = Date.now();
+
+      this._approvalHistory.push({
+        id, decision: pending.decisionResult.decision,
+        riskLevel: pending.riskLevel, approved: true,
+        approvedBy: pending.approvedBy, ts: Date.now()
+      });
+
+      _RISK(`Approved: [${id}] by ${pending.approvedBy}`);
+      if (pending.onApprove) pending.onApprove(pending.decisionResult);
+
+      this._removeApprovalUI(id);
+      delete this._pendingApprovals[id];
+      return true;
+    },
+
+    // ── Reject ──
+    reject: function(id, reason) {
+      const pending = this._pendingApprovals[id];
+      if (!pending || pending.status !== 'PENDING') return false;
+
+      pending.status = 'REJECTED';
+      pending.rejectedAt = Date.now();
+
+      this._approvalHistory.push({
+        id, decision: pending.decisionResult.decision,
+        riskLevel: pending.riskLevel, approved: false,
+        reason: reason || 'user rejected', ts: Date.now()
+      });
+
+      _RISK(`Rejected: [${id}] — ${reason || 'user rejected'}`);
+      if (pending.onReject) pending.onReject(reason);
+
+      this._removeApprovalUI(id);
+      delete this._pendingApprovals[id];
+      return true;
+    },
+
+    _showApprovalUI: function(pending) {
+      try {
+        const el = document.createElement('div');
+        el.id = `approval_${pending.id}`;
+        el.style.cssText = `
+          position:fixed; top:80px; right:20px; z-index:99999;
+          background:rgba(15,23,42,0.97); color:white;
+          border-radius:12px; padding:16px 20px; min-width:320px;
+          font-family:'Sarabun',sans-serif; font-size:13px;
+          box-shadow:0 8px 32px rgba(220,38,38,0.4);
+          border:2px solid #dc2626;
+        `;
+        const riskColor = pending.riskLevel === 'CRITICAL' ? '#dc2626' : '#f97316';
+        el.innerHTML = `
+          <div style="font-weight:bold;color:${riskColor};margin-bottom:8px">
+            ⚠️ Approval Required [${pending.riskLevel}]
+          </div>
+          <div style="color:#e2e8f0;margin-bottom:4px">
+            Decision: <b>${pending.decisionResult.decision}</b>
+          </div>
+          <div style="color:#94a3b8;font-size:12px;margin-bottom:12px">
+            ${pending.decisionResult.reason}
+          </div>
+          <div style="display:flex;gap:8px">
+            <button onclick="RISK_AWARE_AI.approve('${pending.id}','user')" style="
+              background:#16a34a;color:white;border:none;padding:6px 14px;
+              border-radius:6px;cursor:pointer;font-size:12px;flex:1">
+              ✅ Approve
+            </button>
+            <button onclick="RISK_AWARE_AI.reject('${pending.id}','user rejected')" style="
+              background:#dc2626;color:white;border:none;padding:6px 14px;
+              border-radius:6px;cursor:pointer;font-size:12px;flex:1">
+              ❌ Reject
+            </button>
+          </div>
+          <div style="color:#64748b;font-size:11px;margin-top:8px">
+            Auto-approve in 30s | ID: ${pending.id}
+          </div>
+        `;
+        document.body.appendChild(el);
+      } catch(e) {}
+    },
+
+    _removeApprovalUI: function(id) {
+      try {
+        const el = document.getElementById(`approval_${id}`);
+        if (el) el.remove();
+      } catch(e) {}
+    },
+
+    getPending: function() { return Object.values(this._pendingApprovals); },
+    getHistory: function(n) { return this._approvalHistory.slice(-(n || 10)); }
+  };
+
+  // Hook AUTO_ORCHESTRATOR.runFromDecision() to check risk first
+  if (window.AUTO_ORCHESTRATOR) {
+    const _origRun = window.AUTO_ORCHESTRATOR.runFromDecision.bind(window.AUTO_ORCHESTRATOR);
+    window.AUTO_ORCHESTRATOR.runFromDecision = function(decisionResult) {
+      const riskLevel = window.RISK_AWARE_AI.assessRisk(
+        decisionResult.decision,
+        decisionResult.suggestedActions
+      );
+
+      if (riskLevel === 'HIGH' || riskLevel === 'CRITICAL') {
+        window.RISK_AWARE_AI.requireApproval(
+          decisionResult,
+          (approved) => {
+            _RISK(`Executing approved decision: ${approved.decision}`);
+            _origRun(approved);
+            // Record in DECISION_LOG
+            if (window.DECISION_LOG && window.GLOBAL_METRICS_ENGINE) {
+              window.DECISION_LOG.record(
+                approved.decision,
+                approved.suggestedActions?.[0]?.action || 'unknown',
+                window.GLOBAL_METRICS_ENGINE.getSystemMetrics()
+              );
+            }
+          },
+          (reason) => {
+            _RISK(`Decision rejected: ${decisionResult.decision} — ${reason}`);
+          }
+        );
+      } else {
+        // Low/Medium risk → execute directly
+        _origRun(decisionResult);
+        if (window.DECISION_LOG && window.GLOBAL_METRICS_ENGINE) {
+          window.DECISION_LOG.record(
+            decisionResult.decision,
+            decisionResult.suggestedActions?.[0]?.action || 'unknown',
+            window.GLOBAL_METRICS_ENGINE.getSystemMetrics()
+          );
+        }
+      }
+    };
+  }
+
+  _LOG('Phase 43: Risk-Aware AI initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 44: CONTINUOUS IMPROVEMENT LOOP
+  // Observe → Decide → Act → Evaluate → Learn → Improve
+  // ═══════════════════════════════════════════════════════════
+
+  window.IMPROVEMENT_LOOP = {
+    _cycleCount: 0,
+    _interval: null,
+    _improvementLog: [],
+    _MAX_LOG: 50,
+
+    // ── Run one improvement cycle ──
+    runCycle: async function() {
+      this._cycleCount++;
+      const cycle = {
+        id: this._cycleCount,
+        ts: Date.now(),
+        steps: {}
+      };
+
+      try {
+        // Step 1: Observe
+        const metrics = window.GLOBAL_METRICS_ENGINE.getSystemMetrics();
+        const business = window.BUSINESS_METRICS.getBusinessHealth();
+        cycle.steps.observe = { healthScore: metrics.healthScore, bizScore: business.overallScore };
+
+        // Step 2: Predict
+        const predictions = window.PREDICTIVE_ENGINE.analyze();
+        cycle.steps.predict = { count: predictions.length };
+
+        // Step 3: Decide (with adaptive weights)
+        const decision = window.AI_DECISION_ENGINE.decide(metrics, business);
+        cycle.steps.decide = { decision: decision.decision, confidence: decision.confidence };
+
+        // Step 4: Act (via risk-aware orchestrator)
+        if (decision.decision !== 'IGNORE') {
+          window.AUTO_ORCHESTRATOR.runFromDecision(decision);
+          cycle.steps.act = { action: decision.suggestedActions?.[0]?.action || 'none' };
+        } else {
+          cycle.steps.act = { action: 'none (IGNORE)' };
+        }
+
+        // Step 5: Evaluate (pending — will complete in 30s)
+        cycle.steps.evaluate = { status: 'pending' };
+
+        // Step 6: Learn (from Policy Engine)
+        const policyStats = window.POLICY_ENGINE.stats();
+        cycle.steps.learn = {
+          policies: policyStats.total,
+          prefer: policyStats.prefer,
+          avoid: policyStats.avoid
+        };
+
+        // Step 7: Improve (check if we're getting better)
+        const dlStats = window.DECISION_LOG.stats();
+        cycle.steps.improve = {
+          successRate: dlStats.successRate,
+          avgImpact: dlStats.avgImpact,
+          trend: dlStats.successRate >= 70 ? 'IMPROVING' : dlStats.successRate >= 50 ? 'STABLE' : 'DECLINING'
+        };
+
+        cycle.status = 'COMPLETE';
+
+      } catch(e) {
+        cycle.status = 'ERROR';
+        cycle.error = e.message;
+        _WARN(`Improvement cycle error: ${e.message}`);
+      }
+
+      this._improvementLog.push(cycle);
+      if (this._improvementLog.length > this._MAX_LOG) this._improvementLog.shift();
+
+      if (this._cycleCount % 5 === 0) {
+        const dlStats = window.DECISION_LOG.stats();
+        _LEARN(`Improvement cycle #${this._cycleCount}: successRate=${dlStats.successRate}% avgImpact=${dlStats.avgImpact}`);
+      }
+
+      return cycle;
+    },
+
+    // ── Start continuous loop ──
+    start: function(intervalMs) {
+      intervalMs = intervalMs || 120000; // 2 min
+      if (this._interval) clearInterval(this._interval);
+      this._interval = setInterval(() => this.runCycle(), intervalMs);
+      _LOG(`Improvement Loop started (every ${intervalMs/1000}s)`);
+    },
+
+    stop: function() {
+      if (this._interval) {
+        clearInterval(this._interval);
+        this._interval = null;
+        _LOG('Improvement Loop stopped');
+      }
+    },
+
+    // ── Get improvement trend ──
+    getTrend: function() {
+      const recent = this._improvementLog.slice(-10);
+      if (recent.length < 2) return 'UNKNOWN';
+
+      const rates = recent
+        .filter(c => c.steps?.improve?.successRate !== undefined)
+        .map(c => c.steps.improve.successRate);
+
+      if (rates.length < 2) return 'UNKNOWN';
+      const first = rates.slice(0, Math.floor(rates.length/2)).reduce((a,b)=>a+b,0) / Math.floor(rates.length/2);
+      const last  = rates.slice(Math.floor(rates.length/2)).reduce((a,b)=>a+b,0) / Math.ceil(rates.length/2);
+
+      return last > first + 5 ? 'IMPROVING' : last < first - 5 ? 'DECLINING' : 'STABLE';
+    },
+
+    stats: function() {
+      return {
+        cycleCount: this._cycleCount,
+        running: !!this._interval,
+        trend: this.getTrend(),
+        recentCycles: this._improvementLog.slice(-3),
+        decisionLog: window.DECISION_LOG.stats(),
+        policyEngine: window.POLICY_ENGINE.stats(),
+        agentFeedback: window.AGENT_FEEDBACK.stats()
+      };
+    }
+  };
+
+  // Start improvement loop after 10s
+  setTimeout(() => {
+    window.IMPROVEMENT_LOOP.start(120000);
+  }, 10000);
+
+  _LOG('Phase 44: Continuous Improvement Loop initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // V1100 DEBUG TOOLS
+  // ═══════════════════════════════════════════════════════════
+
+  window.V1100 = {
+    version: _V1100_VERSION,
+
+    report: function() {
+      console.group('%c[V1100] Self-Learning System Report', 'color:#0891b2;font-size:14px;font-weight:bold');
+
+      console.group('Phase 38: Decision Memory');
+      const dlStats = window.DECISION_LOG.stats();
+      console.log(`Total decisions: ${dlStats.total} | Evaluated: ${dlStats.evaluated} | Pending: ${dlStats.pending}`);
+      console.log(`Success rate: ${dlStats.successRate}% | Avg impact: ${dlStats.avgImpact}`);
+      if (dlStats.byAction.length > 0) console.table(dlStats.byAction);
+      console.groupEnd();
+
+      console.group('Phase 39: Outcome Evaluation');
+      const recent = window.DECISION_LOG.getRecent(5);
+      recent.forEach(e => {
+        const status = e.success === null ? '⏳' : e.success ? '✅' : '❌';
+        console.log(`${status} [${e.action}] impact=${e.impactScore ?? 'pending'}`);
+      });
+      console.groupEnd();
+
+      console.group('Phase 40: Policy Engine');
+      const pStats = window.POLICY_ENGINE.stats();
+      console.log(`Policies: ${pStats.total} (${pStats.prefer} PREFER, ${pStats.avoid} AVOID)`);
+      if (pStats.topPolicies.length > 0) console.table(pStats.topPolicies);
+      console.groupEnd();
+
+      console.group('Phase 41: Adaptive Decision Weights');
+      const weights = window.AI_DECISION_ENGINE._actionWeights;
+      if (weights) console.table(Object.entries(weights).map(([action, weight]) => ({ action, weight })));
+      console.groupEnd();
+
+      console.group('Phase 42: Agent Feedback');
+      const afStats = window.AGENT_FEEDBACK.stats();
+      console.log(`Total feedbacks: ${afStats.total}`);
+      if (afStats.byAgent.length > 0) console.table(afStats.byAgent);
+      console.groupEnd();
+
+      console.group('Phase 43: Risk-Aware AI');
+      const pending = window.RISK_AWARE_AI.getPending();
+      console.log(`Pending approvals: ${pending.length}`);
+      const history = window.RISK_AWARE_AI.getHistory(5);
+      if (history.length > 0) console.table(history);
+      console.groupEnd();
+
+      console.group('Phase 44: Improvement Loop');
+      const loopStats = window.IMPROVEMENT_LOOP.stats();
+      console.log(`Cycles: ${loopStats.cycleCount} | Running: ${loopStats.running} | Trend: ${loopStats.trend}`);
+      console.groupEnd();
+
+      // Pass/Fail
+      const checks = {
+        'DECISION_LOG defined': !!window.DECISION_LOG,
+        'OUTCOME_EVALUATOR defined': !!window.OUTCOME_EVALUATOR,
+        'POLICY_ENGINE defined': !!window.POLICY_ENGINE,
+        'AI_DECISION_ENGINE.updateWeights': !!window.AI_DECISION_ENGINE?.updateWeights,
+        'AI_DECISION_ENGINE._actionWeights': !!window.AI_DECISION_ENGINE?._actionWeights,
+        'AGENT_FEEDBACK defined': !!window.AGENT_FEEDBACK,
+        'RISK_AWARE_AI defined': !!window.RISK_AWARE_AI,
+        'IMPROVEMENT_LOOP defined': !!window.IMPROVEMENT_LOOP,
+        'Improvement Loop running': !!window.IMPROVEMENT_LOOP._interval,
+        'Version 11.0.0': window.__COMPHONE_VERSION === _V1100_VERSION
+      };
+
+      console.group('Pass/Fail Summary');
+      let pass = 0, fail = 0;
+      Object.entries(checks).forEach(([name, result]) => {
+        if (result) { console.log(`✅ ${name}`); pass++; }
+        else { console.warn(`⚠️ ${name}`); fail++; }
+      });
+      console.log(`\nResult: ${pass}/${pass+fail}`);
+      if (fail === 0) {
+        console.log('%c🎉 SELF-LEARNING SYSTEM: FULLY OPERATIONAL', 'color:#0891b2;font-size:16px;font-weight:bold');
+      }
+      console.groupEnd();
+      console.groupEnd();
+    },
+
+    // Simulate learning cycle
+    simulateLearning: async function(cycles) {
+      cycles = cycles || 3;
+      _LOG(`Simulating ${cycles} learning cycles...`);
+
+      // Inject test data first
+      if (window.V1000) window.V1000.injectTestData();
+
+      for (let i = 0; i < cycles; i++) {
+        // Simulate a decision
+        const metrics = window.GLOBAL_METRICS_ENGINE.getSystemMetrics();
+        const id = window.DECISION_LOG.record(
+          'OPTIMIZE', 'reduceRefreshRate', metrics
+        );
+
+        // Simulate outcome after 1s
+        await new Promise(r => setTimeout(r, 1000));
+        window.DECISION_LOG._evaluate(id);
+
+        // Agent feedback
+        window.AGENT_FEEDBACK.report('Manus', 'analysis', true, `Cycle ${i+1}`);
+
+        // Run improvement cycle
+        await window.IMPROVEMENT_LOOP.runCycle();
+
+        _LOG(`Simulation cycle ${i+1}/${cycles} complete`);
+      }
+
+      _LOG('Simulation complete — run V1100.report() to see results');
+    },
+
+    // Approve all pending
+    approveAll: function() {
+      const pending = window.RISK_AWARE_AI.getPending();
+      pending.forEach(p => window.RISK_AWARE_AI.approve(p.id, 'V1100.approveAll'));
+      return pending.length;
+    },
+
+    log: window.DECISION_LOG,
+    policy: window.POLICY_ENGINE,
+    feedback: window.AGENT_FEEDBACK,
+    risk: window.RISK_AWARE_AI,
+    loop: window.IMPROVEMENT_LOOP
+  };
+
+  // ── Update version ──
+  window.__COMPHONE_VERSION = _V1100_VERSION;
+  window.__COMPHONE_BUILD   = _V1100_BUILD;
+
+  _LOG('=== v11.0.0 Self-Learning System LOADED ===');
+  _LOG('Commands: V1100.report() | V1100.simulateLearning() | V1100.approveAll()');
+  _LOG('         DECISION_LOG.stats() | POLICY_ENGINE.getPolicies()');
+  _LOG('         AGENT_FEEDBACK.report(agent,type,success) | RISK_AWARE_AI.getPending()');
+  _LOG('         IMPROVEMENT_LOOP.runCycle() | IMPROVEMENT_LOOP.getTrend()');
+
+})();
+
+</script>
 </body>
 </html>
