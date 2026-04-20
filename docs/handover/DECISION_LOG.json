@@ -1,0 +1,62 @@
+{
+  "_meta": {
+    "description": "DECISION_LOG — บันทึก AI decisions ทุกครั้ง พร้อม before/after state",
+    "version": "v16.0.0",
+    "format": "Array of decision records",
+    "maxEntries": 100,
+    "note": "ไฟล์นี้เป็น template — runtime data อยู่ใน localStorage key: COMPHONE_DECISION_LOG"
+  },
+  "_schema": {
+    "id": "string — unique decision ID",
+    "timestamp": "number — Unix ms",
+    "decision": "SAFE_MODE | ALERT | OPTIMIZE | HEAL | IGNORE",
+    "confidence": "number 0-1",
+    "reason": "string — human-readable reason",
+    "action": "string — action taken",
+    "context": {
+      "latency": "number ms",
+      "errorRate": "number %",
+      "userActive": "boolean",
+      "device": "desktop | mobile | tablet",
+      "timeSlot": "peak | off-peak | night",
+      "networkQuality": "good | fair | poor",
+      "dayType": "weekday | weekend"
+    },
+    "before": {
+      "latency": "number",
+      "errorRate": "number",
+      "healthScore": "number"
+    },
+    "after": {
+      "latency": "number",
+      "errorRate": "number",
+      "healthScore": "number"
+    },
+    "impactScore": "number -100 to +100",
+    "success": "boolean",
+    "evaluatedAt": "number — Unix ms"
+  },
+  "_sampleEntry": {
+    "id": "dec_1745123456789",
+    "timestamp": 1745123456789,
+    "decision": "OPTIMIZE",
+    "confidence": 0.82,
+    "reason": "Latency spike detected (3200ms > 3000ms threshold) + errorRate elevated (15%)",
+    "action": "reduceRefreshRate",
+    "context": {
+      "latency": 3200,
+      "errorRate": 15,
+      "userActive": true,
+      "device": "desktop",
+      "timeSlot": "peak",
+      "networkQuality": "fair",
+      "dayType": "weekday"
+    },
+    "before": { "latency": 3200, "errorRate": 15, "healthScore": 72 },
+    "after": { "latency": 890, "errorRate": 5, "healthScore": 91 },
+    "impactScore": 45,
+    "success": true,
+    "evaluatedAt": 1745123486789
+  },
+  "entries": []
+}

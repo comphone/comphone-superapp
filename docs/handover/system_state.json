@@ -1,0 +1,123 @@
+{
+  "version": "v16.0.0",
+  "build": "d500a6e",
+  "buildDate": "2026-04-20",
+  "repository": "https://github.com/comphone/comphone-superapp",
+  "branch": "main",
+  "file": "pwa/dashboard_pc.html",
+
+  "features": [
+    "Self-Evolving Debug System",
+    "AI Governance & Trust",
+    "Autonomous Incident Management",
+    "Trusted Execution Mode",
+    "Production Observability",
+    "Self-Learning System",
+    "Intelligent Autonomous System",
+    "Anti-Fragile System",
+    "Self-Defending System",
+    "Production Hardening"
+  ],
+
+  "patchHistory": [
+    { "version": "v6.2.6", "commit": "a4d3c77", "desc": "Recovery Patch — Loop Detection + Canonical callApi" },
+    { "version": "v7.0.0", "commit": "5e1c174", "desc": "Core Reconstruction — Single API Pipeline" },
+    { "version": "v8.0.0", "commit": "2922ba3", "desc": "Production Hardening — Controller Layer + Timer Purge" },
+    { "version": "v8.1.0", "commit": "7d65d94", "desc": "Self-Defending — Duplicate Guard + Circuit Breaker" },
+    { "version": "v9.0.0", "commit": "a8711c3", "desc": "Anti-Fragile — Priority Queue + Per-Action Circuit" },
+    { "version": "v10.0.0", "commit": "e0d6bb8", "desc": "Intelligent Autonomous — AI Decision + Predictive" },
+    { "version": "v11.0.0", "commit": "ef012e8", "desc": "Self-Learning — Decision Memory + Policy Engine" },
+    { "version": "v12.0.0", "commit": "875e028", "desc": "AI Safety — Confidence Gate + Anti-Overfitting" },
+    { "version": "v13.0.0", "commit": "3093984", "desc": "AI Governance — Sandbox + Trust Score + Shadow Mode" },
+    { "version": "v14.0.0", "commit": "246c51a", "desc": "Production Observability — XAI + Kill Switch + Replay" },
+    { "version": "v15.0.0", "commit": "bc29fa0", "desc": "Autonomous Incident — Root Cause + Auto Freeze + Self Debug" },
+    { "version": "v16.0.0", "commit": "d500a6e", "desc": "Self-Evolving — Fix Learning + Failure Memory + Anomaly Detection" }
+  ],
+
+  "activeModules": {
+    "API_CONTROLLER": true,
+    "PRIORITY_QUEUE": true,
+    "CIRCUIT_BREAKER": true,
+    "GLOBAL_METRICS_ENGINE": true,
+    "BUSINESS_METRICS": true,
+    "AI_DECISION_ENGINE": true,
+    "AUTO_ORCHESTRATOR": true,
+    "PREDICTIVE_ENGINE": true,
+    "SYSTEM_BRAIN": true,
+    "DECISION_LOG": true,
+    "OUTCOME_EVALUATOR": true,
+    "POLICY_ENGINE": true,
+    "IMPROVEMENT_LOOP": true,
+    "RISK_AWARE_AI": true,
+    "CONTEXT_COLLECTOR": true,
+    "SANITY_GUARD": true,
+    "ROLLBACK_MEMORY": true,
+    "DATA_INTEGRITY": true,
+    "TRUST_SCORE": true,
+    "SHADOW_AI": true,
+    "AI_SANDBOX": true,
+    "FULL_ROLLBACK": true,
+    "HARD_TRUST_GATE": true,
+    "XAI_LOG": true,
+    "SYSTEM": true,
+    "REAL_HEALTH": true,
+    "PROD_REPLAY": true,
+    "ROOT_CAUSE_ENGINE": true,
+    "INCIDENT_MANAGER": true,
+    "AUTO_FREEZE": true,
+    "SELF_DEBUG": true,
+    "TRUSTED_EXEC": true,
+    "FIX_LEARNING_ENGINE": true,
+    "FAILURE_MEMORY": true,
+    "ANOMALY_DETECTOR": true,
+    "ADAPTIVE_FIX_GEN": true,
+    "EVOLUTION_SCORE": true
+  },
+
+  "disabledModules": {
+    "OFFLINE_QUEUE": false,
+    "SOFT_UPDATE": false,
+    "silentRefresh": false
+  },
+
+  "timers": {
+    "_v800SyncTimer": "60s — single sync timer",
+    "_pingTimer": "30s — online check only",
+    "_v1600_anomalyInterval": "60s — anomaly detection",
+    "_v1600_evolutionInterval": "60s — evolution score"
+  },
+
+  "apiPipeline": {
+    "entryPoint": "API_CONTROLLER.call(action, params)",
+    "flow": "User → API_CONTROLLER → _v800GuardedCallApi → _BASE_FETCH_FN",
+    "wrapperDepth": 1,
+    "forbiddenPatterns": [
+      "callApi() direct (not via API_CONTROLLER)",
+      "render → callApi",
+      "timer → callApi (except sync/ping)"
+    ]
+  },
+
+  "aiConfig": {
+    "trustThreshold": 0.70,
+    "actThreshold": 0.55,
+    "policyThreshold": 0.65,
+    "minSamples": 5,
+    "minPolicySamples": 10,
+    "sandboxMode": true,
+    "shadowMode": false,
+    "forbiddenActions": [
+      "disableCore", "killDashboard", "clearAllData",
+      "disableAuth", "bypassSecurity", "infiniteLoop",
+      "deleteDatabase", "exposeSecrets", "disableLogging", "corruptState"
+    ]
+  },
+
+  "healthConfig": {
+    "autoFreezeThreshold": 60,
+    "autoFreezeConsecutive": 3,
+    "circuitBreakerThreshold": 5,
+    "circuitBreakerReset": 30000,
+    "rateLimitPerMinute": 30
+  }
+}

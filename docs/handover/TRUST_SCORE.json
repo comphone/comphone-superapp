@@ -1,0 +1,77 @@
+{
+  "_meta": {
+    "description": "TRUST_SCORE — trust score ของทุก module ในระบบ",
+    "version": "v16.0.0",
+    "note": "ไฟล์นี้เป็น template — runtime data อยู่ใน localStorage key: COMPHONE_TRUST_SCORE",
+    "updateMethod": "EMA (Exponential Moving Average) alpha=0.1",
+    "minTrustToAct": 0.70,
+    "minTrustToOrchestrate": 0.75
+  },
+  "_schema": {
+    "moduleName": {
+      "score": "number 0-1",
+      "totalCalls": "number",
+      "successCalls": "number",
+      "lastUpdated": "number — Unix ms",
+      "history": "number[] — last 10 scores"
+    }
+  },
+  "modules": {
+    "API": {
+      "score": 0.98,
+      "totalCalls": 0,
+      "successCalls": 0,
+      "lastUpdated": 0,
+      "history": [0.98]
+    },
+    "CACHE": {
+      "score": 0.95,
+      "totalCalls": 0,
+      "successCalls": 0,
+      "lastUpdated": 0,
+      "history": [0.95]
+    },
+    "AI": {
+      "score": 0.72,
+      "totalCalls": 0,
+      "successCalls": 0,
+      "lastUpdated": 0,
+      "history": [0.72]
+    },
+    "PREDICTOR": {
+      "score": 0.68,
+      "totalCalls": 0,
+      "successCalls": 0,
+      "lastUpdated": 0,
+      "history": [0.68]
+    },
+    "ORCHESTRATOR": {
+      "score": 0.85,
+      "totalCalls": 0,
+      "successCalls": 0,
+      "lastUpdated": 0,
+      "history": [0.85]
+    },
+    "MANUS": {
+      "score": 0.90,
+      "totalCalls": 0,
+      "successCalls": 0,
+      "lastUpdated": 0,
+      "history": [0.90]
+    },
+    "HERMES": {
+      "score": 0.85,
+      "totalCalls": 0,
+      "successCalls": 0,
+      "lastUpdated": 0,
+      "history": [0.85]
+    },
+    "OPENCLAW": {
+      "score": 0.80,
+      "totalCalls": 0,
+      "successCalls": 0,
+      "lastUpdated": 0,
+      "history": [0.80]
+    }
+  }
+}

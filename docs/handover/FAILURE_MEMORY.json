@@ -1,0 +1,43 @@
+{
+  "_meta": {
+    "description": "FAILURE_MEMORY — จำ failure patterns และ fixes ที่ได้ผล",
+    "version": "v16.0.0",
+    "note": "ไฟล์นี้เป็น template — runtime data อยู่ใน localStorage key: COMPHONE_FAILURE_MEMORY",
+    "maxPatterns": 50,
+    "minConfidence": 0.7,
+    "minEvidence": 2
+  },
+  "_schema": {
+    "patternKey": "string — sorted causes joined with '+'",
+    "causes": "string[] — root causes",
+    "fixes": "string[] — fixes ที่ใช้",
+    "totalCount": "number",
+    "successCount": "number",
+    "confidence": "number 0-1",
+    "lastSeen": "number — Unix ms",
+    "firstSeen": "number — Unix ms"
+  },
+  "_knownPatterns": [
+    {
+      "patternKey": "duplicate API call+stale cache",
+      "causes": ["duplicate API call", "stale cache"],
+      "fixes": ["clearInFlightLocks", "clearStaleCache"],
+      "totalCount": 3,
+      "successCount": 3,
+      "confidence": 1.0,
+      "lastSeen": 1745100000000,
+      "firstSeen": 1745000000000
+    },
+    {
+      "patternKey": "circuit open+high error rate",
+      "causes": ["circuit open", "high error rate"],
+      "fixes": ["resetOpenCircuits", "enableSafeMode"],
+      "totalCount": 4,
+      "successCount": 3,
+      "confidence": 0.75,
+      "lastSeen": 1745100000000,
+      "firstSeen": 1744900000000
+    }
+  ],
+  "patterns": {}
+}

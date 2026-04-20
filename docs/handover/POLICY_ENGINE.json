@@ -1,0 +1,53 @@
+{
+  "_meta": {
+    "description": "POLICY_ENGINE — rules ที่ระบบสร้างเองจาก decision history",
+    "version": "v16.0.0",
+    "note": "ไฟล์นี้เป็น template — runtime data อยู่ใน localStorage key: COMPHONE_POLICY_ENGINE",
+    "policyTypes": ["PREFER", "AVOID"],
+    "minEvidence": 3,
+    "minPolicySamples": 10
+  },
+  "_schema": {
+    "id": "string",
+    "type": "PREFER | AVOID",
+    "condition": "string — human-readable condition",
+    "action": "string — action to prefer/avoid",
+    "successRate": "number 0-1",
+    "evidence": "number — sample count",
+    "confidence": "number 0-1",
+    "createdAt": "number — Unix ms",
+    "expiresAt": "number — Unix ms (TTL: 4-72h based on confidence)",
+    "contextMatch": {
+      "device": "optional — desktop | mobile | tablet | any",
+      "timeSlot": "optional — peak | off-peak | night | any",
+      "networkQuality": "optional — good | fair | poor | any"
+    }
+  },
+  "_samplePolicies": [
+    {
+      "id": "pol_latency_optimize_001",
+      "type": "PREFER",
+      "condition": "latency > 3000ms AND errorRate < 20%",
+      "action": "reduceRefreshRate",
+      "successRate": 0.85,
+      "evidence": 7,
+      "confidence": 0.82,
+      "createdAt": 1745100000000,
+      "expiresAt": 1745359200000,
+      "contextMatch": { "device": "any", "timeSlot": "peak", "networkQuality": "fair" }
+    },
+    {
+      "id": "pol_error_safemode_001",
+      "type": "PREFER",
+      "condition": "errorRate > 30% AND health < 70",
+      "action": "enableSafeMode",
+      "successRate": 0.90,
+      "evidence": 5,
+      "confidence": 0.88,
+      "createdAt": 1745100000000,
+      "expiresAt": 1745445600000,
+      "contextMatch": { "device": "any", "timeSlot": "any", "networkQuality": "poor" }
+    }
+  ],
+  "policies": []
+}

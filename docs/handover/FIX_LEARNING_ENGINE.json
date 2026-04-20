@@ -1,0 +1,51 @@
+{
+  "_meta": {
+    "description": "FIX_LEARNING_ENGINE — เรียนรู้ว่า fix ไหนได้ผลกับ cause ไหน",
+    "version": "v16.0.0",
+    "note": "ไฟล์นี้เป็น template — runtime data อยู่ใน localStorage key: COMPHONE_FIX_LEARNING",
+    "scoreFormula": "score = successRate * 0.6 + (avgImprovement / 100) * 0.4",
+    "minDataPoints": 2,
+    "emaAlpha": 0.3
+  },
+  "_schema": {
+    "cause": {
+      "fixName": {
+        "successRate": "number 0-1",
+        "totalCount": "number",
+        "successCount": "number",
+        "avgImprovement": "number — health improvement score",
+        "score": "number — composite score",
+        "lastUsed": "number — Unix ms"
+      }
+    }
+  },
+  "_knownKnowledge": {
+    "latency spike": {
+      "reduceRefreshRate": {
+        "successRate": 0.85, "totalCount": 7, "successCount": 6,
+        "avgImprovement": 35, "score": 0.65, "lastUsed": 1745100000000
+      },
+      "clearStaleCache": {
+        "successRate": 0.70, "totalCount": 5, "successCount": 4,
+        "avgImprovement": 25, "score": 0.52, "lastUsed": 1745050000000
+      }
+    },
+    "high error rate": {
+      "enableSafeMode": {
+        "successRate": 0.90, "totalCount": 5, "successCount": 5,
+        "avgImprovement": 40, "score": 0.70, "lastUsed": 1745100000000
+      },
+      "resetOpenCircuits": {
+        "successRate": 0.80, "totalCount": 4, "successCount": 3,
+        "avgImprovement": 30, "score": 0.60, "lastUsed": 1745080000000
+      }
+    },
+    "stale cache": {
+      "clearStaleCache": {
+        "successRate": 0.95, "totalCount": 8, "successCount": 8,
+        "avgImprovement": 45, "score": 0.75, "lastUsed": 1745100000000
+      }
+    }
+  },
+  "knowledge": {}
+}
