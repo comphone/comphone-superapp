@@ -12073,5 +12073,1486 @@ body.theme-dark .sg-detail-close { background: #334155; color: #94a3b8; }
 })();
 
 </script>
+
+<script id="v1000-intelligent-autonomous">
+/**
+ * COMPHONE Dashboard v10.0.0 — Intelligent Autonomous System
+ * Phase 31: Global Metrics Engine (System Observability)
+ * Phase 32: Business Metrics Layer
+ * Phase 33: AI Decision Engine
+ * Phase 34: Auto Orchestration
+ * Phase 35: Predictive Analysis
+ * Phase 36: Agent Coordination Brain
+ * Phase 37: Executive Mode Dashboard
+ *
+ * Principle: "รู้ล่วงหน้า ตัดสินใจได้ และปรับตัวเองได้"
+ */
+
+(function() {
+  'use strict';
+
+  const _V1000_VERSION = '10.0.0';
+  const _V1000_BUILD   = 'intelligent-autonomous';
+
+  function _LOG(msg)    { console.log(`%c[v${_V1000_VERSION}] ${msg}`, 'color:#7c3aed;font-weight:bold'); }
+  function _WARN(msg)   { console.warn(`[v${_V1000_VERSION}] ⚠️ ${msg}`); }
+  function _ERR(msg)    { console.error(`[v${_V1000_VERSION}] ❌ ${msg}`); }
+  function _BRAIN(msg)  { console.log(`%c[BRAIN] ${msg}`, 'color:#dc2626;font-weight:bold'); }
+  function _INSIGHT(msg){ console.log(`%c[INSIGHT] ${msg}`, 'color:#0891b2;font-weight:bold'); }
+
+  _LOG('=== Intelligent Autonomous System Loading ===');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 31: GLOBAL METRICS ENGINE (System Observability)
+  // รวม: API latency, error rate, queue depth, circuit state,
+  //       user activity
+  // ═══════════════════════════════════════════════════════════
+
+  window.GLOBAL_METRICS_ENGINE = {
+    _history: [],          // rolling 5-min window
+    _MAX_HISTORY: 300,     // 300 data points (1/sec)
+    _userActivity: [],     // user actions in last 10 min
+    _MAX_ACTIVITY: 100,
+    _startTime: Date.now(),
+
+    // ── Record every API call ──
+    record: function(action, elapsed, success, source) {
+      const point = {
+        ts: Date.now(),
+        action, elapsed, success,
+        source: source || 'unknown'
+      };
+      this._history.push(point);
+      if (this._history.length > this._MAX_HISTORY) this._history.shift();
+    },
+
+    // ── Record user action ──
+    recordActivity: function(type, detail) {
+      this._userActivity.push({ ts: Date.now(), type, detail });
+      if (this._userActivity.length > this._MAX_ACTIVITY) this._userActivity.shift();
+    },
+
+    // ── Main output: getSystemMetrics() ──
+    getSystemMetrics: function() {
+      const now = Date.now();
+      const window60s = this._history.filter(p => now - p.ts < 60000);
+      const window5m  = this._history.filter(p => now - p.ts < 300000);
+
+      // Latency stats (60s)
+      const latencies = window60s.map(p => p.elapsed).filter(Boolean);
+      const avgLatency = latencies.length
+        ? Math.round(latencies.reduce((a,b)=>a+b,0) / latencies.length)
+        : 0;
+      const p95Latency = latencies.length
+        ? latencies.sort((a,b)=>a-b)[Math.floor(latencies.length * 0.95)] || 0
+        : 0;
+
+      // Error rate (60s)
+      const errorRate60s = window60s.length
+        ? Math.round(window60s.filter(p=>!p.success).length / window60s.length * 100)
+        : 0;
+
+      // Error rate (5m)
+      const errorRate5m = window5m.length
+        ? Math.round(window5m.filter(p=>!p.success).length / window5m.length * 100)
+        : 0;
+
+      // Queue depth
+      const queueDepth = window.__PRIORITY_QUEUE ? window.__PRIORITY_QUEUE.size() : 0;
+
+      // Circuit states
+      const circuits = window.__PER_ACTION_CIRCUIT ? window.__PER_ACTION_CIRCUIT.status() : [];
+      const openCircuits   = circuits.filter(c => c.state === 'OPEN').length;
+      const halfOpenCircuits = circuits.filter(c => c.state === 'HALF-OPEN').length;
+      const globalCBOpen   = window.__CIRCUIT_BREAKER ? window.__CIRCUIT_BREAKER.BLOCK_API : false;
+
+      // Recovery mode
+      const recoveryMode = window.__RECOVERY_MODE ? window.__RECOVERY_MODE.level : 'NORMAL';
+
+      // User activity (10 min)
+      const activityCount = this._userActivity.filter(a => now - a.ts < 600000).length;
+
+      // Throttle state
+      const throttleDelay = window.__INTELLIGENT_THROTTLE
+        ? window.__INTELLIGENT_THROTTLE._state.baseDelay
+        : 0;
+
+      // In-flight count
+      const inFlightCount = window.__IN_FLIGHT
+        ? Object.keys(window.__IN_FLIGHT).length
+        : 0;
+
+      // Health score (0-100)
+      let healthScore = 100;
+      healthScore -= Math.min(30, errorRate60s * 0.5);
+      healthScore -= Math.min(20, avgLatency > 2000 ? 20 : avgLatency > 1000 ? 10 : 0);
+      healthScore -= openCircuits * 5;
+      healthScore -= queueDepth > 5 ? 10 : 0;
+      healthScore -= globalCBOpen ? 20 : 0;
+      healthScore = Math.max(0, Math.round(healthScore));
+
+      // Uptime
+      const uptimeMs = now - this._startTime;
+      const uptimeMin = Math.floor(uptimeMs / 60000);
+
+      return {
+        timestamp: new Date(now).toLocaleTimeString('th-TH'),
+        uptime: `${uptimeMin}m`,
+        healthScore,
+        healthLabel: healthScore >= 90 ? 'HEALTHY' : healthScore >= 70 ? 'DEGRADED' : healthScore >= 50 ? 'WARNING' : 'CRITICAL',
+        api: {
+          avgLatency: avgLatency + 'ms',
+          p95Latency: p95Latency + 'ms',
+          errorRate60s: errorRate60s + '%',
+          errorRate5m:  errorRate5m + '%',
+          callsLast60s: window60s.length,
+          inFlight: inFlightCount,
+          throttleDelay: throttleDelay + 'ms'
+        },
+        queue: {
+          depth: queueDepth,
+          stats: window.__PRIORITY_QUEUE ? window.__PRIORITY_QUEUE.stats() : {}
+        },
+        circuits: {
+          open: openCircuits,
+          halfOpen: halfOpenCircuits,
+          globalOpen: globalCBOpen,
+          details: circuits.filter(c => c.state !== 'CLOSED')
+        },
+        system: {
+          recoveryMode,
+          safeMode: window.__SAFE_MODE || false,
+          healingPatterns: window.__SELF_HEALER ? window.__SELF_HEALER.stats().patterns.length : 0
+        },
+        user: {
+          activityLast10m: activityCount,
+          tabId: window.__TAB_SYNC ? window.__TAB_SYNC.tabId : 'unknown'
+        }
+      };
+    }
+  };
+
+  // Hook into API_CONTROLLER to auto-record metrics
+  if (window.API_CONTROLLER) {
+    const _origCall = window.API_CONTROLLER.call;
+    window.API_CONTROLLER.call = async function _v1000MetricsCall(action, payload, options) {
+      const t0 = performance.now();
+      const result = await _origCall.call(this, action, payload, options);
+      const elapsed = Math.round(performance.now() - t0);
+      const success = result?.success !== false;
+      window.GLOBAL_METRICS_ENGINE.record(action, elapsed, success, options?.source || 'UserAction');
+      return result;
+    };
+    window.API_CONTROLLER._version = _V1000_VERSION;
+  }
+
+  _LOG('Phase 31: Global Metrics Engine initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 32: BUSINESS METRICS LAYER
+  // revenue trend, job SLA, conversion rate, stock risk
+  // ═══════════════════════════════════════════════════════════
+
+  window.BUSINESS_METRICS = {
+    // Simulated business data store (populated from APP_STATE)
+    _data: {
+      revenue: [],      // [{ ts, amount, period }]
+      jobs: [],         // [{ ts, id, status, slaMs, completedMs }]
+      sales: [],        // [{ ts, items, total, converted }]
+      stock: [],        // [{ ts, sku, qty, minQty, reorderPoint }]
+    },
+    _MAX_RECORDS: 500,
+
+    // ── Ingest data from APP_STATE ──
+    ingest: function(type, data) {
+      if (!this._data[type]) return;
+      const record = Object.assign({ ts: Date.now() }, data);
+      this._data[type].push(record);
+      if (this._data[type].length > this._MAX_RECORDS) this._data[type].shift();
+    },
+
+    // ── Revenue Trend ──
+    _getRevenueTrend: function() {
+      const records = this._data.revenue;
+      if (records.length < 2) return { trend: 'UNKNOWN', change: 0, risk: 'LOW' };
+
+      const now = Date.now();
+      const today   = records.filter(r => now - r.ts < 86400000);
+      const yesterday = records.filter(r => now - r.ts >= 86400000 && now - r.ts < 172800000);
+
+      const todayTotal = today.reduce((s, r) => s + (r.amount || 0), 0);
+      const yestTotal  = yesterday.reduce((s, r) => s + (r.amount || 0), 0);
+
+      const change = yestTotal > 0
+        ? Math.round((todayTotal - yestTotal) / yestTotal * 100)
+        : 0;
+
+      return {
+        todayTotal,
+        yesterdayTotal: yestTotal,
+        change,
+        trend: change > 5 ? 'UP' : change < -5 ? 'DOWN' : 'STABLE',
+        risk: change < -15 ? 'HIGH' : change < -5 ? 'MEDIUM' : 'LOW',
+        insight: change < -15
+          ? `Revenue ↓${Math.abs(change)}% (risk: HIGH) — ควรตรวจสอบด่วน`
+          : change < -5
+          ? `Revenue ↓${Math.abs(change)}% (risk: MEDIUM)`
+          : change > 5
+          ? `Revenue ↑${change}% (risk: LOW) — แนวโน้มดี`
+          : `Revenue คงที่ (risk: LOW)`
+      };
+    },
+
+    // ── Job SLA ──
+    _getJobSLA: function() {
+      const jobs = this._data.jobs;
+      if (jobs.length === 0) return { slaRate: 100, atRisk: 0, breached: 0, risk: 'LOW' };
+
+      const completed = jobs.filter(j => j.completedMs !== undefined);
+      const slaBreached = completed.filter(j => j.completedMs > j.slaMs).length;
+      const slaRate = completed.length
+        ? Math.round((1 - slaBreached / completed.length) * 100)
+        : 100;
+
+      // Jobs at risk (in progress, > 80% of SLA elapsed)
+      const now = Date.now();
+      const inProgress = jobs.filter(j => j.status === 'in_progress');
+      const atRisk = inProgress.filter(j => {
+        const elapsed = now - j.ts;
+        return j.slaMs && elapsed > j.slaMs * 0.8;
+      }).length;
+
+      return {
+        slaRate,
+        atRisk,
+        breached: slaBreached,
+        total: jobs.length,
+        risk: slaRate < 80 ? 'HIGH' : slaRate < 90 ? 'MEDIUM' : 'LOW',
+        insight: slaRate < 80
+          ? `SLA ${slaRate}% (risk: HIGH) — ${atRisk} งานใกล้เกิน SLA`
+          : slaRate < 90
+          ? `SLA ${slaRate}% (risk: MEDIUM) — ${atRisk} งานต้องระวัง`
+          : `SLA ${slaRate}% (risk: LOW) ✅`
+      };
+    },
+
+    // ── Conversion Rate ──
+    _getConversionRate: function() {
+      const sales = this._data.sales;
+      if (sales.length === 0) return { rate: 0, trend: 'UNKNOWN', risk: 'LOW' };
+
+      const total = sales.length;
+      const converted = sales.filter(s => s.converted).length;
+      const rate = total > 0 ? Math.round(converted / total * 100) : 0;
+
+      const recent = sales.filter(s => Date.now() - s.ts < 3600000);
+      const recentRate = recent.length > 0
+        ? Math.round(recent.filter(s => s.converted).length / recent.length * 100)
+        : rate;
+
+      return {
+        rate,
+        recentRate,
+        trend: recentRate > rate + 5 ? 'UP' : recentRate < rate - 5 ? 'DOWN' : 'STABLE',
+        risk: rate < 20 ? 'HIGH' : rate < 40 ? 'MEDIUM' : 'LOW',
+        insight: rate < 20
+          ? `Conversion ${rate}% (risk: HIGH) — ต่ำกว่าเกณฑ์`
+          : `Conversion ${rate}% (risk: ${rate < 40 ? 'MEDIUM' : 'LOW'})`
+      };
+    },
+
+    // ── Stock Risk ──
+    _getStockRisk: function() {
+      const stocks = this._data.stock;
+      if (stocks.length === 0) return { critical: 0, warning: 0, risk: 'LOW' };
+
+      // Group by SKU — take latest
+      const bySkuMap = {};
+      stocks.forEach(s => {
+        if (!bySkuMap[s.sku] || s.ts > bySkuMap[s.sku].ts) bySkuMap[s.sku] = s;
+      });
+      const latest = Object.values(bySkuMap);
+
+      const critical = latest.filter(s => s.qty <= 0 || s.qty < s.minQty).length;
+      const warning  = latest.filter(s => s.qty < s.reorderPoint && s.qty >= s.minQty).length;
+
+      return {
+        critical,
+        warning,
+        total: latest.length,
+        risk: critical > 0 ? 'HIGH' : warning > 2 ? 'MEDIUM' : 'LOW',
+        insight: critical > 0
+          ? `Stock ${critical} รายการหมด/ต่ำกว่าขั้นต่ำ (risk: HIGH)`
+          : warning > 2
+          ? `Stock ${warning} รายการใกล้หมด (risk: MEDIUM)`
+          : `Stock ปกติ (risk: LOW) ✅`
+      };
+    },
+
+    // ── Main output: getBusinessHealth() ──
+    getBusinessHealth: function() {
+      const revenue    = this._getRevenueTrend();
+      const jobSLA     = this._getJobSLA();
+      const conversion = this._getConversionRate();
+      const stockRisk  = this._getStockRisk();
+
+      // Overall business health score
+      let score = 100;
+      if (revenue.risk === 'HIGH')    score -= 25;
+      else if (revenue.risk === 'MEDIUM') score -= 10;
+      if (jobSLA.risk === 'HIGH')     score -= 25;
+      else if (jobSLA.risk === 'MEDIUM') score -= 10;
+      if (conversion.risk === 'HIGH') score -= 20;
+      else if (conversion.risk === 'MEDIUM') score -= 8;
+      if (stockRisk.risk === 'HIGH')  score -= 20;
+      else if (stockRisk.risk === 'MEDIUM') score -= 8;
+
+      score = Math.max(0, score);
+
+      return {
+        timestamp: new Date().toLocaleTimeString('th-TH'),
+        overallScore: score,
+        overallLabel: score >= 85 ? 'HEALTHY' : score >= 65 ? 'ATTENTION' : 'CRITICAL',
+        revenue,
+        jobSLA,
+        conversion,
+        stockRisk,
+        // Executive insights (ไม่ใช่ data แต่เป็น insight)
+        insights: [
+          revenue.insight,
+          jobSLA.insight,
+          conversion.insight,
+          stockRisk.insight
+        ].filter(Boolean),
+        topRisk: [
+          { area: 'Revenue', risk: revenue.risk },
+          { area: 'Job SLA', risk: jobSLA.risk },
+          { area: 'Conversion', risk: conversion.risk },
+          { area: 'Stock', risk: stockRisk.risk }
+        ].sort((a,b) => {
+          const order = { HIGH: 0, MEDIUM: 1, LOW: 2, UNKNOWN: 3 };
+          return order[a.risk] - order[b.risk];
+        })
+      };
+    }
+  };
+
+  // Hook APP_STATE changes to ingest business data
+  if (window.APP_STATE && window.APP_STATE.on) {
+    window.APP_STATE.on('jobs', function(jobs) {
+      if (!Array.isArray(jobs)) return;
+      jobs.forEach(job => {
+        window.BUSINESS_METRICS.ingest('jobs', {
+          id: job.id || job.jobId,
+          status: job.status,
+          slaMs: (job.slaHours || 24) * 3600000,
+          completedMs: job.completedAt ? Date.now() - new Date(job.completedAt).getTime() : undefined
+        });
+      });
+    });
+    window.APP_STATE.on('inventory', function(inv) {
+      if (!Array.isArray(inv)) return;
+      inv.forEach(item => {
+        window.BUSINESS_METRICS.ingest('stock', {
+          sku: item.sku || item.id,
+          qty: item.qty || item.quantity || 0,
+          minQty: item.minQty || item.minStock || 5,
+          reorderPoint: item.reorderPoint || item.minQty * 2 || 10
+        });
+      });
+    });
+  }
+
+  _LOG('Phase 32: Business Metrics Layer initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 33: AI DECISION ENGINE
+  // INPUT: system metrics + business metrics + incidents + patterns
+  // OUTPUT: { decision, confidence, reason, actions }
+  // ═══════════════════════════════════════════════════════════
+
+  window.AI_DECISION_ENGINE = {
+    _incidents: [],    // incident log
+    _decisions: [],    // decision history
+    _MAX_DECISIONS: 50,
+    _cooldowns: {},    // prevent duplicate decisions
+
+    // Decision types
+    DECISIONS: {
+      SCALE_UP:       'SCALE_UP',
+      SCALE_DOWN:     'SCALE_DOWN',
+      ALERT:          'ALERT',
+      OPTIMIZE:       'OPTIMIZE',
+      SAFE_MODE:      'SAFE_MODE',
+      HEAL:           'HEAL',
+      IGNORE:         'IGNORE',
+      PREDICT_WARN:   'PREDICT_WARN'
+    },
+
+    // ── Record incident ──
+    recordIncident: function(type, severity, detail) {
+      const incident = { ts: Date.now(), type, severity, detail };
+      this._incidents.push(incident);
+      if (this._incidents.length > 100) this._incidents.shift();
+      _BRAIN(`Incident: [${severity}] ${type} — ${detail}`);
+      return incident;
+    },
+
+    // ── Core decision logic ──
+    decide: function(systemMetrics, businessMetrics) {
+      systemMetrics  = systemMetrics  || window.GLOBAL_METRICS_ENGINE.getSystemMetrics();
+      businessMetrics = businessMetrics || window.BUSINESS_METRICS.getBusinessHealth();
+
+      const signals = [];
+      let confidence = 0;
+      let decision = this.DECISIONS.IGNORE;
+      const reasons = [];
+      const suggestedActions = [];
+
+      // ── Signal: API health ──
+      const errorRate = parseInt(systemMetrics.api.errorRate60s) || 0;
+      const avgLatency = parseInt(systemMetrics.api.avgLatency) || 0;
+      const healthScore = systemMetrics.healthScore || 100;
+
+      if (healthScore < 50) {
+        signals.push({ type: 'CRITICAL_HEALTH', weight: 40 });
+        reasons.push(`System health ${healthScore}% (critical)`);
+        suggestedActions.push({ action: 'enableSafeMode', priority: 'P0' });
+      } else if (healthScore < 70) {
+        signals.push({ type: 'LOW_HEALTH', weight: 25 });
+        reasons.push(`System health ${healthScore}% (degraded)`);
+        suggestedActions.push({ action: 'reduceRefreshRate', priority: 'P1' });
+      }
+
+      if (errorRate > 50) {
+        signals.push({ type: 'HIGH_ERROR_RATE', weight: 35 });
+        reasons.push(`Error rate ${errorRate}% (>50%)`);
+        suggestedActions.push({ action: 'triggerAlert', priority: 'P0' });
+      } else if (errorRate > 20) {
+        signals.push({ type: 'ELEVATED_ERROR', weight: 15 });
+        reasons.push(`Error rate ${errorRate}% (elevated)`);
+      }
+
+      if (avgLatency > 3000) {
+        signals.push({ type: 'LATENCY_SPIKE', weight: 20 });
+        reasons.push(`Avg latency ${avgLatency}ms (>3s)`);
+        suggestedActions.push({ action: 'disableHeavyFeatures', priority: 'P1' });
+      }
+
+      // ── Signal: Queue pressure ──
+      const queueDepth = systemMetrics.queue.depth || 0;
+      if (queueDepth > 10) {
+        signals.push({ type: 'QUEUE_PRESSURE', weight: 15 });
+        reasons.push(`Queue depth ${queueDepth} (>10)`);
+        suggestedActions.push({ action: 'throttleRequests', priority: 'P1' });
+      }
+
+      // ── Signal: Circuit breakers ──
+      const openCircuits = systemMetrics.circuits.open || 0;
+      if (openCircuits >= 3) {
+        signals.push({ type: 'MULTIPLE_CIRCUITS_OPEN', weight: 30 });
+        reasons.push(`${openCircuits} circuits OPEN`);
+        suggestedActions.push({ action: 'triggerAlert', priority: 'P0' });
+      }
+
+      // ── Signal: Business health ──
+      const bizScore = businessMetrics.overallScore || 100;
+      if (bizScore < 60) {
+        signals.push({ type: 'BUSINESS_CRITICAL', weight: 25 });
+        reasons.push(`Business health ${bizScore}% (critical)`);
+        suggestedActions.push({ action: 'notifyManager', priority: 'P0' });
+      }
+
+      const topRisk = businessMetrics.topRisk?.[0];
+      if (topRisk?.risk === 'HIGH') {
+        signals.push({ type: `BIZ_${topRisk.area.toUpperCase()}_RISK`, weight: 20 });
+        reasons.push(`${topRisk.area} risk: HIGH`);
+      }
+
+      // ── Signal: Predictive (from PREDICTIVE_ENGINE) ──
+      if (window.PREDICTIVE_ENGINE) {
+        const predictions = window.PREDICTIVE_ENGINE.getActiveAlerts();
+        predictions.forEach(p => {
+          if (p.severity === 'HIGH') {
+            signals.push({ type: 'PREDICTION_HIGH', weight: 20 });
+            reasons.push(`Prediction: ${p.message}`);
+            suggestedActions.push({ action: 'predictiveAlert', detail: p.message, priority: 'P1' });
+          }
+        });
+      }
+
+      // ── Calculate total weight → decision ──
+      const totalWeight = signals.reduce((s, sig) => s + sig.weight, 0);
+      confidence = Math.min(0.99, totalWeight / 100);
+
+      if (totalWeight >= 60) {
+        decision = this.DECISIONS.SAFE_MODE;
+      } else if (totalWeight >= 40) {
+        decision = this.DECISIONS.ALERT;
+      } else if (totalWeight >= 25) {
+        decision = this.DECISIONS.OPTIMIZE;
+      } else if (totalWeight >= 10) {
+        decision = this.DECISIONS.HEAL;
+      } else {
+        decision = this.DECISIONS.IGNORE;
+        confidence = Math.max(0.1, confidence);
+      }
+
+      // ── Cooldown check (prevent spam) ──
+      const cooldownKey = decision;
+      const now = Date.now();
+      if (this._cooldowns[cooldownKey] && now - this._cooldowns[cooldownKey] < 120000) {
+        // Same decision within 2 min → downgrade to IGNORE
+        const result = {
+          decision: this.DECISIONS.IGNORE,
+          confidence: 0.1,
+          reason: `Cooldown: same decision (${decision}) within 2 min`,
+          signals: [],
+          suggestedActions: [],
+          timestamp: new Date(now).toLocaleTimeString('th-TH')
+        };
+        return result;
+      }
+      this._cooldowns[cooldownKey] = now;
+
+      const result = {
+        decision,
+        confidence: Math.round(confidence * 100) / 100,
+        reason: reasons.join(' + ') || 'System normal',
+        signals,
+        suggestedActions,
+        systemHealth: healthScore,
+        businessHealth: bizScore,
+        timestamp: new Date(now).toLocaleTimeString('th-TH')
+      };
+
+      // Log decision
+      this._decisions.push(result);
+      if (this._decisions.length > this._MAX_DECISIONS) this._decisions.shift();
+
+      if (decision !== this.DECISIONS.IGNORE) {
+        _BRAIN(`Decision: ${decision} (confidence: ${result.confidence}) — ${result.reason}`);
+      }
+
+      return result;
+    },
+
+    getHistory: function(n) {
+      return this._decisions.slice(-(n || 10));
+    }
+  };
+
+  _LOG('Phase 33: AI Decision Engine initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 34: AUTO ORCHESTRATION
+  // ระบบทำเอง: reduce refresh rate, disable heavy features,
+  //             trigger alert, assign agent
+  // ═══════════════════════════════════════════════════════════
+
+  window.AUTO_ORCHESTRATOR = {
+    _actionLog: [],
+    _MAX_LOG: 100,
+    _executedActions: {},  // cooldown per action
+
+    // ── Execute orchestration action ──
+    execute: function(action, detail, priority) {
+      const now = Date.now();
+      const cooldownKey = action;
+      if (this._executedActions[cooldownKey] && now - this._executedActions[cooldownKey] < 60000) {
+        return false; // cooldown 1 min
+      }
+      this._executedActions[cooldownKey] = now;
+
+      const log = { ts: now, action, detail, priority };
+      this._actionLog.push(log);
+      if (this._actionLog.length > this._MAX_LOG) this._actionLog.shift();
+
+      _LOG(`Orchestrator: ${action} (${priority || 'P2'}) — ${detail || ''}`);
+
+      switch(action) {
+        case 'enableSafeMode':
+          if (window.SAFE_MODE && !window.__SAFE_MODE) {
+            window.SAFE_MODE.enable('orchestrator');
+            _BRAIN('Orchestrator: Safe Mode ENABLED');
+          }
+          break;
+
+        case 'disableSafeMode':
+          if (window.SAFE_MODE && window.__SAFE_MODE) {
+            window.SAFE_MODE.disable();
+            _BRAIN('Orchestrator: Safe Mode DISABLED');
+          }
+          break;
+
+        case 'reduceRefreshRate':
+          // ลด sync interval จาก 60s → 120s
+          if (window.__INTELLIGENT_THROTTLE) {
+            window.__INTELLIGENT_THROTTLE._state.baseDelay = 1000;
+            _LOG('Orchestrator: Refresh rate reduced (1s delay added)');
+          }
+          break;
+
+        case 'restoreRefreshRate':
+          if (window.__INTELLIGENT_THROTTLE) {
+            window.__INTELLIGENT_THROTTLE._state.baseDelay = 0;
+            _LOG('Orchestrator: Refresh rate restored');
+          }
+          break;
+
+        case 'disableHeavyFeatures':
+          window.__HEAVY_FEATURES_DISABLED = true;
+          _LOG('Orchestrator: Heavy features disabled');
+          break;
+
+        case 'enableHeavyFeatures':
+          window.__HEAVY_FEATURES_DISABLED = false;
+          _LOG('Orchestrator: Heavy features enabled');
+          break;
+
+        case 'triggerAlert':
+          this._triggerAlert(detail || 'System alert from Auto Orchestrator');
+          break;
+
+        case 'throttleRequests':
+          if (window.__RUNTIME_GUARD) {
+            window.__RUNTIME_GUARD._RATE_LIMIT = 15;
+            _LOG('Orchestrator: Rate limit reduced to 15/min');
+          }
+          break;
+
+        case 'restoreThrottle':
+          if (window.__RUNTIME_GUARD) {
+            window.__RUNTIME_GUARD._RATE_LIMIT = 30;
+            _LOG('Orchestrator: Rate limit restored to 30/min');
+          }
+          break;
+
+        case 'notifyManager':
+          this._notifyManager(detail);
+          break;
+
+        case 'assignAgent':
+          if (window.SYSTEM_BRAIN) {
+            window.SYSTEM_BRAIN.route({ type: 'INCIDENT', detail, priority });
+          }
+          break;
+
+        case 'predictiveAlert':
+          this._triggerAlert(`[PREDICTIVE] ${detail}`);
+          break;
+
+        default:
+          _WARN(`Orchestrator: unknown action ${action}`);
+      }
+      return true;
+    },
+
+    _triggerAlert: function(message) {
+      _BRAIN(`ALERT: ${message}`);
+      // Show in-app notification
+      try {
+        const alertEl = document.createElement('div');
+        alertEl.style.cssText = `
+          position:fixed; top:20px; right:20px; z-index:99999;
+          background:#dc2626; color:white; padding:12px 20px;
+          border-radius:8px; font-weight:bold; font-size:14px;
+          box-shadow:0 4px 12px rgba(0,0,0,0.3); max-width:350px;
+          animation: slideIn 0.3s ease;
+        `;
+        alertEl.textContent = `⚠️ ${message}`;
+        document.body.appendChild(alertEl);
+        setTimeout(() => alertEl.remove(), 8000);
+      } catch(e) {}
+    },
+
+    _notifyManager: function(detail) {
+      _BRAIN(`Manager notification: ${detail}`);
+      // Log to console with high visibility
+      console.group('%c🚨 MANAGER NOTIFICATION', 'color:red;font-size:16px;font-weight:bold');
+      console.log(detail || 'System requires attention');
+      console.log('Time:', new Date().toLocaleString('th-TH'));
+      console.groupEnd();
+    },
+
+    // ── Auto-run based on AI decision ──
+    runFromDecision: function(decisionResult) {
+      if (!decisionResult || decisionResult.decision === 'IGNORE') return;
+
+      const { decision, suggestedActions } = decisionResult;
+
+      // Execute suggested actions
+      if (suggestedActions && suggestedActions.length > 0) {
+        suggestedActions.forEach(sa => {
+          this.execute(sa.action, sa.detail, sa.priority);
+        });
+      }
+
+      // Decision-level actions
+      switch(decision) {
+        case 'SAFE_MODE':
+          this.execute('enableSafeMode', `AI Decision: ${decisionResult.reason}`, 'P0');
+          this.execute('triggerAlert', `SAFE MODE: ${decisionResult.reason}`, 'P0');
+          break;
+        case 'ALERT':
+          this.execute('triggerAlert', decisionResult.reason, 'P0');
+          break;
+        case 'OPTIMIZE':
+          this.execute('reduceRefreshRate', decisionResult.reason, 'P1');
+          this.execute('disableHeavyFeatures', decisionResult.reason, 'P1');
+          break;
+        case 'HEAL':
+          this.execute('restoreRefreshRate', 'Recovery', 'P2');
+          this.execute('enableHeavyFeatures', 'Recovery', 'P2');
+          break;
+      }
+    },
+
+    getLog: function(n) {
+      return this._actionLog.slice(-(n || 20));
+    }
+  };
+
+  _LOG('Phase 34: Auto Orchestration initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 35: PREDICTIVE ANALYSIS
+  // คาดการณ์: SLA จะตก, stock จะหมด, latency จะ spike
+  // ═══════════════════════════════════════════════════════════
+
+  window.PREDICTIVE_ENGINE = {
+    _predictions: [],
+    _MAX_PREDICTIONS: 50,
+    _alerts: [],
+
+    // ── Linear regression (simple) ──
+    _linearTrend: function(values) {
+      if (values.length < 3) return { slope: 0, intercept: values[0] || 0, r2: 0 };
+      const n = values.length;
+      const xs = values.map((_, i) => i);
+      const sumX  = xs.reduce((a,b) => a+b, 0);
+      const sumY  = values.reduce((a,b) => a+b, 0);
+      const sumXY = xs.reduce((s, x, i) => s + x * values[i], 0);
+      const sumX2 = xs.reduce((s, x) => s + x*x, 0);
+      const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+      const intercept = (sumY - slope * sumX) / n;
+      return { slope, intercept, r2: Math.min(1, Math.abs(slope) / (sumY/n || 1)) };
+    },
+
+    // ── Predict latency spike ──
+    _predictLatency: function() {
+      const history = window.GLOBAL_METRICS_ENGINE._history;
+      if (history.length < 10) return null;
+
+      const recent = history.slice(-20);
+      const latencies = recent.map(p => p.elapsed || 0);
+      const trend = this._linearTrend(latencies);
+
+      if (trend.slope > 50) {
+        const projectedIn2h = trend.intercept + trend.slope * (120 * 60);
+        if (projectedIn2h > 3000) {
+          return {
+            type: 'LATENCY_SPIKE',
+            severity: projectedIn2h > 5000 ? 'HIGH' : 'MEDIUM',
+            message: `Latency จะ spike ถึง ~${Math.round(projectedIn2h)}ms ใน ~2 ชั่วโมง`,
+            projectedValue: Math.round(projectedIn2h),
+            timeframe: '2h',
+            confidence: Math.min(0.9, trend.r2)
+          };
+        }
+      }
+      return null;
+    },
+
+    // ── Predict SLA breach ──
+    _predictSLA: function() {
+      const jobs = window.BUSINESS_METRICS._data.jobs;
+      if (jobs.length < 5) return null;
+
+      const recent = jobs.slice(-20);
+      const slaRates = [];
+      for (let i = 0; i < recent.length - 2; i += 3) {
+        const chunk = recent.slice(i, i+3);
+        const completed = chunk.filter(j => j.completedMs !== undefined);
+        if (completed.length > 0) {
+          const rate = completed.filter(j => j.completedMs <= j.slaMs).length / completed.length;
+          slaRates.push(rate * 100);
+        }
+      }
+
+      if (slaRates.length < 2) return null;
+      const trend = this._linearTrend(slaRates);
+
+      if (trend.slope < -2) {
+        const projectedIn2h = Math.max(0, slaRates[slaRates.length-1] + trend.slope * 4);
+        if (projectedIn2h < 85) {
+          return {
+            type: 'SLA_BREACH',
+            severity: projectedIn2h < 70 ? 'HIGH' : 'MEDIUM',
+            message: `SLA จะตกเหลือ ~${Math.round(projectedIn2h)}% ใน ~2 ชั่วโมง`,
+            projectedValue: Math.round(projectedIn2h),
+            timeframe: '2h',
+            confidence: Math.min(0.85, Math.abs(trend.slope) / 10)
+          };
+        }
+      }
+      return null;
+    },
+
+    // ── Predict stock out ──
+    _predictStockOut: function() {
+      const stocks = window.BUSINESS_METRICS._data.stock;
+      if (stocks.length < 3) return null;
+
+      const bySkuMap = {};
+      stocks.forEach(s => {
+        if (!bySkuMap[s.sku]) bySkuMap[s.sku] = [];
+        bySkuMap[s.sku].push(s);
+      });
+
+      const predictions = [];
+      Object.entries(bySkuMap).forEach(([sku, records]) => {
+        if (records.length < 2) return;
+        const qtys = records.map(r => r.qty);
+        const trend = this._linearTrend(qtys);
+
+        if (trend.slope < -1) {
+          const currentQty = qtys[qtys.length - 1];
+          const hoursToZero = currentQty / Math.abs(trend.slope);
+
+          if (hoursToZero < 24) {
+            predictions.push({
+              type: 'STOCK_OUT',
+              severity: hoursToZero < 8 ? 'HIGH' : 'MEDIUM',
+              message: `Stock [${sku}] จะหมดใน ~${Math.round(hoursToZero)} ชั่วโมง`,
+              sku,
+              currentQty,
+              projectedValue: 0,
+              timeframe: `${Math.round(hoursToZero)}h`,
+              confidence: Math.min(0.9, Math.abs(trend.slope) / 5)
+            });
+          }
+        }
+      });
+
+      return predictions.length > 0 ? predictions[0] : null;
+    },
+
+    // ── Run all predictions ──
+    analyze: function() {
+      const results = [];
+      const now = Date.now();
+
+      const latencyPred = this._predictLatency();
+      if (latencyPred) results.push(latencyPred);
+
+      const slaPred = this._predictSLA();
+      if (slaPred) results.push(slaPred);
+
+      const stockPred = this._predictStockOut();
+      if (stockPred) results.push(stockPred);
+
+      // Store predictions
+      results.forEach(p => {
+        p.ts = now;
+        this._predictions.push(p);
+        if (this._predictions.length > this._MAX_PREDICTIONS) this._predictions.shift();
+
+        if (p.severity === 'HIGH') {
+          this._alerts.push(p);
+          if (this._alerts.length > 20) this._alerts.shift();
+          _INSIGHT(`Prediction [HIGH]: ${p.message}`);
+        }
+      });
+
+      return results;
+    },
+
+    getActiveAlerts: function() {
+      const now = Date.now();
+      return this._alerts.filter(a => now - a.ts < 3600000); // last 1h
+    },
+
+    getLatest: function(n) {
+      return this._predictions.slice(-(n || 5));
+    }
+  };
+
+  _LOG('Phase 35: Predictive Analysis initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 36: AGENT COORDINATION BRAIN
+  // รวม Manus, Hermes, OpenClaw → SYSTEM_BRAIN.route(task)
+  // ═══════════════════════════════════════════════════════════
+
+  window.SYSTEM_BRAIN = {
+    _version: _V1000_VERSION,
+    _agents: {
+      Manus: {
+        name: 'Manus',
+        role: 'General AI Assistant',
+        capabilities: ['analysis', 'report', 'decision', 'code'],
+        status: 'READY',
+        accuracy: 0.92,
+        taskCount: 0
+      },
+      Hermes: {
+        name: 'Hermes',
+        role: 'Communication & Alert Agent',
+        capabilities: ['alert', 'notify', 'message', 'escalate'],
+        status: 'READY',
+        accuracy: 0.95,
+        taskCount: 0
+      },
+      OpenClaw: {
+        name: 'OpenClaw',
+        role: 'Vision & QC Agent',
+        capabilities: ['vision', 'qc', 'image', 'scan'],
+        status: 'READY',
+        accuracy: 0.88,
+        taskCount: 0
+      }
+    },
+    _taskLog: [],
+    _MAX_TASKS: 100,
+    _memory: [],  // shared context across agents
+    _MAX_MEMORY: 200,
+
+    // ── Shared context ──
+    getSystemContext: function() {
+      return {
+        systemMetrics: window.GLOBAL_METRICS_ENGINE.getSystemMetrics(),
+        businessHealth: window.BUSINESS_METRICS.getBusinessHealth(),
+        predictions: window.PREDICTIVE_ENGINE.getActiveAlerts(),
+        recentDecisions: window.AI_DECISION_ENGINE.getHistory(3),
+        recoveryMode: window.__RECOVERY_MODE ? window.__RECOVERY_MODE.level : 'NORMAL',
+        timestamp: new Date().toLocaleTimeString('th-TH')
+      };
+    },
+
+    // ── Route task to best agent ──
+    route: function(task) {
+      const { type, detail, priority, requiredCapability } = task;
+      const cap = requiredCapability || this._inferCapability(type);
+
+      // Find best agent
+      const candidates = Object.values(this._agents)
+        .filter(a => a.status === 'READY' && a.capabilities.includes(cap))
+        .sort((a, b) => b.accuracy - a.accuracy);
+
+      const agent = candidates[0];
+      if (!agent) {
+        _WARN(`SYSTEM_BRAIN: no agent available for capability [${cap}]`);
+        return { success: false, error: 'NO_AGENT', task };
+      }
+
+      agent.taskCount++;
+      const taskRecord = {
+        ts: Date.now(),
+        type, detail, priority,
+        capability: cap,
+        assignedTo: agent.name,
+        status: 'ASSIGNED'
+      };
+
+      this._taskLog.push(taskRecord);
+      if (this._taskLog.length > this._MAX_TASKS) this._taskLog.shift();
+
+      // Store in shared memory
+      this._memory.push({
+        ts: Date.now(),
+        agent: agent.name,
+        type,
+        detail: detail ? String(detail).substring(0, 100) : ''
+      });
+      if (this._memory.length > this._MAX_MEMORY) this._memory.shift();
+
+      _BRAIN(`SYSTEM_BRAIN: [${type}] → ${agent.name} (${cap})`);
+
+      return {
+        success: true,
+        agent: agent.name,
+        capability: cap,
+        task: taskRecord,
+        context: this.getSystemContext()
+      };
+    },
+
+    _inferCapability: function(type) {
+      const map = {
+        INCIDENT: 'analysis',
+        ALERT: 'alert',
+        NOTIFY: 'notify',
+        VISION: 'vision',
+        QC: 'qc',
+        REPORT: 'report',
+        DECISION: 'decision',
+        ESCALATE: 'escalate',
+        CODE: 'code',
+        MESSAGE: 'message'
+      };
+      return map[type] || 'analysis';
+    },
+
+    // ── Agent collaboration ──
+    collaborate: function(task, agentNames) {
+      const results = {};
+      agentNames.forEach(name => {
+        const agent = this._agents[name];
+        if (!agent || agent.status !== 'READY') {
+          results[name] = { success: false, error: 'NOT_READY' };
+          return;
+        }
+        agent.taskCount++;
+        results[name] = { success: true, agent: name, task };
+        _BRAIN(`SYSTEM_BRAIN: collaborate [${task.type}] → ${name}`);
+      });
+      return results;
+    },
+
+    // ── Agent scoring ──
+    updateAccuracy: function(agentName, correct) {
+      const agent = this._agents[agentName];
+      if (!agent) return;
+      // Exponential moving average
+      agent.accuracy = Math.round((agent.accuracy * 0.9 + (correct ? 1 : 0) * 0.1) * 100) / 100;
+    },
+
+    status: function() {
+      return {
+        agents: Object.values(this._agents).map(a => ({
+          name: a.name, role: a.role, status: a.status,
+          accuracy: a.accuracy, taskCount: a.taskCount
+        })),
+        totalTasks: this._taskLog.length,
+        memorySize: this._memory.length,
+        recentTasks: this._taskLog.slice(-5)
+      };
+    }
+  };
+
+  _LOG('Phase 36: Agent Coordination Brain initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 37: EXECUTIVE MODE DASHBOARD
+  // ไม่ใช่ data แต่เป็น "insight"
+  // ❌ "Revenue: 50,000"
+  // ✔ "Revenue ↓12% (risk: HIGH)"
+  // ═══════════════════════════════════════════════════════════
+
+  window.EXECUTIVE_DASHBOARD = {
+    _renderInterval: null,
+    _container: null,
+
+    // ── Format insight (not data) ──
+    formatInsight: function(value, change, unit, riskLevel) {
+      const arrow = change > 0 ? '↑' : change < 0 ? '↓' : '→';
+      const riskColor = riskLevel === 'HIGH' ? '#dc2626' : riskLevel === 'MEDIUM' ? '#d97706' : '#16a34a';
+      const changeAbs = Math.abs(change);
+      return {
+        text: `${arrow}${changeAbs}${unit || '%'} (risk: ${riskLevel})`,
+        color: riskColor,
+        arrow,
+        change: changeAbs,
+        risk: riskLevel
+      };
+    },
+
+    // ── Get executive summary ──
+    getSummary: function() {
+      const sys  = window.GLOBAL_METRICS_ENGINE.getSystemMetrics();
+      const biz  = window.BUSINESS_METRICS.getBusinessHealth();
+      const preds = window.PREDICTIVE_ENGINE.analyze();
+      const decision = window.AI_DECISION_ENGINE.decide(sys, biz);
+
+      // Auto orchestrate
+      if (decision.decision !== 'IGNORE') {
+        window.AUTO_ORCHESTRATOR.runFromDecision(decision);
+      }
+
+      return {
+        timestamp: new Date().toLocaleString('th-TH'),
+        // System status (insight, not raw data)
+        system: {
+          status: sys.healthLabel,
+          insight: sys.healthScore >= 90
+            ? `ระบบปกติ (${sys.healthScore}%) ✅`
+            : sys.healthScore >= 70
+            ? `ระบบเริ่มมีปัญหา (${sys.healthScore}%) ⚠️`
+            : `ระบบวิกฤต (${sys.healthScore}%) 🚨`,
+          latency: parseInt(sys.api.avgLatency) > 1000
+            ? `API ช้า ${sys.api.avgLatency} ⚠️`
+            : `API ปกติ ${sys.api.avgLatency} ✅`,
+          errors: parseInt(sys.api.errorRate60s) > 10
+            ? `Error ${sys.api.errorRate60s} ⚠️`
+            : `Error ${sys.api.errorRate60s} ✅`
+        },
+        // Business insights (not raw numbers)
+        business: {
+          revenue: biz.revenue.insight,
+          jobSLA: biz.jobSLA.insight,
+          conversion: biz.conversion.insight,
+          stock: biz.stockRisk.insight,
+          overallRisk: biz.topRisk[0]?.risk || 'LOW'
+        },
+        // AI Decision
+        aiDecision: {
+          action: decision.decision,
+          confidence: `${Math.round(decision.confidence * 100)}%`,
+          reason: decision.reason,
+          isActionRequired: decision.decision !== 'IGNORE'
+        },
+        // Predictions
+        predictions: preds.map(p => ({
+          type: p.type,
+          message: p.message,
+          severity: p.severity,
+          timeframe: p.timeframe
+        })),
+        // Agent status
+        agents: window.SYSTEM_BRAIN.status().agents.map(a => `${a.name}: ${a.status}`),
+        // Recovery mode
+        recoveryMode: sys.system.recoveryMode
+      };
+    },
+
+    // ── Render executive panel in DOM ──
+    render: function() {
+      const summary = this.getSummary();
+      let container = document.getElementById('__v1000_executive_panel');
+
+      if (!container) {
+        container = document.createElement('div');
+        container.id = '__v1000_executive_panel';
+        container.style.cssText = `
+          position: fixed; bottom: 20px; left: 20px; z-index: 9998;
+          background: rgba(15,23,42,0.95); color: white;
+          border-radius: 12px; padding: 16px 20px; min-width: 340px;
+          font-family: 'Sarabun', sans-serif; font-size: 13px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+          border: 1px solid rgba(124,58,237,0.4);
+          backdrop-filter: blur(8px);
+          max-height: 80vh; overflow-y: auto;
+        `;
+        document.body.appendChild(container);
+        this._container = container;
+      }
+
+      const riskColor = summary.business.overallRisk === 'HIGH' ? '#dc2626'
+        : summary.business.overallRisk === 'MEDIUM' ? '#d97706' : '#16a34a';
+
+      const predHtml = summary.predictions.length > 0
+        ? summary.predictions.map(p =>
+            `<div style="color:${p.severity==='HIGH'?'#f87171':'#fbbf24'};margin-top:4px">
+              ⚡ ${p.message}
+            </div>`).join('')
+        : '<div style="color:#6ee7b7">ไม่มี prediction alerts ✅</div>';
+
+      container.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <span style="font-weight:bold;color:#a78bfa;font-size:14px">
+            🧠 SYSTEM BRAIN v${_V1000_VERSION}
+          </span>
+          <span style="font-size:11px;color:#94a3b8">${summary.timestamp}</span>
+          <button onclick="document.getElementById('__v1000_executive_panel').style.display='none'"
+            style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:16px">✕</button>
+        </div>
+        <div style="border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:10px;margin-bottom:10px">
+          <div style="font-size:12px;color:#94a3b8;margin-bottom:4px">SYSTEM STATUS</div>
+          <div style="color:${summary.system.status==='HEALTHY'?'#6ee7b7':summary.system.status==='DEGRADED'?'#fbbf24':'#f87171'}">
+            ${summary.system.insight}
+          </div>
+          <div style="color:#94a3b8;font-size:12px;margin-top:2px">
+            ${summary.system.latency} &nbsp;|&nbsp; ${summary.system.errors}
+          </div>
+        </div>
+        <div style="border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:10px;margin-bottom:10px">
+          <div style="font-size:12px;color:#94a3b8;margin-bottom:4px">BUSINESS INSIGHTS</div>
+          <div style="color:#e2e8f0">${summary.business.revenue}</div>
+          <div style="color:#e2e8f0">${summary.business.jobSLA}</div>
+          <div style="color:#e2e8f0">${summary.business.conversion}</div>
+          <div style="color:#e2e8f0">${summary.business.stock}</div>
+        </div>
+        <div style="border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:10px;margin-bottom:10px">
+          <div style="font-size:12px;color:#94a3b8;margin-bottom:4px">AI DECISION</div>
+          <div style="color:${summary.aiDecision.isActionRequired?'#f87171':'#6ee7b7'};font-weight:bold">
+            ${summary.aiDecision.action} (${summary.aiDecision.confidence})
+          </div>
+          <div style="color:#94a3b8;font-size:12px">${summary.aiDecision.reason}</div>
+        </div>
+        <div style="border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:10px;margin-bottom:10px">
+          <div style="font-size:12px;color:#94a3b8;margin-bottom:4px">PREDICTIONS</div>
+          ${predHtml}
+        </div>
+        <div>
+          <div style="font-size:12px;color:#94a3b8;margin-bottom:4px">AGENTS</div>
+          <div style="color:#a78bfa;font-size:12px">${summary.agents.join(' &nbsp;|&nbsp; ')}</div>
+        </div>
+        <div style="margin-top:10px;text-align:center">
+          <button onclick="window.V1000.report()" style="
+            background:#7c3aed;color:white;border:none;padding:6px 14px;
+            border-radius:6px;cursor:pointer;font-size:12px;margin-right:6px">
+            Full Report
+          </button>
+          <button onclick="window.EXECUTIVE_DASHBOARD.hide()" style="
+            background:#374151;color:white;border:none;padding:6px 14px;
+            border-radius:6px;cursor:pointer;font-size:12px">
+            Hide
+          </button>
+        </div>
+      `;
+    },
+
+    show: function() {
+      const el = document.getElementById('__v1000_executive_panel');
+      if (el) el.style.display = 'block';
+      else this.render();
+    },
+
+    hide: function() {
+      const el = document.getElementById('__v1000_executive_panel');
+      if (el) el.style.display = 'none';
+    },
+
+    // ── Auto-refresh every 30s ──
+    startAutoRefresh: function(intervalMs) {
+      intervalMs = intervalMs || 30000;
+      if (this._renderInterval) clearInterval(this._renderInterval);
+      this._renderInterval = setInterval(() => {
+        if (document.getElementById('__v1000_executive_panel')?.style.display !== 'none') {
+          this.render();
+        }
+      }, intervalMs);
+      _LOG(`Executive Dashboard: auto-refresh every ${intervalMs/1000}s`);
+    },
+
+    stopAutoRefresh: function() {
+      if (this._renderInterval) {
+        clearInterval(this._renderInterval);
+        this._renderInterval = null;
+      }
+    }
+  };
+
+  _LOG('Phase 37: Executive Mode Dashboard initialized ✅');
+
+  // ═══════════════════════════════════════════════════════════
+  // AUTONOMOUS LOOP — ทำงานอัตโนมัติทุก 60s
+  // ═══════════════════════════════════════════════════════════
+
+  window.__AUTONOMOUS_LOOP = {
+    _interval: null,
+    _cycleCount: 0,
+
+    start: function(intervalMs) {
+      intervalMs = intervalMs || 60000;
+      if (this._interval) clearInterval(this._interval);
+
+      this._interval = setInterval(() => {
+        this._cycleCount++;
+        try {
+          // 1. Collect metrics
+          const sys = window.GLOBAL_METRICS_ENGINE.getSystemMetrics();
+          const biz = window.BUSINESS_METRICS.getBusinessHealth();
+
+          // 2. Predict
+          const preds = window.PREDICTIVE_ENGINE.analyze();
+
+          // 3. Decide
+          const decision = window.AI_DECISION_ENGINE.decide(sys, biz);
+
+          // 4. Orchestrate
+          if (decision.decision !== 'IGNORE') {
+            window.AUTO_ORCHESTRATOR.runFromDecision(decision);
+          }
+
+          // 5. Route to agents if needed
+          if (decision.decision === 'ALERT' || decision.decision === 'SAFE_MODE') {
+            window.SYSTEM_BRAIN.route({
+              type: 'INCIDENT',
+              detail: decision.reason,
+              priority: 'P0'
+            });
+          }
+
+          // 6. Update executive dashboard
+          if (document.getElementById('__v1000_executive_panel')?.style.display !== 'none') {
+            window.EXECUTIVE_DASHBOARD.render();
+          }
+
+          if (this._cycleCount % 5 === 0) {
+            _LOG(`Autonomous cycle #${this._cycleCount}: ${decision.decision} (health: ${sys.healthScore}%)`);
+          }
+        } catch(e) {
+          _WARN(`Autonomous loop error: ${e.message}`);
+        }
+      }, intervalMs);
+
+      _LOG(`Autonomous Loop started (every ${intervalMs/1000}s)`);
+    },
+
+    stop: function() {
+      if (this._interval) {
+        clearInterval(this._interval);
+        this._interval = null;
+        _LOG('Autonomous Loop stopped');
+      }
+    }
+  };
+
+  // Start autonomous loop after 5s (let page load first)
+  setTimeout(() => {
+    window.__AUTONOMOUS_LOOP.start(60000);
+    window.EXECUTIVE_DASHBOARD.startAutoRefresh(30000);
+  }, 5000);
+
+  // ═══════════════════════════════════════════════════════════
+  // V1000 DEBUG TOOLS
+  // ═══════════════════════════════════════════════════════════
+
+  window.V1000 = {
+    version: _V1000_VERSION,
+
+    report: function() {
+      const summary = window.EXECUTIVE_DASHBOARD.getSummary();
+
+      console.group('%c[V1000] Intelligent Autonomous System Report', 'color:#7c3aed;font-size:14px;font-weight:bold');
+
+      console.group('1. System Observability');
+      const sys = window.GLOBAL_METRICS_ENGINE.getSystemMetrics();
+      console.log(`Health: ${sys.healthScore}% (${sys.healthLabel})`);
+      console.log(`Latency: ${sys.api.avgLatency} avg, ${sys.api.p95Latency} p95`);
+      console.log(`Error Rate: ${sys.api.errorRate60s} (60s), ${sys.api.errorRate5m} (5m)`);
+      console.log(`Queue Depth: ${sys.queue.depth}`);
+      console.log(`Open Circuits: ${sys.circuits.open}`);
+      console.groupEnd();
+
+      console.group('2. Business Insights');
+      console.log(summary.business.revenue);
+      console.log(summary.business.jobSLA);
+      console.log(summary.business.conversion);
+      console.log(summary.business.stock);
+      console.groupEnd();
+
+      console.group('3. AI Decision');
+      console.log(`Decision: ${summary.aiDecision.action} (${summary.aiDecision.confidence})`);
+      console.log(`Reason: ${summary.aiDecision.reason}`);
+      console.groupEnd();
+
+      console.group('4. Predictions');
+      if (summary.predictions.length === 0) {
+        console.log('No active predictions ✅');
+      } else {
+        summary.predictions.forEach(p => {
+          console.log(`[${p.severity}] ${p.message} (${p.timeframe})`);
+        });
+      }
+      console.groupEnd();
+
+      console.group('5. Agent Brain');
+      const brainStatus = window.SYSTEM_BRAIN.status();
+      console.table(brainStatus.agents);
+      console.log(`Total tasks routed: ${brainStatus.totalTasks}`);
+      console.groupEnd();
+
+      console.group('6. Autonomous Loop');
+      console.log(`Cycle count: ${window.__AUTONOMOUS_LOOP._cycleCount}`);
+      console.log(`Running: ${!!window.__AUTONOMOUS_LOOP._interval}`);
+      console.groupEnd();
+
+      // Pass/Fail
+      const checks = {
+        'GLOBAL_METRICS_ENGINE defined': !!window.GLOBAL_METRICS_ENGINE,
+        'BUSINESS_METRICS defined': !!window.BUSINESS_METRICS,
+        'AI_DECISION_ENGINE defined': !!window.AI_DECISION_ENGINE,
+        'AUTO_ORCHESTRATOR defined': !!window.AUTO_ORCHESTRATOR,
+        'PREDICTIVE_ENGINE defined': !!window.PREDICTIVE_ENGINE,
+        'SYSTEM_BRAIN defined': !!window.SYSTEM_BRAIN,
+        'EXECUTIVE_DASHBOARD defined': !!window.EXECUTIVE_DASHBOARD,
+        'Autonomous Loop running': !!window.__AUTONOMOUS_LOOP._interval,
+        'API_CONTROLLER v10.0.0': window.API_CONTROLLER?._version === _V1000_VERSION,
+        'System health >= 50': sys.healthScore >= 50,
+      };
+
+      console.group('Pass/Fail Summary');
+      let pass = 0, fail = 0;
+      Object.entries(checks).forEach(([name, result]) => {
+        if (result) { console.log(`✅ ${name}`); pass++; }
+        else { console.warn(`⚠️ ${name}`); fail++; }
+      });
+      console.log(`\nResult: ${pass}/${pass+fail}`);
+      if (fail === 0) {
+        console.log('%c🎉 INTELLIGENT AUTONOMOUS SYSTEM: FULLY OPERATIONAL', 'color:#7c3aed;font-size:16px;font-weight:bold');
+      }
+      console.groupEnd();
+      console.groupEnd();
+
+      return summary;
+    },
+
+    // Show executive dashboard
+    showDashboard: function() {
+      window.EXECUTIVE_DASHBOARD.render();
+      window.EXECUTIVE_DASHBOARD.show();
+    },
+
+    // Simulate business data for testing
+    injectTestData: function() {
+      // Revenue
+      for (let i = 0; i < 10; i++) {
+        window.BUSINESS_METRICS.ingest('revenue', {
+          amount: 5000 + Math.random() * 2000 - (i * 100),
+          period: 'daily'
+        });
+      }
+      // Jobs
+      for (let i = 0; i < 10; i++) {
+        window.BUSINESS_METRICS.ingest('jobs', {
+          id: `J${i}`, status: i < 7 ? 'completed' : 'in_progress',
+          slaMs: 86400000, completedMs: i < 7 ? 70000000 + i * 5000000 : undefined
+        });
+      }
+      // Stock
+      ['SKU001', 'SKU002', 'SKU003'].forEach((sku, i) => {
+        window.BUSINESS_METRICS.ingest('stock', {
+          sku, qty: 10 - i * 4, minQty: 5, reorderPoint: 8
+        });
+      });
+      _LOG('Test data injected ✅');
+    },
+
+    // Force autonomous cycle
+    runCycle: function() {
+      const sys = window.GLOBAL_METRICS_ENGINE.getSystemMetrics();
+      const biz = window.BUSINESS_METRICS.getBusinessHealth();
+      const decision = window.AI_DECISION_ENGINE.decide(sys, biz);
+      const preds = window.PREDICTIVE_ENGINE.analyze();
+      _BRAIN(`Manual cycle: ${decision.decision} (${Math.round(decision.confidence*100)}%)`);
+      return { decision, predictions: preds };
+    },
+
+    metrics: window.GLOBAL_METRICS_ENGINE,
+    business: window.BUSINESS_METRICS,
+    brain: window.SYSTEM_BRAIN,
+    orchestrator: window.AUTO_ORCHESTRATOR,
+    predictor: window.PREDICTIVE_ENGINE,
+    executive: window.EXECUTIVE_DASHBOARD,
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // MARK VERSION
+  // ═══════════════════════════════════════════════════════════
+
+  window.__COMPHONE_VERSION = _V1000_VERSION;
+  window.__COMPHONE_BUILD   = _V1000_BUILD;
+
+  _LOG('=== v10.0.0 Intelligent Autonomous System LOADED ===');
+  _LOG('Commands: V1000.report() | V1000.showDashboard() | V1000.runCycle()');
+  _LOG('         V1000.injectTestData() | SYSTEM_BRAIN.route({type,detail})');
+  _LOG('         EXECUTIVE_DASHBOARD.getSummary() | AI_DECISION_ENGINE.decide()');
+
+})();
+
+</script>
 </body>
 </html>
