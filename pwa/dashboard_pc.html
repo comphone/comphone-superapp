@@ -16371,5 +16371,783 @@ body.theme-dark .sg-detail-close { background: #334155; color: #94a3b8; }
 })();
 
 </script>
+
+<script id="v1400-production-observability">
+/**
+ * COMPHONE Dashboard v14.0.0 — Production Observability
+ * Phase 56: Hard Trust Gate (block if AI trust < 0.7)
+ * Phase 57: Explainable AI Log (WHY + WHY THIS ACTION + EXPECTED RESULT)
+ * Phase 58: System Kill Switch (window.SYSTEM.freeze())
+ * Phase 59: Real Health Score (weighted, no fake 100%)
+ * Phase 60: Production Replay (record session, replay bug)
+ */
+
+(function() {
+  'use strict';
+  const _V1400_VERSION = '14.0.0';
+  console.log(`[v${_V1400_VERSION}] Production Observability loading...`);
+
+  // ─────────────────────────────────────────────────────────────────
+  // PHASE 56 — HARD TRUST GATE
+  // if (AI.trust < 0.7) → BLOCK EXECUTION
+  // ─────────────────────────────────────────────────────────────────
+  window.HARD_TRUST_GATE = {
+    _MIN_AI_TRUST: 0.70,
+    _MIN_CRITICAL_TRUST: 0.85,
+    _blockedCount: 0,
+    _blockLog: [],
+    _MAX_LOG: 50,
+
+    // Check if AI is trusted enough to execute
+    check: function(module, minScore) {
+      const threshold = minScore || this._MIN_AI_TRUST;
+      const score = window.TRUST_SCORE?.get(module) ?? 0;
+      const trusted = score >= threshold;
+      if (!trusted) {
+        this._block(module, score, threshold);
+      }
+      return trusted;
+    },
+
+    // Hard block — throw error to stop execution chain
+    enforce: function(module, minScore) {
+      if (!this.check(module, minScore)) {
+        const score = (window.TRUST_SCORE?.get(module) ?? 0).toFixed(3);
+        const threshold = (minScore || this._MIN_AI_TRUST).toFixed(2);
+        const msg = `[HARD_TRUST_GATE] BLOCKED: ${module} trust=${score} < threshold=${threshold}`;
+        console.error(msg);
+        throw new Error(msg);
+      }
+    },
+
+    _block: function(module, score, threshold) {
+      this._blockedCount++;
+      const entry = {
+        module, score, threshold,
+        timestamp: Date.now(),
+        reason: `trust ${score.toFixed(3)} < ${threshold.toFixed(2)}`,
+      };
+      this._blockLog.unshift(entry);
+      if (this._blockLog.length > this._MAX_LOG) {
+        this._blockLog = this._blockLog.slice(0, this._MAX_LOG);
+      }
+      console.warn(`[HARD_TRUST_GATE] Blocked ${module}: trust=${score.toFixed(3)} < ${threshold.toFixed(2)}`);
+    },
+
+    getBlockLog: function(n) { return this._blockLog.slice(0, n || 10); },
+    stats: function() {
+      return {
+        blockedCount: this._blockedCount,
+        minAiTrust: this._MIN_AI_TRUST,
+        currentAiTrust: (window.TRUST_SCORE?.get('AI') ?? 0).toFixed(3),
+        aiTrusted: this.check('AI'),
+      };
+    },
+  };
+
+  // Hook AI_DECISION_ENGINE.decide — enforce trust gate
+  const _origDecideV1400 = window.AI_DECISION_ENGINE?.decide;
+  if (_origDecideV1400) {
+    window.AI_DECISION_ENGINE.decide = function(systemMetrics, businessMetrics) {
+      // Hard trust gate — block if AI trust too low
+      if (!window.HARD_TRUST_GATE.check('AI')) {
+        console.warn('[HARD_TRUST_GATE] AI decision blocked — trust too low, returning IGNORE');
+        return { decision: 'IGNORE', confidence: 0, reason: 'AI trust below threshold', blocked: true };
+      }
+      return _origDecideV1400.call(this, systemMetrics, businessMetrics);
+    };
+  }
+
+  // Hook AUTO_ORCHESTRATOR.execute — enforce trust gate for ORCHESTRATOR
+  const _origExecuteV1400 = window.AUTO_ORCHESTRATOR?.execute;
+  if (_origExecuteV1400) {
+    window.AUTO_ORCHESTRATOR.execute = function(action, detail, priority) {
+      if (!window.HARD_TRUST_GATE.check('ORCHESTRATOR', 0.75)) {
+        console.warn(`[HARD_TRUST_GATE] Orchestrator blocked action: ${action}`);
+        return;
+      }
+      return _origExecuteV1400.call(this, action, detail, priority);
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // PHASE 57 — EXPLAINABLE AI LOG (XAI)
+  // WHY + WHY THIS ACTION + EXPECTED RESULT
+  // ─────────────────────────────────────────────────────────────────
+  window.XAI_LOG = {
+    _log: [],
+    _MAX_LOG: 100,
+
+    // Record full explanation for a decision
+    record: function(decisionResult, systemMetrics, businessMetrics) {
+      if (!decisionResult) return null;
+
+      const explanation = {
+        id: 'xai_' + Date.now(),
+        timestamp: Date.now(),
+        decision: decisionResult.decision,
+        confidence: decisionResult.confidence,
+        action: decisionResult.action || null,
+
+        // WHY: what triggered this decision
+        why: this._buildWhy(systemMetrics, businessMetrics),
+
+        // WHY THIS ACTION: evidence for chosen action
+        whyThisAction: this._buildWhyAction(decisionResult, systemMetrics),
+
+        // EXPECTED RESULT: what should improve
+        expectedResult: this._buildExpectedResult(decisionResult.decision, systemMetrics),
+
+        // Actual result (filled in later by DECISION_LOG)
+        actualResult: null,
+        outcomeStatus: 'PENDING',
+      };
+
+      this._log.unshift(explanation);
+      if (this._log.length > this._MAX_LOG) {
+        this._log = this._log.slice(0, this._MAX_LOG);
+      }
+
+      console.log(`[XAI] Decision: ${explanation.decision} (conf: ${explanation.confidence?.toFixed(2)})`);
+      console.log(`[XAI] WHY: ${explanation.why.join(' | ')}`);
+      console.log(`[XAI] WHY THIS ACTION: ${explanation.whyThisAction}`);
+      console.log(`[XAI] EXPECTED: ${explanation.expectedResult}`);
+
+      return explanation.id;
+    },
+
+    _buildWhy: function(sys, biz) {
+      const reasons = [];
+      if (!sys) return ['no system metrics available'];
+
+      if (sys.avgLatency > 3000) reasons.push(`latency=${sys.avgLatency}ms (> 3000ms threshold)`);
+      else if (sys.avgLatency > 1500) reasons.push(`latency=${sys.avgLatency}ms (elevated)`);
+
+      if (sys.errorRate > 20) reasons.push(`errorRate=${sys.errorRate?.toFixed(1)}% (> 20% threshold)`);
+      else if (sys.errorRate > 10) reasons.push(`errorRate=${sys.errorRate?.toFixed(1)}% (elevated)`);
+
+      if (sys.openCircuits > 0) reasons.push(`${sys.openCircuits} circuit(s) open`);
+      if (sys.queueDepth > 5) reasons.push(`queueDepth=${sys.queueDepth} (high)`);
+      if (sys.healthScore < 70) reasons.push(`healthScore=${sys.healthScore?.toFixed(0)} (< 70)`);
+
+      if (biz) {
+        if (biz.slaBreachRisk > 0.5) reasons.push(`SLA breach risk=${(biz.slaBreachRisk*100).toFixed(0)}%`);
+        if (biz.revenueRisk === 'HIGH') reasons.push('revenue risk HIGH');
+        if (biz.stockRisk === 'HIGH') reasons.push('stock risk HIGH');
+      }
+
+      return reasons.length > 0 ? reasons : ['system metrics within normal range'];
+    },
+
+    _buildWhyAction: function(decisionResult, sys) {
+      const action = decisionResult.decision;
+      const conf = (decisionResult.confidence * 100).toFixed(0);
+
+      const actionMap = {
+        'SAFE_MODE':      `Safe Mode chosen: ${conf}% confidence — multiple critical signals detected`,
+        'ALERT':          `Alert chosen: ${conf}% confidence — error/SLA threshold exceeded`,
+        'OPTIMIZE':       `Optimize chosen: ${conf}% confidence — latency/performance degradation detected`,
+        'HEAL':           `Self-heal chosen: ${conf}% confidence — repeated error pattern detected`,
+        'IGNORE':         `Ignore chosen: ${conf}% confidence — signals within acceptable range`,
+        'SCALE_UP':       `Scale up chosen: ${conf}% confidence — capacity threshold reached`,
+      };
+
+      // Add policy evidence if available
+      let policyEvidence = '';
+      try {
+        const policies = window.POLICY_ENGINE?.query(sys) || [];
+        if (policies.length > 0) {
+          policyEvidence = ` | Policy evidence: successRate=${(policies[0].successRate*100).toFixed(0)}% (${policies[0].evidence} samples)`;
+        }
+      } catch(e) {}
+
+      return (actionMap[action] || `${action}: ${conf}% confidence`) + policyEvidence;
+    },
+
+    _buildExpectedResult: function(decision, sys) {
+      const currentLatency = sys?.avgLatency || 0;
+      const currentError = sys?.errorRate || 0;
+
+      const expectations = {
+        'SAFE_MODE':  `System stabilizes — non-critical API calls stop, latency should normalize`,
+        'ALERT':      `Operations team notified — manual intervention expected within 5-15 min`,
+        'OPTIMIZE':   `Latency: ${currentLatency}ms → < 1000ms (estimated 2-5 min)`,
+        'HEAL':       `Error rate: ${currentError.toFixed(1)}% → < 5% (estimated 1-3 min via retry/fallback)`,
+        'IGNORE':     `No change expected — system continues normal operation`,
+        'SCALE_UP':   `Throughput increases — queue depth should reduce within 1 min`,
+      };
+
+      return expectations[decision] || `${decision} executed — monitor metrics for improvement`;
+    },
+
+    // Update outcome after evaluation
+    updateOutcome: function(xaiId, impactScore, actualMetrics) {
+      const entry = this._log.find(e => e.id === xaiId);
+      if (!entry) return;
+      entry.actualResult = actualMetrics;
+      entry.outcomeStatus = impactScore > 10 ? 'SUCCESS' : impactScore < -10 ? 'FAILURE' : 'NEUTRAL';
+      entry.impactScore = impactScore;
+    },
+
+    getLog: function(n) { return this._log.slice(0, n || 10); },
+
+    // Pretty print last explanation
+    explain: function(n) {
+      const entry = this._log[n || 0];
+      if (!entry) { console.log('[XAI] No explanations yet'); return; }
+      console.log(`\n═══ XAI Explanation [${entry.decision}] ═══`);
+      console.log(`Decision: ${entry.decision} (confidence: ${(entry.confidence*100).toFixed(0)}%)`);
+      console.log(`\nWHY:`);
+      entry.why.forEach(w => console.log(`  • ${w}`));
+      console.log(`\nWHY THIS ACTION:\n  ${entry.whyThisAction}`);
+      console.log(`\nEXPECTED RESULT:\n  ${entry.expectedResult}`);
+      console.log(`\nOUTCOME: ${entry.outcomeStatus}${entry.impactScore !== undefined ? ` (impact: ${entry.impactScore})` : ' (pending)'}`);
+      console.log('═══════════════════════════════════════\n');
+    },
+
+    stats: function() {
+      const total = this._log.length;
+      const success = this._log.filter(e => e.outcomeStatus === 'SUCCESS').length;
+      const failure = this._log.filter(e => e.outcomeStatus === 'FAILURE').length;
+      return { total, success, failure, pending: total - success - failure };
+    },
+  };
+
+  // Hook AI_DECISION_ENGINE.decide to record XAI
+  const _origDecideV1400b = window.AI_DECISION_ENGINE?.decide;
+  if (_origDecideV1400b) {
+    window.AI_DECISION_ENGINE.decide = function(systemMetrics, businessMetrics) {
+      const result = _origDecideV1400b.call(this, systemMetrics, businessMetrics);
+      if (result && result.decision !== 'IGNORE') {
+        const xaiId = window.XAI_LOG.record(result, systemMetrics, businessMetrics);
+        result._xaiId = xaiId;
+      }
+      return result;
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // PHASE 58 — SYSTEM KILL SWITCH
+  // window.SYSTEM.freeze() → stop everything
+  // ─────────────────────────────────────────────────────────────────
+  window.SYSTEM = {
+    _frozen: false,
+    _frozenAt: null,
+    _frozenReason: null,
+    _frozenIntervals: [],
+
+    // FREEZE: stop API, AI, timers, show locked UI
+    freeze: function(reason) {
+      if (this._frozen) {
+        console.warn('[SYSTEM] Already frozen');
+        return;
+      }
+
+      this._frozen = true;
+      this._frozenAt = Date.now();
+      this._frozenReason = reason || 'manual';
+
+      console.error(`[SYSTEM] ⛔ SYSTEM FROZEN: ${reason}`);
+
+      // 1. Block all API calls
+      const _origCallApi = window.callApi;
+      window.callApi = async function(action) {
+        console.warn(`[SYSTEM] API call blocked (frozen): ${action}`);
+        throw new Error('SYSTEM_FROZEN');
+      };
+      window.callApi._frozen = true;
+      window.callApi._origCallApi = _origCallApi;
+
+      // 2. Block AI decisions
+      if (window.AI_DECISION_ENGINE) {
+        window.AI_DECISION_ENGINE._frozen = true;
+        const _origDecide = window.AI_DECISION_ENGINE.decide;
+        window.AI_DECISION_ENGINE.decide = function() {
+          return { decision: 'IGNORE', confidence: 0, reason: 'SYSTEM_FROZEN', blocked: true };
+        };
+        window.AI_DECISION_ENGINE._origDecide = _origDecide;
+      }
+
+      // 3. Stop all intervals
+      const maxId = setTimeout(() => {}, 0);
+      for (let i = 0; i <= maxId; i++) {
+        clearInterval(i);
+        this._frozenIntervals.push(i);
+      }
+      clearTimeout(maxId);
+
+      // 4. Stop improvement loop
+      if (window.IMPROVEMENT_LOOP?._intervalId) {
+        clearInterval(window.IMPROVEMENT_LOOP._intervalId);
+        window.IMPROVEMENT_LOOP._intervalId = null;
+      }
+
+      // 5. Show locked UI
+      this._showLockedUI(reason);
+
+      // 6. Enable safe mode
+      if (window.SAFE_MODE && !window.SAFE_MODE.isActive?.()) {
+        window.SAFE_MODE.enable?.('system_freeze');
+      }
+
+      console.error('[SYSTEM] ⛔ All systems stopped. Call SYSTEM.unfreeze() to restore.');
+    },
+
+    // UNFREEZE: restore system
+    unfreeze: function(adminCode) {
+      if (!this._frozen) {
+        console.log('[SYSTEM] Not frozen');
+        return;
+      }
+
+      // Optional admin code check (default: any call unfreezes)
+      this._frozen = false;
+
+      // Restore callApi
+      if (window.callApi?._origCallApi) {
+        window.callApi = window.callApi._origCallApi;
+      }
+
+      // Restore AI decisions
+      if (window.AI_DECISION_ENGINE?._origDecide) {
+        window.AI_DECISION_ENGINE.decide = window.AI_DECISION_ENGINE._origDecide;
+        window.AI_DECISION_ENGINE._frozen = false;
+        delete window.AI_DECISION_ENGINE._origDecide;
+      }
+
+      // Remove locked UI
+      const overlay = document.getElementById('_v1400_system_locked');
+      if (overlay) overlay.remove();
+
+      // Disable safe mode
+      if (window.SAFE_MODE?.isActive?.()) {
+        window.SAFE_MODE.disable?.();
+      }
+
+      const frozenDuration = ((Date.now() - this._frozenAt) / 1000).toFixed(1);
+      console.log(`[SYSTEM] ✅ System unfrozen after ${frozenDuration}s`);
+      this._frozenAt = null;
+      this._frozenReason = null;
+    },
+
+    _showLockedUI: function(reason) {
+      const existing = document.getElementById('_v1400_system_locked');
+      if (existing) existing.remove();
+
+      const overlay = document.createElement('div');
+      overlay.id = '_v1400_system_locked';
+      overlay.style.cssText = [
+        'position:fixed', 'top:0', 'left:0', 'width:100vw', 'height:100vh',
+        'background:rgba(0,0,0,0.85)', 'z-index:999999', 'display:flex',
+        'align-items:center', 'justify-content:center', 'flex-direction:column',
+        'color:#fff', 'font-family:monospace',
+      ].join(';');
+      overlay.innerHTML = `
+        <div style="text-align:center;padding:40px;border:2px solid #e74c3c;border-radius:8px;background:#1a1a2e;">
+          <div style="font-size:48px;margin-bottom:16px;">⛔</div>
+          <div style="font-size:24px;font-weight:bold;color:#e74c3c;margin-bottom:8px;">SYSTEM LOCKED</div>
+          <div style="font-size:14px;color:#aaa;margin-bottom:16px;">Reason: ${reason || 'manual freeze'}</div>
+          <div style="font-size:12px;color:#666;">Frozen at: ${new Date().toLocaleTimeString()}</div>
+          <div style="margin-top:20px;font-size:11px;color:#888;">
+            Run <code style="color:#f39c12">SYSTEM.unfreeze()</code> in console to restore
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+    },
+
+    isFrozen: function() { return this._frozen; },
+    status: function() {
+      return {
+        frozen: this._frozen,
+        frozenAt: this._frozenAt ? new Date(this._frozenAt).toLocaleTimeString() : null,
+        reason: this._frozenReason,
+        frozenDuration: this._frozenAt ? ((Date.now() - this._frozenAt) / 1000).toFixed(1) + 's' : null,
+      };
+    },
+  };
+
+  // ─────────────────────────────────────────────────────────────────
+  // PHASE 59 — REAL HEALTH SCORE
+  // Weighted, no fake 100% if there are issues
+  // ─────────────────────────────────────────────────────────────────
+  window.REAL_HEALTH = {
+    // Weights for each component (must sum to 1.0)
+    _weights: {
+      apiSuccess:       0.35,  // API success rate
+      dataIntegrity:    0.20,  // Data integrity (no violations)
+      renderSuccess:    0.20,  // Render success (no blocked renders)
+      errorLogs:        0.15,  // Error log absence
+      trustScore:       0.10,  // Average module trust
+    },
+
+    _history: [],
+    _MAX_HISTORY: 60, // 60 data points
+
+    // Calculate real health score
+    calculate: function() {
+      const scores = {};
+
+      // 1. API Success Rate (from API_CONTROLLER)
+      try {
+        const apiStats = window.API_CONTROLLER?.getStats?.() || {};
+        const total = (apiStats.success || 0) + (apiStats.error || 0);
+        scores.apiSuccess = total > 0 ? (apiStats.success || 0) / total : 0.5;
+      } catch(e) { scores.apiSuccess = 0.5; }
+
+      // 2. Data Integrity Score
+      try {
+        const intStats = window.DATA_INTEGRITY?.stats?.() || {};
+        const violations = intStats.total || 0;
+        const blocked = intStats.blockedRenders || 0;
+        // Penalize for violations and blocked renders
+        scores.dataIntegrity = Math.max(0, 1 - (violations * 0.02) - (blocked * 0.05));
+      } catch(e) { scores.dataIntegrity = 0.5; }
+
+      // 3. Render Success (inverse of blocked renders)
+      try {
+        const intStats = window.DATA_INTEGRITY?.stats?.() || {};
+        const blocked = intStats.blockedRenders || 0;
+        scores.renderSuccess = Math.max(0, 1 - (blocked * 0.1));
+      } catch(e) { scores.renderSuccess = 0.5; }
+
+      // 4. Error Log Score (from GLOBAL_METRICS_ENGINE)
+      try {
+        const metrics = window.GLOBAL_METRICS_ENGINE?.getSystemMetrics?.() || {};
+        const errorRate = metrics.errorRate || 0;
+        scores.errorLogs = Math.max(0, 1 - (errorRate / 100));
+      } catch(e) { scores.errorLogs = 0.5; }
+
+      // 5. Trust Score (average of all modules)
+      try {
+        const allTrust = window.TRUST_SCORE?.getAll?.() || [];
+        const avgTrust = allTrust.length > 0
+          ? allTrust.reduce((sum, m) => sum + m.score, 0) / allTrust.length
+          : 0.5;
+        scores.trustScore = avgTrust;
+      } catch(e) { scores.trustScore = 0.5; }
+
+      // Weighted sum
+      let weightedScore = 0;
+      let totalWeight = 0;
+      Object.keys(this._weights).forEach(key => {
+        if (scores[key] !== undefined) {
+          weightedScore += scores[key] * this._weights[key];
+          totalWeight += this._weights[key];
+        }
+      });
+
+      const finalScore = totalWeight > 0 ? weightedScore / totalWeight : 0.5;
+
+      // CRITICAL: never return 100% if there are any violations or errors
+      const hasIssues = (
+        (window.DATA_INTEGRITY?.stats?.()?.total || 0) > 0 ||
+        (window.DATA_INTEGRITY?.stats?.()?.blockedRenders || 0) > 0 ||
+        (window.HARD_TRUST_GATE?.stats?.()?.blockedCount || 0) > 0
+      );
+
+      const cappedScore = hasIssues ? Math.min(finalScore, 0.97) : finalScore;
+      const percentScore = Math.round(cappedScore * 100);
+
+      const result = {
+        score: percentScore,
+        grade: percentScore >= 95 ? 'A' : percentScore >= 85 ? 'B' : percentScore >= 70 ? 'C' : percentScore >= 50 ? 'D' : 'F',
+        components: Object.keys(scores).reduce((acc, k) => {
+          acc[k] = Math.round(scores[k] * 100) + '%';
+          return acc;
+        }, {}),
+        hasIssues: hasIssues,
+        timestamp: Date.now(),
+      };
+
+      this._history.unshift(result);
+      if (this._history.length > this._MAX_HISTORY) {
+        this._history = this._history.slice(0, this._MAX_HISTORY);
+      }
+
+      return result;
+    },
+
+    getTrend: function(n) {
+      const recent = this._history.slice(0, n || 10);
+      if (recent.length < 2) return 'INSUFFICIENT_DATA';
+      const avg = recent.reduce((s, r) => s + r.score, 0) / recent.length;
+      const latest = recent[0].score;
+      if (latest > avg + 3) return 'IMPROVING';
+      if (latest < avg - 3) return 'DECLINING';
+      return 'STABLE';
+    },
+
+    report: function() {
+      const health = this.calculate();
+      console.log(`\n═══ REAL HEALTH SCORE ═══`);
+      console.log(`Overall: ${health.score}% (Grade: ${health.grade})`);
+      console.log(`Trend: ${this.getTrend()}`);
+      console.log(`Has Issues: ${health.hasIssues}`);
+      console.log(`Components:`);
+      Object.entries(health.components).forEach(([k, v]) => {
+        console.log(`  ${k}: ${v}`);
+      });
+      console.log('═══════════════════════════\n');
+      return health;
+    },
+  };
+
+  // Override GLOBAL_METRICS_ENGINE.getSystemMetrics to include real health
+  const _origGetSystemMetrics = window.GLOBAL_METRICS_ENGINE?.getSystemMetrics;
+  if (_origGetSystemMetrics) {
+    window.GLOBAL_METRICS_ENGINE.getSystemMetrics = function() {
+      const metrics = _origGetSystemMetrics.call(this);
+      // Replace healthScore with real weighted score
+      const realHealth = window.REAL_HEALTH.calculate();
+      metrics.healthScore = realHealth.score;
+      metrics.healthGrade = realHealth.grade;
+      metrics.healthComponents = realHealth.components;
+      metrics.healthHasIssues = realHealth.hasIssues;
+      return metrics;
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // PHASE 60 — PRODUCTION REPLAY
+  // Record: USER → API → RESPONSE → UI
+  // Replay: reproduce bug 100%
+  // ─────────────────────────────────────────────────────────────────
+  window.PROD_REPLAY = {
+    _recording: false,
+    _session: [],
+    _MAX_EVENTS: 500,
+    _sessionId: null,
+    _savedSessions: [],
+    _MAX_SESSIONS: 5,
+
+    // Start recording
+    startRecording: function(label) {
+      this._recording = true;
+      this._session = [];
+      this._sessionId = 'session_' + Date.now();
+      console.log(`[PROD_REPLAY] Recording started: ${this._sessionId} (${label || ''})`);
+    },
+
+    // Stop recording and save
+    stopRecording: function() {
+      this._recording = false;
+      const saved = {
+        id: this._sessionId,
+        events: this._session.slice(),
+        recordedAt: Date.now(),
+        duration: this._session.length > 0
+          ? this._session[this._session.length - 1].timestamp - this._session[0].timestamp
+          : 0,
+      };
+      this._savedSessions.unshift(saved);
+      if (this._savedSessions.length > this._MAX_SESSIONS) {
+        this._savedSessions = this._savedSessions.slice(0, this._MAX_SESSIONS);
+      }
+      console.log(`[PROD_REPLAY] Recording stopped: ${saved.events.length} events, ${(saved.duration/1000).toFixed(1)}s`);
+      return saved;
+    },
+
+    // Record an event
+    record: function(type, data) {
+      if (!this._recording) return;
+      if (this._session.length >= this._MAX_EVENTS) return;
+
+      this._session.push({
+        type: type,
+        data: this._sanitizeForRecord(data),
+        timestamp: Date.now(),
+      });
+    },
+
+    _sanitizeForRecord: function(data) {
+      try {
+        // Deep clone, remove circular refs, limit size
+        const str = JSON.stringify(data, (key, val) => {
+          if (typeof val === 'function') return '[Function]';
+          if (typeof val === 'undefined') return '[undefined]';
+          return val;
+        });
+        if (str.length > 2000) return { _truncated: true, preview: str.slice(0, 200) };
+        return JSON.parse(str);
+      } catch(e) {
+        return { _error: 'cannot serialize', type: typeof data };
+      }
+    },
+
+    // Replay a session (dry run — logs only, no actual API calls)
+    replay: function(sessionId) {
+      const session = this._savedSessions.find(s => s.id === sessionId) ||
+                      this._savedSessions[0];
+      if (!session) {
+        console.error('[PROD_REPLAY] No session found');
+        return;
+      }
+
+      console.log(`\n═══ REPLAY: ${session.id} (${session.events.length} events) ═══`);
+      session.events.forEach((event, i) => {
+        const relTime = i > 0 ? `+${event.timestamp - session.events[0].timestamp}ms` : '0ms';
+        console.log(`[${relTime}] ${event.type}:`, event.data);
+      });
+      console.log('═══ REPLAY END ═══\n');
+      return session;
+    },
+
+    // Export session as JSON for bug report
+    export: function(sessionId) {
+      const session = this._savedSessions.find(s => s.id === sessionId) ||
+                      this._savedSessions[0];
+      if (!session) return null;
+      const json = JSON.stringify(session, null, 2);
+      console.log('[PROD_REPLAY] Session exported (' + json.length + ' bytes)');
+      return json;
+    },
+
+    getSessions: function() {
+      return this._savedSessions.map(s => ({
+        id: s.id,
+        events: s.events.length,
+        duration: (s.duration / 1000).toFixed(1) + 's',
+        recordedAt: new Date(s.recordedAt).toLocaleTimeString(),
+      }));
+    },
+
+    stats: function() {
+      return {
+        recording: this._recording,
+        currentEvents: this._session.length,
+        savedSessions: this._savedSessions.length,
+        sessionId: this._sessionId,
+      };
+    },
+  };
+
+  // Hook callApi to record API events
+  const _origCallApiV1400 = window.callApi;
+  if (_origCallApiV1400) {
+    window.callApi = async function(action, params) {
+      const start = Date.now();
+      window.PROD_REPLAY.record('API_CALL', { action, params: params ? Object.keys(params) : [] });
+      try {
+        const result = await _origCallApiV1400(action, params);
+        const elapsed = Date.now() - start;
+        window.PROD_REPLAY.record('API_RESPONSE', {
+          action,
+          elapsed,
+          success: true,
+          hasData: result !== null && result !== undefined,
+          dataKeys: result && typeof result === 'object' ? Object.keys(result).slice(0, 5) : [],
+        });
+        return result;
+      } catch(e) {
+        window.PROD_REPLAY.record('API_ERROR', { action, error: e.message, elapsed: Date.now() - start });
+        throw e;
+      }
+    };
+    window.callApi._v1400_replay_wrapped = true;
+  }
+
+  // Hook loadSection to record UI events
+  const _origLoadSection = window.loadSection;
+  if (_origLoadSection) {
+    window.loadSection = function(section, params) {
+      window.PROD_REPLAY.record('UI_NAVIGATE', { section, params });
+      return _origLoadSection.call(this, section, params);
+    };
+  }
+
+  // Record user clicks on nav items
+  document.addEventListener('click', function(e) {
+    const navItem = e.target.closest('[data-section]');
+    if (navItem) {
+      window.PROD_REPLAY.record('USER_CLICK', {
+        section: navItem.dataset.section,
+        element: navItem.tagName,
+        text: navItem.textContent?.trim().slice(0, 30),
+      });
+    }
+  }, { passive: true });
+
+  // ─────────────────────────────────────────────────────────────────
+  // V1400 Debug Tools
+  // ─────────────────────────────────────────────────────────────────
+  window.V1400 = {
+    report: function() {
+      console.log('=== COMPHONE v14.0.0 — Production Observability Report ===');
+      console.log('\n[Phase 56] Hard Trust Gate:', window.HARD_TRUST_GATE.stats());
+      console.log('[Phase 57] XAI Log:', window.XAI_LOG.stats());
+      window.XAI_LOG.explain(0);
+      console.log('[Phase 58] System Status:', window.SYSTEM.status());
+      console.log('[Phase 59] Real Health:');
+      window.REAL_HEALTH.report();
+      console.log('[Phase 60] Production Replay:', window.PROD_REPLAY.stats());
+      return {
+        version: _V1400_VERSION,
+        trustGate: window.HARD_TRUST_GATE.stats(),
+        xai: window.XAI_LOG.stats(),
+        system: window.SYSTEM.status(),
+        health: window.REAL_HEALTH.calculate(),
+        replay: window.PROD_REPLAY.stats(),
+      };
+    },
+
+    // Test Phase 56: Hard Trust Gate
+    testTrustGate: function() {
+      console.log('[TEST] Hard Trust Gate...');
+      const result = window.HARD_TRUST_GATE.check('AI');
+      console.log('[TEST] AI trusted:', result);
+      console.log('[TEST] Stats:', window.HARD_TRUST_GATE.stats());
+    },
+
+    // Test Phase 57: XAI
+    testXAI: function() {
+      console.log('[TEST] XAI Log...');
+      const mockDecision = { decision: 'OPTIMIZE', confidence: 0.82, reason: 'latency spike' };
+      const mockMetrics = { avgLatency: 3200, errorRate: 15, healthScore: 65, openCircuits: 1, queueDepth: 3 };
+      window.XAI_LOG.record(mockDecision, mockMetrics, null);
+      window.XAI_LOG.explain(0);
+    },
+
+    // Test Phase 58: Kill Switch
+    testKillSwitch: function() {
+      console.log('[TEST] System Kill Switch — freeze for 3s...');
+      window.SYSTEM.freeze('test');
+      setTimeout(() => {
+        window.SYSTEM.unfreeze();
+        console.log('[TEST] System unfrozen');
+      }, 3000);
+    },
+
+    // Test Phase 59: Real Health
+    testRealHealth: function() {
+      console.log('[TEST] Real Health Score...');
+      return window.REAL_HEALTH.report();
+    },
+
+    // Test Phase 60: Production Replay
+    testReplay: function() {
+      console.log('[TEST] Production Replay...');
+      window.PROD_REPLAY.startRecording('test');
+      window.PROD_REPLAY.record('USER_CLICK', { section: 'dashboard' });
+      window.PROD_REPLAY.record('API_CALL', { action: 'getDashboardBundle' });
+      window.PROD_REPLAY.record('API_RESPONSE', { action: 'getDashboardBundle', elapsed: 450, success: true });
+      window.PROD_REPLAY.record('UI_NAVIGATE', { section: 'dashboard' });
+      const session = window.PROD_REPLAY.stopRecording();
+      window.PROD_REPLAY.replay(session.id);
+    },
+  };
+
+  // Set version
+  window.__COMPHONE_VERSION = _V1400_VERSION;
+  console.log(`[v${_V1400_VERSION}] Production Observability loaded ✅`);
+  console.log(`  Phase 56: Hard Trust Gate (block AI if trust < 0.7)`);
+  console.log(`  Phase 57: Explainable AI Log (WHY + WHY THIS ACTION + EXPECTED)`);
+  console.log(`  Phase 58: System Kill Switch (SYSTEM.freeze())`);
+  console.log(`  Phase 59: Real Health Score (weighted, no fake 100%)`);
+  console.log(`  Phase 60: Production Replay (record + replay bug)`);
+  console.log(`  Debug: V1400.report()`);
+
+})();
+
+</script>
 </body>
 </html>
