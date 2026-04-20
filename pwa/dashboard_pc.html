@@ -9463,5 +9463,469 @@ body.theme-dark .sg-detail-close { background: #334155; color: #94a3b8; }
 })();
 
 </script>
+
+<!-- v7.0.0 Isolation Mode + Core Reconstruction -->
+<script>
+/* ============================================================
+   COMPHONE v7.0.0 — Isolation Mode + Core Reconstruction
+   
+   PRINCIPLE: "หนึ่งระบบ = หนึ่ง flow"
+   
+   PHASE 1: ISOLATION MODE
+   - window.__SYSTEM_STABLE_MODE = true
+   - Hard disable ทุก auto system (ไม่ใช่แค่ปิด — กัน trigger ได้เลย)
+   
+   PHASE 2: CORE RECONSTRUCTION
+   - Single API Pipeline (ลบ wrapper stack จริง)
+   - callApi = fetch + normalize + error เท่านั้น
+   - ห้าม retry/cache/offline อยู่ใน callApi
+   
+   PHASE 3: CONTROLLED RE-ENABLE
+   - Step 1: Cache (read-only)
+   - Step 2: Single Timer (60s)
+   - Step 3: Retry (max 1 layer, caller-side เท่านั้น)
+   
+   FORENSIC FINDINGS:
+   - 9 callApi wrappers (L4935→L5245→L5410→L5801→L6064→L7362→L7544→L8796→L9254)
+   - 3 refresh controllers: silentRefresh(30s), APP_STATE.syncAll(60s), V622.healthCheck
+   - V622 softUpdate: production=300s, staging=60s, dev=30s
+   - V622 healthCheck: production=120s, staging=30s, dev=15s
+   - _v61OrigCallApi declared TWICE (L4934, L5243) — variable shadowing
+   ============================================================ */
+(function() {
+  'use strict';
+
+  const _V700_VERSION = '7.0.0';
+  const _V700_LOG = (msg) => console.log('[COMPHONE v7.0.0]', msg);
+  const _V700_WARN = (msg) => console.warn('[COMPHONE v7.0.0]', msg);
+
+  _V700_LOG('=== Isolation Mode + Core Reconstruction starting ===');
+
+  // ────────────────────────────────────────────────────────
+  // PHASE 1: ISOLATION MODE
+  // ตั้ง __SYSTEM_STABLE_MODE = true
+  // ทุกระบบต้องเช็ค flag นี้ก่อนทำงาน
+  // ────────────────────────────────────────────────────────
+  window.__SYSTEM_STABLE_MODE = true;
+  _V700_LOG('Phase 1: __SYSTEM_STABLE_MODE = true');
+
+  // ── 1A: Hard Disable silentRefresh ──
+  // silentRefresh ที่ L1679 ใช้ setInterval(silentRefresh, 30000)
+  // v6.3.0 override เป็น no-op แล้ว แต่ setInterval ยังทำงานอยู่
+  // ต้องหยุด startAutoRefresh('dashboard') และ override ให้แน่ใจ
+  window.silentRefresh = function() {
+    if (window.__SYSTEM_STABLE_MODE) return; // HARD BLOCK
+    _V700_WARN('silentRefresh called but BLOCKED by __SYSTEM_STABLE_MODE');
+  };
+  if (typeof window.stopAutoRefresh === 'function') {
+    window.stopAutoRefresh('dashboard');
+  }
+  _V700_LOG('Phase 1A: silentRefresh HARD DISABLED');
+
+  // ── 1B: Hard Disable APP_STATE.syncAll auto-timer ──
+  // setInterval ที่ L3734 เรียก APP_STATE.syncAll() ทุก 60s
+  // ต้อง override APP_STATE.syncAll ให้เช็ค __SYSTEM_STABLE_MODE
+  if (window.APP_STATE) {
+    // เก็บ original ไว้ใช้ใน Phase 3
+    if (!window.APP_STATE._v700OrigSyncAll) {
+      window.APP_STATE._v700OrigSyncAll = window.APP_STATE.syncAll.bind(window.APP_STATE);
+    }
+    window.APP_STATE.syncAll = async function _v700GuardedSyncAll(force) {
+      if (window.__SYSTEM_STABLE_MODE && !force) {
+        _V700_WARN('APP_STATE.syncAll BLOCKED by __SYSTEM_STABLE_MODE');
+        return;
+      }
+      return window.APP_STATE._v700OrigSyncAll(force);
+    };
+    _V700_LOG('Phase 1B: APP_STATE.syncAll HARD GUARDED');
+  }
+
+  // ── 1C: Hard Disable V622 soft update + health check ──
+  if (window.V622) {
+    // Clear existing timers
+    if (window.V622._softUpdateTimer) {
+      clearInterval(window.V622._softUpdateTimer);
+      window.V622._softUpdateTimer = null;
+      _V700_LOG('Phase 1C: V622 _softUpdateTimer CLEARED');
+    }
+    // Override _checkForSoftUpdate
+    if (typeof window.V622._checkForSoftUpdate === 'function') {
+      window.V622._checkForSoftUpdate = function() {
+        if (window.__SYSTEM_STABLE_MODE) return;
+      };
+    }
+    // Override softUpdate
+    if (typeof window.V622.softUpdate === 'function') {
+      window.V622.softUpdate = function() {
+        if (window.__SYSTEM_STABLE_MODE) {
+          _V700_WARN('V622.softUpdate BLOCKED by __SYSTEM_STABLE_MODE');
+          return;
+        }
+      };
+    }
+    // Override refreshHealth
+    if (typeof window.V622.refreshHealth === 'function') {
+      window.V622._v700OrigRefreshHealth = window.V622.refreshHealth;
+      window.V622.refreshHealth = function() {
+        if (window.__SYSTEM_STABLE_MODE) return;
+        return window.V622._v700OrigRefreshHealth.call(this);
+      };
+    }
+    _V700_LOG('Phase 1C: V622 softUpdate + healthCheck HARD DISABLED');
+  }
+
+  // ── 1D: Hard Disable v6.3.0 _cleanSyncInterval ──
+  // v6.3.0 สร้าง _syncTimer ไว้ใน closure — ต้องหยุดผ่าน V630
+  if (window.V630 && typeof window.V630.stopAll === 'function') {
+    window.V630.stopAll();
+    _V700_LOG('Phase 1D: V630 sync timer STOPPED');
+  }
+
+  // ── 1E: Hard Disable v6.2.6 ping timer ──
+  // ping timer ยังทำงานได้ (เป็น online check ที่ดี)
+  // แต่ต้อง disable ถ้า __SYSTEM_STABLE_MODE
+  // ไม่ disable ping — ยังต้องการ online status
+  _V700_LOG('Phase 1E: Ping check KEPT (needed for online detection)');
+
+  _V700_LOG('Phase 1 COMPLETE: System in Isolation Mode');
+  _V700_LOG('Active flow: User Action → callApi → render ONLY');
+
+  // ────────────────────────────────────────────────────────
+  // PHASE 2: CORE RECONSTRUCTION
+  // สร้าง Single API Pipeline จริงๆ
+  // ลบ wrapper stack ทั้งหมด — ใช้ BASE callApi โดยตรง
+  //
+  // Architecture:
+  //   callApi(action, payload)
+  //     → fetch(GAS_URL, { action, token, ...payload })
+  //     → normalize response
+  //     → handle error
+  //     → return data
+  //
+  // ห้าม:
+  //   - callApi เรียก callApi
+  //   - retry อยู่ใน callApi
+  //   - cache อยู่ใน callApi
+  //   - offline queue อยู่ใน callApi
+  // ────────────────────────────────────────────────────────
+
+  // Step 2.1: หา BASE fetch function จาก api_client.js
+  // api_client.js export window.callApi ก่อน dashboard_pc.html จะ override
+  // ต้องหา BASE ที่ทำ fetch() จริง
+  // Strategy: ใช้ _CANONICAL_BASE ที่ v6.2.6 snapshot ไว้ (ก่อน wrapper ทั้งหมด)
+  // ถ้าไม่มี ให้ rebuild จาก scratch โดยใช้ getGasUrl + getAuthToken
+
+  let _BASE_FETCH_FN = null;
+
+  // Try to get BASE from v6.2.6 snapshot (ก่อน wrapper chain)
+  if (typeof window._CANONICAL_BASE === 'function') {
+    _BASE_FETCH_FN = window._CANONICAL_BASE;
+    _V700_LOG('Phase 2: Using _CANONICAL_BASE as fetch function');
+  } else if (typeof window.getGasUrl === 'function') {
+    // Rebuild BASE from scratch
+    const _TIMEOUT_MS = 15000;
+    _BASE_FETCH_FN = async function _v700BaseFetch(action, payload, options) {
+      payload = payload || {};
+      options = options || {};
+      const url = window.getGasUrl();
+      if (!url) return { success: false, error: 'NO_GAS_URL', message: 'ไม่พบ GAS URL' };
+      const token = (typeof window.getAuthToken === 'function') ? window.getAuthToken() : '';
+      const body = JSON.stringify({ action, token, ...payload });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), options.timeout || _TIMEOUT_MS);
+      const t0 = Date.now();
+      try {
+        const bustUrl = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
+        const res = await fetch(bustUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body,
+          redirect: 'follow',
+          signal: controller.signal
+        });
+        const data = await res.json();
+        const elapsed = Date.now() - t0;
+        if (data && data.success === false) {
+          console.warn('[v7.0.0] API ❌', action, elapsed + 'ms', data.error);
+        } else {
+          console.log('[v7.0.0] API ✅', action, elapsed + 'ms');
+        }
+        // Normalize response
+        if (typeof window.normalizeApiResponse === 'function') {
+          return window.normalizeApiResponse(data);
+        }
+        return data;
+      } catch(e) {
+        const elapsed = Date.now() - t0;
+        if (e.name === 'AbortError') {
+          console.error('[v7.0.0] API ⏱ TIMEOUT', action, elapsed + 'ms');
+          return { success: false, error: 'TIMEOUT', message: 'Request timeout' };
+        }
+        console.error('[v7.0.0] API ❌', action, e.message);
+        return { success: false, error: e.message, message: e.message };
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    };
+    _V700_LOG('Phase 2: Rebuilt BASE fetch function from scratch');
+  } else {
+    _V700_WARN('Phase 2: Cannot find BASE — using current window.callApi as fallback');
+    _BASE_FETCH_FN = window.callApi;
+  }
+
+  // Step 2.2: สร้าง Single API Pipeline
+  // Call depth tracker
+  let _callDepth = 0;
+  const _MAX_DEPTH = 3; // conservative — ลดจาก 5 → 3
+  const _callLog = []; // log ล่าสุด 50 calls
+  const _callStats = {};
+
+  window.callApi = async function _v700SinglePipeline(action, payload, options) {
+    payload = payload || {};
+    options = options || {};
+
+    // Guard 1: Call depth (prevent infinite loop)
+    _callDepth++;
+    if (_callDepth > _MAX_DEPTH) {
+      _callDepth--;
+      const msg = `LOOP GUARD: depth ${_callDepth} exceeded for "${action}"`;
+      console.error('[v7.0.0]', msg);
+      return { success: false, error: 'LOOP_GUARD', message: msg };
+    }
+
+    // Guard 2: Online check (real ping, not navigator.onLine)
+    const isOnline = (window._V626_IS_ONLINE !== undefined) ? window._V626_IS_ONLINE : true;
+    if (!isOnline && !options.forceOnline) {
+      _callDepth--;
+      _V700_WARN('callApi OFFLINE: ' + action);
+      return { success: false, error: 'OFFLINE', message: 'ระบบออฟไลน์ชั่วคราว' };
+    }
+
+    // Track stats
+    _callStats[action] = (_callStats[action] || 0) + 1;
+    const t0 = Date.now();
+
+    try {
+      // SINGLE PATH: BASE fetch only
+      // No retry, no cache, no offline queue here
+      const result = await _BASE_FETCH_FN.call(window, action, payload, options);
+      const elapsed = Date.now() - t0;
+
+      // Log
+      _callLog.push({ action, elapsed, success: result?.success !== false, ts: Date.now() });
+      if (_callLog.length > 50) _callLog.shift();
+
+      return result;
+    } catch(err) {
+      console.error('[v7.0.0] callApi error:', action, err.message);
+      return { success: false, error: err.message || 'UNKNOWN', message: err.message };
+    } finally {
+      _callDepth--;
+    }
+  };
+
+  // Mark as v7.0.0 single pipeline
+  window.callApi._version = _V700_VERSION;
+  window.callApi._isSinglePipeline = true;
+  window.callApi._stats = _callStats;
+  window.callApi._log = _callLog;
+  _V700_LOG('Phase 2: Single API Pipeline installed (v7.0.0)');
+
+  // Step 2.3: สร้าง Clean cachedCallApi (แยกจาก callApi)
+  // cache เป็น layer แยก ไม่ใช่ wrapper ใน callApi
+  const _cache = {};
+  const _CACHE_TTL = 30000; // 30s default
+
+  window.cachedCallApi = async function _v700CachedCallApi(action, params, ttl) {
+    params = params || {};
+    ttl = (ttl !== undefined && ttl !== null) ? ttl : _CACHE_TTL;
+    const key = action + ':' + JSON.stringify(params);
+    const now = Date.now();
+
+    // Cache hit
+    if (ttl > 0 && _cache[key] && (now - _cache[key].ts) < ttl) {
+      return Promise.resolve(_cache[key].data);
+    }
+
+    // Cache miss — call Single Pipeline
+    const data = await window.callApi(action, params);
+    if (data && data.success !== false && !data.error) {
+      _cache[key] = { data, ts: Date.now() };
+    }
+    return data;
+  };
+  window.cachedCallApi._version = _V700_VERSION;
+
+  // Step 2.4: Override clearApiCache
+  window.clearApiCache = function(action) {
+    if (action) {
+      Object.keys(_cache).filter(k => k.startsWith(action + ':')).forEach(k => delete _cache[k]);
+    } else {
+      Object.keys(_cache).forEach(k => delete _cache[k]);
+    }
+    _V700_LOG('Cache cleared: ' + (action || 'ALL'));
+  };
+
+  _V700_LOG('Phase 2 COMPLETE: Core Reconstruction done');
+  _V700_LOG('callApi = Single Pipeline (no wrapper stack)');
+
+  // ────────────────────────────────────────────────────────
+  // PHASE 3: CONTROLLED RE-ENABLE
+  // เปิดระบบกลับทีละตัว
+  // ────────────────────────────────────────────────────────
+
+  // Step 3.1: Cache — พร้อมแล้วจาก Phase 2
+  _V700_LOG('Phase 3 Step 1: Cache ENABLED (cachedCallApi ready)');
+
+  // Step 3.2: Single Timer (เลือก 1 เท่านั้น — APP_STATE.syncAll ทุก 60s)
+  let _v700SyncTimer = null;
+  function _v700StartSync() {
+    if (_v700SyncTimer) clearInterval(_v700SyncTimer);
+    _v700SyncTimer = setInterval(function _v700SyncInterval() {
+      // ตรวจสอบก่อน: online + auth + ไม่ stable mode block
+      if (window.__SYSTEM_STABLE_MODE === false) return; // ถ้า disable stable mode ให้หยุด
+      const isOnline = (window._V626_IS_ONLINE !== undefined) ? window._V626_IS_ONLINE : true;
+      if (!isOnline) return;
+      if (typeof window.getAuthToken === 'function' && !window.getAuthToken()) return;
+      // ใช้ original syncAll (ไม่ผ่าน guard)
+      if (window.APP_STATE && typeof window.APP_STATE._v700OrigSyncAll === 'function') {
+        window.APP_STATE._v700OrigSyncAll(false).catch(function(e) {
+          _V700_WARN('syncAll error: ' + e.message);
+        });
+      }
+    }, 60000);
+    _V700_LOG('Phase 3 Step 2: Single sync timer started (60s)');
+  }
+
+  // Step 3.3: Retry — ให้ caller ทำเอง ไม่ใส่ใน callApi
+  // ให้ withRetry ยังใช้ได้ แต่ต้องเรียกจาก caller เท่านั้น
+  _V700_LOG('Phase 3 Step 3: Retry available via withRetry() — caller-side only');
+
+  // Step 3.4: Offline Queue — ยังปิดอยู่
+  _V700_LOG('Phase 3 Step 4: Offline Queue DISABLED (Phase 4 future)');
+
+  // Step 3.5: Soft Update — ยังปิดอยู่
+  _V700_LOG('Phase 3 Step 5: Soft Update DISABLED (Phase 4 future)');
+
+  // ────────────────────────────────────────────────────────
+  // DEBUG & MONITORING TOOLS
+  // ────────────────────────────────────────────────────────
+  window.V700 = {
+    version: _V700_VERSION,
+
+    // ตรวจสอบ system state
+    inspect: function() {
+      const info = {
+        version: _V700_VERSION,
+        stableMode: window.__SYSTEM_STABLE_MODE,
+        callApiVersion: window.callApi._version,
+        isSinglePipeline: window.callApi._isSinglePipeline,
+        callDepth: _callDepth,
+        isOnline: window._V626_IS_ONLINE,
+        cacheSize: Object.keys(_cache).length,
+        syncTimerActive: !!_v700SyncTimer,
+      };
+      console.table([info]);
+      return info;
+    },
+
+    // ดู API call stats
+    stats: function() {
+      const sorted = Object.entries(_callStats).sort((a, b) => b[1] - a[1]);
+      console.table(sorted.map(([a, c]) => ({ action: a, calls: c })));
+      return _callStats;
+    },
+
+    // ดู call log ล่าสุด
+    log: function(n) {
+      const recent = _callLog.slice(-(n || 10));
+      console.table(recent);
+      return recent;
+    },
+
+    // Force online
+    forceOnline: function() {
+      window._V626_IS_ONLINE = true;
+      _V700_LOG('Forced online');
+    },
+
+    // Reset call depth
+    resetDepth: function() {
+      _callDepth = 0;
+      _V700_LOG('Call depth reset to 0');
+    },
+
+    // Clear cache
+    clearCache: function(action) {
+      window.clearApiCache(action);
+    },
+
+    // Manual sync (bypass stable mode)
+    sync: function() {
+      if (window.APP_STATE && typeof window.APP_STATE._v700OrigSyncAll === 'function') {
+        return window.APP_STATE._v700OrigSyncAll(true);
+      }
+    },
+
+    // Start sync timer
+    startSync: function() {
+      _v700StartSync();
+    },
+
+    // Stop sync timer
+    stopSync: function() {
+      if (_v700SyncTimer) {
+        clearInterval(_v700SyncTimer);
+        _v700SyncTimer = null;
+        _V700_LOG('Sync timer stopped');
+      }
+    },
+
+    // Exit stable mode (enable all auto systems)
+    exitStableMode: function() {
+      window.__SYSTEM_STABLE_MODE = false;
+      _V700_LOG('Exited stable mode — auto systems re-enabled');
+    },
+
+    // Enter stable mode
+    enterStableMode: function() {
+      window.__SYSTEM_STABLE_MODE = true;
+      _V700_LOG('Entered stable mode — auto systems blocked');
+    },
+
+    // Latency report
+    latency: function() {
+      if (_callLog.length === 0) return { p50: 0, p95: 0, count: 0 };
+      const times = _callLog.map(l => l.elapsed).sort((a, b) => a - b);
+      const p50 = times[Math.floor(times.length * 0.5)];
+      const p95 = times[Math.floor(times.length * 0.95)];
+      console.log(`[V700] Latency — P50: ${p50}ms | P95: ${p95}ms | Count: ${times.length}`);
+      return { p50, p95, count: times.length };
+    }
+  };
+
+  // ────────────────────────────────────────────────────────
+  // INIT
+  // ────────────────────────────────────────────────────────
+  function _v700Init() {
+    // Start single sync timer after 3s (ให้ page load ก่อน)
+    setTimeout(_v700StartSync, 3000);
+
+    _V700_LOG('=== v7.0.0 Isolation Mode + Core Reconstruction LOADED ✅ ===');
+    _V700_LOG('Flow: User Action → callApi (Single Pipeline) → render');
+    _V700_LOG('Timer: APP_STATE.syncAll every 60s (single timer)');
+    _V700_LOG('Debug: V700.inspect(), V700.stats(), V700.log(), V700.latency()');
+    _V700_LOG('Control: V700.sync(), V700.startSync(), V700.stopSync()');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _v700Init);
+  } else {
+    setTimeout(_v700Init, 100);
+  }
+
+})();
+
+</script>
 </body>
 </html>
