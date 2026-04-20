@@ -7622,6 +7622,395 @@ console.log('[COMPHONE v6.2.2] Full Release System patch loaded — Safe Update 
   console.log('[COMPHONE v6.2.3] Alerts Hotfix loaded — normalizeAlerts() active');
   console.log('[ALERTS] Patched: callApi, cachedCallApi, renderDashboard, renderAIAlerts, _renderBundleDashboard');
 
+<script>
+// ============================================================
+// COMPHONE v6.2.4 — Role Guard Fix
+// Phase 1: hasAccess() with OWNER > admin > manager > technician > cashier > viewer
+// Phase 2: Block render until APP_STATE.user ready
+// Phase 3: Separate network error vs permission error
+// Phase 4: Role normalization (lowercase + alias)
+// Phase 5: OWNER override — always allow
+// Detect → Normalize → Guard → Separate → Protect
+// ============================================================
+(function() {
+  'use strict';
+
+  // ──────────────────────────────────────────────────────────
+  // Phase 1 + 4 + 5: Enhanced Role Guard v6.2.4
+  // ──────────────────────────────────────────────────────────
+
+  /**
+   * Full role hierarchy (lowest → highest index = more permissions)
+   * OWNER is always at the top and bypasses all checks.
+   */
+  const ROLE_HIERARCHY = ['viewer', 'cashier', 'technician', 'manager', 'admin', 'owner'];
+
+  /**
+   * Phase 4: Normalize role string to lowercase canonical form.
+   * Maps aliases: superadmin/root/su → owner, etc.
+   * @param {string} role
+   * @returns {string} normalized role
+   */
+  function normalizeRole(role) {
+    if (!role) return 'viewer';
+    const r = String(role).toLowerCase().trim();
+    // Alias map
+    const ALIAS = {
+      'superadmin': 'owner',
+      'super_admin': 'owner',
+      'root': 'owner',
+      'su': 'owner',
+      'super': 'owner',
+      'owner': 'owner',
+      'administrator': 'admin',
+      'admin': 'admin',
+      'mgr': 'manager',
+      'manager': 'manager',
+      'tech': 'technician',
+      'technician': 'technician',
+      'engineer': 'technician',
+      'cashier': 'cashier',
+      'sale': 'cashier',
+      'sales': 'cashier',
+      'viewer': 'viewer',
+      'readonly': 'viewer',
+      'guest': 'viewer',
+    };
+    return ALIAS[r] || 'viewer';
+  }
+
+  /**
+   * Phase 1: hasAccess(userRole, requiredRole)
+   * Returns true if userRole >= requiredRole in hierarchy.
+   * Phase 5: OWNER always returns true.
+   * @param {string} userRole
+   * @param {string} requiredRole
+   * @returns {boolean}
+   */
+  function hasAccess(userRole, requiredRole) {
+    const normalizedUser     = normalizeRole(userRole);
+    const normalizedRequired = normalizeRole(requiredRole);
+    // Phase 5: OWNER override — always allow
+    if (normalizedUser === 'owner') return true;
+    const userIdx     = ROLE_HIERARCHY.indexOf(normalizedUser);
+    const requiredIdx = ROLE_HIERARCHY.indexOf(normalizedRequired);
+    // Unknown roles default to viewer (index 0)
+    const safeUserIdx     = userIdx     >= 0 ? userIdx     : 0;
+    const safeRequiredIdx = requiredIdx >= 0 ? requiredIdx : 0;
+    return safeUserIdx >= safeRequiredIdx;
+  }
+
+  /**
+   * Get current user role from session (normalized).
+   * @returns {string}
+   */
+  function getCurrentRole() {
+    try {
+      const session = JSON.parse(localStorage.getItem('comphone_auth_session') || '{}');
+      const raw = session.role || session.user_role || session.userRole || 'viewer';
+      return normalizeRole(raw);
+    } catch(e) {
+      return 'viewer';
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Phase 3: Error Type Classifier
+  // ──────────────────────────────────────────────────────────
+
+  /**
+   * Classify an error as 'network', 'permission', 'auth', or 'unknown'.
+   * @param {*} err — Error object, string, or API response
+   * @returns {'network'|'permission'|'auth'|'unknown'}
+   */
+  function classifyError(err) {
+    if (!err) return 'unknown';
+    const msg = String(err.message || err.error || err.toString()).toLowerCase();
+    // Network errors
+    if (msg.includes('failed to fetch') ||
+        msg.includes('networkerror') ||
+        msg.includes('network request failed') ||
+        msg.includes('timeout') ||
+        msg.includes('net::err') ||
+        msg.includes('connection refused') ||
+        msg.includes('offline')) {
+      return 'network';
+    }
+    // Auth errors (token expired, not logged in)
+    if (msg.includes('unauthorized') ||
+        msg.includes('unauthenticated') ||
+        msg.includes('token') ||
+        msg.includes('session expired') ||
+        msg.includes('not logged in') ||
+        msg.includes('login required') ||
+        (err.status === 401)) {
+      return 'auth';
+    }
+    // Permission errors
+    if (msg.includes('forbidden') ||
+        msg.includes('permission') ||
+        msg.includes('access denied') ||
+        msg.includes('not allowed') ||
+        msg.includes('ไม่มีสิทธิ์') ||
+        (err.status === 403)) {
+      return 'permission';
+    }
+    return 'unknown';
+  }
+
+  /**
+   * Phase 3: Render appropriate error UI based on error type.
+   * @param {string} errorType — 'network'|'permission'|'auth'|'unknown'
+   * @param {object} opts — { section, requiredRole, userRole, message }
+   */
+  function renderErrorUI(errorType, opts) {
+    opts = opts || {};
+    const mc = document.getElementById('main-content');
+    if (!mc) return;
+
+    const templates = {
+      network: `
+        <div style="padding:20px">
+          <div class="fallback-card" style="border-left:4px solid #f59e0b">
+            <span class="fallback-icon">📡</span>
+            <div class="fallback-title" style="color:#92400e">ไม่สามารถเชื่อมต่อได้</div>
+            <div class="fallback-msg">เกิดปัญหาการเชื่อมต่อเครือข่าย<br>กรุณาตรวจสอบอินเทอร์เน็ตและลองใหม่</div>
+            <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
+              <button class="btn-primary" onclick="loadSection(window._currentSection||'dashboard')">
+                <i class="bi bi-arrow-clockwise"></i> ลองใหม่
+              </button>
+              <button class="btn-secondary" onclick="loadSection('dashboard')">
+                <i class="bi bi-house-fill"></i> หน้าหลัก
+              </button>
+            </div>
+          </div>
+        </div>`,
+      permission: `
+        <div style="padding:20px">
+          <div class="fallback-card" style="border-left:4px solid #dc2626">
+            <span class="fallback-icon">🔒</span>
+            <div class="fallback-title" style="color:#991b1b">ไม่มีสิทธิ์เข้าถึง</div>
+            <div class="fallback-msg">
+              หน้านี้ต้องการสิทธิ์ระดับ <strong>${opts.requiredRole || 'admin'}</strong> ขึ้นไป<br>
+              บัญชีของคุณมีสิทธิ์ระดับ <strong>${opts.userRole || getCurrentRole()}</strong>
+            </div>
+            <button class="btn-secondary" onclick="loadSection('dashboard')" style="margin-top:12px">
+              <i class="bi bi-house-fill"></i> กลับหน้าหลัก
+            </button>
+          </div>
+        </div>`,
+      auth: `
+        <div style="padding:20px">
+          <div class="fallback-card" style="border-left:4px solid #7c3aed">
+            <span class="fallback-icon">🔑</span>
+            <div class="fallback-title" style="color:#5b21b6">Session หมดอายุ</div>
+            <div class="fallback-msg">กรุณาเข้าสู่ระบบใหม่อีกครั้ง</div>
+            <button class="btn-primary" onclick="localStorage.removeItem('comphone_auth_session');location.reload()" style="margin-top:12px">
+              <i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ
+            </button>
+          </div>
+        </div>`,
+      unknown: `
+        <div style="padding:20px">
+          <div class="fallback-card" style="border-left:4px solid #6b7280">
+            <span class="fallback-icon">⚠️</span>
+            <div class="fallback-title">เกิดข้อผิดพลาด</div>
+            <div class="fallback-msg">${opts.message || 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'}</div>
+            <button class="btn-secondary" onclick="loadSection('dashboard')" style="margin-top:12px">
+              <i class="bi bi-house-fill"></i> กลับหน้าหลัก
+            </button>
+          </div>
+        </div>`
+    };
+
+    mc.innerHTML = templates[errorType] || templates.unknown;
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Phase 2: Auth-Ready Guard — block render until session loaded
+  // ──────────────────────────────────────────────────────────
+
+  let _authReady = false;
+  let _authReadyCallbacks = [];
+
+  function onAuthReady(cb) {
+    if (_authReady) { cb(); return; }
+    _authReadyCallbacks.push(cb);
+  }
+
+  function markAuthReady() {
+    if (_authReady) return;
+    _authReady = true;
+    console.log('[ROLE GUARD v6.2.4] Auth ready — role:', getCurrentRole());
+    _authReadyCallbacks.forEach(cb => { try { cb(); } catch(e) {} });
+    _authReadyCallbacks = [];
+  }
+
+  // Auto-detect auth readiness by watching localStorage
+  function checkAuthReady() {
+    try {
+      const session = JSON.parse(localStorage.getItem('comphone_auth_session') || 'null');
+      if (session && (session.token || session.email || session.userId)) {
+        markAuthReady();
+        return true;
+      }
+    } catch(e) {}
+    return false;
+  }
+
+  // Poll for auth readiness (max 5s)
+  let _authPollCount = 0;
+  const _authPollInterval = setInterval(function() {
+    _authPollCount++;
+    if (checkAuthReady() || _authPollCount >= 50) {
+      clearInterval(_authPollInterval);
+      if (!_authReady) {
+        // Timeout — mark ready anyway to prevent infinite block
+        console.warn('[ROLE GUARD v6.2.4] Auth timeout — proceeding with viewer role');
+        markAuthReady();
+      }
+    }
+  }, 100);
+
+  // Also detect auth from pcCheckSession success
+  const _origPcCheckSession = window.pcCheckSession;
+  if (typeof _origPcCheckSession === 'function') {
+    window.pcCheckSession = async function() {
+      const result = await _origPcCheckSession.apply(this, arguments);
+      markAuthReady();
+      return result;
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Phase 1 + 2 + 3 + 4 + 5: Override ROLE_GUARD with fixed version
+  // ──────────────────────────────────────────────────────────
+
+  // Wait for ROLE_GUARD to be defined, then override
+  function patchRoleGuard() {
+    if (!window.ROLE_GUARD) {
+      setTimeout(patchRoleGuard, 100);
+      return;
+    }
+
+    const RG = window.ROLE_GUARD;
+
+    // Phase 1 + 5: Replace ROLES array to include 'owner'
+    RG.ROLES = ROLE_HIERARCHY.slice(); // ['viewer','cashier','technician','manager','admin','owner']
+
+    // Phase 4: Override getRole() to normalize
+    RG.getRole = function() {
+      return getCurrentRole(); // already normalized
+    };
+
+    // Phase 1 + 5: Override can() to use hasAccess()
+    RG.can = function(permission) {
+      const userRole     = getCurrentRole();
+      const requiredRole = this.PERMISSIONS[permission] || 'admin';
+      return hasAccess(userRole, requiredRole);
+    };
+
+    // Phase 1 + 5: Override canAccess() to use hasAccess()
+    RG.canAccess = function(section) {
+      const userRole     = getCurrentRole();
+      const requiredRole = this.MENU_ROLES[section] || 'admin';
+      return hasAccess(userRole, requiredRole);
+    };
+
+    // Phase 3 + 5: Override guardSection() to separate error types
+    RG.guardSection = function(section) {
+      const userRole = getCurrentRole();
+      // Phase 5: OWNER always allowed
+      if (userRole === 'owner') return true;
+      // Phase 2: If auth not ready, defer
+      if (!_authReady) {
+        onAuthReady(() => {
+          if (window._currentSection === section) {
+            window.loadSection && window.loadSection(section);
+          }
+        });
+        return false;
+      }
+      if (!this.canAccess(section)) {
+        const requiredRole = this.MENU_ROLES[section] || 'admin';
+        renderErrorUI('permission', { section, requiredRole, userRole });
+        return false;
+      }
+      return true;
+    };
+
+    // Phase 2: Override applyGuards() to wait for auth
+    const _origApplyGuards = RG.applyGuards.bind(RG);
+    RG.applyGuards = function() {
+      if (!_authReady) {
+        onAuthReady(() => _origApplyGuards());
+        return;
+      }
+      _origApplyGuards();
+    };
+
+    console.log('[ROLE GUARD v6.2.4] ROLE_GUARD patched — ROLES:', RG.ROLES);
+  }
+
+  // Run patch after DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', patchRoleGuard);
+  } else {
+    patchRoleGuard();
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Expose public API
+  // ──────────────────────────────────────────────────────────
+  window.hasAccess       = hasAccess;
+  window.normalizeRole   = normalizeRole;
+  window.getCurrentRole  = getCurrentRole;
+  window.classifyError   = classifyError;
+  window.renderErrorUI   = renderErrorUI;
+  window.onAuthReady     = onAuthReady;
+  window.markAuthReady   = markAuthReady;
+  // Additional explicit exports for validation
+  window.ROLE_HIERARCHY  = ROLE_HIERARCHY;
+
+  // ──────────────────────────────────────────────────────────
+  // Phase 3: Patch loadSection to classify errors properly
+  // ──────────────────────────────────────────────────────────
+  const _v624OrigLoadSection = window.loadSection;
+  window.loadSection = function(section) {
+    window._currentSection = section;
+    // Phase 2: Block if auth not ready
+    if (!_authReady) {
+      onAuthReady(() => {
+        if (window._currentSection === section) {
+          _v624OrigLoadSection && _v624OrigLoadSection(section);
+        }
+      });
+      return;
+    }
+    try {
+      const result = _v624OrigLoadSection ? _v624OrigLoadSection(section) : null;
+      if (result && typeof result.then === 'function') {
+        result.catch(function(err) {
+          const errType = classifyError(err);
+          console.warn('[ROLE GUARD v6.2.4] loadSection error:', section, errType, err);
+          renderErrorUI(errType, { message: err && err.message });
+        });
+      }
+      return result;
+    } catch(err) {
+      const errType = classifyError(err);
+      console.warn('[ROLE GUARD v6.2.4] loadSection sync error:', section, errType, err);
+      renderErrorUI(errType, { message: err && err.message });
+    }
+  };
+
+  // ──────────────────────────────────────────────────────────
+  // Phase 4: Debug log
+  // ──────────────────────────────────────────────────────────
+  console.log('[COMPHONE v6.2.4] Role Guard Fix loaded');
+  console.log('[ROLE GUARD v6.2.4] Hierarchy:', ROLE_HIERARCHY.join(' < '));
+  console.log('[ROLE GUARD v6.2.4] Current role (normalized):', getCurrentRole());
+
 })();
 </script>
 </body>
