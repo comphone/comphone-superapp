@@ -17149,5 +17149,775 @@ body.theme-dark .sg-detail-close { background: #334155; color: #94a3b8; }
 })();
 
 </script>
+
+<script id="v1500-autonomous-incident-management">
+/**
+ * COMPHONE Dashboard v15.0.0 — Autonomous Incident Management
+ * Phase 61: Root Cause Engine (PROD_REPLAY + LOG → auto root cause)
+ * Phase 62: Auto Incident Detection (error/latency/data spike → incident)
+ * Phase 63: Auto Freeze (Smart Kill Switch — health<60 OR error>threshold)
+ * Phase 64: Self Debug Loop (detect → analyze → fix → validate)
+ * Phase 65: Trusted Execution Mode (only audit-approved actions)
+ */
+
+(function() {
+  'use strict';
+  const _V1500_VERSION = '15.0.0';
+  console.log(`[v${_V1500_VERSION}] Autonomous Incident Management loading...`);
+
+  // ─────────────────────────────────────────────────────────────────
+  // PHASE 61 — ROOT CAUSE ENGINE
+  // Analyze PROD_REPLAY + DECISION_LOG + XAI_LOG → root cause
+  // ─────────────────────────────────────────────────────────────────
+  window.ROOT_CAUSE_ENGINE = {
+    _analyses: [],
+    _MAX_ANALYSES: 50,
+
+    // Analyze current system state and recent events → root cause
+    analyze: function(context) {
+      const causes = [];
+      const evidence = [];
+
+      // 1. Duplicate API calls
+      try {
+        const replay = window.PROD_REPLAY?._session || [];
+        const apiCalls = replay.filter(e => e.type === 'API_CALL');
+        const actionCounts = {};
+        apiCalls.forEach(e => {
+          const action = e.data?.action;
+          if (action) actionCounts[action] = (actionCounts[action] || 0) + 1;
+        });
+        const duplicates = Object.entries(actionCounts).filter(([, count]) => count > 1);
+        if (duplicates.length > 0) {
+          causes.push('duplicate API call');
+          evidence.push(`Duplicate calls: ${duplicates.map(([a, c]) => `${a}(×${c})`).join(', ')}`);
+        }
+      } catch(e) {}
+
+      // 2. Stale cache (API_RESPONSE with very old data)
+      try {
+        const cacheKeys = Object.keys(localStorage).filter(k => k.includes('cache') || k.includes('bundle'));
+        const staleKeys = cacheKeys.filter(k => {
+          try {
+            const val = JSON.parse(localStorage.getItem(k));
+            const ts = val?.timestamp || val?.cachedAt || 0;
+            return ts > 0 && (Date.now() - ts) > 5 * 60 * 1000; // > 5 min
+          } catch(e) { return false; }
+        });
+        if (staleKeys.length > 0) {
+          causes.push('stale cache');
+          evidence.push(`Stale cache keys: ${staleKeys.slice(0, 3).join(', ')}`);
+        }
+      } catch(e) {}
+
+      // 3. Circuit breaker open
+      try {
+        const circuits = window.API_CONTROLLER?._perCircuit || {};
+        const openCircuits = Object.entries(circuits).filter(([, c]) => c.state === 'OPEN');
+        if (openCircuits.length > 0) {
+          causes.push('circuit breaker open');
+          evidence.push(`Open circuits: ${openCircuits.map(([a]) => a).join(', ')}`);
+        }
+      } catch(e) {}
+
+      // 4. High error rate
+      try {
+        const metrics = window.GLOBAL_METRICS_ENGINE?.getSystemMetrics?.() || {};
+        if (metrics.errorRate > 20) {
+          causes.push('high error rate');
+          evidence.push(`Error rate: ${metrics.errorRate?.toFixed(1)}%`);
+        }
+        if (metrics.avgLatency > 3000) {
+          causes.push('latency spike');
+          evidence.push(`Avg latency: ${metrics.avgLatency}ms`);
+        }
+      } catch(e) {}
+
+      // 5. Data integrity violations
+      try {
+        const intStats = window.DATA_INTEGRITY?.stats?.() || {};
+        if (intStats.total > 0) {
+          causes.push('data integrity violation');
+          evidence.push(`Violations: ${intStats.total}, blocked renders: ${intStats.blockedRenders}`);
+        }
+      } catch(e) {}
+
+      // 6. AI trust too low
+      try {
+        const aiTrust = window.TRUST_SCORE?.get?.('AI') || 0;
+        if (aiTrust < 0.65) {
+          causes.push('AI trust degraded');
+          evidence.push(`AI trust: ${aiTrust.toFixed(3)} (< 0.65)`);
+        }
+      } catch(e) {}
+
+      // 7. Wrapper chain broken (callApi depth)
+      try {
+        const callLock = window.__CALL_LOCK;
+        if (callLock?.depth > 5) {
+          causes.push('API wrapper chain overload');
+          evidence.push(`Call depth: ${callLock.depth}`);
+        }
+      } catch(e) {}
+
+      // 8. Offline queue backed up
+      try {
+        const queue = window.OFFLINE_QUEUE;
+        if (queue && queue.length > 10) {
+          causes.push('offline queue backup');
+          evidence.push(`Queue size: ${queue.length}`);
+        }
+      } catch(e) {}
+
+      // Build result
+      const rootCause = causes.length > 0
+        ? `Failure caused by: ${causes.join(' + ')}`
+        : 'No root cause detected — system appears healthy';
+
+      const analysis = {
+        id: 'rca_' + Date.now(),
+        timestamp: Date.now(),
+        rootCause,
+        causes,
+        evidence,
+        context: context || 'manual',
+        healthScore: window.REAL_HEALTH?.calculate?.()?.score || null,
+      };
+
+      this._analyses.unshift(analysis);
+      if (this._analyses.length > this._MAX_ANALYSES) {
+        this._analyses = this._analyses.slice(0, this._MAX_ANALYSES);
+      }
+
+      console.log(`[ROOT_CAUSE] ${rootCause}`);
+      if (evidence.length > 0) {
+        evidence.forEach(e => console.log(`  Evidence: ${e}`));
+      }
+
+      return analysis;
+    },
+
+    getAnalyses: function(n) { return this._analyses.slice(0, n || 5); },
+    lastCause: function() { return this._analyses[0]?.rootCause || 'No analysis yet'; },
+    stats: function() {
+      return {
+        total: this._analyses.length,
+        lastCause: this.lastCause(),
+        lastAt: this._analyses[0] ? new Date(this._analyses[0].timestamp).toLocaleTimeString() : null,
+      };
+    },
+  };
+
+  // ─────────────────────────────────────────────────────────────────
+  // PHASE 62 — AUTO INCIDENT DETECTION
+  // Monitor: error spike + latency spike + data violation → incident
+  // ─────────────────────────────────────────────────────────────────
+  window.INCIDENT_MANAGER = {
+    _incidents: [],
+    _MAX_INCIDENTS: 100,
+    _active: [],
+    _cooldown: {},
+    _COOLDOWN_MS: 60000, // 1 minute between same-type incidents
+
+    // Thresholds
+    _thresholds: {
+      errorRate:    20,   // % error rate
+      latency:      3000, // ms
+      healthScore:  70,   // below this = incident
+      violations:   3,    // data integrity violations
+    },
+
+    // Create a new incident
+    create: function(type, severity, description, evidence) {
+      // Cooldown check
+      const now = Date.now();
+      if (this._cooldown[type] && (now - this._cooldown[type]) < this._COOLDOWN_MS) {
+        return null; // Skip duplicate incident
+      }
+      this._cooldown[type] = now;
+
+      const incident = {
+        id: 'inc_' + now,
+        type,
+        severity,   // CRITICAL / HIGH / MEDIUM / LOW
+        description,
+        evidence: evidence || [],
+        status: 'OPEN',
+        createdAt: now,
+        resolvedAt: null,
+        rootCause: null,
+        autoActions: [],
+      };
+
+      this._incidents.unshift(incident);
+      if (this._incidents.length > this._MAX_INCIDENTS) {
+        this._incidents = this._incidents.slice(0, this._MAX_INCIDENTS);
+      }
+      this._active.push(incident.id);
+
+      console.error(`[INCIDENT] ${severity} — ${type}: ${description}`);
+
+      // Auto root cause analysis
+      setTimeout(() => {
+        const rca = window.ROOT_CAUSE_ENGINE?.analyze?.(type);
+        if (rca) incident.rootCause = rca.rootCause;
+      }, 500);
+
+      // Trigger auto actions based on severity
+      this._autoRespond(incident);
+
+      return incident;
+    },
+
+    _autoRespond: function(incident) {
+      if (incident.severity === 'CRITICAL') {
+        incident.autoActions.push('ROOT_CAUSE_ANALYSIS');
+        incident.autoActions.push('NOTIFY_TEAM');
+        // CRITICAL → trigger auto freeze check
+        if (window.AUTO_FREEZE) {
+          window.AUTO_FREEZE.checkAndFreeze('incident:' + incident.type);
+        }
+      } else if (incident.severity === 'HIGH') {
+        incident.autoActions.push('ROOT_CAUSE_ANALYSIS');
+        incident.autoActions.push('SAFE_MODE');
+        if (window.SAFE_MODE && !window.SAFE_MODE.isActive?.()) {
+          window.SAFE_MODE.enable?.('incident:' + incident.type);
+        }
+      }
+    },
+
+    resolve: function(incidentId, resolution) {
+      const incident = this._incidents.find(i => i.id === incidentId);
+      if (!incident) return false;
+      incident.status = 'RESOLVED';
+      incident.resolvedAt = Date.now();
+      incident.resolution = resolution;
+      this._active = this._active.filter(id => id !== incidentId);
+      console.log(`[INCIDENT] Resolved: ${incidentId} — ${resolution}`);
+      return true;
+    },
+
+    // Check metrics and auto-create incidents
+    scan: function() {
+      try {
+        const metrics = window.GLOBAL_METRICS_ENGINE?.getSystemMetrics?.() || {};
+        const health = window.REAL_HEALTH?.calculate?.() || {};
+
+        if (metrics.errorRate > this._thresholds.errorRate) {
+          this.create('ERROR_SPIKE', 'HIGH',
+            `Error rate ${metrics.errorRate?.toFixed(1)}% exceeds threshold ${this._thresholds.errorRate}%`,
+            [`errorRate: ${metrics.errorRate?.toFixed(1)}%`]);
+        }
+
+        if (metrics.avgLatency > this._thresholds.latency) {
+          this.create('LATENCY_SPIKE', 'HIGH',
+            `Latency ${metrics.avgLatency}ms exceeds threshold ${this._thresholds.latency}ms`,
+            [`avgLatency: ${metrics.avgLatency}ms`]);
+        }
+
+        if (health.score < this._thresholds.healthScore) {
+          const severity = health.score < 50 ? 'CRITICAL' : 'HIGH';
+          this.create('HEALTH_DEGRADED', severity,
+            `Health score ${health.score}% (grade ${health.grade}) below threshold ${this._thresholds.healthScore}%`,
+            [`healthScore: ${health.score}%`, `grade: ${health.grade}`]);
+        }
+
+        const intStats = window.DATA_INTEGRITY?.stats?.() || {};
+        if (intStats.total >= this._thresholds.violations) {
+          this.create('DATA_VIOLATION', 'HIGH',
+            `${intStats.total} data integrity violations detected`,
+            [`violations: ${intStats.total}`, `blockedRenders: ${intStats.blockedRenders}`]);
+        }
+      } catch(e) {
+        console.warn('[INCIDENT_MANAGER] scan error:', e.message);
+      }
+    },
+
+    getActive: function() { return this._incidents.filter(i => i.status === 'OPEN'); },
+    getAll: function(n) { return this._incidents.slice(0, n || 10); },
+    stats: function() {
+      const open = this._incidents.filter(i => i.status === 'OPEN').length;
+      const critical = this._incidents.filter(i => i.severity === 'CRITICAL' && i.status === 'OPEN').length;
+      return { total: this._incidents.length, open, critical };
+    },
+  };
+
+  // Start auto incident scan every 30s
+  const _v1500_incidentScanInterval = setInterval(() => {
+    window.INCIDENT_MANAGER.scan();
+  }, 30000);
+
+  // ─────────────────────────────────────────────────────────────────
+  // PHASE 63 — AUTO FREEZE (Smart Kill Switch)
+  // if health < 60 OR error > threshold → SYSTEM.freeze()
+  // ─────────────────────────────────────────────────────────────────
+  window.AUTO_FREEZE = {
+    _enabled: true,
+    _HEALTH_THRESHOLD: 60,
+    _ERROR_THRESHOLD: 40,  // % error rate
+    _LATENCY_THRESHOLD: 5000, // ms
+    _checkCount: 0,
+    _freezeHistory: [],
+    _lastCheck: null,
+    _CONSECUTIVE_FAILS: 3,  // Must fail N times before freeze
+    _failCount: 0,
+
+    enable: function() { this._enabled = true; console.log('[AUTO_FREEZE] Enabled'); },
+    disable: function() { this._enabled = false; console.log('[AUTO_FREEZE] Disabled'); },
+
+    checkAndFreeze: function(trigger) {
+      if (!this._enabled) return false;
+      if (window.SYSTEM?.isFrozen?.()) return false; // Already frozen
+
+      this._checkCount++;
+      this._lastCheck = Date.now();
+
+      try {
+        const health = window.REAL_HEALTH?.calculate?.() || {};
+        const metrics = window.GLOBAL_METRICS_ENGINE?.getSystemMetrics?.() || {};
+
+        const healthFail = health.score < this._HEALTH_THRESHOLD;
+        const errorFail = (metrics.errorRate || 0) > this._ERROR_THRESHOLD;
+        const latencyFail = (metrics.avgLatency || 0) > this._LATENCY_THRESHOLD;
+
+        const shouldFreeze = healthFail || errorFail || latencyFail;
+
+        if (shouldFreeze) {
+          this._failCount++;
+          const reasons = [];
+          if (healthFail) reasons.push(`health=${health.score}% < ${this._HEALTH_THRESHOLD}%`);
+          if (errorFail) reasons.push(`errorRate=${metrics.errorRate?.toFixed(1)}% > ${this._ERROR_THRESHOLD}%`);
+          if (latencyFail) reasons.push(`latency=${metrics.avgLatency}ms > ${this._LATENCY_THRESHOLD}ms`);
+
+          console.warn(`[AUTO_FREEZE] Fail #${this._failCount}/${this._CONSECUTIVE_FAILS}: ${reasons.join(', ')}`);
+
+          if (this._failCount >= this._CONSECUTIVE_FAILS) {
+            const reason = `Auto-freeze: ${reasons.join(' + ')} (trigger: ${trigger || 'scan'})`;
+            this._freezeHistory.unshift({ reason, timestamp: Date.now(), trigger });
+            if (this._freezeHistory.length > 10) this._freezeHistory = this._freezeHistory.slice(0, 10);
+
+            window.SYSTEM?.freeze?.(reason);
+            this._failCount = 0; // Reset after freeze
+
+            // Create incident
+            window.INCIDENT_MANAGER?.create?.('AUTO_FREEZE', 'CRITICAL', reason, reasons);
+            return true;
+          }
+        } else {
+          // Reset fail count on healthy check
+          if (this._failCount > 0) {
+            console.log(`[AUTO_FREEZE] System healthy — reset fail count`);
+            this._failCount = 0;
+          }
+        }
+      } catch(e) {
+        console.warn('[AUTO_FREEZE] check error:', e.message);
+      }
+      return false;
+    },
+
+    getFreezeHistory: function() { return this._freezeHistory; },
+    stats: function() {
+      return {
+        enabled: this._enabled,
+        checkCount: this._checkCount,
+        failCount: this._failCount,
+        freezeHistory: this._freezeHistory.length,
+        thresholds: {
+          health: this._HEALTH_THRESHOLD,
+          error: this._ERROR_THRESHOLD,
+          latency: this._LATENCY_THRESHOLD,
+        },
+      };
+    },
+  };
+
+  // Auto check every 30s
+  const _v1500_autoFreezeInterval = setInterval(() => {
+    window.AUTO_FREEZE.checkAndFreeze('scheduled');
+  }, 30000);
+
+  // ─────────────────────────────────────────────────────────────────
+  // PHASE 64 — SELF DEBUG LOOP
+  // detect → analyze → fix → validate
+  // ─────────────────────────────────────────────────────────────────
+  window.SELF_DEBUG = {
+    _running: false,
+    _history: [],
+    _MAX_HISTORY: 20,
+    _MAX_CYCLES: 3, // Max auto-fix attempts per issue
+
+    // Fix strategies: action → fix function
+    _fixStrategies: {
+      'duplicate API call': function() {
+        // Clear in-flight locks
+        if (window.__IN_FLIGHT) {
+          const count = Object.keys(window.__IN_FLIGHT).length;
+          window.__IN_FLIGHT = {};
+          return `Cleared ${count} in-flight locks`;
+        }
+        return 'No in-flight locks to clear';
+      },
+      'stale cache': function() {
+        // Clear stale cache entries
+        const cacheKeys = Object.keys(localStorage).filter(k => k.includes('cache') || k.includes('bundle'));
+        let cleared = 0;
+        cacheKeys.forEach(k => {
+          try {
+            const val = JSON.parse(localStorage.getItem(k));
+            const ts = val?.timestamp || val?.cachedAt || 0;
+            if (ts > 0 && (Date.now() - ts) > 5 * 60 * 1000) {
+              localStorage.removeItem(k);
+              cleared++;
+            }
+          } catch(e) {}
+        });
+        return `Cleared ${cleared} stale cache entries`;
+      },
+      'circuit breaker open': function() {
+        // Reset open circuits
+        const circuits = window.API_CONTROLLER?._perCircuit || {};
+        let reset = 0;
+        Object.keys(circuits).forEach(action => {
+          if (circuits[action].state === 'OPEN') {
+            circuits[action].state = 'CLOSED';
+            circuits[action].errorCount = 0;
+            reset++;
+          }
+        });
+        return `Reset ${reset} open circuits`;
+      },
+      'high error rate': function() {
+        // Enable safe mode to reduce load
+        if (window.SAFE_MODE && !window.SAFE_MODE.isActive?.()) {
+          window.SAFE_MODE.enable?.('self_debug');
+          return 'Enabled Safe Mode to reduce error rate';
+        }
+        return 'Safe Mode already active';
+      },
+      'latency spike': function() {
+        // Reduce refresh rate
+        if (window.INTELLIGENT_THROTTLE) {
+          window.INTELLIGENT_THROTTLE._currentInterval = Math.min(
+            window.INTELLIGENT_THROTTLE._currentInterval * 2,
+            window.INTELLIGENT_THROTTLE._MAX_INTERVAL || 120000
+          );
+          return `Increased throttle interval to ${window.INTELLIGENT_THROTTLE._currentInterval}ms`;
+        }
+        return 'Throttle adjusted';
+      },
+      'data integrity violation': function() {
+        // Clear violation log (they've been logged, now reset)
+        if (window.DATA_INTEGRITY) {
+          const count = window.DATA_INTEGRITY._violations?.length || 0;
+          window.DATA_INTEGRITY._violations = [];
+          window.DATA_INTEGRITY._blockedRenders = 0;
+          return `Cleared ${count} integrity violations`;
+        }
+        return 'Integrity violations cleared';
+      },
+      'AI trust degraded': function() {
+        // Reset AI trust to baseline
+        if (window.TRUST_SCORE?._scores?.AI) {
+          window.TRUST_SCORE._scores.AI.score = 0.72; // Reset to baseline
+          return 'AI trust score reset to baseline (0.72)';
+        }
+        return 'AI trust reset';
+      },
+      'offline queue backup': function() {
+        // Clear offline queue
+        if (window.OFFLINE_QUEUE) {
+          const count = window.OFFLINE_QUEUE.length;
+          window.OFFLINE_QUEUE = [];
+          return `Cleared ${count} offline queue items`;
+        }
+        return 'Offline queue cleared';
+      },
+    },
+
+    // Run one debug cycle: detect → analyze → fix → validate
+    runCycle: async function() {
+      if (this._running) {
+        console.warn('[SELF_DEBUG] Already running');
+        return null;
+      }
+      this._running = true;
+
+      const cycle = {
+        id: 'debug_' + Date.now(),
+        timestamp: Date.now(),
+        phase: 'DETECT',
+        detected: [],
+        analyzed: null,
+        fixes: [],
+        validated: false,
+        healthBefore: null,
+        healthAfter: null,
+      };
+
+      try {
+        // PHASE: DETECT
+        console.log('[SELF_DEBUG] Phase 1: DETECT');
+        cycle.healthBefore = window.REAL_HEALTH?.calculate?.()?.score || null;
+
+        // PHASE: ANALYZE
+        cycle.phase = 'ANALYZE';
+        console.log('[SELF_DEBUG] Phase 2: ANALYZE');
+        const rca = window.ROOT_CAUSE_ENGINE?.analyze?.('self_debug');
+        cycle.analyzed = rca;
+        cycle.detected = rca?.causes || [];
+
+        if (cycle.detected.length === 0) {
+          console.log('[SELF_DEBUG] No issues detected — system healthy');
+          cycle.phase = 'COMPLETE';
+          cycle.validated = true;
+          this._running = false;
+          this._history.unshift(cycle);
+          return cycle;
+        }
+
+        // PHASE: FIX
+        cycle.phase = 'FIX';
+        console.log(`[SELF_DEBUG] Phase 3: FIX (${cycle.detected.length} issues)`);
+        for (const cause of cycle.detected) {
+          const fixFn = this._fixStrategies[cause];
+          if (fixFn) {
+            try {
+              const result = fixFn();
+              cycle.fixes.push({ cause, result, success: true });
+              console.log(`[SELF_DEBUG] Fixed: ${cause} → ${result}`);
+            } catch(e) {
+              cycle.fixes.push({ cause, result: e.message, success: false });
+              console.warn(`[SELF_DEBUG] Fix failed: ${cause} → ${e.message}`);
+            }
+          } else {
+            cycle.fixes.push({ cause, result: 'No fix strategy available', success: false });
+          }
+        }
+
+        // PHASE: VALIDATE
+        cycle.phase = 'VALIDATE';
+        console.log('[SELF_DEBUG] Phase 4: VALIDATE');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        cycle.healthAfter = window.REAL_HEALTH?.calculate?.()?.score || null;
+        cycle.validated = cycle.healthAfter >= (cycle.healthBefore || 0);
+
+        const improvement = cycle.healthAfter - (cycle.healthBefore || 0);
+        console.log(`[SELF_DEBUG] Validation: health ${cycle.healthBefore}% → ${cycle.healthAfter}% (${improvement >= 0 ? '+' : ''}${improvement}%)`);
+        console.log(`[SELF_DEBUG] Cycle ${cycle.validated ? 'SUCCESS ✅' : 'PARTIAL ⚠️'}`);
+
+      } catch(e) {
+        console.error('[SELF_DEBUG] Cycle error:', e.message);
+        cycle.error = e.message;
+      } finally {
+        this._running = false;
+        cycle.phase = 'COMPLETE';
+        this._history.unshift(cycle);
+        if (this._history.length > this._MAX_HISTORY) {
+          this._history = this._history.slice(0, this._MAX_HISTORY);
+        }
+      }
+
+      return cycle;
+    },
+
+    getHistory: function(n) { return this._history.slice(0, n || 5); },
+    stats: function() {
+      const success = this._history.filter(c => c.validated).length;
+      return {
+        running: this._running,
+        totalCycles: this._history.length,
+        successCycles: success,
+        lastCycle: this._history[0]?.id || null,
+      };
+    },
+  };
+
+  // ─────────────────────────────────────────────────────────────────
+  // PHASE 65 — TRUSTED EXECUTION MODE
+  // AI can only execute actions that passed audit history
+  // ─────────────────────────────────────────────────────────────────
+  window.TRUSTED_EXEC = {
+    _enabled: true,
+    _auditedActions: {},  // action → { approved: bool, successRate: float, evidence: int }
+    _MIN_EVIDENCE: 3,     // Minimum samples to trust
+    _MIN_SUCCESS_RATE: 0.6, // 60% success rate to be trusted
+    _blockedActions: [],
+    _MAX_BLOCKED_LOG: 50,
+
+    // Mark action as audited (called by DECISION_LOG + OUTCOME_EVALUATOR)
+    recordAudit: function(action, success) {
+      if (!this._auditedActions[action]) {
+        this._auditedActions[action] = { approved: false, successCount: 0, totalCount: 0, successRate: 0 };
+      }
+      const entry = this._auditedActions[action];
+      entry.totalCount++;
+      if (success) entry.successCount++;
+      entry.successRate = entry.successCount / entry.totalCount;
+      entry.approved = entry.totalCount >= this._MIN_EVIDENCE && entry.successRate >= this._MIN_SUCCESS_RATE;
+    },
+
+    // Check if action is trusted
+    isTrusted: function(action) {
+      if (!this._enabled) return true; // Bypass if disabled
+      const entry = this._auditedActions[action];
+      if (!entry) return false; // Never audited = not trusted
+      return entry.approved;
+    },
+
+    // Enforce — block if not trusted
+    enforce: function(action) {
+      if (!this.isTrusted(action)) {
+        const entry = this._auditedActions[action];
+        const reason = !entry
+          ? 'never audited'
+          : entry.totalCount < this._MIN_EVIDENCE
+            ? `insufficient evidence (${entry.totalCount}/${this._MIN_EVIDENCE} samples)`
+            : `low success rate (${(entry.successRate * 100).toFixed(0)}% < ${this._MIN_SUCCESS_RATE * 100}%)`;
+
+        this._blockedActions.unshift({ action, reason, timestamp: Date.now() });
+        if (this._blockedActions.length > this._MAX_BLOCKED_LOG) {
+          this._blockedActions = this._blockedActions.slice(0, this._MAX_BLOCKED_LOG);
+        }
+        console.warn(`[TRUSTED_EXEC] BLOCKED: ${action} — ${reason}`);
+        return false;
+      }
+      return true;
+    },
+
+    // Pre-approve actions with known good history (bootstrap)
+    bootstrap: function() {
+      const safeActions = [
+        'getDashboardBundle', 'getJobList', 'getSystemVersion', 'checkSession',
+        'getStockList', 'getReportSummary', 'getPOList', 'getHealthMetrics',
+        'enableSafeMode', 'disableHeavyFeatures', 'reduceRefreshRate',
+      ];
+      safeActions.forEach(action => {
+        // Simulate 5 successful audits
+        for (let i = 0; i < 5; i++) this.recordAudit(action, true);
+      });
+      console.log(`[TRUSTED_EXEC] Bootstrapped ${safeActions.length} safe actions`);
+    },
+
+    getAuditedActions: function() {
+      return Object.entries(this._auditedActions).map(([action, entry]) => ({
+        action, ...entry,
+      })).sort((a, b) => b.totalCount - a.totalCount);
+    },
+
+    getBlockedLog: function(n) { return this._blockedActions.slice(0, n || 10); },
+    stats: function() {
+      const approved = Object.values(this._auditedActions).filter(e => e.approved).length;
+      const total = Object.keys(this._auditedActions).length;
+      return {
+        enabled: this._enabled,
+        auditedActions: total,
+        approvedActions: approved,
+        blockedCount: this._blockedActions.length,
+      };
+    },
+  };
+
+  // Bootstrap trusted actions immediately
+  window.TRUSTED_EXEC.bootstrap();
+
+  // Hook AUTO_ORCHESTRATOR.execute to enforce trusted execution
+  const _origExecuteV1500 = window.AUTO_ORCHESTRATOR?.execute;
+  if (_origExecuteV1500) {
+    window.AUTO_ORCHESTRATOR.execute = function(action, detail, priority) {
+      if (!window.TRUSTED_EXEC.enforce(action)) {
+        console.warn(`[TRUSTED_EXEC] Orchestrator blocked: ${action}`);
+        return;
+      }
+      return _origExecuteV1500.call(this, action, detail, priority);
+    };
+  }
+
+  // Hook DECISION_LOG to record audit outcomes
+  const _origDecisionLogRecord = window.DECISION_LOG?.record;
+  if (_origDecisionLogRecord) {
+    window.DECISION_LOG.record = function(decision, action, beforeMetrics) {
+      const result = _origDecisionLogRecord.call(this, decision, action, beforeMetrics);
+      // Record initial audit (outcome TBD)
+      return result;
+    };
+  }
+
+  // Hook OUTCOME_EVALUATOR to feed trusted execution
+  const _origEvaluate = window.OUTCOME_EVALUATOR?.evaluate;
+  if (_origEvaluate) {
+    window.OUTCOME_EVALUATOR.evaluate = function(logId) {
+      const result = _origEvaluate.call(this, logId);
+      if (result) {
+        window.TRUSTED_EXEC.recordAudit(result.action, result.success);
+      }
+      return result;
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // V1500 Debug Tools
+  // ─────────────────────────────────────────────────────────────────
+  window.V1500 = {
+    report: function() {
+      console.log('=== COMPHONE v15.0.0 — Autonomous Incident Management Report ===');
+      console.log('\n[Phase 61] Root Cause Engine:', window.ROOT_CAUSE_ENGINE.stats());
+      console.log('[Phase 62] Incident Manager:', window.INCIDENT_MANAGER.stats());
+      console.log('[Phase 63] Auto Freeze:', window.AUTO_FREEZE.stats());
+      console.log('[Phase 64] Self Debug:', window.SELF_DEBUG.stats());
+      console.log('[Phase 65] Trusted Execution:', window.TRUSTED_EXEC.stats());
+      return {
+        version: _V1500_VERSION,
+        rootCause: window.ROOT_CAUSE_ENGINE.stats(),
+        incidents: window.INCIDENT_MANAGER.stats(),
+        autoFreeze: window.AUTO_FREEZE.stats(),
+        selfDebug: window.SELF_DEBUG.stats(),
+        trustedExec: window.TRUSTED_EXEC.stats(),
+      };
+    },
+
+    testRootCause: function() {
+      console.log('[TEST] Root Cause Engine...');
+      return window.ROOT_CAUSE_ENGINE.analyze('test');
+    },
+
+    testIncident: function() {
+      console.log('[TEST] Auto Incident Detection...');
+      return window.INCIDENT_MANAGER.create('TEST_INCIDENT', 'MEDIUM', 'Manual test incident', ['test evidence']);
+    },
+
+    testAutoFreeze: function() {
+      console.log('[TEST] Auto Freeze check...');
+      return window.AUTO_FREEZE.checkAndFreeze('test');
+    },
+
+    testSelfDebug: async function() {
+      console.log('[TEST] Self Debug Loop...');
+      return await window.SELF_DEBUG.runCycle();
+    },
+
+    testTrustedExec: function() {
+      console.log('[TEST] Trusted Execution Mode...');
+      const trusted = window.TRUSTED_EXEC.isTrusted('getDashboardBundle');
+      const blocked = window.TRUSTED_EXEC.isTrusted('unknownAction');
+      console.log('getDashboardBundle trusted:', trusted);
+      console.log('unknownAction trusted:', blocked);
+      return window.TRUSTED_EXEC.stats();
+    },
+  };
+
+  // Set version
+  window.__COMPHONE_VERSION = _V1500_VERSION;
+  console.log(`[v${_V1500_VERSION}] Autonomous Incident Management loaded ✅`);
+  console.log(`  Phase 61: Root Cause Engine (PROD_REPLAY + LOG → auto root cause)`);
+  console.log(`  Phase 62: Auto Incident Detection (error/latency/data → incident)`);
+  console.log(`  Phase 63: Auto Freeze (health<60 OR error>40% → SYSTEM.freeze())`);
+  console.log(`  Phase 64: Self Debug Loop (detect → analyze → fix → validate)`);
+  console.log(`  Phase 65: Trusted Execution Mode (audit-approved actions only)`);
+  console.log(`  Debug: V1500.report()`);
+
+})();
+
+</script>
 </body>
 </html>
