@@ -17919,5 +17919,678 @@ body.theme-dark .sg-detail-close { background: #334155; color: #94a3b8; }
 })();
 
 </script>
+
+<script id="v1600-self-evolving-debug">
+/**
+ * COMPHONE Dashboard v16.0.0 — Self-Evolving Debug System
+ * Phase 66: Fix Learning Engine (learn from fix history)
+ * Phase 67: Failure Memory (instant fix on known failure patterns)
+ * Phase 68: Anomaly Detection (detect unknown → escalate)
+ * Phase 69: Adaptive Fix Generation (AI generates new fix combos)
+ * Phase 70: Self Evolution Score (measure daily improvement)
+ */
+
+(function() {
+  'use strict';
+  const _V1600_VERSION = '16.0.0';
+  console.log(`[v${_V1600_VERSION}] Self-Evolving Debug System loading...`);
+
+  // ─────────────────────────────────────────────────────────────────
+  // PHASE 66 — FIX LEARNING ENGINE
+  // Learn from fix history → choose best fix based on success rate
+  // ─────────────────────────────────────────────────────────────────
+  window.FIX_LEARNING_ENGINE = {
+    _knowledge: {},   // cause → { fixName, successCount, totalCount, successRate, avgImprovement }
+    _fixLog: [],
+    _MAX_LOG: 200,
+
+    // Record a fix attempt and its outcome
+    recordFix: function(cause, fixName, success, healthImprovement) {
+      const key = cause;
+      if (!this._knowledge[key]) {
+        this._knowledge[key] = {};
+      }
+      if (!this._knowledge[key][fixName]) {
+        this._knowledge[key][fixName] = {
+          fixName,
+          successCount: 0,
+          totalCount: 0,
+          successRate: 0,
+          avgImprovement: 0,
+          lastUsed: null,
+        };
+      }
+      const entry = this._knowledge[key][fixName];
+      entry.totalCount++;
+      if (success) entry.successCount++;
+      entry.successRate = entry.successCount / entry.totalCount;
+      // EMA for improvement
+      const alpha = 0.3;
+      entry.avgImprovement = entry.avgImprovement === 0
+        ? (healthImprovement || 0)
+        : entry.avgImprovement * (1 - alpha) + (healthImprovement || 0) * alpha;
+      entry.lastUsed = Date.now();
+
+      this._fixLog.unshift({ cause, fixName, success, healthImprovement, timestamp: Date.now() });
+      if (this._fixLog.length > this._MAX_LOG) this._fixLog = this._fixLog.slice(0, this._MAX_LOG);
+    },
+
+    // Get best fix for a cause based on learned history
+    getBestFix: function(cause) {
+      const fixes = this._knowledge[cause];
+      if (!fixes || Object.keys(fixes).length === 0) return null;
+
+      // Score = successRate * 0.6 + avgImprovement/100 * 0.4
+      let best = null;
+      let bestScore = -1;
+      Object.values(fixes).forEach(entry => {
+        if (entry.totalCount < 2) return; // Need at least 2 data points
+        const score = entry.successRate * 0.6 + (entry.avgImprovement / 100) * 0.4;
+        if (score > bestScore) {
+          bestScore = score;
+          best = entry;
+        }
+      });
+      return best;
+    },
+
+    // Get ranked fixes for a cause
+    getRankedFixes: function(cause) {
+      const fixes = this._knowledge[cause];
+      if (!fixes) return [];
+      return Object.values(fixes)
+        .filter(e => e.totalCount >= 1)
+        .sort((a, b) => b.successRate - a.successRate);
+    },
+
+    getKnowledge: function() { return this._knowledge; },
+    stats: function() {
+      const causes = Object.keys(this._knowledge).length;
+      const totalFixes = Object.values(this._knowledge)
+        .reduce((sum, fixes) => sum + Object.keys(fixes).length, 0);
+      return { causes, totalFixes, logEntries: this._fixLog.length };
+    },
+  };
+
+  // Hook SELF_DEBUG.runCycle to record fix outcomes
+  const _origRunCycle = window.SELF_DEBUG?.runCycle;
+  if (_origRunCycle) {
+    window.SELF_DEBUG.runCycle = async function() {
+      const cycle = await _origRunCycle.call(this);
+      if (cycle && cycle.fixes && cycle.fixes.length > 0) {
+        const improvement = (cycle.healthAfter || 0) - (cycle.healthBefore || 0);
+        cycle.fixes.forEach(fix => {
+          window.FIX_LEARNING_ENGINE.recordFix(
+            fix.cause, fix.cause, fix.success, improvement
+          );
+        });
+        // Also update SELF_DEBUG to prefer learned fixes
+        window.SELF_DEBUG._learnedFixes = window.FIX_LEARNING_ENGINE.getKnowledge();
+      }
+      return cycle;
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // PHASE 67 — FAILURE MEMORY
+  // Remember failure patterns → instant fix on next occurrence
+  // ─────────────────────────────────────────────────────────────────
+  window.FAILURE_MEMORY = {
+    _memory: {},      // pattern_key → { causes, fixes, successCount, totalCount }
+    _MAX_MEMORY: 50,
+    _MIN_CONFIDENCE: 0.7, // Must have 70% success rate to use memory
+
+    // Generate a key from a set of causes
+    _patternKey: function(causes) {
+      return [...causes].sort().join('+');
+    },
+
+    // Store a failure pattern and its successful fix
+    remember: function(causes, fixes, success) {
+      const key = this._patternKey(causes);
+      if (!this._memory[key]) {
+        this._memory[key] = {
+          key,
+          causes: [...causes],
+          fixes: [...fixes],
+          successCount: 0,
+          totalCount: 0,
+          confidence: 0,
+          lastSeen: null,
+          firstSeen: Date.now(),
+        };
+      }
+      const entry = this._memory[key];
+      entry.totalCount++;
+      if (success) entry.successCount++;
+      entry.confidence = entry.successCount / entry.totalCount;
+      entry.lastSeen = Date.now();
+
+      if (Object.keys(this._memory).length > this._MAX_MEMORY) {
+        // Remove oldest low-confidence entry
+        const oldest = Object.values(this._memory)
+          .sort((a, b) => a.confidence - b.confidence || a.lastSeen - b.lastSeen)[0];
+        if (oldest) delete this._memory[oldest.key];
+      }
+
+      console.log(`[FAILURE_MEMORY] Remembered: "${key}" (confidence: ${(entry.confidence * 100).toFixed(0)}%)`);
+    },
+
+    // Recall: check if this pattern is known and has high confidence
+    recall: function(causes) {
+      const key = this._patternKey(causes);
+      const entry = this._memory[key];
+      if (!entry) return null;
+      if (entry.confidence < this._MIN_CONFIDENCE) return null;
+      if (entry.totalCount < 2) return null;
+      return entry;
+    },
+
+    // Instant fix: if pattern is known → return fix immediately
+    instantFix: function(causes) {
+      const memory = this.recall(causes);
+      if (!memory) return null;
+      console.log(`[FAILURE_MEMORY] Instant fix! Pattern "${memory.key}" recognized (confidence: ${(memory.confidence * 100).toFixed(0)}%)`);
+      return memory;
+    },
+
+    getMemory: function() { return Object.values(this._memory); },
+    stats: function() {
+      const highConf = Object.values(this._memory).filter(e => e.confidence >= this._MIN_CONFIDENCE).length;
+      return {
+        patterns: Object.keys(this._memory).length,
+        highConfidence: highConf,
+        minConfidence: this._MIN_CONFIDENCE,
+      };
+    },
+  };
+
+  // Hook ROOT_CAUSE_ENGINE.analyze to check memory first
+  const _origAnalyze = window.ROOT_CAUSE_ENGINE?.analyze;
+  if (_origAnalyze) {
+    window.ROOT_CAUSE_ENGINE.analyze = function(context) {
+      const result = _origAnalyze.call(this, context);
+      if (result.causes.length > 0) {
+        // Check failure memory
+        const instant = window.FAILURE_MEMORY.instantFix(result.causes);
+        if (instant) {
+          result.instantFix = instant;
+          result.rootCause = `[KNOWN PATTERN] ${result.rootCause}`;
+          console.log(`[ROOT_CAUSE] Instant fix available: ${instant.fixes.join(', ')}`);
+        }
+      }
+      return result;
+    };
+  }
+
+  // Hook SELF_DEBUG.runCycle to remember patterns
+  const _origRunCycle2 = window.SELF_DEBUG?.runCycle;
+  if (_origRunCycle2) {
+    window.SELF_DEBUG.runCycle = async function() {
+      const cycle = await _origRunCycle2.call(this);
+      if (cycle && cycle.detected && cycle.detected.length > 0) {
+        const fixNames = (cycle.fixes || []).map(f => f.cause);
+        window.FAILURE_MEMORY.remember(cycle.detected, fixNames, cycle.validated);
+      }
+      return cycle;
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // PHASE 68 — ANOMALY DETECTION
+  // Detect unknown/unexpected patterns → flag, don't auto-fix, escalate
+  // ─────────────────────────────────────────────────────────────────
+  window.ANOMALY_DETECTOR = {
+    _baseline: {},      // metric → { mean, stddev, sampleCount }
+    _anomalies: [],
+    _MAX_ANOMALIES: 100,
+    _SIGMA_THRESHOLD: 3.0, // 3-sigma rule
+    _WARM_UP_SAMPLES: 10,  // Need N samples before detecting anomalies
+    _escalations: [],
+
+    // Update baseline with new metric value
+    updateBaseline: function(metricName, value) {
+      if (!this._baseline[metricName]) {
+        this._baseline[metricName] = { mean: value, variance: 0, sampleCount: 1, m2: 0 };
+        return;
+      }
+      const b = this._baseline[metricName];
+      b.sampleCount++;
+      // Welford's online algorithm for mean and variance
+      const delta = value - b.mean;
+      b.mean += delta / b.sampleCount;
+      const delta2 = value - b.mean;
+      b.m2 += delta * delta2;
+      b.variance = b.sampleCount > 1 ? b.m2 / (b.sampleCount - 1) : 0;
+      b.stddev = Math.sqrt(b.variance);
+    },
+
+    // Check if value is anomalous
+    isAnomaly: function(metricName, value) {
+      const b = this._baseline[metricName];
+      if (!b || b.sampleCount < this._WARM_UP_SAMPLES) return false; // Not enough data
+      if (b.stddev === 0) return false; // No variance = not anomalous
+      const zScore = Math.abs(value - b.mean) / b.stddev;
+      return zScore > this._SIGMA_THRESHOLD;
+    },
+
+    // Detect anomalies in current metrics
+    detect: function() {
+      const anomalies = [];
+      try {
+        const metrics = window.GLOBAL_METRICS_ENGINE?.getSystemMetrics?.() || {};
+        const metricsToCheck = {
+          avgLatency: metrics.avgLatency || 0,
+          errorRate: metrics.errorRate || 0,
+          queueDepth: metrics.queueDepth || 0,
+          callRate: metrics.callRate || 0,
+        };
+
+        Object.entries(metricsToCheck).forEach(([name, value]) => {
+          this.updateBaseline(name, value);
+          if (this.isAnomaly(name, value)) {
+            const b = this._baseline[name];
+            const zScore = Math.abs(value - b.mean) / b.stddev;
+            anomalies.push({
+              metric: name,
+              value,
+              mean: b.mean.toFixed(2),
+              stddev: b.stddev.toFixed(2),
+              zScore: zScore.toFixed(2),
+              severity: zScore > 5 ? 'CRITICAL' : zScore > 4 ? 'HIGH' : 'MEDIUM',
+            });
+          }
+        });
+      } catch(e) {}
+
+      if (anomalies.length > 0) {
+        const anomaly = {
+          id: 'anomaly_' + Date.now(),
+          timestamp: Date.now(),
+          metrics: anomalies,
+          status: 'OPEN',
+          escalated: false,
+        };
+        this._anomalies.unshift(anomaly);
+        if (this._anomalies.length > this._MAX_ANOMALIES) {
+          this._anomalies = this._anomalies.slice(0, this._MAX_ANOMALIES);
+        }
+
+        console.warn(`[ANOMALY] Detected ${anomalies.length} anomalies — DO NOT auto-fix, escalating...`);
+        anomalies.forEach(a => {
+          console.warn(`  [ANOMALY] ${a.metric}: ${a.value} (z-score: ${a.zScore}, baseline: ${a.mean}±${a.stddev})`);
+        });
+
+        // Escalate — create incident but NO auto fix
+        this._escalate(anomaly);
+        return anomaly;
+      }
+      return null;
+    },
+
+    _escalate: function(anomaly) {
+      anomaly.escalated = true;
+      this._escalations.unshift({ anomalyId: anomaly.id, timestamp: Date.now() });
+
+      // Create incident (HIGH severity — human review needed)
+      window.INCIDENT_MANAGER?.create?.(
+        'ANOMALY_DETECTED',
+        'HIGH',
+        `Unknown anomaly detected in ${anomaly.metrics.map(m => m.metric).join(', ')} — requires human review`,
+        anomaly.metrics.map(m => `${m.metric}: z-score=${m.zScore}`)
+      );
+
+      console.warn('[ANOMALY] Escalated to INCIDENT_MANAGER — awaiting human review');
+    },
+
+    getAnomalies: function(n) { return this._anomalies.slice(0, n || 10); },
+    getBaseline: function() { return this._baseline; },
+    stats: function() {
+      return {
+        baselineMetrics: Object.keys(this._baseline).length,
+        anomaliesDetected: this._anomalies.length,
+        escalations: this._escalations.length,
+        sigmaThreshold: this._SIGMA_THRESHOLD,
+        warmUpSamples: this._WARM_UP_SAMPLES,
+      };
+    },
+  };
+
+  // Auto detect anomalies every 60s
+  const _v1600_anomalyInterval = setInterval(() => {
+    window.ANOMALY_DETECTOR.detect();
+  }, 60000);
+
+  // ─────────────────────────────────────────────────────────────────
+  // PHASE 69 — ADAPTIVE FIX GENERATION
+  // AI generates new fix combinations based on failure patterns
+  // ─────────────────────────────────────────────────────────────────
+  window.ADAPTIVE_FIX_GEN = {
+    _generatedFixes: [],
+    _MAX_FIXES: 30,
+    _appliedFixes: [],
+
+    // Generate a new fix combination for given causes
+    generate: function(causes) {
+      if (!causes || causes.length === 0) return null;
+
+      // Lookup best individual fixes from learning engine
+      const bestFixes = causes.map(cause => {
+        const best = window.FIX_LEARNING_ENGINE.getBestFix(cause);
+        return { cause, bestFix: best?.fixName || cause };
+      });
+
+      // Combine fixes intelligently
+      const fixCombos = this._buildCombinations(bestFixes);
+
+      const generated = {
+        id: 'fix_gen_' + Date.now(),
+        causes,
+        combinations: fixCombos,
+        description: this._describe(causes, fixCombos),
+        confidence: this._estimateConfidence(causes),
+        timestamp: Date.now(),
+        applied: false,
+        outcome: null,
+      };
+
+      this._generatedFixes.unshift(generated);
+      if (this._generatedFixes.length > this._MAX_FIXES) {
+        this._generatedFixes = this._generatedFixes.slice(0, this._MAX_FIXES);
+      }
+
+      console.log(`[ADAPTIVE_FIX] Generated: "${generated.description}" (confidence: ${(generated.confidence * 100).toFixed(0)}%)`);
+      return generated;
+    },
+
+    _buildCombinations: function(bestFixes) {
+      // Strategy 1: Sequential (fix one by one)
+      const sequential = bestFixes.map(f => f.bestFix);
+
+      // Strategy 2: Parallel (fix all at once — only safe fixes)
+      const safeFixes = ['stale cache', 'duplicate API call', 'AI trust degraded'];
+      const parallel = bestFixes.filter(f => safeFixes.includes(f.cause)).map(f => f.bestFix);
+
+      // Strategy 3: Priority (fix most impactful first)
+      const priorityOrder = ['circuit breaker open', 'high error rate', 'latency spike', 'stale cache', 'duplicate API call'];
+      const priority = [...bestFixes].sort((a, b) => {
+        const ai = priorityOrder.indexOf(a.cause);
+        const bi = priorityOrder.indexOf(b.cause);
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      }).map(f => f.bestFix);
+
+      return { sequential, parallel, priority };
+    },
+
+    _describe: function(causes, combos) {
+      if (causes.length === 1) {
+        return `Fix: ${combos.sequential[0]}`;
+      }
+      return `Combined fix: ${combos.priority.slice(0, 3).join(' + ')}`;
+    },
+
+    _estimateConfidence: function(causes) {
+      if (causes.length === 0) return 0;
+      const scores = causes.map(cause => {
+        const best = window.FIX_LEARNING_ENGINE.getBestFix(cause);
+        return best ? best.successRate : 0.5; // Default 50% if no history
+      });
+      return scores.reduce((sum, s) => sum + s, 0) / scores.length;
+    },
+
+    // Apply a generated fix
+    apply: async function(fixId) {
+      const fix = this._generatedFixes.find(f => f.id === fixId);
+      if (!fix) return null;
+      if (fix.applied) { console.warn('[ADAPTIVE_FIX] Already applied'); return fix; }
+
+      console.log(`[ADAPTIVE_FIX] Applying: ${fix.description}`);
+      fix.applied = true;
+      fix.appliedAt = Date.now();
+
+      const healthBefore = window.REAL_HEALTH?.calculate?.()?.score || 0;
+      const results = [];
+
+      // Apply priority combination
+      for (const fixName of fix.combinations.priority) {
+        const fixFn = window.SELF_DEBUG?._fixStrategies?.[fixName];
+        if (fixFn) {
+          try {
+            const result = fixFn();
+            results.push({ fixName, result, success: true });
+          } catch(e) {
+            results.push({ fixName, result: e.message, success: false });
+          }
+        }
+      }
+
+      await new Promise(r => setTimeout(r, 1000));
+      const healthAfter = window.REAL_HEALTH?.calculate?.()?.score || 0;
+      const improvement = healthAfter - healthBefore;
+
+      fix.outcome = { results, healthBefore, healthAfter, improvement, success: improvement >= 0 };
+      this._appliedFixes.unshift(fix);
+
+      // Record in learning engine
+      fix.causes.forEach(cause => {
+        window.FIX_LEARNING_ENGINE.recordFix(cause, fix.description, fix.outcome.success, improvement);
+      });
+
+      console.log(`[ADAPTIVE_FIX] Applied: health ${healthBefore}% → ${healthAfter}% (${improvement >= 0 ? '+' : ''}${improvement}%)`);
+      return fix;
+    },
+
+    getGenerated: function(n) { return this._generatedFixes.slice(0, n || 5); },
+    stats: function() {
+      const applied = this._appliedFixes.length;
+      const successful = this._appliedFixes.filter(f => f.outcome?.success).length;
+      return {
+        generated: this._generatedFixes.length,
+        applied,
+        successRate: applied > 0 ? (successful / applied * 100).toFixed(0) + '%' : 'N/A',
+      };
+    },
+  };
+
+  // ─────────────────────────────────────────────────────────────────
+  // PHASE 70 — SELF EVOLUTION SCORE
+  // Measure daily improvement: "วันนี้เก่งขึ้นไหม"
+  // ─────────────────────────────────────────────────────────────────
+  window.EVOLUTION_SCORE = {
+    _dailyScores: [],
+    _MAX_DAYS: 30,
+    _sessionStart: Date.now(),
+    _sessionMetrics: {
+      fixAttempts: 0,
+      fixSuccesses: 0,
+      incidentsCreated: 0,
+      incidentsResolved: 0,
+      anomaliesDetected: 0,
+      avgHealthScore: [],
+      avgLatency: [],
+      selfDebugCycles: 0,
+      learnedPatterns: 0,
+    },
+
+    // Record a metric event
+    record: function(event, value) {
+      const m = this._sessionMetrics;
+      switch(event) {
+        case 'fix_attempt': m.fixAttempts++; break;
+        case 'fix_success': m.fixSuccesses++; break;
+        case 'incident_created': m.incidentsCreated++; break;
+        case 'incident_resolved': m.incidentsResolved++; break;
+        case 'anomaly_detected': m.anomaliesDetected++; break;
+        case 'health_score': m.avgHealthScore.push(value); break;
+        case 'latency': m.avgLatency.push(value); break;
+        case 'debug_cycle': m.selfDebugCycles++; break;
+        case 'learned_pattern': m.learnedPatterns++; break;
+      }
+    },
+
+    // Calculate evolution score for current session
+    calculate: function() {
+      const m = this._sessionMetrics;
+      const scores = {};
+
+      // 1. Fix effectiveness (0-25 pts)
+      const fixRate = m.fixAttempts > 0 ? m.fixSuccesses / m.fixAttempts : 0;
+      scores.fixEffectiveness = Math.round(fixRate * 25);
+
+      // 2. Incident resolution (0-20 pts)
+      const resolveRate = m.incidentsCreated > 0 ? m.incidentsResolved / m.incidentsCreated : 1;
+      scores.incidentResolution = Math.round(resolveRate * 20);
+
+      // 3. Health stability (0-25 pts)
+      const avgHealth = m.avgHealthScore.length > 0
+        ? m.avgHealthScore.reduce((a, b) => a + b, 0) / m.avgHealthScore.length
+        : 75;
+      scores.healthStability = Math.round((avgHealth / 100) * 25);
+
+      // 4. Learning progress (0-20 pts)
+      const knowledgeSize = Object.keys(window.FIX_LEARNING_ENGINE._knowledge).length;
+      const memorySize = Object.keys(window.FAILURE_MEMORY._memory).length;
+      const learnScore = Math.min(1, (knowledgeSize + memorySize) / 20);
+      scores.learningProgress = Math.round(learnScore * 20);
+
+      // 5. Anomaly handling (0-10 pts)
+      const anomalyScore = m.anomaliesDetected > 0 ? 0.5 : 1; // Fewer anomalies = better
+      scores.anomalyHandling = Math.round(anomalyScore * 10);
+
+      const total = Object.values(scores).reduce((a, b) => a + b, 0);
+      const grade = total >= 90 ? 'S' : total >= 80 ? 'A' : total >= 70 ? 'B' : total >= 60 ? 'C' : total >= 50 ? 'D' : 'F';
+
+      return { total, grade, scores, sessionDuration: Date.now() - this._sessionStart };
+    },
+
+    // Compare with previous session
+    getTrend: function() {
+      if (this._dailyScores.length < 2) return 'INSUFFICIENT_DATA';
+      const current = this._dailyScores[0]?.total || 0;
+      const previous = this._dailyScores[1]?.total || 0;
+      const delta = current - previous;
+      if (delta > 5) return 'IMPROVING';
+      if (delta < -5) return 'DECLINING';
+      return 'STABLE';
+    },
+
+    // Save daily score
+    saveDaily: function() {
+      const score = this.calculate();
+      score.date = new Date().toLocaleDateString('th-TH');
+      score.timestamp = Date.now();
+      this._dailyScores.unshift(score);
+      if (this._dailyScores.length > this._MAX_DAYS) {
+        this._dailyScores = this._dailyScores.slice(0, this._MAX_DAYS);
+      }
+      console.log(`[EVOLUTION] Daily score saved: ${score.total}/100 (Grade ${score.grade})`);
+      return score;
+    },
+
+    report: function() {
+      const current = this.calculate();
+      const trend = this.getTrend();
+      console.log('=== SELF EVOLUTION SCORE ===');
+      console.log(`Total: ${current.total}/100 (Grade ${current.grade})`);
+      console.log(`Trend: ${trend}`);
+      console.log('Breakdown:', current.scores);
+      console.log(`Session: ${Math.round(current.sessionDuration / 60000)} minutes`);
+      return { current, trend, history: this._dailyScores.slice(0, 7) };
+    },
+  };
+
+  // Auto record health score every 60s
+  const _v1600_evolutionInterval = setInterval(() => {
+    const health = window.REAL_HEALTH?.calculate?.();
+    if (health) window.EVOLUTION_SCORE.record('health_score', health.score);
+    const metrics = window.GLOBAL_METRICS_ENGINE?.getSystemMetrics?.();
+    if (metrics) window.EVOLUTION_SCORE.record('latency', metrics.avgLatency || 0);
+  }, 60000);
+
+  // ─────────────────────────────────────────────────────────────────
+  // V1600 Debug Tools
+  // ─────────────────────────────────────────────────────────────────
+  window.V1600 = {
+    report: function() {
+      console.log('=== COMPHONE v16.0.0 — Self-Evolving Debug System Report ===');
+      console.log('\n[Phase 66] Fix Learning Engine:', window.FIX_LEARNING_ENGINE.stats());
+      console.log('[Phase 67] Failure Memory:', window.FAILURE_MEMORY.stats());
+      console.log('[Phase 68] Anomaly Detector:', window.ANOMALY_DETECTOR.stats());
+      console.log('[Phase 69] Adaptive Fix Gen:', window.ADAPTIVE_FIX_GEN.stats());
+      console.log('[Phase 70] Evolution Score:');
+      window.EVOLUTION_SCORE.report();
+      return {
+        version: _V1600_VERSION,
+        fixLearning: window.FIX_LEARNING_ENGINE.stats(),
+        failureMemory: window.FAILURE_MEMORY.stats(),
+        anomalyDetector: window.ANOMALY_DETECTOR.stats(),
+        adaptiveFix: window.ADAPTIVE_FIX_GEN.stats(),
+        evolution: window.EVOLUTION_SCORE.calculate(),
+      };
+    },
+
+    testLearning: function() {
+      console.log('[TEST] Fix Learning Engine...');
+      window.FIX_LEARNING_ENGINE.recordFix('latency spike', 'latency spike', true, 15);
+      window.FIX_LEARNING_ENGINE.recordFix('latency spike', 'latency spike', true, 20);
+      window.FIX_LEARNING_ENGINE.recordFix('latency spike', 'latency spike', false, -5);
+      const best = window.FIX_LEARNING_ENGINE.getBestFix('latency spike');
+      console.log('Best fix for latency spike:', best);
+      return best;
+    },
+
+    testMemory: function() {
+      console.log('[TEST] Failure Memory...');
+      const causes = ['duplicate API call', 'stale cache'];
+      window.FAILURE_MEMORY.remember(causes, ['clear in-flight locks', 'clear stale cache'], true);
+      window.FAILURE_MEMORY.remember(causes, ['clear in-flight locks', 'clear stale cache'], true);
+      window.FAILURE_MEMORY.remember(causes, ['clear in-flight locks', 'clear stale cache'], true);
+      const instant = window.FAILURE_MEMORY.instantFix(causes);
+      console.log('Instant fix:', instant);
+      return instant;
+    },
+
+    testAnomaly: function() {
+      console.log('[TEST] Anomaly Detection...');
+      // Seed baseline
+      for (let i = 0; i < 15; i++) {
+        window.ANOMALY_DETECTOR.updateBaseline('testMetric', 100 + Math.random() * 10);
+      }
+      // Inject anomaly
+      window.ANOMALY_DETECTOR.updateBaseline('testMetric', 500);
+      const isAnomaly = window.ANOMALY_DETECTOR.isAnomaly('testMetric', 500);
+      console.log('Is anomaly (500 vs baseline ~105):', isAnomaly);
+      return isAnomaly;
+    },
+
+    testAdaptiveFix: async function() {
+      console.log('[TEST] Adaptive Fix Generation...');
+      const fix = window.ADAPTIVE_FIX_GEN.generate(['latency spike', 'stale cache']);
+      console.log('Generated fix:', fix?.description);
+      return fix;
+    },
+
+    testEvolution: function() {
+      console.log('[TEST] Self Evolution Score...');
+      window.EVOLUTION_SCORE.record('fix_attempt', 1);
+      window.EVOLUTION_SCORE.record('fix_success', 1);
+      window.EVOLUTION_SCORE.record('health_score', 85);
+      return window.EVOLUTION_SCORE.report();
+    },
+  };
+
+  // Set version
+  window.__COMPHONE_VERSION = _V1600_VERSION;
+  console.log(`[v${_V1600_VERSION}] Self-Evolving Debug System loaded ✅`);
+  console.log(`  Phase 66: Fix Learning Engine (learn from fix history)`);
+  console.log(`  Phase 67: Failure Memory (instant fix on known patterns)`);
+  console.log(`  Phase 68: Anomaly Detection (unknown → escalate, no auto-fix)`);
+  console.log(`  Phase 69: Adaptive Fix Generation (AI generates new combos)`);
+  console.log(`  Phase 70: Self Evolution Score (daily improvement metric)`);
+  console.log(`  Debug: V1600.report()`);
+
+})();
+
+</script>
 </body>
 </html>
