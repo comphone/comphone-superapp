@@ -7443,5 +7443,186 @@ const V622 = (() => {
 
 console.log('[COMPHONE v6.2.2] Full Release System patch loaded — Safe Update + Soft Update + Env Control + Health Link');
 </script>
+<script>
+// ============================================================
+// COMPHONE v6.2.3 — Alerts Hotfix + Normalizer + Debug Log
+// Phase 1: normalizeAlerts() — single source of truth
+// Phase 2: Safe Render — all alert usage goes through normalizer
+// Phase 3: Debug Log — [ALERTS] console.log
+// Detect → Normalize → Protect → Enforce
+// ============================================================
+(function() {
+  'use strict';
+
+  // ──────────────────────────────────────────────────────────
+  // Phase 2: normalizeAlerts() — accepts all formats
+  // ──────────────────────────────────────────────────────────
+  /**
+   * Normalize any alerts value into a guaranteed Array.
+   * Handles: Array, {data:[...]}, {alerts:[...]}, {items:[...]},
+   *          {result:[...]}, null, undefined, string, number.
+   * @param {*} alerts
+   * @returns {Array}
+   */
+  function normalizeAlerts(alerts) {
+    if (Array.isArray(alerts))         return alerts;
+    if (!alerts)                        return [];
+    if (Array.isArray(alerts.data))     return alerts.data;
+    if (Array.isArray(alerts.alerts))   return alerts.alerts;
+    if (Array.isArray(alerts.items))    return alerts.items;
+    if (Array.isArray(alerts.result))   return alerts.result;
+    // Phase 4: Debug log when format is unexpected
+    console.warn('[ALERTS] Unexpected format — returning []:', alerts);
+    return [];
+  }
+
+  // Expose globally
+  window.normalizeAlerts = normalizeAlerts;
+
+  // ──────────────────────────────────────────────────────────
+  // Phase 1 + 3: Patch renderDashboard — safe alerts render
+  // ──────────────────────────────────────────────────────────
+  const _origRenderDashboard = window.renderDashboard;
+  if (typeof _origRenderDashboard === 'function') {
+    window.renderDashboard = function(data) {
+      if (data && data.alerts !== undefined) {
+        // Phase 4: Debug log
+        console.log('[ALERTS] renderDashboard raw:', typeof data.alerts, data.alerts);
+        data.alerts = normalizeAlerts(data.alerts);
+        console.log('[ALERTS] renderDashboard normalized:', data.alerts.length, 'items');
+      }
+      return _origRenderDashboard.call(this, data);
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Phase 1 + 3: Patch renderAIAlerts — safe render
+  // ──────────────────────────────────────────────────────────
+  const _origRenderAIAlerts = window.renderAIAlerts;
+  if (typeof _origRenderAIAlerts === 'function') {
+    window.renderAIAlerts = function(alerts) {
+      console.log('[ALERTS] renderAIAlerts raw:', typeof alerts, alerts);
+      const alertList = normalizeAlerts(alerts);
+      console.log('[ALERTS] renderAIAlerts normalized:', alertList.length, 'items');
+      return _origRenderAIAlerts.call(this, alertList);
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Phase 1 + 3: Patch _renderBundleDashboard (v6.0 bundle)
+  // ──────────────────────────────────────────────────────────
+  const _origBundleRender = window._renderBundleDashboard;
+  if (typeof _origBundleRender === 'function') {
+    window._renderBundleDashboard = function(bundle) {
+      if (bundle && bundle.alerts !== undefined) {
+        console.log('[ALERTS] bundle raw:', typeof bundle.alerts, bundle.alerts);
+        bundle.alerts = normalizeAlerts(bundle.alerts);
+        console.log('[ALERTS] bundle normalized:', bundle.alerts.length, 'items');
+      }
+      return _origBundleRender.call(this, bundle);
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Phase 1 + 3: Patch loadDashboard — intercept before render
+  // ──────────────────────────────────────────────────────────
+  const _origLoadDashboard = window.loadDashboard;
+  if (typeof _origLoadDashboard === 'function') {
+    window.loadDashboard = async function() {
+      // Wrap the result to normalize alerts before any render
+      const result = await _origLoadDashboard.apply(this, arguments);
+      return result;
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Phase 1 + 3: Global callApi interceptor for alerts
+  // Normalize alerts in ANY API response that contains alerts
+  // ──────────────────────────────────────────────────────────
+  const _origCallApi = window.callApi;
+  if (typeof _origCallApi === 'function') {
+    window.callApi = async function(action, params) {
+      const res = await _origCallApi.apply(this, arguments);
+      if (res && res.alerts !== undefined) {
+        const before = res.alerts;
+        res.alerts = normalizeAlerts(res.alerts);
+        if (!Array.isArray(before)) {
+          console.log('[ALERTS] callApi(' + action + ') normalized alerts:', before, '→', res.alerts);
+        }
+      }
+      if (res && res.data && res.data.alerts !== undefined) {
+        res.data.alerts = normalizeAlerts(res.data.alerts);
+      }
+      return res;
+    };
+  }
+
+  // Also patch cachedCallApi if available
+  const _origCachedCallApi = window.cachedCallApi;
+  if (typeof _origCachedCallApi === 'function') {
+    window.cachedCallApi = async function(action, params, ttl) {
+      const res = await _origCachedCallApi.apply(this, arguments);
+      if (res && res.alerts !== undefined) {
+        res.alerts = normalizeAlerts(res.alerts);
+      }
+      if (res && res.data && res.data.alerts !== undefined) {
+        res.data.alerts = normalizeAlerts(res.data.alerts);
+      }
+      return res;
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Phase 3: Safe renderDashboardAlerts helper
+  // Used directly in renderDashboard HTML template
+  // ──────────────────────────────────────────────────────────
+  window.safeRenderAlerts = function(alerts, maxItems) {
+    const alertList = normalizeAlerts(alerts);
+    const limit = maxItems || 6;
+    if (alertList.length === 0) {
+      return '<p style="color:#9ca3af;font-size:13px;text-align:center;padding:20px">ไม่มีการแจ้งเตือน ✅</p>';
+    }
+    const icons  = { urgent:'bi-exclamation-triangle-fill', sla:'bi-clock-fill', stock:'bi-box-seam-fill', billing:'bi-cash-coin', warning:'bi-exclamation-triangle-fill', critical:'bi-exclamation-octagon-fill', info:'bi-info-circle-fill' };
+    const colors = { urgent:'#dc2626', sla:'#d97706', stock:'#7c3aed', billing:'#059669', warning:'#f59e0b', critical:'#dc2626', info:'#3b82f6' };
+    return alertList.slice(0, limit).map(function(a) {
+      const type  = a.type || 'urgent';
+      const color = colors[type] || '#6b7280';
+      const icon  = icons[type]  || 'bi-bell-fill';
+      return '<div class="alert-row">' +
+        '<div class="alert-icon" style="background:' + color + '20;color:' + color + '"><i class="bi ' + icon + '"></i></div>' +
+        '<div><div class="alert-msg">' + (a.message || a.msg || '-') + '</div>' +
+        (a.data && a.data.status_label ? '<div class="alert-sub">สถานะ: ' + a.data.status_label + '</div>' : '') +
+        '</div></div>';
+    }).join('');
+  };
+
+  // ──────────────────────────────────────────────────────────
+  // Phase 3: Safe renderAlertsBanner helper (for dashboard KPI)
+  // ──────────────────────────────────────────────────────────
+  window.safeRenderAlertsBanner = function(alerts) {
+    const alertList = normalizeAlerts(alerts);
+    if (alertList.length === 0) return '';
+    return '<div class="collapsible-panel" style="margin-bottom:16px">' +
+      '<div class="panel-header" onclick="togglePanel(this)" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:12px 16px;background:#fef3c7;border-radius:12px;font-weight:700;color:#92400e">' +
+      '<span>⚠️ การแจ้งเตือน (' + alertList.length + ')</span>' +
+      '<span style="margin-left:auto">▼</span></div>' +
+      '<div class="panel-body" style="padding:10px 0">' +
+      alertList.map(function(a) {
+        return '<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid #f1f5f9;cursor:pointer" ' +
+          'onclick="if(\'' + (a.action||'') + '\')loadSection(\'' + (a.action||'') + '\')">' +
+          '<span>' + (a.type === 'critical' ? '🔴' : a.type === 'warning' ? '🟡' : 'ℹ️') + '</span>' +
+          '<span style="font-size:13px">' + (a.message || a.msg || '-') + '</span></div>';
+      }).join('') +
+      '</div></div>';
+  };
+
+  // ──────────────────────────────────────────────────────────
+  // Phase 4: Debug log on init
+  // ──────────────────────────────────────────────────────────
+  console.log('[COMPHONE v6.2.3] Alerts Hotfix loaded — normalizeAlerts() active');
+  console.log('[ALERTS] Patched: callApi, cachedCallApi, renderDashboard, renderAIAlerts, _renderBundleDashboard');
+
+})();
+</script>
 </body>
 </html>

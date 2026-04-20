@@ -685,16 +685,18 @@ function getAlerts() {
       });
     }
 
+    // v6.2.3: Backend Contract — 'alerts' field MUST be an array
     return {
       success: true,
       total: items.length,
       low_stock_count: lowStockItems.length,
       overdue_jobs_count: overdueJobs.length,
       pm_due_count: pmSummary.total,
-      items: items
+      items: items,
+      alerts: items  // CONTRACT: always an Array
     };
   } catch (e) {
-    return { success: false, total: 0, items: [], error: e.toString() };
+    return { success: false, total: 0, items: [], alerts: [], error: e.toString() };
   }
 }
 
