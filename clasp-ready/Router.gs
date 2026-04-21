@@ -556,53 +556,233 @@ function dispatchActionV55_(action, payload, args) {
 }
 
 // ============================================================
-// PHASE 20.5: Approval & Security Audit Stubs
-// หมายเหตุ: ควร implement logic เต็มที่หลัง (Server-side validation + Audit sheet logging)
+// PHASE 21.1: Production Approval & Security Audit
+// NEVER TRUST CLIENT — ทุก approval ต้องผ่าน server-side validation
 // ============================================================
+
+// Role → Allowed Actions (whitelist ที่ชัดเจน)
+// ถ้า action ไม่อยู่ใน list ของ role นั้น → REJECT
+var APPROVAL_ROLE_PERMISSIONS = {
+  owner: [
+    // Admin / System
+    'deleteJob', 'deleteData', 'deleteUser', 'deleteInventoryItem', 'cancelJob', 'refund',
+    'approveBilling', 'rejectBilling', 'setupSystem', 'initSystem', 'setScriptProperties',
+    'setupAllTriggers', 'runBackup', 'seedAllData', 'pruneAuditLog', 'cleanAllData',
+    'databaseMaintenance', 'validateSchema', 'runIntegrityCheck', 'syncCodeToDrive',
+    'storeSessionContent', 'createUser', 'updateUserRole', 'setUserActive', 'listUsers',
+    // Financial
+    'createBilling', 'updatePayment', 'markBillingPaid', 'generatePromptPayQR',
+    'calculateTax', 'saveTaxReport', 'generateTaxInvoice', 'generateWhtDocument',
+    // Stock
+    'transferStock', 'createPurchaseOrder', 'receivePurchaseOrder', 'cancelPurchaseOrder',
+    'addInventoryItem', 'updateInventoryItem', 'deleteInventoryItem', 'scanWithdrawStock',
+    // Job / CRM
+    'createJob', 'openJob', 'updateJobStatus', 'transitionJob', 'updateJobById',
+    'markJobStatus', 'markDone', 'markWaiting', 'addQuickNote', 'addAppointment',
+    'updateJobSchedule', 'createCustomer', 'updateCustomer', 'createAfterSalesRecord',
+    'logAfterSalesFollowUp', 'sendAfterSalesAlerts', 'scheduleFollowUp', 'logFollowUpResult',
+    'nudgeSalesTeam', 'createWarranty', 'updateWarrantyStatus',
+    // Communication
+    'sendLineMessage', 'nudgeTech', 'sendPushToAll', 'savePushSubscription', 'removePushSubscription',
+    // AI
+    'smartAssignTech', 'optimizeRoute', 'analyzeWorkImage', 'runJobCompletionQC',
+    'qualityCheck', 'geminiSlipVerify', 'verifyPaymentSlip',
+    // Auth (self-service)
+    'changePassword', 'logoutUser'
+  ],
+  accountant: [
+    'createBilling', 'updatePayment', 'markBillingPaid', 'generatePromptPayQR',
+    'transferStock', 'createPurchaseOrder', 'receivePurchaseOrder', 'cancelPurchaseOrder',
+    'addInventoryItem', 'updateInventoryItem', 'getInventoryItemDetail',
+    'getStockMovementHistory', 'checkStock', 'barcodeLookup', 'scanWithdrawStock',
+    'calculateTax', 'saveTaxReport', 'getTaxReport', 'generateTaxInvoice', 'generateWhtDocument',
+    'listBillings', 'getBilling', 'getReportData',
+    'updateJobStatus', 'transitionJob', 'markJobStatus', 'markDone', 'markWaiting',
+    'createJob', 'openJob', 'updateCustomer', 'createCustomer',
+    'changePassword', 'logoutUser'
+  ],
+  sales: [
+    'createJob', 'openJob', 'updateJobStatus', 'transitionJob', 'updateJobById',
+    'markJobStatus', 'markDone', 'markWaiting', 'addQuickNote', 'addAppointment',
+    'updateJobSchedule', 'createCustomer', 'updateCustomer',
+    'createBilling', 'updatePayment', 'markBillingPaid',
+    'sendLineMessage', 'nudgeTech', 'nudgeSalesTeam',
+    'changePassword', 'logoutUser'
+  ],
+  technician: [
+    'updateJobStatus', 'transitionJob', 'markJobStatus', 'markDone', 'markWaiting',
+    'addQuickNote', 'clockIn', 'clockOut', 'addAppointment',
+    'handleProcessPhotos', 'analyzeWorkImage', 'qualityCheck', 'runJobCompletionQC',
+    'changePassword', 'logoutUser'
+  ]
+};
+
+/**
+ * validateApproval_ — Production-grade server-side approval validation
+ * @param {Object} payload — { token, username, action, clientRole, nonce, timestamp, ... }
+ * @return {Object} — { success: true/false, reason: 'OK'|'INVALID_SESSION'|... }
+ */
 function validateApproval_(payload) {
   try {
-    var token = payload.token || '';
-    var username = payload.username || '';
-    var action = payload.action || '';
-    var clientRole = payload.clientRole || '';
-    var nonce = payload.nonce || '';
-    var timestamp = payload.timestamp || 0;
+    var token     = payload.token || '';
+    var username  = payload.username || '';
+    var action    = payload.action || '';
+    var nonce     = payload.nonce || '';
+    var timestamp = Number(payload.timestamp || 0);
 
-    // Basic validation
-    if (!token) return { allowed: false, reason: 'Missing token' };
-    if (!action) return { allowed: false, reason: 'Missing action' };
-    if (!nonce) return { allowed: false, reason: 'Missing nonce' };
+    // ── 1. REQUIRED FIELD CHECK ────────────────────────────────────────
+    if (!token)     return { success: false, reason: 'MISSING_TOKEN' };
+    if (!action)    return { success: false, reason: 'MISSING_ACTION' };
+    if (!nonce)     return { success: false, reason: 'MISSING_NONCE' };
+    if (!timestamp) return { success: false, reason: 'MISSING_TIMESTAMP' };
 
-    // Anti-replay: nonce ต้องไม่ซ้ำ (simplified — ควรใช้ CacheService ใน production)
-    var age = Date.now() - timestamp;
-    if (age > 300000) { // 5 นาที
-      return { allowed: false, reason: 'Approval request expired' };
+    // ── 2. TIMESTAMP DRIFT (±5 นาที) ────────────────────────────────────
+    var now = Date.now();
+    var drift = Math.abs(now - timestamp);
+    var MAX_DRIFT_MS = 5 * 60 * 1000; // 5 นาที
+    if (drift > MAX_DRIFT_MS) {
+      return { success: false, reason: 'TIME_DRIFT', detail: 'drift=' + Math.round(drift/1000) + 's' };
     }
 
-    // TODO: ตรวจสอบ token กับ DB_USERS และตรวจ role permission
-    // ขณะนี้อนุญาตในทุกกรณี (allow แล้ว log)
-    return { allowed: true, message: 'Approved (stub — implement full validation)', action: action, nonce: nonce };
+    // ── 3. NONCE ANTI-REPLAY (CacheService, TTL 10 นาที) ──────────────────
+    var cache = CacheService.getScriptCache();
+    var nonceKey = 'nonce_' + String(nonce).replace(/[^a-zA-Z0-9_-]/g, '');
+    if (cache.get(nonceKey)) {
+      return { success: false, reason: 'NONCE_USED' };
+    }
+    // บันทึก nonce ทันที (10 นาที)
+    cache.put(nonceKey, '1', 600);
+
+    // ── 4. SESSION VERIFICATION ────────────────────────────────────
+    var sessionCheck = verifySession(token);
+    if (!sessionCheck || !sessionCheck.valid) {
+      return { success: false, reason: 'INVALID_SESSION', detail: sessionCheck ? sessionCheck.error : 'verifySession failed' };
+    }
+    var session = sessionCheck.session;
+
+    // ตรวจว่า username ตรงกับ session
+    if (session.username && username && session.username.toLowerCase() !== username.toLowerCase()) {
+      return { success: false, reason: 'USER_MISMATCH', detail: 'token owner != requested user' };
+    }
+
+    // ── 5. USER VERIFICATION (DB_USERS — ตรวจ active) ────────────────────
+    var ss = getComphoneSheet();
+    var userSheet = findSheetByName(ss, 'DB_USERS');
+    if (!userSheet) {
+      return { success: false, reason: 'DB_USERS_NOT_FOUND' };
+    }
+    var rows = userSheet.getDataRange().getValues();
+    var headers = rows[0];
+    var idx = {};
+    for (var h = 0; h < headers.length; h++) {
+      idx[String(headers[h]).toLowerCase().trim()] = h;
+    }
+    var colUser   = idx['username'] !== undefined ? idx['username'] : 0;
+    var colActive = idx['active']   !== undefined ? idx['active']   : 4;
+    var colRole   = idx['role']     !== undefined ? idx['role']     : 2;
+
+    var userFound = false;
+    var userActive = false;
+    var dbRole = '';
+    for (var r = 1; r < rows.length; r++) {
+      var rowUser = String(rows[r][colUser] || '').trim().toLowerCase();
+      if (rowUser === session.username.toLowerCase()) {
+        userFound = true;
+        var activeVal = String(rows[r][colActive] || 'TRUE').toUpperCase();
+        userActive = activeVal !== 'FALSE' && activeVal !== '0';
+        dbRole = String(rows[r][colRole] || 'TECHNICIAN').toLowerCase().trim();
+        break;
+      }
+    }
+    if (!userFound) {
+      return { success: false, reason: 'USER_NOT_FOUND' };
+    }
+    if (!userActive) {
+      return { success: false, reason: 'USER_INACTIVE' };
+    }
+
+    // ── 6. ROLE PERMISSION CHECK ────────────────────────────────────────
+    var normalizedRole = dbRole;
+    // Alias mapping (ป้องกันกับ PWA roles)
+    if (normalizedRole === 'admin')   normalizedRole = 'owner';
+    if (normalizedRole === 'acct')    normalizedRole = 'accountant';
+    if (normalizedRole === 'tech')    normalizedRole = 'technician';
+    if (normalizedRole === 'exec')    normalizedRole = 'owner';
+
+    var allowedActions = APPROVAL_ROLE_PERMISSIONS[normalizedRole];
+    if (!allowedActions) {
+      return { success: false, reason: 'UNKNOWN_ROLE', detail: dbRole };
+    }
+
+    // OWNER = all-powerful (ไม่ต้องตรวจ whitelist)
+    if (normalizedRole !== 'owner') {
+      var actionAllowed = false;
+      for (var a = 0; a < allowedActions.length; a++) {
+        if (allowedActions[a] === action) {
+          actionAllowed = true;
+          break;
+        }
+      }
+      if (!actionAllowed) {
+        return { success: false, reason: 'ROLE_DENIED', detail: 'role=' + dbRole + ' action=' + action };
+      }
+    }
+
+    // ── 7. APPROVED ────────────────────────────────────────────────────
+    // Log approval success
+    try {
+      logApprovalAudit_({
+        action: action,
+        targetId: payload.targetId || '',
+        success: true,
+        reason: 'OK',
+        user: session.username,
+        role: dbRole,
+        nonce: nonce,
+        source: 'validateApproval_'
+      });
+    } catch (logErr) { /* silent — ห้าม audit log ล้มเหลว ไม่ควรหยุด approval */ }
+
+    return {
+      success: true,
+      reason: 'OK',
+      user: session.username,
+      role: dbRole,
+      action: action,
+      nonce: nonce
+    };
+
   } catch (e) {
-    return { allowed: false, reason: e.toString() };
+    // ล้มเหลวใน validateApproval_ — ห้าม allow โดยเด็ดขาด
+    return { success: false, reason: 'SERVER_ERROR', detail: e.toString() };
   }
 }
 
+/**
+ * batchValidateApproval_ — Batch approval validation
+ */
 function batchValidateApproval_(payload) {
   try {
     var items = payload.items || [];
+    if (!Array.isArray(items) || items.length === 0) {
+      return { success: false, reason: 'EMPTY_BATCH' };
+    }
     var approved = 0;
     var results = [];
     for (var i = 0; i < items.length; i++) {
       var r = validateApproval_(items[i]);
-      if (r.allowed) approved++;
+      if (r && r.success) approved++;
       results.push(r);
     }
     return { success: true, approved: approved, total: items.length, results: results };
   } catch (e) {
-    return { success: false, error: e.toString() };
+    return { success: false, reason: 'SERVER_ERROR', detail: e.toString() };
   }
 }
 
+/**
+ * logApprovalAudit_ — บันทึก audit log ลง AUDIT_LOG sheet
+ */
 function logApprovalAudit_(payload) {
   try {
     var ss = getComphoneSheet();
@@ -614,33 +794,39 @@ function logApprovalAudit_(payload) {
     sheet.appendRow([
       Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss'),
       payload.action || '',
-      payload.id || payload.targetId || '',
-      payload.success ? 'true' : 'false',
+      payload.targetId || payload.id || '',
+      payload.success === true ? 'true' : 'false',
       payload.reason || '',
       payload.user || '',
       payload.role || '',
       payload.nonce || '',
-      'approval_guard'
+      payload.source || 'approval_guard'
     ]);
     return { success: true };
   } catch (e) {
-    return { success: false, error: e.toString() };
+    return { success: false, reason: 'AUDIT_LOG_ERROR', detail: e.toString() };
   }
 }
 
+/**
+ * batchLogApprovalAudit_ — Batch audit log
+ */
 function batchLogApprovalAudit_(payload) {
   try {
-    if (!Array.isArray(payload)) payload = payload.logs || [];
-    if (!Array.isArray(payload)) payload = [payload];
-    for (var i = 0; i < payload.length; i++) {
-      logApprovalAudit_(payload[i]);
+    var logs = Array.isArray(payload) ? payload : (payload.logs || []);
+    if (!Array.isArray(logs)) logs = [logs];
+    for (var i = 0; i < logs.length; i++) {
+      logApprovalAudit_(logs[i]);
     }
-    return { success: true, logged: payload.length };
+    return { success: true, logged: logs.length };
   } catch (e) {
-    return { success: false, error: e.toString() };
+    return { success: false, reason: 'SERVER_ERROR', detail: e.toString() };
   }
 }
 
+/**
+ * logSecurityViolations_ — บันทึก security violations ลง SECURITY_LOG sheet
+ */
 function logSecurityViolations_(payload) {
   try {
     var violations = payload.violations || [];
@@ -664,7 +850,7 @@ function logSecurityViolations_(payload) {
     }
     return { success: true, logged: violations.length };
   } catch (e) {
-    return { success: false, error: e.toString() };
+    return { success: false, reason: 'AUDIT_LOG_ERROR', detail: e.toString() };
   }
 }
 
