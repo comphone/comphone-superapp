@@ -271,38 +271,65 @@ function recordFailure(action) {
   return { disabled: false };
 }
 
-// Main execution function
+// Main execution function (PHASE 25.4: with execution trace)
 async function AI_EXECUTOR(decision) {
+  const traceEntry = {
+    action: decision && decision.action,
+    ts: Date.now(),
+    status: 'started',
+    result: null,
+    error: null,
+    tokenUsed: !!window.__LAST_APPROVED_ACTION,
+    duration: 0
+  };
+
   if (!window.__AI_EXECUTOR_ENABLED) {
+    traceEntry.status = 'disabled';
+    traceEntry.error = 'EXECUTOR_DISABLED';
+    window.EXECUTION_TRACE.push(traceEntry);
     return { error: 'EXECUTOR_DISABLED' };
   }
 
   // 1. PRE-CONDITION VALIDATION
   const preCheck = validatePreCondition(decision);
   if (!preCheck.valid) {
+    traceEntry.status = 'pre_check_failed';
+    traceEntry.error = preCheck.reason;
+    window.EXECUTION_TRACE.push(traceEntry);
     console.error('PRE_CONDITION_FAILED:', preCheck.reason, decision);
     return { error: 'PRE_CONDITION_FAILED', reason: preCheck.reason };
   }
 
   const action = decision.action;
+  const startTime = Date.now();
 
   // 2. TRUST CHECK
   if (!checkTrust()) {
+    traceEntry.status = 'trust_low';
+    traceEntry.error = 'AI_TRUST_TOO_LOW';
+    window.EXECUTION_TRACE.push(traceEntry);
     return { error: 'AI_TRUST_TOO_LOW' };
   }
 
   // 3. IDEMPOTENCY CHECK
   const idemCheck = checkIdempotency(action);
   if (!idemCheck.allowed) {
+    traceEntry.status = 'idempotency_block';
+    traceEntry.error = idemCheck.reason;
+    traceEntry.duration = Date.now() - startTime;
+    window.EXECUTION_TRACE.push(traceEntry);
     return { error: 'IDEMPOTENCY_BLOCK', reason: idemCheck.reason, waitTime: idemCheck.waitTime };
   }
 
   // 4. REAL APPROVAL (SANDBOX)
   const map = window.__ACTION_MAP[action];
   if (map && map.type === 'write') {
-    // สำหรับ write action — ต้องขอ approve ผ่าน approval_guard.js
     const approved = await AI_SANDBOX.propose(action, decision);
     if (!approved) {
+      traceEntry.status = 'user_denied';
+      traceEntry.error = 'USER_DENIED_APPROVAL';
+      traceEntry.duration = Date.now() - startTime;
+      window.EXECUTION_TRACE.push(traceEntry);
       return { error: 'USER_DENIED_APPROVAL' };
     }
   }
@@ -310,10 +337,16 @@ async function AI_EXECUTOR(decision) {
   // 5. EXECUTION (ENFORCED THROUGH API_CONTROLLER -> GAS_EXECUTE)
   try {
     const result = await API_CONTROLLER.call(action, decision.payload);
+    traceEntry.status = 'success';
+    traceEntry.result = result;
 
     // 6. POST-CONDITION VALIDATION
     const postCheck = validatePostCondition(action, result);
     if (!postCheck.valid) {
+      traceEntry.status = 'post_check_failed';
+      traceEntry.error = postCheck.reason;
+      traceEntry.duration = Date.now() - startTime;
+      window.EXECUTION_TRACE.push(traceEntry);
       console.error('POST_CONDITION_FAILED:', postCheck.reason, result);
       const failure = recordFailure(action);
       if (failure.disabled) {
@@ -335,6 +368,9 @@ async function AI_EXECUTOR(decision) {
     const impact = IMPACT_TRACKER.track(action, { /* before */ }, result.data || {});
 
     // 9. RETURN SUCCESS
+    traceEntry.duration = Date.now() - startTime;
+    window.EXECUTION_TRACE.push(traceEntry);
+
     return {
       success: true,
       data: result.data,
@@ -343,12 +379,18 @@ async function AI_EXECUTOR(decision) {
     };
 
   } catch (err) {
-    console.error('EXECUTION_ERROR:', err);
+    const normalized = ERROR_NORMALIZATION.map(err);
+    traceEntry.status = 'error';
+    traceEntry.error = normalized;
+    traceEntry.duration = Date.now() - startTime;
+    window.EXECUTION_TRACE.push(traceEntry);
+
+    console.error('EXECUTION_ERROR:', normalized.type, normalized.message);
     const failure = recordFailure(action);
     if (failure.disabled) {
-      return { error: 'EXECUTION_ERROR', message: err.message, failureGuard: failure };
+      return { error: normalized.type, message: normalized.message, failureGuard: failure };
     }
-    return { error: 'EXECUTION_ERROR', message: err.message };
+    return { error: normalized.type, message: normalized.message };
   }
 }
 
@@ -439,3 +481,32 @@ window.AI_EXECUTOR = Object.assign(
 
 // Auto-initialize
 console.log('AI_EXECUTOR v18.1 - SAFE EXECUTION LOADED (PHASE 20.5)');
+
+// PHASE 25.4: Debug Panel
+window.AI_DEBUG_PANEL = function() {
+  return {
+    last10: window.EXECUTION_TRACE.slice(-10),
+    inFlight: Array.from(window.__ACTION_EXEC_LOCK.entries()).map(([action, expiry]) => ({
+      action,
+      expiresIn: Math.max(0, Math.ceil((expiry - Date.now()) / 1000))
+    })),
+    disabled: Array.from(__FAILURE_COUNT.entries()).map(([action, count]) => ({ action, count })),
+    version: window.__APP_VERSION,
+    totalTraces: window.EXECUTION_TRACE.length,
+    approvalQueue: window.__APPROVAL_QUEUE.length,
+    lastError: window.EXECUTION_TRACE.filter(t => t.error).slice(-1)[0] || null
+  };
+};
+
+// PHASE 25.4: Execution Health Check
+window.EXECUTION_HEALTH_CHECK = function() {
+  return {
+    executor: typeof window.AI_EXECUTOR,
+    gas: typeof window.GAS_EXECUTE,
+    lock: window.__EXECUTION_LOCK_VERSION || 'NOT_INSTALLED',
+    version: window.__APP_VERSION || 'NOT_SET',
+    trustedActions: window.__TRUSTED_ACTIONS ? Object.keys(window.__TRUSTED_ACTIONS).length : 0,
+    traceCount: window.EXECUTION_TRACE ? window.EXECUTION_TRACE.length : 0,
+    timestamp: Date.now()
+  };
+};
