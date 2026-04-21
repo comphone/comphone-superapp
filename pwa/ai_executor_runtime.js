@@ -22,6 +22,78 @@ window.__LAST_APPROVED_ACTION = window.__LAST_APPROVED_ACTION || null;
 // PHASE 25.4: Global Execution Trace
 window.EXECUTION_TRACE = window.EXECUTION_TRACE || [];
 
+// PHASE 25.5: Persist execution trace from localStorage
+(function loadPersistedTrace() {
+  try {
+    const saved = localStorage.getItem('comphone_exec_trace');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        window.EXECUTION_TRACE = parsed;
+      }
+    }
+  } catch (e) {
+    console.warn('[TRACE] Failed to load persisted trace:', e);
+  }
+})();
+
+function persistTrace() {
+  try {
+    const trimmed = window.EXECUTION_TRACE.slice(-100);
+    localStorage.setItem('comphone_exec_trace', JSON.stringify(trimmed));
+  } catch (e) {
+    // Ignore quota errors
+  }
+}
+
+// PHASE 25.5: Failure Memory
+window.FAILURE_MEMORY = {
+  records: [],
+  record: function(entry) {
+    this.records.push({
+      action: entry.action,
+      error: entry.error,
+      timestamp: Date.now()
+    });
+    // Keep only last 50
+    if (this.records.length > 50) this.records = this.records.slice(-50);
+    try {
+      localStorage.setItem('comphone_failure_mem', JSON.stringify(this.records));
+    } catch (e) {}
+  },
+  load: function() {
+    try {
+      const saved = localStorage.getItem('comphone_failure_mem');
+      if (saved) this.records = JSON.parse(saved);
+    } catch (e) {}
+  }
+};
+window.FAILURE_MEMORY.load();
+
+// PHASE 25.5: Failure Alert (>3 errors in 60s)
+const __ERROR_WINDOW = [];
+function checkFailureAlert(action, normalizedError) {
+  const now = Date.now();
+  __ERROR_WINDOW.push({ ts: now, action, error: normalizedError });
+  // Trim old entries (>60s)
+  const cutoff = now - 60000;
+  while (__ERROR_WINDOW.length > 0 && __ERROR_WINDOW[0].ts < cutoff) {
+    __ERROR_WINDOW.shift();
+  }
+  if (__ERROR_WINDOW.length > 3) {
+    console.warn('[FAILURE_ALERT] มี Error มากกว่า 3 ครั้ง ใน 60 วิ:', __ERROR_WINDOW);
+    // Optional: notify admin via GAS if available
+    if (window.GAS_EXECUTE && typeof window.GAS_EXECUTE === 'function') {
+      try {
+        window.GAS_EXECUTE('notifyAdmin', {
+          subject: 'COMPHONE FAILURE ALERT',
+          body: JSON.stringify(__ERROR_WINDOW.slice(-3))
+        });
+      } catch (e) {}
+    }
+  }
+}
+
 // PHASE 25.4: Error Normalization Map
 const ERROR_NORMALIZATION = {
   map: function(err) {
@@ -287,6 +359,7 @@ async function AI_EXECUTOR(decision) {
     traceEntry.status = 'disabled';
     traceEntry.error = 'EXECUTOR_DISABLED';
     window.EXECUTION_TRACE.push(traceEntry);
+    persistTrace();
     return { error: 'EXECUTOR_DISABLED' };
   }
 
@@ -296,6 +369,7 @@ async function AI_EXECUTOR(decision) {
     traceEntry.status = 'pre_check_failed';
     traceEntry.error = preCheck.reason;
     window.EXECUTION_TRACE.push(traceEntry);
+    persistTrace();
     console.error('PRE_CONDITION_FAILED:', preCheck.reason, decision);
     return { error: 'PRE_CONDITION_FAILED', reason: preCheck.reason };
   }
@@ -308,6 +382,7 @@ async function AI_EXECUTOR(decision) {
     traceEntry.status = 'trust_low';
     traceEntry.error = 'AI_TRUST_TOO_LOW';
     window.EXECUTION_TRACE.push(traceEntry);
+    persistTrace();
     return { error: 'AI_TRUST_TOO_LOW' };
   }
 
@@ -318,6 +393,7 @@ async function AI_EXECUTOR(decision) {
     traceEntry.error = idemCheck.reason;
     traceEntry.duration = Date.now() - startTime;
     window.EXECUTION_TRACE.push(traceEntry);
+    persistTrace();
     return { error: 'IDEMPOTENCY_BLOCK', reason: idemCheck.reason, waitTime: idemCheck.waitTime };
   }
 
@@ -330,6 +406,7 @@ async function AI_EXECUTOR(decision) {
       traceEntry.error = 'USER_DENIED_APPROVAL';
       traceEntry.duration = Date.now() - startTime;
       window.EXECUTION_TRACE.push(traceEntry);
+    persistTrace();
       return { error: 'USER_DENIED_APPROVAL' };
     }
   }
@@ -347,6 +424,7 @@ async function AI_EXECUTOR(decision) {
       traceEntry.error = postCheck.reason;
       traceEntry.duration = Date.now() - startTime;
       window.EXECUTION_TRACE.push(traceEntry);
+    persistTrace();
       console.error('POST_CONDITION_FAILED:', postCheck.reason, result);
       const failure = recordFailure(action);
       if (failure.disabled) {
@@ -370,6 +448,7 @@ async function AI_EXECUTOR(decision) {
     // 9. RETURN SUCCESS
     traceEntry.duration = Date.now() - startTime;
     window.EXECUTION_TRACE.push(traceEntry);
+    persistTrace();
 
     return {
       success: true,
@@ -384,6 +463,11 @@ async function AI_EXECUTOR(decision) {
     traceEntry.error = normalized;
     traceEntry.duration = Date.now() - startTime;
     window.EXECUTION_TRACE.push(traceEntry);
+    persistTrace();
+
+    // PHASE 25.5: Record failure + alert
+    window.FAILURE_MEMORY.record({ action, error: normalized });
+    checkFailureAlert(action, normalized);
 
     console.error('EXECUTION_ERROR:', normalized.type, normalized.message);
     const failure = recordFailure(action);
@@ -480,7 +564,7 @@ window.AI_EXECUTOR = Object.assign(
 );
 
 // Auto-initialize
-console.log('AI_EXECUTOR v18.1 - SAFE EXECUTION LOADED (PHASE 20.5)');
+console.log('AI_EXECUTOR v18.2 - SAFE EXECUTION LOADED (PHASE 25.5)');
 
 // PHASE 25.4: Debug Panel
 window.AI_DEBUG_PANEL = function() {
@@ -508,5 +592,26 @@ window.EXECUTION_HEALTH_CHECK = function() {
     trustedActions: window.__TRUSTED_ACTIONS ? Object.keys(window.__TRUSTED_ACTIONS).length : 0,
     traceCount: window.EXECUTION_TRACE ? window.EXECUTION_TRACE.length : 0,
     timestamp: Date.now()
+  };
+};
+
+// PHASE 25.5: System Ready Check
+window.SYSTEM_READY_CHECK = function() {
+  const health = window.EXECUTION_HEALTH_CHECK ? window.EXECUTION_HEALTH_CHECK() : {};
+  return {
+    version: window.__APP_VERSION,
+    executor: typeof window.AI_EXECUTOR,
+    gas: typeof window.GAS_EXECUTE,
+    lock: window.__EXECUTION_LOCK_VERSION,
+    trace: window.EXECUTION_TRACE ? window.EXECUTION_TRACE.length : 0,
+    failures: window.FAILURE_MEMORY ? window.FAILURE_MEMORY.records.length : 0,
+    ready: !!(
+      window.__APP_VERSION &&
+      window.AI_EXECUTOR &&
+      typeof window.GAS_EXECUTE === 'function' &&
+      window.__TRUSTED_ACTIONS &&
+      Object.keys(window.__TRUSTED_ACTIONS).length > 0
+    ),
+    health: health
   };
 };

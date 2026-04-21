@@ -6,7 +6,7 @@
 <title>COMPHONE Dashboard — PC</title>
 <script>
   // PHASE 25.3 — GLOBAL VERSION LOCK
-  window.__APP_VERSION = 'v5.6.3';
+  window.__APP_VERSION = 'v5.6.4';
 
   // Cache invalidation on version mismatch
   if (localStorage.__APP_VERSION !== window.__APP_VERSION) {
@@ -40,6 +40,29 @@
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI','Sarabun',sans-serif; background: var(--bg); color: #111827; }
+
+  /* PHASE 25.5 — VERSION BADGE */
+  #version_badge {
+    position: fixed;
+    bottom: 12px;
+    right: 12px;
+    z-index: 9999;
+    background: rgba(15, 23, 42, 0.9);
+    color: #e2e8f0;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: 'Segoe UI', monospace;
+    letter-spacing: 0.3px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.08);
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  #version_badge .ok { color: #34d399; }
+  #version_badge .warn { color: #fbbf24; }
+  #version_badge .err { color: #f87171; }
 
   /* ===== SIDEBAR ===== */
   .sidebar {
@@ -736,9 +759,9 @@ function setActiveNav(section) {
   });
 }
 </script>
-<script src="execution_lock.js?v=564"></script>
-<script src="ai_executor_runtime.js?v=564"></script>
-<script src="approval_guard.js?v=564"></script>
+<script src="execution_lock.js?v=565"></script>
+<script src="ai_executor_runtime.js?v=565"></script>
+<script src="approval_guard.js?v=565"></script>
 <script src="ai_executor_validation.js"></script>
 <script src="ai_executor_validation_v18.js"></script>
 <script src="ai_executor_validation_v19.js"></script>
@@ -748,5 +771,31 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/comphone-superapp/pwa/sw.js').catch(() => {});
 }
 </script>
+
+<!-- PHASE 25.5 — VERSION BADGE -->
+<div id="version_badge">v5.6.4 | AI:• | LOCK:•</div>
+<script>
+(function updateVersionBadge() {
+  const badge = document.getElementById('version_badge');
+  if (!badge) return;
+  const aiOk = !!(window.AI_EXECUTOR && window.AI_EXECUTOR.execute);
+  const lockOk = !!(window.__TRUSTED_ACTIONS && Object.keys(window.__TRUSTED_ACTIONS).length > 0);
+  const aiClass = aiOk ? 'ok' : 'err';
+  const lockClass = lockOk ? 'ok' : 'err';
+  badge.innerHTML = `${window.__APP_VERSION || 'v?'} | AI:<span class="${aiClass}">${aiOk?'OK':'FAIL'}</span> | LOCK:<span class="${lockClass}">${lockOk?'OK':'FAIL'}</span>`;
+})();
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    const badge = document.getElementById('version_badge');
+    if (!badge) return;
+    const aiOk = !!(window.AI_EXECUTOR && window.AI_EXECUTOR.execute);
+    const lockOk = !!(window.__TRUSTED_ACTIONS && Object.keys(window.__TRUSTED_ACTIONS).length > 0);
+    const aiClass = aiOk ? 'ok' : 'err';
+    const lockClass = lockOk ? 'ok' : 'err';
+    badge.innerHTML = `${window.__APP_VERSION || 'v?'} | AI:<span class="${aiClass}">${aiOk?'OK':'FAIL'}</span> | LOCK:<span class="${lockClass}">${lockOk?'OK':'FAIL'}</span>`;
+  }, 1500);
+});
+</script>
+
 </body>
 </html>
