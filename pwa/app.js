@@ -125,7 +125,7 @@ function normalizeJob(j) {
 window.addEventListener('load', () => {
   // Register Service Worker
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/comphone-superapp/pwa/sw.js').catch(() => {});
+    navigator.serviceWorker.register('/comphone-superapp/sw.js').catch(() => {});
   }
 
   // PWA Install prompt
