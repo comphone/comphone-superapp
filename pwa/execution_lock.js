@@ -337,6 +337,14 @@
       };
 
       if (!__ORIGINAL_GAS_RUN) {
+        // PHASE 20.3 FIX: Clear token even on infrastructure failure (prevent reuse)
+        if (!opts.skipApprovalCheck) {
+          window.__LAST_APPROVED_ACTION = null;
+          if (window.__APPROVAL_CLEAR_TIMEOUT) {
+            clearTimeout(window.__APPROVAL_CLEAR_TIMEOUT);
+            window.__APPROVAL_CLEAR_TIMEOUT = null;
+          }
+        }
         reject(new Error('GAS_EXECUTE: Original google.script.run not captured. Lock may have failed.'));
         return;
       }
