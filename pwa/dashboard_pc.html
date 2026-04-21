@@ -228,6 +228,8 @@
 </style>
 </head>
 <body>
+  <div id="approval-panel" style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: white; border: 1px solid #ccc; padding: 10px; max-width: 300px; max-height: 400px; overflow-y: auto;"></div>
+
 
 <!-- ===== SIDEBAR ===== -->
 <aside class="sidebar" id="sidebar">
@@ -315,6 +317,44 @@ const GAS_URL = localStorage.getItem('comphone_gas_url') ||
 
 let CHARTS = {};
 let DASHBOARD_DATA = null;
+
+
+// ===== DATA SCHEMA & ACTION MAP (FOR AI_EXECUTOR) ====
+window.__DATA_SCHEMA = {
+  stock: ['product_id', 'name', 'qty', 'min_level'],
+  job: ['job_id', 'status', 'technician', 'sla_due'],
+  order: ['order_id', 'customer', 'total', 'status']
+};
+
+window.__ACTION_MAP = {
+  getStockList: {
+    api: 'getStockList',
+    type: 'read'
+  },
+  updateJobStatus: {
+    api: 'updateJobStatus',
+    type: 'write'
+  },
+  posCheckout: {
+    api: 'posCheckout',
+    type: 'write'
+  }
+};
+
+// ===== UI REFRESH MAP (FOR AI_EXECUTOR) ====
+window.__UI_REFRESH_MAP = {
+  updateJobStatus: function() { 
+    if (typeof window.loadDashboard === 'function') {
+      window.loadDashboard();
+    }
+  },
+  posCheckout: function() {
+    if (typeof window.loadDashboard === 'function') {
+      window.loadDashboard();
+    }
+  }
+};
+
 
 // ===== INIT =====
 window.addEventListener('load', () => {
@@ -672,5 +712,9 @@ function setActiveNav(section) {
   });
 }
 </script>
+<script src="ai_executor_runtime.js"></script>
+<script src="ai_executor_validation.js"></script>
+<script src="ai_executor_validation_v18.js"></script>
+<script src="ai_executor_validation_v19.js"></script>
 </body>
 </html>
