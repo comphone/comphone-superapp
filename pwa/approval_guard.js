@@ -243,7 +243,7 @@ function approve(id, action, options) {
           clearTimeout(timeoutId);
           ApprovalState.pending.delete(nonce);
 
-          if (result && result.allowed) {
+          if (result && result.success) {
             // === PHASE 20.3: GRANT APPROVAL TOKEN ===
             window.__LAST_APPROVED_ACTION = action;
             if (window.__APPROVAL_CLEAR_TIMEOUT) {
@@ -257,7 +257,7 @@ function approve(id, action, options) {
             }, 3000); // 3 วินาที
             // ==========================================
 
-            showToast(`✅ ${result.message || 'อนุมัติสำเร็จ'}`, 'success');
+            showToast(`✅ ${result.reason || 'อนุมัติสำเร็จ'}`, 'success');
             _logApprovalAttempt(action, id, true, 'Server approved', result);
             if (typeof onSuccess === 'function') onSuccess(result);
             resolve(result);
