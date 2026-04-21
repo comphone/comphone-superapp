@@ -2,7 +2,7 @@
 // COMPHONE SUPER APP V5.5
 
 const CACHE_NAME = 'comphone-customer-v1.0.0';
-const BASE = '/comphone-superapp';
+const BASE = '/comphone-superapp/pwa';
 const ASSETS = [
   BASE + '/customer_portal.html',
   BASE + '/customer_manifest.json',

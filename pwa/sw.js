@@ -5,7 +5,7 @@
 // ============================================================
 const CACHE_V = 'comphone-v5.6.0';
 const CACHE_NAME = CACHE_V; // alias for compat
-const BASE = '/comphone-superapp';
+const BASE = '/comphone-superapp/pwa';
 const ASSETS = [
   BASE + '/',
   BASE + '/index.html',
