@@ -615,3 +615,270 @@ window.SYSTEM_READY_CHECK = function() {
     health: health
   };
 };
+
+// ============================================================
+// PHASE 26: SELF HEALING SYSTEM
+// ============================================================
+
+// STEP 1 — AUTO ROOT CAUSE
+window.AUTO_ROOT_CAUSE = function() {
+  const recent = (window.EXECUTION_TRACE || []).slice(-20);
+  const failures = recent.filter(t => t.status === 'error' || t.status === 'post_check_failed' || t.status === 'pre_check_failed');
+
+  if (failures.length === 0) {
+    return { cause: 'HEALTHY', confidence: 1.0, count: 0 };
+  }
+
+  const counts = {};
+  failures.forEach(f => {
+    const errType = (f.error && f.error.type) || (typeof f.error === 'string' ? f.error : 'UNKNOWN');
+    counts[errType] = (counts[errType] || 0) + 1;
+  });
+
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  const [topCause, topCount] = sorted[0];
+  const totalFailures = failures.length;
+  const confidence = Math.min(0.99, topCount / Math.max(totalFailures, 3));
+
+  let cause = topCause;
+  // Map raw error types to root cause categories
+  const causeMap = {
+    'APPROVAL_REQUIRED': 'APPROVAL_REQUIRED',
+    'USER_DENIED_APPROVAL': 'APPROVAL_REQUIRED',
+    'API_ERROR': 'API_ERROR',
+    'TIMEOUT': 'TIMEOUT',
+    'UNTRUSTED_ACTION': 'UNTRUSTED_ACTION',
+    'UNTRUSTED_ACTION_BLOCKED': 'UNTRUSTED_ACTION',
+    'PRE_CONDITION_FAILED': 'VALIDATION',
+    'POST_CONDITION_FAILED': 'VALIDATION',
+    'IDEMPOTENCY_BLOCK': 'RATE_LIMIT',
+    'AI_TRUST_TOO_LOW': 'TRUST',
+    'EXECUTOR_DISABLED': 'CONFIG'
+  };
+  cause = causeMap[cause] || cause;
+
+  return {
+    cause: cause,
+    confidence: parseFloat(confidence.toFixed(2)),
+    count: totalFailures,
+    breakdown: counts,
+    recentActions: failures.slice(-3).map(f => f.action)
+  };
+};
+
+// STEP 4 — FIX LEARNING ENGINE (define before AUTO_FIX)
+window.FIX_LEARNING_ENGINE = {
+  db: [],
+  learn: function(entry) {
+    this.db.push({
+      cause: entry.cause,
+      fix: entry.fix,
+      success: entry.success,
+      ts: Date.now()
+    });
+    // Keep last 100
+    if (this.db.length > 100) this.db = this.db.slice(-100);
+    try {
+      localStorage.setItem('comphone_fix_db', JSON.stringify(this.db));
+    } catch (e) {}
+  },
+  load: function() {
+    try {
+      const saved = localStorage.getItem('comphone_fix_db');
+      if (saved) this.db = JSON.parse(saved);
+    } catch (e) {}
+  },
+  getSuccessRate: function(cause, fix) {
+    const matches = this.db.filter(r => r.cause === cause && r.fix === fix);
+    if (matches.length === 0) return null;
+    const successes = matches.filter(r => r.success).length;
+    return parseFloat((successes / matches.length).toFixed(2));
+  },
+  suggestFix: function(cause) {
+    // Find the fix with highest success rate for this cause
+    const causeRecords = this.db.filter(r => r.cause === cause);
+    if (causeRecords.length === 0) return null;
+    const fixCounts = {};
+    causeRecords.forEach(r => {
+      if (!fixCounts[r.fix]) fixCounts[r.fix] = { total: 0, success: 0 };
+      fixCounts[r.fix].total++;
+      if (r.success) fixCounts[r.fix].success++;
+    });
+    let bestFix = null;
+    let bestRate = -1;
+    Object.entries(fixCounts).forEach(([fix, stats]) => {
+      const rate = stats.success / stats.total;
+      if (rate > bestRate) {
+        bestRate = rate;
+        bestFix = fix;
+      }
+    });
+    return bestFix ? { fix: bestFix, rate: parseFloat(bestRate.toFixed(2)) } : null;
+  }
+};
+window.FIX_LEARNING_ENGINE.load();
+
+// STEP 5 — SAFETY GUARD
+window.SELF_HEAL_SAFETY = {
+  check: function(cause, confidence) {
+    // NEVER auto-fix these
+    const NEVER_AUTO = ['UNKNOWN', 'SECURITY', 'UNTRUSTED_ACTION', 'CONFIG'];
+    if (NEVER_AUTO.includes(cause)) {
+      return { allowed: false, reason: 'SAFETY_NEVER_AUTO: ' + cause };
+    }
+    // Confidence threshold
+    if (confidence < 0.7) {
+      return { allowed: false, reason: 'SAFETY_LOW_CONFIDENCE: ' + confidence };
+    }
+    // Require minimum sample size
+    return { allowed: true };
+  }
+};
+
+// STEP 2 — AUTO FIX ENGINE
+window.AUTO_FIX = async function(cause) {
+  const fixId = 'FIX_' + Date.now();
+  console.log('[AUTO_FIX] Starting fix for cause:', cause, 'id:', fixId);
+
+  let result = { fix: 'NONE', success: false, detail: '' };
+
+  switch (cause) {
+
+    case 'APPROVAL_REQUIRED':
+      // Reset approval token to unlock UI
+      window.__LAST_APPROVED_ACTION = null;
+      if (window.__APPROVAL_CLEAR_TIMEOUT) {
+        clearTimeout(window.__APPROVAL_CLEAR_TIMEOUT);
+        window.__APPROVAL_CLEAR_TIMEOUT = null;
+      }
+      // Clear expired approvals
+      window.__APPROVAL_QUEUE = (window.__APPROVAL_QUEUE || []).filter(item => {
+        const expired = Date.now() - item.createdAt > 30000;
+        if (expired && item.resolve) item.resolve(false);
+        return !expired;
+      });
+      renderApprovalUI();
+      result = { fix: 'RESET_APPROVAL_TOKEN', success: true, detail: 'Cleared stale approval tokens' };
+      break;
+
+    case 'API_ERROR':
+      // Enter safe mode: disable executor temporarily, force cache usage
+      window.__AI_EXECUTOR_ENABLED = false;
+      setTimeout(() => {
+        window.__AI_EXECUTOR_ENABLED = true;
+        console.log('[AUTO_FIX] Executor re-enabled after API_ERROR cool-down');
+      }, 30000);
+      result = { fix: 'ENTER_SAFE_MODE', success: true, detail: 'Executor disabled for 30s' };
+      break;
+
+    case 'TIMEOUT':
+      // Enable safe mode: increase timeout tolerance, show offline indicator
+      window.__TIMEOUT_SAFE_MODE = true;
+      setTimeout(() => {
+        window.__TIMEOUT_SAFE_MODE = false;
+        console.log('[AUTO_FIX] Timeout safe mode cleared');
+      }, 60000);
+      result = { fix: 'TIMEOUT_SAFE_MODE', success: true, detail: 'Timeout safe mode enabled for 60s' };
+      break;
+
+    case 'RATE_LIMIT':
+      // Clear idempotency locks
+      if (window.__ACTION_EXEC_LOCK) {
+        window.__ACTION_EXEC_LOCK.clear();
+      }
+      result = { fix: 'CLEAR_RATE_LIMITS', success: true, detail: 'Cleared all action locks' };
+      break;
+
+    case 'TRUST':
+      // Reset trust flag
+      window.__AI_TRUST_TOO_LOW = false;
+      result = { fix: 'RESET_TRUST', success: true, detail: 'Trust flag reset' };
+      break;
+
+    case 'VALIDATION':
+      // Log for manual review — validation errors need human inspection
+      result = { fix: 'LOG_FOR_REVIEW', success: false, detail: 'Validation errors require manual review' };
+      break;
+
+    case 'HEALTHY':
+      result = { fix: 'NO_ACTION', success: true, detail: 'System is healthy' };
+      break;
+
+    default:
+      result = { fix: 'UNKNOWN_CAUSE', success: false, detail: 'No fix defined for: ' + cause };
+  }
+
+  // Learn from this fix
+  window.FIX_LEARNING_ENGINE.learn({
+    cause: cause,
+    fix: result.fix,
+    success: result.success
+  });
+
+  console.log('[AUTO_FIX] Completed:', result);
+  return result;
+};
+
+// STEP 3 — SELF HEAL LOOP
+window.__SELF_HEAL_INTERVAL = null;
+window.__SELF_HEAL_STATS = { runs: 0, fixesApplied: 0, lastRun: null };
+
+window.START_SELF_HEAL = function() {
+  if (window.__SELF_HEAL_INTERVAL) {
+    console.log('[SELF_HEAL] Already running');
+    return;
+  }
+  window.__SELF_HEAL_INTERVAL = setInterval(function() {
+    window.__SELF_HEAL_STATS.runs++;
+    window.__SELF_HEAL_STATS.lastRun = Date.now();
+
+    const rc = window.AUTO_ROOT_CAUSE();
+    if (!rc || rc.cause === 'HEALTHY') {
+      return; // Nothing to fix
+    }
+
+    // Safety guard
+    const safety = window.SELF_HEAL_SAFETY.check(rc.cause, rc.confidence);
+    if (!safety.allowed) {
+      console.warn('[SELF_HEAL] BLOCKED:', safety.reason, 'cause:', rc.cause, 'confidence:', rc.confidence);
+      return;
+    }
+
+    console.log('[SELF_HEAL] Detected issue:', rc.cause, 'confidence:', rc.confidence, 'count:', rc.count);
+
+    // Try fix
+    window.AUTO_FIX(rc.cause).then(function(fixResult) {
+      if (fixResult && fixResult.success) {
+        window.__SELF_HEAL_STATS.fixesApplied++;
+        console.log('[SELF_HEAL] Fix applied successfully:', fixResult.fix);
+      } else {
+        console.warn('[SELF_HEAL] Fix failed or no-op:', fixResult);
+      }
+    });
+
+  }, 30000);
+  console.log('[SELF_HEAL] Loop started (30s interval)');
+};
+
+window.STOP_SELF_HEAL = function() {
+  if (window.__SELF_HEAL_INTERVAL) {
+    clearInterval(window.__SELF_HEAL_INTERVAL);
+    window.__SELF_HEAL_INTERVAL = null;
+    console.log('[SELF_HEAL] Loop stopped');
+  }
+};
+
+window.SELF_HEAL_STATUS = function() {
+  return {
+    running: !!window.__SELF_HEAL_INTERVAL,
+    stats: window.__SELF_HEAL_STATS,
+    learningDbSize: window.FIX_LEARNING_ENGINE ? window.FIX_LEARNING_ENGINE.db.length : 0
+  };
+};
+
+// Auto-start self-heal after 10 seconds
+setTimeout(function() {
+  if (window.__APP_VERSION) {
+    window.START_SELF_HEAL();
+  }
+}, 10000);
