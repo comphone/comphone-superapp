@@ -405,7 +405,7 @@ function dispatchActionV55_(action, payload, args) {
 
       case 'storeSessionContent':
         return storeSessionContent(payload.content || '');
-
+      // ============================================================
       // Customer Portal (Public — ไม่ต้อง Auth)
       // ============================================================
       case 'getJobStatusPublic':
@@ -413,6 +413,8 @@ function dispatchActionV55_(action, payload, args) {
           payload.job_id || payload.jobId || '',
           payload.phone || ''
         );
+      case 'submitCustomerRating':
+        return submitCustomerRating_(payload);
 
       // ============================================================
       // Notification Center — Sprint 3 T4
@@ -700,4 +702,44 @@ function healthCheckV55_() {
     elapsed_ms: elapsed,
     checks:    checks
   };
+}
+
+// ============================================================
+// Customer Portal Helpers
+// ============================================================
+/**
+ * submitCustomerRating_ - บันทึกคะแนนจากลูกค้า (Public API)
+ * @param {Object} payload - { job_id, rating, comment? }
+ * @return {Object} - { success, message }
+ */
+function submitCustomerRating_(payload) {
+  try {
+    var jobId = payload.job_id || payload.jobId || '';
+    var rating = Number(payload.rating || 0);
+    var comment = payload.comment || '';
+
+    if (!jobId) return { success: false, error: 'ไม่พบ job_id' };
+    if (!rating || rating < 1 || rating > 5) return { success: false, error: 'Rating ต้องอยู่ระหว่าง 1-5' };
+
+    var ss = getComphoneSheet();
+    var sheet = findSheetByName(ss, 'CUSTOMER_RATINGS');
+
+    // ถ้าไม่มี sheet ให้สร้าง
+    if (!sheet) {
+      sheet = ss.insertSheet('CUSTOMER_RATINGS');
+      sheet.appendRow(['job_id', 'rating', 'comment', 'submitted_at', 'source']);
+    }
+
+    sheet.appendRow([
+      jobId,
+      rating,
+      comment,
+      Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss'),
+      'customer_portal'
+    ]);
+
+    return { success: true, message: 'ขอบคุณสำหรับคะแนน' };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
 }

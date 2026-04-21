@@ -6,21 +6,27 @@ let ALL_PO = [];
 let PO_FILTER = 'all';
 let PO_ITEMS = []; // รายการสินค้าในฟอร์มสร้าง PO
 
-// ===== callApi (POST) — shared helper =====
-// ถ้า crm_attendance.js ยังไม่ได้ define ให้ define ที่นี่
+// ===== callApi fallback — PHASE 20.4: ใช้ AI_EXECUTOR แทน fetch =====
 if (typeof callApi === 'undefined') {
   window.callApi = async function(payload) {
-    const url = APP.scriptUrl || DEFAULT_SCRIPT_URL;
-    if (!url) return { success: false, error: 'ไม่พบ Script URL' };
+    payload = payload || {};
+    const action = payload.action;
+    if (!action) return { success: false, error: 'ไม่พบ action ใน payload' };
+    const params = Object.assign({}, payload);
+    delete params.action;
+
     try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        redirect: 'follow'
-      });
-      return await res.json();
+      const method = (typeof isReadAction === 'function' && isReadAction(action)) ? 'query' : 'execute';
+      if (!window.AI_EXECUTOR || !window.AI_EXECUTOR[method]) {
+        return { success: false, error: 'AI_EXECUTOR ยังไม่พร้อมใช้งาน' };
+      }
+      const data = await window.AI_EXECUTOR[method]({ action: action, payload: params });
+      if (data && data._headers) delete data._headers;
+      return data;
     } catch (e) {
+      if (e.message && e.message.includes('APPROVAL_REQUIRED')) {
+        return { success: false, error: 'APPROVAL_REQUIRED', message: 'กรุณาขออนุมัติการดำเนินการ' };
+      }
       return { success: false, error: e.message };
     }
   };

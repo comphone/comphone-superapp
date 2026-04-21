@@ -200,14 +200,24 @@ async function submitLogin() {
   if (errorDiv) errorDiv.style.display = 'none';
 
   try {
-    const url = APP.scriptUrl || DEFAULT_SCRIPT_URL;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'loginUser', username: username.trim(), password: password }),
-      redirect: 'follow',
-    });
-    const data = await res.json();
+    // PHASE 20.4: ใช้ AI_EXECUTOR แทน fetch โดยตรง
+    let data;
+    if (window.AI_EXECUTOR && window.AI_EXECUTOR.query) {
+      data = await window.AI_EXECUTOR.query({
+        action: 'loginUser',
+        payload: { username: username.trim(), password: password }
+      });
+    } else {
+      // Fallback สำหรับกรณี AI_EXECUTOR ยังไม่โหลด
+      const url = APP.scriptUrl || DEFAULT_SCRIPT_URL;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'loginUser', username: username.trim(), password: password }),
+        redirect: 'follow',
+      });
+      data = await res.json();
+    }
 
     if (data && data.success) {
       // บันทึก session

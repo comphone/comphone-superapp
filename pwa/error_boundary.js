@@ -174,14 +174,25 @@ window.syncOfflineQueue = async function() {
         payload.username = APP.user.username;
       }
 
-      const res = await fetch(url, {
-        method:   'POST',
-        headers:  { 'Content-Type': 'text/plain' },
-        body:     JSON.stringify(payload),
-        redirect: 'follow'
-      });
+      let data;
+      if (window.AI_EXECUTOR && window.AI_EXECUTOR.execute) {
+        // PHASE 20.4: ใช้ AI_EXECUTOR แทน fetch โดยตรง
+        const action = payload.action;
+        const params = Object.assign({}, payload);
+        delete params.action;
+        const method = (typeof isReadAction === 'function' && isReadAction(action)) ? 'query' : 'execute';
+        data = await window.AI_EXECUTOR[method]({ action: action, payload: params });
+      } else {
+        // Fallback สำหรับกรณีที่ AI_EXECUTOR ยังไม่โหลด
+        const res = await fetch(url, {
+          method:   'POST',
+          headers:  { 'Content-Type': 'text/plain' },
+          body:     JSON.stringify(payload),
+          redirect: 'follow'
+        });
+        data = await res.json();
+      }
 
-      const data = await res.json();
       if (data && data.success) {
         successCount++;
       } else {

@@ -375,7 +375,13 @@ window.addEventListener('load', () => {
 });
 
 // ===== API =====
+// PHASE 20.4: เปลี่ยนจาก fetch โดยตรง → AI_EXECUTOR
 async function callGas(action, params) {
+  if (window.AI_EXECUTOR && window.AI_EXECUTOR.query) {
+    const method = (typeof isReadAction === 'function' && isReadAction(action)) ? 'query' : 'execute';
+    return window.AI_EXECUTOR[method]({ action: action, payload: params || {} });
+  }
+  // Fallback สำหรับกรณีที่ AI_EXECUTOR ยังไม่โหลด
   const url = localStorage.getItem('comphone_gas_url') || GAS_URL;
   const r = await fetch(url, {
     method: 'POST',

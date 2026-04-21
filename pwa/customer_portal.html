@@ -225,7 +225,23 @@
       }
     })();
 
-    // ── Search ───────────────────────────────────────────────
+    // —— Helper: call API ————————————————————————————————————————————————
+    // PHASE 20.4: ใช้ AI_EXECUTOR ถ้ามี ไม่งันแล้ว fallback ไป fetch
+    async function portalCall(action, params) {
+      params = params || {};
+      if (window.AI_EXECUTOR && window.AI_EXECUTOR.query) {
+        return window.AI_EXECUTOR.query({ action: action, payload: params });
+      }
+      // Fallback สำหรับ static host (ไม่มี GAS runtime)
+      var res = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(Object.assign({ action: action }, params))
+      });
+      return await res.json();
+    }
+
+    // —— Search ————————————————————————————————————————————————
     async function searchJob() {
       var jobId = document.getElementById('input-job-id').value.trim();
       var phone = document.getElementById('input-phone').value.trim();
@@ -246,15 +262,7 @@
       resultArea.innerHTML = '<div class="card" style="text-align:center;padding:2rem;color:#64748b;"><i class="bi bi-hourglass-split spinner" style="font-size:2rem;"></i><br><br>กำลังโหลดข้อมูล...</div>';
 
       try {
-        var payload = { action: 'getJobStatusPublic', job_id: jobId };
-        if (phone) payload.phone = phone;
-
-        var res = await fetch(GAS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        var data = await res.json();
+        var data = await portalCall('getJobStatusPublic', { job_id: jobId, phone: phone || undefined });
 
         if (data.success) {
           PORTAL_STATE.currentJob = data;
@@ -280,10 +288,7 @@
       if (PORTAL_STATE.refreshInterval) clearInterval(PORTAL_STATE.refreshInterval);
       PORTAL_STATE.refreshInterval = setInterval(async function() {
         try {
-          var payload = { action: 'getJobStatusPublic', job_id: jobId };
-          if (phone) payload.phone = phone;
-          var res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-          var data = await res.json();
+          var data = await portalCall('getJobStatusPublic', { job_id: jobId, phone: phone || undefined });
           if (data.success) {
             var oldStatus = PORTAL_STATE.currentJob && PORTAL_STATE.currentJob.job && PORTAL_STATE.currentJob.job.status;
             var newStatus = data.job && data.job.status;
@@ -453,12 +458,7 @@
       hoverRating(n);
       document.getElementById('rating-msg').textContent = 'กำลังบันทึก...';
       try {
-        var res = await fetch(GAS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'submitCustomerRating', job_id: jobId, rating: n })
-        });
-        var data = await res.json();
+        var data = await portalCall('submitCustomerRating', { job_id: jobId, rating: n });
         document.getElementById('rating-msg').textContent = data.success ? '✅ ขอบคุณสำหรับคะแนน!' : '❌ บันทึกไม่สำเร็จ';
       } catch(e) {
         document.getElementById('rating-msg').textContent = '❌ ไม่สามารถเชื่อมต่อได้';

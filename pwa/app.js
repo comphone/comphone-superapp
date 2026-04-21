@@ -249,21 +249,7 @@ function startMainApp() {
 
 async function loadLiveData() {
   try {
-    const url = APP.scriptUrl || DEFAULT_SCRIPT_URL;
-    const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 20000); // 20s startup timeout
-    let data;
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'getDashboardData' }),
-        signal: ctrl.signal
-      });
-      data = await res.json();
-    } finally {
-      clearTimeout(tid);
-    }
+    const data = await window.AI_EXECUTOR.query({ action: 'getDashboardData' });
     if (!data || !data.success) return;
 
     // เก็บ jobs จาก API
@@ -1097,45 +1083,41 @@ function startVoiceSearch() {
 }
 
 // ===== API CALL =====
-// callAPI(action, params) — ใช้ใน job_workflow.js
+// callAPI(action, params) — ใช้ใน job_workflow.js และทั่วไป
+// PHASE 20.4: เปลี่ยนจาก fetch โดยตรง → AI_EXECUTOR
+const READ_ACTIONS = {
+  getDashboardData: true, getJobStateConfig: true, getJobTimeline: true,
+  getJobQRData: true, getPhotoGalleryData: true, inventoryOverview: true,
+  getInventoryItemDetail: true, getStockMovementHistory: true, checkStock: true,
+  barcodeLookup: true, listPurchaseOrders: true, getCustomer: true,
+  listCustomers: true, getCustomerHistoryFull: true, getCustomerListWithStats: true,
+  getCRMFollowUpSchedule: true, getCRMMetrics: true, getAfterSalesDue: true,
+  getAfterSalesSummary: true, getAttendanceReport: true, getTechHistory: true,
+  getAllTechsSummary: true, getBilling: true, listBillings: true, getReportData: true,
+  getAuditLog: true, getAuditSummary: true, getSecurityStatus: true, getComphoneConfig: true,
+  getSchemaInfo: true, systemStatus: true, health: true, help: true,
+  verifySession: true, listUsers: true, geminiReorderSuggestion: true,
+  getWarrantyByJobId: true, listWarranties: true, getTaxReport: true,
+  getTaxReminder: true, getJobStatusPublic: true, getDriveSyncStatus: true
+};
+
+function isReadAction(action) {
+  return !!READ_ACTIONS[action];
+}
+
 async function callAPI(action, params = {}) {
-  const url = APP.scriptUrl || DEFAULT_SCRIPT_URL;
-  if (!url) return null;
   if (!navigator.onLine) {
     saveOfflineAction({ action, params, time: Date.now() });
     return null;
   }
   try {
-    // เพิ่ม auth token ถ้ามี
-    const payload = { action, ...params };
-    if (typeof AUTH !== 'undefined' && AUTH.token) {
-      payload.token = AUTH.token;
-      payload.username = AUTH.username;
-    } else if (APP.user && APP.user.authToken) {
-      payload.token = APP.user.authToken;
-      payload.username = APP.user.username;
-    }
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify(payload),
-        redirect: 'follow',
-        signal: controller.signal
-      });
-      const data = await res.json();
-      // กรอง _headers metadata ที่ GAS เพิ่มเข้ามาใน response body
-      if (data && data._headers) delete data._headers;
-      return data;
-    } finally {
-      clearTimeout(timeoutId);
-    }
+    const method = isReadAction(action) ? 'query' : 'execute';
+    const data = await window.AI_EXECUTOR[method]({ action: action, payload: params });
+    if (data && data._headers) delete data._headers;
+    return data;
   } catch (e) {
-    if (e.name === 'AbortError') {
-      showToast('คำขอใช้เวลานานเกินไป กรุณาลองใหม่', 'warning');
-      return null;
+    if (e.message && e.message.includes('APPROVAL_REQUIRED')) {
+      showToast('กรุณาขออนุมัติการดำเนินการ', 'warning');
     }
     saveOfflineAction({ action, params, time: Date.now() });
     return null;
@@ -1143,26 +1125,24 @@ async function callAPI(action, params = {}) {
 }
 // callApi(payload) — alias สำหรับ crm_attendance.js, purchase_order.js, dashboard.js
 window.callApi = async function(payload) {
-  const url = APP.scriptUrl || DEFAULT_SCRIPT_URL;
-  if (!url) return { success: false, error: 'ไม่พบ Script URL' };
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+  payload = payload || {};
+  const action = payload.action;
+  if (!action) return { success: false, error: 'ไม่พบ action ใน payload' };
+
+  // ลบ action ออกจาก payload เพื่อส่งใน AI_EXECUTOR
+  const params = Object.assign({}, payload);
+  delete params.action;
+
   try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload),
-      redirect: 'follow',
-      signal: controller.signal
-    });
-    const data = await res.json();
+    const method = isReadAction(action) ? 'query' : 'execute';
+    const data = await window.AI_EXECUTOR[method]({ action: action, payload: params });
     if (data && data._headers) delete data._headers;
     return data;
   } catch (e) {
-    if (e.name === 'AbortError') return { success: false, error: 'Request timeout (30s)' };
+    if (e.message && e.message.includes('APPROVAL_REQUIRED')) {
+      return { success: false, error: 'APPROVAL_REQUIRED', message: 'กรุณาขออนุมัติการดำเนินการ' };
+    }
     return { success: false, error: e.message };
-  } finally {
-    clearTimeout(timeoutId);
   }
 };
 

@@ -30,36 +30,126 @@
   // ===== 2. SECURITY VIOLATION LOG =====
   window.__SECURITY_VIOLATION = [];
 
-  // ===== 2a. TRUSTED ACTIONS WHITELIST (PHASE 20.3) =====
+  // ===== 2a. TRUSTED ACTIONS WHITELIST (PHASE 20.3 + 20.4) =====
+  // อัพเดตรายการที่ใช้งานจริงใน COMPHONE SUPER APP
   window.__TRUSTED_ACTIONS = {
-    // Read / Query
-    getDashboardBundle: true,
-    getJobList: true,
-    getStockList: true,
-    getPOSItems: true,
-    viewRevenue: true,
-    // Write / Mutate (require approval)
+    // === Read / Query (no approval required) ===
+    getDashboardData: true,
+    getJobStateConfig: true,
+    getJobTimeline: true,
+    getJobQRData: true,
+    getPhotoGalleryData: true,
+    inventoryOverview: true,
+    getInventoryItemDetail: true,
+    getStockMovementHistory: true,
+    checkStock: true,
+    barcodeLookup: true,
+    listPurchaseOrders: true,
+    getCustomer: true,
+    listCustomers: true,
+    getCustomerHistoryFull: true,
+    getCustomerListWithStats: true,
+    getCRMFollowUpSchedule: true,
+    getCRMMetrics: true,
+    getAfterSalesDue: true,
+    getAfterSalesSummary: true,
+    getAttendanceReport: true,
+    getTechHistory: true,
+    getAllTechsSummary: true,
+    getBilling: true,
+    listBillings: true,
+    getReportData: true,
+    getAuditLog: true,
+    getAuditSummary: true,
+    getSecurityStatus: true,
+    getComphoneConfig: true,
+    getSchemaInfo: true,
+    systemStatus: true,
+    health: true,
+    help: true,
+    verifySession: true,
+    listUsers: true,
+    geminiReorderSuggestion: true,
+    getWarrantyByJobId: true,
+    listWarranties: true,
+    getTaxReport: true,
+    getTaxReminder: true,
+    getJobStatusPublic: true,
+    getDriveSyncStatus: true,
+    // === Public / Customer Portal ===
+    submitCustomerRating: true,
+    // === Write / Mutate (require approval) ===
     updateJobStatus: true,
+    transitionJob: true,
+    updateJobById: true,
+    openJob: true,
     createJob: true,
-    deleteJob: true,
-    deleteData: true,
-    deleteUser: true,
-    cancelJob: true,
-    refund: true,
-    approveBilling: true,
-    rejectBilling: true,
+    addQuickNote: true,
+    markJobStatus: true,
+    handleProcessPhotos: true,
+    sendDashboardSummary: true,
     transferStock: true,
-    createPO: true,
-    markDone: true,
-    markWaiting: true,
-    addAppointment: true,
-    sendLine: true,
+    addInventoryItem: true,
+    updateInventoryItem: true,
+    deleteInventoryItem: true,
+    scanWithdrawStock: true,
+    createPurchaseOrder: true,
+    receivePurchaseOrder: true,
+    cancelPurchaseOrder: true,
+    createCustomer: true,
+    updateCustomer: true,
+    createBilling: true,
+    updatePayment: true,
+    markBillingPaid: true,
+    generatePromptPayQR: true,
+    createAfterSalesRecord: true,
+    logAfterSalesFollowUp: true,
+    sendAfterSalesAlerts: true,
+    scheduleFollowUp: true,
+    logFollowUpResult: true,
+    nudgeSalesTeam: true,
+    clockIn: true,
+    clockOut: true,
+    loginUser: true,
+    logoutUser: true,
+    createUser: true,
+    updateUserRole: true,
+    setUserActive: true,
+    changePassword: true,
+    forcePasswordChange: true,
+    lockAccount: true,
+    unlockAccount: true,
+    sendLineMessage: true,
     nudgeTech: true,
-    posCheckout: true,
-    updateStock: true,
-    processPayment: true,
-    setupSystem: true,
-    // Audit / System
+    addAppointment: true,
+    updateJobSchedule: true,
+    savePushSubscription: true,
+    removePushSubscription: true,
+    sendPushToAll: true,
+    smartAssignTech: true,
+    optimizeRoute: true,
+    analyzeWorkImage: true,
+    runJobCompletionQC: true,
+    qualityCheck: true,
+    geminiSlipVerify: true,
+    verifyPaymentSlip: true,
+    calculateTax: true,
+    saveTaxReport: true,
+    taxAction: true,
+    generateTaxInvoice: true,
+    generateWhtDocument: true,
+    createWarranty: true,
+    updateWarrantyStatus: true,
+    runBackup: true,
+    seedAllData: true,
+    setupAllTriggers: true,
+    initSystem: true,
+    setScriptProperties: true,
+    syncCodeToDrive: true,
+    storeSessionContent: true,
+    pruneAuditLog: true,
+    cronMorningAlert: true,
+    // === Security / Audit (internal) ===
     logApprovalAudit: true,
     batchLogApprovalAudit: true,
     batchValidateApproval: true,
@@ -250,6 +340,13 @@
         return;
       }
 
+      // ส่ง flattened payload เพื่อ backward compatibility กับ Router.gs
+      // Router.gs รับ payload แบบ flattened object ที่มี action อยู่ใน property
+      const gasPayload = Object.assign({}, payload, {
+        action: action,
+        __execMeta: payload.__execMeta
+      });
+
       __ORIGINAL_GAS_RUN
         .withSuccessHandler(function(result) {
           // ONE-TIME USE: ล้าง approval token ทันที (ใช้งานได้ครั้งเดียว)
@@ -273,13 +370,15 @@
             }
           }
           reject(err);
-        })[action](payload);
+        })
+        .routeActionV55(action, gasPayload);
     });
   };
 
-  // ===== 8. AI_EXECUTOR ENTRY POINT =====
+  // ===== 8. AI_EXECUTOR ENTRY POINT (PHASE 20.4) =====
   /**
    * จุดที่ทุก action ต้องผ่านที่นี้
+   * สำหรับ write/delete/financial actions (ต้อง approval)
    * @param {object} request - { action: string, payload: object }
    * @return {Promise} - GAS response
    */
@@ -297,10 +396,28 @@
       throw new Error('AI_EXECUTOR.execute: action must be a string');
     }
 
-    // ห่อมื่นที่นี้จะเพิ่ม approval check ได้ (ถ้าต้องการ)
-    // ในอนาคต ใช้ canApprove() จาก approval_guard.js ก่อนหลังจากนี้
-
     return window.GAS_EXECUTE(action, payload);
+  };
+
+  /**
+   * สำหรับ read/query actions (ไม่ต้อง approval)
+   * @param {object} request - { action: string, payload: object }
+   * @return {Promise} - GAS response
+   */
+  window.AI_EXECUTOR.query = async function(request) {
+    request = request || {};
+    const action = request.action;
+    const payload = request.payload || {};
+
+    if (!action) {
+      throw new Error('AI_EXECUTOR.query: missing action');
+    }
+    if (typeof action !== 'string') {
+      throw new Error('AI_EXECUTOR.query: action must be a string');
+    }
+
+    // Query actions ไม่ต้อง approval — ใช้ skipApprovalCheck
+    return window.GAS_EXECUTE(action, payload, { skipApprovalCheck: true });
   };
 
   // ===== 9. DEBUG / SECURITY UTILITIES =====
