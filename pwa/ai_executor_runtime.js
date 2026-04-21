@@ -19,6 +19,22 @@ window.__EXECUTION_LOG = []; // For debugging
 window.__TRUSTED_ACTIONS = window.__TRUSTED_ACTIONS || {};
 window.__LAST_APPROVED_ACTION = window.__LAST_APPROVED_ACTION || null;
 
+// PHASE 25.4: Global Execution Trace
+window.EXECUTION_TRACE = window.EXECUTION_TRACE || [];
+
+// PHASE 25.4: Error Normalization Map
+const ERROR_NORMALIZATION = {
+  map: function(err) {
+    const msg = (err && err.message) ? err.message : String(err);
+    if (msg.includes('APPROVAL_REQUIRED')) return { type: 'APPROVAL_REQUIRED', code: 401, message: msg };
+    if (msg.includes('UNTRUSTED_ACTION')) return { type: 'UNTRUSTED_ACTION', code: 403, message: msg };
+    if (msg.includes('TIMEOUT') || msg.includes('timeout')) return { type: 'TIMEOUT', code: 408, message: msg };
+    if (msg.includes('API_ERROR') || msg.includes('SERVER_ERROR')) return { type: 'API_ERROR', code: 500, message: msg };
+    if (msg.includes('NETWORK') || msg.includes('fetch') || msg.includes('ECONNREFUSED')) return { type: 'API_ERROR', code: 503, message: msg };
+    return { type: 'UNKNOWN', code: 500, message: msg };
+  }
+};
+
 // อ่าน role จาก APP state (ไม่อ่านจาก localStorage โดยตรง)
 Object.defineProperty(window, '__USER_ROLE', {
   get() {

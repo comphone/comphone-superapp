@@ -57,14 +57,18 @@ self.addEventListener('install', e => {
   );
 });
 
-// Activate: clear old caches
+// Activate: clear old caches + reload all tabs (PHASE 25.4)
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
     )
+    .then(() => self.clients.claim())
+    .then(() => self.clients.matchAll({ type: 'window' }))
+    .then(clientsArr => {
+      clientsArr.forEach(client => client.navigate(client.url));
+    })
   );
-  self.clients.claim();
 });
 
 // Fetch: Route ตาม 3 strategies
