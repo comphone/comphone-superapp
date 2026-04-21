@@ -1,7 +1,7 @@
 // ============================================================
 // COMPHONE SUPER APP V5.5 — execution_lock.js
-// PHASE 20.2: GLOBAL EXECUTION LOCK (CRITICAL)
-// Version: 5.6.2-PROD
+// PHASE 20.2 + 20.3: GLOBAL EXECUTION LOCK + TRUSTED EXECUTION ENFORCEMENT
+// Version: 5.6.3-PROD
 // ============================================================
 // หลักการ:
 //   1. ล็อก google.script.run ทุก property → โยน DIRECT_GAS_CALL_BLOCKED
@@ -9,12 +9,14 @@
 //   3. สร้าง AI_EXECUTOR.execute() — entry point ที่ถูกต้องใช้
 //   4. จับบีปา๊สล้องทุกครั้ง → __SECURITY_VIOLATION[]
 //   5. ห้ามการเข้าถึง → showToast + log
+//   6. WHITELIST: __TRUSTED_ACTIONS — อนุญาตเฉพาะ action ที่ลงทะเบียน
+//   7. APPROVAL TOKEN: __LAST_APPROVED_ACTION — one-time use, auto-clear 3s
 // ============================================================
 
 (function() {
   'use strict';
 
-  const LOCK_VERSION = '5.6.2-PROD';
+  const LOCK_VERSION = '5.6.3-PROD';
   const LOCK_MARKER = '__EXECUTION_LOCK_INSTALLED';
 
   // ===== 1. PREVENT DOUBLE-LOCK =====
@@ -27,6 +29,49 @@
 
   // ===== 2. SECURITY VIOLATION LOG =====
   window.__SECURITY_VIOLATION = [];
+
+  // ===== 2a. TRUSTED ACTIONS WHITELIST (PHASE 20.3) =====
+  window.__TRUSTED_ACTIONS = {
+    // Read / Query
+    getDashboardBundle: true,
+    getJobList: true,
+    getStockList: true,
+    getPOSItems: true,
+    viewRevenue: true,
+    // Write / Mutate (require approval)
+    updateJobStatus: true,
+    createJob: true,
+    deleteJob: true,
+    deleteData: true,
+    deleteUser: true,
+    cancelJob: true,
+    refund: true,
+    approveBilling: true,
+    rejectBilling: true,
+    transferStock: true,
+    createPO: true,
+    markDone: true,
+    markWaiting: true,
+    addAppointment: true,
+    sendLine: true,
+    nudgeTech: true,
+    posCheckout: true,
+    updateStock: true,
+    processPayment: true,
+    setupSystem: true,
+    // Audit / System
+    logApprovalAudit: true,
+    batchLogApprovalAudit: true,
+    batchValidateApproval: true,
+    validateApproval: true,
+    logSecurityViolations: true,
+  };
+
+  // ===== 2b. APPROVAL TOKEN (PHASE 20.3) =====
+  // สำหรับ one-time execution หลัง approve สำเร็จ
+  window.__LAST_APPROVED_ACTION = null;
+  window.__APPROVAL_CLEAR_TIMEOUT = null;
+  const APPROVAL_TOKEN_TTL_MS = 3000; // 3 วินาที
 
   // ===== 3. ORIGINAL REFERENCE (private) =====
   let __ORIGINAL_GAS_RUN = null;
@@ -140,18 +185,53 @@
     return origEval.apply(this, arguments);
   };
 
-  // ===== 7. SAFE WRAPPER: GAS_EXECUTE() =====
+  // ===== 7. SAFE WRAPPER: GAS_EXECUTE() (PHASE 20.3 HARDENED) =====
   /**
    * ช่องทางเดียวที่ปลอดภัยในการเรียก GAS
+   * การตรวจสอบ:
+   *   1. Action ต้องอยู่ใน __TRUSTED_ACTIONS
+   *   2. ต้องมี approval token (__LAST_APPROVED_ACTION === action)
+   *   3. ใช้งานได้ครั้งเดียว (auto-clear หลัง execute)
    * @param {string} action - ชื่อ function บน GAS
    * @param {object} payload - ข้อมูลที่ส่ง
+   * @param {object} opts - { skipApprovalCheck: boolean } สำหรับ internal เช่น validateApproval
    * @return {Promise} - resolve/reject ตาม GAS response
    */
-  window.GAS_EXECUTE = async function(action, payload) {
+  window.GAS_EXECUTE = async function(action, payload, opts) {
+    opts = opts || {};
+
     return new Promise((resolve, reject) => {
       if (!action || typeof action !== 'string') {
         reject(new Error('GAS_EXECUTE: action must be a non-empty string'));
         return;
+      }
+
+      // --- STEP 1: WHITELIST CHECK ---
+      if (!window.__TRUSTED_ACTIONS[action]) {
+        const err = new Error('UNTRUSTED_ACTION_BLOCKED: "' + action + '" is not in the trusted actions whitelist');
+        console.error('[EXECUTION_LOCK] ⛔ UNTRUSTED_ACTION_BLOCKED:', action);
+        window.__SECURITY_VIOLATION.push({
+          type: 'UNTRUSTED_ACTION',
+          action: action,
+          ts: Date.now()
+        });
+        reject(err);
+        return;
+      }
+
+      // --- STEP 2: APPROVAL TOKEN CHECK (ยกเว้น skip สำหรับ internal calls) ---
+      if (!opts.skipApprovalCheck) {
+        if (!window.__LAST_APPROVED_ACTION || window.__LAST_APPROVED_ACTION !== action) {
+          const err = new Error('APPROVAL_REQUIRED: "' + action + '" requires prior approval via approve()');
+          console.error('[EXECUTION_LOCK] ⛔ APPROVAL_REQUIRED:', action);
+          window.__SECURITY_VIOLATION.push({
+            type: 'APPROVAL_REQUIRED',
+            action: action,
+            ts: Date.now()
+          });
+          reject(err);
+          return;
+        }
       }
 
       payload = payload || {};
@@ -161,7 +241,8 @@
         ts: Date.now(),
         nonce: _generateNonce(),
         source: 'GAS_EXECUTE',
-        lockVersion: LOCK_VERSION
+        lockVersion: LOCK_VERSION,
+        approvalToken: !!window.__LAST_APPROVED_ACTION
       };
 
       if (!__ORIGINAL_GAS_RUN) {
@@ -171,9 +252,26 @@
 
       __ORIGINAL_GAS_RUN
         .withSuccessHandler(function(result) {
+          // ONE-TIME USE: ล้าง approval token ทันที (ใช้งานได้ครั้งเดียว)
+          if (!opts.skipApprovalCheck) {
+            window.__LAST_APPROVED_ACTION = null;
+            if (window.__APPROVAL_CLEAR_TIMEOUT) {
+              clearTimeout(window.__APPROVAL_CLEAR_TIMEOUT);
+              window.__APPROVAL_CLEAR_TIMEOUT = null;
+            }
+            console.log('[EXECUTION_LOCK] 🔑 Approval token consumed for:', action);
+          }
           resolve(result);
         })
         .withFailureHandler(function(err) {
+          // ถ้า execute ล้มเหลว → ล้าง token ด้วย (ป้องกัน reuse ในกรณีที่ล้มเหลว)
+          if (!opts.skipApprovalCheck) {
+            window.__LAST_APPROVED_ACTION = null;
+            if (window.__APPROVAL_CLEAR_TIMEOUT) {
+              clearTimeout(window.__APPROVAL_CLEAR_TIMEOUT);
+              window.__APPROVAL_CLEAR_TIMEOUT = null;
+            }
+          }
           reject(err);
         })[action](payload);
     });

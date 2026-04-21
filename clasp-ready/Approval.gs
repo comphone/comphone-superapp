@@ -1,8 +1,8 @@
 // ============================================================
 // COMPHONE SUPER APP V5.5
 // Approval.gs — Server-side Approval Validation (SOURCE OF TRUTH)
-// PHASE 20.1: Production Approval Hardening
-// Version: 5.6.1-PROD
+// PHASE 20.1 + 20.3: Production Approval Hardening + Trusted Execution Enforcement
+// Version: 5.6.3-PROD
 // ============================================================
 // หลักการ:
 //   1. SERVER IS THE SOURCE OF TRUTH — ไม่เຊื่อ client แม้วแต่ role/token
@@ -52,6 +52,43 @@ var APPROVAL_USED_NONCE_PROP = 'USED_NONCES';
 var APPROVAL_NONCE_MAX_AGE_MS = 10 * 60 * 1000; // 10 นาที
 
 // ============================================================
+// PHASE 20.3: SERVER-SIDE TRUSTED ACTIONS (Ground Truth)
+// ต้องตรงกันกับ __TRUSTED_ACTIONS ใน execution_lock.js
+// ============================================================
+var SERVER_TRUSTED_ACTIONS = {
+  getDashboardBundle: true,
+  getJobList: true,
+  getStockList: true,
+  getPOSItems: true,
+  viewRevenue: true,
+  updateJobStatus: true,
+  createJob: true,
+  deleteJob: true,
+  deleteData: true,
+  deleteUser: true,
+  cancelJob: true,
+  refund: true,
+  approveBilling: true,
+  rejectBilling: true,
+  transferStock: true,
+  createPO: true,
+  markDone: true,
+  markWaiting: true,
+  addAppointment: true,
+  sendLine: true,
+  nudgeTech: true,
+  posCheckout: true,
+  updateStock: true,
+  processPayment: true,
+  setupSystem: true,
+  logApprovalAudit: true,
+  batchLogApprovalAudit: true,
+  batchValidateApproval: true,
+  validateApproval: true,
+  logSecurityViolations: true,
+};
+
+// ============================================================
 // CORE: validateApproval() — ตรวจสอบสิทธิ์การอนุมัติ (Single)
 // ============================================================
 /**
@@ -74,6 +111,12 @@ function validateApproval(request) {
     if (!token)     return _rejectApproval('MISSING_TOKEN', action, targetId, username, 'No token provided');
     if (!nonce)     return _rejectApproval('MISSING_NONCE', action, targetId, username, 'No nonce provided');
     if (!timestamp) return _rejectApproval('MISSING_TIMESTAMP', action, targetId, username, 'No timestamp provided');
+
+    // --- STEP 1b: PHASE 20.3 Trusted Action Check ---
+    if (!SERVER_TRUSTED_ACTIONS[action]) {
+      return _rejectApproval('UNTRUSTED_ACTION', action, targetId, username,
+        'Action "' + action + '" is not in the server trusted actions list');
+    }
 
     // --- STEP 2: Verify session token (SOURCE OF TRUTH) ---
     var sessionCheck = verifySession(token);

@@ -1,7 +1,7 @@
 // ============================================================
 // COMPHONE SUPER APP V5.5 — approval_guard.js
-// PHASE 20.1: Production Approval Hardening
-// Version: 5.6.1-PROD
+// PHASE 20.1 + 20.3: Production Approval Hardening + Trusted Execution Enforcement
+// Version: 5.6.3-PROD
 // ============================================================
 // หลักการ:
 //   1. NEVER TRUST CLIENT — ทุก approval ต้องผ่าน Server validation
@@ -223,7 +223,8 @@ function approve(id, action, options) {
       }, APPROVAL_CONFIG.serverTimeoutMs);
 
       // ใช้ GAS_EXECUTE (ผ่าน Execution Lock) — ห้ามใช้ google.script.run โดยตรง
-      GAS_EXECUTE('validateApproval', requestPayload)
+      // skipApprovalCheck: true สำหรับ validateApproval (เป็นตัว gate เอง)
+      GAS_EXECUTE('validateApproval', requestPayload, { skipApprovalCheck: true })
         .then((result) => {
           if (settled) return;
           settled = true;
@@ -231,6 +232,19 @@ function approve(id, action, options) {
           ApprovalState.pending.delete(nonce);
 
           if (result && result.allowed) {
+            // === PHASE 20.3: GRANT APPROVAL TOKEN ===
+            window.__LAST_APPROVED_ACTION = action;
+            if (window.__APPROVAL_CLEAR_TIMEOUT) {
+              clearTimeout(window.__APPROVAL_CLEAR_TIMEOUT);
+            }
+            window.__APPROVAL_CLEAR_TIMEOUT = setTimeout(() => {
+              if (window.__LAST_APPROVED_ACTION === action) {
+                window.__LAST_APPROVED_ACTION = null;
+                console.log('[APPROVAL] ⏰ Token auto-cleared for:', action);
+              }
+            }, 3000); // 3 วินาที
+            // ==========================================
+
             showToast(`✅ ${result.message || 'อนุมัติสำเร็จ'}`, 'success');
             _logApprovalAttempt(action, id, true, 'Server approved', result);
             if (typeof onSuccess === 'function') onSuccess(result);
@@ -287,7 +301,7 @@ function batchApprove(items, options) {
     const nonce = _generateNonce();
     const timestamp = Date.now();
 
-    // ใช้ GAS_EXECUTE (ผ่าน Execution Lock)
+    // ใช้ GAS_EXECUTE (ผ่าน Execution Lock) — skipApprovalCheck สำหรับ batchValidateApproval (gate เอง)
     GAS_EXECUTE('batchValidateApproval', {
       token: user.authToken || '',
       username: user.username || '',
@@ -295,7 +309,7 @@ function batchApprove(items, options) {
       nonce: nonce,
       timestamp: timestamp,
       clientRole: user.role || ''
-    })
+    }, { skipApprovalCheck: true })
       .then((result) => {
         if (result && result.success) {
           showToast(`✅ สำเร็จ ${result.approved || 0}/${items.length} รายการ`, 'success');
@@ -393,7 +407,7 @@ function _logApprovalAttempt(action, id, success, reason, serverResult) {
 
 function _sendAuditLogImmediate(entry) {
   try {
-    GAS_EXECUTE('logApprovalAudit', entry).catch(() => {});
+    GAS_EXECUTE('logApprovalAudit', entry, { skipApprovalCheck: true }).catch(() => {});
   } catch (e) {}
 }
 
@@ -419,7 +433,7 @@ function syncApprovalAuditLogs() {
     const logs = JSON.parse(localStorage.getItem(key) || '[]');
     if (logs.length === 0) return;
 
-    GAS_EXECUTE('batchLogApprovalAudit', logs)
+    GAS_EXECUTE('batchLogApprovalAudit', logs, { skipApprovalCheck: true })
       .then(() => {
         localStorage.removeItem(key);
       })
