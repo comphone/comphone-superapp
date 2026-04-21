@@ -15,6 +15,10 @@ window.__AI_TRUST_TOO_LOW = false;
 window.__ACTION_EXEC_LOCK = new Map(); // actionName -> expiry timestamp
 window.__EXECUTION_LOG = []; // For debugging
 
+// PHASE 20.3+20.5: Defensive declarations (source of truth is execution_lock.js)
+window.__TRUSTED_ACTIONS = window.__TRUSTED_ACTIONS || {};
+window.__LAST_APPROVED_ACTION = window.__LAST_APPROVED_ACTION || null;
+
 // อ่าน role จาก APP state (ไม่อ่านจาก localStorage โดยตรง)
 Object.defineProperty(window, '__USER_ROLE', {
   get() {
@@ -37,8 +41,8 @@ function isActionRegistered(action) {
   if (window.__TRUSTED_ACTIONS && window.__TRUSTED_ACTIONS[action]) {
     return true;
   }
-  // Fallback: ถ้าไม่มี whitelist ให้อนุญาต (ไม่ปลอดภัย แต่ล็อกการทำงาน)
-  return true;
+  // SECURITY: ถ้าไม่อยู่ใน whitelist → BLOCK
+  return false;
 }
 
 // Data schema (defined in dashboard_pc.html or injected)
@@ -80,6 +84,17 @@ function renderApprovalUI() {
 window._approveItem = function(id) {
   const item = window.__APPROVAL_QUEUE.find(x => x.id === id);
   if (!item) return;
+
+  // PHASE 20.3 FIX: Set one-time approval token BEFORE resolving
+  window.__LAST_APPROVED_ACTION = item.action;
+  if (window.__APPROVAL_CLEAR_TIMEOUT) {
+    clearTimeout(window.__APPROVAL_CLEAR_TIMEOUT);
+  }
+  window.__APPROVAL_CLEAR_TIMEOUT = setTimeout(() => {
+    window.__LAST_APPROVED_ACTION = null;
+    console.log('[APPROVAL] ⏰ Token auto-cleared for:', item.action);
+  }, 3000);
+
   item.resolve(true);
   _logApprovalItem(item, true);
   _removeApprovalItem(id);

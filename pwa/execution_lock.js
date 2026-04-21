@@ -84,6 +84,7 @@
     updateJobById: true,
     openJob: true,
     createJob: true,
+    deleteJob: true,
     addQuickNote: true,
     markJobStatus: true,
     handleProcessPhotos: true,

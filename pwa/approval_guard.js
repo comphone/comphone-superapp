@@ -166,6 +166,27 @@ function canApprove(action) {
  */
 function approve(id, action, options) {
   options = options || {};
+
+  // PHASE 20.3 FIX: Handle approval queue items (AI_SANDBOX flow)
+  // ถ้าเรียกด้วยแค่ id และพบ item ใน approval queue → ใช้ simple flow
+  if (arguments.length === 1 && window.__APPROVAL_QUEUE && Array.isArray(window.__APPROVAL_QUEUE)) {
+    const item = window.__APPROVAL_QUEUE.find(x => x.id === id);
+    if (item) {
+      window.__LAST_APPROVED_ACTION = item.action;
+      if (window.__APPROVAL_CLEAR_TIMEOUT) {
+        clearTimeout(window.__APPROVAL_CLEAR_TIMEOUT);
+      }
+      window.__APPROVAL_CLEAR_TIMEOUT = setTimeout(() => {
+        window.__LAST_APPROVED_ACTION = null;
+        console.log('[APPROVAL] ⏰ Token auto-cleared for:', item.action);
+      }, 3000);
+      item.resolve(true);
+      _logApprovalItem(item, true);
+      _removeApprovalItem(id);
+      return Promise.resolve({ success: true, reason: 'Queue item approved', action: item.action });
+    }
+  }
+
   const {
     onSuccess,
     onError,
