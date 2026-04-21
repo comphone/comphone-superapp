@@ -163,6 +163,9 @@ function dispatchActionV55_(action, payload, args) {
 
       case 'getDashboardData':
         return getDashboardData();
+      case 'getDashboardBundle':
+        // PC Dashboard bundle — ขณะนี้ใช้ getDashboardData() เป็นฐาน สามารถ customize ที่หลังได้
+        return getDashboardData();
       case 'getJobStateConfig':
         return getJobStateConfig();
       case 'getJobTimeline':
@@ -367,6 +370,18 @@ function dispatchActionV55_(action, payload, args) {
       case 'pruneAuditLog':
         return pruneAuditLog(payload.keep_days || 90);
 
+      // Approval & Security Audit (PHASE 20.5)
+      case 'validateApproval':
+        return validateApproval_(payload);
+      case 'batchValidateApproval':
+        return batchValidateApproval_(payload);
+      case 'logApprovalAudit':
+        return logApprovalAudit_(payload);
+      case 'batchLogApprovalAudit':
+        return batchLogApprovalAudit_(payload);
+      case 'logSecurityViolations':
+        return logSecurityViolations_(payload);
+
       // ============================================================
       // Quick Actions (LINE, Appointment, Status)
       // ============================================================
@@ -425,16 +440,8 @@ function dispatchActionV55_(action, payload, args) {
       // ============================================================
       // Admin Panel — Sprint 3 T3
       // ============================================================
-      case 'listUsers':
-        return listUsers_(payload);
-      case 'createUser':
-        return createUser_(payload);
-      case 'setUserActive':
-        return setUserActive_(payload);
-      case 'updateUserRole':
-        return updateUserRole_(payload);
-      case 'setupAllTriggers':
-        return setupAllTriggers();
+      // หมายเหตุ: listUsers, createUser, setUserActive, updateUserRole, setupAllTriggers
+      // ถูกจัดการไว้ในส่วน Auth แล้ว (บนบนที่ 243-252)
       case 'runBackup':
         return runBackup();
       case 'seedAllData':
@@ -536,9 +543,7 @@ function dispatchActionV55_(action, payload, args) {
       case 'cleanAllData':
         return jsonOutputV55_(cleanAllData());
 
-      // ── Kudos / Customer Rating ──────────────────────────────
-      case 'submitCustomerRating':
-        return jsonOutputV55_(submitCustomerRating_(payload));
+      // ── Kudos / Customer Rating (หมายเหตุ: submitCustomerRating อยู่ในส่วน Customer Portal แล้ว)
       case 'getCustomerRatings':
         return jsonOutputV55_(getCustomerRatings_(payload));
 
@@ -547,6 +552,119 @@ function dispatchActionV55_(action, payload, args) {
     }
   } catch (error) {
     return { success: false, action: action, error: error.toString() };
+  }
+}
+
+// ============================================================
+// PHASE 20.5: Approval & Security Audit Stubs
+// หมายเหตุ: ควร implement logic เต็มที่หลัง (Server-side validation + Audit sheet logging)
+// ============================================================
+function validateApproval_(payload) {
+  try {
+    var token = payload.token || '';
+    var username = payload.username || '';
+    var action = payload.action || '';
+    var clientRole = payload.clientRole || '';
+    var nonce = payload.nonce || '';
+    var timestamp = payload.timestamp || 0;
+
+    // Basic validation
+    if (!token) return { allowed: false, reason: 'Missing token' };
+    if (!action) return { allowed: false, reason: 'Missing action' };
+    if (!nonce) return { allowed: false, reason: 'Missing nonce' };
+
+    // Anti-replay: nonce ต้องไม่ซ้ำ (simplified — ควรใช้ CacheService ใน production)
+    var age = Date.now() - timestamp;
+    if (age > 300000) { // 5 นาที
+      return { allowed: false, reason: 'Approval request expired' };
+    }
+
+    // TODO: ตรวจสอบ token กับ DB_USERS และตรวจ role permission
+    // ขณะนี้อนุญาตในทุกกรณี (allow แล้ว log)
+    return { allowed: true, message: 'Approved (stub — implement full validation)', action: action, nonce: nonce };
+  } catch (e) {
+    return { allowed: false, reason: e.toString() };
+  }
+}
+
+function batchValidateApproval_(payload) {
+  try {
+    var items = payload.items || [];
+    var approved = 0;
+    var results = [];
+    for (var i = 0; i < items.length; i++) {
+      var r = validateApproval_(items[i]);
+      if (r.allowed) approved++;
+      results.push(r);
+    }
+    return { success: true, approved: approved, total: items.length, results: results };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+function logApprovalAudit_(payload) {
+  try {
+    var ss = getComphoneSheet();
+    var sheet = findSheetByName(ss, 'AUDIT_LOG');
+    if (!sheet) {
+      sheet = ss.insertSheet('AUDIT_LOG');
+      sheet.appendRow(['timestamp', 'action', 'target_id', 'success', 'reason', 'user', 'role', 'nonce', 'source']);
+    }
+    sheet.appendRow([
+      Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss'),
+      payload.action || '',
+      payload.id || payload.targetId || '',
+      payload.success ? 'true' : 'false',
+      payload.reason || '',
+      payload.user || '',
+      payload.role || '',
+      payload.nonce || '',
+      'approval_guard'
+    ]);
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+function batchLogApprovalAudit_(payload) {
+  try {
+    if (!Array.isArray(payload)) payload = payload.logs || [];
+    if (!Array.isArray(payload)) payload = [payload];
+    for (var i = 0; i < payload.length; i++) {
+      logApprovalAudit_(payload[i]);
+    }
+    return { success: true, logged: payload.length };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+function logSecurityViolations_(payload) {
+  try {
+    var violations = payload.violations || [];
+    var ss = getComphoneSheet();
+    var sheet = findSheetByName(ss, 'SECURITY_LOG');
+    if (!sheet) {
+      sheet = ss.insertSheet('SECURITY_LOG');
+      sheet.appendRow(['timestamp', 'type', 'action', 'method', 'source', 'stack', 'count']);
+    }
+    for (var i = 0; i < violations.length; i++) {
+      var v = violations[i];
+      sheet.appendRow([
+        Utilities.formatDate(new Date((v.ts || Date.now())), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss'),
+        v.type || '',
+        v.action || '',
+        v.method || '',
+        v.source || '',
+        (v.stack || '').substring(0, 500),
+        violations.length
+      ]);
+    }
+    return { success: true, logged: violations.length };
+  } catch (e) {
+    return { success: false, error: e.toString() };
   }
 }
 

@@ -42,6 +42,18 @@ const APPROVAL_CONFIG = {
   }
 };
 
+// Role aliases (GAS role → PWA role key)
+const ROLE_ALIASES = {
+  'owner':      'owner',
+  'admin':      'owner',
+  'accountant': 'accountant',
+  'acct':       'accountant',
+  'sales':      'sales',
+  'technician': 'technician',
+  'tech':       'technician',
+  'exec':       'owner',
+};
+
 // ============================================================
 // 2. CLIENT-SIDE ROLE MAP (Fallback เท่านั้น — Server เป็นตัวตัดสิน)
 // ============================================================
