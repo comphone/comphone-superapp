@@ -182,8 +182,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: data.icon || '/comphone-superapp/icons/icon-192.png',
-      badge: data.badge || '/comphone-superapp/icons/icon-72.png',
+      icon: data.icon || '/comphone-superapp/pwa/icons/icon-192.png',
+      badge: data.badge || '/comphone-superapp/pwa/icons/icon-72.png',
       tag: data.tag || 'comphone',
       data: data.data || {}
     })
