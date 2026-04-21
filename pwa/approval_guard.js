@@ -191,63 +191,71 @@ function approve(id, action, options) {
   ApprovalState.pending.set(nonce, { action, id, timestamp });
   ApprovalState.lastActionAt = timestamp;
 
-  // --- STEP 4: Server Validation (SOURCE OF TRUTH) ---
-  showToast('⏳ กำลังตรวจสอบสิทธิ์...', 'info');
+    // --- STEP 4: Server Validation (SOURCE OF TRUTH) ---
+    showToast('⏳ กำลังตรวจสอบสิทธิ์...', 'info');
 
-  return new Promise((resolve, reject) => {
-    const user = (typeof APP !== 'undefined' && APP.user) ? APP.user : {};
-    const requestPayload = {
-      token: user.authToken || '',
-      username: user.username || '',
-      action: action,
-      targetId: id,
-      nonce: nonce,
-      timestamp: timestamp,
-      clientRole: user.role || '',
-      payload: payload,
-      userAgent: navigator.userAgent,
-      screenSize: `${window.innerWidth}x${window.innerHeight}`
-    };
+    return new Promise((resolve, reject) => {
+      const user = (typeof APP !== 'undefined' && APP.user) ? APP.user : {};
+      const requestPayload = {
+        token: user.authToken || '',
+        username: user.username || '',
+        action: action,
+        targetId: id,
+        nonce: nonce,
+        timestamp: timestamp,
+        clientRole: user.role || '',
+        payload: payload,
+        userAgent: navigator.userAgent,
+        screenSize: `${window.innerWidth}x${window.innerHeight}`
+      };
 
-    // Timeout handler
-    const timeoutId = setTimeout(() => {
-      ApprovalState.pending.delete(nonce);
-      showToast('⛔ เซิร์ฟเวอร์ไม่ตอบสนอง กรุณาลองใหม่', 'error');
-      _logApprovalAttempt(action, id, false, 'Server timeout');
-      if (typeof onError === 'function') onError({ stage: 'timeout', reason: 'Server timeout' });
-      reject('Server timeout');
-    }, APPROVAL_CONFIG.serverTimeoutMs);
+      let settled = false;
 
-    google.script.run
-      .withSuccessHandler((result) => {
-        clearTimeout(timeoutId);
+      // Timeout handler
+      const timeoutId = setTimeout(() => {
+        if (settled) return;
+        settled = true;
         ApprovalState.pending.delete(nonce);
+        showToast('⛔ เซิร์ฟเวอร์ไม่ตอบสนอง กรุณาลองใหม่', 'error');
+        _logApprovalAttempt(action, id, false, 'Server timeout');
+        if (typeof onError === 'function') onError({ stage: 'timeout', reason: 'Server timeout' });
+        reject('Server timeout');
+      }, APPROVAL_CONFIG.serverTimeoutMs);
 
-        if (result && result.allowed) {
-          showToast(`✅ ${result.message || 'อนุมัติสำเร็จ'}`, 'success');
-          _logApprovalAttempt(action, id, true, 'Server approved', result);
-          if (typeof onSuccess === 'function') onSuccess(result);
-          resolve(result);
-        } else {
-          const reason = result ? (result.reason || 'ไม่มีสิทธิ์ (Server)') : 'ไม่มีสิทธิ์ (Server)';
-          showToast(`⛔ ${reason}`, 'error');
-          _logApprovalAttempt(action, id, false, reason, result);
-          if (typeof onError === 'function') onError({ stage: 'server', reason: reason, serverResult: result });
-          reject(reason);
-        }
-      })
-      .withFailureHandler((err) => {
-        clearTimeout(timeoutId);
-        ApprovalState.pending.delete(nonce);
+      // ใช้ GAS_EXECUTE (ผ่าน Execution Lock) — ห้ามใช้ google.script.run โดยตรง
+      GAS_EXECUTE('validateApproval', requestPayload)
+        .then((result) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeoutId);
+          ApprovalState.pending.delete(nonce);
 
-        const errorMsg = (err && err.message) ? err.message : String(err);
-        showToast(`⛔ เกิดข้อผิดพลาด: ${errorMsg}`, 'error');
-        _logApprovalAttempt(action, id, false, `Server error: ${errorMsg}`);
-        if (typeof onError === 'function') onError({ stage: 'serverError', reason: errorMsg });
-        reject(errorMsg);
-      })
-      .validateApproval(requestPayload);
-  });
+          if (result && result.allowed) {
+            showToast(`✅ ${result.message || 'อนุมัติสำเร็จ'}`, 'success');
+            _logApprovalAttempt(action, id, true, 'Server approved', result);
+            if (typeof onSuccess === 'function') onSuccess(result);
+            resolve(result);
+          } else {
+            const reason = result ? (result.reason || 'ไม่มีสิทธิ์ (Server)') : 'ไม่มีสิทธิ์ (Server)';
+            showToast(`⛔ ${reason}`, 'error');
+            _logApprovalAttempt(action, id, false, reason, result);
+            if (typeof onError === 'function') onError({ stage: 'server', reason: reason, serverResult: result });
+            reject(reason);
+          }
+        })
+        .catch((err) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeoutId);
+          ApprovalState.pending.delete(nonce);
+
+          const errorMsg = (err && err.message) ? err.message : String(err);
+          showToast(`⛔ เกิดข้อผิดพลาด: ${errorMsg}`, 'error');
+          _logApprovalAttempt(action, id, false, `Server error: ${errorMsg}`);
+          if (typeof onError === 'function') onError({ stage: 'serverError', reason: errorMsg });
+          reject(errorMsg);
+        });
+    });
 }
 
 // ============================================================
@@ -279,8 +287,16 @@ function batchApprove(items, options) {
     const nonce = _generateNonce();
     const timestamp = Date.now();
 
-    google.script.run
-      .withSuccessHandler((result) => {
+    // ใช้ GAS_EXECUTE (ผ่าน Execution Lock)
+    GAS_EXECUTE('batchValidateApproval', {
+      token: user.authToken || '',
+      username: user.username || '',
+      items: items,
+      nonce: nonce,
+      timestamp: timestamp,
+      clientRole: user.role || ''
+    })
+      .then((result) => {
         if (result && result.success) {
           showToast(`✅ สำเร็จ ${result.approved || 0}/${items.length} รายการ`, 'success');
           if (typeof options.onSuccess === 'function') options.onSuccess(result);
@@ -291,18 +307,10 @@ function batchApprove(items, options) {
           reject(result);
         }
       })
-      .withFailureHandler((err) => {
+      .catch((err) => {
         showToast(`⛔ Server error: ${err}`, 'error');
         if (typeof options.onError === 'function') options.onError(err);
         reject(err);
-      })
-      .batchValidateApproval({
-        token: user.authToken || '',
-        username: user.username || '',
-        items: items,
-        nonce: nonce,
-        timestamp: timestamp,
-        clientRole: user.role || ''
       });
   });
 }
@@ -385,10 +393,7 @@ function _logApprovalAttempt(action, id, success, reason, serverResult) {
 
 function _sendAuditLogImmediate(entry) {
   try {
-    google.script.run
-      .withSuccessHandler(() => {})
-      .withFailureHandler(() => {})
-      .logApprovalAudit(entry);
+    GAS_EXECUTE('logApprovalAudit', entry).catch(() => {});
   } catch (e) {}
 }
 
@@ -414,14 +419,13 @@ function syncApprovalAuditLogs() {
     const logs = JSON.parse(localStorage.getItem(key) || '[]');
     if (logs.length === 0) return;
 
-    google.script.run
-      .withSuccessHandler(() => {
+    GAS_EXECUTE('batchLogApprovalAudit', logs)
+      .then(() => {
         localStorage.removeItem(key);
       })
-      .withFailureHandler(() => {
+      .catch(() => {
         // Keep for next sync
-      })
-      .batchLogApprovalAudit(logs);
+      });
   } catch (e) {
     console.error('Sync audit log error:', e);
   }

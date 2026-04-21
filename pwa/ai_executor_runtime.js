@@ -279,7 +279,19 @@ async function AI_EXECUTOR(decision) {
 }
 
 // Debug/exploration functions
+// PHASE 20.2: Preserve execution_lock.js methods (execute, security)
+const __EXISTING_AI_EXECUTOR = window.AI_EXECUTOR || {};
+
 window.AI_EXECUTOR = {
+  // รักษา execute() และ security() จาก execution_lock.js (ห้ามมี)
+  execute: __EXISTING_AI_EXECUTOR.execute || function(request) {
+    console.warn('[AI_EXECUTOR] Fallback execute() called. execution_lock.js may not be loaded.');
+    request = request || {};
+    if (!request.action) throw new Error('AI_EXECUTOR.execute: missing action');
+    return window.GAS_EXECUTE ? window.GAS_EXECUTE(request.action, request.payload || {}) : Promise.reject('GAS_EXECUTE not available');
+  },
+  security: __EXISTING_AI_EXECUTOR.security || {},
+
   debug: function() {
     return {
       enabled: window.__AI_EXECUTOR_ENABLED,
