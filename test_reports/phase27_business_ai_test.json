@@ -1,0 +1,283 @@
+{
+  "tests": [
+    {
+      "test": "TEST 1 — askAI",
+      "status": "PASS",
+      "checks": [
+        [
+          "askAI_ function defined",
+          true
+        ],
+        [
+          "Routed in Router.gs",
+          true
+        ],
+        [
+          "_buildTechAnswer_ called",
+          true
+        ],
+        [
+          "Searches DB_JOB_LOGS",
+          true
+        ],
+        [
+          "Searches DB_KNOWLEDGE_BASE",
+          true
+        ],
+        [
+          "Returns confidence",
+          true
+        ],
+        [
+          "Has try-catch",
+          true
+        ]
+      ],
+      "note": "Rule-based answer builder. Confidence scales with data availability."
+    },
+    {
+      "test": "TEST 2 — smartAssignV2",
+      "status": "FAIL",
+      "checks": [
+        [
+          "smartAssignV2_ function defined",
+          true
+        ],
+        [
+          "Routed in Router.gs",
+          true
+        ],
+        [
+          "Uses haversineDistance",
+          true
+        ],
+        [
+          "Uses getSlaHours",
+          true
+        ],
+        [
+          "Weighted scoring 35/30/20/15",
+          true
+        ],
+        [
+          "Workload from DBJOBS",
+          true
+        ],
+        [
+          "SLA risk calculation",
+          true
+        ],
+        [
+          "Skill match logic",
+          true
+        ],
+        [
+          "Returns top 3",
+          false
+        ],
+        [
+          "Sorts by score",
+          true
+        ]
+      ],
+      "note": "Multi-factor: Distance 35%, Workload 30%, SLA Risk 20%, Skill 15%"
+    },
+    {
+      "test": "TEST 3 — sendCSAT",
+      "status": "PASS",
+      "checks": [
+        [
+          "sendCSAT_ function defined",
+          true
+        ],
+        [
+          "Routed in Router.gs",
+          true
+        ],
+        [
+          "Generates MD5 token",
+          true
+        ],
+        [
+          "Appends to DB_CSAT",
+          true
+        ],
+        [
+          "Calls sendLinePush",
+          true
+        ],
+        [
+          "Calls sendLineNotify fallback",
+          true
+        ],
+        [
+          "Handles missing line_id",
+          true
+        ],
+        [
+          "Returns csat_token",
+          true
+        ]
+      ],
+      "note": "LINE Push + room fallback. Token-based tracking."
+    },
+    {
+      "test": "TEST 4 — recordCSAT",
+      "status": "PASS",
+      "checks": [
+        [
+          "recordCSAT_ function defined",
+          true
+        ],
+        [
+          "Routed in Router.gs",
+          true
+        ],
+        [
+          "Validates score 1-5",
+          true
+        ],
+        [
+          "Updates DB_CSAT",
+          true
+        ],
+        [
+          "Sets status completed",
+          true
+        ],
+        [
+          "Low score alert to EXECUTIVE",
+          true
+        ],
+        [
+          "Returns record",
+          true
+        ]
+      ],
+      "note": "Score validation + low-score executive alert."
+    },
+    {
+      "test": "TEST 5 — generateTOR",
+      "status": "PASS",
+      "checks": [
+        [
+          "generateTOR_ function defined",
+          true
+        ],
+        [
+          "Routed in Router.gs",
+          true
+        ],
+        [
+          "Generates tor_id",
+          true
+        ],
+        [
+          "Reads company config",
+          true
+        ],
+        [
+          "Builds HTML",
+          true
+        ],
+        [
+          "Saves to DB_TOR",
+          true
+        ],
+        [
+          "Signature blocks",
+          true
+        ],
+        [
+          "Payment terms",
+          true
+        ]
+      ],
+      "note": "Template-based with branding, scope, budget, team."
+    },
+    {
+      "test": "TEST 6 — exportTORpdf",
+      "status": "PASS",
+      "checks": [
+        [
+          "exportTORpdf_ function defined",
+          true
+        ],
+        [
+          "Routed in Router.gs",
+          true
+        ],
+        [
+          "HTML to PDF",
+          true
+        ],
+        [
+          "Uploads to Drive",
+          true
+        ],
+        [
+          "Public view link",
+          true
+        ],
+        [
+          "Updates status",
+          true
+        ],
+        [
+          "Returns pdf_url",
+          true
+        ]
+      ],
+      "note": "HTML→PDF blob + Drive upload with public link."
+    },
+    {
+      "test": "TEST 7 — SECURITY",
+      "status": "PASS",
+      "checks": [
+        [
+          "PWA uses GAS_EXECUTE",
+          true
+        ],
+        [
+          "No direct google.script.run in PWA",
+          true
+        ],
+        [
+          "Proxy lock installed",
+          true
+        ],
+        [
+          "Throws on direct access",
+          true
+        ],
+        [
+          "Logs violations",
+          true
+        ],
+        [
+          "askAI in owner perms",
+          true
+        ],
+        [
+          "askAI in sales perms",
+          true
+        ],
+        [
+          "askAI in tech perms",
+          true
+        ],
+        [
+          "Router dispatch",
+          true
+        ]
+      ],
+      "note": "Execution lock blocks direct GAS. Role whitelist enforced."
+    }
+  ],
+  "summary": {
+    "total": 7,
+    "passed": 6,
+    "failed": 1,
+    "overall": "FAIL"
+  }
+}
