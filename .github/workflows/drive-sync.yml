@@ -172,12 +172,12 @@ jobs:
       - name: ⚙️ Configure rclone
         run: |
           echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Configure rclone"
-          cat > ~/.config/rclone/rclone.conf <<EOF
-          [gdrive]
-          type = drive
-          scope = drive
-          service_account_file = ~/.config/rclone/service-account.json
-          EOF
+          cat > ~/.config/rclone/rclone.conf <<'EOF'
+[gdrive]
+type = drive
+scope = drive
+service_account_file = ~/.config/rclone/service-account.json
+EOF
           echo "[✅] rclone config written"
 
       # ---------- STEP 6: Test Drive Access ----------
@@ -275,7 +275,7 @@ jobs:
           echo "| Branch | \`$GITHUB_REF_NAME\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Trigger | \`$GITHUB_EVENT_NAME\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Secret | \`${{ steps.secret_check.outputs.secret_type || 'unknown' }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Drive Test | \`${{ steps.drive_test.outputs.drive_ok && 'OK' || 'FAIL' }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Drive Test | \`${{ steps.drive_test.outputs.drive_ok == 'true' && 'OK' || 'FAIL' }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Backup | \`${{ steps.sync_backup.outputs.backup_status || 'N/A' }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Time | $(date '+%Y-%m-%d %H:%M:%S UTC') |" >> $GITHUB_STEP_SUMMARY
 

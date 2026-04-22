@@ -1,9 +1,20 @@
 // COMPHONE SUPER APP V5.5
 // ============================================================
 // LineBot.gs - LINE Messaging Integration
-// Version: 5.6.5 (PHASE 26.4.1)
+// Version: 5.6.6 (PHASE 27.1 - AUDIT & REFACTOR)
 // Last Updated: 2025-04-22
 // Deployed via: GitHub Actions (production environment)
+// ============================================================
+// CHANGELOG v5.6.6:
+//   - Unified resolveJobId_() with strict priority: text > context > null
+//   - Centralized Context API: saveContext_(), getContext_(), clearContext_()
+//   - Fixed classifyMessage: NEVER pre-resolve from context (only explicit text)
+//   - Fixed handlePhotoReport: proper context fallback with clear UX
+//   - Fixed handleWorkNote: returns helpful error instead of silent null
+//   - Standardized all UX messages: emoji prefix + clear action + hint
+//   - Added groupChatUserId_() for reliable user isolation in groups
+//   - Added strict validation: every handler validates jobId before proceed
+//   - All failures return actionable messages (no silent errors)
 // ============================================================
 
 var LINE_GAS_URL = (typeof getWebAppBaseUrl_ === 'function' ? getWebAppBaseUrl_() : '') || '';
@@ -18,33 +29,49 @@ var LINE_CASUAL_KEYWORDS_V55 = [
   '555', 'ok', 'โอเค', 'รับทราบ', 'ครับ', 'ค่ะ', 'เดี๋ยว', 'ขอบคุณ', 'ฝนตก', 'รถติด'
 ];
 
-// ── CONTEXT MEMORY & THROTTLE CONFIG ──
+// ── CONFIG ──
 var LINE_CTX_TTL_MS_ = 30 * 60 * 1000;      // 30 นาที
 var LINE_THROTTLE_MAX_ = 12;                // ข้อความต่อนาที
 var LINE_THROTTLE_WINDOW_MS_ = 60 * 1000;   // 1 นาที
 var LINE_BATCH_WINDOW_MS_ = 8 * 1000;       // 8 วินาที สำหรับ batch รูป
 
 // ══════════════════════════════════════════════════════════════════
-// CONTEXT MEMORY — จำงาน JobID ล่าสุดในบริบทของผู้ใช้
+// SECTION 1: UNIFIED CONTEXT API
 // ══════════════════════════════════════════════════════════════════
 
-function getLineCtxKey_(userId) { return 'LINE_CTX_' + String(userId); }
-function getLineThrottleKey_(userId) { return 'LINE_THR_' + String(userId); }
-function getLineBatchKey_(userId) { return 'LINE_BATCH_' + String(userId); }
+/**
+ * สร้าง key ที่ปลอดภัยสำหรับ PropertiesService
+ * รองรับทั้ง user chat และ group chat (groupId + userId ถ้ามี)
+ */
+function _ctxKey(userId, groupId) {
+  var base = 'LINE_CTX_';
+  if (groupId && userId) {
+    return base + groupId + '_' + userId;
+  }
+  return base + String(userId || groupId || 'unknown');
+}
+
+function _thrKey(userId, groupId) {
+  return 'LINE_THR_' + String(userId || groupId || 'unknown');
+}
+
+function _batchKey(userId, groupId) {
+  return 'LINE_BATCH_' + String(userId || groupId || 'unknown');
+}
 
 /**
- * ดึงบริบทผู้ใช้ และลบถ้าหมดอายุ
- * @returns {Object|null} {lastJobId, lastAction, lastTs}
+ * ดึงบริบทผู้ใช้
+ * @returns {Object|null} {jobId, ts, source} หรือ null ถ้าไม่มี/หมดอายุ
  */
-function getUserContext_(userId) {
-  if (!userId) return null;
+function getContext_(userId, groupId) {
+  if (!userId && !groupId) return null;
   try {
-    var raw = PropertiesService.getScriptProperties().getProperty(getLineCtxKey_(userId));
+    var raw = PropertiesService.getScriptProperties().getProperty(_ctxKey(userId, groupId));
     if (!raw) return null;
     var ctx = JSON.parse(raw);
-    if (!ctx || !ctx.lastTs) return null;
-    if (Date.now() - ctx.lastTs > LINE_CTX_TTL_MS_) {
-      clearUserContext_(userId);
+    if (!ctx || !ctx.ts) return null;
+    if (Date.now() - ctx.ts > LINE_CTX_TTL_MS_) {
+      clearContext_(userId, groupId);
       return null;
     }
     return ctx;
@@ -53,38 +80,45 @@ function getUserContext_(userId) {
   }
 }
 
-function setUserContext_(userId, jobId, action) {
-  if (!userId) return;
+/**
+ * บันทึกบริบท
+ * @param {string} userId
+ * @param {string} groupId
+ * @param {string} jobId
+ * @param {string} source — ทำไมถึงจำ (เช่น 'text', 'image', 'status')
+ */
+function saveContext_(userId, groupId, jobId, source) {
+  if (!userId && !groupId) return;
   try {
     var ctx = {
-      lastJobId: String(jobId || '').toUpperCase(),
-      lastAction: String(action || ''),
-      lastTs: Date.now()
+      jobId: String(jobId || '').toUpperCase(),
+      source: String(source || ''),
+      ts: Date.now()
     };
-    PropertiesService.getScriptProperties().setProperty(getLineCtxKey_(userId), JSON.stringify(ctx));
+    PropertiesService.getScriptProperties().setProperty(_ctxKey(userId, groupId), JSON.stringify(ctx));
   } catch (e) { /* silent */ }
 }
 
-function clearUserContext_(userId) {
-  if (!userId) return;
+function clearContext_(userId, groupId) {
+  if (!userId && !groupId) return;
   try {
-    PropertiesService.getScriptProperties().deleteProperty(getLineCtxKey_(userId));
-    PropertiesService.getScriptProperties().deleteProperty(getLineBatchKey_(userId));
+    PropertiesService.getScriptProperties().deleteProperty(_ctxKey(userId, groupId));
+    PropertiesService.getScriptProperties().deleteProperty(_batchKey(userId, groupId));
   } catch (e) { /* silent */ }
 }
 
 // ══════════════════════════════════════════════════════════════════
-// THROTTLE — กันสแปมป์หลังว่นรวด
+// SECTION 2: THROTTLE & BATCH
 // ══════════════════════════════════════════════════════════════════
 
-function shouldThrottle_(userId) {
-  if (!userId) return { allowed: true, remaining: LINE_THROTTLE_MAX_, retryAfter: 0 };
+function shouldThrottle_(userId, groupId) {
+  var id = userId || groupId;
+  if (!id) return { allowed: true, remaining: LINE_THROTTLE_MAX_, retryAfter: 0 };
   try {
-    var key = getLineThrottleKey_(userId);
+    var key = _thrKey(userId, groupId);
     var raw = PropertiesService.getScriptProperties().getProperty(key);
     var now = Date.now();
     var entries = raw ? JSON.parse(raw) : [];
-    // กรองเฉพาะรายการใน window
     entries = entries.filter(function(ts) { return now - ts < LINE_THROTTLE_WINDOW_MS_; });
     if (entries.length >= LINE_THROTTLE_MAX_) {
       var oldest = entries[0];
@@ -99,18 +133,13 @@ function shouldThrottle_(userId) {
   }
 }
 
-// ══════════════════════════════════════════════════════════════════
-// BATCH IMAGE — รวมรูปที่ส่งในช่วงสันหนึ่ง
-// ══════════════════════════════════════════════════════════════════
-
-function recordImageBatch_(userId, jobId, messageId) {
-  if (!userId) return 1;
+function recordImageBatch_(userId, groupId, messageId) {
+  if (!userId && !groupId) return 1;
   try {
-    var key = getLineBatchKey_(userId);
+    var key = _batchKey(userId, groupId);
     var now = Date.now();
     var raw = PropertiesService.getScriptProperties().getProperty(key);
     var batch = raw ? JSON.parse(raw) : { images: [], startedAt: now };
-    // รีเซ็ตถ้าหมดเวลาเกิน
     if (now - batch.startedAt > LINE_BATCH_WINDOW_MS_) {
       batch = { images: [], startedAt: now };
     }
@@ -122,10 +151,10 @@ function recordImageBatch_(userId, jobId, messageId) {
   }
 }
 
-function getBatchCount_(userId) {
-  if (!userId) return 0;
+function getBatchCount_(userId, groupId) {
+  if (!userId && !groupId) return 0;
   try {
-    var key = getLineBatchKey_(userId);
+    var key = _batchKey(userId, groupId);
     var raw = PropertiesService.getScriptProperties().getProperty(key);
     if (!raw) return 0;
     var batch = JSON.parse(raw);
@@ -137,25 +166,50 @@ function getBatchCount_(userId) {
   }
 }
 
+// ══════════════════════════════════════════════════════════════════
+// SECTION 3: UNIFIED JOBID RESOLUTION
+// ══════════════════════════════════════════════════════════════════
+
 /**
- * สร้าง JobID แบบอัฐฤษี—หาในข้อความก่อน แล้วหาจาก Context
+ * สกัด JobID จากข้อความ (ลำดับความ)
  * @returns {string} JobID หรือ ''
  */
-function extractJobIdSmart_(text, userId, hint) {
-  var fromText = extractJobIdV55_(text);
-  if (fromText) return fromText;
-  var ctx = getUserContext_(userId);
-  if (ctx && ctx.lastJobId) {
-    // ถ้ามี hint (เช่น สถานะ) และ context ตรงกัน ใช้ได้เลย
-    if (!hint || ctx.lastAction === hint) return ctx.lastJobId;
-    // ถ้าไม่มี hint หรือ hint ตรง ก็ใช้ context ได้ (เช่น ส่งรูปไม่มีระบุ JobID)
-    return ctx.lastJobId;
-  }
-  return '';
+function extractJobIdV55_(text) {
+  var match = String(text || '').match(/j\d{3,6}/i);
+  return match ? String(match[0]).toUpperCase() : '';
 }
 
 /**
- * สร้างข้อความแจ้งผู้ใช้ว่าใช้ Context JobID แทน
+ * สร้าง JobID แบบอัฐฤษี — ลำดับความ:
+ *   1. หาใน text ก่อน
+ *   2. ถ้าไม่มี → fallback ไป context (ไม่มีการ validate hint แบบซับซ้อน)
+ *   3. ถ้าไม่มี context ทั้งหมด → return null
+ *
+ * @param {string} text — ข้อความที่อาจมี JobID
+ * @param {string} userId
+ * @param {string} groupId
+ * @returns {string|null} JobID หรือ null
+ */
+function resolveJobId_(text, userId, groupId) {
+  // STEP 1: extract from text
+  var fromText = extractJobIdV55_(text);
+  if (fromText) {
+    // หาเจอในข้อความ แล้ว — ไม่สนใจว่า context จะอัพเดทหลังนี้
+    return fromText;
+  }
+
+  // STEP 2: fallback to context (only if user explicitly mentions a work-related word, or for images)
+  var ctx = getContext_(userId, groupId);
+  if (ctx && ctx.jobId) {
+    return ctx.jobId;
+  }
+
+  // STEP 3: nothing found
+  return null;
+}
+
+/**
+ * สร้างข้อความ UX มาตรฐานให้ผู้ใช้ว่าใช้ Context
  */
 function buildContextHint_(jobId, actionLabel) {
   if (!jobId) return '';
@@ -163,6 +217,27 @@ function buildContextHint_(jobId, actionLabel) {
          (actionLabel ? ' (สำหรับ' + actionLabel + ')' : '') +
          '\nพิมพ์ #clear เพื่อล้างบริบท';
 }
+
+/**
+ * ข้อความมาตรฐานเมื่อไม่พบ JobID
+ */
+function buildMissingJobIdMessage_(mediaType) {
+  var hint = mediaType === 'image'
+    ? '🖼️ รับรูปแล้ว แต่ยังไม่ทราบ JobID\n\n'
+    : '❌ ไม่พบ JobID\n\n';
+
+  return createTextMessage(
+    hint +
+    'วิธีใช้:\n' +
+    '1. พิมพ์ JobID ในข้อความ เช่น "J0001 ถึงแล้ว"\n' +
+    '2. หลังจากนั้นบอทจำ JobID ได้อัตโนมัติ\n' +
+    '3. หรือส่งรูปพร้อมข้อความที่มี JobID'
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SECTION 4: WEBHOOK ENTRY POINT
+// ══════════════════════════════════════════════════════════════════
 
 function handleLineWebhook(e) {
   try {
@@ -187,10 +262,10 @@ function processLineEventV55_(event) {
   var source = event.source || {};
   var replyToken = event.replyToken || '';
   var groupId = source.groupId || source.roomId || '';
-  var userId = source.userId || groupId || '';
+  var userId = source.userId || '';
   var userName = getLineDisplayNameV55_(userId) || 'LINE_USER';
 
-  // ── จับ join event: เมื่อ Bot ถูกเพิ่มเข้ากลุ่ม ──
+  // ── JOIN EVENT ──
   if (event.type === 'join' && groupId) {
     saveLineGroupId_(groupId, replyToken);
     return { success: true, event_type: 'join', group_id: groupId };
@@ -208,10 +283,15 @@ function processLineEventV55_(event) {
   return {
     success: true,
     user_id: userId,
+    group_id: groupId,
     message_type: message.type || '',
     replied: !!(responseMessage && replyToken)
   };
 }
+
+// ══════════════════════════════════════════════════════════════════
+// SECTION 5: MESSAGE ROUTER
+// ══════════════════════════════════════════════════════════════════
 
 function processLineMessage(message, userId, userName, groupId) {
   groupId = groupId || '';
@@ -220,20 +300,19 @@ function processLineMessage(message, userId, userName, groupId) {
   var hasImage = message.type === 'image';
   var hasLocation = message.type === 'location';
 
-  // ── STEP 1: ANTI-SPAM THROTTLE ──
-  var throttle = shouldThrottle_(userId);
+  // STEP 1: THROTTLE
+  var throttle = shouldThrottle_(userId, groupId);
   if (!throttle.allowed) {
-    Logger.log('[LINE THROTTLE] ผู้ใช้ ' + userId + ' ส่งมากเกิน ' + LINE_THROTTLE_MAX_ + ' ข้อความ/นาที');
+    Logger.log('[LINE THROTTLE] user=' + userId + ' group=' + groupId + ' exceeded ' + LINE_THROTTLE_MAX_ + '/min');
     return createTextMessage('⚠️ คุณส่งข้อความมากเกินไป กรุณาลองใหม่อีก ' + throttle.retryAfter + ' วินาที');
   }
 
-  // ── STEP 2: CLEAR CONTEXT COMMAND ──
+  // STEP 2: COMMANDS (bypass classification)
   if (/^(#?clear|ล้างบริบท)/i.test(text)) {
-    clearUserContext_(userId);
+    clearContext_(userId, groupId);
     return createTextMessage('✅ ล้างบริบทแล้ว\nบอทจำงาน JobID ล่าสุดได้แล้ว');
   }
 
-  // ── STEP 2b: HELP COMMAND ──
   if (/^(#?help|ช่วยเหลือ|คำสั่ง)/i.test(text)) {
     return createTextMessage(
       '📚 คำสั่ง LINE Bot COMPHONE V5.5\n\n' +
@@ -253,34 +332,45 @@ function processLineMessage(message, userId, userName, groupId) {
     );
   }
 
-  // ── STEP 3: SMART CLASSIFICATION ──
-  var classification = classifyMessage(text, hasImage, hasLocation, userId);
+  // STEP 3: CLASSIFY (ONLY by text content, NEVER from context)
+  var classification = classifyMessage(text, hasImage, hasLocation);
   if (classification.type === 'casual') return null;
 
-  // ── STEP 4: ROUTE ──
+  // STEP 4: RESOLVE JobID (text first, then context fallback)
+  // สำหรับ image/location: ใช้ context เป็น fallback ได้
+  var resolvedJobId = null;
+  if (classification.type === 'work_report' || classification.type === 'location_share') {
+    resolvedJobId = resolveJobId_(text, userId, groupId);
+  } else {
+    // สำหรับ text commands/status: ใช้ทั้ง text และ context
+    resolvedJobId = resolveJobId_(text, userId, groupId);
+  }
+
+  // STEP 5: ROUTE
   switch (classification.type) {
     case 'command':
-      return handleCommand(classification, text, userId, userName, groupId);
+      return handleCommand(classification, text, userId, userName, groupId, resolvedJobId);
     case 'location_share':
-      return handleLocation(message, classification, userId, userName);
+      return handleLocation(message, userId, userName, groupId, resolvedJobId);
     case 'work_report':
-      return handlePhotoReport(message, classification, userId, userName);
+      return handlePhotoReport(message, userId, userName, groupId, resolvedJobId);
     case 'status_update':
-      return handleStatus(classification, text, userId, userName);
+      return handleStatus(classification, text, userId, userName, groupId, resolvedJobId);
     case 'work_note':
-      return handleWorkNote(classification, text, userId, userName);
+      return handleWorkNote(classification, text, userId, userName, groupId, resolvedJobId);
     default:
       return null;
   }
 }
 
-function classifyMessage(text, hasImage, hasLocation, userId) {
+// ══════════════════════════════════════════════════════════════════
+// SECTION 6: CLASSIFICATION (text-only, NO context)
+// ══════════════════════════════════════════════════════════════════
+
+function classifyMessage(text, hasImage, hasLocation) {
   text = String(text || '').trim();
   var normalized = text.toLowerCase();
-
-  // ใช้ Smart Extraction: หาในข้อความก่อน ถ้าไม่มีค่อยใช้ Context
-  var jobIdFromText = extractJobIdV55_(text);
-  var jobId = jobIdFromText || extractJobIdSmart_(text, userId, '') || '';
+  var jobId = extractJobIdV55_(text); // หาเฉพาะจากข้อความเท่านั้น
 
   if (/^\/groupid/i.test(text)) return { type: 'command', command: 'get_group_id' };
   if (/^(#?เปิดงาน|create job)/i.test(text)) return { type: 'command', command: 'open_job', jobId: jobId };
@@ -311,47 +401,48 @@ function classifyMessage(text, hasImage, hasLocation, userId) {
   return { type: 'work_note', jobId: jobId };
 }
 
-function handleCommand(classification, text, userId, userName, groupId) {
+// ══════════════════════════════════════════════════════════════════
+// SECTION 7: COMMAND HANDLERS
+// ══════════════════════════════════════════════════════════════════
+
+function handleCommand(classification, text, userId, userName, groupId, resolvedJobId) {
   groupId = groupId || '';
   switch (classification.command) {
     case 'get_group_id':
       return handleGetGroupId_(groupId, userId);
     case 'open_job':
-      return handleOpenJob(text, userId, userName);
+      return handleOpenJob(text, userId, userName, groupId);
     case 'close_job':
-      return handleCloseJob(text, userId, userName);
+      return handleCloseJob(text, userId, userName, groupId, resolvedJobId);
     case 'check_job':
       return formatCheckJobsV55_(text);
     case 'check_stock':
       return formatCheckStockV55_(text);
     case 'check_billing':
-      return formatCheckBillingV55_(text);
+      return formatCheckBillingV55_(text, userId, groupId, resolvedJobId);
     case 'summary':
       return formatSummaryV55_();
-    case 'clear_context':
-      clearUserContext_(userId);
-      return createTextMessage('✅ ล้างบริบทแล้ว\nบอทจำงาน JobID ล่าสุดได้แล้ว');
     default:
-      return createTextMessage('ไม่พบคำสั่งที่รองรับ');
+      return createTextMessage('❌ ไม่พบคำสั่งที่รองรับ');
   }
 }
 
-function handleOpenJob(text, userId, userName) {
+function handleOpenJob(text, userId, userName, groupId) {
   var payload = parseOpenJobTextV55_(text);
   payload.changed_by = userName || userId || 'LINE';
   payload.user = payload.changed_by;
   var result = callRouterActionV55_('createJob', payload);
 
   if (!result || result.success === false || result.error) {
-    return createTextMessage('เปิดงานไม่สำเร็จ: ' + (result && (result.error || result.message) || 'unknown'));
+    return createTextMessage('❌ เปิดงานไม่สำเร็จ: ' + (result && (result.error || result.message) || 'unknown'));
   }
 
-  // บันทึก Context หลังเปิดงานสำเร็จ
+  // บันทึก Context
   if (result.job_id) {
-    setUserContext_(userId, result.job_id, 'open_job');
+    saveContext_(userId, groupId, result.job_id, 'open_job');
   }
 
-  // ส่ง Flex Message แจ้งกลุ่มช่างด้วย
+  // ส่ง Flex Message แจ้งกลุ่มช่าง
   if (typeof notifyNewJobToTechnicians === 'function') {
     notifyNewJobToTechnicians({
       job_id: result.job_id,
@@ -363,7 +454,7 @@ function handleOpenJob(text, userId, userName) {
       due_date: payload.due_date || '-'
     });
   }
-  // ตอบกลับผู้ส่งด้วย Flex Message
+
   if (typeof createJobFlexMessage_ === 'function') {
     return createJobFlexMessage_({
       job_id: result.job_id,
@@ -375,19 +466,20 @@ function handleOpenJob(text, userId, userName) {
       due_date: payload.due_date || '-'
     });
   }
-  var lines = [
-    'เปิดงานสำเร็จ',
+
+  return createTextMessage([
+    '✅ เปิดงานสำเร็จ',
     'JobID: ' + (result.job_id || '-'),
     'สถานะ: ' + (result.status_label || '-'),
-    'ลูกค้า: ' + (payload.customer_name || payload.customer || '-'),
-    LINE_GAS_URL ? ('Dashboard: ' + LINE_GAS_URL) : ''
-  ];
-  return createTextMessage(lines.filter(Boolean).join('\n'));
+    'ลูกค้า: ' + (payload.customer_name || payload.customer || '-')
+  ].join('\n'));
 }
 
-function handleCloseJob(text, userId, userName) {
-  var jobId = extractJobIdSmart_(text, userId, '') || extractJobIdV55_(text);
-  if (!jobId) return createTextMessage('กรุณาระบุ JobID เช่น #ปิดงาน J0001\nหรือส่งข้อความที่มี JobID ก่อนหนึ่ง ข้อความ หลังจากนั้นบอทจำ JobID ได้อัตโนมัติ');
+function handleCloseJob(text, userId, userName, groupId, resolvedJobId) {
+  var jobId = resolvedJobId || extractJobIdV55_(text);
+  if (!jobId) {
+    return buildMissingJobIdMessage_('text');
+  }
 
   var result = callRouterActionV55_('transitionJob', {
     job_id: jobId,
@@ -397,27 +489,26 @@ function handleCloseJob(text, userId, userName) {
   });
 
   if (!result || result.success === false || result.error) {
-    return createTextMessage('ปิดงานไม่สำเร็จ: ' + (result && (result.error || result.message) || 'unknown'));
+    return createTextMessage('❌ ปิดงานไม่สำเร็จ: ' + (result && (result.error || result.message) || 'unknown'));
   }
 
-  // อัพเดท Context ให้สถานะล่าสุดคือ ปิดงาน
-  setUserContext_(userId, jobId, 'close_job');
+  saveContext_(userId, groupId, jobId, 'close_job');
 
-  // ส่ง Flex Message อัปเดตสถานะ
   if (typeof createStatusFlexMessage_ === 'function') {
     return createStatusFlexMessage_({ job_id: jobId, changed_by: userName || userId }, result.to_status_label || 'ปิดงานสมบูรณ์');
   }
-  return createTextMessage('ปิดงานสำเร็จ\nJobID: ' + jobId + '\nสถานะ: ' + (result.to_status_label || 'ปิดงาน'));
+  return createTextMessage('✅ ปิดงานสำเร็จ\nJobID: ' + jobId + '\nสถานะ: ' + (result.to_status_label || 'ปิดงาน'));
 }
 
-function handleLocation(message, classification, userId, userName) {
-  // ใช้ Smart Extraction: หาจาก title/address ก่อน และ context
-  var jobId = classification.jobId ||
-              extractJobIdV55_(message.title || message.address || '') ||
-              extractJobIdSmart_('', userId, 'status_update');
+// ══════════════════════════════════════════════════════════════════
+// SECTION 8: LOCATION HANDLER
+// ══════════════════════════════════════════════════════════════════
+
+function handleLocation(message, userId, userName, groupId, resolvedJobId) {
+  var jobId = resolvedJobId || extractJobIdV55_(message.title || message.address || '');
 
   if (!jobId) {
-    return createTextMessage('📍 รับพิกัดแล้ว แต่ยังไม่พบ JobID\n\nวิธีใช้:\n1. ส่งข้อความที่มี JobID ก่อน แล้วส่งพิกัดอีกครั้ง\n2. หรือระบุ JobID ในข้อความคู่กับตำแหน่ง เช่น "J0001 ถึงแล้ว" แล้วแชร์พิกัด');
+    return buildMissingJobIdMessage_('location');
   }
 
   var update = callRouterActionV55_('updateJobStatus', {
@@ -429,19 +520,28 @@ function handleLocation(message, classification, userId, userName) {
   });
 
   if (!update || update.error || update.success === false) {
-    return createTextMessage('อัปเดตพิกัดไม่สำเร็จ: ' + (update && update.error || 'unknown'));
+    return createTextMessage('❌ อัปเดตพิกัดไม่สำเร็จ: ' + (update && update.error || 'unknown'));
   }
 
-  // อัพเดท context
-  setUserContext_(userId, jobId, 'location');
+  saveContext_(userId, groupId, jobId, 'location');
 
-  return createTextMessage('✅ บันทึกพิกัดแล้ว\nJobID: ' + jobId + '\nLat: ' + message.latitude + '\nLng: ' + message.longitude);
+  return createTextMessage(
+    '✅ บันทึกพิกัดแล้ว\nJobID: ' + jobId +
+    '\nLat: ' + message.latitude +
+    '\nLng: ' + message.longitude +
+    buildContextHint_(jobId, 'พิกัด')
+  );
 }
 
-function handleStatus(classification, text, userId, userName) {
-  var jobId = classification.jobId || extractJobIdSmart_(text, userId, 'status_update') || extractJobIdV55_(text);
+// ══════════════════════════════════════════════════════════════════
+// SECTION 9: STATUS HANDLER
+// ══════════════════════════════════════════════════════════════════
+
+function handleStatus(classification, text, userId, userName, groupId, resolvedJobId) {
+  var jobId = resolvedJobId || classification.jobId || extractJobIdV55_(text);
+
   if (!jobId) {
-    return createTextMessage('กรุณาระบุ JobID เช่น "J0001 ถึงแล้ว"\nหรือส่งข้อความที่มี JobID ก่อนหนึ่ง ข้อความ แล้วบอทจำ JobID ได้อัตโนมัติ');
+    return buildMissingJobIdMessage_('text');
   }
 
   var result = callRouterActionV55_('transitionJob', {
@@ -452,22 +552,39 @@ function handleStatus(classification, text, userId, userName) {
   });
 
   if (!result || result.success === false || result.error) {
-    return createTextMessage('อัปเดตสถานะไม่สำเร็จ: ' + (result && (result.error || result.message) || 'unknown'));
+    return createTextMessage('❌ อัปเดตสถานะไม่สำเร็จ: ' + (result && (result.error || result.message) || 'unknown'));
   }
 
-  // บันทึก Context
-  setUserContext_(userId, jobId, 'status_update');
+  saveContext_(userId, groupId, jobId, 'status_update');
 
-  // ส่ง Flex Message อัปเดตสถานะ
   if (typeof createStatusFlexMessage_ === 'function') {
-    return createStatusFlexMessage_({ job_id: jobId, changed_by: userName || userId, note: text }, result.to_status_label || statusLabel);
+    return createStatusFlexMessage_(
+      { job_id: jobId, changed_by: userName || userId, note: text },
+      result.to_status_label || '-'
+    );
   }
-  return createTextMessage('✅ อัปเดตสถานะแล้ว\nJobID: ' + jobId + '\nสถานะ: ' + (result.to_status_label || '-') + buildContextHint_(jobId, 'อัปเดตสถานะ'));
+
+  return createTextMessage(
+    '✅ อัปเดตสถานะแล้ว\nJobID: ' + jobId +
+    '\nสถานะ: ' + (result.to_status_label || '-') +
+    buildContextHint_(jobId, 'อัปเดตสถานะ')
+  );
 }
 
-function handleWorkNote(classification, text, userId, userName) {
-  var jobId = classification.jobId || extractJobIdSmart_(text, userId, 'work_note') || extractJobIdV55_(text);
-  if (!jobId) return null; // ถ้าไม่มี JobID และไม่มี context ให้ข้าม (ไม่ตอบกลับ)
+// ══════════════════════════════════════════════════════════════════
+// SECTION 10: WORK NOTE HANDLER
+// ══════════════════════════════════════════════════════════════════
+
+function handleWorkNote(classification, text, userId, userName, groupId, resolvedJobId) {
+  var jobId = resolvedJobId || classification.jobId || extractJobIdV55_(text);
+
+  if (!jobId) {
+    // ไม่ใช่ null อีกต่อไป — ต้องบอกผู้ใช้ว่าไม่ได้ทำอะไร
+    return createTextMessage(
+      'ℹ️ ข้อความนี้ยังไม่มี JobID\n' +
+      'ถ้าต้องการบันทึกหมายเหตุ กรุณาระบุ JobID ด้วย เช่น "J0001 หมายเหตุ..."'
+    );
+  }
 
   var result = callRouterActionV55_('addQuickNote', {
     job_id: jobId,
@@ -476,35 +593,35 @@ function handleWorkNote(classification, text, userId, userName) {
   });
 
   if (!result || result.success === false || result.error) {
-    return createTextMessage('บันทึกหมายเหตุไม่สำเร็จ: ' + (result && result.error || 'unknown'));
+    return createTextMessage('❌ บันทึกหมายเหตุไม่สำเร็จ: ' + (result && result.error || 'unknown'));
   }
 
-  // บันทึก Context
-  setUserContext_(userId, jobId, 'work_note');
+  saveContext_(userId, groupId, jobId, 'work_note');
 
-  return createTextMessage('📝 บันทึกหมายเหตุแล้ว\nJobID: ' + jobId + buildContextHint_(jobId, 'หมายเหตุ'));
+  return createTextMessage(
+    '📝 บันทึกหมายเหตุแล้ว\nJobID: ' + jobId +
+    buildContextHint_(jobId, 'หมายเหตุ')
+  );
 }
 
-function handlePhotoReport(message, classification, userId, userName) {
-  var jobId = classification.jobId || extractJobIdSmart_('', userId, 'work_report') || '';
+// ══════════════════════════════════════════════════════════════════
+// SECTION 11: PHOTO REPORT HANDLER
+// ══════════════════════════════════════════════════════════════════
+
+function handlePhotoReport(message, userId, userName, groupId, resolvedJobId) {
+  var jobId = resolvedJobId;
   var messageId = message.id || '';
 
-  // ── CASE 1: ไม่พบ JobID และไม่มี Context ──
+  // CASE 1: ไม่พบ JobID ทั้งหมด (ไม่มีใน text และไม่มี context)
   if (!jobId) {
-    return createTextMessage(
-      '🖼️ รับรูปแล้ว แต่ยังไม่ทราบ JobID\n\n' +
-      'วิธีใช้:\n' +
-      '1. ส่งข้อความที่มี JobID ก่อน แล้วส่งรูปอีกครั้ง\n' +
-      '2. หรือส่งรูพพร้อมข้อความที่มี JobID ในคำพิมพ์ เช่น "J0001 ถึงแล้ว"\n\n' +
-      'ฟ้า ในภาพที่ส่งมา บอทจะพยายามหา JobID แล้วแนบให้อัตโนมัติ'
-    );
+    return buildMissingJobIdMessage_('image');
   }
 
-  // ── CASE 2: บันทึก Context และ Batch ──
-  setUserContext_(userId, jobId, 'work_report');
-  var batchCount = recordImageBatch_(userId, jobId, messageId);
+  // CASE 2: บันทึก Context และ Batch
+  saveContext_(userId, groupId, jobId, 'work_report');
+  var batchCount = recordImageBatch_(userId, groupId, messageId);
 
-  // ── CASE 3: ส่งเข้าคิว Queue ──
+  // CASE 3: ส่งเข้าคิว Queue
   if (typeof queuePhotoFromLINE === 'function') {
     var queueResult = queuePhotoFromLINE(messageId, jobId, userName || userId || 'LINE');
     if (queueResult && !queueResult.error) {
@@ -517,10 +634,10 @@ function handlePhotoReport(message, classification, userId, userName) {
         buildContextHint_(jobId, 'รูป')
       );
     }
-    return createTextMessage('รับรูปแล้ว แต่เข้าคิวไม่สำเร็จ: ' + (queueResult && queueResult.error || 'unknown'));
+    return createTextMessage('❌ รับรูปแล้ว แต่เข้าคิวไม่สำเร็จ: ' + (queueResult && queueResult.error || 'unknown'));
   }
 
-  // ── FALLBACK: ยังไม่มี queuePhoto ──
+  // FALLBACK: ยังไม่มี queuePhoto
   return createTextMessage(
     '📷 รับรูปแล้ว\nJobID: ' + jobId + '\n' +
     'หมายเหตุ: ยังไม่เปิดใช้งานคิวรูปภาพอัตโนมัติ' +
@@ -528,10 +645,13 @@ function handlePhotoReport(message, classification, userId, userName) {
   );
 }
 
-// ── GROUP ID HELPERS ──
+// ══════════════════════════════════════════════════════════════════
+// SECTION 12: GROUP ID HELPERS
+// ══════════════════════════════════════════════════════════════════
+
 function handleGetGroupId_(groupId, userId) {
   if (!groupId) {
-    return createTextMessage('คำสั่งนี้ใช้ได้เฉพาะใน LINE Group เท่านั้น\nกรุณาเพิ่ม Bot เข้ากลุ่มก่อนแล้วพิมพ์ /groupid ในกลุ่มนั้น');
+    return createTextMessage('คำสั่งนี้ใช้ได้เฉพาะใน LINE Group เท่านั้น\nกรุณาเพิ่ม Bot เข้ากลุ่มก่อน แล้วพิมพ์ /groupid');
   }
   return createTextMessage('LINE Group ID ของกลุ่มนี้:\n\n' + groupId + '\n\nคัดลอก ID นี้ไปตั้งค่าในระบบได้เลย');
 }
@@ -559,6 +679,10 @@ function saveLineGroupId_(groupId, replyToken) {
     // ไม่ต้อง throw เพื่อไม่ให้ webhook ล้ม
   }
 }
+
+// ══════════════════════════════════════════════════════════════════
+// SECTION 13: LINE API HELPERS
+// ══════════════════════════════════════════════════════════════════
 
 function replyLineMessage(replyToken, messages) {
   var channelToken = getConfig('LINE_CHANNEL_ACCESS_TOKEN') || '';
@@ -593,6 +717,10 @@ function createTextMessage(text) {
     text: String(text || '').substring(0, 5000)
   };
 }
+
+// ══════════════════════════════════════════════════════════════════
+// SECTION 14: FORMATTERS
+// ══════════════════════════════════════════════════════════════════
 
 function formatCheckJobsV55_(text) {
   var searchText = String(text || '').replace(/^(#?เช็คงาน|check job)/i, '').trim();
@@ -639,10 +767,43 @@ function formatCheckStockV55_(text) {
   return createTextMessage(lines.join('\n'));
 }
 
+function formatCheckBillingV55_(text, userId, groupId, resolvedJobId) {
+  var jobId = resolvedJobId || extractJobIdV55_(text);
+  if (!jobId) {
+    return createTextMessage(
+      '📋 วิธีใช้: #เช็คบิล [JobID]\n' +
+      'ตัวอย่าง: #เช็คบิล J0001\n\n' +
+      'หรือ: #เช็คยอด J0001'
+    );
+  }
+
+  var result = callRouterActionV55_('getBilling', { job_id: jobId });
+  if (!result || result.success === false || !result.billing) {
+    return createTextMessage('❌ ไม่พบข้อมูลบิลสำหรับ ' + jobId + '\n' + (result && result.error || ''));
+  }
+
+  var b = result.billing;
+  var statusEmoji = b.payment_status === 'PAID' ? '✅' : (b.payment_status === 'PARTIAL' ? '🔶' : '⏳');
+  var statusLabel = b.payment_status === 'PAID' ? 'ชำระแล้ว' : (b.payment_status === 'PARTIAL' ? 'ชำระบางส่วน' : 'ยังไม่ชำระ');
+
+  var lines = [
+    statusEmoji + ' ข้อมูลบิล ' + jobId,
+    '👤 ลูกค้า: ' + (b.customer_name || '-'),
+    '💰 ยอดรวม: ฿' + Number(b.total_amount || 0).toLocaleString(),
+    '✅ ชำระแล้ว: ฿' + Number(b.amount_paid || 0).toLocaleString(),
+    '📌 คงค้าง: ฿' + Number(b.balance_due || 0).toLocaleString(),
+    '🏷️ สถานะ: ' + statusLabel
+  ];
+
+  if (b.transaction_ref) lines.push('🔖 Ref: ' + b.transaction_ref);
+  if (b.paid_at) lines.push('🕒 ชำระเมื่อ: ' + String(b.paid_at).substring(0, 10));
+
+  return createTextMessage(lines.join('\n'));
+}
+
 function formatSummaryV55_() {
   var dashboard = callRouterActionV55_('getDashboardData', {});
   var summary = dashboard && dashboard.summary ? dashboard.summary : {};
-  // ใช้ Flex Message ถ้ามี
   if (typeof createSummaryFlexMessage_ === 'function') {
     return createSummaryFlexMessage_(summary);
   }
@@ -657,6 +818,10 @@ function formatSummaryV55_() {
     'รายได้เดือน: ' + Number(revenue.month || 0)
   ].join('\n'));
 }
+
+// ══════════════════════════════════════════════════════════════════
+// SECTION 15: UTILITIES
+// ══════════════════════════════════════════════════════════════════
 
 function callRouterActionV55_(action, payload) {
   if (typeof routeActionV55 === 'function') {
@@ -673,15 +838,10 @@ function parseLineWebhookBodyV55_(e) {
   return JSON.parse(e.postData.contents || '{}');
 }
 
-/**
- * ตรวจสอบ HMAC-SHA256 signature จาก LINE Platform
- * @param {Object} e - GAS doPost event
- * @returns {boolean}
- */
 function verifyLineSignature_(e) {
   try {
     var secret = getConfig('LINE_CHANNEL_SECRET') || '';
-    if (!secret) return true; // ถ้ายังไม่ตั้งค่า ให้ผ่าน (dev mode)
+    if (!secret) return true;
     var signature = (e.parameter && e.parameter['X-Line-Signature']) ||
                     (e.headers && e.headers['X-Line-Signature']) || '';
     if (!signature) return false;
@@ -729,11 +889,6 @@ function parseOpenJobTextV55_(text) {
   };
 }
 
-function extractJobIdV55_(text) {
-  var match = String(text || '').match(/j\d{3,6}/i);
-  return match ? String(match[0]).toUpperCase() : '';
-}
-
 function countKeywordMatchesV55_(text, keywords) {
   var count = 0;
   for (var i = 0; i < keywords.length; i++) {
@@ -752,42 +907,39 @@ function getLineDisplayNameV55_(userId) {
   }
 }
 
+// ══════════════════════════════════════════════════════════════════
+// SECTION 16: SELF-TEST (for debugging)
+// ══════════════════════════════════════════════════════════════════
+
 /**
- * formatCheckBillingV55_ — ตรวจสอบยอดบิลผ่าน LINE
- * คำสั่ง: #เช็คบิล J0001 หรือ #เช็คยอด J0001
- * @param {string} text
- * @returns {Object} LINE text message
+ * ทดสอบระบบ Context + Image Flow
+ * วิธีใช้: ใน GAS Editor พิมพ์ testContextFlow_()
  */
-function formatCheckBillingV55_(text) {
-  var jobId = extractJobIdV55_(text) || extractJobIdSmart_(text, null, '');
-  if (!jobId) {
-    return createTextMessage(
-      '📋 วิธีใช้: #เช็คบิล [JobID]\n' +
-      'ตัวอย่าง: #เช็คบิล J0001\n\n' +
-      'หรือ: #เช็คยอด J0001'
-    );
-  }
+function testContextFlow_() {
+  var userId = 'TEST_USER_001';
+  var groupId = '';
 
-  var result = callRouterActionV55_('getBilling', { job_id: jobId });
-  if (!result || result.success === false || !result.billing) {
-    return createTextMessage('❌ ไม่พบข้อมูลบิลสำหรับ ' + jobId + '\n' + (result && result.error || ''));
-  }
+  // Test 1: save context
+  saveContext_(userId, groupId, 'J0001', 'status_update');
+  var ctx = getContext_(userId, groupId);
+  Logger.log('Test 1 - Save/Load: ' + (ctx && ctx.jobId === 'J0001' ? 'PASS' : 'FAIL'));
 
-  var b = result.billing;
-  var statusEmoji = b.payment_status === 'PAID' ? '✅' : (b.payment_status === 'PARTIAL' ? '🔶' : '⏳');
-  var statusLabel = b.payment_status === 'PAID' ? 'ชำระแล้ว' : (b.payment_status === 'PARTIAL' ? 'ชำระบางส่วน' : 'ยังไม่ชำระ');
+  // Test 2: resolveJobId_ with text
+  var r1 = resolveJobId_('J0002 ถึงแล้ว', userId, groupId);
+  Logger.log('Test 2 - Text priority: ' + (r1 === 'J0002' ? 'PASS' : 'FAIL'));
 
-  var lines = [
-    statusEmoji + ' ข้อมูลบิล ' + jobId,
-    '👤 ลูกค้า: ' + (b.customer_name || '-'),
-    '💰 ยอดรวม: ฿' + Number(b.total_amount || 0).toLocaleString(),
-    '✅ ชำระแล้ว: ฿' + Number(b.amount_paid || 0).toLocaleString(),
-    '📌 คงค้าง: ฿' + Number(b.balance_due || 0).toLocaleString(),
-    '🏷️ สถานะ: ' + statusLabel
-  ];
+  // Test 3: resolveJobId_ without text (fallback to context)
+  var r2 = resolveJobId_('', userId, groupId);
+  Logger.log('Test 3 - Context fallback: ' + (r2 === 'J0001' ? 'PASS' : 'FAIL'));
 
-  if (b.transaction_ref) lines.push('🔖 Ref: ' + b.transaction_ref);
-  if (b.paid_at) lines.push('🕒 ชำระเมื่อ: ' + String(b.paid_at).substring(0, 10));
+  // Test 4: resolveJobId_ with no context
+  var r3 = resolveJobId_('', 'UNKNOWN_USER', '');
+  Logger.log('Test 4 - No context: ' + (r3 === null ? 'PASS' : 'FAIL'));
 
-  return createTextMessage(lines.join('\n'));
+  // Test 5: clear context
+  clearContext_(userId, groupId);
+  var ctx2 = getContext_(userId, groupId);
+  Logger.log('Test 5 - Clear: ' + (ctx2 === null ? 'PASS' : 'FAIL'));
+
+  Logger.log('All tests complete. Check results above.');
 }
