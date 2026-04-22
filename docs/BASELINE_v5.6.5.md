@@ -231,6 +231,20 @@ grep "__APP_VERSION.*5.6.5" pwa/dashboard_pc.html
 
 ---
 
+## 9. Hotfix History
+
+### Hotfix 2026-04-22: Dashboard PC Outage
+- **Trigger:** Runtime evidence showed dashboard_pc.html failing with `APPROVAL_REQUIRED` error
+- **Root Cause:** `callGas()` in dashboard_pc.html attempted to use `AI_EXECUTOR.execute` (which requires approval token) for read-only `getDashboardData` action. Additionally, `ai_executor_validation.js` (a console diagnostic script) was incorrectly loaded as a runtime script.
+- **Fix:**
+  1. Removed `ai_executor_validation.js` from dashboard_pc.html script load order
+  2. Changed `callGas()` to use direct `fetch()` instead of `AI_EXECUTOR` (PC dashboard is served from GitHub Pages where `google.script.run` is unavailable)
+  3. Added guard around `__USER_ROLE` property definition in `ai_executor_runtime.js` to prevent redefinition errors
+- **Commit:** `b49da80` (AUTO DEPLOY 2026-04-22_17-00-03)
+- **Impact:** Dashboard PC now renders successfully with live data from GAS
+
+---
+
 **Frozen by:** PHMP v1 Protocol — Architecture Freeze Mode  
 **Date:** 2026-04-22  
 **Baseline Status:** `IMMUTABLE`  
