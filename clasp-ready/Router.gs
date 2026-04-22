@@ -100,23 +100,27 @@ function doGet(e) {
 
 function doPost(e) {
   try {
-    // ── Rate Limiting: 60 requests/min per IP via CacheService ──
+    // ── Rate Limiting: 60 requests/min ต่อ action ผ่าน CacheService ──
+    // PHASE 26.6 FIX: ไม่ใช้ e.parameter.ip (ปลอม client spoof) แล้วใช้ token/username hash แทน
     try {
-      var ip = (e && e.parameter && e.parameter.ip) || 'global';
       var cache = CacheService.getScriptCache();
-      var cacheKey = 'rl_' + ip.replace(/[^a-zA-Z0-9]/g, '_');
-      var count = parseInt(cache.get(cacheKey) || '0', 10);
+      var rateKeyBase = (payload.token || payload.username || payload.action || 'anon').toString().replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 32);
+      var rateKey = 'rl_' + rateKeyBase;
+      var count = parseInt(cache.get(rateKey) || '0', 10);
       if (count >= 60) {
         return jsonOutputV55_({ success: false, error: 'Rate limit exceeded. Please retry in 60 seconds.', code: 429 });
       }
-      cache.put(cacheKey, String(count + 1), 60);
+      cache.put(rateKey, String(count + 1), 60);
     } catch (rlErr) { /* rate limit ไม่ critical — ไม่ต้องหยุด */ }
 
     var payload = parsePostPayloadV55_(e);
     // ── ตรวจจับ LINE Webhook (มี destination + events array) ──
     if (payload.destination && Array.isArray(payload.events)) {
-      // ตรวจสอบ HMAC-SHA256 signature ก่อนประมวลผล
-      if (typeof verifyLineSignature_ === 'function' && !verifyLineSignature_(e)) {
+      // PHASE 26.6 FIX: Hard-fail ถ้า verifyLineSignature_ ไม่มี — ไม่ให้ silent fallback
+      if (typeof verifyLineSignature_ !== 'function') {
+        return jsonOutputV55_({ success: false, error: 'LINE signature verification unavailable' });
+      }
+      if (!verifyLineSignature_(e)) {
         return jsonOutputV55_({ success: false, error: 'Invalid LINE signature' });
       }
       return jsonOutputV55_(handleLineWebhook(e));
@@ -137,6 +141,10 @@ function routeActionV55(action, payload) {
 function dispatchActionV55_(action, payload, args) {
   payload = payload || {};
   args = Array.isArray(args) ? args : [payload];
+
+  // PHASE 26.6 FIX: Auth gate helper — ห่องทางที่เรียก underscore functions โดยตรง ต้องตรวจ token ก่อน
+  var authGate = _checkAuthGateV55_(action, payload);
+  if (authGate) return authGate;
 
   try {
     switch (action) {
@@ -927,6 +935,39 @@ function normalizeActionV55_(action) {
     'summary': 'sendDashboardSummary'
   };
   return map[action] || action;
+}
+
+// PHASE 26.6 FIX: Auth gate — ห่องทางที่เรียก underscore functions โดยตรง ต้องตรวจ token ก่อน
+function _checkAuthGateV55_(action, payload) {
+  var AUTH_REQUIRED = {
+    'cancelPurchaseOrder': true,
+    'scheduleFollowUp': true,
+    'logFollowUpResult': true,
+    'nudgeSalesTeam': true,
+    'nudgeTech': true,
+    'smartAssignTech': true,
+    'smartAssignV2': true,
+    'geminiSlipVerify': true,
+    'verifyPaymentSlip': true,
+    'askAI': true,
+    'sendCSAT': true,
+    'generateTOR': true,
+    'exportTORpdf': true,
+    'runBackup': true,
+    'seedAllData': true,
+    'pruneAuditLog': true
+  };
+  if (!AUTH_REQUIRED[action]) return null;
+
+  var token = payload && payload.token ? String(payload.token) : '';
+  if (!token) {
+    return { success: false, error: 'AUTH_REQUIRED', code: 401, message: 'Token required for action: ' + action };
+  }
+  var session = verifySession(token);
+  if (!session || !session.valid) {
+    return { success: false, error: 'INVALID_SESSION', code: 401, message: 'Invalid or expired session' };
+  }
+  return null;
 }
 
 function invokeFunctionByNameV55_(functionName, args) {
