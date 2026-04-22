@@ -370,25 +370,36 @@ function previewTOR(html) {
 }
 
 // ============================================================
-// DASHBOARD CARDS
+// PHASE 28: AI BUSINESS METRICS DASHBOARD
 // ============================================================
 async function renderBusinessAICards() {
   const container = document.getElementById('business-ai-cards');
   if (!container) return;
   try {
-    const res = await window.GAS_EXECUTE('getBusinessAIMetrics', {});
+    const res = await window.GAS_EXECUTE('getAIMetrics', { period: 'today' });
     if (res && res.success && res.data) {
+      const m = res.data;
       container.innerHTML = `
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 12px 10px">
+          <div class="kpi-card" style="background:linear-gradient(135deg,#3b82f6,#60a5fa);cursor:pointer" onclick="openAICompanion()">
+            <div class="kpi-icon"><i class="bi bi-cpu-fill"></i></div>
+            <div class="kpi-value">${m.aiUsageCount || 0}</div>
+            <div class="kpi-label">AI Usage Today</div>
+          </div>
           <div class="kpi-card" style="background:linear-gradient(135deg,#7c3aed,#a78bfa);cursor:pointer" onclick="openCSAT()">
             <div class="kpi-icon"><i class="bi bi-star-fill"></i></div>
-            <div class="kpi-value">${res.data.csat ? res.data.csat.avg_score.toFixed(1) : '-'}</div>
-            <div class="kpi-label">CSAT คะแนน</div>
+            <div class="kpi-value">${m.csatAvg ? m.csatAvg.toFixed(1) : '-'}</div>
+            <div class="kpi-label">CSAT Score</div>
+          </div>
+          <div class="kpi-card" style="background:linear-gradient(135deg,#10b981,#34d399);cursor:pointer" onclick="openSmartAssignV2()">
+            <div class="kpi-icon"><i class="bi bi-robot"></i></div>
+            <div class="kpi-value">${m.jobsAssignedByAI || 0}</div>
+            <div class="kpi-label">Jobs Auto Assigned</div>
           </div>
           <div class="kpi-card" style="background:linear-gradient(135deg,#ea580c,#fb923c);cursor:pointer" onclick="openTOR()">
-            <div class="kpi-icon"><i class="bi bi-file-earmark-text-fill"></i></div>
-            <div class="kpi-value">${res.data.tor ? res.data.tor.total : 0}</div>
-            <div class="kpi-label">TOR ทั้งหมด</div>
+            <div class="kpi-icon"><i class="bi bi-cash-stack"></i></div>
+            <div class="kpi-value">฿${Number(m.revenueFromAI || 0).toLocaleString()}</div>
+            <div class="kpi-label">Revenue Impact</div>
           </div>
         </div>
       `;
@@ -396,6 +407,15 @@ async function renderBusinessAICards() {
   } catch (e) {
     container.innerHTML = '';
   }
+}
+
+// Auto-refresh metrics every 60s
+if (typeof window.__AI_METRICS_INTERVAL === 'undefined') {
+  window.__AI_METRICS_INTERVAL = setInterval(function() {
+    if (document.visibilityState === 'visible') {
+      renderBusinessAICards();
+    }
+  }, 60000);
 }
 
 // ============================================================

@@ -542,6 +542,14 @@ function dispatchActionV55_(action, payload, args) {
         return getBusinessAIMetrics_(payload);
 
       // ============================================================
+      // PHASE 28: Business Metrics AI
+      // ============================================================
+      case 'getAIMetrics':
+        return getAIMetrics_(payload);
+      case 'logAIUsage':
+        return logAIUsage_(payload);
+
+      // ============================================================
       // Multi-branch (TASK 7)
       // ============================================================
       case 'getBranchList':

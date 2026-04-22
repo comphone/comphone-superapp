@@ -458,6 +458,26 @@ async function AI_EXECUTOR(decision) {
     // 8. IMPACT TRACKING
     const impact = IMPACT_TRACKER.track(action, { /* before */ }, result.data || {});
 
+    // PHASE 28: LOG AI USAGE METRICS
+    try {
+      if (window.GAS_EXECUTE && typeof window.GAS_EXECUTE === 'function') {
+        window.GAS_EXECUTE('logAIUsage', {
+          action: action,
+          user: decision.user || 'SYSTEM',
+          impact: (impact && impact.score) || 1,
+          detail: {
+            traceId: traceEntry.id,
+            duration: traceEntry.duration,
+            postCheck: postCheck.valid
+          }
+        }).catch(function(e) {
+          console.warn('[METRICS] logAIUsage failed (non-critical):', e);
+        });
+      }
+    } catch (metricsErr) {
+      console.warn('[METRICS] logAIUsage hook error (non-critical):', metricsErr);
+    }
+
     // 9. RETURN SUCCESS
     traceEntry.duration = Date.now() - startTime;
     window.EXECUTION_TRACE.push(traceEntry);
