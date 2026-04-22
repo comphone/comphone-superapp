@@ -157,6 +157,35 @@ if ! grep -q 'photo\|image\|blob\|base64' clasp-ready/Router.gs; then
 fi
 
 # ============================================================
+# TEST SUITE E: BROWSER-LEVEL SMOKE TESTS (Post-Incident Upgrade)
+# ============================================================
+echo ""
+echo "💻 [SUITE E] Browser-Level Smoke Tests..."
+
+if command -v python3 &>/dev/null && [ -f "scripts/browser-smoke-test.py" ]; then
+  if python3 scripts/browser-smoke-test.py; then
+    echo "   ✅ Browser-level smoke test passed"
+  else
+    fail "Browser-level smoke test FAILED — recurrence patterns detected"
+  fi
+else
+  warn "Python3 or browser-smoke-test.py unavailable — skipping browser tests"
+fi
+
+# E2: Post-incident recurrence patterns
+if grep -q 'ai_executor_validation.js' pwa/dashboard_pc.html; then
+  fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"
+fi
+
+if grep -A5 'async function callGas' pwa/dashboard_pc.html | grep -q 'window.AI_EXECUTOR'; then
+  fail "RECURRENCE: callGas() routes through AI_EXECUTOR instead of direct fetch"
+fi
+
+if ! grep -q 'Object.getOwnPropertyDescriptor(window, .__USER_ROLE.)' pwa/ai_executor_runtime.js; then
+  fail "RECURRENCE: __USER_ROLE redefinition guard missing"
+fi
+
+# ============================================================
 # REPORT
 # ============================================================
 echo ""
