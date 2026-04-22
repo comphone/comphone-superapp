@@ -108,16 +108,18 @@ const ERROR_NORMALIZATION = {
 };
 
 // อ่าน role จาก APP state (ไม่อ่านจาก localStorage โดยตรง)
-Object.defineProperty(window, '__USER_ROLE', {
-  get() {
-    const user = (typeof APP !== 'undefined' && APP.user) ? APP.user : null;
-    return user ? (user.role || 'guest') : 'guest';
-  },
-  set() {
-    console.warn('⛔ __USER_ROLE is read-only in production mode');
-  },
-  configurable: false
-});
+if (!Object.getOwnPropertyDescriptor(window, '__USER_ROLE')) {
+  Object.defineProperty(window, '__USER_ROLE', {
+    get() {
+      const user = (typeof APP !== 'undefined' && APP.user) ? APP.user : null;
+      return user ? (user.role || 'guest') : 'guest';
+    },
+    set() {
+      console.warn('⮔ __USER_ROLE is read-only in production mode');
+    },
+    configurable: false
+  });
+}
 
 // Trust system
 function checkTrust() {
