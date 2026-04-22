@@ -230,6 +230,26 @@ function processLineMessage(message, userId, userName, groupId) {
     return createTextMessage('✅ ล้างบริบทแล้ว\nบอทจำงาน JobID ล่าสุดได้แล้ว');
   }
 
+  // ── STEP 2b: HELP COMMAND ──
+  if (/^(#?help|ช่วยเหลือ|คำสั่ง)/i.test(text)) {
+    return createTextMessage(
+      '📚 คำสั่ง LINE Bot COMPHONE V5.5\n\n' +
+      '📋 งาน:\n' +
+      '#เปิดงาน ลูกค้า|อาการ|ที่อยู่\n' +
+      '#ปิดงาน J0001\n' +
+      '#เช็คงาน J0001\n' +
+      '#เช็คสต็อก [คำค้นหา]\n' +
+      '#เช็คบิล J0001\n' +
+      '#สรุป\n\n' +
+      '📍 สถานะ (ไม่ต้องมี JobID ถ้าบอทจำได้):\n' +
+      'J0001 เดินทาง / ถึงแล้ว / เริ่มงาน\n' +
+      'J0001 งานเสร็จ / ลูกค้าตรวจรับ\n' +
+      'J0001 เก็บเงิน / ปิดงานสมบูรณ์\n\n' +
+      '🖼️ รูป: ส่งรูปพร้อมข้อความ หลังจากนั้นบอทจำ JobID ได้\n\n' +
+      '⚠️ #clear — ล้างบริบท JobID ที่จำไว้'
+    );
+  }
+
   // ── STEP 3: SMART CLASSIFICATION ──
   var classification = classifyMessage(text, hasImage, hasLocation, userId);
   if (classification.type === 'casual') return null;
@@ -305,6 +325,9 @@ function handleCommand(classification, text, userId, userName, groupId) {
       return formatCheckBillingV55_(text);
     case 'summary':
       return formatSummaryV55_();
+    case 'clear_context':
+      clearUserContext_(userId);
+      return createTextMessage('✅ ล้างบริบทแล้ว\nบอทจำงาน JobID ล่าสุดได้แล้ว');
     default:
       return createTextMessage('ไม่พบคำสั่งที่รองรับ');
   }
@@ -318,6 +341,11 @@ function handleOpenJob(text, userId, userName) {
 
   if (!result || result.success === false || result.error) {
     return createTextMessage('เปิดงานไม่สำเร็จ: ' + (result && (result.error || result.message) || 'unknown'));
+  }
+
+  // บันทึก Context หลังเปิดงานสำเร็จ
+  if (result.job_id) {
+    setUserContext_(userId, result.job_id, 'open_job');
   }
 
   // ส่ง Flex Message แจ้งกลุ่มช่างด้วย
@@ -355,8 +383,8 @@ function handleOpenJob(text, userId, userName) {
 }
 
 function handleCloseJob(text, userId, userName) {
-  var jobId = extractJobIdV55_(text);
-  if (!jobId) return createTextMessage('กรุณาระบุ JobID เช่น #ปิดงาน J0001');
+  var jobId = extractJobIdSmart_(text, userId, '') || extractJobIdV55_(text);
+  if (!jobId) return createTextMessage('กรุณาระบุ JobID เช่น #ปิดงาน J0001\nหรือส่งข้อความที่มี JobID ก่อนหนึ่ง ข้อความ หลังจากนั้นบอทจำ JobID ได้อัตโนมัติ');
 
   var result = callRouterActionV55_('transitionJob', {
     job_id: jobId,
@@ -369,6 +397,9 @@ function handleCloseJob(text, userId, userName) {
     return createTextMessage('ปิดงานไม่สำเร็จ: ' + (result && (result.error || result.message) || 'unknown'));
   }
 
+  // อัพเดท Context ให้สถานะล่าสุดคือ ปิดงาน
+  setUserContext_(userId, jobId, 'close_job');
+
   // ส่ง Flex Message อัปเดตสถานะ
   if (typeof createStatusFlexMessage_ === 'function') {
     return createStatusFlexMessage_({ job_id: jobId, changed_by: userName || userId }, result.to_status_label || 'ปิดงานสมบูรณ์');
@@ -377,9 +408,13 @@ function handleCloseJob(text, userId, userName) {
 }
 
 function handleLocation(message, classification, userId, userName) {
-  var jobId = classification.jobId || extractJobIdV55_(message.title || message.address || '');
+  // ใช้ Smart Extraction: หาจาก title/address ก่อน และ context
+  var jobId = classification.jobId ||
+              extractJobIdV55_(message.title || message.address || '') ||
+              extractJobIdSmart_('', userId, 'status_update');
+
   if (!jobId) {
-    return createTextMessage('รับพิกัดแล้ว แต่ยังไม่พบ JobID กรุณาส่งข้อความ เช่น J0001 ถึงหน้างาน พร้อมแชร์ตำแหน่งอีกครั้ง');
+    return createTextMessage('📍 รับพิกัดแล้ว แต่ยังไม่พบ JobID\n\nวิธีใช้:\n1. ส่งข้อความที่มี JobID ก่อน แล้วส่งพิกัดอีกครั้ง\n2. หรือระบุ JobID ในข้อความคู่กับตำแหน่ง เช่น "J0001 ถึงแล้ว" แล้วแชร์พิกัด');
   }
 
   var update = callRouterActionV55_('updateJobStatus', {
@@ -394,12 +429,17 @@ function handleLocation(message, classification, userId, userName) {
     return createTextMessage('อัปเดตพิกัดไม่สำเร็จ: ' + (update && update.error || 'unknown'));
   }
 
-  return createTextMessage('บันทึกพิกัดเรียบร้อย\nJobID: ' + jobId);
+  // อัพเดท context
+  setUserContext_(userId, jobId, 'location');
+
+  return createTextMessage('✅ บันทึกพิกัดแล้ว\nJobID: ' + jobId + '\nLat: ' + message.latitude + '\nLng: ' + message.longitude);
 }
 
 function handleStatus(classification, text, userId, userName) {
-  var jobId = classification.jobId || extractJobIdV55_(text);
-  if (!jobId) return createTextMessage('กรุณาระบุ JobID เช่น J0001 ถึงหน้างาน');
+  var jobId = classification.jobId || extractJobIdSmart_(text, userId, 'status_update') || extractJobIdV55_(text);
+  if (!jobId) {
+    return createTextMessage('กรุณาระบุ JobID เช่น "J0001 ถึงแล้ว"\nหรือส่งข้อความที่มี JobID ก่อนหนึ่ง ข้อความ แล้วบอทจำ JobID ได้อัตโนมัติ');
+  }
 
   var result = callRouterActionV55_('transitionJob', {
     job_id: jobId,
@@ -412,16 +452,19 @@ function handleStatus(classification, text, userId, userName) {
     return createTextMessage('อัปเดตสถานะไม่สำเร็จ: ' + (result && (result.error || result.message) || 'unknown'));
   }
 
+  // บันทึก Context
+  setUserContext_(userId, jobId, 'status_update');
+
   // ส่ง Flex Message อัปเดตสถานะ
   if (typeof createStatusFlexMessage_ === 'function') {
     return createStatusFlexMessage_({ job_id: jobId, changed_by: userName || userId, note: text }, result.to_status_label || statusLabel);
   }
-  return createTextMessage('อัปเดตสถานะเรียบร้อย\nJobID: ' + jobId + '\nสถานะ: ' + (result.to_status_label || '-'));
+  return createTextMessage('✅ อัปเดตสถานะแล้ว\nJobID: ' + jobId + '\nสถานะ: ' + (result.to_status_label || '-') + buildContextHint_(jobId, 'อัปเดตสถานะ'));
 }
 
 function handleWorkNote(classification, text, userId, userName) {
-  var jobId = classification.jobId || extractJobIdV55_(text);
-  if (!jobId) return null;
+  var jobId = classification.jobId || extractJobIdSmart_(text, userId, 'work_note') || extractJobIdV55_(text);
+  if (!jobId) return null; // ถ้าไม่มี JobID และไม่มี context ให้ข้าม (ไม่ตอบกลับ)
 
   var result = callRouterActionV55_('addQuickNote', {
     job_id: jobId,
@@ -433,24 +476,53 @@ function handleWorkNote(classification, text, userId, userName) {
     return createTextMessage('บันทึกหมายเหตุไม่สำเร็จ: ' + (result && result.error || 'unknown'));
   }
 
-  return createTextMessage('บันทึกหมายเหตุแล้ว\nJobID: ' + jobId);
+  // บันทึก Context
+  setUserContext_(userId, jobId, 'work_note');
+
+  return createTextMessage('📝 บันทึกหมายเหตุแล้ว\nJobID: ' + jobId + buildContextHint_(jobId, 'หมายเหตุ'));
 }
 
 function handlePhotoReport(message, classification, userId, userName) {
-  var jobId = classification.jobId || '';
+  var jobId = classification.jobId || extractJobIdSmart_('', userId, 'work_report') || '';
+  var messageId = message.id || '';
+
+  // ── CASE 1: ไม่พบ JobID และไม่มี Context ──
   if (!jobId) {
-    return createTextMessage('รับรูปแล้ว แต่ยังไม่พบ JobID กรุณาส่งรูปพร้อมข้อความ เช่น J0001 ถึงหน้างาน');
+    return createTextMessage(
+      '🖼️ รับรูปแล้ว แต่ยังไม่ทราบ JobID\n\n' +
+      'วิธีใช้:\n' +
+      '1. ส่งข้อความที่มี JobID ก่อน แล้วส่งรูปอีกครั้ง\n' +
+      '2. หรือส่งรูพพร้อมข้อความที่มี JobID ในคำพิมพ์ เช่น "J0001 ถึงแล้ว"\n\n' +
+      'ฟ้า ในภาพที่ส่งมา บอทจะพยายามหา JobID แล้วแนบให้อัตโนมัติ'
+    );
   }
 
+  // ── CASE 2: บันทึก Context และ Batch ──
+  setUserContext_(userId, jobId, 'work_report');
+  var batchCount = recordImageBatch_(userId, jobId, messageId);
+
+  // ── CASE 3: ส่งเข้าคิว Queue ──
   if (typeof queuePhotoFromLINE === 'function') {
-    var queueResult = queuePhotoFromLINE(message.id || '', jobId, userName || userId || 'LINE');
+    var queueResult = queuePhotoFromLINE(messageId, jobId, userName || userId || 'LINE');
     if (queueResult && !queueResult.error) {
-      return createTextMessage('รับรูปเข้าคิวเรียบร้อย\nJobID: ' + jobId + '\nQueueID: ' + (queueResult.queueId || '-') + '\n' + (queueResult.message || 'รอประมวลผลอัตโนมัติ'));
+      var batchHint = batchCount > 1 ? ' (รูปที่ ' + batchCount + ' ในช่วง 8 วิ)' : '';
+      return createTextMessage(
+        '📷 รับรูปแล้ว' + batchHint + '\n' +
+        'JobID: ' + jobId + '\n' +
+        'QueueID: ' + (queueResult.queueId || '-') + '\n' +
+        (queueResult.message || 'รอประมวลผลอัตโนมัติ') +
+        buildContextHint_(jobId, 'รูป')
+      );
     }
     return createTextMessage('รับรูปแล้ว แต่เข้าคิวไม่สำเร็จ: ' + (queueResult && queueResult.error || 'unknown'));
   }
 
-  return createTextMessage('รับรูปเรียบร้อย\nJobID: ' + jobId + '\nหมายเหตุ: ยังไม่เปิดใช้งานคิวรูปภาพอัตโนมัติในสคริปต์นี้');
+  // ── FALLBACK: ยังไม่มี queuePhoto ──
+  return createTextMessage(
+    '📷 รับรูปแล้ว\nJobID: ' + jobId + '\n' +
+    'หมายเหตุ: ยังไม่เปิดใช้งานคิวรูปภาพอัตโนมัติ' +
+    buildContextHint_(jobId, 'รูป')
+  );
 }
 
 // ── GROUP ID HELPERS ──
@@ -684,7 +756,7 @@ function getLineDisplayNameV55_(userId) {
  * @returns {Object} LINE text message
  */
 function formatCheckBillingV55_(text) {
-  var jobId = extractJobIdV55_(text);
+  var jobId = extractJobIdV55_(text) || extractJobIdSmart_(text, null, '');
   if (!jobId) {
     return createTextMessage(
       '📋 วิธีใช้: #เช็คบิล [JobID]\n' +
