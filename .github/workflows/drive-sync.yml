@@ -70,9 +70,13 @@ jobs:
             exit 0
           fi
 
-          # นับ failure ใน 1 ชั่วโมง (สูงสุด 20 runs)
+          # นับ failure ใน 1 ชั่วโมง (สูงสุด 20 runs) — fallback ถ้า jq fromdateiso8601 ไม่มี
           RECENT_FAILS=$(gh api repos/${{ github.repository }}/actions/workflows/$WORKFLOW_ID/runs?per_page=20 \
-            --jq '[.workflow_runs[] | select(.conclusion=="failure" and (.run_started_at | fromdateiso8601) > (now - 3600))] | length')
+            --jq '.workflow_runs[] | select(.conclusion=="failure") | .run_started_at' 2>/dev/null | while read dt; do
+              run_ts=$(date -d "$dt" +%s 2>/dev/null || python3 -c "import datetime,sys; print(int(datetime.datetime.fromisoformat('$dt'.replace('Z','+00:00')).timestamp()))" 2>/dev/null || echo 0)
+              now_ts=$(date +%s)
+              if [ "$run_ts" -gt "$(( now_ts - 3600 ))" ]; then echo "1"; fi
+            done | wc -l)
 
           echo "[ℹ️] Recent failures in last hour: $RECENT_FAILS"
 

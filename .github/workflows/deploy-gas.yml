@@ -388,7 +388,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| รายการ | ค่า |" >> $GITHUB_STEP_SUMMARY
           echo "|--------|-----|" >> $GITHUB_STEP_SUMMARY
-          echo "| Commit | \`${{ github.sha | slice(0,7) }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`$(echo '${{ github.sha }}' | cut -c1-7)\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Branch | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Actor | \`${{ github.actor }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Trigger | \`${{ github.event_name }}\` |" >> $GITHUB_STEP_SUMMARY
