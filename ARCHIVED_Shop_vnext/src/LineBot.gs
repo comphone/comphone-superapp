@@ -105,8 +105,16 @@ function processLineMessage(message, userId, userName) {
     case 'work_report':
       return handlePhotoReport(message, cls, userId, userName);
     case 'status_update':
+      // เพิ่มการผูกรูปย้อนหลังเมื่อระบุ JobID ใน Status Update
+      if (cls.jobId) {
+        reassignPendingPhotos(userName || '', cls.jobId);
+      }
       return handleStatus(cls, text, userId, userName);
     case 'work_note':
+      // เพิ่มการผูกรูปย้อนหลังเมื่อระบุ JobID ใน Work Note
+      if (cls.jobId) {
+        reassignPendingPhotos(userName || '', cls.jobId);
+      }
       return handleWorkNote(cls, text, userId, userName);
     default:
       return null;
@@ -141,34 +149,30 @@ function handleCommand(cls, text, userId, userName) {
 // ============================================================================
 
 function handlePhotoReport(message, cls, userId, userName) {
-  // V324: Drive-First Photo Queue โ€” เธเธฒเธเธฃเธนเธเน€เธเนเธฒเธฃเธฐเธเธ โ’ เธเธฑเธ”เธซเธกเธงเธ”เธซเธกเธนเนเธ—เธตเธซเธฅเธฑเธ
+  // V325: Accept All Photos - บันทึกลง Queue ก่อนเสมอ แม้ไม่มี JobID
   var jobId = cls.jobId || '';
-  var imageId = message.id || ''
+  var imageId = message.id || '';
 
-  // เนเธกเนเธเธ jobId โ’ เนเธเนเธเธเนเธฒเธเธฃเธฐเธเธธ
-  if (!jobId) {
-    return createTextMessage(
-      '๐“ธ เธฃเธฑเธเธ เธฒเธเนเธฅเนเธงเธเธฃเธฑเธ!\n\n' +
-      'โ ๏ธ เนเธ•เนเนเธกเนเธเธ JobID โ€” เธเธฃเธธเธ“เธฒเธฃเธฐเธเธธเธ”เนเธงเธข\n' +
-      'เน€เธเนเธ เธชเนเธเธฃเธนเธเธเธฃเนเธญเธกเธเนเธญเธเธงเธฒเธก "J0001 เธ–เธถเธเธซเธเนเธฒเธเธฒเธเนเธฅเนเธง"\n\n' +
-      'เธซเธฃเธทเธญเธเธดเธกเธเน #เน€เธเธดเธ”เธเธฒเธ เธเนเธญเธเธชเนเธเธฃเธนเธ'
-    );
-  }
-
-  // เธเธฑเนเธเธ•เธญเธเธ—เธตเน 1: เธ”เธฒเธงเธเนเนเธซเธฅเธ” โ’ Upload Drive Temp โ’ Queue
+  // ส่งเข้า Queue ทันที (JobID อาจเป็นค่าว่าง)
   var queueResult = queuePhotoFromLINE(imageId, jobId, userName || '');
 
   if (!queueResult || queueResult.error) {
-    return createTextMessage('โ เธเธฒเธเธฃเธนเธเนเธกเนเธชเธณเน€เธฃเนเธ: ' + (queueResult ? queueResult.error : 'unknown'));
+    return createTextMessage('❌ เกิดข้อผิดพลาดในการบันทึกรูป: ' + (queueResult ? queueResult.error : 'unknown'));
   }
 
-  // เธเธฑเนเธเธ•เธญเธเธ—เธตเน 2: เธ•เธญเธเธเธฅเธฑเธเธเนเธฒเธ
-  var reply = '๐“ธ ' + queueResult.message + '\n\n';
-  reply += '๐“ JobID: ' + jobId + '\n';
-  if (userName) reply += '๐‘ท ' + userName + '\n';
-  reply += '๐ท๏ธ Queue: ' + queueResult.queueId + '\n\n';
-  reply += 'โณ AI เธเธฐเธเธฑเธ”เธซเธกเธงเธ”เธซเธกเธนเนเธญเธฑเธ•เนเธเธกเธฑเธ•เธดเธ เธฒเธขเนเธ 1 เธเธฑเนเธงเนเธกเธ\n';
-  reply += 'เธซเธฃเธทเธญเธเธธเธ“เนเธซเธเนเธเธเธ” "เธเธฑเธ”เธเธฒเธฃเธฃเธนเธเธ เธฒเธ" เธ—เธตเน Dashboard เนเธ”เนเน€เธฅเธข';
+  // ข้อความตอบกลับตามสถานะ JobID
+  var reply = '';
+  if (!jobId) {
+    reply = '📸 รับรูปเข้าคิวชั่วคราวแล้ว!\n\n';
+    reply += '⚠️ ยังไม่พบ JobID กรุณาพิมพ์ JobID หรือแจ้งรายละเอียดลูกค้า\n';
+    reply += 'เพื่อให้ AI ช่วยผูกรูปเข้ากับงานให้อัตโนมัติครับ';
+  } else {
+    reply = '✅ ' + queueResult.message + '\n\n';
+    reply += '🆔 JobID: ' + jobId + '\n';
+    if (userName) reply += '👤 ' + userName + '\n';
+    reply += '📦 Queue ID: ' + queueResult.queueId + '\n\n';
+    reply += '🤖 AI กำลังวิเคราะห์และจัดหมวดหมู่รูปภาพให้ใน 1 นาที...';
+  }
 
   return createTextMessage(reply);
 }
