@@ -12,6 +12,16 @@
 
 'use strict';
 
+// PHASE 26.6 FIX: Safe showToast fallback (ถ้า dashboard_pc.html ไม่มี app.js โหลด)
+if (typeof window.showToast !== 'function') {
+  window.showToast = function(msg, type) {
+    console.log('[TOAST-' + (type || 'info') + ']', msg);
+    if (typeof M !== 'undefined' && M.toast) {
+      M.toast({ html: String(msg), classes: type === 'error' ? 'red' : type === 'success' ? 'green' : 'blue' });
+    }
+  };
+}
+
 // ============================================================
 // 1. APPROVAL CONFIGURATION
 // ============================================================

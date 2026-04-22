@@ -932,6 +932,10 @@ function normalizeActionV55_(action) {
 function invokeFunctionByNameV55_(functionName, args) {
   functionName = String(functionName || '').trim();
   if (!functionName) return { success: false, error: 'Function name is required' };
+  // PHASE 26.6 FIX: ป้องกันการเรียก private functions (ขึ้นต้นด้วย _)
+  if (functionName.charAt(0) === '_') {
+    return { success: false, error: 'Private function access denied: ' + functionName, action: functionName };
+  }
   var globalScope = typeof globalThis !== 'undefined' ? globalThis : this;
   var fn = globalScope[functionName];
   if (typeof fn !== 'function') {

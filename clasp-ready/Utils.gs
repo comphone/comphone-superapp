@@ -58,7 +58,13 @@ function createInvoicePDF(data) {
       '</table></body></html>';
     var blob = Utilities.newBlob(html, 'text/html', 'INV_' + id + '.html');
     var pdfBlob = blob.getAs('application/pdf');
-    var folder = DriveApp.getFolderById(ROOT_FOLDER_ID);
+    var folder;
+    try {
+      folder = DriveApp.getFolderById(ROOT_FOLDER_ID);
+    } catch (driveErr) {
+      Logger.log('createInvoicePDF Drive folder access failed: ' + driveErr);
+      return { success: false, error: 'Drive folder not accessible: ' + driveErr.toString() };
+    }
     var file = folder.createFile(pdfBlob.setName('INV-' + id + '.pdf'));
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
     return { success: true, invoice_id: 'INV-' + id, total: gt, tax: tax, pdf_url: file.getUrl() };
