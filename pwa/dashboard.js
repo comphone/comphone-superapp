@@ -99,6 +99,8 @@ function renderDashboard(data) {
       </div>
     </div>
 
+    <div id="business-ai-cards"></div>
+
     <!-- REVENUE CHART -->
     <div class="section-card" style="margin:0 12px 10px">
       <div class="section-label">รายรับ (บาท)</div>
@@ -193,6 +195,11 @@ function renderDashboard(data) {
 
   // Draw revenue chart
   drawRevenueChart(revenue);
+
+  // PHASE 27: Render Business AI cards
+  if (typeof renderBusinessAICards === 'function') {
+    setTimeout(renderBusinessAICards, 100);
+  }
 }
 
 // ===== RENDER JOB ROW =====

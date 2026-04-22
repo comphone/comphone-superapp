@@ -46,6 +46,8 @@ const ROLES = {
       { icon: 'bi-clipboard2-data', label: 'รายงาน', color: '#cffafe', textColor: '#164e63', action: 'viewReport' },
       { icon: 'bi-calendar-check', label: 'นัดหมาย', color: '#fef9c3', textColor: '#713f12', action: 'addAppointment' },
       { icon: 'bi-cart-fill', label: 'สั่งซื้อ', color: '#d1fae5', textColor: '#065f46', action: 'openPO' },
+      { icon: 'bi-robot', label: 'AI ช่วยซ่อม', color: '#ede9fe', textColor: '#5b21b6', action: 'openAICompanion' },
+      { icon: 'bi-magic', label: 'จ่ายงาน V2', color: '#dbeafe', textColor: '#1e40af', action: 'openSmartAssignV2' },
       { icon: 'bi-three-dots', label: 'เพิ่มเติม', color: '#f3f4f6', textColor: '#374151', action: 'moreActions' }
     ]
   },
@@ -73,7 +75,9 @@ const ROLES = {
       { icon: 'bi-megaphone-fill', label: 'จี้งานด่วน', color: '#fee2e2', textColor: '#991b1b', action: 'urgentAction' },
       { icon: 'bi-telephone-fill', label: 'โทรลูกค้า', color: '#d1fae5', textColor: '#065f46', action: 'callVIP' },
       { icon: 'bi-cart-fill', label: 'สั่งซื้อ', color: '#d1fae5', textColor: '#065f46', action: 'openPO' },
-      { icon: 'bi-file-earmark-bar-graph', label: 'รายงาน P&L', color: '#dbeafe', textColor: '#1e40af', action: 'viewPL' }
+      { icon: 'bi-file-earmark-bar-graph', label: 'รายงาน P&L', color: '#dbeafe', textColor: '#1e40af', action: 'viewPL' },
+      { icon: 'bi-star-fill', label: 'CSAT', color: '#fef3c7', textColor: '#92400e', action: 'openCSAT' },
+      { icon: 'bi-file-earmark-text-fill', label: 'TOR', color: '#ffedd5', textColor: '#9a3412', action: 'openTOR' }
     ]
   }
 };
