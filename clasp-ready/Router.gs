@@ -100,8 +100,11 @@ function doGet(e) {
 
 function doPost(e) {
   try {
+    var payload = parsePostPayloadV55_(e);
+
     // ── Rate Limiting: 60 requests/min ต่อ action ผ่าน CacheService ──
     // PHASE 26.6 FIX: ไม่ใช้ e.parameter.ip (ปลอม client spoof) แล้วใช้ token/username hash แทน
+    // PHASE 26.6 STABILIZE: payload ต้อง parse ก่อน rate limit ทุกครั้ง
     try {
       var cache = CacheService.getScriptCache();
       var rateKeyBase = (payload.token || payload.username || payload.action || 'anon').toString().replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 32);
@@ -113,7 +116,6 @@ function doPost(e) {
       cache.put(rateKey, String(count + 1), 60);
     } catch (rlErr) { /* rate limit ไม่ critical — ไม่ต้องหยุด */ }
 
-    var payload = parsePostPayloadV55_(e);
     // ── ตรวจจับ LINE Webhook (มี destination + events array) ──
     if (payload.destination && Array.isArray(payload.events)) {
       // PHASE 26.6 FIX: Hard-fail ถ้า verifyLineSignature_ ไม่มี — ไม่ให้ silent fallback
@@ -152,7 +154,7 @@ function dispatchActionV55_(action, payload, args) {
         return {
           success: true,
           app: 'COMPHONE SUPER APP V5.5+',
-          version: CONFIG.VERSION || '5.5.2',
+          version: CONFIG.VERSION || '5.6.5',
           actions: [
             'getDashboardData', 'getJobStateConfig', 'getJobTimeline', 'transitionJob', 'updateJobById',
             'addQuickNote', 'openJob', 'updateJobStatus', 'getPhotoGalleryData', 'generateJobQR',

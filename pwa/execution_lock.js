@@ -16,7 +16,7 @@
 (function() {
   'use strict';
 
-  const LOCK_VERSION = '5.6.3-PROD';
+  const LOCK_VERSION = '5.6.5-PROD';
   const LOCK_MARKER = '__EXECUTION_LOCK_INSTALLED';
 
   // ===== 1. PREVENT DOUBLE-LOCK =====
