@@ -49,7 +49,7 @@ const PERMISSION_MAP = {
 };
 
 // Role aliases (GAS role → PWA role key)
-const ROLE_ALIASES = {
+const AUTH_ROLE_ALIASES = {
   'owner':      'owner',
   'admin':      'owner',      // admin = owner
   'accountant': 'accountant',
@@ -76,7 +76,7 @@ function canAccess(permission) {
 
   // ดึง role ของ user
   const rawRole = String(user.role || user.authRole || '').toLowerCase();
-  const role    = ROLE_ALIASES[rawRole] || rawRole;
+  const role    = AUTH_ROLE_ALIASES[rawRole] || rawRole;
 
   // ถ้าไม่มีใน PERMISSION_MAP = ทุกคนเข้าได้
   const allowed = PERMISSION_MAP[permission];
@@ -166,7 +166,7 @@ function applyRoleUI() {
   if (!user) return;
 
   const rawRole = String(user.role || '').toLowerCase();
-  const role    = ROLE_ALIASES[rawRole] || rawRole;
+  const role    = AUTH_ROLE_ALIASES[rawRole] || rawRole;
 
   // Elements ที่ต้องการ role เฉพาะ
   document.querySelectorAll('[data-role-require]').forEach(el => {

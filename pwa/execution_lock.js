@@ -226,7 +226,13 @@
   }
 
   // ล็อกทันทีที่ทำงาน (fallback ถ้า GAS runtime ยังไม่พร้อม)
-  if (!installLock()) {
+  // PHASE 26.4: ตรวจจับ static hosting — ถ้าไม่ใช่ GAS origin ให้ข้าม retry loop
+  const isGasEnvironment = typeof google !== 'undefined' && google.script && google.script.run;
+  const isStaticHosting = window.location.protocol === 'file:' || !isGasEnvironment;
+
+  if (isStaticHosting) {
+    console.log('[EXECUTION_LOCK] 📡 Static hosting detected — skipping GAS lock install');
+  } else if (!installLock()) {
     let attempts = 0;
     const maxAttempts = 100; // 10 วินาที
     const interval = setInterval(() => {
@@ -235,7 +241,7 @@
         clearInterval(interval);
       } else if (attempts >= maxAttempts) {
         clearInterval(interval);
-        console.error('[EXECUTION_LOCK] ⛐ Failed: google.script.run never appeared after 10s');
+        console.warn('[EXECUTION_LOCK] ⛐ Failed: google.script.run never appeared after 10s');
       }
     }, 100);
   }
