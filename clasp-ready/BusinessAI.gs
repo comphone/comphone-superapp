@@ -5,6 +5,16 @@
 // ============================================================
 
 /* ============================================================
+   SCHEMA HELPERS — v17 Normalized Response
+   ============================================================ */
+function _wrapSuccess_(data) {
+  return { success: true, data: data || {}, error: null, meta: { ts: Date.now(), version: 'v17' } };
+}
+function _wrapError_(error) {
+  return { success: false, data: null, error: String(error), meta: { ts: Date.now(), version: 'v17' } };
+}
+
+/* ============================================================
    SECTION 1 — AI TECH COMPANION (askAI_)
    Query repair history + knowledge base → answer tech questions
    ============================================================ */
@@ -22,10 +32,10 @@ function askAI_(payload) {
     var jobId = String(ctx.job_id || ctx.jobId || '');
     var symptom = String(ctx.symptom || '');
 
-    if (!question) return { success: false, error: 'กรุณาระบุคำถาม' };
+    if (!question) return _wrapError_('กรุณาระบุคำถาม');
 
     var ss = getComphoneSheet();
-    if (!ss) return { success: false, error: 'ไม่พบ Spreadsheet' };
+    if (!ss) return _wrapError_('ไม่พบ Spreadsheet');
 
     var sources = [];
     var snippets = [];
@@ -95,8 +105,7 @@ function askAI_(payload) {
     // ── 3. สร้างคำตอบ (rule-based, no external AI key required) ──
     var answer = _buildTechAnswer_(question, symptom, snippets, kbMatches);
 
-    return {
-      success: true,
+    return _wrapSuccess_({
       question: question,
       answer: answer.text,
       confidence: answer.confidence,
@@ -104,9 +113,9 @@ function askAI_(payload) {
       snippets: snippets.slice(0, 5),
       kb_matches: kbMatches.slice(0, 3),
       suggested_next: answer.suggested_next || []
-    };
+    });
   } catch (err) {
-    return { success: false, error: err.toString() };
+    return _wrapError_(err);
   }
 }
 
@@ -204,7 +213,7 @@ function smartAssignV2_(payload) {
   try {
     payload = payload || {};
     var ss = getComphoneSheet();
-    if (!ss) return { success: false, error: 'ไม่พบ Spreadsheet' };
+    if (!ss) return _wrapError_('ไม่พบ Spreadsheet');
 
     var jobId = String(payload.job_id || payload.jobId || '');
     var jobLat = parseFloat(payload.lat || payload.job_lat || 0);
@@ -217,7 +226,7 @@ function smartAssignV2_(payload) {
 
     // ── 1. ดึงข้อมูลช่าง (DB_USERS role=tech + มีพิกัด) ──
     var userSheet = findSheetByName(ss, 'DB_USERS');
-    if (!userSheet) return { success: false, error: 'ไม่พบ DB_USERS' };
+    if (!userSheet) return _wrapError_('ไม่พบ DB_USERS');
     var users = userSheet.getDataRange().getValues();
     var uHdr = users[0];
     var uIdx = {};
@@ -255,7 +264,7 @@ function smartAssignV2_(payload) {
         maxJobs: uMaxJobs >= 0 ? parseInt(users[i][uMaxJobs] || 10, 10) : 10
       });
     }
-    if (techs.length === 0) return { success: false, error: 'ไม่พบช่างที่ active' };
+    if (techs.length === 0) return _wrapError_('ไม่พบช่างที่ active');
 
     // ── 2. คำนวณ Workload จาก DBJOBS ──
     var jobSheet = findSheetByName(ss, 'DBJOBS');
@@ -355,17 +364,16 @@ function smartAssignV2_(payload) {
     // เรียงตาม score สูงสุด
     recommendations.sort(function(a, b){ return b.score - a.score; });
 
-    return {
-      success: true,
+    return _wrapSuccess_({
       job_id: jobId,
       priority: priority,
       sla_hours: slaHours,
-      recommended: recommendations.slice(0, 3),
+      recommendations: recommendations.slice(0, 3),
       total_techs: techs.length,
       factors: { distance: '35%', workload: '30%', sla_risk: '20%', skill_match: '15%' }
-    };
+    });
   } catch (err) {
-    return { success: false, error: err.toString() };
+    return _wrapError_(err);
   }
 }
 
@@ -387,7 +395,7 @@ function sendCSAT_(payload) {
     var customerName = String(payload.customer_name || 'ลูกค้า');
     var channel = String(payload.channel || 'line');
 
-    if (!jobId) return { success: false, error: 'ต้องระบุ job_id' };
+    if (!jobId) return _wrapError_('ต้องระบุ job_id');
 
     // สร้าง CSAT token (ใช้ job_id + timestamp)
     var csatToken = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, jobId + '_' + Date.now());
@@ -435,16 +443,15 @@ function sendCSAT_(payload) {
       sendLineNotify({ message: msg, room: 'SALES' });
     }
 
-    return {
-      success: true,
+    return _wrapSuccess_({
       job_id: jobId,
       csat_token: csatToken,
       message: 'ส่งแบบสอบถามแล้ว',
       channel: channel,
       lineResult: lineResult
-    };
+    });
   } catch (err) {
-    return { success: false, error: err.toString() };
+    return _wrapError_(err);
   }
 }
 
@@ -460,12 +467,12 @@ function recordCSAT_(payload) {
     var score = parseInt(payload.score || 0, 10);
     var comment = String(payload.comment || '');
 
-    if (!token) return { success: false, error: 'ต้องระบุ csat_token' };
-    if (score < 1 || score > 5) return { success: false, error: 'score ต้องอยู่ระหว่าง 1-5' };
+    if (!token) return _wrapError_('ต้องระบุ csat_token');
+    if (score < 1 || score > 5) return _wrapError_('score ต้องอยู่ระหว่าง 1-5');
 
     var ss = getComphoneSheet();
     var csatSheet = findSheetByName(ss, 'DB_CSAT');
-    if (!csatSheet) return { success: false, error: 'ไม่พบ DB_CSAT' };
+    if (!csatSheet) return _wrapError_('ไม่พบ DB_CSAT');
 
     var rows = csatSheet.getDataRange().getValues();
     var found = false;
@@ -490,7 +497,7 @@ function recordCSAT_(payload) {
       }
     }
 
-    if (!found) return { success: false, error: 'ไม่พบ CSAT token: ' + token };
+    if (!found) return _wrapError_('ไม่พบ CSAT token: ' + token);
 
     // แจ้งเตือนถ้าคะแนนต่ำ
     if (score <= 2) {
@@ -500,9 +507,9 @@ function recordCSAT_(payload) {
       });
     }
 
-    return { success: true, message: 'บันทึกคะแนนแล้ว', record: record };
+    return _wrapSuccess_({ message: 'บันทึกคะแนนแล้ว', record: record });
   } catch (err) {
-    return { success: false, error: err.toString() };
+    return _wrapError_(err);
   }
 }
 
@@ -517,7 +524,7 @@ function getCSATSummary_(payload) {
     var period = String(payload.period || '30d');
     var ss = getComphoneSheet();
     var csatSheet = findSheetByName(ss, 'DB_CSAT');
-    if (!csatSheet) return { success: false, error: 'ไม่พบ DB_CSAT' };
+    if (!csatSheet) return _wrapError_('ไม่พบ DB_CSAT');
 
     var rows = csatSheet.getDataRange().getValues();
     var now = new Date();
@@ -536,16 +543,15 @@ function getCSATSummary_(payload) {
       }
     }
 
-    return {
-      success: true,
+    return _wrapSuccess_({
       period: period,
       total_responses: total,
       avg_score: total > 0 ? Math.round((sum / total) * 100) / 100 : 0,
       distribution: dist,
       nps: total > 0 ? Math.round(((dist[5] + dist[4] - dist[1] - dist[2]) / total) * 100) : 0
-    };
+    });
   } catch (err) {
-    return { success: false, error: err.toString() };
+    return _wrapError_(err);
   }
 }
 
@@ -614,8 +620,7 @@ function generateTOR_(payload) {
       ]);
     }
 
-    return {
-      success: true,
+    return _wrapSuccess_({
       tor_id: torId,
       html_preview: html,
       fields: {
@@ -627,9 +632,9 @@ function generateTOR_(payload) {
         deliverables_count: deliverables.length,
         team_count: team.length
       }
-    };
+    });
   } catch (err) {
-    return { success: false, error: err.toString() };
+    return _wrapError_(err);
   }
 }
 
@@ -644,7 +649,7 @@ function exportTORpdf_(payload) {
     var torId = String(payload.tor_id || payload.torId || '');
     var html = String(payload.html_content || payload.html || '');
 
-    if (!torId) return { success: false, error: 'ต้องระบุ tor_id' };
+    if (!torId) return _wrapError_('ต้องระบุ tor_id');
     if (!html) {
       // ลองดึงจาก DB_TOR
       var ss = getComphoneSheet();
@@ -659,7 +664,7 @@ function exportTORpdf_(payload) {
         }
       }
     }
-    if (!html) return { success: false, error: 'ไม่พบ TOR content' };
+    if (!html) return _wrapError_('ไม่พบ TOR content');
 
     var blob = Utilities.newBlob(html, 'text/html; charset=utf-8', torId + '.html');
     var pdfBlob = blob.getAs('application/pdf');
@@ -672,15 +677,14 @@ function exportTORpdf_(payload) {
     // อัปเดต status
     _updateTorStatus_(torId, 'exported', file.getUrl());
 
-    return {
-      success: true,
+    return _wrapSuccess_({
       tor_id: torId,
       pdf_url: file.getUrl(),
       drive_file_id: file.getId(),
       exported_at: new Date()
-    };
+    });
   } catch (err) {
-    return { success: false, error: err.toString() };
+    return _wrapError_(err);
   }
 }
 
@@ -693,7 +697,7 @@ function listTOR_(payload) {
     var status = String(payload.status || '');
     var ss = getComphoneSheet();
     var torSheet = findSheetByName(ss, 'DB_TOR');
-    if (!torSheet) return { success: false, error: 'ไม่พบ DB_TOR' };
+    if (!torSheet) return _wrapError_('ไม่พบ DB_TOR');
 
     var rows = torSheet.getDataRange().getValues();
     var items = [];
@@ -711,9 +715,9 @@ function listTOR_(payload) {
         pdf_url: String(rows[i][9] || '')
       });
     }
-    return { success: true, count: items.length, items: items.reverse() };
+    return _wrapSuccess_({ count: items.length, items: items.reverse() });
   } catch (err) {
-    return { success: false, error: err.toString() };
+    return _wrapError_(err);
   }
 }
 
@@ -836,7 +840,7 @@ function autoSendCSAT_() {
   try {
     var ss = getComphoneSheet();
     var jobSheet = findSheetByName(ss, 'DBJOBS');
-    if (!jobSheet) return { success: false, error: 'ไม่พบ DBJOBS' };
+    if (!jobSheet) return _wrapError_('ไม่พบ DBJOBS');
 
     var jobs = jobSheet.getDataRange().getValues();
     var jHdr = jobs[0];
@@ -862,9 +866,9 @@ function autoSendCSAT_() {
       if (result.success) sent++;
     }
 
-    return { success: true, sent: sent };
+    return _wrapSuccess_({ sent: sent });
   } catch (err) {
-    return { success: false, error: err.toString() };
+    return _wrapError_(err);
   }
 }
 
@@ -876,12 +880,11 @@ function getBusinessAIMetrics_() {
     var csat = getCSATSummary_({ period: '30d' });
     var tor = listTOR_({ status: '' });
 
-    return {
-      success: true,
-      csat: csat.success ? { avg_score: csat.avg_score, total: csat.total_responses, nps: csat.nps } : null,
-      tor: tor.success ? { total: tor.count, draft: tor.items.filter(function(t){ return t.status === 'draft'; }).length, exported: tor.items.filter(function(t){ return t.status === 'exported'; }).length } : null
-    };
+    return _wrapSuccess_({
+      csat: csat.success ? { avg_score: csat.data.avg_score, total: csat.data.total_responses, nps: csat.data.nps } : null,
+      tor: tor.success ? { total: tor.data.count, draft: tor.data.items.filter(function(t){ return t.status === 'draft'; }).length, exported: tor.data.items.filter(function(t){ return t.status === 'exported'; }).length } : null
+    });
   } catch (err) {
-    return { success: false, error: err.toString() };
+    return _wrapError_(err);
   }
 }

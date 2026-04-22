@@ -43,9 +43,9 @@ async function sendAIQuestion() {
   try {
     const res = await window.GAS_EXECUTE('askAI', { question: q, context: {} });
     removeLoadingInChat();
-    if (res && res.success) {
-      history.innerHTML += `<div style="margin:6px 0"><span style="background:#f3f4f6;color:#374151;padding:6px 12px;border-radius:12px 12px 12px 0;display:inline-block;font-size:13px;white-space:pre-wrap">${escapeHtml(res.answer)}</span></div>`;
-      if (res.confidence < 0.5) {
+    if (res && res.success && res.data) {
+      history.innerHTML += `<div style="margin:6px 0"><span style="background:#f3f4f6;color:#374151;padding:6px 12px;border-radius:12px 12px 12px 0;display:inline-block;font-size:13px;white-space:pre-wrap">${escapeHtml(res.data.answer)}</span></div>`;
+      if (res.data.confidence < 0.5) {
         history.innerHTML += `<div style="font-size:11px;color:#d97706;margin-top:4px">⚠️ ความมั่นใจต่ำ — กรุณาตรวจสอบกับช่าง</div>`;
       }
     } else {
@@ -125,13 +125,13 @@ async function runSmartAssignV2() {
   try {
     const res = await window.GAS_EXECUTE('smartAssignV2', payload);
     const container = document.getElementById('sa-result');
-    if (res && res.success) {
+    if (res && res.success && res.data) {
       container.innerHTML = `
         <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:12px;margin-bottom:8px">
           <div style="font-weight:700;color:#065f46">✅ ผลการวิเคราะห์ (${res.total_techs} ช่าง)</div>
-          <div style="font-size:11px;color:#6b7280">น้ำหนักการ: ระยะทาง ${res.factors.distance} | งานค้าง ${res.factors.workload} | SLA Risk ${res.factors.sla_risk} | ทักษะ ${res.factors.skill_match}</div>
+          <div style="font-size:11px;color:#6b7280">น้ำหนักการ: ระยะทาง ${res.data.factors.distance} | งานค้าง ${res.data.factors.workload} | SLA Risk ${res.data.factors.sla_risk} | ทักษะ ${res.data.factors.skill_match}</div>
         </div>
-        ${res.recommended.map((r, i) => `
+        ${res.data.recommendations.map((r, i) => `
           <div style="background:#fff;border:1.5px solid ${i === 0 ? '#10b981' : '#e5e7eb'};border-radius:12px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
             <div style="width:36px;height:36px;border-radius:50%;background:${i === 0 ? '#10b981' : '#e5e7eb'};color:${i === 0 ? '#fff' : '#374151'};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px">${i + 1}</div>
             <div style="flex:1">
@@ -191,20 +191,20 @@ async function loadCSATMetrics() {
   if (!container) return;
   try {
     const res = await window.GAS_EXECUTE('getCSATSummary', { period: '30d' });
-    if (res && res.success) {
+    if (res && res.success && res.data) {
       container.innerHTML = `
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
           <div style="background:#f0fdf4;border-radius:12px;padding:10px;text-align:center">
             <div style="font-size:10px;color:#6b7280">คะแนนเฉลี่ย</div>
-            <div style="font-size:18px;font-weight:900;color:#10b981">${res.avg_score.toFixed(1)}</div>
+            <div style="font-size:18px;font-weight:900;color:#10b981">${res.data.avg_score.toFixed(1)}</div>
           </div>
           <div style="background:#eff6ff;border-radius:12px;padding:10px;text-align:center">
             <div style="font-size:10px;color:#6b7280">จำนวนตอบ</div>
-            <div style="font-size:18px;font-weight:900;color:#3b82f6">${res.total_responses}</div>
+            <div style="font-size:18px;font-weight:900;color:#3b82f6">${res.data.total_responses}</div>
           </div>
           <div style="background:#fef3c7;border-radius:12px;padding:10px;text-align:center">
             <div style="font-size:10px;color:#6b7280">NPS</div>
-            <div style="font-size:18px;font-weight:900;color:#d97706">${res.nps}</div>
+            <div style="font-size:18px;font-weight:900;color:#d97706">${res.data.nps}</div>
           </div>
         </div>
       `;
@@ -227,8 +227,8 @@ async function sendCSATNow() {
       channel: 'line'
     });
     const out = document.getElementById('csat-send-result');
-    if (res && res.success) {
-      out.innerHTML = `<div style="background:#d1fae5;color:#065f46;padding:10px;border-radius:12px;font-size:13px">✅ ส่งแล้ว! Token: <code>${res.csat_token}</code></div>`;
+    if (res && res.success && res.data) {
+      out.innerHTML = `<div style="background:#d1fae5;color:#065f46;padding:10px;border-radius:12px;font-size:13px">✅ ส่งแล้ว! Token: <code>${res.data.csat_token}</code></div>`;
     } else {
       out.innerHTML = `<div class="alert-card danger">⚠️ ${escapeHtml(res && res.error ? res.error : 'ไม่สามารถส่งได้')}</div>`;
     }
@@ -281,10 +281,10 @@ async function loadTORList() {
   if (!container) return;
   try {
     const res = await window.GAS_EXECUTE('listTOR', { status: '' });
-    if (res && res.success && res.count > 0) {
+    if (res && res.success && res.data && res.data.count > 0) {
       container.innerHTML = `
         <div style="font-size:12px;font-weight:700;margin-bottom:6px">รายการ TOR ล่าสุด (${res.count})</div>
-        ${res.items.slice(0, 5).map(t => `
+        ${res.data.items.slice(0, 5).map(t => `
           <div style="background:#f9fafb;border-radius:10px;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
             <div>
               <div style="font-weight:700;font-size:13px">${t.project}</div>
@@ -322,11 +322,11 @@ async function generateTORNow() {
   try {
     const res = await window.GAS_EXECUTE('generateTOR', payload);
     const out = document.getElementById('tor-result');
-    if (res && res.success) {
+    if (res && res.success && res.data) {
       out.innerHTML = `
         <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:12px;margin-bottom:8px">
-          <div style="font-weight:700;color:#065f46">✅ ออก TOR แล้ว (${res.tor_id})</div>
-          <div style="font-size:12px;color:#374151;margin-top:6px">${res.fields.project} · ${res.fields.client} · ฿${Number(res.fields.budget||0).toLocaleString()}</div>
+          <div style="font-weight:700;color:#065f46">✅ ออก TOR แล้ว (${res.data.tor_id})</div>
+          <div style="font-size:12px;color:#374151;margin-top:6px">${res.data.fields.project} · ${res.data.fields.client} · ฿${Number(res.data.fields.budget||0).toLocaleString()}</div>
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn-setup" style="flex:1;background:#3b82f6" onclick="exportTORPdf('${res.tor_id}', \`${escapeHtml(res.html_preview)}\`)">
@@ -352,9 +352,9 @@ async function exportTORPdf(torId, htmlContent) {
   try {
     showToast('กำลังออก PDF...');
     const res = await window.GAS_EXECUTE('exportTORpdf', { tor_id: torId, html_content: htmlContent });
-    if (res && res.success) {
+    if (res && res.success && res.data) {
       showToast('✅ ออก PDF แล้ว!');
-      window.open(res.pdf_url, '_blank');
+      window.open(res.data.pdf_url, '_blank');
     } else {
       showToast('❌ ไม่สามารถออก PDF: ' + (res && res.error ? res.error : ''));
     }
@@ -377,17 +377,17 @@ async function renderBusinessAICards() {
   if (!container) return;
   try {
     const res = await window.GAS_EXECUTE('getBusinessAIMetrics', {});
-    if (res && res.success) {
+    if (res && res.success && res.data) {
       container.innerHTML = `
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 12px 10px">
           <div class="kpi-card" style="background:linear-gradient(135deg,#7c3aed,#a78bfa);cursor:pointer" onclick="openCSAT()">
             <div class="kpi-icon"><i class="bi bi-star-fill"></i></div>
-            <div class="kpi-value">${res.csat ? res.csat.avg_score.toFixed(1) : '-'}</div>
+            <div class="kpi-value">${res.data.csat ? res.data.csat.avg_score.toFixed(1) : '-'}</div>
             <div class="kpi-label">CSAT คะแนน</div>
           </div>
           <div class="kpi-card" style="background:linear-gradient(135deg,#ea580c,#fb923c);cursor:pointer" onclick="openTOR()">
             <div class="kpi-icon"><i class="bi bi-file-earmark-text-fill"></i></div>
-            <div class="kpi-value">${res.tor ? res.tor.total : 0}</div>
+            <div class="kpi-value">${res.data.tor ? res.data.tor.total : 0}</div>
             <div class="kpi-label">TOR ทั้งหมด</div>
           </div>
         </div>
