@@ -11,9 +11,9 @@
 #   - Approval Gate: Environment 'production' ต้องมีคนอนุมัติ
 #
 # SECURITY:
-#   - CLASP_CREDENTIALS secret (base64 ~/.clasprc.json)
+#   - CLASPRC_JSON secret (raw ~/.clasprc.json content)
 #   - No hardcoded credentials
-#   - Deploy log ไม่แสดง credentials
+#   - Deploy log never exposes credentials
 #
 # FAIL-SAFE:
 #   - Concurrency lock (ไม่ให้ 2 deploy พร้อมกัน)
@@ -132,34 +132,34 @@ jobs:
         run: |
           echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Validate Secrets"
 
-          if [ -z "${{ secrets.CLASP_CREDENTIALS }}" ]; then
-            echo "[❌] CLASP_CREDENTIALS secret MISSING"
+          if [ -z "${{ secrets.CLASPRC_JSON }}" ]; then
+            echo "[❌] CLASPRC_JSON secret MISSING"
             echo ""
             echo "วิธีสร้าง:"
-            echo "1. ที่เครื่อง local รัน: cat ~/.clasprc.json | base64 -w 0"
-            echo "2. Copy output ทั้งหมด"
+            echo "1. ที่เครื่อง local รัน: cat ~/.clasprc.json"
+            echo "2. Copy JSON output ทั้งหมด (แบบ RAW JSON ไม่ต้อง base64)"
             echo "3. ไปที่ GitHub → Settings → Secrets → Actions → New repository secret"
-            echo "4. Name: CLASP_CREDENTIALS | Value: [paste base64 output]"
+            echo "4. Name: CLASPRC_JSON | Value: [paste raw JSON content]"
             echo ""
-            echo "secrets_ok=false" >> $GITHUB_OUTPUT
-            exit 1
-          fi
-
-          # Validate base64 decodes
-          if ! echo "${{ secrets.CLASP_CREDENTIALS }}" | base64 -d > /tmp/clasp_test.json 2>/dev/null; then
-            echo "[❌] CLASP_CREDENTIALS is not valid base64"
             echo "secrets_ok=false" >> $GITHUB_OUTPUT
             exit 1
           fi
 
           # Validate JSON structure
-          if ! python3 -c "import json; json.load(open('/tmp/clasp_test.json'))" 2>/dev/null; then
-            echo "[❌] CLASP_CREDENTIALS decodes but is not valid JSON"
+          if ! echo '${{ secrets.CLASPRC_JSON }}' | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
+            echo "[❌] CLASPRC_JSON is not valid JSON"
             echo "secrets_ok=false" >> $GITHUB_OUTPUT
             exit 1
           fi
 
-          echo "[✅] CLASP_CREDENTIALS valid (base64 JSON)"
+          # Validate contains access_token
+          if ! echo '${{ secrets.CLASPRC_JSON }}' | grep -q '"access_token"'; then
+            echo "[❌] CLASPRC_JSON missing 'access_token' field"
+            echo "secrets_ok=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          echo "[✅] CLASPRC_JSON valid (raw JSON with access_token)"
           echo "secrets_ok=true" >> $GITHUB_OUTPUT
 
       # ── STEP 1d: Deployment Gate ──
@@ -223,14 +223,20 @@ jobs:
         run: |
           echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Setup clasp credentials"
           mkdir -p ~/.config/clasp
-          # Decode credentials from secret
-          echo "${{ secrets.CLASP_CREDENTIALS }}" | base64 -d > ~/.clasprc.json
-          # Verify it loaded (without exposing content)
+          # Write raw JSON credentials from secret
+          echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+          # Verify file exists and has content
           if [ ! -s ~/.clasprc.json ]; then
-            echo "[❌] Failed to decode CLASP_CREDENTIALS"
+            echo "[❌] Failed to write ~/.clasprc.json (empty or missing)"
             exit 1
           fi
-          echo "[✅] clasp credentials configured"
+          # Verify contains access_token (sanity check)
+          if ! grep -q '"access_token"' ~/.clasprc.json; then
+            echo "[❌] ~/.clasprc.json missing access_token field"
+            exit 1
+          fi
+          # Mask the file size only (never expose content)
+          echo "[✅] clasp credentials configured ($(wc -c < ~/.clasprc.json) bytes)"
 
       # ── STEP 2d: Verify project access ──
       - name: 🔍 Verify GAS Project Access
