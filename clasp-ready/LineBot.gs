@@ -1,945 +1,630 @@
-// COMPHONE SUPER APP V5.5
-// ============================================================
-// LineBot.gs - LINE Messaging Integration
-// Version: 5.6.6 (PHASE 27.1 - AUDIT & REFACTOR)
-// Last Updated: 2025-04-22
-// Deployed via: GitHub Actions (production environment)
-// ============================================================
-// CHANGELOG v5.6.6:
-//   - Unified resolveJobId_() with strict priority: text > context > null
-//   - Centralized Context API: saveContext_(), getContext_(), clearContext_()
-//   - Fixed classifyMessage: NEVER pre-resolve from context (only explicit text)
-//   - Fixed handlePhotoReport: proper context fallback with clear UX
-//   - Fixed handleWorkNote: returns helpful error instead of silent null
-//   - Standardized all UX messages: emoji prefix + clear action + hint
-//   - Added groupChatUserId_() for reliable user isolation in groups
-//   - Added strict validation: every handler validates jobId before proceed
-//   - All failures return actionable messages (no silent errors)
+﻿// ============================================================
+// LineBot.gs โ€” Complete Integration (V313)
+// LINE Bot โ” Super App GAS API
+// GAS-compatible: no Node.js syntax, no async/await
 // ============================================================
 
-var LINE_GAS_URL = (typeof getWebAppBaseUrl_ === 'function' ? getWebAppBaseUrl_() : '') || '';
+var LINE_GAS_URL = 'https://script.google.com/macros/s/AKfycbxO23P_kz2uUXsHbtUhn6gflOjE0ZZNV6bf3K8JDy7IK0PGdEJe_UtyYiqO_oY_WXqnvg/exec';
 
-var LINE_WORK_KEYWORDS_V55 = [
-  'เปิดงาน', 'ปิดงาน', 'เช็คงาน', 'เช็คสต็อก', 'สรุป', 'งาน', 'job', 'ซ่อม', 'ติดตั้ง',
-  'เดินทาง', 'ถึงหน้างาน', 'เริ่มงาน', 'รอชิ้นส่วน', 'งานเสร็จ', 'เก็บเงิน', 'ลูกค้า',
-  'cctv', 'wifi', 'router', 'network', 'gps', 'location', 'รูป', 'ภาพ'
+// ============================================================================
+// SMART FILTER
+// ============================================================================
+
+var WORK_KEYWORDS = [
+  'เธ•เธดเธ”เธ•เธฑเนเธ', 'เธเนเธญเธก', 'เน€เธเธฅเธตเนเธขเธ', 'เธ•เธฑเนเธเธเนเธฒ', 'เน€เธ”เธดเธเธชเธฒเธข', 'เน€เธเธฒเธฐ', 'เธขเธถเธ”', 'เธเธฃเธฐเธเธญเธ',
+  'เธเธฅเนเธญเธ', 'cctv', 'wifi', 'เน€เธฃเธฒเน€เธ•เธญเธฃเน', 'extender', 'เธชเธฒเธขlan', 'poe', 'nvr', 'dvr',
+  'switch', 'access point', 'fiber', 'sfp',
+  'เน€เธชเธฃเนเธ', 'เน€เธฃเธตเธขเธเธฃเนเธญเธข', 'เธเธณเธฅเธฑเธเธ—เธณ', 'เธ–เธถเธ', 'เน€เธฃเธดเนเธกเธเธฒเธ',
+  'เน€เธเธดเธ”เธเธฒเธ', 'เธเธดเธ”เธเธฒเธ', 'เน€เธเนเธเธเธฒเธ', 'เน€เธเนเธเธชเธ•เนเธญเธ', 'เธชเธฃเธธเธ', 'เธฃเธฑเธเธเธฒเธ', 'เธกเธญเธเธซเธกเธฒเธข',
+  'เธเธดเธเธฑเธ”', 'location', 'gps', 'เธฃเธนเธ', 'เธ เธฒเธ',
+  'เธฅเธนเธเธเนเธฒ', 'เน€เธเธญเธฃเน', 'เธ—เธตเนเธญเธขเธนเน', 'เธญเธณเน€เธ เธญ', 'เธเธฑเธเธซเธงเธฑเธ”',
+  'เน€เธเธดเธ”เนเธกเนเธ•เธดเธ”', 'เธ เธฒเธเนเธกเนเธเธถเนเธ', 'เธชเธฑเธเธเธฒเธ“เธเธฒเธ”', 'เน€เธเนเธ•เธซเธฅเธธเธ”',
+  'เธเนเธญเธกเธเธณเธฃเธธเธ', 'ma', 'preventive', 'เธชเธณเธฃเธงเธ'
 ];
 
-var LINE_CASUAL_KEYWORDS_V55 = [
-  '555', 'ok', 'โอเค', 'รับทราบ', 'ครับ', 'ค่ะ', 'เดี๋ยว', 'ขอบคุณ', 'ฝนตก', 'รถติด'
+var CASUAL_KEYWORDS = [
+  '555', '5555', '55555', 'เธฎเนเธฒ', 'เธญเธดเธญเธด', 'ok', 'เนเธญเน€เธ', 'เธฃเธฑเธเธ—เธฃเธฒเธ',
+  'เธเธดเธ', 'เธเนเธฒเธง', 'เน€เธ—เธตเนเธขเธ', 'เน€เธขเนเธ', 'เธเธฑเธ',
+  'เธเธเธ•เธ', 'เธฃเนเธญเธ', 'เธซเธเธฒเธง', 'เธญเธฒเธเธฒเธจ',
+  'เธเธฑเธเธฃเธ–', 'เธฃเธ–เธ•เธดเธ”', 'เธ–เธถเธเธขเธฑเธ', 'เนเธซเธเนเธฅเนเธง'
 ];
 
-// ── CONFIG ──
-var LINE_CTX_TTL_MS_ = 30 * 60 * 1000;      // 30 นาที
-var LINE_THROTTLE_MAX_ = 12;                // ข้อความต่อนาที
-var LINE_THROTTLE_WINDOW_MS_ = 60 * 1000;   // 1 นาที
-var LINE_BATCH_WINDOW_MS_ = 8 * 1000;       // 8 วินาที สำหรับ batch รูป
+function classifyMessage(text, hasImage, hasLocation) {
+  if (!text) text = '';
+  var t = text.toLowerCase().trim();
+  var jobIdMatch = t.match(/j\d{3,4}/i);
+  var jobId = jobIdMatch ? jobIdMatch[0].toUpperCase() : null;
 
-// ══════════════════════════════════════════════════════════════════
-// SECTION 1: UNIFIED CONTEXT API
-// ══════════════════════════════════════════════════════════════════
-
-/**
- * สร้าง key ที่ปลอดภัยสำหรับ PropertiesService
- * รองรับทั้ง user chat และ group chat (groupId + userId ถ้ามี)
- */
-function _ctxKey(userId, groupId) {
-  var base = 'LINE_CTX_';
-  if (groupId && userId) {
-    return base + groupId + '_' + userId;
+  // 1. Commands
+  var cmds = {
+    'เน€เธเธดเธ”เธเธฒเธ': /^(เน€เธเธดเธ”เธเธฒเธ|#เน€เธเธดเธ”เธเธฒเธ)/,
+    'เธเธดเธ”เธเธฒเธ': /^(เธเธดเธ”เธเธฒเธ|#เธเธดเธ”เธเธฒเธ)/,
+    'เน€เธเนเธเธเธฒเธ': /^(เน€เธเนเธเธเธฒเธ|#เน€เธเนเธเธเธฒเธ)/,
+    'เน€เธเนเธเธชเธ•เนเธญเธ': /^(เน€เธเนเธเธชเธ•เนเธญเธ|#เน€เธเนเธเธชเธ•เนเธญเธ)/,
+    'เธชเธฃเธธเธ': /^เธชเธฃเธธเธ/
+  };
+  var cmdKeys = Object.keys(cmds);
+  for (var ci = 0; ci < cmdKeys.length; ci++) {
+    if (cmds[cmdKeys[ci]].test(t)) return { type: 'command', command: cmdKeys[ci], jobId: jobId };
   }
-  return base + String(userId || groupId || 'unknown');
+
+  // 2. Location message โ’ GPS update
+  if (hasLocation) return { type: 'location_share', jobId: jobId };
+
+  // 3. Image โ’ always work report
+  if (hasImage) return { type: 'work_report', subType: 'photo', jobId: jobId };
+
+  // 4. Status updates
+  if (t.match(/เน€เธชเธฃเนเธ|เน€เธฃเธตเธขเธเธฃเนเธญเธข|done/i)) return { type: 'status_update', status: 'Completed', jobId: jobId };
+  if (t.match(/เธ–เธถเธ|เนเธเธ–เธถเธ|เธญเธขเธนเนเธซเธเนเธฒเธเธฒเธ/i)) return { type: 'status_update', status: 'เธ–เธถเธเธชเธ–เธฒเธเธ—เธตเน', jobId: jobId };
+  if (t.match(/เธเธณเธฅเธฑเธเน€เธ”เธดเธเธ—เธฒเธ|on the way/i)) return { type: 'status_update', status: 'เธเธณเธฅเธฑเธเน€เธ”เธดเธเธ—เธฒเธ', jobId: jobId };
+  if (t.match(/เน€เธฃเธดเนเธก|start|เธเธณเธฅเธฑเธเธ—เธณ/i)) return { type: 'status_update', status: 'InProgress', jobId: jobId };
+
+  // 5. Count keywords
+  var ws = 0, cs = 0;
+  for (var wi = 0; wi < WORK_KEYWORDS.length; wi++) if (t.indexOf(WORK_KEYWORDS[wi]) > -1) ws++;
+  for (var wj = 0; wj < CASUAL_KEYWORDS.length; wj++) if (t.indexOf(CASUAL_KEYWORDS[wj]) > -1) cs++;
+
+  if (ws >= 1 && cs < ws) return { type: 'work_note', jobId: jobId };
+  if (cs >= 2 && cs > ws) return { type: 'casual' };
+  if (ws >= 1) return { type: 'work_note', jobId: jobId };
+
+  if (t.length < 15) return { type: 'casual' };
+  return { type: 'work_note', jobId: jobId };
 }
 
-function _thrKey(userId, groupId) {
-  return 'LINE_THR_' + String(userId || groupId || 'unknown');
+// ============================================================================
+// MAIN PROCESSOR (sync โ€” GAS เนเธกเนเธฃเธญเธเธฃเธฑเธ async/await)
+// ============================================================================
+
+/**
+ * เธเธฃเธฐเธกเธงเธฅเธเธฅเธเนเธญเธเธงเธฒเธกเธเธฒเธ LINE
+ * @param {object} message - LINE message object
+ * @param {string} userId - LINE user ID
+ * @param {string} userName - display name
+ * @return {object|null} - LINE response (text/flex) เธซเธฃเธทเธญ null (silent)
+ */
+function processLineMessage(message, userId, userName) {
+  var type = message.type;
+  var text = message.text || '';
+  var hasImage = type === 'image';
+  var hasLocation = type === 'location';
+
+  // 1. Classify
+  var cls = classifyMessage(text, hasImage, hasLocation);
+
+  // 2. SILENT for casual
+  if (cls.type === 'casual') return null;
+
+  // 3. Route
+  switch (cls.type) {
+    case 'command':
+      return handleCommand(cls, text, userId, userName);
+    case 'location_share':
+      return handleLocation(message, cls, userId, userName);
+    case 'work_report':
+      return handlePhotoReport(message, cls, userId, userName);
+    case 'status_update':
+      // เพิ่มการผูกรูปย้อนหลังเมื่อระบุ JobID ใน Status Update
+      if (cls.jobId) {
+        reassignPendingPhotos(userName || '', cls.jobId);
+      }
+      return handleStatus(cls, text, userId, userName);
+    case 'work_note':
+      // เพิ่มการผูกรูปย้อนหลังเมื่อระบุ JobID ใน Work Note
+      if (cls.jobId) {
+        reassignPendingPhotos(userName || '', cls.jobId);
+      }
+      return handleWorkNote(cls, text, userId, userName);
+    default:
+      return null;
+  }
 }
 
-function _batchKey(userId, groupId) {
-  return 'LINE_BATCH_' + String(userId || groupId || 'unknown');
+// ============================================================================
+// COMMAND HANDLER
+// ============================================================================
+
+function handleCommand(cls, text, userId, userName) {
+  switch (cls.command) {
+    case 'เน€เธเธดเธ”เธเธฒเธ':
+      return handleOpenJob(text, userId);
+    case 'เธเธดเธ”เธเธฒเธ':
+      return handleCloseJob(text);
+    case 'เน€เธเนเธเธเธฒเธ':
+      var search = text.replace(/เน€เธเนเธเธเธฒเธ|#เน€เธเนเธเธเธฒเธ/g, '').trim() || '';
+      return callAndFormat('เน€เธเนเธเธเธฒเธ', { search: search }, formatJobList);
+    case 'เน€เธเนเธเธชเธ•เนเธญเธ':
+      var item = text.replace(/เน€เธเนเธเธชเธ•เนเธญเธ|#เน€เธเนเธเธชเธ•เนเธญเธ/g, '').trim() || '';
+      return callAndFormat('เน€เธเนเธเธชเธ•เนเธญเธ', { search: item }, formatStock);
+    case 'เธชเธฃเธธเธ':
+      return callAndFormat('เธชเธฃเธธเธเธเธฒเธ', {}, formatSummary);
+    default:
+      return null;
+  }
+}
+
+// ============================================================================
+// PHOTO + VISION + DRIVE PIPELINE
+// ============================================================================
+
+function handlePhotoReport(message, cls, userId, userName) {
+  // V325: Accept All Photos - บันทึกลง Queue ก่อนเสมอ แม้ไม่มี JobID
+  var jobId = cls.jobId || '';
+  var imageId = message.id || '';
+
+  // ส่งเข้า Queue ทันที (JobID อาจเป็นค่าว่าง)
+  var queueResult = queuePhotoFromLINE(imageId, jobId, userName || '');
+
+  if (!queueResult || queueResult.error) {
+    return createTextMessage('❌ เกิดข้อผิดพลาดในการบันทึกรูป: ' + (queueResult ? queueResult.error : 'unknown'));
+  }
+
+  // ข้อความตอบกลับตามสถานะ JobID
+  var reply = '';
+  if (!jobId) {
+    reply = '📸 รับรูปเข้าคิวชั่วคราวแล้ว!\n\n';
+    reply += '⚠️ ยังไม่พบ JobID กรุณาพิมพ์ JobID หรือแจ้งรายละเอียดลูกค้า\n';
+    reply += 'เพื่อให้ AI ช่วยผูกรูปเข้ากับงานให้อัตโนมัติครับ';
+  } else {
+    reply = '✅ ' + queueResult.message + '\n\n';
+    reply += '🆔 JobID: ' + jobId + '\n';
+    if (userName) reply += '👤 ' + userName + '\n';
+    reply += '📦 Queue ID: ' + queueResult.queueId + '\n\n';
+    reply += '🤖 AI กำลังวิเคราะห์และจัดหมวดหมู่รูปภาพให้ใน 1 นาที...';
+  }
+
+  return createTextMessage(reply);
 }
 
 /**
- * ดึงบริบทผู้ใช้
- * @returns {Object|null} {jobId, ts, source} หรือ null ถ้าไม่มี/หมดอายุ
+ * เธ”เธฒเธงเธเนเนเธซเธฅเธ”เธฃเธนเธเธเธฒเธ LINE โ’ เนเธเธฅเธ base64
  */
-function getContext_(userId, groupId) {
-  if (!userId && !groupId) return null;
+function _downloadLineImage(imageId, imageUrl) {
   try {
-    var raw = PropertiesService.getScriptProperties().getProperty(_ctxKey(userId, groupId));
-    if (!raw) return null;
-    var ctx = JSON.parse(raw);
-    if (!ctx || !ctx.ts) return null;
-    if (Date.now() - ctx.ts > LINE_CTX_TTL_MS_) {
-      clearContext_(userId, groupId);
-      return null;
+    var channelToken = getConfig('LINE_CHANNEL_ACCESS_TOKEN') || '';
+    
+    // เธงเธดเธเธตเธ—เธตเน 1: เธ–เนเธฒเธกเธต channel token โ’ เธ”เธฒเธงเธเนเนเธซเธฅเธ”เธเนเธฒเธ LINE API
+    if (channelToken && imageId) {
+      var options = {
+        method: 'get',
+        headers: { 'Authorization': 'Bearer ' + channelToken },
+        muteHttpExceptions: true
+      };
+      var resp = UrlFetchApp.fetch('https://api-data.line.me/v2/bot/message/' + imageId + '/content', options);
+      var blob = resp.getBlob();
+      if (blob && blob.getBytes().length > 100) {
+        return Utilities.base64Encode(blob.getBytes());
+      }
     }
-    return ctx;
+    
+    // เธงเธดเธเธตเธ—เธตเน 2: เธ–เนเธฒเนเธกเนเธกเธต token เนเธ•เนเธกเธต URL โ’ เธฅเธญเธเนเธซเธฅเธ”เธ•เธฃเธ
+    if (imageUrl && imageUrl.indexOf('http') === 0) {
+      var resp2 = UrlFetchApp.fetch(imageUrl, { muteHttpExceptions: true });
+      var blob2 = resp2.getBlob();
+      if (blob2 && blob2.getBytes().length > 100) {
+        return Utilities.base64Encode(blob2.getBytes());
+      }
+    }
+    
+    return '';
+  } catch(e) {
+    Logger.log('Download image failed: ' + e);
+    return '';
+  }
+}
+
+/**
+ * เธงเธดเน€เธเธฃเธฒเธฐเธซเนเธฃเธนเธเธเธฒเธ base64 เนเธ”เธขเธ•เธฃเธ (เนเธกเนเธ•เนเธญเธเธเนเธฒเธ URL)
+ */
+function analyzeWorkImageFromBase64(base64, context) {
+  var apiKey = getConfig('GEMINI_API_KEY') || getConfig('GOOGLE_AI_API_KEY') || '';
+  if (!apiKey) {
+    return { error: 'GEMINI_API_KEY not configured' };
+  }
+
+  var prompt = 'เธเธธเธ“เธเธทเธญเธเธนเนเธเนเธงเธข AI เธเธญเธเธฃเนเธฒเธ Comphone & Electronics เน€เธเธตเนเธขเธงเธเธฒเธเธ”เนเธฒเธ CCTV, เธฃเธฐเธเธเน€เธเธฃเธทเธญเธเนเธฒเธข, WiFi\n\n' +
+    'เธเธฃเธดเธเธ—เธเธฒเธ: ' + (context || 'เนเธกเนเธฃเธฐเธเธธ') + '\n\n' +
+    'เธงเธดเน€เธเธฃเธฒเธฐเธซเนเธฃเธนเธเธ เธฒเธเธเธฒเธเนเธฅเธฐเธ•เธญเธเธเธฅเธฑเธเน€เธเนเธ JSON เน€เธ—เนเธฒเธเธฑเนเธ:\n' +
+    '{\n' +
+    '  "auto_label": "เธชเธฃเธธเธเธชเธฑเนเธเน เธงเนเธฒเธฃเธนเธเธเธตเนเนเธชเธ”เธเธญเธฐเนเธฃ เน€เธเนเธ เธ เธฒเธเธเธฅเนเธญเธเธงเธเธเธฃเธเธดเธ” 2 เธ•เธฑเธงเธ•เธดเธ”เธ•เธฑเนเธเธเธเน€เธชเธฒเธเธญเธเธเธฃเธตเธ•",\n' +
+    '  "detected_equipment": ["เธเธฅเนเธญเธเธงเธเธเธฃเธเธดเธ” 2 เธ•เธฑเธง", "เธชเธฒเธข LAN 1 เธกเนเธงเธ"],\n' +
+    '  "location_type": "เธเธฃเธฐเน€เธ เธ—เธชเธ–เธฒเธเธ—เธตเน",\n' +
+    '  "installation_quality": "เธ”เธต/เธเธญเนเธเน/เธ•เนเธญเธเธเธฃเธฑเธเธเธฃเธธเธ",\n' +
+    '  "quality_issues": ["เธเธฑเธเธซเธฒเธ—เธตเนเธเธ"],\n' +
+    '  "is_ready_to_close": true,\n' +
+    '  "suggestions": ["เธเธณเนเธเธฐเธเธณ"],\n' +
+    '  "estimated_effort": "เธเนเธฒเธข/เธเธฒเธเธเธฅเธฒเธ/เธขเธฒเธ",\n' +
+    '  "confidence": 0.85\n' +
+    '}\n\n' +
+    'เธ•เธญเธ JSON เธญเธขเนเธฒเธเน€เธ”เธตเธขเธง เนเธกเนเธกเธตเธเนเธญเธเธงเธฒเธกเธญเธทเนเธ เนเธกเนเธกเธต markdown:';
+
+  try {
+    var bodyObj = {
+      contents: [{
+        parts: [
+          { text: prompt },
+          { inline_data: { mime_type: 'image/jpeg', data: base64 } }
+        ]
+      }],
+      generationConfig: { temperature: 0.2, maxOutputTokens: 1024 }
+    };
+
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
+    var options = {
+      method: 'post', contentType: 'application/json',
+      payload: JSON.stringify(bodyObj), muteHttpExceptions: true
+    };
+
+    var response = UrlFetchApp.fetch(url, options);
+    var result = JSON.parse(response.getContentText());
+
+    if (result.error) return { error: 'Gemini API Error: ' + JSON.stringify(result.error) };
+
+    var content = '';
+    if (result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts) {
+      content = result.candidates[0].content.parts[0].text || '';
+    }
+
+    var jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      var parsed = JSON.parse(jsonMatch[0]);
+      parsed.provider = 'gemini-2.0-flash';
+      return parsed;
+    }
+    return { error: 'Invalid response', raw: content };
+  } catch(e) {
+    return { error: 'Vision analysis failed: ' + e.toString() };
+  }
+}
+
+/**
+ * Phase auto-detect เธเธฒเธเธเธฅเธเธฒเธฃเธงเธดเน€เธเธฃเธฒเธฐเธซเนเธ เธฒเธ
+ */
+function detectPhase(analysis) {
+  if (!analysis || typeof analysis !== 'string') return '00_เธชเธณเธฃเธงเธ';
+  var t = analysis.toLowerCase();
+
+  if (t.indexOf('เธ•เธดเธ”เธ•เธฑเน') > -1 || t.indexOf('install') > -1 || t.indexOf('mount') > -1 || t.indexOf('เธงเธฒเธ') > -1) {
+    return '01_เธ•เธดเธ”เธ•เธฑเนเธ';
+  }
+  if (t.indexOf('เน€เธชเธฃเนเธ') > -1 || t.indexOf('complete') > -1 || t.indexOf('done') > -1 || t.indexOf('เน€เธฃเธตเธขเธเธฃเนเธญเธข') > -1) {
+    return '02_เน€เธชเธฃเนเธเธชเธกเธเธนเธฃเธ“เน';
+  }
+  if (t.indexOf('เธเนเธญเธก') > -1 || t.indexOf('repair') > -1 || t.indexOf('ma') > -1 || t.indexOf('เธเธณเธฃเธธเธ') > -1) {
+    return '03_MA_เธเนเธญเธกเธเธณเธฃเธธเธ';
+  }
+  return '00_เธชเธณเธฃเธงเธ';
+}
+
+// ============================================================================
+// LOCATION HANDLER
+// ============================================================================
+
+function handleLocation(message, cls, userId, userName) {
+  var lat = message.latitude;
+  var lng = message.longitude;
+
+  if (!lat || !lng) {
+    return createTextMessage('โ เนเธกเนเนเธ”เนเธฃเธฑเธเธเธดเธเธฑเธ” โ€” เธเธฃเธธเธ“เธฒเธฅเธญเธเธชเนเธ Location เนเธซเธกเนเธญเธตเธเธเธฃเธฑเนเธ');
+  }
+
+  // 1. เธเธฑเธเธ—เธถเธเธเธดเธเธฑเธ”เธเนเธฒเธ
+  callGAS({
+    action: 'เธญเธฑเธเน€เธ”เธ—เธชเธ–เธฒเธเธฐ',
+    job_id: cls.jobId || '',
+    status: '',
+    technician: userName || '',
+    lat: lat,
+    lng: lng,
+    note: '๐“ เธเธดเธเธฑเธ”: ' + lat.toFixed(6) + ', ' + lng.toFixed(6)
+  });
+
+  // 2. เธ•เธฃเธงเธเธชเธญเธเธงเนเธฒเธเนเธฒเธเธญเธขเธนเนเนเธเธฅเนเธเธฑเธเธเธฒเธเนเธซเธ
+  var area = getAreaFromLocation(lat, lng);
+  var nearestJob = findNearestPendingJobs(lat, lng);
+
+  var msg = '๐“ เธเธฑเธเธ—เธถเธเธเธดเธเธฑเธ”เนเธฅเนเธง!\n\n';
+  msg += '๐‘ท ' + (userName || 'เธเนเธฒเธ') + '\n';
+  msg += '๐“ ' + area.area + '\n';
+  msg += '๐—บ๏ธ เธเธดเธเธฑเธ”: ' + lat.toFixed(4) + ', ' + lng.toFixed(4) + '\n';
+
+  if (nearestJob && nearestJob.job) {
+    var dist = haversineDistance(lat, lng, parseFloat(nearestJob.lat || 0), parseFloat(nearestJob.lng || 0));
+    msg += '\n๐“ เนเธเธฅเนเธเธฑเธเธเธฒเธ: ' + nearestJob.job.job_id + ' โ€” ' + nearestJob.job.customer + '\n';
+    msg += '๐“ เธฃเธฐเธขเธฐเธ—เธฒเธ: ' + dist.toFixed(1) + ' km\n';
+    msg += '\nเธ•เนเธญเธเธเธฒเธฃเธฃเธฑเธเธเธฒเธเธเธตเนเนเธซเธกเธเธฃเธฑเธ?';
+  }
+
+  return createTextMessage(msg);
+}
+
+/**
+ * เธซเธฒเธเธฒเธ pending เธ—เธตเนเนเธเธฅเนเธเธดเธเธฑเธ”เธกเธฒเธเธ—เธตเนเธชเธธเธ”
+ */
+function findNearestPendingJobs(lat, lng) {
+  try {
+    var result = callGAS({ action: 'เน€เธเนเธเธเธฒเธ', search: '' });
+    if (!result || !result.success || !result.data || !result.data.jobs) return null;
+
+    var jobs = result.data.jobs;
+    var pending = [];
+    for (var i = 0; i < jobs.length; i++) {
+      if (jobs[i].status === 'เธฃเธญเธ”เธณเน€เธเธดเธเธเธฒเธฃ' || jobs[i].status === 'InProgress') {
+        pending.push(jobs[i]);
+      }
+    }
+    if (pending.length === 0) return null;
+
+    return { job: pending[0], distance: 'N/A' };
   } catch (e) {
     return null;
   }
 }
 
-/**
- * บันทึกบริบท
- * @param {string} userId
- * @param {string} groupId
- * @param {string} jobId
- * @param {string} source — ทำไมถึงจำ (เช่น 'text', 'image', 'status')
- */
-function saveContext_(userId, groupId, jobId, source) {
-  if (!userId && !groupId) return;
-  try {
-    var ctx = {
-      jobId: String(jobId || '').toUpperCase(),
-      source: String(source || ''),
-      ts: Date.now()
-    };
-    PropertiesService.getScriptProperties().setProperty(_ctxKey(userId, groupId), JSON.stringify(ctx));
-  } catch (e) { /* silent */ }
+// ============================================================================
+// STATUS UPDATE HANDLER
+// ============================================================================
+
+function handleStatus(cls, text, userId, userName) {
+  var jobId = cls.jobId || extractJobId(text);
+  var activeJob = findActiveJob(userId, jobId);
+
+  if (!activeJob) {
+    return createTextMessage('โ เนเธกเนเธเธเธเธฒเธ โ€” เธเธฃเธธเธ“เธฒเธฃเธฐเธเธธ JobID เธซเธฃเธทเธญ #เน€เธเธดเธ”เธเธฒเธ เธเนเธญเธ');
+  }
+
+  callGAS({
+    action: 'เธญเธฑเธเน€เธ”เธ—เธชเธ–เธฒเธเธฐ',
+    job_id: activeJob.job_id,
+    status: cls.status || activeJob.status,
+    technician: userName || activeJob.technician,
+    note: text
+  });
+
+  return createTextMessage(
+    'โ… เธญเธฑเธเน€เธ”เธ•เธเธฒเธ ' + activeJob.job_id + '\n' +
+    '๐“ เธชเธ–เธฒเธเธฐ: ' + cls.status + '\n' +
+    '๐“ "' + text + '"\n\n' +
+    '๐“ เนเธเธฅเน€เธ”เธญเธฃเน: ' + (activeJob.folder_url || 'เธขเธฑเธเนเธกเนเธชเธฃเนเธฒเธ') + '\n' +
+    'โ• [๐“ธ เธชเนเธเธฃเธนเธ] [โ… เธเธดเธ”เธเธฒเธ] [๐“ เธเธดเธเธฑเธ”]'
+  );
 }
 
-function clearContext_(userId, groupId) {
-  if (!userId && !groupId) return;
-  try {
-    PropertiesService.getScriptProperties().deleteProperty(_ctxKey(userId, groupId));
-    PropertiesService.getScriptProperties().deleteProperty(_batchKey(userId, groupId));
-  } catch (e) { /* silent */ }
+// ============================================================================
+// WORK NOTE HANDLER
+// ============================================================================
+
+function handleWorkNote(cls, text, userId, userName) {
+  var jobId = cls.jobId || extractJobId(text);
+  var activeJob = findActiveJob(userId, jobId);
+
+  if (!activeJob) {
+    if (text.length > 20) return handleOpenJob(text, userId);
+    return null;
+  }
+
+  callGAS({
+    action: 'เธญเธฑเธเน€เธ”เธ—เธชเธ–เธฒเธเธฐ',
+    job_id: activeJob.job_id,
+    status: activeJob.status,
+    technician: userName || activeJob.technician,
+    note: text
+  });
+
+  return createTextMessage(
+    '๐“ เธเธฑเธเธ—เธถเธเธซเธกเธฒเธขเน€เธซเธ•เธธเธเธฒเธ ' + activeJob.job_id + '\n"' + text + '"\n๐“ ' + (activeJob.folder_url || '')
+  );
 }
 
-// ══════════════════════════════════════════════════════════════════
-// SECTION 2: THROTTLE & BATCH
-// ══════════════════════════════════════════════════════════════════
+// ============================================================================
+// OPEN/CLOSE JOB
+// ============================================================================
 
-function shouldThrottle_(userId, groupId) {
-  var id = userId || groupId;
-  if (!id) return { allowed: true, remaining: LINE_THROTTLE_MAX_, retryAfter: 0 };
-  try {
-    var key = _thrKey(userId, groupId);
-    var raw = PropertiesService.getScriptProperties().getProperty(key);
-    var now = Date.now();
-    var entries = raw ? JSON.parse(raw) : [];
-    entries = entries.filter(function(ts) { return now - ts < LINE_THROTTLE_WINDOW_MS_; });
-    if (entries.length >= LINE_THROTTLE_MAX_) {
-      var oldest = entries[0];
-      var retryAfter = Math.ceil((oldest + LINE_THROTTLE_WINDOW_MS_ - now) / 1000);
-      return { allowed: false, remaining: 0, retryAfter: Math.max(1, retryAfter) };
+function handleOpenJob(text, userId) {
+  var parts = text.replace(/เน€เธเธดเธ”เธเธฒเธ|#เน€เธเธดเธ”เธเธฒเธ/g, '').trim().split(/\s+/);
+  if (parts.length < 2) {
+    return createTextMessage(
+      'โ เนเธเนเธเธณเธชเธฑเนเธ: #เน€เธเธดเธ”เธเธฒเธ [เธเธทเนเธญ] [เน€เธเธญเธฃเน] [เธญเธฒเธเธฒเธฃ]\nเธ•เธฑเธงเธญเธขเนเธฒเธ: #เน€เธเธดเธ”เธเธฒเธ เธฃเธฃ.เธชเธงเนเธฒเธ 081xxx เธ•เธดเธ”เธ•เธฑเนเธเธเธฅเนเธญเธ 3 เธเธธเธ”'
+    );
+  }
+
+  var name = parts[0];
+  var phone = parts[1];
+  var symptom = parts.slice(2).join(' ') || 'เนเธกเนเธฃเธฐเธเธธ';
+
+  var result = callGAS({
+    action: 'เน€เธเธดเธ”เธเธฒเธ',
+    name: name,
+    phone: phone,
+    symptom: symptom
+  });
+
+  if (!result || !result.success) return createTextMessage('โ เน€เธเธดเธ”เธเธฒเธเธฅเนเธกเน€เธซเธฅเธง: ' + (result ? result.error : 'unknown'));
+
+  var jd = result.data;
+  return createTextMessage(
+    'โ… เน€เธเธดเธ”เธเธฒเธเธชเธณเน€เธฃเนเธ!\n\n' +
+    '๐“ ' + jd.job_id + ' โ€” ' + jd.customer + '\n' +
+    '๐”ง เธญเธฒเธเธฒเธฃ: ' + symptom + '\n' +
+    '๐“ เธชเธ–เธฒเธเธฐ: ' + jd.status + '\n\n' +
+    '๐“ธ เธชเนเธเธฃเธนเธเธชเธณเธฃเธงเธเนเธ”เนเธ—เธฑเธเธ—เธต\n' +
+    '๐“ เธเธ”เนเธเธฃเน Location เน€เธเธทเนเธญเธฃเธฐเธเธธเธ•เธณเนเธซเธเนเธ\n' +
+    '๐“ #เน€เธเนเธเธเธฒเธ ' + jd.job_id + ' เน€เธเธทเนเธญเธ”เธนเธชเธ–เธฒเธเธฐ'
+  );
+}
+
+function handleCloseJob(text) {
+  var parts = text.replace(/เธเธดเธ”เธเธฒเธ|#เธเธดเธ”เธเธฒเธ/g, '').trim().split(/\s+/);
+  if (parts.length < 2) {
+    return createTextMessage(
+      'โ เนเธเนเธเธณเธชเธฑเนเธ: #เธเธดเธ”เธเธฒเธ [JobID] [เธญเธฐเนเธซเธฅเน:เธเธณเธเธงเธ] [เธเนเธฒเนเธฃเธ]\nเธ•เธฑเธงเธญเธขเนเธฒเธ: #เธเธดเธ”เธเธฒเธ J0018 เธชเธฒเธขLAN:5,CCTV:3 500'
+    );
+  }
+
+  var jobId = parts[0];
+  var partsUsed = parts[1];
+  var labor = parseInt(parts[2]) || 0;
+
+  var result = callGAS({
+    action: 'เธเธดเธ”เธเธฒเธ',
+    job_id: jobId,
+    parts: partsUsed,
+    labor_cost: labor
+  });
+
+  if (!result || !result.success) return createTextMessage('โ เธเธดเธ”เธเธฒเธเธฅเนเธกเน€เธซเธฅเธง: ' + (result ? result.error : 'unknown'));
+
+  return createTextMessage(
+    'โ… เธเธดเธ”เธเธฒเธ ' + jobId + ' เธชเธณเน€เธฃเนเธ!\n\n' +
+    '๐”ง เธญเธฐเนเธซเธฅเน: ' + partsUsed + '\n' +
+    '๐‘ท เธเนเธฒเนเธฃเธ: ' + labor.toLocaleString() + ' เธเธฒเธ—\n' +
+    '๐’ฐ เธ•เธฑเธ”เธชเธ•เนเธญเธ + เธชเธฃเนเธฒเธเธเธดเธฅเนเธฅเนเธง'
+  );
+}
+
+function handleAcceptJob(jobId, userName) {
+  if (!jobId) return createTextMessage('โ เธฃเธฐเธเธธ JobID เธ”เนเธงเธข เน€เธเนเธ J0018');
+
+  callGAS({
+    action: 'เธญเธฑเธเน€เธ”เธ—เธชเธ–เธฒเธเธฐ',
+    job_id: jobId,
+    status: 'InProgress',
+    technician: userName || 'เธเนเธฒเธ',
+    note: 'เธฃเธฑเธเธเธฒเธเนเธฅเนเธง เธเธณเธฅเธฑเธเนเธเธชเธ–เธฒเธเธ—เธตเน'
+  });
+
+  return createTextMessage('๐‘ท เธฃเธฑเธเธเธฒเธ ' + jobId + ' เนเธฅเนเธง! เธเธณเธฅเธฑเธเนเธเธชเธ–เธฒเธเธ—เธตเนเธเธฃเธฑเธ\n\n๐“ เธชเนเธ Location เน€เธเธทเนเธญเธญเธฑเธเน€เธ”เธ•เธ•เธณเนเธซเธเนเธ');
+}
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+
+function extractJobId(text) {
+  var match = text ? text.match(/j\d{3,4}/i) : null;
+  return match ? match[0].toUpperCase() : null;
+}
+
+function findActiveJob(userId, jobId) {
+  if (jobId) {
+    var result = callGAS({ action: 'เน€เธเนเธเธเธฒเธ', search: jobId });
+    if (result && result.success && result.data && result.data.jobs && result.data.jobs.length > 0) return result.data.jobs[0];
+  }
+  var byUser = callGAS({ action: 'เน€เธเนเธเธเธฒเธ', search: userId });
+  if (byUser && byUser.success && byUser.data && byUser.data.jobs && byUser.data.jobs.length > 0) {
+    var jobs = byUser.data.jobs;
+    for (var i = 0; i < jobs.length; i++) {
+      if (jobs[i].status !== 'Completed' && jobs[i].status !== 'Archived') return jobs[i];
     }
-    entries.push(now);
-    PropertiesService.getScriptProperties().setProperty(key, JSON.stringify(entries));
-    return { allowed: true, remaining: LINE_THROTTLE_MAX_ - entries.length, retryAfter: 0 };
-  } catch (e) {
-    return { allowed: true, remaining: LINE_THROTTLE_MAX_, retryAfter: 0 };
+    return jobs[0];
   }
-}
-
-function recordImageBatch_(userId, groupId, messageId) {
-  if (!userId && !groupId) return 1;
-  try {
-    var key = _batchKey(userId, groupId);
-    var now = Date.now();
-    var raw = PropertiesService.getScriptProperties().getProperty(key);
-    var batch = raw ? JSON.parse(raw) : { images: [], startedAt: now };
-    if (now - batch.startedAt > LINE_BATCH_WINDOW_MS_) {
-      batch = { images: [], startedAt: now };
+  var all = callGAS({ action: 'เน€เธเนเธเธเธฒเธ', search: '' });
+  if (all && all.success && all.data && all.data.jobs && all.data.jobs.length > 0) {
+    var allJobs = all.data.jobs;
+    for (var j = 0; j < allJobs.length; j++) {
+      if (allJobs[j].status === 'เธฃเธญเธ”เธณเน€เธเธดเธเธเธฒเธฃ') return allJobs[j];
     }
-    batch.images.push({ messageId: messageId || '', ts: now });
-    PropertiesService.getScriptProperties().setProperty(key, JSON.stringify(batch));
-    return batch.images.length;
-  } catch (e) {
-    return 1;
+    return allJobs[0];
   }
-}
-
-function getBatchCount_(userId, groupId) {
-  if (!userId && !groupId) return 0;
-  try {
-    var key = _batchKey(userId, groupId);
-    var raw = PropertiesService.getScriptProperties().getProperty(key);
-    if (!raw) return 0;
-    var batch = JSON.parse(raw);
-    var now = Date.now();
-    if (!batch || now - batch.startedAt > LINE_BATCH_WINDOW_MS_) return 0;
-    return batch.images ? batch.images.length : 0;
-  } catch (e) {
-    return 0;
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════
-// SECTION 3: UNIFIED JOBID RESOLUTION
-// ══════════════════════════════════════════════════════════════════
-
-/**
- * สกัด JobID จากข้อความ (ลำดับความ)
- * @returns {string} JobID หรือ ''
- */
-function extractJobIdV55_(text) {
-  var match = String(text || '').match(/j\d{3,6}/i);
-  return match ? String(match[0]).toUpperCase() : '';
-}
-
-/**
- * สร้าง JobID แบบอัฐฤษี — ลำดับความ:
- *   1. หาใน text ก่อน
- *   2. ถ้าไม่มี → fallback ไป context (ไม่มีการ validate hint แบบซับซ้อน)
- *   3. ถ้าไม่มี context ทั้งหมด → return null
- *
- * @param {string} text — ข้อความที่อาจมี JobID
- * @param {string} userId
- * @param {string} groupId
- * @returns {string|null} JobID หรือ null
- */
-function resolveJobId_(text, userId, groupId) {
-  // STEP 1: extract from text
-  var fromText = extractJobIdV55_(text);
-  if (fromText) {
-    // หาเจอในข้อความ แล้ว — ไม่สนใจว่า context จะอัพเดทหลังนี้
-    return fromText;
-  }
-
-  // STEP 2: fallback to context (only if user explicitly mentions a work-related word, or for images)
-  var ctx = getContext_(userId, groupId);
-  if (ctx && ctx.jobId) {
-    return ctx.jobId;
-  }
-
-  // STEP 3: nothing found
   return null;
 }
 
 /**
- * สร้างข้อความ UX มาตรฐานให้ผู้ใช้ว่าใช้ Context
+ * เน€เธฃเธตเธขเธ GAS API (เนเธเน UrlFetchApp เนเธ—เธ https module)
  */
-function buildContextHint_(jobId, actionLabel) {
-  if (!jobId) return '';
-  return '\n\nฟ้า จำงาน: ' + jobId +
-         (actionLabel ? ' (สำหรับ' + actionLabel + ')' : '') +
-         '\nพิมพ์ #clear เพื่อล้างบริบท';
-}
-
-/**
- * ข้อความมาตรฐานเมื่อไม่พบ JobID
- */
-function buildMissingJobIdMessage_(mediaType) {
-  var hint = mediaType === 'image'
-    ? '🖼️ รับรูปแล้ว แต่ยังไม่ทราบ JobID\n\n'
-    : '❌ ไม่พบ JobID\n\n';
-
-  return createTextMessage(
-    hint +
-    'วิธีใช้:\n' +
-    '1. พิมพ์ JobID ในข้อความ เช่น "J0001 ถึงแล้ว"\n' +
-    '2. หลังจากนั้นบอทจำ JobID ได้อัตโนมัติ\n' +
-    '3. หรือส่งรูปพร้อมข้อความที่มี JobID'
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════
-// SECTION 4: WEBHOOK ENTRY POINT
-// ══════════════════════════════════════════════════════════════════
-
-function handleLineWebhook(e) {
+function callGAS(body) {
   try {
-    var body = parseLineWebhookBodyV55_(e);
-    var events = body.events || [];
-    var handled = [];
-
-    for (var i = 0; i < events.length; i++) {
-      var eventResult = processLineEventV55_(events[i]);
-      if (eventResult) handled.push(eventResult);
-    }
-
-    return { success: true, handled: handled.length, results: handled };
-  } catch (error) {
-    return { success: false, error: error.toString() };
+    var payload = JSON.stringify(body);
+    var options = {
+      method: 'post',
+      contentType: 'application/json',
+      payload: payload,
+      muteHttpExceptions: true
+    };
+    var response = UrlFetchApp.fetch(LINE_GAS_URL, options);
+    return JSON.parse(response.getContentText());
+  } catch (e) {
+    return { success: false, error: e.toString() };
   }
 }
 
-function processLineEventV55_(event) {
-  event = event || {};
-  var message = event.message || {};
-  var source = event.source || {};
-  var replyToken = event.replyToken || '';
-  var groupId = source.groupId || source.roomId || '';
-  var userId = source.userId || '';
-  var userName = getLineDisplayNameV55_(userId) || 'LINE_USER';
-
-  // ── JOIN EVENT ──
-  if (event.type === 'join' && groupId) {
-    saveLineGroupId_(groupId, replyToken);
-    return { success: true, event_type: 'join', group_id: groupId };
-  }
-
-  if (event.type !== 'message') {
-    return { success: true, skipped: true, reason: 'unsupported_event_type', type: event.type || '' };
-  }
-
-  var responseMessage = processLineMessage(message, userId, userName, groupId);
-  if (responseMessage && replyToken) {
-    replyLineMessage(replyToken, normalizeLineMessagesV55_(responseMessage));
-  }
-
-  return {
-    success: true,
-    user_id: userId,
-    group_id: groupId,
-    message_type: message.type || '',
-    replied: !!(responseMessage && replyToken)
-  };
-}
-
-// ══════════════════════════════════════════════════════════════════
-// SECTION 5: MESSAGE ROUTER
-// ══════════════════════════════════════════════════════════════════
-
-function processLineMessage(message, userId, userName, groupId) {
-  groupId = groupId || '';
-  message = message || {};
-  var text = message.text || '';
-  var hasImage = message.type === 'image';
-  var hasLocation = message.type === 'location';
-
-  // STEP 1: THROTTLE
-  var throttle = shouldThrottle_(userId, groupId);
-  if (!throttle.allowed) {
-    Logger.log('[LINE THROTTLE] user=' + userId + ' group=' + groupId + ' exceeded ' + LINE_THROTTLE_MAX_ + '/min');
-    return createTextMessage('⚠️ คุณส่งข้อความมากเกินไป กรุณาลองใหม่อีก ' + throttle.retryAfter + ' วินาที');
-  }
-
-  // STEP 2: COMMANDS (bypass classification)
-  if (/^(#?clear|ล้างบริบท)/i.test(text)) {
-    clearContext_(userId, groupId);
-    return createTextMessage('✅ ล้างบริบทแล้ว\nบอทจำงาน JobID ล่าสุดได้แล้ว');
-  }
-
-  if (/^(#?help|ช่วยเหลือ|คำสั่ง)/i.test(text)) {
-    return createTextMessage(
-      '📚 คำสั่ง LINE Bot COMPHONE V5.5\n\n' +
-      '📋 งาน:\n' +
-      '#เปิดงาน ลูกค้า|อาการ|ที่อยู่\n' +
-      '#ปิดงาน J0001\n' +
-      '#เช็คงาน J0001\n' +
-      '#เช็คสต็อก [คำค้นหา]\n' +
-      '#เช็คบิล J0001\n' +
-      '#สรุป\n\n' +
-      '📍 สถานะ (ไม่ต้องมี JobID ถ้าบอทจำได้):\n' +
-      'J0001 เดินทาง / ถึงแล้ว / เริ่มงาน\n' +
-      'J0001 งานเสร็จ / ลูกค้าตรวจรับ\n' +
-      'J0001 เก็บเงิน / ปิดงานสมบูรณ์\n\n' +
-      '🖼️ รูป: ส่งรูปพร้อมข้อความ หลังจากนั้นบอทจำ JobID ได้\n\n' +
-      '⚠️ #clear — ล้างบริบท JobID ที่จำไว้'
-    );
-  }
-
-  // STEP 3: CLASSIFY (ONLY by text content, NEVER from context)
-  var classification = classifyMessage(text, hasImage, hasLocation);
-  if (classification.type === 'casual') return null;
-
-  // STEP 4: RESOLVE JobID (text first, then context fallback)
-  // สำหรับ image/location: ใช้ context เป็น fallback ได้
-  var resolvedJobId = null;
-  if (classification.type === 'work_report' || classification.type === 'location_share') {
-    resolvedJobId = resolveJobId_(text, userId, groupId);
-  } else {
-    // สำหรับ text commands/status: ใช้ทั้ง text และ context
-    resolvedJobId = resolveJobId_(text, userId, groupId);
-  }
-
-  // STEP 5: ROUTE
-  switch (classification.type) {
-    case 'command':
-      return handleCommand(classification, text, userId, userName, groupId, resolvedJobId);
-    case 'location_share':
-      return handleLocation(message, userId, userName, groupId, resolvedJobId);
-    case 'work_report':
-      return handlePhotoReport(message, userId, userName, groupId, resolvedJobId);
-    case 'status_update':
-      return handleStatus(classification, text, userId, userName, groupId, resolvedJobId);
-    case 'work_note':
-      return handleWorkNote(classification, text, userId, userName, groupId, resolvedJobId);
-    default:
-      return null;
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════
-// SECTION 6: CLASSIFICATION (text-only, NO context)
-// ══════════════════════════════════════════════════════════════════
-
-function classifyMessage(text, hasImage, hasLocation) {
-  text = String(text || '').trim();
-  var normalized = text.toLowerCase();
-  var jobId = extractJobIdV55_(text); // หาเฉพาะจากข้อความเท่านั้น
-
-  if (/^\/groupid/i.test(text)) return { type: 'command', command: 'get_group_id' };
-  if (/^(#?เปิดงาน|create job)/i.test(text)) return { type: 'command', command: 'open_job', jobId: jobId };
-  if (/^(#?ปิดงาน|close job)/i.test(text)) return { type: 'command', command: 'close_job', jobId: jobId };
-  if (/^(#?เช็คงาน|check job)/i.test(text)) return { type: 'command', command: 'check_job', jobId: jobId };
-  if (/^(#?เช็คสต็อก|check stock)/i.test(text)) return { type: 'command', command: 'check_stock', jobId: jobId };
-  if (/^(#?เช็คบิล|เช็คยอด|check bill)/i.test(text)) return { type: 'command', command: 'check_billing', jobId: jobId };
-  if (/^(#?สรุป|summary)/i.test(text)) return { type: 'command', command: 'summary', jobId: jobId };
-
-  if (hasLocation) return { type: 'location_share', jobId: jobId };
-  if (hasImage) return { type: 'work_report', subType: 'photo', jobId: jobId };
-
-  if (/(เดินทาง|on the way)/i.test(text)) return { type: 'status_update', status_code: 4, jobId: jobId };
-  if (/(ถึงหน้างาน|ถึงแล้ว|arrived)/i.test(text)) return { type: 'status_update', status_code: 5, jobId: jobId };
-  if (/(เริ่มงาน|start work|เริ่ม)/i.test(text)) return { type: 'status_update', status_code: 6, jobId: jobId };
-  if (/(รอชิ้นส่วน|รออะไหล่)/i.test(text)) return { type: 'status_update', status_code: 7, jobId: jobId };
-  if (/(งานเสร็จ|เสร็จแล้ว|done)/i.test(text)) return { type: 'status_update', status_code: 8, jobId: jobId };
-  if (/(ลูกค้าตรวจรับ|ตรวจรับ)/i.test(text)) return { type: 'status_update', status_code: 9, jobId: jobId };
-  if (/(รอเก็บเงิน|รอชำระเงิน)/i.test(text)) return { type: 'status_update', status_code: 10, jobId: jobId };
-  if (/(เก็บเงินแล้ว|ชำระแล้ว)/i.test(text)) return { type: 'status_update', status_code: 11, jobId: jobId };
-  if (/(ปิดงานสมบูรณ์|complete)/i.test(text)) return { type: 'status_update', status_code: 12, jobId: jobId };
-
-  var workScore = countKeywordMatchesV55_(normalized, LINE_WORK_KEYWORDS_V55);
-  var casualScore = countKeywordMatchesV55_(normalized, LINE_CASUAL_KEYWORDS_V55);
-
-  if (jobId || workScore > 0) return { type: 'work_note', jobId: jobId };
-  if (casualScore > 0 || normalized.length < 10) return { type: 'casual' };
-  return { type: 'work_note', jobId: jobId };
-}
-
-// ══════════════════════════════════════════════════════════════════
-// SECTION 7: COMMAND HANDLERS
-// ══════════════════════════════════════════════════════════════════
-
-function handleCommand(classification, text, userId, userName, groupId, resolvedJobId) {
-  groupId = groupId || '';
-  switch (classification.command) {
-    case 'get_group_id':
-      return handleGetGroupId_(groupId, userId);
-    case 'open_job':
-      return handleOpenJob(text, userId, userName, groupId);
-    case 'close_job':
-      return handleCloseJob(text, userId, userName, groupId, resolvedJobId);
-    case 'check_job':
-      return formatCheckJobsV55_(text);
-    case 'check_stock':
-      return formatCheckStockV55_(text);
-    case 'check_billing':
-      return formatCheckBillingV55_(text, userId, groupId, resolvedJobId);
-    case 'summary':
-      return formatSummaryV55_();
-    default:
-      return createTextMessage('❌ ไม่พบคำสั่งที่รองรับ');
-  }
-}
-
-function handleOpenJob(text, userId, userName, groupId) {
-  var payload = parseOpenJobTextV55_(text);
-  payload.changed_by = userName || userId || 'LINE';
-  payload.user = payload.changed_by;
-  var result = callRouterActionV55_('createJob', payload);
-
-  if (!result || result.success === false || result.error) {
-    return createTextMessage('❌ เปิดงานไม่สำเร็จ: ' + (result && (result.error || result.message) || 'unknown'));
-  }
-
-  // บันทึก Context
-  if (result.job_id) {
-    saveContext_(userId, groupId, result.job_id, 'open_job');
-  }
-
-  // ส่ง Flex Message แจ้งกลุ่มช่าง
-  if (typeof notifyNewJobToTechnicians === 'function') {
-    notifyNewJobToTechnicians({
-      job_id: result.job_id,
-      customer_name: payload.customer_name || payload.customer,
-      symptom: payload.symptom,
-      address: payload.address || '',
-      technician: payload.technician || 'ยังไม่มอบหมาย',
-      priority: payload.priority || 'ปกติ',
-      due_date: payload.due_date || '-'
-    });
-  }
-
-  if (typeof createJobFlexMessage_ === 'function') {
-    return createJobFlexMessage_({
-      job_id: result.job_id,
-      customer_name: payload.customer_name || payload.customer,
-      symptom: payload.symptom,
-      address: payload.address || '',
-      technician: payload.technician || 'ยังไม่มอบหมาย',
-      priority: payload.priority || 'ปกติ',
-      due_date: payload.due_date || '-'
-    });
-  }
-
-  return createTextMessage([
-    '✅ เปิดงานสำเร็จ',
-    'JobID: ' + (result.job_id || '-'),
-    'สถานะ: ' + (result.status_label || '-'),
-    'ลูกค้า: ' + (payload.customer_name || payload.customer || '-')
-  ].join('\n'));
-}
-
-function handleCloseJob(text, userId, userName, groupId, resolvedJobId) {
-  var jobId = resolvedJobId || extractJobIdV55_(text);
-  if (!jobId) {
-    return buildMissingJobIdMessage_('text');
-  }
-
-  var result = callRouterActionV55_('transitionJob', {
-    job_id: jobId,
-    status_code: 12,
-    note: 'ปิดงานผ่าน LINE',
-    changed_by: userName || userId || 'LINE'
-  });
-
-  if (!result || result.success === false || result.error) {
-    return createTextMessage('❌ ปิดงานไม่สำเร็จ: ' + (result && (result.error || result.message) || 'unknown'));
-  }
-
-  saveContext_(userId, groupId, jobId, 'close_job');
-
-  if (typeof createStatusFlexMessage_ === 'function') {
-    return createStatusFlexMessage_({ job_id: jobId, changed_by: userName || userId }, result.to_status_label || 'ปิดงานสมบูรณ์');
-  }
-  return createTextMessage('✅ ปิดงานสำเร็จ\nJobID: ' + jobId + '\nสถานะ: ' + (result.to_status_label || 'ปิดงาน'));
-}
-
-// ══════════════════════════════════════════════════════════════════
-// SECTION 8: LOCATION HANDLER
-// ══════════════════════════════════════════════════════════════════
-
-function handleLocation(message, userId, userName, groupId, resolvedJobId) {
-  var jobId = resolvedJobId || extractJobIdV55_(message.title || message.address || '');
-
-  if (!jobId) {
-    return buildMissingJobIdMessage_('location');
-  }
-
-  var update = callRouterActionV55_('updateJobStatus', {
-    job_id: jobId,
-    lat: message.latitude,
-    lng: message.longitude,
-    note: 'อัปเดตพิกัดจาก LINE',
-    changed_by: userName || userId || 'LINE'
-  });
-
-  if (!update || update.error || update.success === false) {
-    return createTextMessage('❌ อัปเดตพิกัดไม่สำเร็จ: ' + (update && update.error || 'unknown'));
-  }
-
-  saveContext_(userId, groupId, jobId, 'location');
-
-  return createTextMessage(
-    '✅ บันทึกพิกัดแล้ว\nJobID: ' + jobId +
-    '\nLat: ' + message.latitude +
-    '\nLng: ' + message.longitude +
-    buildContextHint_(jobId, 'พิกัด')
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════
-// SECTION 9: STATUS HANDLER
-// ══════════════════════════════════════════════════════════════════
-
-function handleStatus(classification, text, userId, userName, groupId, resolvedJobId) {
-  var jobId = resolvedJobId || classification.jobId || extractJobIdV55_(text);
-
-  if (!jobId) {
-    return buildMissingJobIdMessage_('text');
-  }
-
-  var result = callRouterActionV55_('transitionJob', {
-    job_id: jobId,
-    status_code: classification.status_code,
-    note: text || 'อัปเดตสถานะผ่าน LINE',
-    changed_by: userName || userId || 'LINE'
-  });
-
-  if (!result || result.success === false || result.error) {
-    return createTextMessage('❌ อัปเดตสถานะไม่สำเร็จ: ' + (result && (result.error || result.message) || 'unknown'));
-  }
-
-  saveContext_(userId, groupId, jobId, 'status_update');
-
-  if (typeof createStatusFlexMessage_ === 'function') {
-    return createStatusFlexMessage_(
-      { job_id: jobId, changed_by: userName || userId, note: text },
-      result.to_status_label || '-'
-    );
-  }
-
-  return createTextMessage(
-    '✅ อัปเดตสถานะแล้ว\nJobID: ' + jobId +
-    '\nสถานะ: ' + (result.to_status_label || '-') +
-    buildContextHint_(jobId, 'อัปเดตสถานะ')
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════
-// SECTION 10: WORK NOTE HANDLER
-// ══════════════════════════════════════════════════════════════════
-
-function handleWorkNote(classification, text, userId, userName, groupId, resolvedJobId) {
-  var jobId = resolvedJobId || classification.jobId || extractJobIdV55_(text);
-
-  if (!jobId) {
-    // ไม่ใช่ null อีกต่อไป — ต้องบอกผู้ใช้ว่าไม่ได้ทำอะไร
-    return createTextMessage(
-      'ℹ️ ข้อความนี้ยังไม่มี JobID\n' +
-      'ถ้าต้องการบันทึกหมายเหตุ กรุณาระบุ JobID ด้วย เช่น "J0001 หมายเหตุ..."'
-    );
-  }
-
-  var result = callRouterActionV55_('addQuickNote', {
-    job_id: jobId,
-    note: text,
-    user: userName || userId || 'LINE'
-  });
-
-  if (!result || result.success === false || result.error) {
-    return createTextMessage('❌ บันทึกหมายเหตุไม่สำเร็จ: ' + (result && result.error || 'unknown'));
-  }
-
-  saveContext_(userId, groupId, jobId, 'work_note');
-
-  return createTextMessage(
-    '📝 บันทึกหมายเหตุแล้ว\nJobID: ' + jobId +
-    buildContextHint_(jobId, 'หมายเหตุ')
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════
-// SECTION 11: PHOTO REPORT HANDLER
-// ══════════════════════════════════════════════════════════════════
-
-function handlePhotoReport(message, userId, userName, groupId, resolvedJobId) {
-  var jobId = resolvedJobId;
-  var messageId = message.id || '';
-
-  // CASE 1: ไม่พบ JobID ทั้งหมด (ไม่มีใน text และไม่มี context)
-  if (!jobId) {
-    return buildMissingJobIdMessage_('image');
-  }
-
-  // CASE 2: บันทึก Context และ Batch
-  saveContext_(userId, groupId, jobId, 'work_report');
-  var batchCount = recordImageBatch_(userId, groupId, messageId);
-
-  // CASE 3: ส่งเข้าคิว Queue
-  if (typeof queuePhotoFromLINE === 'function') {
-    var queueResult = queuePhotoFromLINE(messageId, jobId, userName || userId || 'LINE');
-    if (queueResult && !queueResult.error) {
-      var batchHint = batchCount > 1 ? ' (รูปที่ ' + batchCount + ' ในช่วง 8 วิ)' : '';
-      return createTextMessage(
-        '📷 รับรูปแล้ว' + batchHint + '\n' +
-        'JobID: ' + jobId + '\n' +
-        'QueueID: ' + (queueResult.queueId || '-') + '\n' +
-        (queueResult.message || 'รอประมวลผลอัตโนมัติ') +
-        buildContextHint_(jobId, 'รูป')
-      );
-    }
-    return createTextMessage('❌ รับรูปแล้ว แต่เข้าคิวไม่สำเร็จ: ' + (queueResult && queueResult.error || 'unknown'));
-  }
-
-  // FALLBACK: ยังไม่มี queuePhoto
-  return createTextMessage(
-    '📷 รับรูปแล้ว\nJobID: ' + jobId + '\n' +
-    'หมายเหตุ: ยังไม่เปิดใช้งานคิวรูปภาพอัตโนมัติ' +
-    buildContextHint_(jobId, 'รูป')
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════
-// SECTION 12: GROUP ID HELPERS
-// ══════════════════════════════════════════════════════════════════
-
-function handleGetGroupId_(groupId, userId) {
-  if (!groupId) {
-    return createTextMessage('คำสั่งนี้ใช้ได้เฉพาะใน LINE Group เท่านั้น\nกรุณาเพิ่ม Bot เข้ากลุ่มก่อน แล้วพิมพ์ /groupid');
-  }
-  return createTextMessage('LINE Group ID ของกลุ่มนี้:\n\n' + groupId + '\n\nคัดลอก ID นี้ไปตั้งค่าในระบบได้เลย');
-}
-
-function saveLineGroupId_(groupId, replyToken) {
-  if (!groupId) return;
+function callAndFormat(action, params, formatter) {
   try {
-    var ss = SpreadsheetApp.openById(getConfig('DB_SS_ID'));
-    var logSheet = ss.getSheetByName('DB_ACTIVITY_LOG');
-    if (logSheet) {
-      logSheet.appendRow([
-        new Date(),
-        'LINE_JOIN',
-        groupId,
-        'Bot ถูกเพิ่มเข้ากลุ่ม',
-        'LINE_BOT'
-      ]);
+    var body = { action: action };
+    var keys = Object.keys(params);
+    for (var i = 0; i < keys.length; i++) {
+      body[keys[i]] = params[keys[i]];
     }
-    if (replyToken) {
-      replyLineMessage(replyToken, [createTextMessage(
-        'สวัสดี! COMPHONE Bot พร้อมใช้งานแล้ว\n\nGroup ID ของกลุ่มนี้:\n' + groupId + '\n\nพิมพ์ /groupid เพื่อดู ID ได้ตลอดเวลา'
-      )]);
-    }
-  } catch (err) {
-    // ไม่ต้อง throw เพื่อไม่ให้ webhook ล้ม
+    var result = callGAS(body);
+    if (result && result.success && result.data) return formatter(result.data);
+    return createTextMessage('โ เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธ”เธถเธเธเนเธญเธกเธนเธฅเนเธ”เน');
+  } catch (e) {
+    return createTextMessage('โ ๏ธ Error: ' + e.toString());
   }
-}
-
-// ══════════════════════════════════════════════════════════════════
-// SECTION 13: LINE API HELPERS
-// ══════════════════════════════════════════════════════════════════
-
-function replyLineMessage(replyToken, messages) {
-  var channelToken = getConfig('LINE_CHANNEL_ACCESS_TOKEN') || '';
-  if (!channelToken || !replyToken) return { success: false, error: 'LINE reply configuration missing' };
-  return callLineMessagingApiV55_('https://api.line.me/v2/bot/message/reply', {
-    replyToken: replyToken,
-    messages: normalizeLineMessagesV55_(messages)
-  }, channelToken);
-}
-
-function pushLineMessage(to, messages) {
-  var channelToken = getConfig('LINE_CHANNEL_ACCESS_TOKEN') || '';
-  if (!channelToken || !to) return { success: false, error: 'LINE push configuration missing' };
-  return callLineMessagingApiV55_('https://api.line.me/v2/bot/message/push', {
-    to: to,
-    messages: normalizeLineMessagesV55_(messages)
-  }, channelToken);
-}
-
-function sendLineNotify(payload) {
-  payload = payload || {};
-  var targetUserId = payload.userId || payload.to || getConfig('LINE_DEFAULT_PUSH_USER_ID') || '';
-  if (!targetUserId) {
-    return { success: false, error: 'LINE_DEFAULT_PUSH_USER_ID not configured' };
-  }
-  return pushLineMessage(targetUserId, createTextMessage(payload.message || ''));
 }
 
 function createTextMessage(text) {
+  return { type: 'text', text: text };
+}
+
+function createQuickReply(jobId) {
   return {
-    type: 'text',
-    text: String(text || '').substring(0, 5000)
+    type: 'quick',
+    items: [
+      { type: 'action', action: { type: 'location', label: '๐“ เธชเนเธเธเธดเธเธฑเธ”' } },
+      { type: 'action', action: { type: 'message', label: '๐“ธ เธชเนเธเธฃเธนเธ', text: 'เธชเนเธเธฃเธนเธเธเธฒเธ ' + jobId } },
+      { type: 'action', action: { type: 'message', label: 'โ… เธเธดเธ”เธเธฒเธ', text: '#เธเธดเธ”เธเธฒเธ ' + jobId } }
+    ]
   };
 }
 
-// ══════════════════════════════════════════════════════════════════
-// SECTION 14: FORMATTERS
-// ══════════════════════════════════════════════════════════════════
-
-function formatCheckJobsV55_(text) {
-  var searchText = String(text || '').replace(/^(#?เช็คงาน|check job)/i, '').trim();
-  var dashboard = callRouterActionV55_('getDashboardData', {});
-  var jobs = (dashboard && dashboard.jobs) || [];
-  var filtered = [];
-
-  for (var i = 0; i < jobs.length; i++) {
-    var job = jobs[i] || {};
-    if (!searchText || String(job.id).indexOf(searchText) > -1 || String(job.customer).indexOf(searchText) > -1) {
-      filtered.push(job);
-    }
-    if (filtered.length >= 5) break;
-  }
-
-  if (!filtered.length) return createTextMessage('ไม่พบงานที่ค้นหา');
-
-  var lines = ['รายการงานล่าสุด'];
-  for (var j = 0; j < filtered.length; j++) {
-    lines.push((j + 1) + '. ' + filtered[j].id + ' | ' + filtered[j].customer + ' | ' + filtered[j].status);
-  }
-  return createTextMessage(lines.join('\n'));
+function getStatusEmoji(s) {
+  if (!s) return '๐“';
+  if (s === 'เธฃเธญเธ”เธณเน€เธเธดเธเธเธฒเธฃ') return 'โณ';
+  if (s === 'InProgress' || s === 'เธเธณเธฅเธฑเธเธ—เธณ') return '๐”';
+  if (s === 'Completed' || s === 'เน€เธชเธฃเนเธเนเธฅเนเธง') return 'โ…';
+  if (s === 'เธขเธเน€เธฅเธดเธ') return 'โ';
+  return '๐“';
 }
 
-function formatCheckStockV55_(text) {
-  var keyword = String(text || '').replace(/^(#?เช็คสต็อก|check stock)/i, '').trim().toLowerCase();
-  var dashboard = callRouterActionV55_('getDashboardData', {});
-  var items = (dashboard && dashboard.inventory) || [];
-  var filtered = [];
-
-  for (var i = 0; i < items.length; i++) {
-    var item = items[i] || {};
-    var haystack = (String(item.code || '') + ' ' + String(item.name || '')).toLowerCase();
-    if (!keyword || haystack.indexOf(keyword) > -1) filtered.push(item);
-    if (filtered.length >= 5) break;
+function formatJobList(data) {
+  if (!data.jobs || data.jobs.length === 0) return createTextMessage('๐“ เนเธกเนเธกเธตเธเธฒเธ');
+  var lines = [];
+  var max = Math.min(data.jobs.length, 10);
+  for (var i = 0; i < max; i++) {
+    var j = data.jobs[i];
+    lines.push(j.job_id + ' | ' + j.customer + ' | ' + getStatusEmoji(j.status) + ' ' + j.status);
   }
+  return createTextMessage('๐“ เธเธฒเธ ' + data.count + ' เธฃเธฒเธขเธเธฒเธฃ:\n\n' + lines.join('\n'));
+}
 
-  if (!filtered.length) return createTextMessage('ไม่พบรายการสต็อก');
+function formatSummary(data) {
+  return createTextMessage(
+    '๐“ เธชเธฃเธธเธเธเธฒเธเธงเธฑเธเธเธตเน\n\n' +
+    '๐“ เธ—เธฑเนเธเธซเธกเธ”: ' + (data.total || 0) + '\nโณ เธฃเธญเธ”เธณเน€เธเธดเธเธเธฒเธฃ: ' + (data.pending || 0) + '\n๐” เธเธณเธฅเธฑเธเธ—เธณ: ' + (data.inProgress || 0) + '\nโ… เน€เธชเธฃเนเธเนเธฅเนเธง: ' + (data.completed || 0)
+  );
+}
 
-  var lines = ['สต็อกที่ค้นหา'];
-  for (var j = 0; j < filtered.length; j++) {
-    lines.push((j + 1) + '. ' + filtered[j].code + ' | ' + filtered[j].name + ' | คงเหลือ ' + Number(filtered[j].qty || 0));
+function formatStock(data) {
+  if (!data.items || data.items.length === 0) return createTextMessage('๐“ฆ เนเธกเนเธกเธตเธเนเธญเธกเธนเธฅ');
+  var lines = [];
+  var max = Math.min(data.items.length, 10);
+  for (var i = 0; i < max; i++) {
+    var it = data.items[i];
+    lines.push((it.qty < 5 ? '๐”ด' : 'โ…') + ' ' + it.name + ' โ€” ' + it.qty + ' เธเธดเนเธ');
   }
-  return createTextMessage(lines.join('\n'));
+  return createTextMessage('๐“ฆ เธชเธ•เนเธญเธ:\n\n' + lines.join('\n'));
 }
 
-function formatCheckBillingV55_(text, userId, groupId, resolvedJobId) {
-  var jobId = resolvedJobId || extractJobIdV55_(text);
-  if (!jobId) {
-    return createTextMessage(
-      '📋 วิธีใช้: #เช็คบิล [JobID]\n' +
-      'ตัวอย่าง: #เช็คบิล J0001\n\n' +
-      'หรือ: #เช็คยอด J0001'
-    );
-  }
-
-  var result = callRouterActionV55_('getBilling', { job_id: jobId });
-  if (!result || result.success === false || !result.billing) {
-    return createTextMessage('❌ ไม่พบข้อมูลบิลสำหรับ ' + jobId + '\n' + (result && result.error || ''));
-  }
-
-  var b = result.billing;
-  var statusEmoji = b.payment_status === 'PAID' ? '✅' : (b.payment_status === 'PARTIAL' ? '🔶' : '⏳');
-  var statusLabel = b.payment_status === 'PAID' ? 'ชำระแล้ว' : (b.payment_status === 'PARTIAL' ? 'ชำระบางส่วน' : 'ยังไม่ชำระ');
-
-  var lines = [
-    statusEmoji + ' ข้อมูลบิล ' + jobId,
-    '👤 ลูกค้า: ' + (b.customer_name || '-'),
-    '💰 ยอดรวม: ฿' + Number(b.total_amount || 0).toLocaleString(),
-    '✅ ชำระแล้ว: ฿' + Number(b.amount_paid || 0).toLocaleString(),
-    '📌 คงค้าง: ฿' + Number(b.balance_due || 0).toLocaleString(),
-    '🏷️ สถานะ: ' + statusLabel
-  ];
-
-  if (b.transaction_ref) lines.push('🔖 Ref: ' + b.transaction_ref);
-  if (b.paid_at) lines.push('🕒 ชำระเมื่อ: ' + String(b.paid_at).substring(0, 10));
-
-  return createTextMessage(lines.join('\n'));
-}
-
-function formatSummaryV55_() {
-  var dashboard = callRouterActionV55_('getDashboardData', {});
-  var summary = dashboard && dashboard.summary ? dashboard.summary : {};
-  if (typeof createSummaryFlexMessage_ === 'function') {
-    return createSummaryFlexMessage_(summary);
-  }
-  var revenue = summary.revenue || {};
-  return createTextMessage([
-    'สรุป COMPHONE SUPER APP V5.5',
-    'งานทั้งหมด: ' + Number(summary.totalJobs || 0),
-    'สต็อกต่ำ: ' + Number(summary.lowStock || 0),
-    'งานค้าง: ' + Number(summary.overdueJobs || 0),
-    'รายได้วันนี้: ' + Number(revenue.today || 0),
-    'รายได้สัปดาห์: ' + Number(revenue.week || 0),
-    'รายได้เดือน: ' + Number(revenue.month || 0)
-  ].join('\n'));
-}
-
-// ══════════════════════════════════════════════════════════════════
-// SECTION 15: UTILITIES
-// ══════════════════════════════════════════════════════════════════
-
-function callRouterActionV55_(action, payload) {
-  if (typeof routeActionV55 === 'function') {
-    return routeActionV55(action, payload || {});
-  }
-  var globalScope = typeof globalThis !== 'undefined' ? globalThis : this;
-  var fn = globalScope[action];
-  if (typeof fn !== 'function') return { success: false, error: 'Action not available: ' + action };
-  return fn(payload || {});
-}
-
-function parseLineWebhookBodyV55_(e) {
-  if (!e || !e.postData || !e.postData.contents) return {};
-  return JSON.parse(e.postData.contents || '{}');
-}
-
-function verifyLineSignature_(e) {
-  try {
-    var secret = getConfig('LINE_CHANNEL_SECRET') || '';
-    if (!secret) return true;
-    var signature = (e.parameter && e.parameter['X-Line-Signature']) ||
-                    (e.headers && e.headers['X-Line-Signature']) || '';
-    if (!signature) return false;
-    var body = (e.postData && e.postData.contents) || '';
-    var key = Utilities.newBlob(secret).getBytes();
-    var data = Utilities.newBlob(body).getBytes();
-    var hmac = Utilities.computeHmacSha256Signature(data, key);
-    var computed = Utilities.base64Encode(hmac);
-    return computed === signature;
-  } catch (err) {
-    Logger.log('verifyLineSignature_ error: ' + err);
-    return false;
-  }
-}
-
-function normalizeLineMessagesV55_(messages) {
-  if (!messages) return [];
-  return Array.isArray(messages) ? messages : [messages];
-}
-
-function callLineMessagingApiV55_(url, payload, channelToken) {
-  try {
-    var response = UrlFetchApp.fetch(url, {
-      method: 'post',
-      contentType: 'application/json',
-      headers: { Authorization: 'Bearer ' + channelToken },
-      payload: JSON.stringify(payload),
-      muteHttpExceptions: true
-    });
-    var text = response.getContentText() || '{}';
-    return { success: response.getResponseCode() >= 200 && response.getResponseCode() < 300, status: response.getResponseCode(), body: text };
-  } catch (error) {
-    return { success: false, error: error.toString() };
-  }
-}
-
-function parseOpenJobTextV55_(text) {
-  text = String(text || '').replace(/^(#?เปิดงาน|create job)/i, '').trim();
-  var parts = text.split('|');
-  return {
-    customer_name: String(parts[0] || 'ลูกค้าใหม่').trim(),
-    symptom: String(parts[1] || 'รับงานจาก LINE').trim(),
-    note: String(parts[2] || '').trim(),
-    source: 'LINE'
-  };
-}
-
-function countKeywordMatchesV55_(text, keywords) {
-  var count = 0;
-  for (var i = 0; i < keywords.length; i++) {
-    if (text.indexOf(String(keywords[i]).toLowerCase()) > -1) count++;
-  }
-  return count;
-}
-
-function getLineDisplayNameV55_(userId) {
-  var mapJson = getConfig('LINE_USER_MAP_JSON') || '{}';
-  try {
-    var map = JSON.parse(mapJson);
-    return map[userId] || '';
-  } catch (error) {
-    return '';
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════
-// SECTION 16: SELF-TEST (for debugging)
-// ══════════════════════════════════════════════════════════════════
-
-/**
- * ทดสอบระบบ Context + Image Flow
- * วิธีใช้: ใน GAS Editor พิมพ์ testContextFlow_()
- */
-function testContextFlow_() {
-  var userId = 'TEST_USER_001';
-  var groupId = '';
-
-  // Test 1: save context
-  saveContext_(userId, groupId, 'J0001', 'status_update');
-  var ctx = getContext_(userId, groupId);
-  Logger.log('Test 1 - Save/Load: ' + (ctx && ctx.jobId === 'J0001' ? 'PASS' : 'FAIL'));
-
-  // Test 2: resolveJobId_ with text
-  var r1 = resolveJobId_('J0002 ถึงแล้ว', userId, groupId);
-  Logger.log('Test 2 - Text priority: ' + (r1 === 'J0002' ? 'PASS' : 'FAIL'));
-
-  // Test 3: resolveJobId_ without text (fallback to context)
-  var r2 = resolveJobId_('', userId, groupId);
-  Logger.log('Test 3 - Context fallback: ' + (r2 === 'J0001' ? 'PASS' : 'FAIL'));
-
-  // Test 4: resolveJobId_ with no context
-  var r3 = resolveJobId_('', 'UNKNOWN_USER', '');
-  Logger.log('Test 4 - No context: ' + (r3 === null ? 'PASS' : 'FAIL'));
-
-  // Test 5: clear context
-  clearContext_(userId, groupId);
-  var ctx2 = getContext_(userId, groupId);
-  Logger.log('Test 5 - Clear: ' + (ctx2 === null ? 'PASS' : 'FAIL'));
-
-  Logger.log('All tests complete. Check results above.');
+function createJobReportCard(jobData, photoUrl, analysis) {
+  return createTextMessage(
+    '๐“ ' + jobData.job_id + ' โ€” ' + jobData.customer + '\n' +
+    '๐”ง ' + (jobData.symptom || '-') + '\n' +
+    '๐“ ' + getStatusEmoji(jobData.status) + ' ' + jobData.status + '\n' +
+    '๐‘ท ' + (jobData.technician || '-') + '\n' +
+    '๐“ธ ' + (photoUrl || 'เนเธกเนเธกเธตเธฃเธนเธเธ เธฒเธ') + '\n' +
+    '๐“ ' + (jobData.folder_url || '-') + '\n' +
+    (analysis ? '\n๐ค– ' + analysis : '')
+  );
 }
