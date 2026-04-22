@@ -65,6 +65,19 @@ window.POLICY = {
 // ------------------------------------------------------------------
 window.__SELF_HEAL_FIX_LOG = []; // { ts: number, cause: string, success: boolean }
 
+// PHASE 26.6 FIX: Persist self-heal fix log — โหลดจาก localStorage ถ้ามี
+(function loadPersistedFixLog() {
+  try {
+    const saved = localStorage.getItem('comphone_self_heal_fix_log');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) window.__SELF_HEAL_FIX_LOG = parsed;
+    }
+  } catch (e) {
+    console.warn('[SELF_HEAL] Failed to load persisted fix log:', e);
+  }
+})();
+
 window.RATE_LIMIT_SELF_HEAL = {
   /**
    * บันทึก fix ที่เกิดขึ้น และตรวจ rate limit
@@ -78,6 +91,11 @@ window.RATE_LIMIT_SELF_HEAL = {
     if (window.__SELF_HEAL_FIX_LOG.length > 100) {
       window.__SELF_HEAL_FIX_LOG = window.__SELF_HEAL_FIX_LOG.slice(-100);
     }
+
+    // PHASE 26.6 FIX: Persist ทุกครั้งที่มีการบันทึก
+    try {
+      localStorage.setItem('comphone_self_heal_fix_log', JSON.stringify(window.__SELF_HEAL_FIX_LOG));
+    } catch (e) {}
 
     // นับ fixes ใน 1 นาที
     const oneMinuteAgo = now - 60000;
@@ -196,6 +214,19 @@ window.ADMIN_CONTROL = function() {
 window.__SAFE_MODE_HEALTH_HISTORY = []; // { ts: number, health: number }
 window.__SAFE_MODE_ACTIVE = false;
 
+// PHASE 26.6 FIX: Persist safe mode health history — โหลดจาก localStorage ถ้ามี
+(function loadPersistedHealthHistory() {
+  try {
+    const saved = localStorage.getItem('comphone_safe_mode_health');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) window.__SAFE_MODE_HEALTH_HISTORY = parsed;
+    }
+  } catch (e) {
+    console.warn('[SAFE_MODE] Failed to load persisted health history:', e);
+  }
+})();
+
 window.SAFE_MODE_MONITOR = {
   /**
    * บันทึก health score แล้วตรวจ safe mode exit condition
@@ -211,6 +242,11 @@ window.SAFE_MODE_MONITOR = {
     if (window.__SAFE_MODE_HEALTH_HISTORY.length > maxEntries) {
       window.__SAFE_MODE_HEALTH_HISTORY = window.__SAFE_MODE_HEALTH_HISTORY.slice(-maxEntries);
     }
+
+    // PHASE 26.6 FIX: Persist ทุกครั้งที่บันทึก
+    try {
+      localStorage.setItem('comphone_safe_mode_health', JSON.stringify(window.__SAFE_MODE_HEALTH_HISTORY));
+    } catch (e) {}
 
     // ถ้า safe mode ทำงานอยู่ → ตรวจ exit condition
     if (window.__SAFE_MODE_ACTIVE) {
