@@ -185,11 +185,31 @@ jobs:
         id: drive_test
         run: |
           echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Test Drive Access"
-          if rclone lsd gdrive: 2>/dev/null; then
-            echo "[✅] Google Drive connected"
+
+          # Test 1: List directories (auth check)
+          if ! rclone lsd gdrive: 2>/dev/null; then
+            echo "[❌] Google Drive authentication FAILED"
+            echo "drive_ok=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          # Test 2: Write a tiny test file (quota/permission check)
+          echo "comphone-test-$(date +%s)" > /tmp/rclone_write_test.txt
+          if rclone copy /tmp/rclone_write_test.txt gdrive:ComphoneBackup/.github_test/ --stats-one-line 2>/dev/null; then
+            echo "[✅] Google Drive write test PASSED"
             echo "drive_ok=true" >> $GITHUB_OUTPUT
           else
-            echo "[❌] Google Drive connection FAILED"
+            echo "[❌] Google Drive write test FAILED"
+            echo ""
+            echo "ทำไมถึงล้มเหลือ:"
+            echo "Service Account มี storage quota หรือไม่ได้รับสิทธิ์เขียนไฟล์ใน Drive folder"
+            echo ""
+            echo "วิธีแก้:"
+            echo "1. ไปที่ Google Drive → ค้นหา folder 'ComphoneBackup'"
+            echo "2. คลิกขวา → Share"
+            echo "3. เพิ่ม email: firebase-adminsdk-fbsvc@linetasksauto.iam.gserviceaccount.com"
+            echo "4. ตั้งค่าสิทธิ์ให้ 'Editor'"
+            echo ""
             echo "drive_ok=false" >> $GITHUB_OUTPUT
             exit 1
           fi
