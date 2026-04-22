@@ -1,6 +1,9 @@
 // COMPHONE SUPER APP V5.5
 // ============================================================
 // LineBot.gs - LINE Messaging Integration
+// Version: 5.6.5 (PHASE 26.4.1)
+// Last Updated: 2025-04-22
+// Deployed via: GitHub Actions (production environment)
 // ============================================================
 
 var LINE_GAS_URL = (typeof getWebAppBaseUrl_ === 'function' ? getWebAppBaseUrl_() : '') || '';

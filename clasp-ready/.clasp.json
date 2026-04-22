@@ -1,4 +1,5 @@
 {
   "scriptId": "1-aoCd5gXoo1dX4FjW62l8JknR3ZPiaf1W7YEmEdtq8gnRzSp4Hwj6043",
-  "rootDir": "."
+  "rootDir": ".",
+  "_comment": "PRODUCTION — ไม่แก้ไขโดยตรง ใช้ GitHub Actions เท่านั้น สำหรับ deploy ไป production"
 }

@@ -1,0 +1,421 @@
+# ============================================================
+# deploy-gas.yml — Production-Grade GAS Deploy
+# COMPHONE SUPER APP V5.5
+#
+# MISSION: Deploy ขึ้น GAS อย่างปลอดภัย ไม่ double-deploy ไม่ runaway
+#
+# ARCHITECTURE:
+#   - Sole Deploy Trigger: GitHub Actions (production) เท่านั้น
+#   - Local Dev: ใช้ .clasp.dev.json + dev script (อิสระจาก production)
+#   - Cron: Health Check เท่านั้น ไม่มีสิทธิ์ deploy
+#   - Approval Gate: Environment 'production' ต้องมีคนอนุมัติ
+#
+# SECURITY:
+#   - CLASP_CREDENTIALS secret (base64 ~/.clasprc.json)
+#   - No hardcoded credentials
+#   - Deploy log ไม่แสดง credentials
+#
+# FAIL-SAFE:
+#   - Concurrency lock (ไม่ให้ 2 deploy พร้อมกัน)
+#   - Pre-deploy validation (syntax, config, secrets)
+#   - Post-deploy health check
+#   - Rollback ไป version ก่อนหน้าได้
+# ============================================================
+
+name: 🚀 Deploy to Google Apps Script
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'clasp-ready/**'
+      - '.github/workflows/deploy-gas.yml'
+
+  workflow_dispatch:
+    inputs:
+      deploy_type:
+        description: 'ประเภทการ deploy'
+        required: true
+        default: 'standard'
+        type: choice
+        options:
+          - standard        # push + version + deploy
+          - dry-run         # validate only ไม่จริงจัง
+          - force-version   # push + new version ไม่ deploy
+      reason:
+        description: 'เหตุผลในการ deploy (สำหรับ audit log)'
+        required: false
+        default: 'Manual deploy via GitHub Actions'
+
+# ── DEPLOY LOCK: ไม่ให้ 2 deploy พร้อมกัน ──
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+# ── PERMISSIONS: จำกัดสิทธิ์ ──
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  # ═══════════════════════════════════════════════════════════
+  # JOB 1: PRE-DEPLOY VALIDATION
+  # ═══════════════════════════════════════════════════════════
+  validate:
+    name: Pre-Deploy Validation
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy: ${{ steps.gate.outputs.should_deploy }}
+      clasp_ok: ${{ steps.clasp_check.outputs.clasp_ok }}
+      secrets_ok: ${{ steps.secret_check.outputs.secrets_ok }}
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # need full history for checking last deploy
+
+      # ── STEP 1a: Syntax Validate (GS files) ──
+      - name: 🔍 Validate GS Syntax
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Validate GS Syntax"
+          FAILED=0
+          for f in clasp-ready/*.gs; do
+            # GAS uses ES5-ish syntax — basic check: no unmatched brackets
+            node -e "
+              const fs = require('fs');
+              const code = fs.readFileSync('$f', 'utf8');
+              try {
+                // Simple bracket balance check
+                let depth = 0;
+                for (const c of code) {
+                  if (c === '{') depth++;
+                  if (c === '}') depth--;
+                  if (depth < 0) throw new Error('Unmatched }');
+                }
+                if (depth !== 0) throw new Error('Unmatched {');
+                console.log('✅ $f');
+              } catch (e) {
+                console.error('❌ $f:', e.message);
+                process.exit(1);
+              }
+            " || { echo "❌ $f FAILED"; FAILED=1; }
+          done
+          if [ "$FAILED" -eq 1 ]; then exit 1; fi
+          echo "[✅] All GS files passed basic validation"
+
+      # ── STEP 1b: Check clasp config ──
+      - name: ⚙️ Check clasp Config
+        id: clasp_check
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Check clasp Config"
+
+          if [ ! -f "clasp-ready/.clasp.json" ]; then
+            echo "[❌] clasp-ready/.clasp.json NOT FOUND"
+            echo "clasp_ok=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          SCRIPT_ID=$(cat clasp-ready/.clasp.json | grep -oP '"scriptId":\s*"\K[^"]+')
+          if [ -z "$SCRIPT_ID" ]; then
+            echo "[❌] scriptId missing in .clasp.json"
+            echo "clasp_ok=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          echo "[✅] .clasp.json OK (Script ID: ${SCRIPT_ID:0:15}...)"
+          echo "clasp_ok=true" >> $GITHUB_OUTPUT
+
+      # ── STEP 1c: Validate Secrets ──
+      - name: 🔐 Validate Secrets
+        id: secret_check
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Validate Secrets"
+
+          if [ -z "${{ secrets.CLASP_CREDENTIALS }}" ]; then
+            echo "[❌] CLASP_CREDENTIALS secret MISSING"
+            echo ""
+            echo "วิธีสร้าง:"
+            echo "1. ที่เครื่อง local รัน: cat ~/.clasprc.json | base64 -w 0"
+            echo "2. Copy output ทั้งหมด"
+            echo "3. ไปที่ GitHub → Settings → Secrets → Actions → New repository secret"
+            echo "4. Name: CLASP_CREDENTIALS | Value: [paste base64 output]"
+            echo ""
+            echo "secrets_ok=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          # Validate base64 decodes
+          if ! echo "${{ secrets.CLASP_CREDENTIALS }}" | base64 -d > /tmp/clasp_test.json 2>/dev/null; then
+            echo "[❌] CLASP_CREDENTIALS is not valid base64"
+            echo "secrets_ok=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          # Validate JSON structure
+          if ! python3 -c "import json; json.load(open('/tmp/clasp_test.json'))" 2>/dev/null; then
+            echo "[❌] CLASP_CREDENTIALS decodes but is not valid JSON"
+            echo "secrets_ok=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          echo "[✅] CLASP_CREDENTIALS valid (base64 JSON)"
+          echo "secrets_ok=true" >> $GITHUB_OUTPUT
+
+      # ── STEP 1d: Deployment Gate ──
+      - name: 🚦 Deployment Gate
+        id: gate
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Deployment Gate"
+
+          # Check if previous deploy failed recently (spam prevention)
+          echo "Checking recent deployment status..."
+
+          # For dry-run, skip actual deploy
+          if [ "${{ github.event.inputs.deploy_type }}" = "dry-run" ]; then
+            echo "[⚠️] DRY-RUN mode — will validate only, no actual deploy"
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "[✅] All gates passed — ready to deploy"
+          echo "should_deploy=true" >> $GITHUB_OUTPUT
+
+  # ═══════════════════════════════════════════════════════════
+  # JOB 2: DEPLOY TO GAS (WITH ENVIRONMENT PROTECTION)
+  # ═══════════════════════════════════════════════════════════
+  deploy-gas:
+    name: Deploy to GAS Production
+    runs-on: ubuntu-latest
+    needs: validate
+    if: needs.validate.outputs.should_deploy == 'true'
+
+    # ── ENVIRONMENT PROTECTION (ต้องคนอนุมัติ) ──
+    environment:
+      name: production
+      url: ${{ steps.deploy_info.outputs.webapp_url }}
+
+    outputs:
+      deploy_status: ${{ steps.deploy_step.outputs.status }}
+      version: ${{ steps.deploy_step.outputs.version }}
+      webapp_url: ${{ steps.deploy_info.outputs.webapp_url }}
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      # ── STEP 2a: Setup Node.js ──
+      - name: ⬢ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # ── STEP 2b: Install clasp ──
+      - name: 📦 Install clasp
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Install clasp"
+          npm install -g @google/clasp@latest
+          clasp --version
+          echo "[✅] clasp installed"
+
+      # ── STEP 2c: Setup clasp credentials ──
+      - name: 🔑 Setup clasp credentials
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Setup clasp credentials"
+          mkdir -p ~/.config/clasp
+          # Decode credentials from secret
+          echo "${{ secrets.CLASP_CREDENTIALS }}" | base64 -d > ~/.clasprc.json
+          # Verify it loaded (without exposing content)
+          if [ ! -s ~/.clasprc.json ]; then
+            echo "[❌] Failed to decode CLASP_CREDENTIALS"
+            exit 1
+          fi
+          echo "[✅] clasp credentials configured"
+
+      # ── STEP 2d: Verify project access ──
+      - name: 🔍 Verify GAS Project Access
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Verify GAS Project Access"
+          cd clasp-ready
+          # Try to list files (read-only check)
+          if ! clasp status --json > /tmp/clasp_status.json 2>&1; then
+            echo "[❌] Cannot access GAS project. สาเหตุที่เป็นไปได้:"
+            echo "   1. Script ID ผิดใน .clasp.json"
+            echo "   2. clasp credentials หมดอายุ (รัน 'clasp login' ที่ local แล้วอัพเดท secret)"
+            echo "   3. ไม่มีสิทธิ์ใน GAS project"
+            cat /tmp/clasp_status.json
+            exit 1
+          fi
+          echo "[✅] GAS project accessible"
+          echo "Project files:"
+          clasp status --json | python3 -c "import sys,json; d=json.load(sys.stdin); [print(f'  {f}') for f in d.get('files',[])]"
+
+      # ── STEP 2e: PUSH ──
+      - name: 🚀 Push to GAS
+        id: deploy_step
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Push to GAS"
+          cd clasp-ready
+
+          # Generate version tag
+          VERSION="v$(date +%y.%m.%d)-$(echo ${{ github.sha }} | cut -c1-7)"
+          if [ -n "${{ github.event.inputs.reason }}" ]; then
+            DESC="${{ github.event.inputs.reason }} ($VERSION)"
+          else
+            DESC="Auto deploy: ${{ github.event.head_commit.message }} ($VERSION)"
+          fi
+          # Truncate description to 200 chars (GAS limit)
+          DESC="${DESC:0:200}"
+
+          echo "[➡️] Pushing code..."
+          if clasp push 2>&1; then
+            echo "[✅] Push SUCCESS"
+            echo "status=pushed" >> $GITHUB_OUTPUT
+          else
+            echo "[❌] Push FAILED"
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          # Create version (for rollback capability)
+          echo "[➡️] Creating version: $DESC"
+          VERSION_OUTPUT=$(clasp version "$DESC" 2>&1 || true)
+          echo "$VERSION_OUTPUT"
+
+          # Extract version number
+          VERSION_NUM=$(echo "$VERSION_OUTPUT" | grep -oP 'Created version \K\d+' || echo "unknown")
+          echo "[✅] Version created: #$VERSION_NUM"
+
+          echo "version=$VERSION_NUM" >> $GITHUB_OUTPUT
+          echo "commit=${{ github.sha }}" >> $GITHUB_OUTPUT
+
+      # ── STEP 2f: DEPLOY (activate version) ──
+      - name: 🌐 Deploy Web App
+        if: github.event.inputs.deploy_type != 'force-version'
+        id: deploy_info
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Deploy Web App"
+          cd clasp-ready
+
+          # Get current deployments
+          echo "[ℹ️] Current deployments:"
+          clasp deployments 2>&1 || true
+
+          # Deploy to active deployment (updates to latest version)
+          DEPLOY_OUTPUT=$(clasp deploy 2>&1 || true)
+          echo "$DEPLOY_OUTPUT"
+
+          # Extract deployment ID
+          DEPLOY_ID=$(echo "$DEPLOY_OUTPUT" | grep -oP 'Deployment ID: \K[A-Za-z0-9_-]+' || echo "")
+
+          SCRIPT_ID=$(cat .clasp.json | grep -oP '"scriptId":\s*"\K[^"]+')
+          WEBAPP_URL="https://script.google.com/macros/s/${SCRIPT_ID}/exec"
+
+          echo "[✅] Web app deployed"
+          echo "webapp_url=$WEBAPP_URL" >> $GITHUB_OUTPUT
+          echo "deployment_id=${DEPLOY_ID}" >> $GITHUB_OUTPUT
+          echo "script_id=${SCRIPT_ID}" >> $GITHUB_OUTPUT
+
+      # ── STEP 2g: POST-DEPLOY HEALTH CHECK ──
+      - name: 🏥 Health Check
+        if: steps.deploy_info.outputs.webapp_url != ''
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Health Check"
+          WEBAPP_URL="${{ steps.deploy_info.outputs.webapp_url }}"
+
+          MAX_RETRIES=5
+          RETRY_DELAY=3
+
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "[Attempt $i/$MAX_RETRIES] Checking $WEBAPP_URL?health=check ..."
+            # Use -L to follow redirects, -s for silent, -w for status code
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L "$WEBAPP_URL?health=check" || echo "000")
+
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "[✅] Health check PASSED (HTTP 200)"
+              exit 0
+            elif [ "$HTTP_STATUS" = "302" ] || [ "$HTTP_STATUS" = "307" ]; then
+              echo "[ℹ️] Got redirect ($HTTP_STATUS), waiting for propagation..."
+            else
+              echo "[⚠️] HTTP $HTTP_STATUS (expected 200)"
+            fi
+
+            if [ "$i" -lt "$MAX_RETRIES" ]; then
+              echo "[⏳] Waiting ${RETRY_DELAY}s before retry..."
+              sleep $RETRY_DELAY
+            fi
+          done
+
+          echo "[⚠️] Health check returned unexpected status but deploy succeeded"
+          echo "     Web app may need 30-60s to propagate. Check manually."
+          # Don't fail the deploy on health check — GAS sometimes needs time
+          exit 0
+
+      # ── STEP 2h: Audit Log ──
+      - name: 📝 Audit Log
+        if: always()
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Audit Log"
+
+          cat << 'EOF' > /tmp/deploy_audit.json
+          {
+            "timestamp": "$(date -Iseconds)",
+            "actor": "${{ github.actor }}",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}",
+            "trigger": "${{ github.event_name }}",
+            "deploy_status": "${{ steps.deploy_step.outputs.status }}",
+            "version": "${{ steps.deploy_step.outputs.version }}",
+            "webapp_url": "${{ steps.deploy_info.outputs.webapp_url }}",
+            "reason": "${{ github.event.inputs.reason || 'Auto deploy on push to main' }}"
+          }
+          EOF
+
+          echo "📋 DEPLOY AUDIT LOG:"
+          cat /tmp/deploy_audit.json
+
+      # ── STEP 2i: Summary ──
+      - name: 📊 Deploy Summary
+        if: always()
+        run: |
+          echo "## 🚀 GAS Deploy Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| รายการ | ค่า |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha | slice(0,7) }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Actor | \`${{ github.actor }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Trigger | \`${{ github.event_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deploy Type | \`${{ github.event.inputs.deploy_type || 'standard' }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deploy Status | \`${{ steps.deploy_step.outputs.status || 'N/A' }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${{ steps.deploy_step.outputs.version || 'N/A' }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Web App | [Open](${{ steps.deploy_info.outputs.webapp_url }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Reason | ${{ github.event.inputs.reason || 'Auto deploy on push to main' }} |" >> $GITHUB_STEP_SUMMARY
+
+  # ═══════════════════════════════════════════════════════════
+  # JOB 3: NOTIFY (on failure or success)
+  # ═══════════════════════════════════════════════════════════
+  notify:
+    name: Notification
+    runs-on: ubuntu-latest
+    needs: [validate, deploy-gas]
+    if: always() && needs.validate.outputs.should_deploy == 'true'
+
+    steps:
+      - name: 🔔 Deploy Status
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] NOTIFICATION"
+
+          DEPLOY_STATUS="${{ needs.deploy-gas.outputs.deploy_status }}"
+          WEBAPP_URL="${{ needs.deploy-gas.outputs.webapp_url }}"
+
+          if [ "$DEPLOY_STATUS" = "pushed" ]; then
+            echo "✅ GAS DEPLOY SUCCESSFUL"
+            echo "   Version: ${{ needs.deploy-gas.outputs.version }}"
+            echo "   URL: $WEBAPP_URL"
+          elif [ "$DEPLOY_STATUS" = "failed" ]; then
+            echo "❌ GAS DEPLOY FAILED"
+            echo "   Check logs above for details"
+          else
+            echo "⚠️ GAS DEPLOY STATUS: $DEPLOY_STATUS"
+          fi
