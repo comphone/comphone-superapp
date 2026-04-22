@@ -1,5 +1,5 @@
 // ============================================================
-// COMPHONE SUPER APP V5.5 — Service Worker v5.6.0
+// COMPHONE SUPER APP V5.5+ — Service Worker v5.6.5
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ============================================================

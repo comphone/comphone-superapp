@@ -1090,7 +1090,7 @@ function healthCheckV55_() {
 
   return {
     status:    overallOk ? 'healthy' : 'degraded',
-    version:   'V5.5.6',
+    version:   CONFIG.VERSION || '5.6.5',
     timestamp: Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss'),
     elapsed_ms: elapsed,
     checks:    checks
