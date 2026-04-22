@@ -363,6 +363,19 @@ async function AI_EXECUTOR(decision) {
     return { error: 'EXECUTOR_DISABLED' };
   }
 
+  // PHASE 26.5: POLICY CHECK BEFORE EXECUTE
+  if (typeof window.POLICY_CHECK_BEFORE_EXECUTE === 'function') {
+    const policyCheck = window.POLICY_CHECK_BEFORE_EXECUTE(decision);
+    if (policyCheck.blocked) {
+      traceEntry.status = 'policy_blocked';
+      traceEntry.error = policyCheck.reason;
+      window.EXECUTION_TRACE.push(traceEntry);
+      persistTrace();
+      console.error('POLICY_BLOCKED:', policyCheck.reason, decision);
+      return { error: 'POLICY_BLOCKED', reason: policyCheck.reason };
+    }
+  }
+
   // 1. PRE-CONDITION VALIDATION
   const preCheck = validatePreCondition(decision);
   if (!preCheck.valid) {
@@ -450,6 +463,16 @@ async function AI_EXECUTOR(decision) {
     window.EXECUTION_TRACE.push(traceEntry);
     persistTrace();
 
+    // PHASE 26.5: AUDIT LOG
+    if (typeof window.AI_AUDIT_PUSH === 'function') {
+      window.AI_AUDIT_PUSH({
+        type: 'EXECUTION_SUCCESS',
+        action: action,
+        duration: traceEntry.duration,
+        ts: Date.now()
+      });
+    }
+
     return {
       success: true,
       data: result.data,
@@ -471,6 +494,18 @@ async function AI_EXECUTOR(decision) {
 
     console.error('EXECUTION_ERROR:', normalized.type, normalized.message);
     const failure = recordFailure(action);
+
+    // PHASE 26.5: AUDIT LOG
+    if (typeof window.AI_AUDIT_PUSH === 'function') {
+      window.AI_AUDIT_PUSH({
+        type: 'EXECUTION_ERROR',
+        action: action,
+        errorType: normalized.type,
+        errorMessage: normalized.message,
+        ts: Date.now()
+      });
+    }
+
     if (failure.disabled) {
       return { error: normalized.type, message: normalized.message, failureGuard: failure };
     }
@@ -740,6 +775,18 @@ window.AUTO_FIX = async function(cause) {
   const fixId = 'FIX_' + Date.now();
   console.log('[AUTO_FIX] Starting fix for cause:', cause, 'id:', fixId);
 
+  // PHASE 26.5: POLICY CHECK BEFORE FIX
+  if (typeof window.POLICY_CHECK_BEFORE_FIX === 'function') {
+    const policyResult = window.POLICY_CHECK_BEFORE_FIX(cause);
+    if (!policyResult.allowed) {
+      console.warn('[AUTO_FIX] POLICY BLOCKED:', policyResult.reason, 'cause:', cause);
+      if (typeof window.AI_AUDIT_PUSH === 'function') {
+        window.AI_AUDIT_PUSH({ type: 'AUTO_FIX_BLOCKED', cause: cause, reason: policyResult.reason, ts: Date.now() });
+      }
+      return { fix: 'POLICY_BLOCKED', success: false, detail: policyResult.reason };
+    }
+  }
+
   let result = { fix: 'NONE', success: false, detail: '' };
 
   switch (cause) {
@@ -764,6 +811,12 @@ window.AUTO_FIX = async function(cause) {
     case 'API_ERROR':
       // Enter safe mode: disable executor temporarily, force cache usage
       window.__AI_EXECUTOR_ENABLED = false;
+
+      // PHASE 26.5: SAFE MODE MONITOR
+      if (typeof window.SAFE_MODE_MONITOR !== 'undefined' && window.SAFE_MODE_MONITOR.enterSafeMode) {
+        window.SAFE_MODE_MONITOR.enterSafeMode('API_ERROR');
+      }
+
       setTimeout(() => {
         window.__AI_EXECUTOR_ENABLED = true;
         console.log('[AUTO_FIX] Executor re-enabled after API_ERROR cool-down');
@@ -815,6 +868,18 @@ window.AUTO_FIX = async function(cause) {
     success: result.success
   });
 
+  // PHASE 26.5: AUDIT LOG
+  if (typeof window.AI_AUDIT_PUSH === 'function') {
+    window.AI_AUDIT_PUSH({
+      type: 'AUTO_FIX',
+      cause: cause,
+      fix: result.fix,
+      success: result.success,
+      detail: result.detail,
+      ts: Date.now()
+    });
+  }
+
   console.log('[AUTO_FIX] Completed:', result);
   return result;
 };
@@ -828,6 +893,13 @@ window.START_SELF_HEAL = function() {
     console.log('[SELF_HEAL] Already running');
     return;
   }
+
+  // PHASE 26.5: SYSTEM CONTROL GUARD
+  if (!window.SYSTEM_CONTROL || !window.SYSTEM_CONTROL.selfHeal) {
+    console.warn('[SELF_HEAL] BLOCKED by SYSTEM_CONTROL.selfHeal = false');
+    return;
+  }
+
   window.__SELF_HEAL_INTERVAL = setInterval(function() {
     window.__SELF_HEAL_STATS.runs++;
     window.__SELF_HEAL_STATS.lastRun = Date.now();
