@@ -283,7 +283,7 @@ async function loadTORList() {
     const res = await window.GAS_EXECUTE('listTOR', { status: '' });
     if (res && res.success && res.data && res.data.count > 0) {
       container.innerHTML = `
-        <div style="font-size:12px;font-weight:700;margin-bottom:6px">รายการ TOR ล่าสุด (${res.count})</div>
+        <div style="font-size:12px;font-weight:700;margin-bottom:6px">รายการ TOR ล่าสุด (${res.data.count})</div>
         ${res.data.items.slice(0, 5).map(t => `
           <div style="background:#f9fafb;border-radius:10px;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
             <div>
@@ -329,10 +329,10 @@ async function generateTORNow() {
           <div style="font-size:12px;color:#374151;margin-top:6px">${res.data.fields.project} · ${res.data.fields.client} · ฿${Number(res.data.fields.budget||0).toLocaleString()}</div>
         </div>
         <div style="display:flex;gap:8px">
-          <button class="btn-setup" style="flex:1;background:#3b82f6" onclick="exportTORPdf('${res.tor_id}', \`${escapeHtml(res.html_preview)}\`)">
+          <button class="btn-setup" style="flex:1;background:#3b82f6" onclick="exportTORPdf('${res.data.tor_id}', \`${escapeHtml(res.data.html_preview)}\`)">
             <i class="bi bi-file-earmark-pdf-fill"></i> ออก PDF
           </button>
-          <button class="btn-setup" style="flex:1;background:#6b7280" onclick="previewTOR(\`${escapeHtml(res.html_preview)}\`)">
+          <button class="btn-setup" style="flex:1;background:#6b7280" onclick="previewTOR(\`${escapeHtml(res.data.html_preview)}\`)">
             <i class="bi bi-eye-fill"></i> ดูตัวอย่าง
           </button>
         </div>
@@ -414,8 +414,72 @@ if (typeof window.__AI_METRICS_INTERVAL === 'undefined') {
   window.__AI_METRICS_INTERVAL = setInterval(function() {
     if (document.visibilityState === 'visible') {
       renderBusinessAICards();
+      renderBusinessIntelligence();
     }
   }, 60000);
+}
+
+// ============================================================
+// PHASE 29: AI BUSINESS INTELLIGENCE
+// ============================================================
+async function renderBusinessIntelligence() {
+  const container = document.getElementById('business-ai-intel');
+  if (!container) return;
+  try {
+    const res = await window.GAS_EXECUTE('analyzeBusiness', { period: 'today' });
+    if (res && res.success && res.data) {
+      const d = res.data;
+      const hasAlerts = d.alertCount > 0;
+      const hasRecs = d.recommendationCount > 0;
+      
+      container.innerHTML = `
+        <div style="margin:0 12px 10px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div style="font-size:14px;font-weight:700">วิเคราะห์ธุรกิจ AI</div>
+            <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${hasAlerts?'#fee2e2;color:#991b1b':'#d1fae5;color:#065f46'}">${hasAlerts ? d.alertCount + ' เตือน' : 'ปกติ'}</span>
+          </div>
+          
+          ${hasAlerts ? `
+            <div style="margin-bottom:10px">
+              <div style="font-size:12px;font-weight:600;color:#dc2626;margin-bottom:6px">🔔 Alerts</div>
+              ${d.alerts.map(a => `
+                <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px;margin-bottom:6px">
+                  <div style="font-weight:700;font-size:13px;color:#991b1b">${a.title}</div>
+                  <div style="font-size:12px;color:#7f1d1d;margin-top:2px">${a.message}</div>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+          
+          ${hasRecs ? `
+            <div style="margin-bottom:10px">
+              <div style="font-size:12px;font-weight:600;color:#d97706;margin-bottom:6px">💡 Recommendations</div>
+              ${d.recommendations.slice(0, 3).map(r => `
+                <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px;margin-bottom:6px">
+                  <div style="font-weight:700;font-size:13px;color:#92400e">${r.title}</div>
+                  <div style="font-size:11px;color:#78350f;margin-top:2px">${r.detail}</div>
+                  <div style="font-size:11px;color:#10b981;margin-top:4px">✅ ผลลัพธ์ที่คาด: ${r.estimatedImpact}</div>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+          
+          ${Object.keys(d.predictions).length > 0 ? `
+            <div>
+              <div style="font-size:12px;font-weight:600;color:#7c3aed;margin-bottom:6px">🔮 Predictions</div>
+              <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:10px;padding:10px">
+                ${d.predictions.nextWeekUsage ? `<div style="font-size:12px">ทันนี้ AI คาดว่าจะใช้ ~${d.predictions.nextWeekUsage} ครั้ง</div>` : ''}
+                ${d.predictions.nextWeekRevenue ? `<div style="font-size:12px">คาดรายได้ ~฿${Number(d.predictions.nextWeekRevenue).toLocaleString()}</div>` : ''}
+                ${d.predictions.csatTrend ? `<div style="font-size:12px">แนวโน้ม CSAT: ${d.predictions.csatTrend === 'upward' ? '⬆️ ขึ้น' : d.predictions.csatTrend === 'downward' ? '⬇️ ลง' : '↔️ คงที่'}</div>` : ''}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+  } catch (e) {
+    container.innerHTML = '';
+  }
 }
 
 // ============================================================

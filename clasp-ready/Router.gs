@@ -550,6 +550,14 @@ function dispatchActionV55_(action, payload, args) {
         return logAIUsage_(payload);
 
       // ============================================================
+      // PHASE 29: AI Business Intelligence
+      // ============================================================
+      case 'analyzeBusiness':
+        return analyzeBusiness_(payload);
+      case 'getBusinessAlerts':
+        return getBusinessAlerts_(payload);
+
+      // ============================================================
       // Multi-branch (TASK 7)
       // ============================================================
       case 'getBranchList':
