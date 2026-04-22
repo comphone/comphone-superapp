@@ -15,6 +15,152 @@ var LINE_CASUAL_KEYWORDS_V55 = [
   '555', 'ok', 'โอเค', 'รับทราบ', 'ครับ', 'ค่ะ', 'เดี๋ยว', 'ขอบคุณ', 'ฝนตก', 'รถติด'
 ];
 
+// ── CONTEXT MEMORY & THROTTLE CONFIG ──
+var LINE_CTX_TTL_MS_ = 30 * 60 * 1000;      // 30 นาที
+var LINE_THROTTLE_MAX_ = 12;                // ข้อความต่อนาที
+var LINE_THROTTLE_WINDOW_MS_ = 60 * 1000;   // 1 นาที
+var LINE_BATCH_WINDOW_MS_ = 8 * 1000;       // 8 วินาที สำหรับ batch รูป
+
+// ══════════════════════════════════════════════════════════════════
+// CONTEXT MEMORY — จำงาน JobID ล่าสุดในบริบทของผู้ใช้
+// ══════════════════════════════════════════════════════════════════
+
+function getLineCtxKey_(userId) { return 'LINE_CTX_' + String(userId); }
+function getLineThrottleKey_(userId) { return 'LINE_THR_' + String(userId); }
+function getLineBatchKey_(userId) { return 'LINE_BATCH_' + String(userId); }
+
+/**
+ * ดึงบริบทผู้ใช้ และลบถ้าหมดอายุ
+ * @returns {Object|null} {lastJobId, lastAction, lastTs}
+ */
+function getUserContext_(userId) {
+  if (!userId) return null;
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(getLineCtxKey_(userId));
+    if (!raw) return null;
+    var ctx = JSON.parse(raw);
+    if (!ctx || !ctx.lastTs) return null;
+    if (Date.now() - ctx.lastTs > LINE_CTX_TTL_MS_) {
+      clearUserContext_(userId);
+      return null;
+    }
+    return ctx;
+  } catch (e) {
+    return null;
+  }
+}
+
+function setUserContext_(userId, jobId, action) {
+  if (!userId) return;
+  try {
+    var ctx = {
+      lastJobId: String(jobId || '').toUpperCase(),
+      lastAction: String(action || ''),
+      lastTs: Date.now()
+    };
+    PropertiesService.getScriptProperties().setProperty(getLineCtxKey_(userId), JSON.stringify(ctx));
+  } catch (e) { /* silent */ }
+}
+
+function clearUserContext_(userId) {
+  if (!userId) return;
+  try {
+    PropertiesService.getScriptProperties().deleteProperty(getLineCtxKey_(userId));
+    PropertiesService.getScriptProperties().deleteProperty(getLineBatchKey_(userId));
+  } catch (e) { /* silent */ }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// THROTTLE — กันสแปมป์หลังว่นรวด
+// ══════════════════════════════════════════════════════════════════
+
+function shouldThrottle_(userId) {
+  if (!userId) return { allowed: true, remaining: LINE_THROTTLE_MAX_, retryAfter: 0 };
+  try {
+    var key = getLineThrottleKey_(userId);
+    var raw = PropertiesService.getScriptProperties().getProperty(key);
+    var now = Date.now();
+    var entries = raw ? JSON.parse(raw) : [];
+    // กรองเฉพาะรายการใน window
+    entries = entries.filter(function(ts) { return now - ts < LINE_THROTTLE_WINDOW_MS_; });
+    if (entries.length >= LINE_THROTTLE_MAX_) {
+      var oldest = entries[0];
+      var retryAfter = Math.ceil((oldest + LINE_THROTTLE_WINDOW_MS_ - now) / 1000);
+      return { allowed: false, remaining: 0, retryAfter: Math.max(1, retryAfter) };
+    }
+    entries.push(now);
+    PropertiesService.getScriptProperties().setProperty(key, JSON.stringify(entries));
+    return { allowed: true, remaining: LINE_THROTTLE_MAX_ - entries.length, retryAfter: 0 };
+  } catch (e) {
+    return { allowed: true, remaining: LINE_THROTTLE_MAX_, retryAfter: 0 };
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// BATCH IMAGE — รวมรูปที่ส่งในช่วงสันหนึ่ง
+// ══════════════════════════════════════════════════════════════════
+
+function recordImageBatch_(userId, jobId, messageId) {
+  if (!userId) return 1;
+  try {
+    var key = getLineBatchKey_(userId);
+    var now = Date.now();
+    var raw = PropertiesService.getScriptProperties().getProperty(key);
+    var batch = raw ? JSON.parse(raw) : { images: [], startedAt: now };
+    // รีเซ็ตถ้าหมดเวลาเกิน
+    if (now - batch.startedAt > LINE_BATCH_WINDOW_MS_) {
+      batch = { images: [], startedAt: now };
+    }
+    batch.images.push({ messageId: messageId || '', ts: now });
+    PropertiesService.getScriptProperties().setProperty(key, JSON.stringify(batch));
+    return batch.images.length;
+  } catch (e) {
+    return 1;
+  }
+}
+
+function getBatchCount_(userId) {
+  if (!userId) return 0;
+  try {
+    var key = getLineBatchKey_(userId);
+    var raw = PropertiesService.getScriptProperties().getProperty(key);
+    if (!raw) return 0;
+    var batch = JSON.parse(raw);
+    var now = Date.now();
+    if (!batch || now - batch.startedAt > LINE_BATCH_WINDOW_MS_) return 0;
+    return batch.images ? batch.images.length : 0;
+  } catch (e) {
+    return 0;
+  }
+}
+
+/**
+ * สร้าง JobID แบบอัฐฤษี—หาในข้อความก่อน แล้วหาจาก Context
+ * @returns {string} JobID หรือ ''
+ */
+function extractJobIdSmart_(text, userId, hint) {
+  var fromText = extractJobIdV55_(text);
+  if (fromText) return fromText;
+  var ctx = getUserContext_(userId);
+  if (ctx && ctx.lastJobId) {
+    // ถ้ามี hint (เช่น สถานะ) และ context ตรงกัน ใช้ได้เลย
+    if (!hint || ctx.lastAction === hint) return ctx.lastJobId;
+    // ถ้าไม่มี hint หรือ hint ตรง ก็ใช้ context ได้ (เช่น ส่งรูปไม่มีระบุ JobID)
+    return ctx.lastJobId;
+  }
+  return '';
+}
+
+/**
+ * สร้างข้อความแจ้งผู้ใช้ว่าใช้ Context JobID แทน
+ */
+function buildContextHint_(jobId, actionLabel) {
+  if (!jobId) return '';
+  return '\n\nฟ้า จำงาน: ' + jobId +
+         (actionLabel ? ' (สำหรับ' + actionLabel + ')' : '') +
+         '\nพิมพ์ #clear เพื่อล้างบริบท';
+}
+
 function handleLineWebhook(e) {
   try {
     var body = parseLineWebhookBodyV55_(e);
@@ -70,8 +216,25 @@ function processLineMessage(message, userId, userName, groupId) {
   var text = message.text || '';
   var hasImage = message.type === 'image';
   var hasLocation = message.type === 'location';
-   var classification = classifyMessage(text, hasImage, hasLocation);
+
+  // ── STEP 1: ANTI-SPAM THROTTLE ──
+  var throttle = shouldThrottle_(userId);
+  if (!throttle.allowed) {
+    Logger.log('[LINE THROTTLE] ผู้ใช้ ' + userId + ' ส่งมากเกิน ' + LINE_THROTTLE_MAX_ + ' ข้อความ/นาที');
+    return createTextMessage('⚠️ คุณส่งข้อความมากเกินไป กรุณาลองใหม่อีก ' + throttle.retryAfter + ' วินาที');
+  }
+
+  // ── STEP 2: CLEAR CONTEXT COMMAND ──
+  if (/^(#?clear|ล้างบริบท)/i.test(text)) {
+    clearUserContext_(userId);
+    return createTextMessage('✅ ล้างบริบทแล้ว\nบอทจำงาน JobID ล่าสุดได้แล้ว');
+  }
+
+  // ── STEP 3: SMART CLASSIFICATION ──
+  var classification = classifyMessage(text, hasImage, hasLocation, userId);
   if (classification.type === 'casual') return null;
+
+  // ── STEP 4: ROUTE ──
   switch (classification.type) {
     case 'command':
       return handleCommand(classification, text, userId, userName, groupId);
@@ -88,11 +251,13 @@ function processLineMessage(message, userId, userName, groupId) {
   }
 }
 
-function classifyMessage(text, hasImage, hasLocation) {
+function classifyMessage(text, hasImage, hasLocation, userId) {
   text = String(text || '').trim();
   var normalized = text.toLowerCase();
-  var jobIdMatch = text.match(/j\d{3,6}/i);
-  var jobId = jobIdMatch ? String(jobIdMatch[0]).toUpperCase() : '';
+
+  // ใช้ Smart Extraction: หาในข้อความก่อน ถ้าไม่มีค่อยใช้ Context
+  var jobIdFromText = extractJobIdV55_(text);
+  var jobId = jobIdFromText || extractJobIdSmart_(text, userId, '') || '';
 
   if (/^\/groupid/i.test(text)) return { type: 'command', command: 'get_group_id' };
   if (/^(#?เปิดงาน|create job)/i.test(text)) return { type: 'command', command: 'open_job', jobId: jobId };
