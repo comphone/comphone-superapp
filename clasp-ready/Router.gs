@@ -452,6 +452,8 @@ function dispatchActionV55_(action, payload, args) {
       // ============================================================
       case 'smartAssignTech':
         return smartAssignTech_(payload);
+      case 'smartAssignV2':
+        return smartAssignV2_(payload);
       case 'optimizeRoute':
         return optimizeRoute(
           payload.start_lat || payload.lat || 0,
@@ -520,6 +522,26 @@ function dispatchActionV55_(action, payload, args) {
         return getHealthHistory(payload);
 
       // ============================================================
+      // PHASE 27: Business AI (Tech Companion | Smart Assign V2 | CSAT | TOR)
+      // ============================================================
+      case 'askAI':
+        return askAI_(payload);
+      case 'sendCSAT':
+        return sendCSAT_(payload);
+      case 'recordCSAT':
+        return recordCSAT_(payload);
+      case 'getCSATSummary':
+        return getCSATSummary_(payload);
+      case 'generateTOR':
+        return generateTOR_(payload);
+      case 'exportTORpdf':
+        return exportTORpdf_(payload);
+      case 'listTOR':
+        return listTOR_(payload);
+      case 'getBusinessAIMetrics':
+        return getBusinessAIMetrics_(payload);
+
+      // ============================================================
       // Multi-branch (TASK 7)
       // ============================================================
       case 'getBranchList':
@@ -585,8 +607,9 @@ var APPROVAL_ROLE_PERMISSIONS = {
     // Communication
     'sendLineMessage', 'nudgeTech', 'sendPushToAll', 'savePushSubscription', 'removePushSubscription',
     // AI
-    'smartAssignTech', 'optimizeRoute', 'analyzeWorkImage', 'runJobCompletionQC',
-    'qualityCheck', 'geminiSlipVerify', 'verifyPaymentSlip',
+    'smartAssignTech', 'smartAssignV2', 'optimizeRoute', 'analyzeWorkImage', 'runJobCompletionQC',
+    'qualityCheck', 'geminiSlipVerify', 'verifyPaymentSlip', 'askAI', 'sendCSAT', 'getCSATSummary',
+    'generateTOR', 'exportTORpdf', 'listTOR', 'getBusinessAIMetrics',
     // Auth (self-service)
     'changePassword', 'logoutUser'
   ],
@@ -607,12 +630,15 @@ var APPROVAL_ROLE_PERMISSIONS = {
     'updateJobSchedule', 'createCustomer', 'updateCustomer',
     'createBilling', 'updatePayment', 'markBillingPaid',
     'sendLineMessage', 'nudgeTech', 'nudgeSalesTeam',
+    'askAI', 'smartAssignV2', 'sendCSAT', 'getCSATSummary',
+    'generateTOR', 'exportTORpdf', 'listTOR',
     'changePassword', 'logoutUser'
   ],
   technician: [
     'updateJobStatus', 'transitionJob', 'markJobStatus', 'markDone', 'markWaiting',
     'addQuickNote', 'clockIn', 'clockOut', 'addAppointment',
     'handleProcessPhotos', 'analyzeWorkImage', 'qualityCheck', 'runJobCompletionQC',
+    'askAI',
     'changePassword', 'logoutUser'
   ]
 };
