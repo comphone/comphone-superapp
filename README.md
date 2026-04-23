@@ -44,8 +44,8 @@ git push origin main                                    # GitHub Pages (auto)
 | รายการ | URL |
 |--------|-----|
 | **GAS API** | See `BLUEPRINT.md` §3 |
-| **PWA Mobile** | https://comphone.github.io/comphone-superapp/ |
-| **PC Dashboard** | https://comphone.github.io/comphone-superapp/dashboard_pc.html |
+| **PWA Mobile** | https://comphone.github.io/comphone-superapp/pwa/ |
+| **PC Dashboard** | https://comphone.github.io/comphone-superapp/pwa/dashboard_pc.html |
 | **GitHub** | https://github.com/comphone/comphone-superapp |
 
 ---

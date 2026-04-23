@@ -67,10 +67,10 @@ User (PWA) → GET GAS_URL?action=xxx
 |--------|-----|-------|
 | **GAS Web App (Production)** | `https://script.google.com/macros/s/AKfycbwC8youQ6kfwGZ5DRi0P757KrJh9vhvesE7n8VcVTaj0v54ZbXdpqoJXVh9XzfqwcqtMA/exec` | ✅ Active |
 | **LINE Webhook** | `https://comphone-line-webhook.narinoutagit.workers.dev/line/webhook` | ✅ Active |
-| **PWA Mobile App** | `https://comphone.github.io/comphone-superapp/` | ✅ Active |
-| **PC Dashboard** | `https://comphone.github.io/comphone-superapp/dashboard_pc.html` | ✅ Active |
-| **Executive Dashboard** | `https://comphone.github.io/comphone-superapp/executive_dashboard.html` | ✅ Active |
-| **Monitoring Dashboard** | `https://comphone.github.io/comphone-superapp/monitoring_dashboard.html` | ✅ Active |
+| **PWA Mobile App** | `https://comphone.github.io/comphone-superapp/pwa/` | ✅ Active |
+| **PC Dashboard** | `https://comphone.github.io/comphone-superapp/pwa/dashboard_pc.html` | ✅ Active |
+| **Executive Dashboard** | `https://comphone.github.io/comphone-superapp/pwa/executive_dashboard.html` | ✅ Active |
+| **Monitoring Dashboard** | `https://comphone.github.io/comphone-superapp/pwa/monitoring_dashboard.html` | ✅ Active |
 | **GitHub Repository** | `https://github.com/comphone/comphone-superapp` | ✅ Public |
 | **Google Sheets DB** | `https://docs.google.com/spreadsheets/d/19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA` | ✅ Active |
 | **Google Drive Root** | `https://drive.google.com/drive/folders/1YRZRG9r1Y_jMHg2XFFKYjK4Hx-sW0Eq0` | ✅ Active |
