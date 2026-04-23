@@ -1,9 +1,9 @@
 // ============================================================
-// COMPHONE SUPER APP V5.5+ — Service Worker v5.6.6
+// COMPHONE SUPER APP V5.5+ — Service Worker v5.6.8
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ============================================================
-const CACHE_V = 'comphone-v5.6.6';
+const CACHE_V = 'comphone-v5.6.8';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
 const ASSETS = [

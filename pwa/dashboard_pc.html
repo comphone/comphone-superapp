@@ -7,7 +7,7 @@
 <script src="gas_config.js"></script>
 <script>
   // PHASE 25.3 — GLOBAL VERSION LOCK
-  window.__APP_VERSION = 'v5.6.6';
+  window.__APP_VERSION = 'v5.6.8';
 
   // Cache invalidation on version mismatch
   if (localStorage.__APP_VERSION !== window.__APP_VERSION) {
@@ -2484,7 +2484,7 @@ async function renderSettingsSection() {
     <div class="card-box" style="margin-bottom:16px">
       <div class="card-title"><i class="bi bi-info-circle" style="color:#1e40af"></i> ข้อมูลระบบ</div>
       <table style="width:100%;font-size:13px">
-        <tr><td style="color:#6b7280;padding:6px 12px;width:140px">Version</td><td style="font-weight:600">v${(GAS_CONFIG?.version || '5.6.7')} (GAS) / v5.6.7 (PWA)</td></tr>
+        <tr><td style="color:#6b7280;padding:6px 12px;width:140px">Version</td><td style="font-weight:600">v${(GAS_CONFIG?.version || '491')} (GAS) / v5.6.8 (PWA)</td></tr>
         <tr><td style="color:#6b7280;padding:6px 12px">GAS URL</td><td style="font-size:11px;word-break:break-all;color:#6b7280">${GAS_URL||''}</td></tr>
         <tr><td style="color:#6b7280;padding:6px 12px">Spreadsheet</td><td><a href="https://docs.google.com/spreadsheets/d/19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA" target="_blank" style="color:#1e40af;font-size:12px">เปิด Google Sheets ↗</a></td></tr>
         <tr><td style="color:#6b7280;padding:6px 12px">Deploy Date</td><td>${GAS_CONFIG?.deployDate || '-'}</td></tr>
@@ -2591,7 +2591,7 @@ if ('serviceWorker' in navigator) {
 </script>
 
 <!-- PHASE 25.5 — VERSION BADGE -->
-<div id="version_badge">v5.6.5 | AI:• | LOCK:•</div>
+<div id="version_badge">v5.6.8 | AI:• | LOCK:•</div>
 <script>
 (function updateVersionBadge() {
   const badge = document.getElementById('version_badge');
