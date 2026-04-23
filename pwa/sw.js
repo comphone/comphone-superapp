@@ -165,6 +165,12 @@ async function _flushOfflineQueue_() {
   try {
     db = await new Promise((res, rej) => {
       const r = indexedDB.open(DB_NAME, 1);
+      r.onupgradeneeded = e => {
+        const d = e.target.result;
+        if (!d.objectStoreNames.contains(STORE)) {
+          d.createObjectStore(STORE, { keyPath: 'id', autoIncrement: true });
+        }
+      };
       r.onsuccess = e => res(e.target.result);
       r.onerror   = e => rej(e.target.error);
     });
