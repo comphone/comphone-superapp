@@ -3,8 +3,8 @@
 // FIXED 2026-04-23: Corrected to production deployment URL
 const GAS_CONFIG = {
   url: 'https://script.google.com/macros/s/AKfycbwC8youQ6kfwGZ5DRi0P757KrJh9vhvesE7n8VcVTaj0v54ZbXdpqoJXVh9XzfqwcqtMA/exec',
-  deployDate: '2026-04-23_20-30',
-  version: '490'
+  deployDate: '2026-04-23_21-00',
+  version: '491'
 };
 // Expose globally for all frontend modules
 window.GAS_CONFIG = GAS_CONFIG;
