@@ -1043,6 +1043,9 @@ function _renderInventoryUI(invData) {
         <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;white-space:nowrap">
           <input type="checkbox" id="inv-alert-filter" onchange="_filterInventory()"> ⚠️ สต็อกต่ำ
         </label>
+        <button class="btn-refresh" onclick="_showBarcodeScanner()" style="background:#059669;color:#fff;border:none">
+          <i class="bi bi-upc-scan"></i> สแกน
+        </button>
         <button class="btn-refresh" onclick="_showAddItemModal()" style="background:#1e40af;color:#fff;border:none">
           <i class="bi bi-plus-lg"></i> เพิ่มสินค้า
         </button>
@@ -1527,27 +1530,182 @@ async function _doCreatePO() {
   } catch(e) { resEl.innerHTML = `<span style="color:#ef4444;font-size:12px">❌ ${e.message}</span>`; }
 }
 
-function renderRevenueSection(data) {
+// ============================================================
+// BARCODE SCANNER — Search by barcode/code (PHASE 27.6)
+// ============================================================
+function _showBarcodeScanner() {
+  const m = `<div id="inv-modal-overlay" onclick="this.remove()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center">
+    <div onclick="event.stopPropagation()" style="background:#fff;border-radius:16px;padding:24px;max-width:420px;width:90%">
+      <h3 style="margin:0 0 16px;font-size:16px"><i class="bi bi-upc-scan" style="color:#059669"></i> ค้นหาสินค้า (Barcode/รหัส)</h3>
+      <div style="margin-bottom:12px">
+        <input type="text" id="scan-input" placeholder="สแกนหรือพิมพ์ barcode/รหัสสินค้า..."
+          style="width:100%;padding:12px;border:2px solid #059669;border-radius:8px;font-size:16px;font-weight:600;text-align:center"
+          autofocus onkeydown="if(event.key==='Enter')_doBarcodeLookup()">
+      </div>
+      <div id="scan-result" style="display:none"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button onclick="document.getElementById('inv-modal-overlay').remove()" style="background:#f1f5f9;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer">ปิด</button>
+        <button onclick="_doBarcodeLookup()" style="background:#059669;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600">
+          <i class="bi bi-search"></i> ค้นหา
+        </button>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', m);
+  setTimeout(() => { const inp = document.getElementById('scan-input'); if(inp) inp.focus(); }, 200);
+}
+
+async function _doBarcodeLookup() {
+  const barcode = (document.getElementById('scan-input')?.value||'').trim();
+  if(!barcode) return;
+  const resEl = document.getElementById('scan-result');
+  try {
+    resEl.style.display='block'; resEl.innerHTML='<span style="color:#6b7280;font-size:12px">กำลังค้นหา...</span>';
+    const r = await callGas('barcodeLookup', {barcode: barcode});
+    if(r && r.found) {
+      const alert = r.alert ? '⚠️ สต็อกต่ำ' : '✅ ปกติ';
+      resEl.innerHTML = `
+        <div style="background:#f8fafc;border-radius:8px;padding:12px;margin-top:8px">
+          <div style="font-size:16px;font-weight:700;color:#1e40af">${r.code}</div>
+          <div style="font-size:14px;margin:4px 0">${r.name}</div>
+          <div style="display:flex;gap:16px;margin-top:8px">
+            <div><span style="font-size:12px;color:#6b7280">คงเหลือ</span><br><span style="font-size:18px;font-weight:700;color:${r.alert?'#ef4444':'#059669'}">${r.qty}</span></div>
+            <div><span style="font-size:12px;color:#6b7280">ทุน</span><br><span style="font-size:14px">฿${Number(r.cost||0).toLocaleString()}</span></div>
+            <div><span style="font-size:12px;color:#6b7280">ขาย</span><br><span style="font-size:14px">฿${Number(r.price||0).toLocaleString()}</span></div>
+          </div>
+          <div style="margin-top:8px;font-size:12px;color:${r.alert?'#ef4444':'#059669'}">${alert} ${r.statusText||''}</div>
+        </div>`;
+    } else {
+      resEl.innerHTML = `<div style="background:#fee2e2;border-radius:8px;padding:12px;margin-top:8px">
+        <span style="color:#ef4444;font-size:13px">❌ ไม่พบสินค้า: ${barcode}</span>
+      </div>`;
+    }
+  } catch(e) { resEl.innerHTML = `<span style="color:#ef4444;font-size:12px">❌ ${e.message}</span>`; }
+}
+
+async function renderRevenueSection(data) {
   const rev = (data.summary || {}).revenue || {};
   const today = Number(rev.today || 0);
   const week = Number(rev.week || 0);
   const month = Number(rev.month || 0);
+  const dailyRev = data.revenue_by_day || [];
+  const report = data.report || {};
+  const profitJobs = report.jobs || [];
 
-  let html = `<div class="kpi-row" style="margin-bottom:16px">
-    ${kpiBox('bi-currency-exchange', '#d1fae5', '#059669', '฿'+today.toLocaleString(), 'วันนี้', '')}
-    ${kpiBox('bi-calendar-week', '#dbeafe', '#1e40af', '฿'+week.toLocaleString(), 'สัปดาห์นี้', '')}
-    ${kpiBox('bi-calendar-month', '#fef3c7', '#d97706', '฿'+month.toLocaleString(), 'เดือนนี้', '')}
-  </div>
-  <div class="card-box">
-    <div class="card-title"><i class="bi bi-bar-chart-fill" style="color:#d97706"></i> รายรับรายวัน</div>
-    <div class="chart-wrap"><canvas id="revenue-section-chart"></canvas></div>
-  </div>`;
+  // Calculate totals
+  const totalRevenue = profitJobs.reduce((s,j) => s + Number(j.revenue||0), 0);
+  const totalCost = profitJobs.reduce((s,j) => s + Number(j.cost||0), 0);
+  const totalProfit = totalRevenue - totalCost;
+  const margin = totalRevenue > 0 ? ((totalProfit/totalRevenue)*100).toFixed(1) : 0;
+
+  let html = `
+    <!-- KPI Cards -->
+    <div class="kpi-row" style="margin-bottom:16px">
+      ${kpiBox('bi-currency-exchange', '#d1fae5', '#059669', '฿'+today.toLocaleString(), 'วันนี้', '')}
+      ${kpiBox('bi-calendar-week', '#dbeafe', '#1e40af', '฿'+week.toLocaleString(), 'สัปดาห์นี้', '')}
+      ${kpiBox('bi-calendar-month', '#fef3c7', '#d97706', '฿'+month.toLocaleString(), 'เดือนนี้', '')}
+      ${kpiBox('bi-graph-up-arrow', totalProfit >= 0 ? '#d1fae5' : '#fee2e2', totalProfit >= 0 ? '#059669' : '#ef4444', '฿'+totalProfit.toLocaleString(), 'กำไร', `${margin}% margin`)}
+    </div>
+
+    <!-- Revenue Chart -->
+    <div class="card-box" style="margin-bottom:16px">
+      <div class="card-title"><i class="bi bi-bar-chart-fill" style="color:#d97706"></i> รายรับรายวัน</div>
+      <div class="chart-wrap"><canvas id="revenue-section-chart"></canvas></div>
+    </div>
+
+    <!-- Daily Breakdown Table -->
+    <div class="card-box" style="margin-bottom:16px">
+      <div class="card-title">
+        <i class="bi bi-table" style="color:#1e40af"></i> รายรับรายวัน
+        <span class="badge-count">${dailyRev.length} วัน</span>
+      </div>
+      ${dailyRev.length === 0 ? '<p style="color:#9ca3af;font-size:13px;text-align:center;padding:20px">ยังไม่มีข้อมูลรายรับ</p>' :
+        `<div style="overflow-x:auto;max-height:300px;overflow-y:auto">
+          <table class="job-table" style="width:100%">
+            <thead><tr><th>วันที่</th><th style="text-align:right">รายรับ (฿)</th><th style="text-align:right">สะสม (฿)</th></tr></thead>
+            <tbody>${(() => {
+              let cumulative = 0;
+              return dailyRev.map(d => {
+                const amt = Number(d.amount || d.total || 0);
+                cumulative += amt;
+                return `<tr>
+                  <td style="font-size:13px;white-space:nowrap">${d.date || d.day || '-'}</td>
+                  <td style="text-align:right;font-weight:600;font-size:13px;color:${amt>0?'#059669':'#9ca3af'}">฿${amt.toLocaleString()}</td>
+                  <td style="text-align:right;font-size:13px;color:#6b7280">฿${cumulative.toLocaleString()}</td>
+                </tr>`;
+              }).join('');
+            })()}</tbody>
+          </table>
+        </div>`}
+    </div>
+
+    <!-- Profit by Job -->
+    ${profitJobs.length > 0 ? `
+    <div class="card-box" style="margin-bottom:16px">
+      <div class="card-title">
+        <i class="bi bi-clipboard-data" style="color:#059669"></i> กำไร/ขาดทุน ตามงาน
+        <span class="badge-count">${profitJobs.length} งาน</span>
+      </div>
+      <div style="overflow-x:auto;max-height:400px;overflow-y:auto">
+        <table class="job-table" style="width:100%">
+          <thead><tr><th>Job ID</th><th>ลูกค้า</th><th style="text-align:right">รายรับ</th><th style="text-align:right">ต้นทุน</th><th style="text-align:right">กำไร</th></tr></thead>
+          <tbody>${profitJobs.map(j => {
+            const rev = Number(j.revenue||0);
+            const cost = Number(j.cost||0);
+            const profit = rev - cost;
+            return `<tr>
+              <td style="font-weight:600;font-size:13px;white-space:nowrap">${j.jobId||'-'}</td>
+              <td style="font-size:13px">${j.customer||'-'}</td>
+              <td style="text-align:right;font-size:13px">฿${rev.toLocaleString()}</td>
+              <td style="text-align:right;font-size:13px;color:#ef4444">฿${cost.toLocaleString()}</td>
+              <td style="text-align:right;font-weight:700;font-size:13px;color:${profit>=0?'#059669':'#ef4444'}">${profit>=0?':''}฿${Math.abs(profit).toLocaleString()}</td>
+            </tr>`;
+          }).join('')}
+          <tr style="background:#f8fafc;font-weight:700">
+            <td colspan="2" style="font-size:13px">รวม</td>
+            <td style="text-align:right;font-size:13px">฿${totalRevenue.toLocaleString()}</td>
+            <td style="text-align:right;font-size:13px;color:#ef4444">฿${totalCost.toLocaleString()}</td>
+            <td style="text-align:right;font-size:13px;color:${totalProfit>=0?'#059669':'#ef4444'}">${totalProfit>=0?':''}฿${Math.abs(totalProfit).toLocaleString()}</td>
+          </tr>
+        </table>
+      </div>
+    </div>` : ''}
+
+    <!-- Summary Card -->
+    <div class="card-box">
+      <div class="card-title"><i class="bi bi-calculator" style="color:#6b7280"></i> สรุป</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;padding:8px">
+        <div style="text-align:center;padding:12px;background:#f8fafc;border-radius:8px">
+          <div style="font-size:20px;font-weight:700;color:#059669">฿${totalRevenue.toLocaleString()}</div>
+          <div style="font-size:12px;color:#6b7280">รายรับรวม</div>
+        </div>
+        <div style="text-align:center;padding:12px;background:#f8fafc;border-radius:8px">
+          <div style="font-size:20px;font-weight:700;color:#ef4444">฿${totalCost.toLocaleString()}</div>
+          <div style="font-size:12px;color:#6b7280">ต้นทุนรวม</div>
+        </div>
+        <div style="text-align:center;padding:12px;background:#f8fafc;border-radius:8px">
+          <div style="font-size:20px;font-weight:700;color:${totalProfit>=0?'#059669':'#ef4444'}">฿${totalProfit.toLocaleString()}</div>
+          <div style="font-size:12px;color:#6b7280">กำไรสุทธิ</div>
+        </div>
+        <div style="text-align:center;padding:12px;background:#f8fafc;border-radius:8px">
+          <div style="font-size:20px;font-weight:700;color:#1e40af">${margin}%</div>
+          <div style="font-size:12px;color:#6b7280">อัตรากำไร</div>
+        </div>
+      </div>
+      <div style="text-align:right;margin-top:12px">
+        <button onclick="_showTaxCalculator()" style="background:#059669;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:12px;cursor:pointer;margin-right:8px">
+          <i class="bi bi-calculator"></i> คำนวณภาษี
+        </button>
+        <button onclick="_exportRevenueCSV()" style="background:#1e40af;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:12px;cursor:pointer">
+          <i class="bi bi-download"></i> Export CSV
+        </button>
+      </div>
+    </div>`;
 
   document.getElementById('main-content').innerHTML = html;
 
   // Render chart
   setTimeout(() => {
-    const dailyRev = data.revenue_by_day || [];
     const ctx = document.getElementById('revenue-section-chart');
     if (ctx && dailyRev.length) {
       new Chart(ctx, {
@@ -1562,6 +1720,125 @@ function renderRevenueSection(data) {
       });
     }
   }, 100);
+}
+
+function _exportRevenueCSV() {
+  const data = DASHBOARD_DATA || {};
+  const dailyRev = data.revenue_by_day || [];
+  if(!dailyRev.length) { alert('ไม่มีข้อมูลส่งออก'); return; }
+  let csv = 'วันที่,รายรับ (฿)\n';
+  dailyRev.forEach(d => { csv += `${d.date||d.day||''},${d.amount||d.total||0}\n`; });
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `revenue_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ============================================================
+// TAX CALCULATOR — VAT 7% + WHT 1/3/5% (PHASE 27.6)
+// ============================================================
+function _showTaxCalculator() {
+  const m = `<div id="tax-modal-overlay" onclick="this.remove()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center">
+    <div onclick="event.stopPropagation()" style="background:#fff;border-radius:16px;padding:24px;max-width:480px;width:90%;max-height:80vh;overflow-y:auto">
+      <h3 style="margin:0 0 16px;font-size:16px"><i class="bi bi-calculator" style="color:#059669"></i> คำนวณภาษี (VAT + WHT)</h3>
+
+      <!-- Input -->
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;color:#6b7280">จำนวนเงิน (ก่อน VAT)</label>
+        <input type="number" id="tax-amount" value="0" min="0" step="0.01"
+          style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px;font-size:16px;font-weight:700"
+          oninput="_calcTax()">
+      </div>
+
+      <div style="display:flex;gap:12px;margin-bottom:16px">
+        <div style="flex:1">
+          <label style="font-size:12px;color:#6b7280">โหมด VAT</label>
+          <select id="tax-vat-mode" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px" onchange="_calcTax()">
+            <option value="VAT7">VAT 7%</option>
+            <option value="ZERO">VAT 0% (ส่งออก)</option>
+            <option value="EXEMPT">ไม่มี VAT (ยกเว้น)</option>
+          </select>
+        </div>
+        <div style="flex:1">
+          <label style="font-size:12px;color:#6b7280">หัก ณ ที่จ่าย (WHT)</label>
+          <select id="tax-wht-rate" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px" onchange="_calcTax()">
+            <option value="0">ไม่หัก</option>
+            <option value="1">1%</option>
+            <option value="3">3%</option>
+            <option value="5">5%</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div id="tax-results" style="background:#f8fafc;border-radius:12px;padding:16px">
+        <table style="width:100%;font-size:13px">
+          <tr><td style="color:#6b7280;padding:4px 0">จำนวนเงิน (ก่อน VAT)</td><td style="text-align:right;font-weight:600" id="tax-subtotal">฿0.00</td></tr>
+          <tr><td style="color:#6b7280;padding:4px 0">VAT</td><td style="text-align:right;font-weight:600;color:#1e40af" id="tax-vat-label">0%</td></tr>
+          <tr><td style="color:#6b7280;padding:4px 0">จำนวน VAT</td><td style="text-align:right;font-weight:600;color:#1e40af" id="tax-vat-amount">฿0.00</td></tr>
+          <tr style="border-top:1px solid #e2e8f0"><td style="padding:8px 0;font-weight:600">รวม (รวม VAT)</td><td style="text-align:right;font-weight:700;font-size:15px" id="tax-total">฿0.00</td></tr>
+          <tr><td style="color:#6b7280;padding:4px 0">หัก ณ ที่จ่าย</td><td style="text-align:right;font-weight:600;color:#ef4444" id="tax-wht-label">0%</td></tr>
+          <tr><td style="color:#6b7280;padding:4px 0">จำนวน WHT</td><td style="text-align:right;font-weight:600;color:#ef4444" id="tax-wht-amount">฿0.00</td></tr>
+          <tr style="border-top:2px solid #1e40af"><td style="padding:8px 0;font-weight:700;font-size:14px">💰 ยอดสุทธิ (Net Payable)</td><td style="text-align:right;font-weight:700;font-size:18px;color:#059669" id="tax-net">฿0.00</td></tr>
+        </table>
+      </div>
+
+      <!-- Copy button -->
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+        <button onclick="_copyTaxResult()" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:8px 16px;border-radius:8px;font-size:12px;cursor:pointer">
+          <i class="bi bi-clipboard"></i> Copy
+        </button>
+        <button onclick="document.getElementById('tax-modal-overlay').remove()" style="background:#1e40af;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:12px;cursor:pointer">
+          ปิด
+        </button>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', m);
+  _calcTax();
+}
+
+function _calcTax() {
+  const amount = parseFloat(document.getElementById('tax-amount')?.value) || 0;
+  const vatMode = document.getElementById('tax-vat-mode')?.value || 'VAT7';
+  const whtRate = parseInt(document.getElementById('tax-wht-rate')?.value) || 0;
+
+  // VAT calculation
+  let vatPercent = 0;
+  if (vatMode === 'VAT7') vatPercent = 7;
+  else if (vatMode === 'ZERO') vatPercent = 0;
+  // EXEMPT = 0
+
+  const vatAmount = amount * vatPercent / 100;
+  const totalWithVat = amount + vatAmount;
+
+  // WHT calculation (on original amount, not including VAT)
+  const whtAmount = amount * whtRate / 100;
+  const netPayable = totalWithVat - whtAmount;
+
+  // Update UI
+  const el = (id) => document.getElementById(id);
+  if(el('tax-subtotal')) el('tax-subtotal').textContent = '฿' + amount.toLocaleString('th-TH', {minimumFractionDigits:2});
+  if(el('tax-vat-label')) el('tax-vat-label').textContent = vatPercent + '%';
+  if(el('tax-vat-amount')) el('tax-vat-amount').textContent = '฿' + vatAmount.toLocaleString('th-TH', {minimumFractionDigits:2});
+  if(el('tax-total')) el('tax-total').textContent = '฿' + totalWithVat.toLocaleString('th-TH', {minimumFractionDigits:2});
+  if(el('tax-wht-label')) el('tax-wht-label').textContent = whtRate + '%';
+  if(el('tax-wht-amount')) el('tax-wht-amount').textContent = '฿' + whtAmount.toLocaleString('th-TH', {minimumFractionDigits:2});
+  if(el('tax-net')) el('tax-net').textContent = '฿' + netPayable.toLocaleString('th-TH', {minimumFractionDigits:2});
+}
+
+function _copyTaxResult() {
+  const amount = parseFloat(document.getElementById('tax-amount')?.value) || 0;
+  const vatMode = document.getElementById('tax-vat-mode')?.value || 'VAT7';
+  const whtRate = document.getElementById('tax-wht-rate')?.value || '0';
+  const net = document.getElementById('tax-net')?.textContent || '';
+  const text = `🧮 คำนวณภาษี\nจำนวน: ฿${amount.toLocaleString()}\nVAT: ${vatMode}\nWHT: ${whtRate}%\nสุทธิ: ${net}`;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy'; }, 1500);
+  });
 }
 
 async function renderPOSection(data) {
@@ -1754,6 +2031,9 @@ async function renderCRMSection(data) {
               style="width:100%;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px"
               oninput="_filterCRM()">
           </div>
+          <button class="btn-refresh" onclick="_showFollowUpSchedule()" style="background:#1e40af;color:#fff;border:none">
+            <i class="bi bi-calendar3"></i> ปฏิทิน
+          </button>
           <button class="btn-refresh" onclick="_showAddCustomerModal()" style="background:#059669;color:#fff;border:none">
             <i class="bi bi-person-plus"></i> เพิ่มลูกค้า
           </button>
@@ -2102,6 +2382,59 @@ async function _doScheduleFollowUp(id, name) {
       resEl.innerHTML = `<span style="color:#ef4444;font-size:12px">❌ ${r?.error||'นัดไม่สำเร็จ'}</span>`;
     }
   } catch(e) { resEl.innerHTML = `<span style="color:#ef4444;font-size:12px">❌ ${e.message}</span>`; }
+}
+
+// ============================================================
+// FOLLOW-UP SCHEDULE VIEW — Calendar (PHASE 27.6)
+// ============================================================
+async function _showFollowUpSchedule() {
+  const m = `<div id="crm-modal-overlay" onclick="this.remove()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center">
+    <div onclick="event.stopPropagation()" style="background:#fff;border-radius:16px;padding:24px;max-width:560px;width:90%;max-height:80vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="margin:0;font-size:16px"><i class="bi bi-calendar3" style="color:#1e40af"></i> ปฏิทินนัดติดตาม (7 วัน)</h3>
+        <button onclick="document.getElementById('crm-modal-overlay').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#9ca3af">✕</button>
+      </div>
+      <div id="fu-schedule-content"><div class="loading-state"><div class="spinner-pc"></div><p>กำลังโหลด...</p></div></div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', m);
+
+  try {
+    const r = await callGas('getCRMFollowUpSchedule', {});
+    const schedule = r?.schedule || {};
+    const dates = Object.keys(schedule).sort();
+    const el = document.getElementById('fu-schedule-content');
+    if(!el) return;
+
+    if(dates.length === 0) {
+      el.innerHTML = '<p style="color:#9ca3af;font-size:13px;text-align:center;padding:20px">ไม่มีนัดติดตามใน 7 วันข้างหน้า</p>';
+      return;
+    }
+
+    el.innerHTML = dates.map(date => {
+      const items = schedule[date] || [];
+      const isToday = date === new Date().toISOString().split('T')[0];
+      return `
+        <div style="margin-bottom:12px;padding:12px;background:${isToday?'#dbeafe':'#f8fafc'};border-radius:8px;border-left:4px solid ${isToday?'#1e40af':'#e2e8f0'}">
+          <div style="font-size:14px;font-weight:700;color:${isToday?'#1e40af':'#6b7280'};margin-bottom:8px">
+            ${isToday?'📅 วันนี้':'📆'} ${date}
+            <span style="font-size:12px;font-weight:400;color:#9ca3af">(${items.length} นัด)</span>
+          </div>
+          ${items.map(item => `
+            <div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #e2e8f0">
+              <div style="width:6px;height:6px;border-radius:50%;background:#1e40af;flex-shrink:0"></div>
+              <div style="flex:1">
+                <div style="font-size:13px;font-weight:600">${item.customer_name||'-'}</div>
+                <div style="font-size:12px;color:#6b7280">${item.note||item.result||''}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>`;
+    }).join('');
+  } catch(e) {
+    const el = document.getElementById('fu-schedule-content');
+    if(el) el.innerHTML = `<p style="color:#ef4444;font-size:13px;text-align:center;padding:20px">❌ ${e.message}</p>`;
+  }
 }
 
 async function renderSettingsSection() {
