@@ -78,6 +78,48 @@ function doGet(e) {
     if (action === 'guardstatus') {
       return jsonOutputV55_(propertiesGuardStatus());
     }
+    // Init Agent Properties — GET ?action=initAgentProps
+    if (action === 'initagentprops') {
+      var props = PropertiesService.getScriptProperties();
+      var init = {
+        "AG_REGISTERED_AGENTS": "[]",
+        "AG_ACTIVITY_LOG": "[]",
+        "AM_RULES": "[]",
+        "AM_PATTERNS": "{}",
+        "AM_STATS": '{"totalInteractions":0,"totalPatterns":0,"totalRules":0}',
+        "AM_SNAPSHOTS": "[]",
+        "AM_INCIDENTS": "[]",
+        "AS_AGENT_SCORES": "{}",
+        "AS_OUTCOME_HISTORY": "[]",
+        "ACO_SHARED_RESULTS": "[]",
+        "WF_CUSTOM_WORKFLOWS": "{}",
+        "WF_RUN_LOG": "[]",
+        "WS_CIRCUIT_STATE": '{"failures":0,"state":"closed","lastFailure":0}',
+        "WS_SAFETY_LOG": "[]",
+        "DG_COOLDOWN_STATE": "{}",
+        "DG_DEDUP_FINGERPRINTS": "{}",
+        "DG_RATE_COUNTERS": "{}",
+        "DG_GUARD_LOG": "[]",
+        "MC_ARCHIVE_INCIDENTS": "[]",
+        "MC_PRUNE_LOG": "[]",
+        "vl_calibration": '{"version":0,"rules":[]}',
+        "vl_rules": "[]",
+        "INTEL_ALERT_QUEUE": "[]",
+        "INTEL_ANALYTICS": "[]"
+      };
+      var set = 0;
+      for (var k in init) {
+        if (!props.getProperty(k)) {
+          props.setProperty(k, init[k]);
+          set++;
+        }
+      }
+      return jsonOutputV55_({ success: true, initialized: set, total: Object.keys(props.getProperties()).length });
+    }
+    // Setup Properties Guard Trigger — GET ?action=setupGuardTrigger
+    if (action === 'setupguardtrigger') {
+      return jsonOutputV55_(setupPropertiesGuardTrigger());
+    }
     // Default: API Ready response + redirect hint
     return jsonOutputV55_({
       status:       'ok',
