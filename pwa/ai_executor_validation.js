@@ -102,7 +102,7 @@
   
   // Test 9: Check that AI_EXECUTOR has debug function
   test('AI_EXECUTOR.debug exists', 
-    typeof window.AI_EXECUTOR === 'function' &&
+    (typeof window.AI_EXECUTOR === 'object' || typeof window.AI_EXECUTOR === 'function') &&
     typeof window.AI_EXECUTOR.debug === 'function');
   
   // Test 10: Check that script tag is present

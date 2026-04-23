@@ -9,9 +9,10 @@
 const OFFLINE_DB = {
   db: null,
   DB_NAME: 'comphone_offline',
-  DB_VERSION: 1,
+  DB_VERSION: 2,  // v2: match SW version, includes 'queue' store
   STORE_QUEUE: 'action_queue',
   STORE_CACHE: 'data_cache',
+  SYNC_QUEUE: 'queue',  // SW uses this store for background sync
   syncing: false
 };
 
@@ -40,6 +41,13 @@ async function initOfflineDB() {
           keyPath: 'key'
         });
         cacheStore.createIndex('by_expires', 'expires', { unique: false });
+      }
+
+      // Store 3: queue — SW background sync queue (must match sw.js)
+      if (!db.objectStoreNames.contains(OFFLINE_DB.SYNC_QUEUE)) {
+        db.createObjectStore(OFFLINE_DB.SYNC_QUEUE, {
+          keyPath: 'id', autoIncrement: true
+        });
       }
     };
 

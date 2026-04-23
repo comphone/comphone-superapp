@@ -146,6 +146,9 @@ window.__DATA_SCHEMA = window.__DATA_SCHEMA || {};
 // Action map (defined in dashboard_pc.html)
 window.__ACTION_MAP = window.__ACTION_MAP || {};
 
+// UI Refresh map (defined in dashboard_pc.html)
+window.__UI_REFRESH_MAP = window.__UI_REFRESH_MAP || {};
+
 // Approval queue and related functions (Hardened Approval System)
 window.__APPROVAL_QUEUE = window.__APPROVAL_QUEUE || [];
 window.__APPROVAL_LOG = window.__APPROVAL_LOG || [];
