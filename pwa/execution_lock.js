@@ -343,15 +343,44 @@
       };
 
       if (!__ORIGINAL_GAS_RUN) {
-        // PHASE 20.3 FIX: Clear token even on infrastructure failure (prevent reuse)
+        // ===== STATIC HOSTING FALLBACK: ใช้ fetch() แทน google.script.run =====
+        // PHASE 26.6 FIX: On GitHub Pages (static hosting), google.script.run doesn't exist.
+        // Use GET-based fetch to the GAS API URL instead.
+        const gasUrl = window.COMPHONE_GAS_URL || (window.GAS_CONFIG && window.GAS_CONFIG.url) || '';
+        if (!gasUrl) {
+          if (!opts.skipApprovalCheck) {
+            window.__LAST_APPROVED_ACTION = null;
+          }
+          reject(new Error('GAS_EXECUTE: No google.script.run AND no GAS URL configured'));
+          return;
+        }
+
+        console.log('[EXECUTION_LOCK] 📡 Static hosting → fetch fallback for:', action);
+        const qs = new URLSearchParams(
+          Object.assign({}, payload, { action: action, _t: Date.now() })
+        ).toString();
+        const fetchUrl = gasUrl + '?' + qs;
+
+        // Clear approval token
         if (!opts.skipApprovalCheck) {
           window.__LAST_APPROVED_ACTION = null;
           if (window.__APPROVAL_CLEAR_TIMEOUT) {
             clearTimeout(window.__APPROVAL_CLEAR_TIMEOUT);
             window.__APPROVAL_CLEAR_TIMEOUT = null;
           }
+          console.log('[EXECUTION_LOCK] 🔑 Approval token consumed (fetch) for:', action);
         }
-        reject(new Error('GAS_EXECUTE: Original google.script.run not captured. Lock may have failed.'));
+
+        fetch(fetchUrl, { redirect: 'follow' })
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            console.log('[EXECUTION_LOCK] ✅ fetch fallback OK for:', action);
+            resolve(data);
+          })
+          .catch(function(err) {
+            console.error('[EXECUTION_LOCK] ❌ fetch fallback FAIL for:', action, err);
+            reject(new Error('GAS_EXECUTE fetch failed: ' + err.message));
+          });
         return;
       }
 
