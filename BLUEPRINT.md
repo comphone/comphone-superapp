@@ -162,20 +162,25 @@ comphone-superapp/
 | **Auto Deploy** | `deploy_all.sh` | ✅ tar → rclone → clasp push |
 | **Property Guard** | `Router.gs` | ✅ 49/50 properties (1 slot reserved) |
 
-### ✅ Completed (Phase 27.1-27.3)
+### ✅ Completed (Phase 27.1-27.5)
 
 | ฟีเจอร์ | สถานะ | หมายเหตุ |
 |---------|-------|---------|
-| **Inventory UI** | ✅ Full CRUD | 4 KPI cards, search/filter, 3-layer stock, transfer, add/edit/delete, PO from low-stock |
-| **Dashboard Performance** | ✅ Optimized | Switch to `getDashboardBundle` (single-pass reads + 90s cache), ~11s → ~1-2s |
+| **Inventory UI** | ✅ Full CRUD | 4 KPI, search/filter, 3-layer stock, transfer, add/edit/delete, PO from low-stock |
+| **Dashboard Performance** | ✅ Optimized | `getDashboardBundle` (single-pass + 90s cache), ~11s → ~1-2s |
 | **Login (Static Hosting)** | ✅ Fixed | `execution_lock.js` fetch fallback + `Router.gs` doGet routeActionV55 |
-| **Deploy Pipeline** | ✅ Hardened | Apps Script API fallback when clasp timeout, 60s timeout on clasp push |
+| **Deploy Pipeline** | ✅ Hardened | Apps Script API fallback when clasp timeout, 60s timeout |
+| **Jobs CRUD** | ✅ Full CRUD | 4 KPI, search, status filter, timeline modal, status transition (12 states) |
+| **PO CRUD** | ✅ Full CRUD | Real PO data, 4 KPI, search, receive/cancel |
+| **CRM** | ✅ Full CRUD | Real customer data, search, create/edit/view history, follow-up, overdue alerts |
+| **Settings** | ✅ Complete | System health, user list, property guard, cache management, quick actions |
+| **getProfitReport** | ✅ Optimized | O(N×M) → O(N+M), single DBJOBS read |
 
 ### 🔧 In Progress
 
 | ฟีเจอร์ | สถานะ | หมายเหตุ |
 |---------|-------|---------|
-| **PC Section CRUD** | 🔧 Partial | Inventory ✅, Jobs/Revenue/PO/CRM/Settings ยัง read-only |
+| **Revenue Enhancement** | 🔧 Basic | Chart + KPI แล้ว, ยังไม่มี daily breakdown table |
 | **Auto-Tax Engine** | 🔧 Planned | VAT 7% / WHT 3% — Frontend calculation |
 
 ### 📋 Planned (Roadmap)
