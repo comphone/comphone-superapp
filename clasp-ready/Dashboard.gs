@@ -328,6 +328,16 @@ function getProfitReport(data) {
         if (bn.indexOf('ชำระ') > -1 || bn.indexOf('จ่าย') > -1 || bn.toLowerCase().indexOf('pay') > -1) payIdx = bi;
       }
       
+      // Pre-build job_id -> customer_name lookup map (read DBJOBS once)
+      var jobCustMap = {};
+      if (jsh) {
+        var jobs = jsh.getDataRange().getValues();
+        for (var ji = 1; ji < jobs.length; ji++) {
+          var mapId = String(jobs[ji][0] || '');
+          if (mapId) jobCustMap[mapId] = String(jobs[ji][1] || '-');
+        }
+      }
+
       for (var i = 1; i < bills.length; i++) {
         var rev = totalIdx >= 0 ? Number(bills[i][totalIdx] || 0) : 0;
         var parts = partsIdx >= 0 ? Number(bills[i][partsIdx] || 0) : 0;
@@ -342,16 +352,7 @@ function getProfitReport(data) {
         report.jobCount++;
         
         var jid = jobIdIdx >= 0 ? String(bills[i][jobIdIdx] || '') : 'N/A';
-        var cust = '-';
-        if (jsh) {
-          var jobs = jsh.getDataRange().getValues();
-          for (var ji = 1; ji < jobs.length; ji++) {
-            if (String(jobs[ji][0]) === jid) {
-              cust = String(jobs[ji][1] || '-');
-              break;
-            }
-          }
-        }
+        var cust = jobCustMap[jid] || '-';
         
         report.jobs.push({
           jobId: jid, customer: cust,
