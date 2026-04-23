@@ -58,6 +58,14 @@ function doGet(e) {
     if (action === 'getsystemmetrics' || action === 'systemmetrics') {
       return jsonOutputV55_((typeof getSystemMetrics === 'function') ? getSystemMetrics() : { success: false, error: 'not available' });
     }
+    // Properties Audit — GET ?action=auditProperties
+    if (action === 'auditproperties') {
+      return jsonOutputV55_(auditProperties());
+    }
+    // Properties Cleanup — GET ?action=cleanupProperties
+    if (action === 'cleanupproperties') {
+      return jsonOutputV55_(cleanupAllProperties());
+    }
     // Default: API Ready response + redirect hint
     return jsonOutputV55_({
       status:       'ok',
