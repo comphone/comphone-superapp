@@ -2,127 +2,115 @@
 // ============================================================
 // Router.gs - Main Router and API Dispatcher
 // ============================================================
+// ARCHITECTURE:
+//   GAS = API ONLY (JSON responses via ContentService)
+//   UI  = PWA ONLY → https://comphone.github.io/comphone-superapp/pwa/
+//   HtmlService ถูกลบออกทั้งหมด (V5.5.8 API-Only)
+// ============================================================
 
-function include(filename) {
-  return HtmlService.createHtmlOutputFromFile(filename).getContent();
-}
-
+/**
+ * doGet — API-Only JSON endpoint
+ * ไม่มี HtmlService อีกต่อไป
+ * ทุก GET request → JSON response
+ */
 function doGet(e) {
   try {
     var params = (e && e.parameter) || {};
     var action = normalizeActionV55_(params.action || '');
-    var jobId = params.jobId || params.job_id || '';
+    var jobId  = params.jobId || params.job_id || '';
 
-    // ============================================================
-    // Health Check Endpoint — GET ?action=health
-    // Returns: { status, version, timestamp, checks }
-    // ============================================================
+    // Health Check — GET ?action=health
     if (action === 'health' || action === 'ping' || action === 'healthcheck') {
       return jsonOutputV55_(healthCheckV55_());
     }
 
-    if (action === 'json' || action === 'getDashboardData') {
+    // Version — GET ?action=getVersion
+    if (action === 'getversion' || action === 'version') {
+      return jsonOutputV55_(getVersionV55_());
+    }
+
+    // Dashboard Data — GET ?action=getDashboardData
+    if (action === 'json' || action === 'getDashboardData' || action === 'getdashboarddata') {
       return jsonOutputV55_(getDashboardData());
     }
 
-    if (action === 'getJobStateConfig') {
+    // Job State Config — GET ?action=getJobStateConfig
+    if (action === 'getjobstateconfig') {
       return jsonOutputV55_(getJobStateConfig());
     }
 
-    if (action === 'getJobQRData' || action === 'jobqrdata') {
+    // Job QR Data — GET ?action=getJobQRData&jobId=...
+    if (action === 'getjobqrdata' || action === 'jobqrdata') {
       return jsonOutputV55_(getJobWebAppPayload(jobId));
     }
 
-    if (action === 'getPhotoGalleryData' || action === 'photogallerydata') {
+    // Photo Gallery Data — GET ?action=getPhotoGalleryData&jobId=...
+    if (action === 'getphotogallerydata' || action === 'photogallerydata') {
       return jsonOutputV55_(getPhotoGalleryData(jobId));
     }
 
-    if (params.view === 'jobqr' || action === 'jobqr') {
-      var qrTemplate = HtmlService.createTemplateFromFile('JobQRView');
-      qrTemplate.jobId = jobId;
-      qrTemplate.apiBaseUrl = getWebAppBaseUrl_() || '';
-      return qrTemplate.evaluate()
-        .setTitle('COMPHONE SUPER APP V5.5 - Job QR')
-        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-        .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
+    // Security Log — GET ?action=getSecurityLog (admin monitoring)
+    if (action === 'getsecuritylog' || action === 'securitylog') {
+      var _log = (typeof getSecurityLog === 'function') ? getSecurityLog() : [];
+      return jsonOutputV55_({ success: true, data: _log, count: _log.length });
     }
-
-    if (params.view === 'photogallery' || action === 'photogallery') {
-      var galleryTemplate = HtmlService.createTemplateFromFile('PhotoGallery');
-      galleryTemplate.jobId = jobId;
-      galleryTemplate.apiBaseUrl = getWebAppBaseUrl_() || '';
-      return galleryTemplate.evaluate()
-        .setTitle('COMPHONE SUPER APP V5.5 - Photo Gallery')
-        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-        .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
+    // System Metrics — GET ?action=getSystemMetrics (admin monitoring)
+    if (action === 'getsystemmetrics' || action === 'systemmetrics') {
+      return jsonOutputV55_((typeof getSystemMetrics === 'function') ? getSystemMetrics() : { success: false, error: 'not available' });
     }
-
-    var template = HtmlService.createTemplateFromFile('Index');
-    template.apiBaseUrl = getWebAppBaseUrl_() || '';
-    template.jobQrWebAppUrl = buildWebAppUrl_(getWebAppBaseUrl_() || '', { view: 'jobqr', jobId: jobId });
-    template.mode = params.mode || '';
-    template.jobId = jobId;
-    template.status = params.status || '';
-    template.customerName = params.customerName || '';
-    template.action = params.action || '';
-    template.view = params.view || '';
-    template.filter = params.filter || '';
-    template.search = params.search || '';
-    template.techName = params.techName || '';
-    template.date = params.date || '';
-    template.dateFrom = params.dateFrom || '';
-    template.dateTo = params.dateTo || '';
-    template.reportType = params.reportType || '';
-    template.editMode = params.editMode || '';
-    template.tab = params.tab || '';
-    template.page = params.page || '';
-    template.query = params.query || '';
-    template.type = params.type || '';
-    template.id = params.id || '';
-    template.name = params.name || '';
-    template.description = params.description || '';
-    template.callback = params.callback || '';
-    template.redirect = params.redirect || '';
-
-    return template.evaluate()
-      .setTitle('COMPHONE SUPER APP V5.5')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
+    // Default: API Ready response + redirect hint
+    return jsonOutputV55_({
+      status:       'ok',
+      version:      (typeof CONFIG !== 'undefined' ? CONFIG.VERSION : 'V5.5.8'),
+      message:      'COMPHONE API READY',
+      architecture: 'API-Only (V5.5.8)',
+      ui_url:       'https://comphone.github.io/comphone-superapp/pwa/',
+      note:         'UI อยู่ที่ PWA เท่านั้น — GAS เป็น API Backend เท่านั้น'
+    });
   } catch (error) {
-    return HtmlService.createHtmlOutput(
-      '<html><head><meta charset="UTF-8"><title>COMPHONE SUPER APP V5.5</title></head><body>' +
-      '<h2>COMPHONE SUPER APP V5.5 - Router Error</h2><pre>' +
-      sanitizeHtmlTextV55_(String(error)) + '\n' + sanitizeHtmlTextV55_(String(error && error.stack || '')) +
-      '</pre></body></html>'
-    );
+    return jsonOutputV55_({
+      status:  'error',
+      error:   error.toString(),
+      version: (typeof CONFIG !== 'undefined' ? CONFIG.VERSION : 'V5.5.8')
+    });
   }
 }
 
 function doPost(e) {
   try {
-    var payload = parsePostPayloadV55_(e);
-
-    // ── Rate Limiting: 60 requests/min ต่อ action ผ่าน CacheService ──
-    // PHASE 26.6 FIX: ไม่ใช้ e.parameter.ip (ปลอม client spoof) แล้วใช้ token/username hash แทน
-    // PHASE 26.6 STABILIZE: payload ต้อง parse ก่อน rate limit ทุกครั้ง
+    // ── Rate Limiting + Security Log (Production Hardening V5.5.8) ──
     try {
-      var cache = CacheService.getScriptCache();
-      var rateKeyBase = (payload.token || payload.username || payload.action || 'anon').toString().replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 32);
-      var rateKey = 'rl_' + rateKeyBase;
-      var count = parseInt(cache.get(rateKey) || '0', 10);
-      if (count >= 60) {
-        return jsonOutputV55_({ success: false, error: 'Rate limit exceeded. Please retry in 60 seconds.', code: 429 });
+      var _p0     = parsePostPayloadV55_(e);
+      var _token0 = (_p0 && (_p0.token || _p0.auth_token)) || 'anon';
+      var _act0   = (_p0 && (_p0.action || _p0.route)) || 'unknown';
+      if (typeof rateLimit_ === 'function') {
+        var _rl = rateLimit_(_token0, _act0);
+        if (!_rl.allowed) {
+          return jsonOutputV55_({
+            success:  false,
+            error:    'Rate limit exceeded. Retry in ' + _rl.reset_in + 's.',
+            code:     429,
+            reason:   _rl.reason,
+            reset_in: _rl.reset_in
+          });
+        }
+      } else {
+        // Fallback: simple counter
+        var _cache0 = CacheService.getScriptCache();
+        var _ck0    = 'rl_' + _token0.substring(0, 20);
+        var _cnt0   = parseInt(_cache0.get(_ck0) || '0', 10);
+        if (_cnt0 >= 60) {
+          return jsonOutputV55_({ success: false, error: 'Rate limit exceeded.', code: 429 });
+        }
+        _cache0.put(_ck0, String(_cnt0 + 1), 60);
       }
-      cache.put(rateKey, String(count + 1), 60);
-    } catch (rlErr) { /* rate limit ไม่ critical — ไม่ต้องหยุด */ }
+    } catch (rlErr) { /* rate limit ไม่ critical — fail open */ }
 
+    var payload = parsePostPayloadV55_(e);
     // ── ตรวจจับ LINE Webhook (มี destination + events array) ──
     if (payload.destination && Array.isArray(payload.events)) {
-      // PHASE 26.6 FIX: Hard-fail ถ้า verifyLineSignature_ ไม่มี — ไม่ให้ silent fallback
-      if (typeof verifyLineSignature_ !== 'function') {
-        return jsonOutputV55_({ success: false, error: 'LINE signature verification unavailable' });
-      }
-      if (!verifyLineSignature_(e)) {
+      // ตรวจสอบ HMAC-SHA256 signature ก่อนประมวลผล
+      if (typeof verifyLineSignature_ === 'function' && !verifyLineSignature_(e)) {
         return jsonOutputV55_({ success: false, error: 'Invalid LINE signature' });
       }
       return jsonOutputV55_(handleLineWebhook(e));
@@ -143,21 +131,23 @@ function routeActionV55(action, payload) {
 function dispatchActionV55_(action, payload, args) {
   payload = payload || {};
   args = Array.isArray(args) ? args : [payload];
-
-  // PHASE 26.6 FIX: Auth gate helper — ห่องทางที่เรียก underscore functions โดยตรง ต้องตรวจ token ก่อน
-  var authGate = _checkAuthGateV55_(action, payload);
-  if (authGate) return authGate;
-
+  // Phase 5: RouterSplit fast path — O(1) lookup vs O(n) switch
+  try {
+    if (typeof routeByModule === 'function' && action !== 'help') {
+      var _fast = routeByModule(action, payload);
+      if (_fast !== null) return _fast;
+    }
+  } catch(_re) { /* fall through to switch */ }
   try {
     switch (action) {
       case 'help':
         return {
           success: true,
           app: 'COMPHONE SUPER APP V5.5+',
-          version: CONFIG.VERSION || '5.6.5',
+          version: CONFIG.VERSION || 'V5.5.7',
           actions: [
             'getDashboardData', 'getJobStateConfig', 'getJobTimeline', 'transitionJob', 'updateJobById',
-            'addQuickNote', 'openJob', 'updateJobStatus', 'getPhotoGalleryData', 'generateJobQR',
+            'addQuickNote', 'checkJobs', 'listJobs', 'openJob', 'updateJobStatus', 'getPhotoGalleryData', 'generateJobQR',
             'getJobQRData', 'handleProcessPhotos', 'sendDashboardSummary', 'inventoryOverview',
             'transferStock', 'createCustomer', 'updateCustomer', 'getCustomer', 'listCustomers',
             'loginUser', 'logoutUser', 'verifySession', 'listUsers', 'createUser', 'updateUserRole', 'setUserActive', 'setupUserSheet',
@@ -167,14 +157,15 @@ function dispatchActionV55_(action, payload, args) {
             'getStockMovementHistory', 'createPurchaseOrder', 'listPurchaseOrders', 'receivePurchaseOrder',
             'checkStock', 'barcodeLookup', 'scanWithdrawStock', 'geminiReorderSuggestion',
             'createBilling', 'getBilling', 'generatePromptPayQR', 'updatePayment', 'listBillings',
-            'initSystem', 'systemStatus', 'setupAllTriggers', 'getSchemaInfo', 'validateConfig', 'getComphoneConfig', 'setScriptProperties'
+            'initSystem', 'systemStatus', 'setupAllTriggers', 'cleanupSessions', 'verifyToken', 'getSchemaInfo', 'validateConfig', 'getComphoneConfig', 'setScriptProperties'
           ]
         };
 
-      case 'getDashboardData':
-        return getDashboardData();
       case 'getDashboardBundle':
-        // PC Dashboard bundle — ขณะนี้ใช้ getDashboardData() เป็นฐาน สามารถ customize ที่หลังได้
+        return getDashboardBundle(payload);
+      case 'invalidateBundleCache':
+        return invalidateBundleCache();
+      case 'getDashboardData':
         return getDashboardData();
       case 'getJobStateConfig':
         return getJobStateConfig();
@@ -189,6 +180,9 @@ function dispatchActionV55_(action, payload, args) {
       case 'addQuickNote':
         if (args.length >= 3) return invokeFunctionByNameV55_('addQuickNote', args);
         return addQuickNote(payload.job_id || payload.jobId || '', payload.note || '', payload.user || payload.changed_by || 'SYSTEM');
+      case 'checkJobs':
+      case 'listJobs':
+        return checkJobs(payload);
       case 'openJob':
       case 'createJob':
         return openJob(payload);
@@ -263,6 +257,12 @@ function dispatchActionV55_(action, payload, args) {
         return setUserActive(payload.token || '', payload.username || '', payload.active !== false);
       case 'setupUserSheet':
         return setupUserSheet();
+      case 'forceResetAdmin':
+        return forceResetAdmin(payload.password || payload.newPassword || '');
+      case 'cleanupSessions':
+        return cleanupSessions();
+      case 'verifyToken':
+        return verifyToken(payload.token || '');
 
       // ============================================================
       // System Setup & Health Check
@@ -273,6 +273,21 @@ function dispatchActionV55_(action, payload, args) {
         return initSystem();
       case 'systemStatus':
         return systemStatus();
+      case 'getSystemMetrics':
+        return getSystemMetrics();
+      case 'getHealthMonitor':
+        return getHealthMonitor(payload);
+      case 'controlAction':
+        return (typeof controlAction === 'function') ? controlAction(payload) : { success: false, error: 'controlAction not available' };
+      case 'storeSnapshot':
+        return (typeof storeSnapshot === 'function') ? storeSnapshot(payload) : { success: false, error: 'storeSnapshot not available' };
+      case 'getSnapshots':
+        return (typeof getSnapshots === 'function') ? getSnapshots(payload) : { success: false, error: 'getSnapshots not available' };
+      case 'getHealthTrend':
+        return (typeof getHealthTrend === 'function') ? getHealthTrend(payload) : { success: false, error: 'getHealthTrend not available' };
+      case 'getSecurityLog':
+        var _sl = (typeof getSecurityLog === 'function') ? getSecurityLog() : [];
+        return { success: true, data: _sl, count: _sl.length };
       case 'setupTriggers':
       case 'setupAllTriggers':
         return setupAllTriggers();
@@ -380,18 +395,6 @@ function dispatchActionV55_(action, payload, args) {
       case 'pruneAuditLog':
         return pruneAuditLog(payload.keep_days || 90);
 
-      // Approval & Security Audit (PHASE 20.5)
-      case 'validateApproval':
-        return validateApproval_(payload);
-      case 'batchValidateApproval':
-        return batchValidateApproval_(payload);
-      case 'logApprovalAudit':
-        return logApprovalAudit_(payload);
-      case 'batchLogApprovalAudit':
-        return batchLogApprovalAudit_(payload);
-      case 'logSecurityViolations':
-        return logSecurityViolations_(payload);
-
       // ============================================================
       // Quick Actions (LINE, Appointment, Status)
       // ============================================================
@@ -400,6 +403,85 @@ function dispatchActionV55_(action, payload, args) {
           payload.message || '',
           payload.to || payload.toId || _getRoomGroupId(payload.room || 'TECHNICIAN')
         );
+      // ── LINE Bot V2 Routes (LineBotV2.gs) ──
+      case 'sendLineAlert':
+        return sendLineAlert(
+          payload.alertType || 'CUSTOM',
+          payload.data || {},
+          { toId: payload.toId || payload.to }
+        );
+      case 'checkAndAlertSLA':
+        return checkAndAlertSLA(payload.slaPercent || payload.value || 0, {});
+      case 'checkAndAlertHealth':
+        return checkAndAlertHealth(payload.healthScore || payload.value || 0, {});
+      case 'checkAndAlertError':
+        return checkAndAlertError(payload.errorRate || 0, payload.latencyMs || 0, {});
+      case 'mapLineUser':
+        return mapLineUserToSystem(payload.lineUserId || '', payload.systemUsername || '');
+      case 'getSystemUserFromLine':
+        return { success: true, user: getSystemUserFromLine(payload.lineUserId || '') };
+      case 'setupLineBotV2':
+        return setupLineBotV2();
+      case 'testLineBotV2':
+        return testLineBotV2();
+      // ── LINE Quota Optimization (LineBotQuota.gs) ──────────────────
+      case 'queueAlert':
+        return queueAlert(payload.alertType || '', payload.data || {});
+      case 'getAlertQueue':
+        return { success: true, queue: getAlertQueue() };
+      case 'getUnnotifiedAlerts':
+        return { success: true, alerts: getUnnotifiedAlerts() };
+      case 'clearAlertQueue':
+        return clearAlertQueue();
+      case 'markAlertsNotified':
+        return markAlertsNotified(payload.ids || []);
+      case 'smartPushAlert':
+        return smartPushAlert(payload.alertType || '', payload.data || {}, {});
+      case 'checkAndAlertSLAOptimized':
+        return checkAndAlertSLAOptimized(payload.slaPercent || payload.value || 0, {});
+      case 'checkAndAlertHealthOptimized':
+        return checkAndAlertHealthOptimized(payload.healthScore || payload.value || 0, {});
+      case 'checkAndAlertErrorOptimized':
+        return checkAndAlertErrorOptimized(payload.errorRate || 0, payload.latencyMs || 0, {});
+      case 'sendDailyDigest':
+        return sendDailyDigest();
+      case 'setupDailyDigestTrigger':
+        return setupDailyDigestTrigger();
+      case 'getQuotaStatus':
+        return getQuotaStatus();
+      case 'getCachedResponse':
+        return { success: true, data: getCachedResponse(payload.key || '') };
+      case 'setCachedResponse':
+        return setCachedResponse(payload.key || '', payload.data || {}, payload.ttl || 300);
+      case 'invalidateCache':
+        return invalidateCache(payload.key || '');
+      // ── LINE Intelligent Notification (LineBotIntelligent.gs) ─────────
+      case 'queueAlertIntelligent':
+        return queueAlertIntelligent(payload.alertType || '', payload.data || {}, payload.options || {});
+      case 'getIntelAlertQueue':
+        return getIntelAlertQueue(payload.options || {});
+      case 'getPrioritizedAlerts':
+        return getPrioritizedAlerts(payload.role || '', payload.userId || '');
+      case 'getAlertsForRole':
+        return getAlertsForRole(payload.role || '');
+      case 'getAlertsForUser':
+        return getAlertsForUser(payload.userId || '');
+      case 'expireOldAlerts':
+        return expireOldAlerts();
+      case 'setAlertTTL':
+        return setAlertTTL(payload.alertId || '', payload.ttlMin || 120);
+      case 'acknowledgeAlert':
+        return acknowledgeAlert(payload.alertId || '', payload.lineUserId || '');
+      case 'bulkAcknowledge':
+        return bulkAcknowledge(payload.alertIds || [], payload.lineUserId || '');
+      case 'getGroupedAlerts':
+        return getGroupedAlerts(payload.options || {});
+      case 'buildGroupedFlexMessage':
+        return buildGroupedFlexMessage(payload.groupKey || '', payload.options || {});
+      case 'getAlertAnalytics':
+        return getAlertAnalytics(payload.days || 7);
+      case 'buildAnalyticsFlexMessage':
+        return buildAnalyticsFlexMessage(payload.days || 7);
       case 'nudgeTech':
         return nudgeTechAction_(payload);
       case 'addAppointment':
@@ -417,7 +499,8 @@ function dispatchActionV55_(action, payload, args) {
       // Reports
       // ============================================================
       case 'getReportData':
-        return getReportData_(payload.period || 'month');
+        // Phase 4: Use optimized SheetOptimizer version
+        return (typeof getReportData === 'function') ? getReportData(payload) : getReportData_(payload.period || 'month');
 
       // ============================================================
       // Drive Sync
@@ -430,7 +513,7 @@ function dispatchActionV55_(action, payload, args) {
 
       case 'storeSessionContent':
         return storeSessionContent(payload.content || '');
-      // ============================================================
+
       // Customer Portal (Public — ไม่ต้อง Auth)
       // ============================================================
       case 'getJobStatusPublic':
@@ -438,8 +521,6 @@ function dispatchActionV55_(action, payload, args) {
           payload.job_id || payload.jobId || '',
           payload.phone || ''
         );
-      case 'submitCustomerRating':
-        return submitCustomerRating_(payload);
 
       // ============================================================
       // Notification Center — Sprint 3 T4
@@ -450,8 +531,16 @@ function dispatchActionV55_(action, payload, args) {
       // ============================================================
       // Admin Panel — Sprint 3 T3
       // ============================================================
-      // หมายเหตุ: listUsers, createUser, setUserActive, updateUserRole, setupAllTriggers
-      // ถูกจัดการไว้ในส่วน Auth แล้ว (บนบนที่ 243-252)
+      case 'listUsers':
+        return listUsers_(payload);
+      case 'createUser':
+        return createUser_(payload);
+      case 'setUserActive':
+        return setUserActive_(payload);
+      case 'updateUserRole':
+        return updateUserRole_(payload);
+      case 'setupAllTriggers':
+        return setupAllTriggers();
       case 'runBackup':
         return runBackup();
       case 'seedAllData':
@@ -462,8 +551,6 @@ function dispatchActionV55_(action, payload, args) {
       // ============================================================
       case 'smartAssignTech':
         return smartAssignTech_(payload);
-      case 'smartAssignV2':
-        return smartAssignV2_(payload);
       case 'optimizeRoute':
         return optimizeRoute(
           payload.start_lat || payload.lat || 0,
@@ -490,6 +577,173 @@ function dispatchActionV55_(action, payload, args) {
       case 'verifyPaymentSlip':
         // ตรวจสลิปด้วย API หรือ Gemini Vision เป็น fallback
         return verifyPaymentSlip_(payload);
+
+      // ============================================================
+      // Vision Pipeline v1.0.0 (Production)
+      // ============================================================
+      case 'runVisionPipeline':
+        return runVisionPipeline(payload);
+      case 'runSlipVerifyPipeline':
+        return runSlipVerifyPipeline(payload);
+      case 'runQCPipeline':
+        return runQCPipeline(payload);
+      case 'submitHumanReview':
+        return submitHumanReview(payload);
+      case 'getVisionDashboardStats':
+        return getVisionDashboardStats(payload);
+      case 'getVisionPipelineVersion':
+        return getVisionPipelineVersion();
+
+      // ============================================================
+      // VisionLearning — Self-Learning System v1.0.0
+      // ============================================================
+      case 'processFeedbackLoop':
+        return processFeedbackLoop();
+      case 'getConfidenceCalibration':
+        return getConfidenceCalibration();
+      case 'getDynamicThreshold':
+        return { success: true, type: payload.type, threshold: getDynamicThreshold(payload.type || 'QC') };
+      case 'setManualThreshold':
+        return setManualThreshold(payload);
+      case 'analyzeErrorPatterns':
+        return analyzeErrorPatterns(payload);
+      case 'buildAdaptivePrompt':
+        return { success: true, prompt: buildAdaptivePrompt(payload.type || 'QC', payload.input || {}) };
+      case 'createRule':
+        return createRule(payload);
+      case 'getActiveRules':
+        return getActiveRules(payload);
+      case 'autoGenerateRulesFromPatterns':
+        return autoGenerateRulesFromPatterns(payload);
+      case 'getLearningDashboard':
+        return getLearningDashboard(payload);
+      case 'setupLearningTriggers':
+        return setupLearningTriggers();
+      case 'getVisionLearningVersion':
+        return getVisionLearningVersion();
+
+      // ============================================================
+      // Agent Gateway — Multi-Agent Platform v1.0.0
+      // ============================================================
+      case 'agentDispatch':
+        return agentGatewayDispatch(payload);
+      case 'registerAgent':
+        return registerAgent(payload);
+      case 'listAgents':
+        return listAgents(payload);
+      case 'getAgentLogs':
+        return getAgentLogs(payload);
+      case 'getAgentStats':
+        return getAgentStats(payload);
+      case 'getAgentGatewayVersion':
+        return getAgentGatewayVersion();
+
+      // ============================================================
+      // AI Operating System — Phase 1-6 (V5.5.8)
+      // ============================================================
+
+      // Phase 1: AgentMemory
+      case 'amStoreIncident':         return amStoreIncident(payload);
+      case 'amResolveIncident':        return amResolveIncident(payload);
+      case 'amGetIncidents':           return amGetIncidents(payload);
+      case 'amStorePattern':           return amStorePattern(payload);
+      case 'amGetPatterns':            return amGetPatterns(payload);
+      case 'amStoreRule':              return amStoreRule(payload);
+      case 'amGetRules':               return amGetRules(payload);
+      case 'amEvaluateRules':          return amEvaluateRules(payload);
+      case 'amSaveSnapshot':           return amSaveSnapshot(payload);
+      case 'amGetSnapshots':           return amGetSnapshots(payload);
+      case 'getAgentMemoryDashboard':  return getAgentMemoryDashboard(payload);
+      case 'getAgentMemoryVersion':    return getAgentMemoryVersion();
+
+      // Phase 2: SharedContext
+      case 'getSystemContext':         return getSystemContext(payload);
+      case 'getContextDiff':           return getContextDiff(payload);
+      case 'getSharedContextVersion':  return getSharedContextVersion();
+
+      // Phase 3: AgentCollaboration
+      case 'agentCall':                return agentCall(payload);
+      case 'agentBroadcast':           return agentBroadcast(payload);
+      case 'agentConsensus':           return agentConsensus(payload);
+      case 'agentDelegate':            return agentDelegate(payload);
+      case 'getSharedResults':         return getSharedResults(payload);
+      case 'getCollaborationStats':    return getCollaborationStats(payload);
+      case 'getAgentCollaborationVersion': return getAgentCollaborationVersion();
+
+      // Phase 4: WorkflowEngine
+      case 'triggerWorkflow':          return triggerWorkflow(payload);
+      case 'autoTriggerWorkflows':     return autoTriggerWorkflows(payload);
+      case 'defineWorkflow':           return defineWorkflow(payload);
+      case 'listWorkflows':            return listWorkflows(payload);
+      case 'getWorkflowRunLog':        return getWorkflowRunLog(payload);
+      case 'getWorkflowEngineVersion': return getWorkflowEngineVersion();
+
+      // Phase 5: DecisionLayer
+      case 'decide':                   return decide(payload);
+      case 'decideAndAct':             return decideAndAct(payload);
+      case 'getDecisionLayerVersion':  return getDecisionLayerVersion();
+
+      // Phase 6: LearningIntegration
+      case 'syncLearningToMemory':     return syncLearningToMemory(payload);
+      case 'syncIncidentsToLearning':  return syncIncidentsToLearning(payload);
+      case 'runLearningCycle':         return runLearningCycle(payload);
+      case 'getLearningMemoryBridge':  return getLearningMemoryBridge(payload);
+      case 'setupLearningIntegrationTrigger': return setupLearningIntegrationTrigger();
+      case 'getLearningIntegrationVersion':   return getLearningIntegrationVersion();
+
+      // ============================================================
+      // AI-OS Stabilization — Phase 1: MemoryControl
+      // ============================================================
+      case 'getMemoryControlVersion':   return getMemoryControlVersion();
+      case 'runRetentionPolicy':        return runRetentionPolicy(payload);
+      case 'prunePatterns':             return prunePatterns(payload);
+      case 'getMemoryHealth':           return getMemoryHealth(payload);
+      case 'getArchivedIncidents':      return getArchivedIncidents(payload);
+      case 'setupMemoryControlTrigger': return setupMemoryControlTrigger();
+
+      // ============================================================
+      // AI-OS Stabilization — Phase 2: DecisionGuard
+      // ============================================================
+      case 'getDecisionGuardVersion':   return getDecisionGuardVersion();
+      case 'checkGuard':                return checkGuard(payload);
+      case 'checkGuardAndDecide':       return checkGuardAndDecide(payload);
+      case 'checkGuardAndTrigger':      return checkGuardAndTrigger(payload);
+      case 'resetCooldown':             return resetCooldown(payload);
+      case 'getGuardStatus':            return getGuardStatus(payload);
+      case 'getGuardLog':               return getGuardLog(payload);
+
+      // ============================================================
+      // AI-OS Stabilization — Phase 3: WorkflowSafety
+      // ============================================================
+      case 'getWorkflowSafetyVersion':  return getWorkflowSafetyVersion();
+      case 'safeTriggerWorkflow':       return safeTriggerWorkflow(payload);
+      case 'dryRunWorkflow':            return dryRunWorkflow(payload);
+      case 'getWorkflowSafetyStatus':   return getWorkflowSafetyStatus(payload);
+      case 'getSafetyLog':              return getSafetyLog(payload);
+
+      // ============================================================
+      // AI-OS Stabilization — Phase 4: AgentScoring
+      // ============================================================
+      case 'getAgentScoringVersion':    return getAgentScoringVersion();
+      case 'recordOutcome':             return recordOutcome(payload);
+      case 'weightedConsensus':         return weightedConsensus(payload);
+      case 'getAgentScore':             return getAgentScore(payload);
+      case 'getAgentLeaderboard':       return getAgentLeaderboard(payload);
+      case 'resetAgentScore':           return resetAgentScore(payload);
+
+      // ============================================================
+      // AI-OS Stabilization — Phase 5: AIAuditLog
+      // ============================================================
+      case 'getAIAuditLogVersion':      return getAIAuditLogVersion();
+      case 'logAIDecision':             return logAIDecision(payload);
+      case 'getAIDecisionLog':          return getAIDecisionLog(payload);
+      case 'logWorkflowExecution':      return logWorkflowExecution(payload);
+      case 'getWorkflowExecutionLog':   return getWorkflowExecutionLog(payload);
+      case 'logAgentAction':            return logAgentAction(payload);
+      case 'getAgentActionLog':         return getAgentActionLog(payload);
+      case 'logAIAuditEvent':           return logAIAuditEvent(payload);
+      case 'getAIAuditTrail':           return getAIAuditTrail(payload);
+      case 'getAIAuditDashboard':       return getAIAuditDashboard(payload);
 
       // ============================================================
       // Tax Engine (TASK 1-2: VAT Flexible + WHT ภงด.)
@@ -524,48 +778,28 @@ function dispatchActionV55_(action, payload, args) {
         return getWarrantyDue(payload);
 
       // ============================================================
+      // Executive Dashboard (KPI)
+      // ============================================================
+      case 'getExecutiveDashboard':
+        return getExecutiveDashboard(payload);
+      case 'getHealthMonitor':
+        return getHealthMonitor(payload);
+      case 'controlAction':
+        return controlAction(payload);
+      case 'storeSnapshot':
+        return storeSnapshot(payload);
+      case 'getSnapshots':
+        return getSnapshots(payload);
+      case 'getHealthTrend':
+        return getHealthTrend(payload);
+
+      // ============================================================
       // Health Monitoring (TASK 9)
       // ============================================================
       case 'healthCheck':
         return healthCheck(payload);
       case 'getHealthHistory':
         return getHealthHistory(payload);
-
-      // ============================================================
-      // PHASE 27: Business AI (Tech Companion | Smart Assign V2 | CSAT | TOR)
-      // ============================================================
-      case 'askAI':
-        return askAI_(payload);
-      case 'sendCSAT':
-        return sendCSAT_(payload);
-      case 'recordCSAT':
-        return recordCSAT_(payload);
-      case 'getCSATSummary':
-        return getCSATSummary_(payload);
-      case 'generateTOR':
-        return generateTOR_(payload);
-      case 'exportTORpdf':
-        return exportTORpdf_(payload);
-      case 'listTOR':
-        return listTOR_(payload);
-      case 'getBusinessAIMetrics':
-        return getBusinessAIMetrics_(payload);
-
-      // ============================================================
-      // PHASE 28: Business Metrics AI
-      // ============================================================
-      case 'getAIMetrics':
-        return getAIMetrics_(payload);
-      case 'logAIUsage':
-        return logAIUsage_(payload);
-
-      // ============================================================
-      // PHASE 29: AI Business Intelligence
-      // ============================================================
-      case 'analyzeBusiness':
-        return analyzeBusiness_(payload);
-      case 'getBusinessAlerts':
-        return getBusinessAlerts_(payload);
 
       // ============================================================
       // Multi-branch (TASK 7)
@@ -591,318 +825,31 @@ function dispatchActionV55_(action, payload, args) {
       case 'cleanAllData':
         return jsonOutputV55_(cleanAllData());
 
-      // ── Kudos / Customer Rating (หมายเหตุ: submitCustomerRating อยู่ในส่วน Customer Portal แล้ว)
+      // ── Kudos / Customer Rating ────────────────────────────────────────────
+      case 'submitCustomerRating':
+        return jsonOutputV55_(submitCustomerRating_(payload));
       case 'getCustomerRatings':
         return jsonOutputV55_(getCustomerRatings_(payload));
+
+      // ── POS / Retail Sale (ขายหน้าร้าน) ────────────────────────────────
+      case 'createSale':
+      case 'createRetailSale':
+        if (typeof createRetailSale_ === 'function') return createRetailSale_(payload);
+        // fallback: ใช้ createBilling แทนจนกว่าจะมี POS module
+        return autoGenerateBillingForJob(payload.job_id || '', Object.assign({ sale_type: 'retail' }, payload));
+      case 'listSales':
+      case 'listRetailSales':
+        if (typeof listRetailSales_ === 'function') return listRetailSales_(payload);
+        return listAllBillings_(Object.assign({ type: 'retail' }, payload));
+      case 'getSaleSummary':
+        if (typeof getRetailSaleSummary_ === 'function') return getRetailSaleSummary_(payload);
+        return getReportData(Object.assign({ type: 'sale' }, payload));
 
       default:
         return invokeFunctionByNameV55_(action, args);
     }
   } catch (error) {
     return { success: false, action: action, error: error.toString() };
-  }
-}
-
-// ============================================================
-// PHASE 21.1: Production Approval & Security Audit
-// NEVER TRUST CLIENT — ทุก approval ต้องผ่าน server-side validation
-// ============================================================
-
-// Role → Allowed Actions (whitelist ที่ชัดเจน)
-// ถ้า action ไม่อยู่ใน list ของ role นั้น → REJECT
-var APPROVAL_ROLE_PERMISSIONS = {
-  owner: [
-    // Admin / System
-    'deleteJob', 'deleteData', 'deleteUser', 'deleteInventoryItem', 'cancelJob', 'refund',
-    'approveBilling', 'rejectBilling', 'setupSystem', 'initSystem', 'setScriptProperties',
-    'setupAllTriggers', 'runBackup', 'seedAllData', 'pruneAuditLog', 'cleanAllData',
-    'databaseMaintenance', 'validateSchema', 'runIntegrityCheck', 'syncCodeToDrive',
-    'storeSessionContent', 'createUser', 'updateUserRole', 'setUserActive', 'listUsers',
-    // Financial
-    'createBilling', 'updatePayment', 'markBillingPaid', 'generatePromptPayQR',
-    'calculateTax', 'saveTaxReport', 'generateTaxInvoice', 'generateWhtDocument',
-    // Stock
-    'transferStock', 'createPurchaseOrder', 'receivePurchaseOrder', 'cancelPurchaseOrder',
-    'addInventoryItem', 'updateInventoryItem', 'deleteInventoryItem', 'scanWithdrawStock',
-    // Job / CRM
-    'createJob', 'openJob', 'updateJobStatus', 'transitionJob', 'updateJobById',
-    'markJobStatus', 'markDone', 'markWaiting', 'addQuickNote', 'addAppointment',
-    'updateJobSchedule', 'createCustomer', 'updateCustomer', 'createAfterSalesRecord',
-    'logAfterSalesFollowUp', 'sendAfterSalesAlerts', 'scheduleFollowUp', 'logFollowUpResult',
-    'nudgeSalesTeam', 'createWarranty', 'updateWarrantyStatus',
-    // Communication
-    'sendLineMessage', 'nudgeTech', 'sendPushToAll', 'savePushSubscription', 'removePushSubscription',
-    // AI
-    'smartAssignTech', 'smartAssignV2', 'optimizeRoute', 'analyzeWorkImage', 'runJobCompletionQC',
-    'qualityCheck', 'geminiSlipVerify', 'verifyPaymentSlip', 'askAI', 'sendCSAT', 'getCSATSummary',
-    'generateTOR', 'exportTORpdf', 'listTOR', 'getBusinessAIMetrics',
-    // Auth (self-service)
-    'changePassword', 'logoutUser'
-  ],
-  accountant: [
-    'createBilling', 'updatePayment', 'markBillingPaid', 'generatePromptPayQR',
-    'transferStock', 'createPurchaseOrder', 'receivePurchaseOrder', 'cancelPurchaseOrder',
-    'addInventoryItem', 'updateInventoryItem', 'getInventoryItemDetail',
-    'getStockMovementHistory', 'checkStock', 'barcodeLookup', 'scanWithdrawStock',
-    'calculateTax', 'saveTaxReport', 'getTaxReport', 'generateTaxInvoice', 'generateWhtDocument',
-    'listBillings', 'getBilling', 'getReportData',
-    'updateJobStatus', 'transitionJob', 'markJobStatus', 'markDone', 'markWaiting',
-    'createJob', 'openJob', 'updateCustomer', 'createCustomer',
-    'changePassword', 'logoutUser'
-  ],
-  sales: [
-    'createJob', 'openJob', 'updateJobStatus', 'transitionJob', 'updateJobById',
-    'markJobStatus', 'markDone', 'markWaiting', 'addQuickNote', 'addAppointment',
-    'updateJobSchedule', 'createCustomer', 'updateCustomer',
-    'createBilling', 'updatePayment', 'markBillingPaid',
-    'sendLineMessage', 'nudgeTech', 'nudgeSalesTeam',
-    'askAI', 'smartAssignV2', 'sendCSAT', 'getCSATSummary',
-    'generateTOR', 'exportTORpdf', 'listTOR',
-    'changePassword', 'logoutUser'
-  ],
-  technician: [
-    'updateJobStatus', 'transitionJob', 'markJobStatus', 'markDone', 'markWaiting',
-    'addQuickNote', 'clockIn', 'clockOut', 'addAppointment',
-    'handleProcessPhotos', 'analyzeWorkImage', 'qualityCheck', 'runJobCompletionQC',
-    'askAI',
-    'changePassword', 'logoutUser'
-  ]
-};
-
-/**
- * validateApproval_ — Production-grade server-side approval validation
- * @param {Object} payload — { token, username, action, clientRole, nonce, timestamp, ... }
- * @return {Object} — { success: true/false, reason: 'OK'|'INVALID_SESSION'|... }
- */
-function validateApproval_(payload) {
-  try {
-    var token     = payload.token || '';
-    var username  = payload.username || '';
-    var action    = payload.action || '';
-    var nonce     = payload.nonce || '';
-    var timestamp = Number(payload.timestamp || 0);
-
-    // ── 1. REQUIRED FIELD CHECK ────────────────────────────────────────
-    if (!token)     return { success: false, reason: 'MISSING_TOKEN' };
-    if (!action)    return { success: false, reason: 'MISSING_ACTION' };
-    if (!nonce)     return { success: false, reason: 'MISSING_NONCE' };
-    if (!timestamp) return { success: false, reason: 'MISSING_TIMESTAMP' };
-
-    // ── 2. TIMESTAMP DRIFT (±5 นาที) ────────────────────────────────────
-    var now = Date.now();
-    var drift = Math.abs(now - timestamp);
-    var MAX_DRIFT_MS = 5 * 60 * 1000; // 5 นาที
-    if (drift > MAX_DRIFT_MS) {
-      return { success: false, reason: 'TIME_DRIFT', detail: 'drift=' + Math.round(drift/1000) + 's' };
-    }
-
-    // ── 3. NONCE ANTI-REPLAY (CacheService, TTL 10 นาที) ──────────────────
-    var cache = CacheService.getScriptCache();
-    var nonceKey = 'nonce_' + String(nonce).replace(/[^a-zA-Z0-9_-]/g, '');
-    if (cache.get(nonceKey)) {
-      return { success: false, reason: 'NONCE_USED' };
-    }
-    // บันทึก nonce ทันที (10 นาที)
-    cache.put(nonceKey, '1', 600);
-
-    // ── 4. SESSION VERIFICATION ────────────────────────────────────
-    var sessionCheck = verifySession(token);
-    if (!sessionCheck || !sessionCheck.valid) {
-      return { success: false, reason: 'INVALID_SESSION', detail: sessionCheck ? sessionCheck.error : 'verifySession failed' };
-    }
-    var session = sessionCheck.session;
-
-    // ตรวจว่า username ตรงกับ session
-    if (session.username && username && session.username.toLowerCase() !== username.toLowerCase()) {
-      return { success: false, reason: 'USER_MISMATCH', detail: 'token owner != requested user' };
-    }
-
-    // ── 5. USER VERIFICATION (DB_USERS — ตรวจ active) ────────────────────
-    var ss = getComphoneSheet();
-    var userSheet = findSheetByName(ss, 'DB_USERS');
-    if (!userSheet) {
-      return { success: false, reason: 'DB_USERS_NOT_FOUND' };
-    }
-    var rows = userSheet.getDataRange().getValues();
-    var headers = rows[0];
-    var idx = {};
-    for (var h = 0; h < headers.length; h++) {
-      idx[String(headers[h]).toLowerCase().trim()] = h;
-    }
-    var colUser   = idx['username'] !== undefined ? idx['username'] : 0;
-    var colActive = idx['active']   !== undefined ? idx['active']   : 4;
-    var colRole   = idx['role']     !== undefined ? idx['role']     : 2;
-
-    var userFound = false;
-    var userActive = false;
-    var dbRole = '';
-    for (var r = 1; r < rows.length; r++) {
-      var rowUser = String(rows[r][colUser] || '').trim().toLowerCase();
-      if (rowUser === session.username.toLowerCase()) {
-        userFound = true;
-        var activeVal = String(rows[r][colActive] || 'TRUE').toUpperCase();
-        userActive = activeVal !== 'FALSE' && activeVal !== '0';
-        dbRole = String(rows[r][colRole] || 'TECHNICIAN').toLowerCase().trim();
-        break;
-      }
-    }
-    if (!userFound) {
-      return { success: false, reason: 'USER_NOT_FOUND' };
-    }
-    if (!userActive) {
-      return { success: false, reason: 'USER_INACTIVE' };
-    }
-
-    // ── 6. ROLE PERMISSION CHECK ────────────────────────────────────────
-    var normalizedRole = dbRole;
-    // Alias mapping (ป้องกันกับ PWA roles)
-    if (normalizedRole === 'admin')   normalizedRole = 'owner';
-    if (normalizedRole === 'acct')    normalizedRole = 'accountant';
-    if (normalizedRole === 'tech')    normalizedRole = 'technician';
-    if (normalizedRole === 'exec')    normalizedRole = 'owner';
-
-    var allowedActions = APPROVAL_ROLE_PERMISSIONS[normalizedRole];
-    if (!allowedActions) {
-      return { success: false, reason: 'UNKNOWN_ROLE', detail: dbRole };
-    }
-
-    // OWNER = all-powerful (ไม่ต้องตรวจ whitelist)
-    if (normalizedRole !== 'owner') {
-      var actionAllowed = false;
-      for (var a = 0; a < allowedActions.length; a++) {
-        if (allowedActions[a] === action) {
-          actionAllowed = true;
-          break;
-        }
-      }
-      if (!actionAllowed) {
-        return { success: false, reason: 'ROLE_DENIED', detail: 'role=' + dbRole + ' action=' + action };
-      }
-    }
-
-    // ── 7. APPROVED ────────────────────────────────────────────────────
-    // Log approval success
-    try {
-      logApprovalAudit_({
-        action: action,
-        targetId: payload.targetId || '',
-        success: true,
-        reason: 'OK',
-        user: session.username,
-        role: dbRole,
-        nonce: nonce,
-        source: 'validateApproval_'
-      });
-    } catch (logErr) { /* silent — ห้าม audit log ล้มเหลว ไม่ควรหยุด approval */ }
-
-    return {
-      success: true,
-      reason: 'OK',
-      user: session.username,
-      role: dbRole,
-      action: action,
-      nonce: nonce
-    };
-
-  } catch (e) {
-    // ล้มเหลวใน validateApproval_ — ห้าม allow โดยเด็ดขาด
-    return { success: false, reason: 'SERVER_ERROR', detail: e.toString() };
-  }
-}
-
-/**
- * batchValidateApproval_ — Batch approval validation
- */
-function batchValidateApproval_(payload) {
-  try {
-    var items = payload.items || [];
-    if (!Array.isArray(items) || items.length === 0) {
-      return { success: false, reason: 'EMPTY_BATCH' };
-    }
-    var approved = 0;
-    var results = [];
-    for (var i = 0; i < items.length; i++) {
-      var r = validateApproval_(items[i]);
-      if (r && r.success) approved++;
-      results.push(r);
-    }
-    return { success: true, approved: approved, total: items.length, results: results };
-  } catch (e) {
-    return { success: false, reason: 'SERVER_ERROR', detail: e.toString() };
-  }
-}
-
-/**
- * logApprovalAudit_ — บันทึก audit log ลง AUDIT_LOG sheet
- */
-function logApprovalAudit_(payload) {
-  try {
-    var ss = getComphoneSheet();
-    var sheet = findSheetByName(ss, 'AUDIT_LOG');
-    if (!sheet) {
-      sheet = ss.insertSheet('AUDIT_LOG');
-      sheet.appendRow(['timestamp', 'action', 'target_id', 'success', 'reason', 'user', 'role', 'nonce', 'source']);
-    }
-    sheet.appendRow([
-      Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss'),
-      payload.action || '',
-      payload.targetId || payload.id || '',
-      payload.success === true ? 'true' : 'false',
-      payload.reason || '',
-      payload.user || '',
-      payload.role || '',
-      payload.nonce || '',
-      payload.source || 'approval_guard'
-    ]);
-    return { success: true };
-  } catch (e) {
-    return { success: false, reason: 'AUDIT_LOG_ERROR', detail: e.toString() };
-  }
-}
-
-/**
- * batchLogApprovalAudit_ — Batch audit log
- */
-function batchLogApprovalAudit_(payload) {
-  try {
-    var logs = Array.isArray(payload) ? payload : (payload.logs || []);
-    if (!Array.isArray(logs)) logs = [logs];
-    for (var i = 0; i < logs.length; i++) {
-      logApprovalAudit_(logs[i]);
-    }
-    return { success: true, logged: logs.length };
-  } catch (e) {
-    return { success: false, reason: 'SERVER_ERROR', detail: e.toString() };
-  }
-}
-
-/**
- * logSecurityViolations_ — บันทึก security violations ลง SECURITY_LOG sheet
- */
-function logSecurityViolations_(payload) {
-  try {
-    var violations = payload.violations || [];
-    var ss = getComphoneSheet();
-    var sheet = findSheetByName(ss, 'SECURITY_LOG');
-    if (!sheet) {
-      sheet = ss.insertSheet('SECURITY_LOG');
-      sheet.appendRow(['timestamp', 'type', 'action', 'method', 'source', 'stack', 'count']);
-    }
-    for (var i = 0; i < violations.length; i++) {
-      var v = violations[i];
-      sheet.appendRow([
-        Utilities.formatDate(new Date((v.ts || Date.now())), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss'),
-        v.type || '',
-        v.action || '',
-        v.method || '',
-        v.source || '',
-        (v.stack || '').substring(0, 500),
-        violations.length
-      ]);
-    }
-    return { success: true, logged: violations.length };
-  } catch (e) {
-    return { success: false, reason: 'AUDIT_LOG_ERROR', detail: e.toString() };
   }
 }
 
@@ -939,46 +886,9 @@ function normalizeActionV55_(action) {
   return map[action] || action;
 }
 
-// PHASE 26.6 FIX: Auth gate — ห่องทางที่เรียก underscore functions โดยตรง ต้องตรวจ token ก่อน
-function _checkAuthGateV55_(action, payload) {
-  var AUTH_REQUIRED = {
-    'cancelPurchaseOrder': true,
-    'scheduleFollowUp': true,
-    'logFollowUpResult': true,
-    'nudgeSalesTeam': true,
-    'nudgeTech': true,
-    'smartAssignTech': true,
-    'smartAssignV2': true,
-    'geminiSlipVerify': true,
-    'verifyPaymentSlip': true,
-    'askAI': true,
-    'sendCSAT': true,
-    'generateTOR': true,
-    'exportTORpdf': true,
-    'runBackup': true,
-    'seedAllData': true,
-    'pruneAuditLog': true
-  };
-  if (!AUTH_REQUIRED[action]) return null;
-
-  var token = payload && payload.token ? String(payload.token) : '';
-  if (!token) {
-    return { success: false, error: 'AUTH_REQUIRED', code: 401, message: 'Token required for action: ' + action };
-  }
-  var session = verifySession(token);
-  if (!session || !session.valid) {
-    return { success: false, error: 'INVALID_SESSION', code: 401, message: 'Invalid or expired session' };
-  }
-  return null;
-}
-
 function invokeFunctionByNameV55_(functionName, args) {
   functionName = String(functionName || '').trim();
   if (!functionName) return { success: false, error: 'Function name is required' };
-  // PHASE 26.6 FIX: ป้องกันการเรียก private functions (ขึ้นต้นด้วย _)
-  if (functionName.charAt(0) === '_') {
-    return { success: false, error: 'Private function access denied: ' + functionName, action: functionName };
-  }
   var globalScope = typeof globalThis !== 'undefined' ? globalThis : this;
   var fn = globalScope[functionName];
   if (typeof fn !== 'function') {
@@ -1005,12 +915,21 @@ function parsePostPayloadV55_(e) {
 function jsonOutputV55_(data) {
   // GAS ไม่รองรับ custom HTTP headers — เพิ่ม _headers metadata ใน response
   // เพื่อให้ Cloudflare Worker หรือ proxy สามารถอ่านและเพิ่ม headers ได้
-  if (data && typeof data === 'object' && !data._headers) {
-    data._headers = {
-      'X-Content-Type-Options': 'nosniff',
-      'X-Frame-Options': 'DENY',
-      'Cache-Control': 'no-store, no-cache, must-revalidate'
-    };
+  if (data && typeof data === 'object') {
+    if (!data._headers) {
+      data._headers = {
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'Cache-Control': 'no-store, no-cache, must-revalidate'
+      };
+    }
+    // เพิ่ม meta.version ในทุก response — Frontend ใช้ตรวจสอบ version mismatch
+    if (!data.meta) {
+      data.meta = {
+        version: (typeof CONFIG !== 'undefined' && CONFIG.VERSION) || 'V5.5.7',
+        ts: Date.now()
+      };
+    }
   }
   return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
 }
@@ -1090,7 +1009,7 @@ function healthCheckV55_() {
 
   return {
     status:    overallOk ? 'healthy' : 'degraded',
-    version:   CONFIG.VERSION || '5.6.5',
+    version:   CONFIG.VERSION || 'V5.5.7',
     timestamp: Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss'),
     elapsed_ms: elapsed,
     checks:    checks
@@ -1098,41 +1017,36 @@ function healthCheckV55_() {
 }
 
 // ============================================================
-// Customer Portal Helpers
+// 📌 getVersion — GET ?action=getVersion
 // ============================================================
+function getVersionV55_() {
+  return {
+    success: true,
+    version: CONFIG.VERSION || '6.2.0',
+    build:   CONFIG.BUILD   || '2026-04-19',
+    app:     CONFIG.APP_NAME || 'COMPHONE SUPER APP AI',
+    timestamp: Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss')
+  };
+}
+
 /**
- * submitCustomerRating_ - บันทึกคะแนนจากลูกค้า (Public API)
- * @param {Object} payload - { job_id, rating, comment? }
- * @return {Object} - { success, message }
+ * getSystemVersion — Public API for frontend version check
+ * Returns version info for mismatch detection
  */
-function submitCustomerRating_(payload) {
-  try {
-    var jobId = payload.job_id || payload.jobId || '';
-    var rating = Number(payload.rating || 0);
-    var comment = payload.comment || '';
-
-    if (!jobId) return { success: false, error: 'ไม่พบ job_id' };
-    if (!rating || rating < 1 || rating > 5) return { success: false, error: 'Rating ต้องอยู่ระหว่าง 1-5' };
-
-    var ss = getComphoneSheet();
-    var sheet = findSheetByName(ss, 'CUSTOMER_RATINGS');
-
-    // ถ้าไม่มี sheet ให้สร้าง
-    if (!sheet) {
-      sheet = ss.insertSheet('CUSTOMER_RATINGS');
-      sheet.appendRow(['job_id', 'rating', 'comment', 'submitted_at', 'source']);
-    }
-
-    sheet.appendRow([
-      jobId,
-      rating,
-      comment,
-      Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss'),
-      'customer_portal'
-    ]);
-
-    return { success: true, message: 'ขอบคุณสำหรับคะแนน' };
-  } catch (e) {
-    return { success: false, error: e.toString() };
-  }
+function getSystemVersion() {
+  var now = new Date();
+  // Single Source: all values from Config.gs (v6.2.1)
+  return {
+    success:   true,
+    status:    'healthy',
+    version:   CONFIG.VERSION  || '6.2.2',
+    build:     CONFIG.BUILD    || '2026-04-20',
+    app:       CONFIG.APP_NAME || 'COMPHONE SUPER APP AI',
+    updated:   now.toISOString(),
+    timestamp: Utilities.formatDate(now, 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss'),
+    deploy_id: 'GAS-@475',
+    commit:    '4762f10',
+    env:       'production',
+    manifest:  'docs/SYSTEM_MANIFEST.json'
+  };
 }
