@@ -552,11 +552,8 @@ async function callGas(action, payload = {}, force = false) {
   }
   const body = Object.assign({ action, token: _token || '' }, payload);
   if (force) body._nocache = 1;
-  const res = await fetch(GAS_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
+  const qs = new URLSearchParams(body).toString();
+  const res = await fetch(GAS_URL + '?' + qs);
   const data = await res.json();
   _cache[cacheKey] = { data, ts: Date.now() };
   return data;

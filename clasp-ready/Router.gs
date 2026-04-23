@@ -74,6 +74,18 @@ function doGet(e) {
     if (action === 'deepcleanup2') {
       return jsonOutputV55_(deepCleanupPass2());
     }
+    // Executive Dashboard — GET ?action=getExecutiveDashboard
+    if (action === 'getexecutivedashboard') {
+      return jsonOutputV55_((typeof getExecutiveDashboard === 'function') ? getExecutiveDashboard(payload || {}) : { success: false, error: 'getExecutiveDashboard not available' });
+    }
+    // System Logs — GET ?action=getSystemLogs&limit=50
+    if (action === 'getsystemlogs') {
+      return jsonOutputV55_((typeof getSystemLogs === 'function') ? getSystemLogs(params) : { success: false, error: 'getSystemLogs not available' });
+    }
+    // Log System Error — GET ?action=logSystemError&level=ERROR&message=...
+    if (action === 'logsystemerror') {
+      return jsonOutputV55_((typeof logSystemError === 'function') ? logSystemError(params) : { success: false, error: 'logSystemError not available' });
+    }
     // Properties Guard Status — GET ?action=guardStatus
     if (action === 'guardstatus') {
       return jsonOutputV55_(propertiesGuardStatus());

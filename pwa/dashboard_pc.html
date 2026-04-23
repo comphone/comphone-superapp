@@ -424,12 +424,9 @@ window.addEventListener('load', () => {
 // เหตุผล: dashboard_pc.html ทำงานบน GitHub Pages (static) ไม่มี google.script.run
 // AI_EXECUTOR ใช้ได้เฉพาะกับ PWA ที่โหลดผ่าน GAS Web App
 async function callGas(action, params) {
-  const url = localStorage.getItem('comphone_gas_url') || GAS_URL;
-  const r = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action, ...params })
-  });
+  const baseUrl = localStorage.getItem('comphone_gas_url') || GAS_URL;
+  const qs = new URLSearchParams({ action, ...params }).toString();
+  const r = await fetch(baseUrl + '?' + qs);
   return r.json();
 }
 
