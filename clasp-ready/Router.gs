@@ -1099,3 +1099,71 @@ function getSystemVersion() {
     manifest:  'docs/SYSTEM_MANIFEST.json'
   };
 }
+
+// ============================================================
+// System Logs — Centralized Error Logging
+// ============================================================
+
+/**
+ * logSystemError — Log errors to System_Logs sheet
+ * No auth required (frontend may not have token when error occurs)
+ * @param {Object} data - { level, source, message, stack, userAgent, url, userId }
+ * @return {Object} { success }
+ */
+function logSystemError(data) {
+  try {
+    var ssId = PropertiesService.getScriptProperties().getProperty('DB_SS_ID');
+    if (!ssId) return { success: false, error: 'DB_SS_ID not set' };
+    var ss = SpreadsheetApp.openById(ssId);
+    var sheet = ss.getSheetByName('System_Logs');
+    if (!sheet) {
+      sheet = ss.insertSheet('System_Logs');
+      sheet.appendRow(['timestamp', 'level', 'source', 'message', 'stack', 'user_agent', 'url', 'user_id']);
+    }
+    sheet.appendRow([
+      new Date().toISOString(),
+      data.level || 'ERROR',
+      data.source || 'unknown',
+      data.message || '',
+      data.stack || '',
+      data.userAgent || '',
+      data.url || '',
+      data.userId || ''
+    ]);
+    // Keep only last 500 rows
+    if (sheet.getLastRow() > 501) {
+      sheet.deleteRows(2, sheet.getLastRow() - 501);
+    }
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * getSystemLogs — Read logs from System_Logs sheet (Admin only)
+ * @param {Object} params - { limit, level, token }
+ * @return {Object} { success, data, count }
+ */
+function getSystemLogs(params) {
+  try {
+    var ssId = PropertiesService.getScriptProperties().getProperty('DB_SS_ID');
+    if (!ssId) return { success: false, error: 'DB_SS_ID not set' };
+    var ss = SpreadsheetApp.openById(ssId);
+    var sheet = ss.getSheetByName('System_Logs');
+    if (!sheet) return { success: true, data: [], count: 0 };
+    var limit = parseInt(params.limit) || 50;
+    var level = params.level || null;
+    var lastRow = sheet.getLastRow();
+    if (lastRow <= 1) return { success: true, data: [], count: 0 };
+    var startRow = Math.max(2, lastRow - limit + 1);
+    var rows = sheet.getRange(startRow, 1, lastRow - startRow + 1, 8).getValues();
+    var data = rows.map(function(r) {
+      return { timestamp: r[0], level: r[1], source: r[2], message: r[3], stack: r[4], userAgent: r[5], url: r[6], userId: r[7] };
+    }).reverse(); // newest first
+    if (level) data = data.filter(function(d) { return d.level === level; });
+    return { success: true, data: data, count: data.length };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}

@@ -602,6 +602,7 @@
   </div>
 </main>
 
+<script src="gas_config.js"></script>
 <script>
 // ─── Config ───────────────────────────────────────────────────────────────────
 const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyYb8Nr7GR8xVAbiduuJPEmvJVL76m86czIYldo_3l7eQwa9aojjspTCF8BHm36SugAbw/exec';
@@ -992,6 +993,140 @@ function showError(msg) {
 function hideError() {
   document.getElementById('error-banner').classList.remove('show');
 }
+
+// ─── System Logs — Real-time Log Viewer ──────────────────────────────────────
+let sysLogLevelFilter = 'ALL';
+let allSysLogs = [];
+let sysLogsPollTimer = null;
+const SYS_LOGS_POLL_INTERVAL = 10000; // 10 seconds
+
+// Helper: call GAS API and return JSON
+async function callGas(action, params) {
+  const qs = new URLSearchParams({ action, ...params }).toString();
+  const url = gasUrl + '?' + qs;
+  const res = await fetch(url, { method: 'GET' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return await res.json();
+}
+
+// Set log level filter
+function setSysLogLevel(level) {
+  sysLogLevelFilter = level;
+  document.querySelectorAll('#sys-logs-filter .slog-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-level') === level);
+  });
+  renderSysLogsTable();
+}
+
+// Fetch system logs from GAS
+async function fetchSystemLogs() {
+  try {
+    const data = await callGas('getSystemLogs', { limit: 50 });
+    let logs = [];
+    if (Array.isArray(data)) {
+      logs = data;
+    } else if (data.success && Array.isArray(data.data)) {
+      logs = data.data;
+    } else if (data.logs && Array.isArray(data.logs)) {
+      logs = data.logs;
+    }
+    allSysLogs = logs;
+    renderSysLogsTable();
+    // Update status indicator
+    const statusEl = document.getElementById('sys-logs-status');
+    statusEl.innerHTML = '<span class="dot"></span> Connected';
+    statusEl.style.color = 'var(--muted)';
+  } catch (err) {
+    console.error('fetchSystemLogs error:', err);
+    const statusEl = document.getElementById('sys-logs-status');
+    statusEl.innerHTML = '⚠️ Fetch error — retrying...';
+    statusEl.style.color = 'var(--orange)';
+  }
+}
+
+// Render the log table with filtering and color coding
+function renderSysLogsTable() {
+  const tbody = document.getElementById('sys-logs-tbody');
+  const countEl = document.getElementById('sys-logs-count');
+
+  // Filter logs by level
+  let filtered = allSysLogs;
+  if (sysLogLevelFilter !== 'ALL') {
+    filtered = allSysLogs.filter(log => {
+      const lv = (log.level || log.severity || '').toUpperCase();
+      return lv === sysLogLevelFilter;
+    });
+  }
+
+  // Update count
+  const shown = filtered.length;
+  const total = allSysLogs.length;
+  countEl.textContent = sysLogLevelFilter === 'ALL'
+    ? total + ' logs'
+    : shown + ' / ' + total + ' logs';
+
+  // Empty state
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="slog-empty">' +
+      '<span class="slog-empty-icon">✅</span>' +
+      (total === 0 ? 'No logs available' : 'No ' + sysLogLevelFilter + ' logs') +
+      '</td></tr>';
+    return;
+  }
+
+  // Build rows (newest first — reverse if needed)
+  const sorted = [...filtered].sort((a, b) => {
+    const ta = new Date(a.timestamp || a.time || 0).getTime();
+    const tb = new Date(b.timestamp || b.time || 0).getTime();
+    return tb - ta; // newest first
+  });
+
+  tbody.innerHTML = sorted.slice(0, 50).map(log => {
+    const level = (log.level || log.severity || 'INFO').toUpperCase();
+    const source = log.source || log.module || log.component || '—';
+    const msg = log.message || log.detail || log.msg || '—';
+    const ts = log.timestamp || log.time;
+    const timeStr = ts ? new Date(ts).toLocaleString('th-TH', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      day: '2-digit', month: '2-digit'
+    }) : '—';
+
+    // Row class for critical/error highlighting
+    let rowClass = '';
+    if (level === 'CRITICAL') rowClass = 'slog-row-critical';
+    else if (level === 'ERROR') rowClass = 'slog-row-error';
+
+    // Escape HTML in message
+    const safeMsg = msg.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const safeSource = source.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+    return '<tr class="' + rowClass + '">' +
+      '<td class="slog-time">' + timeStr + '</td>' +
+      '<td><span class="slog-level ' + level + '">' + level + '</span></td>' +
+      '<td class="slog-source">' + safeSource + '</td>' +
+      '<td class="slog-msg">' + safeMsg + '</td>' +
+      '</tr>';
+  }).join('');
+
+  // Auto-scroll to top to show newest
+  const wrap = document.getElementById('sys-logs-table-wrap');
+  wrap.scrollTop = 0;
+}
+
+// Start polling for system logs
+function startSysLogsPolling() {
+  // Initial fetch
+  fetchSystemLogs();
+  // Poll every 10 seconds
+  if (sysLogsPollTimer) clearInterval(sysLogsPollTimer);
+  sysLogsPollTimer = setInterval(fetchSystemLogs, SYS_LOGS_POLL_INTERVAL);
+}
+
+// Init on DOM ready (add to existing init)
+document.addEventListener('DOMContentLoaded', () => {
+  // Small delay so main fetchAll runs first
+  setTimeout(startSysLogsPolling, 2000);
+});
 </script>
 </body>
 </html>
