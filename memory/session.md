@@ -59,7 +59,7 @@
 
 | รายการ | URL |
 |--------|-----|
-| **GAS API @487 (หลัก — v6.2.2 Sprint 1+2)** | `https://script.google.com/macros/s/AKfycbxq4wKVp0vlxxvBom_Rmv181EF9n4RT6VqgLZs5M1zLR-SWaq1_xtsGzJDkX1rLd-Gx1A/exec` |
+| **GAS API @488 (หลัก — v6.2.3 POST support)** | `https://script.google.com/macros/s/AKfycbyYb8Nr7GR8xVAbiduuJPEmvJVL76m86czIYldo_3l7eQwa9aojjspTCF8BHm36SugAbw/exec` |
 | **LINE Webhook** | `https://comphone-line-webhook.narinoutagit.workers.dev/line/webhook` |
 | **PWA Mobile** | `https://comphone.github.io/comphone-superapp/pwa/` |
 | **PC Dashboard** | `https://comphone.github.io/comphone-superapp/pwa/dashboard_pc.html` |
