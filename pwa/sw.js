@@ -41,7 +41,7 @@ const API_PATTERNS = [
   /workers\.dev/,
 ];
 
-const NETWORK_TIMEOUT_MS = 3000;
+const NETWORK_TIMEOUT_MS = 15000;  // 15s — GAS cold start can take 5-10s
 const SYNC_TAG = 'comphone-offline-queue';
 
 // Install: pre-cache static assets (graceful — ไม่ fail ถ้า asset ไม่พบ)
