@@ -208,14 +208,10 @@ async function submitLogin() {
         payload: { username: username.trim(), password: password }
       });
     } else {
-      // Fallback สำหรับกรณี AI_EXECUTOR ยังไม่โหลด
+      // Fallback: GET with query params (POST body หายตอน GAS 302 redirect)
       const url = APP.scriptUrl || DEFAULT_SCRIPT_URL;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'loginUser', username: username.trim(), password: password }),
-        redirect: 'follow',
-      });
+      const qs = new URLSearchParams({ action: 'loginUser', username: username.trim(), password: password }).toString();
+      const res = await fetch(url + '?' + qs, { redirect: 'follow' });
       data = await res.json();
     }
 

@@ -122,21 +122,17 @@ function clearApiCache(action) {
 async function callApi(action, payload = {}, options = {}) {
   const url = getGasUrl();
   const timeout = options.timeout || COMPHONE_API_TIMEOUT;
-  // Cache busting
-  const bustUrl = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
-  // Token auth
+  // Build GET URL with query params (POST body หายตอน GAS 302 redirect)
   const token = options.noAuth ? '' : getAuthToken();
-  const body = JSON.stringify({ action, token, ...payload });
+  const qs = new URLSearchParams({ action, token, ...payload, _t: Date.now() }).toString();
+  const getUrl = url + '?' + qs;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
   const _t0 = Date.now(); // เริ่ม timing
 
   try {
-    const res = await fetch(bustUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body,
+    const res = await fetch(getUrl, {
       redirect: 'follow',
       signal: controller.signal
     });
@@ -473,21 +469,17 @@ if (typeof window !== 'undefined') {
     if (!ERROR_ENDPOINT || !shouldSendError()) return;
     errorCount++;
     try {
-      fetch(ERROR_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'logSystemError',
-          level: errorData.level || 'ERROR',
-          source: errorData.source || 'frontend',
-          message: errorData.message || 'Unknown error',
-          stack: errorData.stack || '',
-          userAgent: navigator.userAgent,
-          url: window.location.href,
-          userId: localStorage.getItem('comphone_user') || ''
-        }),
-        mode: 'no-cors' // GAS requires this
-      }).catch(() => {});
+      const qs = new URLSearchParams({
+        action: 'logSystemError',
+        level: errorData.level || 'ERROR',
+        source: errorData.source || 'frontend',
+        message: errorData.message || 'Unknown error',
+        stack: errorData.stack || '',
+        userAgent: navigator.userAgent,
+        url: window.location.href,
+        userId: localStorage.getItem('comphone_user') || ''
+      }).toString();
+      fetch(ERROR_ENDPOINT + '?' + qs, { mode: 'no-cors' }).catch(() => {});
     } catch (_) {}
   }
 

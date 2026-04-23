@@ -183,13 +183,9 @@ window.syncOfflineQueue = async function() {
         const method = (typeof isReadAction === 'function' && isReadAction(action)) ? 'query' : 'execute';
         data = await window.AI_EXECUTOR[method]({ action: action, payload: params });
       } else {
-        // Fallback สำหรับกรณีที่ AI_EXECUTOR ยังไม่โหลด
-        const res = await fetch(url, {
-          method:   'POST',
-          headers:  { 'Content-Type': 'text/plain' },
-          body:     JSON.stringify(payload),
-          redirect: 'follow'
-        });
+        // Fallback: GET with query params (POST body หายตอน GAS 302 redirect)
+        const qs = new URLSearchParams(payload).toString();
+        const res = await fetch(url + '?' + qs, { redirect: 'follow' });
         data = await res.json();
       }
 
