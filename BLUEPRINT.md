@@ -385,4 +385,258 @@ indexedDB.databases().then(dbs => console.log(dbs))
 ---
 
 > **เอกสารนี้คือ Single Source of Truth** — อ้างอิงไฟล์นี้ก่อนเริ่มงานทุกครั้ง
-> อัปเดตล่าสุด: 2026-04-23 | Phase 26.6 | Commit `345c838`
+> อัปเดตล่าสุด: 2026-04-23 | Phase 26.6 | Commit `25283c9`
+
+---
+
+## 14. Script Properties (ตั้งค่าแล้วทั้งหมด — 49/50)
+
+| Property | ค่า | 用途 |
+|----------|-----|------|
+| `DB_SS_ID` | `19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA` | Google Sheets Database ID |
+| `ROOT_FOLDER_ID` | `1YRZRG9r1Y_jMHg2XFFKYjK4Hx-sW0Eq0` | Google Drive Root Folder |
+| `WEB_APP_URL` | Production GAS URL | API Endpoint |
+| `LINE_CHANNEL_ACCESS_TOKEN` | [configured] | LINE Messaging API |
+| `GEMINI_API_KEY` | [configured] | AI (Slip verify, Vision, Smart Assign) |
+| `LINE_GROUP_TECHNICIAN` | `C8ad22a115f38c9ad3cb5ea5c2ff4863b` | แจ้งงานช่าง |
+| `LINE_GROUP_ACCOUNTING` | `C7b939d1d367e6b854690e58b392e88cc` | แจ้งบัญชี |
+| `LINE_GROUP_PROCUREMENT` | `Cfd103d59e77acf00e2f2f801d391c566` | แจ้งจัดซื้อ |
+| `LINE_GROUP_SALES` | `Cb7cc146227212f70e4f171ef3f2bce15` | แจ้งเซลส์ |
+| `LINE_GROUP_EXECUTIVE` | `Cb85204740fa90e38de63c727554e551a` | แจ้งผู้บริหาร |
+| `TAX_MODE` | `VAT7` | โหมดภาษี (VAT7/ZERO/EXEMPT/MIXED) |
+| `BRANCH_ID` | `HQ` | รหัสสาขาปัจจุบัน |
+| `COMPANY_NAME` | `ร้านคอมโฟน` | ชื่อบริษัทสำหรับออกเอกสาร |
+| `COMPANY_TAX_ID` | `1234567890123` | เลขประจำตัวผู้เสียภาษี |
+| `RATE_LIMIT_PER_MIN` | `60` | Request limit ต่อนาที |
+| `ALLOWED_ORIGINS` | `*` | CORS Origins |
+
+**RULE:** ห้ามเกิน 50 properties — ใช้ Spreadsheet แทนสำหรับข้อมูล high-frequency
+
+---
+
+## 15. Scheduled Triggers (GAS — 8 ตัว)
+
+| Function | หน้าที่ | ความถี่ |
+|----------|---------|---------|
+| `sendAfterSalesAlerts` | แจ้งเตือน After Sales | Daily |
+| `checkLowStockAlert` | แจ้งเตือนสต็อกต่ำ | Daily |
+| `cronMorningAlert` | รายงานเช้า | Daily (08:00) |
+| `geminiReorderSuggestion` | AI แนะนำสั่งซื้อ | Daily |
+| `autoBackup` | สำรองข้อมูลอัตโนมัติ | Daily |
+| `getCRMSchedule` | CRM Follow-up | Daily |
+| `cronTaxReminder` | แจ้งเตือนยื่นภาษี | Monthly (วันที่ 1) |
+| `cronHealthCheck` | ตรวจสอบสถานะระบบ | Every 30 min |
+
+---
+
+## 16. API Contract
+
+### Request Pattern (เปลี่ยนจาก POST เป็น GET — Phase 26.4)
+```
+GET {GAS_URL}?action=xxx&token=xxx&param1=val1
+```
+
+### Response Pattern
+```json
+{ "success": true, "data": {...}, "message": "optional" }
+```
+
+### Frontend Call Pattern
+```js
+// Mobile PWA (app.js)
+async function callAPI(action, params = {}) {
+  const url = GAS_URL + '?' + new URLSearchParams({ action, ...params });
+  const res = await fetch(url);
+  return res.json();
+}
+
+// PC Dashboard (dashboard_pc.html)
+async function callGas(action, params) {
+  const baseUrl = localStorage.getItem('comphone_gas_url') || GAS_URL;
+  const qs = new URLSearchParams({ action, ...params }).toString();
+  const r = await fetch(baseUrl + '?' + qs);
+  return r.json();
+}
+```
+
+### Auth
+- ส่ง `token` (Session ID) ในทุก request ที่ต้องการสิทธิ์
+- Token ได้จาก `loginUser` action → `verifySession()` ฝั่ง server
+
+---
+
+## 17. Implemented Actions (40+)
+
+| กลุ่ม | Actions |
+|-------|---------|
+| **Auth** | `loginUser`, `logoutUser`, `verifySession`, `listUsers`, `createUser`, `updateUserRole`, `setUserActive` |
+| **Jobs** | `getJobs`, `getJobById`, `createJob`, `updateJob`, `updateJobStatus`, `deleteJob`, `addJobNote`, `getJobTimeline`, `assignTechnician`, `openJob` |
+| **Inventory** | `getInventory`, `addInventoryItem`, `updateInventoryItem`, `deleteInventoryItem`, `transferStock`, `getStockMovements`, `barcodeLookup`, `getInventoryItemDetail` |
+| **Billing** | `createBill`, `getBills`, `updateBillStatus`, `generatePDF`, `verifySlip`, `createBilling` |
+| **CRM** | `getCustomers`, `createCustomer`, `updateCustomer`, `getCRMSchedule`, `getCustomer` |
+| **Photo** | `uploadPhoto`, `getPhotos`, `processPhotoQueue`, `analyzePhoto` |
+| **PO** | `createPO`, `getPOs`, `updatePOStatus`, `approvePO` |
+| **Attendance** | `clockIn`, `clockOut`, `getAttendance` |
+| **After Sales** | `createAfterSales`, `getAfterSales`, `updateAfterSales`, `createAfterSalesRecord` |
+| **Dashboard** | `getDashboardData`, `systemStatus`, `getExecutiveDashboard`, `getSystemMetrics`, `getSystemLogs` |
+| **LINE** | Webhook (auto-detect via `destination` + `events`) |
+| **Notification** | `sendNotify`, `sendLineMessage` |
+| **AI/Smart** | `smartAssignment`, `gpsPipeline`, `geminiReorderSuggestion` |
+| **System** | `healthCheck`, `guardstatus`, `auditproperties`, `cleanupproperties`, `logSystemError` |
+| **Public** | `getJobStatusPublic` (ไม่ต้อง Auth) |
+
+---
+
+## 18. Backend File Map (67 ไฟล์ — clasp-ready/)
+
+### Core System (14)
+| ไฟล์ | หน้าที่ |
+|------|---------|
+| `Router.gs` | HTTP Router — doGet()/doPost(), dispatch, AUTH_REQUIRED |
+| `Config.gs` | Script Properties wrapper, constants, VERSION |
+| `Auth.gs` | Login PIN, verifySession, RBAC (4 roles) |
+| `Utils.gs` | Shared utilities |
+| `Setup.gs` | Initial setup + sheet creation |
+| `Security.gs` | Token verify, Rate limit, CORS |
+| `HealthMonitor.gs` | System health check + LINE alert |
+| `AutoBackup.gs` | Scheduled backup to Drive |
+| `Backup.gs` | Backup functions |
+| `DatabaseIntegrity.gs` | DB integrity checks |
+| `DataSeeding.gs` | Seed initial data |
+| `SheetOptimizer.gs` | Sheet performance optimization |
+| `DriveSync.gs` | Google Drive sync (OAuth2) |
+| `DeployGuide.gs` | Deploy documentation |
+
+### Business Modules (16)
+| ไฟล์ | หน้าที่ |
+|------|---------|
+| `JobsHandler.gs` | Job CRUD + Timeline + Notes |
+| `JobStateMachine.gs` | 12-state machine + transition validation |
+| `BillingManager.gs` | Bill/Receipt + PromptPay QR + PDF + Slip Verify |
+| `Inventory.gs` | Stock 3-layer (Warehouse/Shop/Van) + PO + Barcode |
+| `CustomerManager.gs` | CRM CRUD + Follow-up schedule |
+| `CustomerPortal.gs` | Public customer portal |
+| `Attendance.gs` | Clock in/out + attendance report |
+| `AfterSales.gs` | Warranty + after-sales follow-up |
+| `WarrantyManager.gs` | ระบบรับประกันสินค้า |
+| `TaxEngine.gs` | คำนวณภาษี VAT/WHT |
+| `TaxDocuments.gs` | สร้าง PDF ใบกำกับภาษี/ภงด. |
+| `MultiBranch.gs` | ระบบจัดการหลายสาขา |
+| `RetailSale.gs` | ระบบขายปลีก |
+| `CRM.gs` | CRM functions |
+| `Reports.gs` | รายงานต่างๆ |
+| `PurchaseOrder.gs` | PO management |
+
+### LINE Bot (6)
+| ไฟล์ | หน้าที่ |
+|------|---------|
+| `LineBot.gs` | LINE Webhook handler + command parser |
+| `LineBotV2.gs` | LINE Bot v2 — enhanced commands |
+| `LineBotIntelligent.gs` | AI-powered LINE Bot responses |
+| `LineBotQuota.gs` | LINE API quota management |
+| `FlexMessage.gs` | Flex Message templates |
+| `Notify.gs` | LINE Notify + Messaging API multi-channel |
+
+### Dashboard & Analytics (5)
+| ไฟล์ | หน้าที่ |
+|------|---------|
+| `Dashboard.gs` | Dashboard data provider |
+| `ExecutiveDashboard.gs` | Executive KPI data |
+| `Analytics.gs` | Business analytics |
+| `SystemGraph.gs` | System metrics graph data |
+| `WorkflowEngine.gs` | AI workflow engine |
+
+### AI & Vision (4)
+| ไฟล์ | หน้าที่ |
+|------|---------|
+| `VisionAnalysis.gs` | Gemini vision analysis (slip, photo) |
+| `AiChat.gs` | AI chat responses |
+| `SmartAssignment.gs` | AI technician assignment |
+| `GpsPipeline.gs` | GPS geofence + route optimization |
+
+### Other (22)
+| ไฟล์ | หน้าที่ |
+|------|---------|
+| `PhotoQueue.gs` | Photo processing queue |
+| `ErrorHandler.gs` | Error logging + notification |
+| `CacheManager.gs` | CacheService wrapper |
+| `AuditLog.gs` | Audit trail |
+| `Scheduler.gs` | Trigger management |
+| `Migration.gs` | Data migration utilities |
+| `TestRunner.gs` | Test functions |
+| `LineTasks.gs` | LINE task automation |
+| `LineTasksAuto.gs` | Auto LINE tasks |
+| `ApprovalWorkflow.gs` | Multi-level approval |
+| `InventoryAlert.gs` | Stock alert functions |
+| `CustomerAnalytics.gs` | Customer analytics |
+| `BillingPdf.gs` | PDF generation |
+| `TaxReminders.gs` | Tax deadline reminders |
+| `SystemConfig.gs` | System configuration |
+| `BranchManager.gs` | Branch management |
+| `RetailPos.gs` | POS functions |
+| `WarrantyCheck.gs` | Warranty verification |
+| `SlipVerification.gs` | Slip verification |
+| `NotificationRouter.gs` | Notification routing |
+| `DataExport.gs` | Data export functions |
+| `SystemMaintenance.gs` | Maintenance utilities |
+
+---
+
+## 19. Design Rationale
+
+### ทำไมใช้ SPA (ไม่ใช่ Multi-page)?
+- ลดภาระ GAS ในการโหลดหน้าใหม่
+- UI ตอบสนองเร็ว (Snappy) คล้าย Native App
+- รองรับการขยายเมนูในอนาคตได้ง่าย
+
+### ทำไม Inventory 3 ชั้น?
+- **คลังหลัก (Main):** รับของเข้าและจัดเก็บ
+- **หน้าร้าน (Site):** ขายหรือใช้งานหน้าร้าน
+- **รถช่าง (Van):** ช่างพกติดรถไปหน้างาน
+- สะท้อนการทำงานจริงของธุรกิจรับเหมาติดตั้ง
+
+### ทำไม PromptPay เป็น payment rail หลัก?
+- เหมาะกับงานบริการในไทย
+- เชื่อมกับการสร้าง QR ได้ง่าย
+- ทำให้ flow สถานะ 10→11 (รอชำระ→ชำระแล้ว) มี automation ชัดเจน
+
+### ทำไมเปลี่ยน POST เป็น GET?
+- GAS redirect POST → GET (302 Found) ทำให้ body หาย
+- GET with query params ไม่ได้รับผลกระทบจาก redirect
+- Dashboard data fetch ใช้ GET ได้ (ไม่ sensitive)
+
+### ทำไม timeout 15 วินาที?
+- GAS cold start ใช้เวลา 5-10 วินาที
+- เดิมตั้ง 3 วินาที → API timeout ก่อนได้ response
+- 15 วินาทีครอบคลุม worst case
+
+---
+
+## 20. API Keys & External Services
+
+| Service | 用途 | สถานะ |
+|---------|------|-------|
+| **LINE Messaging API** | ส่งข้อความ/Flex Message | ✅ Token configured |
+| **LINE Notify** | แจ้งเตือน 5 กลุ่ม | ✅ Configured |
+| **Gemini API (Flash)** | Slip verify, Vision, Smart Assign | ✅ Key configured |
+| **Google Drive** | เก็บรูปงาน + PDF | ✅ ROOT_FOLDER_ID configured |
+| **PromptPay QR** | สร้าง QR รับเงิน | ✅ Built-in (BillingManager.gs) |
+| **Slip Verify API** | ตรวจสลิปโอนเงิน | ✅ Via Gemini Vision |
+| **Cloudflare Worker** | LINE Webhook async proxy | ✅ Deployed |
+
+---
+
+## 21. Architectural Decisions Log
+
+| # | การตัดสินใจ | เหตุผล |
+|---|------------|--------|
+| 1 | ยึด Router กลาง (Router.gs) | ดูแลง่าย, single entry point สำหรับ web app deployment |
+| 2 | ใช้ Google Sheets ต่อ | สอดคล้องระบบเดิม, ลดเวลา migration, เพิ่ม dynamic header mapping |
+| 3 | เปลี่ยนรูปถ่ายเป็น data pipeline | รูป不再是แค่หลักฐาน แต่เป็นตัวขับการประเมินคุณภาพงาน |
+| 4 | ยึด state machine เป็นแกนกลาง | validation, audit log, billing trigger, stock reservation ผูกกันเป็นระบบ |
+| 5 | 3-layer inventory | สะท้อนการทำงานจริง (ร้าน + ภาคสนาม) |
+| 6 | PromptPay เป็น payment rail | เหมาะไทย, QR ง่าย, automation ชัด |
+| 7 | Multi-channel notification | LINE + Telegram + Email (อนาคต) ตาม role |
+| 8 | GET แทน POST | GAS redirect ฆ่า POST body |
+| 9 | SW timeout 15s | GAS cold start 5-10s |
+| 10 | OAuth2 แทน Service Account | Drive quota issues with SA |

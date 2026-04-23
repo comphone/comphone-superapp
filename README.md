@@ -1,7 +1,15 @@
-# COMPHONE SUPER APP V5.5
+# COMPHONE SUPER APP V5.6
 
 ระบบจัดการงานซ่อม ลูกค้า สต็อก และทีมช่าง สำหรับร้าน COMPHONE  
-พัฒนาบน **Google Apps Script (GAS)** + **Bootstrap 5.3** + **LINE Bot**
+พัฒนาบน **Google Apps Script (GAS)** + **PWA SPA** + **LINE Bot** + **Cloudflare Worker**
+
+---
+
+## 📘 Blueprint
+
+> **Single Source of Truth:** [BLUEPRINT.md](BLUEPRINT.md)
+> 
+> อ่านไฟล์นี้ก่อนเริ่มงานทุกครั้ง — ครอบคลุมสถาปัตยกรรม ฟีเจอร์ URLs ความปลอดภัย deploy และกฎการออกแบบ
 
 ---
 
@@ -9,50 +17,41 @@
 
 | โฟลเดอร์ | คำอธิบาย |
 |----------|----------|
-| `clasp-ready/` | ซอร์สโค้ดทั้งหมดที่พร้อม deploy ผ่าน clasp |
-| `docs/` | Blueprint, Memory Log, และเอกสารการพัฒนา |
-| `Shop_vnext/` | โค้ดเวอร์ชันก่อนหน้า (archived) |
-| `.github/workflows/` | GitHub Actions สำหรับ Auto Backup |
+| `clasp-ready/` | GAS Backend source (67 files) — deploy ผ่าน clasp |
+| `pwa/` | PWA Frontend (47+ files) — deploy to GitHub Pages |
+| `workers/line-webhook/` | Cloudflare Worker — LINE Webhook async proxy |
+| `docs/` | เอกสารประกอบ (reviews, specs, audit logs) |
+| `memory/` | AI session context |
+| `.github/workflows/` | GitHub Actions (auto-deploy) |
 
 ---
 
-## ฟีเจอร์หลัก (V5.5)
-
-- **Smart Dashboard** — KPI Cards, Revenue Tracking, Smart Search, Voice Search
-- **Job Management** — 12-Step Workflow, Photo Gallery, Timeline, Status Editor
-- **Inventory System** — คลัง 3 ชั้น (Main → Site → Van), แจ้งเตือนสต็อกต่ำ
-- **CRM** — จัดการลูกค้า, ประวัติการซ่อม, Predictive Maintenance
-- **Team & Attendance** — Clock In/Out, รายงานการทำงาน, Tech Summary
-- **After-Sales** — ติดตามงานหลังการขาย, แจ้งเตือน PM, บันทึก Follow-up
-- **LINE Bot** — รับงาน, อัปเดตสถานะ, แจ้งเตือนอัตโนมัติ
-
----
-
-## การ Deploy
+## Quick Start
 
 ```bash
-# ติดตั้ง clasp
-npm install -g @google/clasp
+# Deploy ทั้งหมด (WSL)
+bash deploy_all.sh
 
-# Login
-clasp login
-
-# Push โค้ด
-cd clasp-ready
-clasp push
+# หรือ deploy แยก
+cd clasp-ready && clasp push --force && clasp deploy  # GAS
+git push origin main                                    # GitHub Pages (auto)
 ```
 
 ---
 
-## Auto Backup
+## URLs สำคัญ
 
-ระบบ GitHub Actions จะสร้าง **Backup Tag** อัตโนมัติทุกวัน 09:00 น. (เวลาไทย)  
-สามารถดู Tags ได้ที่: [Releases & Tags](https://github.com/comphone/comphone-superapp/tags)
+| รายการ | URL |
+|--------|-----|
+| **GAS API** | See `BLUEPRINT.md` §3 |
+| **PWA Mobile** | https://comphone.github.io/comphone-superapp/ |
+| **PC Dashboard** | https://comphone.github.io/comphone-superapp/dashboard_pc.html |
+| **GitHub** | https://github.com/comphone/comphone-superapp |
 
 ---
 
 ## เอกสาร
 
-- [Blueprint หลัก](docs/BLUEPRINT.md)
-- [Memory Log การพัฒนา](docs/DEV_MEMORY.md)
-- [แผนเมนูในอนาคต](docs/BLUEPRINT_MENU_PLAN.md)
+- **[BLUEPRINT.md](BLUEPRINT.md)** — Single Source of Truth (Architecture, Features, Security, Deploy, Rules)
+- **[memory/session.md](memory/session.md)** — AI Session Context (สมองสำรองของ Agent)
+- **[FREEZE_POLICY.md](FREEZE_POLICY.md)** — Architecture Freeze Policy (PHMP v1)
