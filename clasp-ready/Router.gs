@@ -74,6 +74,10 @@ function doGet(e) {
     if (action === 'deepcleanup2') {
       return jsonOutputV55_(deepCleanupPass2());
     }
+    // Properties Guard Status — GET ?action=guardStatus
+    if (action === 'guardstatus') {
+      return jsonOutputV55_(propertiesGuardStatus());
+    }
     // Default: API Ready response + redirect hint
     return jsonOutputV55_({
       status:       'ok',
