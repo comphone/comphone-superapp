@@ -66,6 +66,14 @@ function doGet(e) {
     if (action === 'cleanupproperties') {
       return jsonOutputV55_(cleanupAllProperties());
     }
+    // Deep Cleanup — GET ?action=deepCleanup
+    if (action === 'deepcleanup') {
+      return jsonOutputV55_(deepCleanupProperties());
+    }
+    // Deep Cleanup Pass 2 — GET ?action=deepCleanup2
+    if (action === 'deepcleanup2') {
+      return jsonOutputV55_(deepCleanupPass2());
+    }
     // Default: API Ready response + redirect hint
     return jsonOutputV55_({
       status:       'ok',
