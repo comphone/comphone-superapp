@@ -403,7 +403,7 @@ indexedDB.databases().then(dbs => console.log(dbs))
 ---
 
 > **เอกสารนี้คือ Single Source of Truth** — อ้างอิงไฟล์นี้ก่อนเริ่มงานทุกครั้ง
-> อัปเดตล่าสุด: 2026-04-23 | Phase 27.3 | Commit `pending`
+> อัปเดตล่าสุด: 2026-04-23 | Phase 27.3 | Commit `4b6348f`
 
 ---
 
