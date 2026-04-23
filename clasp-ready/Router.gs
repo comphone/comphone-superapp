@@ -132,7 +132,12 @@ function doGet(e) {
     if (action === 'setupguardtrigger') {
       return jsonOutputV55_(setupPropertiesGuardTrigger());
     }
-    // Default: API Ready response + redirect hint
+    // Default: Route ALL unknown actions through routeActionV55 (PHASE 26.6)
+    // This enables login, verifySession, and all other actions via GET
+    // Previously this returned a static "API READY" response, blocking login on static hosting
+    if (action) {
+      return jsonOutputV55_(routeActionV55(action, params));
+    }
     return jsonOutputV55_({
       status:       'ok',
       version:      CONFIG.VERSION,
