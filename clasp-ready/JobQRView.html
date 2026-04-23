@@ -1,0 +1,423 @@
+<!-- COMPHONE SUPER APP V5.5 -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COMPHONE Job QR</title>
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --card: #ffffff;
+        --text: #172033;
+        --muted: #6b7280;
+        --primary: #0f62fe;
+        --primary-dark: #0b4ed0;
+        --success: #0f9d58;
+        --warning: #f59e0b;
+        --danger: #dc2626;
+        --border: #dfe6f1;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      .container {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        margin-bottom: 14px;
+      }
+      h1, h2, h3, p { margin: 0; }
+      h1 { font-size: 22px; margin-bottom: 6px; }
+      h2 { font-size: 18px; margin-bottom: 12px; }
+      .sub { color: var(--muted); font-size: 13px; }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: #e8f0ff;
+        color: var(--primary-dark);
+        border-radius: 999px;
+        font-weight: bold;
+        font-size: 14px;
+        margin-top: 12px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 14px;
+      }
+      .item {
+        background: #f8fafc;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+      }
+      .label { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+      .value { font-size: 15px; font-weight: bold; word-break: break-word; }
+      .textarea, .input {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        font-size: 15px;
+        outline: none;
+        background: #fff;
+      }
+      .textarea { min-height: 88px; resize: vertical; }
+      .actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin-top: 14px;
+      }
+      .btn {
+        width: 100%;
+        border: 0;
+        border-radius: 12px;
+        padding: 14px 16px;
+        font-size: 15px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      .btn-primary { background: var(--primary); color: #fff; }
+      .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+      .btn-secondary { background: #eef2ff; color: var(--primary-dark); }
+      .btn-success { background: var(--success); color: #fff; }
+      .status-list {
+        display: grid;
+        gap: 10px;
+      }
+      .status-button {
+        border: 1px solid #cfe0ff;
+        background: #f7fbff;
+        color: var(--primary-dark);
+        text-align: left;
+      }
+      .timeline {
+        display: grid;
+        gap: 12px;
+      }
+      .timeline-item {
+        border-left: 4px solid var(--primary);
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 12px 12px 12px 14px;
+      }
+      .timeline-meta {
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+      .timeline-title {
+        font-size: 15px;
+        font-weight: bold;
+        margin-bottom: 6px;
+      }
+      .timeline-note {
+        font-size: 14px;
+        color: #374151;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .qr {
+        width: 180px;
+        height: 180px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        object-fit: cover;
+        background: #fff;
+      }
+      .row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+      .notice {
+        font-size: 13px;
+        color: #92400e;
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        padding: 10px 12px;
+        border-radius: 12px;
+        margin-top: 12px;
+      }
+      .error {
+        color: var(--danger);
+        font-size: 14px;
+        margin-top: 10px;
+      }
+      .muted { color: var(--muted); }
+      .hidden { display: none; }
+      .footer-space { height: 12px; }
+      @media (max-width: 560px) {
+        .grid { grid-template-columns: 1fr; }
+        .qr { width: 140px; height: 140px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <p class="sub">COMPHONE SUPER APP V5.5</p>
+        <h1>Job Status QR</h1>
+        <p class="sub">สแกนแล้วดูสถานะปัจจุบัน เปลี่ยนสถานะ และดู Timeline ได้ทันที</p>
+        <div id="statusBadge" class="badge hidden"></div>
+      </div>
+
+      <div id="errorBox" class="card hidden">
+        <h2>พบปัญหา</h2>
+        <p id="errorText" class="error"></p>
+      </div>
+
+      <div id="jobCard" class="card hidden">
+        <div class="row">
+          <div style="flex:1; min-width:220px;">
+            <h2 id="jobTitle">-</h2>
+            <p id="jobSubtitle" class="sub">-</p>
+            <div class="grid">
+              <div class="item">
+                <div class="label">Job ID</div>
+                <div id="jobIdText" class="value">-</div>
+              </div>
+              <div class="item">
+                <div class="label">ช่าง</div>
+                <div id="techText" class="value">-</div>
+              </div>
+              <div class="item">
+                <div class="label">สร้างเมื่อ</div>
+                <div id="createdText" class="value">-</div>
+              </div>
+              <div class="item">
+                <div class="label">อัปเดตล่าสุด</div>
+                <div id="updatedText" class="value">-</div>
+              </div>
+              <div class="item" style="grid-column: 1 / -1;">
+                <div class="label">อาการ / งานที่ต้องทำ</div>
+                <div id="symptomText" class="value">-</div>
+              </div>
+              <div class="item" style="grid-column: 1 / -1;">
+                <div class="label">หมายเหตุล่าสุด</div>
+                <div id="noteText" class="value">-</div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <img id="qrImage" class="qr" alt="Job QR Code">
+          </div>
+        </div>
+        <div id="qrNotice" class="notice hidden"></div>
+      </div>
+
+      <div id="transitionCard" class="card hidden">
+        <h2>เปลี่ยนสถานะงาน</h2>
+        <p class="sub">ระบบจะแสดงเฉพาะสถานะถัดไปที่อนุญาตตาม State Machine</p>
+        <div style="margin-top:12px;">
+          <div class="label">ผู้เปลี่ยนสถานะ</div>
+          <input id="changedByInput" class="input" placeholder="เช่น ช่างเอก / SYSTEM / LINE BOT">
+        </div>
+        <div style="margin-top:12px;">
+          <div class="label">หมายเหตุ</div>
+          <textarea id="noteInput" class="textarea" placeholder="เช่น ถึงหน้างานแล้ว / รออะไหล่ / งานเสร็จพร้อมตรวจรับ"></textarea>
+        </div>
+        <div id="statusButtons" class="actions status-list"></div>
+        <div id="transitionDone" class="notice hidden"></div>
+      </div>
+
+      <div id="timelineCard" class="card hidden">
+        <h2>Timeline</h2>
+        <div id="timelineList" class="timeline"></div>
+      </div>
+
+      <div class="footer-space"></div>
+    </div>
+
+    <script>
+      const initialJobId = <?= JSON.stringify(jobId || '') ?>;
+      const configuredApiBaseUrl = <?= JSON.stringify(apiBaseUrl || '') ?>;
+
+      function getApiBaseUrl() {
+        if (configuredApiBaseUrl) return configuredApiBaseUrl;
+        return window.location.href.split('?')[0];
+      }
+
+      function getJobIdFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('jobId') || params.get('job_id') || initialJobId || '';
+      }
+
+      function setText(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value || '-';
+      }
+
+      function setHtml(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = value || '';
+      }
+
+      function show(id, visible) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.toggle('hidden', !visible);
+      }
+
+      function escapeHtml(text) {
+        return String(text || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      async function fetchJobData() {
+        const jobId = getJobIdFromUrl();
+        if (!jobId) {
+          renderError('ไม่พบ jobId ใน URL');
+          return;
+        }
+
+        try {
+          const url = getApiBaseUrl() + '?action=jobqrdata&jobId=' + encodeURIComponent(jobId);
+          const res = await fetch(url, { method: 'GET' });
+          const data = await res.json();
+          if (!data.success) {
+            renderError(data.error || 'โหลดข้อมูลไม่สำเร็จ');
+            return;
+          }
+          renderJob(data);
+        } catch (err) {
+          renderError('โหลดข้อมูลไม่สำเร็จ: ' + err.message);
+        }
+      }
+
+      function renderError(message) {
+        show('errorBox', true);
+        setText('errorText', message);
+        show('jobCard', false);
+        show('transitionCard', false);
+        show('timelineCard', false);
+      }
+
+      function renderJob(payload) {
+        show('errorBox', false);
+        show('jobCard', true);
+        show('transitionCard', true);
+        show('timelineCard', true);
+
+        const job = payload.job || {};
+        const qr = payload.qr || {};
+        const badge = document.getElementById('statusBadge');
+        badge.textContent = 'สถานะปัจจุบัน: [' + (job.current_status_code || '-') + '] ' + (job.status_label || '-');
+        badge.classList.remove('hidden');
+
+        setText('jobTitle', job.customer_name || 'ไม่ระบุชื่อลูกค้า');
+        setText('jobSubtitle', 'สถานะปัจจุบัน: ' + (job.status_label || '-') + ' | รหัสสถานะ: ' + (job.current_status_code || '-'));
+        setText('jobIdText', job.job_id || '-');
+        setText('techText', job.technician || '-');
+        setText('createdText', job.created_at || '-');
+        setText('updatedText', job.updated_at || '-');
+        setText('symptomText', job.symptom || '-');
+        setText('noteText', job.note || '-');
+
+        const qrImage = document.getElementById('qrImage');
+        if (qr.qr_image_url) {
+          qrImage.src = qr.qr_image_url;
+          qrImage.alt = 'QR ' + (job.job_id || '');
+        }
+        const qrNotice = document.getElementById('qrNotice');
+        if (qr.warning) {
+          qrNotice.textContent = qr.warning;
+          qrNotice.classList.remove('hidden');
+        } else {
+          qrNotice.classList.add('hidden');
+        }
+
+        renderTransitionButtons(job);
+        renderTimeline(payload.timeline || []);
+      }
+
+      function renderTransitionButtons(job) {
+        const container = document.getElementById('statusButtons');
+        const transitions = Array.isArray(job.allowed_next) ? job.allowed_next : [];
+        if (!transitions.length) {
+          container.innerHTML = '<div class="notice">งานนี้อยู่สถานะสุดท้ายแล้ว ไม่สามารถเปลี่ยนต่อได้</div>';
+          return;
+        }
+        container.innerHTML = transitions.map(item => {
+          return '<button class="btn status-button" onclick="submitTransition(' + Number(item.code) + ', \'' + escapeHtml(item.label) + '\')">' +
+            '<div><strong>ไปสถานะ [' + Number(item.code) + ']</strong> ' + escapeHtml(item.label) + '</div>' +
+            '<div class="sub" style="margin-top:4px;">กดเพื่ออัปเดตสถานะงานขั้นถัดไป</div>' +
+          '</button>';
+        }).join('');
+      }
+
+      function renderTimeline(items) {
+        const container = document.getElementById('timelineList');
+        if (!items.length) {
+          container.innerHTML = '<div class="notice">ยังไม่มี timeline สำหรับงานนี้</div>';
+          return;
+        }
+        container.innerHTML = items.map(item => {
+          const title = (item.from_status || '-') + ' → ' + (item.to_status || '-');
+          return '<div class="timeline-item">' +
+            '<div class="timeline-meta">' + escapeHtml(item.timestamp || item.ts || '-') + ' | ' + escapeHtml(item.changed_by || item.user || '-') + '</div>' +
+            '<div class="timeline-title">' + escapeHtml(title) + '</div>' +
+            '<div class="timeline-note">' + escapeHtml(item.note || item.detail || '-') + '</div>' +
+          '</div>';
+        }).join('');
+      }
+
+      async function submitTransition(statusCode, statusLabel) {
+        const jobId = getJobIdFromUrl();
+        const changedBy = document.getElementById('changedByInput').value.trim() || 'TECHNICIAN';
+        const note = document.getElementById('noteInput').value.trim();
+        const buttons = document.querySelectorAll('.status-button');
+        buttons.forEach(btn => btn.disabled = true);
+        show('transitionDone', false);
+
+        try {
+          const res = await fetch(getApiBaseUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'transitionJob',
+              job_id: jobId,
+              new_status: Number(statusCode),
+              changed_by: changedBy,
+              note: note
+            })
+          });
+          const payload = await res.json();
+          const result = payload.data || payload;
+          if (!payload.success || !result.success) {
+            alert((result && result.error) || payload.error || 'เปลี่ยนสถานะไม่สำเร็จ');
+            return;
+          }
+          const done = document.getElementById('transitionDone');
+          done.textContent = 'อัปเดตสถานะเป็น [' + Number(statusCode) + '] ' + statusLabel + ' สำเร็จ';
+          done.classList.remove('hidden');
+          document.getElementById('noteInput').value = '';
+          await fetchJobData();
+        } catch (err) {
+          alert('เปลี่ยนสถานะไม่สำเร็จ: ' + err.message);
+        } finally {
+          buttons.forEach(btn => btn.disabled = false);
+        }
+      }
+
+      fetchJobData();
+    </script>
+  </body>
+</html>

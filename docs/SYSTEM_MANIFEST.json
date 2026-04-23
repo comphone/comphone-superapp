@@ -1,0 +1,156 @@
+{
+  "_comment": "COMPHONE SUPER APP AI — System Manifest (Single Source of Truth)",
+  "_rule": "DO NOT edit version here manually. Use Config.gs as the authoritative source.",
+  "app": {
+    "name": "COMPHONE SUPER APP AI",
+    "short_name": "COMPHONE AI",
+    "version": "6.2.2",
+    "build": "2026-04-20",
+    "deploy_id": "@475",
+    "commit": "4762f10",
+    "env": "production"
+  },
+  "gas": {
+    "version_action": "getSystemVersion",
+    "config_file": "clasp-ready/Config.gs",
+    "config_key": "VERSION",
+    "router_file": "clasp-ready/Router.gs",
+    "router_split_file": "clasp-ready/RouterSplit.gs"
+  },
+  "frontend": {
+    "entry": "pwa/dashboard_pc.html",
+    "version_constant": "APP_VERSION",
+    "version_rule": "MUST match gas.config_key — no independent hardcode",
+    "version_loader": "V621.initApp()",
+    "version_display": "v{version} • {deploy_id} • {commit[0:7]}"
+  },
+  "version_flow": [
+    "1. Config.gs VERSION (authoritative)",
+    "2. getSystemVersion() → returns version, deploy_id, commit",
+    "3. V621.initApp() → calls getSystemVersion on boot",
+    "4. _updateAllDisplays() → updates sidebar, topbar, footer",
+    "5. _checkMismatch() → shows modal if frontend ≠ backend",
+    "6. _logAppInit() → [APP INIT] console log"
+  ],
+  "modules": {
+    "AgentGateway": {
+      "version": "1.0.0",
+      "status": "active"
+    },
+    "AgentMemory": {
+      "version": "1.0.0",
+      "status": "active"
+    },
+    "AgentCollaboration": {
+      "version": "1.0.0",
+      "status": "active"
+    },
+    "AgentScoring": {
+      "version": "1.0.0",
+      "status": "active"
+    },
+    "WorkflowEngine": {
+      "version": "1.0.0",
+      "status": "active"
+    },
+    "WorkflowSafety": {
+      "version": "1.0.0",
+      "status": "active"
+    },
+    "DecisionLayer": {
+      "version": "1.0.0",
+      "status": "active"
+    },
+    "DecisionGuard": {
+      "version": "1.0.0",
+      "status": "active"
+    },
+    "MemoryControl": {
+      "version": "1.0.0",
+      "status": "active"
+    },
+    "SharedContext": {
+      "version": "1.0.0",
+      "status": "active"
+    },
+    "LearningIntegration": {
+      "version": "1.0.0",
+      "status": "active"
+    },
+    "AIAuditLog": {
+      "version": "1.0.0",
+      "status": "active"
+    },
+    "DashboardBundle": {
+      "version": "1.0.0",
+      "status": "active"
+    },
+    "SheetOptimizer": {
+      "version": "1.0.0",
+      "status": "active"
+    },
+    "RouterSplit": {
+      "version": "1.0.0",
+      "status": "active"
+    }
+  },
+  "updated_at": "2026-04-20T00:00:00.000Z",
+  "version_history": [
+    {
+      "version": "6.2.2",
+      "date": "2026-04-20",
+      "commit": "4762f10",
+      "notes": "Full Release System: Safe Update, Soft Update, Env Control, Health Link"
+    },
+    {
+      "version": "6.2.1",
+      "date": "2026-04-20",
+      "commit": "895d514",
+      "notes": "Version System: Single Source, Auto Sync, Auto Recovery"
+    },
+    {
+      "version": "6.2.0",
+      "date": "2026-04-19",
+      "commit": "8e9261e",
+      "notes": "Header Update: COMPHONE SUPER APP AI, loadAppVersion"
+    },
+    {
+      "version": "6.1.0",
+      "date": "2026-04-18",
+      "commit": "ee19215",
+      "notes": "Performance: Bundle API, Parallel Fetch, Cache Layer"
+    },
+    {
+      "version": "6.0.0",
+      "date": "2026-04-17",
+      "commit": "3678c2e",
+      "notes": "Production Grade: POS, Job Lifecycle, AI Integration"
+    },
+    {
+      "version": "5.6.0",
+      "date": "2026-04-16",
+      "commit": "041da26",
+      "notes": "Dashboard v5.6: Job Modal, Theme System, POS, Module Connect"
+    }
+  ],
+  "environments": {
+    "production": {
+      "autoUpdateDelay": 30,
+      "softUpdateInterval": 300,
+      "healthCheckInterval": 120,
+      "showDebugPanel": false
+    },
+    "staging": {
+      "autoUpdateDelay": 10,
+      "softUpdateInterval": 60,
+      "healthCheckInterval": 30,
+      "showDebugPanel": true
+    },
+    "development": {
+      "autoUpdateDelay": 5,
+      "softUpdateInterval": 30,
+      "healthCheckInterval": 15,
+      "showDebugPanel": true
+    }
+  }
+}

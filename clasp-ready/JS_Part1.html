@@ -1,0 +1,326 @@
+<!-- COMPHONE SUPER APP V5.5 -->
+<script>
+(function (window, document) {
+  'use strict';
+
+  var APP = window.COMPHONE_V55_APP = {
+    version: 'COMPHONE SUPER APP V5.5',
+    config: window.COMPHONE_V55 || {},
+    dashboard: null,
+    summary: null,
+    jobs: [],
+    inventory: [],
+    statusConfig: [],
+    filters: {
+      query: '',
+      status: 'ALL',
+      limit: Number((window.COMPHONE_V55 && window.COMPHONE_V55.defaultLimit) || 20) || 20
+    },
+    selectedJobId: '',
+    ui: {}
+  };
+
+  function el(id) {
+    return document.getElementById(id);
+  }
+
+  function ensureUiRefs() {
+    APP.ui = {
+      systemStatusBadge: el('systemStatusBadge'),
+      apiBasePreview: el('apiBasePreview'),
+      lastRefreshText: el('lastRefreshText'),
+      topTechnicianText: el('topTechnicianText'),
+      pendingPhotosText: el('pendingPhotosText'),
+      openAlertsText: el('openAlertsText'),
+      jobSearchInput: el('jobSearchInput'),
+      statusFilterSelect: el('statusFilterSelect'),
+      clearFilterBtn: el('clearFilterBtn'),
+      refreshDashboardBtn: el('refreshDashboardBtn'),
+      recentJobsLimitSelect: el('recentJobsLimitSelect'),
+      metricTotalJobs: el('metricTotalJobs'),
+      metricLowStock: el('metricLowStock'),
+      metricOverdueJobs: el('metricOverdueJobs'),
+      metricPmDue: el('metricPmDue'),
+      revenueToday: el('revenueToday'),
+      revenueWeek: el('revenueWeek'),
+      revenueMonth: el('revenueMonth'),
+      revenueTodayMeta: el('revenueTodayMeta'),
+      revenueWeekMeta: el('revenueWeekMeta'),
+      revenueMonthMeta: el('revenueMonthMeta'),
+      statusTotalText: el('statusTotalText'),
+      statusBoardLoading: el('statusBoardLoading'),
+      statusBoardError: el('statusBoardError'),
+      statusBoard: el('statusBoard'),
+      alertsCounterPill: el('alertsCounterPill'),
+      alertsList: el('alertsList'),
+      alertsEmpty: el('alertsEmpty'),
+      recentJobsCounter: el('recentJobsCounter'),
+      recentJobsLoading: el('recentJobsLoading'),
+      recentJobsError: el('recentJobsError'),
+      recentJobsEmpty: el('recentJobsEmpty'),
+      recentJobsTable: el('recentJobsTable'),
+      recentJobsTableBody: el('recentJobsTableBody')
+    };
+  }
+
+  function escapeHtml(value) {
+    if (value === null || value === undefined) return '';
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function formatNumber(value) {
+    var number = Number(value || 0);
+    if (!isFinite(number)) number = 0;
+    return number.toLocaleString('th-TH');
+  }
+
+  function formatCurrency(value) {
+    var number = Number(value || 0);
+    if (!isFinite(number)) number = 0;
+    return '฿' + number.toLocaleString('th-TH', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+  }
+
+  function formatDateTime(value) {
+    if (!value) return '-';
+    if (typeof value === 'string') return value;
+    try {
+      return new Date(value).toLocaleString('th-TH');
+    } catch (error) {
+      return String(value || '-');
+    }
+  }
+
+  function setText(idOrNode, value) {
+    var node = typeof idOrNode === 'string' ? el(idOrNode) : idOrNode;
+    if (node) node.textContent = value;
+  }
+
+  function setHtml(idOrNode, html) {
+    var node = typeof idOrNode === 'string' ? el(idOrNode) : idOrNode;
+    if (node) node.innerHTML = html;
+  }
+
+  function show(node) {
+    if (node) node.classList.remove('hidden');
+  }
+
+  function hide(node) {
+    if (node) node.classList.add('hidden');
+  }
+
+  function upsertToastRoot() {
+    var root = el('comphoneToastRoot');
+    if (!root) {
+      root = document.createElement('div');
+      root.id = 'comphoneToastRoot';
+      root.style.position = 'fixed';
+      root.style.right = '18px';
+      root.style.bottom = '18px';
+      root.style.zIndex = '9999';
+      root.style.display = 'grid';
+      root.style.gap = '10px';
+      root.style.maxWidth = '360px';
+      document.body.appendChild(root);
+    }
+    return root;
+  }
+
+  function toast(message, type) {
+    var root = upsertToastRoot();
+    var item = document.createElement('div');
+    var colors = {
+      success: 'rgba(34,197,94,0.18)',
+      error: 'rgba(248,113,113,0.18)',
+      warning: 'rgba(251,191,36,0.18)',
+      info: 'rgba(56,189,248,0.18)'
+    };
+    var borders = {
+      success: '#22c55e',
+      error: '#f87171',
+      warning: '#fbbf24',
+      info: '#38bdf8'
+    };
+    var tone = type || 'info';
+    item.style.padding = '14px 16px';
+    item.style.borderRadius = '14px';
+    item.style.background = colors[tone] || colors.info;
+    item.style.border = '1px solid ' + (borders[tone] || borders.info);
+    item.style.color = '#e2e8f0';
+    item.style.backdropFilter = 'blur(12px)';
+    item.style.boxShadow = '0 12px 30px rgba(2,8,23,0.22)';
+    item.style.fontSize = '14px';
+    item.style.lineHeight = '1.5';
+    item.textContent = message;
+    root.appendChild(item);
+    window.setTimeout(function () {
+      if (item && item.parentNode) item.parentNode.removeChild(item);
+    }, 3200);
+  }
+
+  function ensureDialogRoot() {
+    var overlay = el('comphoneDialogOverlay');
+    if (overlay) return overlay;
+
+    overlay = document.createElement('div');
+    overlay.id = 'comphoneDialogOverlay';
+    overlay.style.position = 'fixed';
+    overlay.style.inset = '0';
+    overlay.style.background = 'rgba(2,8,23,0.72)';
+    overlay.style.backdropFilter = 'blur(10px)';
+    overlay.style.zIndex = '9998';
+    overlay.style.display = 'none';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+    overlay.style.padding = '20px';
+
+    var dialog = document.createElement('div');
+    dialog.id = 'comphoneDialog';
+    dialog.style.width = 'min(760px, 100%)';
+    dialog.style.maxHeight = '90vh';
+    dialog.style.overflow = 'auto';
+    dialog.style.background = 'linear-gradient(180deg, rgba(8,17,31,0.98), rgba(15,27,45,0.98))';
+    dialog.style.border = '1px solid rgba(148,163,184,0.18)';
+    dialog.style.borderRadius = '22px';
+    dialog.style.boxShadow = '0 24px 60px rgba(2,8,23,0.4)';
+    dialog.style.padding = '24px';
+    dialog.style.color = '#e2e8f0';
+
+    var content = document.createElement('div');
+    content.id = 'comphoneDialogContent';
+    dialog.appendChild(content);
+    overlay.appendChild(dialog);
+    overlay.addEventListener('click', function (event) {
+      if (event.target === overlay) closeDialog();
+    });
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  function openDialog(html) {
+    var overlay = ensureDialogRoot();
+    var content = el('comphoneDialogContent');
+    if (content) content.innerHTML = html;
+    overlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDialog() {
+    var overlay = el('comphoneDialogOverlay');
+    if (overlay) overlay.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  function normalizeServerResponse(functionName, response) {
+    if (functionName === 'getDashboardData' || functionName === 'getJobStateConfig' || functionName === 'getJobTimeline' || functionName === 'sendDashboardSummary' || functionName === 'handleProcessPhotos' || functionName === 'openJob' || functionName === 'updateJobById' || functionName === 'addQuickNote') {
+      return response;
+    }
+    if (response && typeof response === 'object' && Object.prototype.hasOwnProperty.call(response, 'data')) {
+      return response.data;
+    }
+    return response;
+  }
+
+  function callServer(functionName, args) {
+    args = Array.isArray(args) ? args : [];
+    return new Promise(function (resolve, reject) {
+      if (typeof google === 'undefined' || !google.script || !google.script.run) {
+        reject(new Error('Google Apps Script runtime is not available'));
+        return;
+      }
+
+      var runner = google.script.run
+        .withSuccessHandler(function (result) {
+          resolve(normalizeServerResponse(functionName, result));
+        })
+        .withFailureHandler(function (error) {
+          reject(error instanceof Error ? error : new Error(error && error.message ? error.message : String(error)));
+        });
+
+      try {
+        if (runner[functionName] && typeof runner[functionName] === 'function') {
+          runner[functionName].apply(runner, args);
+          return;
+        }
+      } catch (directError) {}
+
+      try {
+        if (runner.routeActionV55 && typeof runner.routeActionV55 === 'function') {
+          runner.routeActionV55(functionName, args[0] || {});
+          return;
+        }
+      } catch (routeError) {}
+
+      reject(new Error('Server function not found: ' + functionName));
+    });
+  }
+
+  function getStatusLabel(statusValue) {
+    if (statusValue === null || statusValue === undefined || statusValue === '') return '-';
+    if (typeof statusValue === 'number') {
+      for (var i = 0; i < APP.statusConfig.length; i++) {
+        if (Number(APP.statusConfig[i].code) === Number(statusValue)) return APP.statusConfig[i].label;
+      }
+    }
+    return String(statusValue);
+  }
+
+  function getStatusAppearance(statusValue) {
+    var text = getStatusLabel(statusValue);
+    var map = {
+      'รอมอบหมาย': 'priority-medium',
+      'มอบหมายแล้ว': 'priority-info',
+      'รับงานแล้ว': 'priority-info',
+      'เดินทาง': 'priority-info',
+      'ถึงหน้างาน': 'priority-info',
+      'เริ่มงาน': 'priority-info',
+      'รอชิ้นส่วน': 'priority-medium',
+      'งานเสร็จ': 'priority-info',
+      'ลูกค้าตรวจรับ': 'priority-info',
+      'รอเก็บเงิน': 'priority-medium',
+      'เก็บเงินแล้ว': 'priority-info',
+      'ปิดงาน': 'priority-info'
+    };
+    return map[text] || 'priority-info';
+  }
+
+  function toStatusCodeLookup(distribution) {
+    var lookup = {};
+    (distribution || []).forEach(function (item) {
+      if (!item) return;
+      var label = String(item.label || item.status || item.status_label || '');
+      lookup[label] = Number(item.count || 0);
+      if (item.code !== undefined && item.code !== null) lookup[String(item.code)] = Number(item.count || 0);
+    });
+    return lookup;
+  }
+
+  window.comphoneV55 = {
+    APP: APP,
+    el: el,
+    ensureUiRefs: ensureUiRefs,
+    escapeHtml: escapeHtml,
+    formatNumber: formatNumber,
+    formatCurrency: formatCurrency,
+    formatDateTime: formatDateTime,
+    setText: setText,
+    setHtml: setHtml,
+    show: show,
+    hide: hide,
+    toast: toast,
+    openDialog: openDialog,
+    closeDialog: closeDialog,
+    callServer: callServer,
+    getStatusLabel: getStatusLabel,
+    getStatusAppearance: getStatusAppearance,
+    toStatusCodeLookup: toStatusCodeLookup
+  };
+})(window, document);
+</script>

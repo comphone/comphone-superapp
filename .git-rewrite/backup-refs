@@ -1,0 +1,12 @@
+1f1e8d327122f42237b769cd4c2f1ab338921b2f commit	refs/heads/main
+f967503170d7968301488588d93452ca35c343a6 commit	refs/remotes/origin/HEAD
+3a2e7ebc728b0c7a94698397fd287ad75b5dc9ea commit	refs/remotes/origin/clean-main
+f967503170d7968301488588d93452ca35c343a6 commit	refs/remotes/origin/main
+f967503170d7968301488588d93452ca35c343a6 commit	refs/remotes/origin/production/v16-stable
+66617428fa0071c66dc7961ed8e20faa3e015b8e tag	refs/tags/v16.0.0-stable
+4d07b5bccce5106c01ff412b8042ffa45880e59a tag	refs/tags/v16.1.0-stable
+ae1c03fc7a436d6dcfde5a8a7ca3800804cac777 tag	refs/tags/v16.1.1-stable
+9e7807fdeb12a6e5f9b29e7ee7d4de8eacda73dd tag	refs/tags/v5.5.10
+c74adbccab468d3a906e1b2f26b786747a43db25 tag	refs/tags/v5.5.11
+25aba4ec1e7538ef4765727b38781e6c626abfd9 tag	refs/tags/v5.5.9
+ac28247721a4c599e902e2ab7b90b31b226f7343 tag	refs/tags/v5.6.5-freeze

@@ -1,0 +1,16 @@
+{
+  "name": "comphone-line-webhook",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker — LINE Webhook Async Proxy for Comphone SuperApp AI",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "secret:line": "wrangler secret put LINE_CHANNEL_SECRET",
+    "secret:gas": "wrangler secret put GAS_WEBHOOK_URL"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

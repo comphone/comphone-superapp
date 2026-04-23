@@ -1,0 +1,32 @@
+# Credentials & Secrets
+.env
+*.env
+.clasp.json
+credentials.json
+token.json
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node
+node_modules/
+npm-debug.log
+
+# Temp
+*.tmp
+*.bak
+*.log
+docs/SYSTEM_KEYS_BACKUP*.md
+backups/
+__pycache__/
+Comphone AI Move New/🔐*
+Comphone AI Move New/*CREDENTIALS*
+Comphone AI Move New/*credentials*

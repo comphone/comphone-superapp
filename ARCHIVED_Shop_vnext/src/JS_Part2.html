@@ -1,0 +1,439 @@
+<script>
+// ============================================================
+// V366 Pro-Hybrid — Part 2: Actions + Scanner (Bootstrap 5 + Big Forms)
+// ============================================================
+
+// ═══════════ VIEW JOB DETAIL ═══════════
+function viewJob(id) {
+  var j = findJob(id);
+  if(!j){ toast('❌ ไม่พบงาน '+id,'er'); return; }
+  CURRENT_JOB_ID = id;
+
+  var html = '<h2>📋 '+esc(j.id)+'</h2>';
+  html += '<div class="modal-subtitle">'+esc(j.customer)+'</div>';
+
+  html += '<div style="font-size:16px;color:var(--t2);line-height:2;margin-bottom:18px">';
+  html += '📌 '+esc(j.symptom||'-')+'<br>';
+  html += '📝 '+statusBadge(j.status)+' '+esc(j.status)+'<br>';
+  html += '🔧 '+esc(j.tech||'-')+'<br>';
+  html += '🕐 '+(j.created||'-');
+  html += '</div>';
+
+  html += '<div class="d-flex flex-wrap gap-2 mb-3">';
+  html += '<button onclick="showStatusModal()" class="btn btn-blue btn-lg" style="padding:12px 20px;font-size:15px">📝 เปลี่ยนสถานะ</button>';
+  html += '<button onclick="showEditJobModal()" class="btn btn-outline-dark btn-lg" style="padding:12px 20px;font-size:15px">✏️ แก้ไข</button>';
+  if(j.folder) {
+    html += '<button onclick="window.open('+JSON.stringify(j.folder)+',\'_blank\')" class="btn btn-lg" style="background:rgba(245,158,11,.15);color:var(--orange);padding:12px 20px;font-size:15px">📁 โฟลเดอร์</button>';
+  }
+  html += '</div>';
+
+  // Quick Note
+  html += '<div class="mb-3">';
+  html += '<label class="form-label-lg">📝 หมายเหตุด่วน</label>';
+  html += '<textarea id="qnote" class="form-control dark-input" rows="3" placeholder="พิมพ์หมายเหตุ..." style="min-height:100px"></textarea>';
+  html += '<button onclick="addQuickNote()" class="btn btn-green w-100 mt-2 btn-lg">💾 บันทึกหมายเหตุ</button>';
+  html += '</div>';
+
+  // Timeline
+  html += '<div class="mb-3">';
+  html += '<label class="form-label-lg">📜 ประวัติ</label>';
+  html += '<div id="jobTimeline"></div>';
+  html += '</div>';
+
+  html += '<button onclick="closeModal()" class="btn btn-outline-dark w-100 btn-lg">✕ ปิด</button>';
+
+  openModal(html);
+
+  // Load Timeline
+  try {
+    google.script.run.withSuccessHandler(function(r){
+      var el = document.getElementById('jobTimeline');
+      if(!el) return;
+      if(r && r.timeline && r.timeline.length > 0) {
+        var x = '';
+        for(var i=0; i<Math.min(r.timeline.length,20); i++){
+          var e = r.timeline[i];
+          x += '<div class="timeline-item">' +
+            '<div class="ts">'+esc(e.ts)+'</div>' +
+            '<div class="ta">'+esc(e.action)+'</div>' +
+            (e.detail?'<div class="td">'+esc(e.detail)+'</div>':'') +
+            '</div>';
+        }
+        el.innerHTML = x;
+      } else {
+        el.innerHTML = '<div class="empty-state" style="padding:16px">ยังไม่มีบันทึก</div>';
+      }
+    }).getJobTimeline(id);
+  } catch(e){ console.log('timeline error:', e); }
+}
+
+// ═══════════ STATUS MODAL ═══════════
+function showStatusModal() {
+  var j = findJob(CURRENT_JOB_ID);
+  if(!j) return;
+
+  var html = '<h2>📝 เปลี่ยนสถานะ</h2>';
+  html += '<div class="modal-subtitle">'+esc(CURRENT_JOB_ID)+' — '+esc(j.customer)+'</div>';
+  html += '<div style="font-size:16px;color:var(--t2);margin-bottom:16px">ปัจจุบัน: <b>'+esc(j.status)+'</b></div>';
+  html += '<div class="status-btn-grid">';
+  html += '<button onclick="changeJobStatus(\'รอดำเนินการ\')" class="btn btn-warn btn-lg">⏳ รอดำเนินการ</button>';
+  html += '<button onclick="changeJobStatus(\'InProgress\')" class="btn btn-blue btn-lg">🔄 กำลังดำเนินการ</button>';
+  html += '<button onclick="changeJobStatus(\'Completed\')" class="btn btn-green btn-lg">✅ เสร็จแล้ว</button>';
+  html += '<button onclick="changeJobStatus(\'ยกเลิก\')" class="btn btn-err btn-lg">❌ ยกเลิก</button>';
+  html += '</div>';
+  html += '<button onclick="closeModal()" class="btn btn-outline-dark w-100 btn-lg">ยกเลิก</button>';
+
+  openModal(html);
+}
+
+function changeJobStatus(status) {
+  if(!CURRENT_JOB_ID||!status) return;
+  var btns = document.querySelectorAll('.status-btn-grid .btn');
+  for(var bi=0; bi<btns.length; bi++) btns[bi].disabled = true;
+
+  try {
+    google.script.run
+      .withSuccessHandler(function(){ toast('✅ เปลี่ยนสถานะ: '+status,'ok'); closeModal(); loadData(); })
+      .withFailureHandler(function(e){
+        var btns2 = document.querySelectorAll('.status-btn-grid .btn');
+        for(var i=0; i<btns2.length; i++) btns2[i].disabled = false;
+        toast('❌ '+(e.message||e),'er');
+      })
+      .updateJobStatus({ job_id: CURRENT_JOB_ID, status: status, note: 'Dashboard' });
+  } catch(e){ toast('ผิดพลาด: '+e.message,'er'); }
+}
+
+// ═══════════ EDIT JOB ═══════════
+function showEditJobModal() {
+  var j = findJob(CURRENT_JOB_ID);
+  if(!j) return;
+
+  var html = '<h2>✏️ แก้ไข: '+esc(j.id)+'</h2>';
+  html += '<div class="modal-subtitle">'+esc(j.customer)+'</div>';
+
+  html += '<div class="form-group-lg">';
+  html += '<label class="form-label-lg">ชื่อลูกค้า</label>';
+  html += '<input type="text" class="form-control dark-input" id="editName" value="'+esc(j.customer)+'">';
+  html += '</div>';
+
+  html += '<div class="form-group-lg">';
+  html += '<label class="form-label-lg">อาการ</label>';
+  html += '<textarea class="form-control dark-input" id="editSymptom" rows="3" style="min-height:100px">'+esc(j.symptom||'')+'</textarea>';
+  html += '</div>';
+
+  html += '<div class="form-group-lg">';
+  html += '<label class="form-label-lg">ช่าง</label>';
+  html += '<input type="text" class="form-control dark-input" id="editTech" value="'+esc(j.tech||'')+'">';
+  html += '</div>';
+
+  html += '<button onclick="saveJob()" class="btn btn-green w-100 btn-lg">💾 บันทึก</button>';
+  html += '<button onclick="closeModal()" class="btn btn-outline-dark w-100 btn-lg mt-2">ยกเลิก</button>';
+
+  openModal(html);
+}
+
+function saveJob() {
+  var name = (document.getElementById('editName').value||'').trim();
+  var symptom = (document.getElementById('editSymptom').value||'').trim();
+  var tech = (document.getElementById('editTech').value||'').trim();
+
+  if(!name){ toast('❌ ชื่อลูกค้าห้ามว่าง','er'); return; }
+
+  var btn = document.querySelector('#modalContent .btn-green');
+  setBtnLoading(btn, true, '⏳ บันทึก...');
+
+  try {
+    google.script.run
+      .withSuccessHandler(function(){ toast('✅ แก้ไขงานแล้ว','ok'); closeModal(); loadData(); })
+      .withFailureHandler(function(e){ setBtnLoading(btn,false); toast('❌ '+(e.message||e),'er'); })
+      .updateJobById(CURRENT_JOB_ID, { name: name, symptom: symptom, tech: tech });
+  } catch(e){ toast('ผิดพลาด: '+e.message,'er'); }
+}
+
+// ═══════════ ADD QUICK NOTE ═══════════
+function addQuickNote() {
+  var n = document.getElementById('qnote');
+  if(!n || !n.value.trim()){ toast('❌ พิมพ์หมายเหตุก่อน','er'); return; }
+
+  var btn = document.querySelector('#modalContent .btn-green');
+  setBtnLoading(btn, true, '⏳ บันทึก...');
+
+  try {
+    google.script.run
+      .withSuccessHandler(function(){ toast('✅ บันทึกหมายเหตุแล้ว','ok'); closeModal(); loadData(); })
+      .withFailureHandler(function(e){ setBtnLoading(btn,false); toast('❌ '+e.message,'er'); })
+      .addQuickNote(CURRENT_JOB_ID, n.value.trim(), 'โหน่ง');
+  } catch(e){ toast('ผิดพลาด: '+e.message,'er'); }
+}
+
+// ═══════════ NEW JOB MODAL ═══════════
+function openNewJobModal() {
+  var html = '<h2>➕ เปิดงานใหม่</h2>';
+
+  html += '<div class="form-group-lg" style="margin-top:18px">';
+  html += '<label class="form-label-lg">ชื่อลูกค้า *</label>';
+  html += '<input type="text" class="form-control dark-input" id="newName" placeholder="ชื่อลูกค้า" style="font-size:18px">';
+  html += '</div>';
+
+  html += '<div class="form-group-lg">';
+  html += '<label class="form-label-lg">เบอร์โทร</label>';
+  html += '<input type="tel" class="form-control dark-input" id="newPhone" placeholder="08x-xxx-xxxx" style="font-size:18px">';
+  html += '</div>';
+
+  html += '<div class="form-group-lg">';
+  html += '<label class="form-label-lg">อาการ / รายละเอียด *</label>';
+  html += '<textarea class="form-control dark-input" id="newSymptom" rows="3" placeholder="อาการเสีย, รายละเอียดงาน..." style="min-height:120px;font-size:17px"></textarea>';
+  html += '</div>';
+
+  html += '<div class="form-group-lg">';
+  html += '<label class="form-label-lg">ช่างที่รับงาน</label>';
+  html += '<input type="text" class="form-control dark-input" id="newTech" placeholder="ช่างที่รับงาน" style="font-size:18px">';
+  html += '</div>';
+
+  html += '<button onclick="doOpenJob()" class="btn btn-green w-100 btn-lg" style="font-size:18px;padding:16px">🚀 เปิดงาน</button>';
+  html += '<button onclick="closeModal()" class="btn btn-outline-dark w-100 btn-lg mt-2">ยกเลิก</button>';
+
+  openModal(html);
+}
+
+function doOpenJob() {
+  var name = (document.getElementById('newName').value||'').trim();
+  var phone = (document.getElementById('newPhone').value||'').trim();
+  var symptom = (document.getElementById('newSymptom').value||'').trim();
+  var tech = (document.getElementById('newTech').value||'').trim();
+
+  if(!name){ toast('❌ ใส่ชื่อลูกค้า','er'); return; }
+  if(!symptom){ toast('❌ ใส่อาการ/รายละเอียดงาน','er'); return; }
+
+  var btn = document.querySelector('#modalContent .btn-green');
+  setBtnLoading(btn, true, '⏳ เปิดงาน...');
+
+  try {
+    google.script.run
+      .withSuccessHandler(function(r){ toast('🎉 เปิดงาน '+((r&&r.job_id)?r.job_id:'?')+' สำเร็จ','ok'); closeModal(); loadData(); })
+      .withFailureHandler(function(e){ setBtnLoading(btn,false); toast('❌ '+(e.message||e),'er'); })
+      .openJob({ name: name, phone: phone, symptom: symptom, tech: tech });
+  } catch(e){ toast('ผิดพลาด: '+e.message,'er'); }
+}
+
+// ═══════════ SEND SUMMARY ═══════════
+function sendSummary() {
+  try {
+    showLoading();
+    google.script.run
+      .withSuccessHandler(function(r){ hideLoading(); if(r&&r.success) toast('✅ ส่งสรุป LINE สำเร็จ','ok'); else toast('❌ '+JSON.stringify(r),'er'); loadData(); })
+      .withFailureHandler(function(e){ hideLoading(); toast('❌ '+(e.message||e),'er'); })
+      .sendDashboardSummary();
+  } catch(e){ toast('ผิดพลาด: '+e.message,'er'); }
+}
+
+// ═══════════ NOTE MODAL ═══════════
+function showNoteModal() {
+  var html = '<h2>📝 หมายเหตุ</h2>';
+  html += '<div class="form-group-lg" style="margin-top:18px">';
+  html += '<label class="form-label-lg">Job ID</label>';
+  html += '<input type="text" class="form-control dark-input" id="globalNoteJobId" placeholder="เช่น J0001" style="font-size:18px">';
+  html += '</div>';
+  html += '<div class="form-group-lg">';
+  html += '<label class="form-label-lg">ข้อความหมายเหตุ</label>';
+  html += '<textarea class="form-control dark-input" id="globalNoteText" rows="4" placeholder="พิมพ์หมายเหตุ..." style="min-height:140px;font-size:17px"></textarea>';
+  html += '</div>';
+  html += '<button onclick="saveGlobalNote()" class="btn btn-green w-100 btn-lg">💾 บันทึก</button>';
+  html += '<button onclick="closeModal()" class="btn btn-outline-dark w-100 btn-lg mt-2">ยกเลิก</button>';
+
+  openModal(html);
+}
+
+function saveGlobalNote() {
+  var id = (document.getElementById('globalNoteJobId').value||'').trim();
+  var n = (document.getElementById('globalNoteText').value||'').trim();
+
+  if(!id){ toast('❌ ใส่ Job ID','er'); return; }
+  if(!n){ toast('❌ ใส่หมายเหตุ','er'); return; }
+
+  var btn = document.querySelector('#modalContent .btn-green');
+  setBtnLoading(btn, true, '⏳ บันทึก...');
+
+  try {
+    google.script.run
+      .withSuccessHandler(function(){ toast('✅ บันทึกหมายเหตุแล้ว','ok'); closeModal(); loadData(); })
+      .withFailureHandler(function(e){ setBtnLoading(btn,false); toast('❌ '+(e.message||e),'er'); })
+      .addQuickNote(id, n, 'โหน่ง');
+  } catch(e){ toast('ผิดพลาด: '+e.message,'er'); }
+}
+
+// ═══════════ PROCESS PHOTOS ═══════════
+function processPhotos() {
+  try {
+    if(!confirm('เริ่มจัดรูปภาพทั้งหมด?')) return;
+    showLoading();
+    google.script.run
+      .withSuccessHandler(function(r){ hideLoading(); if(r) toast('✅ จัดรูป สำเร็จ '+(r.successful||0)+' | ผิด '+(r.failed||0),'ok'); else toast('✅ จัดรูปเรียบร้อย','ok'); loadData(); })
+      .withFailureHandler(function(e){ hideLoading(); toast('❌ '+(e.message||e),'er'); })
+      .processImageSorting();
+  } catch(e){ toast('ผิดพลาด: '+e.message,'er'); }
+}
+
+// ═══════════ SCANNER ═══════════
+var _html5QrCode = null;
+
+function showScanner() {
+  var html = '<h2>📷 สแกนเบิกของ</h2>';
+  html += '<div class="modal-subtitle">สแกน Barcode / QR เพื่อเบิกสินค้าจากคลัง</div>';
+  html += '<div id="scannerArea" class="scanner-area"><div style="color:var(--t3);font-size:16px">⏙ กำลังเปิดกล้อง...</div></div>';
+
+  html += '<div class="form-group-lg mt-3">';
+  html += '<label class="form-label-lg">หรือพิมพ์รหัสด้วยตนเอง</label>';
+  html += '<div class="input-group">';
+  html += '<input type="text" class="form-control dark-input" id="scManual" placeholder="รหัส Barcode / ชื่อสินค้า...">';
+  html += '<button class="btn btn-blue btn-lg" onclick="manualLookup()" style="width:auto;padding:12px 20px">🔍</button>';
+  html += '</div></div>';
+
+  html += '<div id="scResult"></div>';
+  html += '<button onclick="closeModal();stopScanner()" class="btn btn-outline-dark w-100 btn-lg mt-3">✕ ปิด</button>';
+
+  openModal(html);
+  startCamera();
+}
+
+function startCamera() {
+  try {
+    if(typeof Html5Qrcode==='undefined'){
+      var sa=document.getElementById('scannerArea');
+      if(sa) sa.innerHTML='<div style="color:var(--red);font-size:15px;text-align:center;padding:20px">⚠️ ไม่พบไลบรารี html5-qrcode<br><span style="color:var(--t3)">ใช้พิมพ์รหัสแทนได้</span></div>';
+      return;
+    }
+    _html5QrCode = new Html5Qrcode('scannerArea', { verbose: false });
+    _html5QrCode.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 250, height: 140 } },
+      function(code){ stopScanner(); lookupBarcode(code); },
+      function(){}
+    ).catch(function(err){
+      var sa=document.getElementById('scannerArea');
+      if(sa) sa.innerHTML='<div style="color:var(--orange);font-size:15px;text-align:center;padding:20px">⚠️ ไม่สามารถเปิดกล้องได้<br>พิมพ์รหัสแทนได้</div>';
+    });
+  } catch(e){
+    var sa=document.getElementById('scannerArea');
+    if(sa) sa.innerHTML='<div style="color:var(--red);font-size:15px;text-align:center;padding:20px">❌ '+e.message+'</div>';
+  }
+}
+
+function stopScanner() {
+  try { if(_html5QrCode){ _html5QrCode.stop().catch(function(){}); _html5QrCode=null; } }
+  catch(e){}
+}
+
+function manualLookup() {
+  var inp = document.getElementById('scManual');
+  if(!inp||!inp.value.trim()){ toast('❌ ใสรหัสหรือชื่อสินค้า','er'); return; }
+  lookupBarcode(inp.value.trim());
+}
+
+function lookupBarcode(code) {
+  try {
+    var el = document.getElementById('scResult');
+    if(el) el.innerHTML = '<div style="color:var(--t2);font-size:16px;text-align:center;padding:12px">⏙ กำลังค้น '+esc(code)+'...</div>';
+
+    google.script.run
+      .withSuccessHandler(function(r){
+        var el2 = document.getElementById('scResult');
+        if(!el2) return;
+
+        if(r && r.found) {
+          var sc = r.alert?'var(--red)':'var(--green)';
+          var qCode = JSON.stringify(r.code);
+          var qName = JSON.stringify(r.name);
+
+          el2.innerHTML =
+            '<div class="bg-emerald p-3" style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:16px;padding:18px;margin:14px 0">' +
+            '<div style="font-size:20px;font-weight:900;color:var(--green)">✅ '+esc(r.name)+'</div>' +
+            '<div style="font-size:15px;color:var(--t2);margin-top:8px">รหัส: <b>'+esc(r.code)+'</b></div>' +
+            '<div style="font-size:16px;color:var(--t2)">คงเหลือ: <b style="color:'+sc+'">'+r.effective+' ชิ้น</b>' +
+            (r.reserved>0?' <span style="color:var(--orange);font-size:14px">(จองแล้ว '+r.reserved+')</span>':'')+'</div>' +
+            (r.cost?'<div style="font-size:14px;color:var(--t3);margin-top:4px">ต้นทุน: '+r.cost+' บ. | ราคาขาย: '+r.price+' บ.</div>':'') +
+            '</div>' +
+            '<div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:16px;padding:18px;margin:14px 0">' +
+            '<div style="font-size:14px;font-weight:700;color:var(--orange);margin-bottom:12px">📦 เบิกสินค้า</div>' +
+            '<div class="form-group-lg">' +
+            '<label class="form-label-lg">จำนวน</label>' +
+            '<input type="number" id="wdQty" value="1" min="1" max="'+r.effective+'" class="form-control dark-input" style="text-align:center;width:100px">' +
+            '</div>' +
+            '<div class="form-group-lg">' +
+            '<label class="form-label-lg">Job ID (ถ้ามี)</label>' +
+            '<input type="text" id="wdJob" placeholder="เช่น J0001" class="form-control dark-input">' +
+            '</div>' +
+            '<button onclick="withdrawFromScan('+qCode+','+qName+')" class="btn btn-green w-100 btn-lg">✅ ยืนยันเบิก</button>' +
+            '</div>';
+        } else {
+          el2.innerHTML = '<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:16px;padding:18px;margin:14px 0">' +
+            '<div style="color:var(--red);font-size:17px;font-weight:700">❌ ไม่พบสินค้า: '+esc(code)+'</div>' +
+            (r.message?'<div style="color:var(--t3);font-size:14px;margin-top:6px">'+esc(r.message)+'</div>':'') +
+            '</div>';
+        }
+      })
+      .withFailureHandler(function(e){
+        var el2=document.getElementById('scResult');
+        if(el2) el2.innerHTML='<div style="color:var(--red);font-size:15px;text-align:center;padding:10px">❌ '+(e.message||e)+'</div>';
+      })
+      .barcodeLookup({ barcode: code });
+  } catch(e){ toast('ผิดพลาด: '+e.message,'er'); }
+}
+
+function withdrawFromScan(code, name) {
+  try {
+    var qtyEl = document.getElementById('wdQty');
+    var jobEl = document.getElementById('wdJob');
+    var qty = parseInt(qtyEl?qtyEl.value:1)||1;
+    var jobId = jobEl?jobEl.value.trim():'';
+
+    if(qty<1){ toast('❌ จำนวนต้องมากกว่า 0','er'); return; }
+
+    var el = document.getElementById('scResult');
+    if(el) el.innerHTML = '<div style="color:var(--t2);font-size:16px;text-align:center;padding:12px">⏙ กำลังเบิก '+esc(name)+' ×'+qty+'...</div>';
+
+    google.script.run
+      .withSuccessHandler(function(r){
+        var el2 = document.getElementById('scResult');
+        if(!el2) return;
+        if(r && r.success) {
+          var ac = r.alert?'var(--red)':'var(--green)';
+          el2.innerHTML =
+            '<div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:16px;padding:24px;margin:14px 0">' +
+            '<div style="font-size:22px;font-weight:900;color:var(--green)">✅ เบิกสำเร็จ!</div>' +
+            '<div style="font-size:17px;margin-top:10px">'+esc(r.name||name)+' ×'+(r.withdrawn||qty)+'</div>' +
+            (r.jobId?'<div style="font-size:15px;color:var(--t2);margin-top:6px">บันทึกในงาน: '+esc(r.jobId)+'</div>':'') +
+            '<div style="font-size:16px;color:var(--t2);margin-top:8px">คงเหลือ: <b style="color:'+ac+'">'+r.remaining+' ชิ้น</b></div>' +
+            (r.alert?'<div style="color:var(--red);font-size:15px;font-weight:700;margin-top:10px">⚠️ สต็อกเหลือน้อย! แจ้งแล้วตามระบบ</div>':'') +
+            '<button onclick="closeModal();stopScanner();loadData()" class="btn btn-blue w-100 btn-lg mt-3">🔄 กลับหน้าจอหลัก</button>' +
+            '</div>';
+        } else {
+          el2.innerHTML = '<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:16px;padding:18px;margin:14px 0">' +
+            '<div style="color:var(--red);font-size:16px">❌ '+(r?(r.error||JSON.stringify(r)):'ผิดพลาด')+'</div></div>';
+        }
+      })
+      .withFailureHandler(function(e){
+        var el2=document.getElementById('scResult');
+        if(el2) el2.innerHTML='<div style="color:var(--red);font-size:15px;text-align:center;padding:10px">❌ '+(e.message||e)+'</div>';
+      })
+      .scanWithdrawStock({ barcode: code, qty: qty, job_id: jobId });
+  } catch(e){ toast('ผิดพลาด: '+e.message,'er'); }
+}
+
+// ═══════════ INIT ═══════════
+(function(){
+  try {
+    if(typeof google==='undefined'){ showError('Google Script ไม่พร้อม','เปิดผ่าน Web App URL เท่านั้น'); return; }
+    showLoading();
+    google.script.run
+      .withSuccessHandler(function(d){
+        try { DATA=d; JOBS=(d&&d.jobs)||[]; INVENTORY=(d&&d.inventory)||[]; renderDashboard(d); }
+        catch(e){ showError('Render', e.message||e); }
+      })
+      .withFailureHandler(function(e){ showError('getDashboardData', e.message||e); })
+      .getDashboardData();
+  } catch(e){ showError('Init', e.message||e); }
+})();
+
+console.log('✅ V366 Pro-Hybrid Part 2 loaded');
+</script>

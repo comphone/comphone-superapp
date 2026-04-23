@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COMPHONE Dashboard — PC</title>
+<script>
+  // PHASE 25.3 — GLOBAL VERSION LOCK
+  window.__APP_VERSION = 'v5.6.6';
+
+  // Cache invalidation on version mismatch
+  if (localStorage.__APP_VERSION !== window.__APP_VERSION) {
+    console.warn('[VERSION] Mismatch detected — clearing cache...');
+    localStorage.clear();
+    if ('caches' in window) {
+      caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+    }
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+    }
+    localStorage.__APP_VERSION = window.__APP_VERSION;
+    location.reload(true);
+  }
+
+  // PHASE 26.6 FIX: Minimal APP stub for error_boundary.js
+  window.APP = window.APP || { currentPage: 'dashboard_pc', user: null };
+</script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --sidebar-w: 240px;
+    --header-h: 60px;
+    --blue: #1e40af;
+    --green: #059669;
+    --amber: #d97706;
+    --red: #dc2626;
+    --gray: #6b7280;
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --border: #e2e8f0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI','Sarabun',sans-serif; background: var(--bg); color: #111827; }
+
+  /* PHASE 25.5 — VERSION BADGE */
+  #version_badge {
+    position: fixed;
+    bottom: 12px;
+    right: 12px;
+    z-index: 9999;
+    background: rgba(15, 23, 42, 0.9);
+    color: #e2e8f0;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: 'Segoe UI', monospace;
+    letter-spacing: 0.3px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.08);
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  #version_badge .ok { color: #34d399; }
+  #version_badge .warn { color: #fbbf24; }
+  #version_badge .err { color: #f87171; }
+
+  /* ===== SIDEBAR ===== */
+  .sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0;
+    width: var(--sidebar-w);
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+    color: #fff; z-index: 100; display: flex; flex-direction: column;
+    transition: width 0.2s;
+  }
+  .sidebar-logo {
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .sidebar-logo .logo-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .sidebar-logo .logo-text { font-size: 15px; font-weight: 800; line-height: 1.2; }
+  .sidebar-logo .logo-sub { font-size: 10px; opacity: 0.5; font-weight: 400; }
+
+  .nav-section { padding: 12px 12px 4px; font-size: 10px; font-weight: 700; opacity: 0.4; text-transform: uppercase; letter-spacing: 1px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 16px; margin: 2px 8px; border-radius: 10px;
+    cursor: pointer; font-size: 14px; font-weight: 500;
+    color: rgba(255,255,255,0.65); transition: all 0.15s;
+    text-decoration: none;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .nav-item.active { background: #3b82f6; color: #fff; font-weight: 700; }
+  .nav-item i { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+  .nav-badge { margin-left: auto; background: #ef4444; color: #fff; border-radius: 20px; padding: 1px 7px; font-size: 10px; font-weight: 700; }
+
+  .sidebar-footer {
+    margin-top: auto; padding: 16px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .user-chip {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 12px;
+  }
+  .user-avatar-sm {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 14px; color: #fff; flex-shrink: 0;
+  }
+  .user-name-sm { font-size: 13px; font-weight: 700; color: #fff; }
+  .user-role-sm { font-size: 10px; opacity: 0.5; }
+
+  /* ===== MAIN AREA ===== */
+  .main-area {
+    margin-left: var(--sidebar-w);
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+  }
+
+  /* ===== TOPBAR ===== */
+  .topbar {
+    height: var(--header-h);
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 16px;
+    padding: 0 24px; position: sticky; top: 0; z-index: 50;
+  }
+  .topbar-title { font-size: 18px; font-weight: 800; color: #111827; flex: 1; }
+  .topbar-date { font-size: 12px; color: var(--gray); }
+  .btn-refresh {
+    background: #f1f5f9; border: 1px solid var(--border);
+    border-radius: 8px; padding: 7px 14px; font-size: 13px;
+    color: #374151; cursor: pointer; display: flex; align-items: center; gap: 6px;
+    transition: background 0.15s;
+  }
+  .btn-refresh:hover { background: #e2e8f0; }
+  .btn-pwa {
+    background: #1e40af; color: #fff; border: none;
+    border-radius: 8px; padding: 7px 14px; font-size: 13px;
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+    text-decoration: none; transition: background 0.15s;
+  }
+  .btn-pwa:hover { background: #1d4ed8; color: #fff; }
+
+  /* ===== CONTENT ===== */
+  .content { padding: 24px; flex: 1; }
+
+  /* ===== KPI ROW ===== */
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+  .kpi-box {
+    background: var(--card); border-radius: 14px; padding: 20px;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; gap: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    transition: box-shadow 0.15s;
+  }
+  .kpi-box:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+  .kpi-icon-box {
+    width: 52px; height: 52px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+  }
+  .kpi-num { font-size: 28px; font-weight: 900; line-height: 1; }
+  .kpi-lbl { font-size: 12px; color: var(--gray); margin-top: 3px; font-weight: 600; }
+  .kpi-sub { font-size: 11px; color: var(--gray); margin-top: 2px; }
+  .kpi-alert-pulse { animation: kpi-pulse 1.5s ease-in-out infinite; border: 2px solid #fca5a5; }
+  @keyframes kpi-pulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.3); }
+    50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+  }
+
+  /* ===== GRID 2 COL ===== */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+
+  /* ===== CARD ===== */
+  .card-box {
+    background: var(--card); border-radius: 14px; padding: 20px;
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .card-title {
+    font-size: 14px; font-weight: 800; color: #111827;
+    margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+  }
+  .card-title .badge-count {
+    background: #f1f5f9; color: var(--gray);
+    border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700;
+  }
+
+  /* ===== JOB TABLE ===== */
+  .job-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .job-table th {
+    text-align: left; padding: 8px 12px;
+    font-size: 11px; font-weight: 700; color: var(--gray);
+    border-bottom: 2px solid var(--border);
+    background: #f8fafc;
+  }
+  .job-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .job-table tr:last-child td { border-bottom: none; }
+  .job-table tr:hover td { background: #f8fafc; }
+  .job-table .job-id { font-weight: 700; color: var(--blue); font-size: 12px; }
+  .job-table .customer { font-weight: 600; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .job-table .symptom { color: var(--gray); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+  .status-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; white-space: nowrap;
+  }
+  .days-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 6px;
+    font-size: 11px; font-weight: 700;
+  }
+
+  /* ===== STATUS DIST ===== */
+  .status-dist { display: flex; flex-direction: column; gap: 10px; }
+  .status-row { display: flex; align-items: center; gap: 10px; }
+  .status-label { font-size: 12px; font-weight: 600; width: 120px; flex-shrink: 0; }
+  .status-bar-wrap { flex: 1; background: #f1f5f9; border-radius: 6px; height: 8px; overflow: hidden; }
+  .status-bar { height: 100%; border-radius: 6px; transition: width 0.5s; }
+  .status-count { font-size: 12px; font-weight: 700; width: 30px; text-align: right; flex-shrink: 0; }
+
+  /* ===== ALERTS ===== */
+  .alert-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .alert-row:last-child { border-bottom: none; }
+  .alert-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .alert-msg { font-size: 13px; font-weight: 700; }
+  .alert-sub { font-size: 11px; color: var(--gray); margin-top: 2px; }
+
+  /* ===== CHART ===== */
+  .chart-wrap { position: relative; height: 220px; }
+
+  /* ===== LOADING ===== */
+  .loading-state { text-align: center; padding: 60px 20px; color: var(--gray); }
+  .spinner-pc {
+    width: 40px; height: 40px; border: 3px solid #e2e8f0;
+    border-top-color: #3b82f6; border-radius: 50%;
+    animation: spin 0.8s linear infinite; margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 1200px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 900px) {
+    .sidebar { width: 64px; }
+    .sidebar-logo .logo-text, .sidebar-logo .logo-sub,
+    .nav-item span, .nav-section, .user-name-sm, .user-role-sm { display: none; }
+    .nav-item { justify-content: center; padding: 12px; }
+    .nav-item i { width: auto; }
+    .main-area { margin-left: 64px; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .kpi-row { grid-template-columns: 1fr 1fr; }
+    .content { padding: 12px; }
+  }
+</style>
+</head>
+<body>
+  <div id="approval-panel" style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: white; border: 1px solid #ccc; padding: 10px; max-width: 300px; max-height: 400px; overflow-y: auto;"></div>
+
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">📱</div>
+    <div>
+      <div class="logo-text">COMPHONE</div>
+      <div class="logo-sub">SUPER APP v5.5</div>
+    </div>
+  </div>
+
+  <div class="nav-section">หลัก</div>
+  <a class="nav-item active" href="#" onclick="loadSection('dashboard')">
+    <i class="bi bi-bar-chart-line-fill"></i><span>Dashboard</span>
+  </a>
+  <a class="nav-item" href="#" onclick="loadSection('jobs')">
+    <i class="bi bi-tools"></i><span>งานบริการ</span>
+    <span class="nav-badge" id="nav-jobs-badge" style="display:none">0</span>
+  </a>
+  <a class="nav-item" href="#" onclick="loadSection('po')">
+    <i class="bi bi-cart-fill"></i><span>ใบสั่งซื้อ</span>
+  </a>
+  <a class="nav-item" href="#" onclick="loadSection('inventory')">
+    <i class="bi bi-box-seam-fill"></i><span>สต็อก</span>
+  </a>
+
+  <div class="nav-section">รายงาน</div>
+  <a class="nav-item" href="#" onclick="loadSection('revenue')">
+    <i class="bi bi-currency-exchange"></i><span>รายรับ</span>
+  </a>
+  <a class="nav-item" href="#" onclick="loadSection('crm')">
+    <i class="bi bi-people-fill"></i><span>ลูกค้า</span>
+  </a>
+
+  <div class="nav-section">ระบบ</div>
+  <a class="nav-item" href="index.html">
+    <i class="bi bi-phone-fill"></i><span>เปิด Mobile App</span>
+  </a>
+  <a class="nav-item" href="#" onclick="loadSection('settings')">
+    <i class="bi bi-gear-fill"></i><span>ตั้งค่า</span>
+  </a>
+
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="user-avatar-sm" id="pc-avatar">A</div>
+      <div>
+        <div class="user-name-sm" id="pc-username">ผู้ดูแลระบบ</div>
+        <div class="user-role-sm" id="pc-role">Admin</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<div class="main-area">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-title" id="topbar-title">
+      <i class="bi bi-bar-chart-line-fill" style="color:#d97706;margin-right:8px"></i>Executive Dashboard
+    </div>
+    <div class="topbar-date" id="topbar-date">—</div>
+    <button class="btn-refresh" onclick="loadDashboard()">
+      <i class="bi bi-arrow-clockwise"></i> รีเฟรช
+    </button>
+    <a class="btn-pwa" href="index.html">
+      <i class="bi bi-phone-fill"></i> Mobile App
+    </a>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content" id="main-content">
+    <div class="loading-state">
+      <div class="spinner-pc"></div>
+      <p>กำลังโหลดข้อมูล...</p>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ===== CONFIG =====
+const GAS_URL = localStorage.getItem('comphone_gas_url') ||
+  'https://script.google.com/macros/s/AKfycbxq4wKVp0vlxxvBom_Rmv181EF9n4RT6VqgLZs5M1zLR-SWaq1_xtsGzJDkX1rLd-Gx1A/exec';
+
+let CHARTS = {};
+let DASHBOARD_DATA = null;
+
+
+// ===== DATA SCHEMA & ACTION MAP (FOR AI_EXECUTOR) ====
+window.__DATA_SCHEMA = {
+  stock: ['product_id', 'name', 'qty', 'min_level'],
+  job: ['job_id', 'status', 'technician', 'sla_due'],
+  order: ['order_id', 'customer', 'total', 'status']
+};
+
+window.__ACTION_MAP = {
+  getStockList: {
+    api: 'getStockList',
+    type: 'read'
+  },
+  updateJobStatus: {
+    api: 'updateJobStatus',
+    type: 'write'
+  },
+  posCheckout: {
+    api: 'posCheckout',
+    type: 'write'
+  }
+};
+
+// ===== UI REFRESH MAP (FOR AI_EXECUTOR) ====
+window.__UI_REFRESH_MAP = {
+  updateJobStatus: function() { 
+    if (typeof window.loadDashboard === 'function') {
+      window.loadDashboard();
+    }
+  },
+  posCheckout: function() {
+    if (typeof window.loadDashboard === 'function') {
+      window.loadDashboard();
+    }
+  }
+};
+
+
+// ===== INIT =====
+window.addEventListener('load', () => {
+  // Load user from PWA localStorage
+  try {
+    const saved = JSON.parse(localStorage.getItem('comphone_user') || '{}');
+    if (saved.name) {
+      document.getElementById('pc-avatar').textContent = saved.name[0].toUpperCase();
+      document.getElementById('pc-username').textContent = saved.name;
+      document.getElementById('pc-role').textContent = saved.role || 'user';
+    }
+    if (saved.scriptUrl) {
+      localStorage.setItem('comphone_gas_url', saved.scriptUrl);
+    }
+  } catch(e) {}
+
+  loadDashboard();
+});
+
+// ===== API =====
+// PHASE 20.4: PC Dashboard — ใช้ fetch โดยตรง (ไม่ผ่าน AI_EXECUTOR)
+// เหตุผล: dashboard_pc.html ทำงานบน GitHub Pages (static) ไม่มี google.script.run
+// AI_EXECUTOR ใช้ได้เฉพาะกับ PWA ที่โหลดผ่าน GAS Web App
+async function callGas(action, params) {
+  const url = localStorage.getItem('comphone_gas_url') || GAS_URL;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ action, ...params })
+  });
+  return r.json();
+}
+
+// ===== LOAD DASHBOARD =====
+async function loadDashboard() {
+  setActiveNav('dashboard');
+  document.getElementById('topbar-title').innerHTML =
+    '<i class="bi bi-bar-chart-line-fill" style="color:#d97706;margin-right:8px"></i>Executive Dashboard';
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="loading-state">
+      <div class="spinner-pc"></div>
+      <p>กำลังโหลดข้อมูลจาก Google Sheet...</p>
+    </div>`;
+
+  try {
+    const data = await callGas('getDashboardData');
+    DASHBOARD_DATA = data;
+    renderDashboard(data);
+  } catch(e) {
+    document.getElementById('main-content').innerHTML = `
+      <div class="loading-state">
+        <i class="bi bi-wifi-off" style="font-size:48px;color:#d1d5db;display:block;margin-bottom:16px"></i>
+        <p style="font-size:16px;font-weight:700">ไม่สามารถเชื่อมต่อ GAS ได้</p>
+        <p style="color:#9ca3af;margin-top:8px">${e.message}</p>
+        <button class="btn-refresh" onclick="loadDashboard()" style="margin-top:16px">
+          <i class="bi bi-arrow-clockwise"></i> ลองใหม่
+        </button>
+      </div>`;
+  }
+}
+
+// ===== RENDER DASHBOARD =====
+function renderDashboard(data) {
+  const summary = data.summary || {};
+  const revenue = summary.revenue || { today: 0, week: 0, month: 0 };
+  const totalJobs = Number(summary.totalJobs || 0);
+  const overdueJobs = Number(summary.overdueJobs || 0);
+  const lowStock = Number(summary.lowStock || 0);
+  const pmDue = Number(summary.pmDueCount || 0);
+  const topTech = summary.topTechnician;
+  const dateStr = summary.date || new Date().toLocaleDateString('th-TH');
+
+  // Status distribution
+  const sdRaw = data.status_distribution || {};
+  const statuses = sdRaw.statuses || [];
+  const totalForBar = sdRaw.total_jobs || totalJobs || 1;
+
+  // Alerts
+  const alertsRaw = data.alerts || {};
+  const alertItems = Array.isArray(alertsRaw) ? alertsRaw : (alertsRaw.items || []);
+
+  // Jobs
+  const jobs = data.jobs || [];
+
+  document.getElementById('topbar-date').textContent = 'อัปเดต: ' + dateStr;
+
+  document.getElementById('main-content').innerHTML = `
+    <!-- KPI ROW -->
+    <div class="kpi-row">
+      ${kpiBox('bi-clipboard2-check-fill', '#dbeafe', '#1e40af', totalJobs, 'งานทั้งหมด', `${jobs.filter(j=>j.status==='รอดำเนินการ'||j.status==='PENDING').length} รอดำเนินการ`)}
+      ${kpiBox('bi-currency-exchange', '#d1fae5', '#059669', '฿' + Number(revenue.today||0).toLocaleString(), 'รายรับวันนี้', `เดือนนี้: ฿${Number(revenue.month||0).toLocaleString()}`)}
+      ${kpiBox('bi-clock-history', overdueJobs > 0 ? '#fee2e2' : '#f1f5f9', overdueJobs > 0 ? '#dc2626' : '#6b7280', overdueJobs, 'งานเกิน SLA', overdueJobs > 0 ? '⚠️ ต้องดำเนินการด่วน' : 'ปกติ', overdueJobs > 0)}
+      ${kpiBox('bi-box-seam-fill', lowStock > 0 ? '#fef3c7' : '#f1f5f9', lowStock > 0 ? '#d97706' : '#6b7280', lowStock, 'สต็อกต่ำ', lowStock > 0 ? '⚠️ ต้องสั่งซื้อเพิ่ม' : 'ปกติ')}
+    </div>
+
+    <!-- REVENUE + STATUS -->
+    <div class="grid-3">
+      <div class="card-box">
+        <div class="card-title"><i class="bi bi-bar-chart-fill" style="color:#d97706"></i> รายรับ (บาท)</div>
+        <div class="chart-wrap"><canvas id="revenue-chart-pc"></canvas></div>
+      </div>
+      <div class="card-box">
+        <div class="card-title"><i class="bi bi-pie-chart-fill" style="color:#3b82f6"></i> สถานะงาน</div>
+        <div class="status-dist" id="status-dist-pc">
+          ${statuses.length === 0 ? '<p style="color:#9ca3af;font-size:13px">ไม่มีข้อมูล</p>' :
+            statuses.filter(s => s.job_count > 0).map(s => statusDistRow(s, totalForBar)).join('')}
+        </div>
+      </div>
+      <div class="card-box">
+        <div class="card-title"><i class="bi bi-bell-fill" style="color:#ef4444"></i> แจ้งเตือน
+          ${alertItems.length > 0 ? `<span class="badge-count" style="background:#fee2e2;color:#dc2626">${alertItems.length}</span>` : ''}
+        </div>
+        <div id="alerts-pc">
+          ${alertItems.length === 0 ? '<p style="color:#9ca3af;font-size:13px;text-align:center;padding:20px">ไม่มีการแจ้งเตือน ✅</p>' :
+            alertItems.slice(0, 6).map(a => alertRow(a)).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- JOBS TABLE + TOP TECH -->
+    <div class="grid-2">
+      <div class="card-box" style="overflow:hidden">
+        <div class="card-title">
+          <i class="bi bi-list-task" style="color:#1e40af"></i> รายการงานทั้งหมด
+          <span class="badge-count">${jobs.length}</span>
+          <input type="text" id="job-search-pc" placeholder="ค้นหา..." oninput="filterJobsPC(this.value)"
+            style="margin-left:auto;border:1px solid #e2e8f0;border-radius:8px;padding:5px 10px;font-size:12px;width:160px">
+        </div>
+        <div style="overflow-x:auto;max-height:400px;overflow-y:auto">
+          <table class="job-table" id="jobs-table-pc">
+            <thead>
+              <tr>
+                <th>Job ID</th>
+                <th>ลูกค้า</th>
+                <th>อาการ</th>
+                <th>สถานะ</th>
+                <th>ช่าง</th>
+                <th>วันที่</th>
+                <th>ค้าง</th>
+              </tr>
+            </thead>
+            <tbody id="jobs-tbody-pc">
+              ${jobs.map(j => jobRow(j)).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <!-- TOP TECH -->
+        ${topTech ? `
+        <div class="card-box">
+          <div class="card-title"><i class="bi bi-trophy-fill" style="color:#d97706"></i> ช่างยอดเยี่ยมสัปดาห์นี้</div>
+          <div style="display:flex;align-items:center;gap:16px;padding:8px 0">
+            <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#fbbf24,#d97706);display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:24px;flex-shrink:0">
+              ${(topTech.name||'?')[0]}
+            </div>
+            <div style="flex:1">
+              <div style="font-size:18px;font-weight:800">${topTech.name||'-'}</div>
+              <div style="font-size:13px;color:#6b7280">${topTech.jobs_completed||0} งานเสร็จ · ${topTech.kudos||0} Kudos</div>
+              <div style="color:#fbbf24;font-size:18px;margin-top:4px">${'★'.repeat(Math.min(5,Math.round(topTech.rating||5)))}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:36px;font-weight:900;color:#10b981">${topTech.jobs_completed||0}</div>
+              <div style="font-size:11px;color:#9ca3af">งาน</div>
+            </div>
+          </div>
+        </div>` : ''}
+
+        <!-- REVENUE SUMMARY -->
+        <div class="card-box">
+          <div class="card-title"><i class="bi bi-cash-stack" style="color:#059669"></i> สรุปรายรับ</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+            ${[['วันนี้','today','#d1fae5','#059669'],['สัปดาห์','week','#dbeafe','#1e40af'],['เดือนนี้','month','#fef3c7','#d97706']].map(([l,k,bg,c]) => `
+            <div style="background:${bg};border-radius:12px;padding:14px;text-align:center">
+              <div style="font-size:11px;color:#6b7280;font-weight:700;margin-bottom:4px">${l}</div>
+              <div style="font-size:20px;font-weight:900;color:${c}">฿${Number(revenue[k]||0).toLocaleString()}</div>
+            </div>`).join('')}
+          </div>
+        </div>
+
+        <!-- PM DUE -->
+        ${pmDue > 0 ? `
+        <div class="card-box" style="background:#fffbeb;border-color:#fde68a">
+          <div style="display:flex;align-items:center;gap:14px">
+            <i class="bi bi-calendar-check-fill" style="font-size:32px;color:#d97706"></i>
+            <div style="flex:1">
+              <div style="font-weight:800;color:#92400e;font-size:15px">After-Sales รอติดตาม</div>
+              <div style="font-size:13px;color:#b45309">${pmDue} ราย</div>
+            </div>
+            <a href="index.html?page=crm" class="btn-pwa" style="font-size:12px;padding:6px 14px">ดูเลย</a>
+          </div>
+        </div>` : ''}
+      </div>
+    </div>
+  `;
+
+  // Draw chart
+  drawRevenueChartPC(revenue);
+}
+
+// ===== HELPERS =====
+function kpiBox(icon, bg, color, value, label, sub, pulse) {
+  return `
+    <div class="kpi-box ${pulse ? 'kpi-alert-pulse' : ''}">
+      <div class="kpi-icon-box" style="background:${bg};color:${color}">
+        <i class="bi ${icon}"></i>
+      </div>
+      <div>
+        <div class="kpi-num" style="color:${color}">${value}</div>
+        <div class="kpi-lbl">${label}</div>
+        ${sub ? `<div class="kpi-sub">${sub}</div>` : ''}
+      </div>
+    </div>`;
+}
+
+const STATUS_COLORS = {
+  'รอมอบหมาย': '#3b82f6', 'มอบหมายแล้ว': '#8b5cf6', 'รับงานแล้ว': '#06b6d4',
+  'เดินทาง': '#f59e0b', 'ถึงหน้างาน': '#f97316', 'เริ่มงาน': '#10b981',
+  'รอชิ้นส่วน': '#ef4444', 'เสร็จแล้ว': '#059669', 'ยกเลิก': '#9ca3af',
+  'Completed': '#059669', 'PENDING': '#3b82f6', 'IN_PROGRESS': '#f59e0b',
+  'รอดำเนินการ': '#3b82f6'
+};
+
+function statusDistRow(s, total) {
+  const pct = total > 0 ? Math.round((s.job_count / total) * 100) : 0;
+  const color = STATUS_COLORS[s.status_label] || '#6b7280';
+  return `
+    <div class="status-row">
+      <div class="status-label">${s.status_label}</div>
+      <div class="status-bar-wrap">
+        <div class="status-bar" style="width:${pct}%;background:${color}"></div>
+      </div>
+      <div class="status-count" style="color:${color}">${s.job_count}</div>
+    </div>`;
+}
+
+function alertRow(a) {
+  const isOverdue = a.type === 'OVERDUE_JOB' || a.type === 'overdue';
+  const isStock = a.type === 'LOW_STOCK' || a.type === 'low_stock';
+  const bg = isOverdue ? '#fee2e2' : isStock ? '#fef3c7' : '#d1fae5';
+  const color = isOverdue ? '#dc2626' : isStock ? '#d97706' : '#059669';
+  const icon = isOverdue ? 'bi-clock-fill' : isStock ? 'bi-box-seam-fill' : 'bi-info-circle-fill';
+  const msg = a.message || (a.data && a.data.customer_name ? `${a.id||''} — ${a.data.customer_name}` : '-');
+  return `
+    <div class="alert-row">
+      <div class="alert-icon" style="background:${bg};color:${color}">
+        <i class="bi ${icon}"></i>
+      </div>
+      <div>
+        <div class="alert-msg">${msg}</div>
+        ${a.data && a.data.status_label ? `<div class="alert-sub">สถานะ: ${a.data.status_label}</div>` : ''}
+      </div>
+    </div>`;
+}
+
+function jobRow(j) {
+  const status = j.status || '-';
+  const color = STATUS_COLORS[status] || '#6b7280';
+  const bg = color + '20';
+  const created = j.created || '-';
+  // คำนวณวันค้าง
+  let daysAgo = '';
+  try {
+    const parts = created.split(' ')[0].split('/');
+    if (parts.length === 2) {
+      const d = new Date(new Date().getFullYear(), parseInt(parts[1])-1, parseInt(parts[0]));
+      const diff = Math.floor((Date.now() - d.getTime()) / 86400000);
+      if (diff > 0) daysAgo = diff;
+    }
+  } catch(e) {}
+
+  return `
+    <tr>
+      <td><span class="job-id">${j.id||'-'}</span></td>
+      <td><span class="customer" title="${j.customer||''}">${j.customer||'-'}</span></td>
+      <td><span class="symptom" title="${j.symptom||''}">${j.symptom||'-'}</span></td>
+      <td><span class="status-badge" style="background:${bg};color:${color}">${status}</span></td>
+      <td style="font-size:12px;color:#6b7280">${j.tech||'-'}</td>
+      <td style="font-size:12px;color:#6b7280;white-space:nowrap">${created}</td>
+      <td>${daysAgo ? `<span class="days-badge" style="background:${daysAgo>7?'#fee2e2':'#fef3c7'};color:${daysAgo>7?'#dc2626':'#d97706'}">${daysAgo}ว</span>` : ''}</td>
+    </tr>`;
+}
+
+function filterJobsPC(q) {
+  const rows = document.querySelectorAll('#jobs-tbody-pc tr');
+  const lq = q.toLowerCase();
+  rows.forEach(r => {
+    r.style.display = r.textContent.toLowerCase().includes(lq) ? '' : 'none';
+  });
+}
+
+function drawRevenueChartPC(revenue) {
+  const canvas = document.getElementById('revenue-chart-pc');
+  if (!canvas) return;
+  if (CHARTS.revenue) { CHARTS.revenue.destroy(); }
+  CHARTS.revenue = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: ['วันนี้', 'สัปดาห์นี้', 'เดือนนี้'],
+      datasets: [{
+        data: [revenue.today||0, revenue.week||0, revenue.month||0],
+        backgroundColor: ['#10b981', '#3b82f6', '#d97706'],
+        borderRadius: 10, borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => '฿' + Number(ctx.raw||0).toLocaleString() } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 12 } } },
+        y: {
+          grid: { color: '#f1f5f9' },
+          ticks: { font: { size: 11 }, callback: v => v >= 1000 ? '฿'+(v/1000).toFixed(0)+'K' : '฿'+v }
+        }
+      }
+    }
+  });
+}
+
+// ===== SECTION LOADER =====
+function loadSection(section) {
+  setActiveNav(section);
+  if (section === 'dashboard') { loadDashboard(); return; }
+
+  document.getElementById('topbar-title').innerHTML =
+    `<i class="bi bi-${sectionIcon(section)}" style="margin-right:8px"></i>${sectionLabel(section)}`;
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="loading-state">
+      <i class="bi bi-${sectionIcon(section)}" style="font-size:48px;color:#d1d5db;display:block;margin-bottom:16px"></i>
+      <p style="font-size:16px;font-weight:700">กำลังพัฒนา: ${sectionLabel(section)}</p>
+      <p style="color:#9ca3af;margin-top:8px">ฟีเจอร์นี้จะพร้อมใช้งานเร็วๆ นี้</p>
+      <button class="btn-refresh" onclick="loadDashboard()" style="margin-top:16px">
+        <i class="bi bi-arrow-left"></i> กลับ Dashboard
+      </button>
+    </div>`;
+}
+
+function sectionIcon(s) {
+  return { jobs:'tools', po:'cart-fill', inventory:'box-seam-fill', revenue:'currency-exchange', crm:'people-fill', settings:'gear-fill' }[s] || 'grid';
+}
+function sectionLabel(s) {
+  return { jobs:'งานบริการ', po:'ใบสั่งซื้อ', inventory:'สต็อก', revenue:'รายรับ', crm:'ลูกค้า', settings:'ตั้งค่า' }[s] || s;
+}
+
+function setActiveNav(section) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const items = document.querySelectorAll('.nav-item');
+  items.forEach(item => {
+    if (item.getAttribute('onclick') && item.getAttribute('onclick').includes(`'${section}'`)) {
+      item.classList.add('active');
+    }
+  });
+}
+</script>
+<script src="error_boundary.js"></script>
+<script src="execution_lock.js?v=566"></script>
+<script src="policy_engine.js?v=566"></script>
+<script src="ai_executor_runtime.js?v=566"></script>
+<script src="approval_guard.js?v=566"></script>
+<script>
+// PHASE 25.3 — Register Service Worker on dashboard
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/comphone-superapp/pwa/sw.js').catch(() => {});
+}
+</script>
+
+<!-- PHASE 25.5 — VERSION BADGE -->
+<div id="version_badge">v5.6.5 | AI:• | LOCK:•</div>
+<script>
+(function updateVersionBadge() {
+  const badge = document.getElementById('version_badge');
+  if (!badge) return;
+  const aiOk = !!(window.AI_EXECUTOR && window.AI_EXECUTOR.execute);
+  const lockOk = !!(window.__TRUSTED_ACTIONS && Object.keys(window.__TRUSTED_ACTIONS).length > 0);
+  const aiClass = aiOk ? 'ok' : 'err';
+  const lockClass = lockOk ? 'ok' : 'err';
+  badge.innerHTML = `${window.__APP_VERSION || 'v?'} | AI:<span class="${aiClass}">${aiOk?'OK':'FAIL'}</span> | LOCK:<span class="${lockClass}">${lockOk?'OK':'FAIL'}</span>`;
+})();
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    const badge = document.getElementById('version_badge');
+    if (!badge) return;
+    const aiOk = !!(window.AI_EXECUTOR && window.AI_EXECUTOR.execute);
+    const lockOk = !!(window.__TRUSTED_ACTIONS && Object.keys(window.__TRUSTED_ACTIONS).length > 0);
+    const aiClass = aiOk ? 'ok' : 'err';
+    const lockClass = lockOk ? 'ok' : 'err';
+    badge.innerHTML = `${window.__APP_VERSION || 'v?'} | AI:<span class="${aiClass}">${aiOk?'OK':'FAIL'}</span> | LOCK:<span class="${lockClass}">${lockOk?'OK':'FAIL'}</span>`;
+  }, 1500);
+});
+</script>
+
+</body>
+</html>

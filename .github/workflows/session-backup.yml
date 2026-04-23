@@ -1,0 +1,57 @@
+# ============================================================
+# session-backup.yml — Scheduled Session Backup
+# COMPHONE SUPER APP V5.5
+# Backup session.md ทุกวัน 23:00 (UTC+7 = 16:00 UTC)
+# ============================================================
+
+name: Scheduled Session Backup
+
+on:
+  schedule:
+    - cron: '0 16 * * *'    # ทุกวัน 23:00 (Thai time = UTC+7)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  backup:
+    name: Backup Session & Clean Old Backups
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create timestamped backup
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M)
+          mkdir -p backups/session
+          if [ -f memory/session.md ]; then
+            cp memory/session.md "backups/session/session_${TIMESTAMP}.md"
+            cp memory/session.md backups/session/session_latest.md
+            echo "✅ Backup: session_${TIMESTAMP}.md"
+          else
+            echo "⚠️ memory/session.md not found"
+          fi
+
+      - name: Keep only last 30 backups
+        run: |
+          cd backups/session
+          # เรียงตามชื่อ (timestamp) แล้วลบไฟล์เก่าเกิน 30 ไฟล์
+          ls -1 session_2*.md 2>/dev/null | sort | head -n -30 | xargs -r rm -v
+          echo "📁 Remaining backups: $(ls session_2*.md 2>/dev/null | wc -l)"
+
+      - name: Commit backup
+        run: |
+          git config user.name "COMPHONE Backup Bot"
+          git config user.email "backup-bot@comphone.local"
+          git add backups/session/
+          if git diff --staged --quiet; then
+            echo "ℹ️ No changes to commit"
+          else
+            git commit -m "🔄 Scheduled backup $(date '+%Y-%m-%d %H:%M') [skip ci]"
+            git push
+            echo "✅ Backup committed and pushed"
+          fi

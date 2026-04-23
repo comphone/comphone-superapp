@@ -1,0 +1,328 @@
+<script>
+// ============================================================
+// V366 Pro-Hybrid — Part 1: Core + Render + Charts + Swiper
+// ============================================================
+var DATA = null;
+var JOBS = [];
+var INVENTORY = [];
+var CURRENT_JOB_ID = null;
+var ALL_JOBS = [];
+var JOB_SWIPER = null;
+var CHART = null;
+
+// ── Loading ──
+function showLoading() { var b = document.getElementById('loadingBar'); if(b) b.style.display='block'; }
+function hideLoading() {
+  var b = document.getElementById('loadingBar'); if(b) b.style.display='none';
+  var ld = document.getElementById('ld'); if(ld) ld.style.display='none';
+}
+
+function showError(title, detail) {
+  hideLoading();
+  var ld = document.getElementById('ld'); if(ld) ld.style.display='none';
+  var eb = document.getElementById('eb');
+  if (eb) { eb.style.display='block'; var ed=document.getElementById('ed'); if(ed) ed.textContent=String(title)+'\n'+String(detail||''); }
+}
+function showContent() {
+  hideLoading();
+  var rb = document.getElementById('rb'); if(rb) rb.style.display='block';
+  var eb = document.getElementById('eb'); if(eb) eb.style.display='none';
+}
+
+// ── Modal ──
+function openModal(html) {
+  var c = document.getElementById('modalContent'); if(c) c.innerHTML = html;
+  var ov = document.getElementById('modalOverlay');
+  if(ov) { ov.classList.add('open'); }
+  document.body.style.overflow = 'hidden';
+}
+function closeModal() {
+  var ov = document.getElementById('modalOverlay'); if(ov) ov.classList.remove('open');
+  document.body.style.overflow = '';
+  CURRENT_JOB_ID = null;
+}
+
+// ── Find Job ──
+function findJob(id) { if(!JOBS) return null; for(var i=0;i<JOBS.length;i++){if(JOBS[i].id===id) return JOBS[i];} return null; }
+
+// ── Escape ──
+function esc(s) { if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── Toast ──
+function toast(msg, type) {
+  try {
+    var t = document.getElementById('toast'); if(!t) return;
+    t.textContent = msg; t.className = 'toast-custom show';
+    if(type==='er') t.className += ' er'; else if(type==='wa') t.className += ' wa'; else t.className += ' ok';
+    clearTimeout(toast._t); toast._t = setTimeout(function(){ t.className='toast-custom'; }, 2800);
+  } catch(e) {}
+}
+
+// ── Button Loading State ──
+function setBtnLoading(btn, loading, txt) {
+  try {
+    if(!btn) return; btn.disabled = loading;
+    if(loading && txt){ btn._orig = btn.textContent; btn.textContent = txt; }
+    else if(!loading && btn._orig){ btn.textContent = btn._orig; delete btn._orig; }
+  } catch(e) {}
+}
+
+// ── Status Helpers ──
+function statusCardClass(s) {
+  if(!s) return 'st-completed';
+  if(String(s).charAt(0)==='ร') return 'st-pending';
+  if(s==='InProgress'||String(s).charAt(0)==='ก') return 'st-progress';
+  if(String(s).indexOf('ยก')>-1) return 'st-canceled';
+  return 'st-completed';
+}
+function statusBadge(s) {
+  if(!s) return '<span class="badge-status badge-completed">✅ เสร็จ</span>';
+  if(String(s).charAt(0)==='ร') return '<span class="badge-status badge-pending">⏳ รอดำเนินการ</span>';
+  if(s==='InProgress'||String(s).charAt(0)==='ก') return '<span class="badge-status badge-progress">🔄 กำลังทำ</span>';
+  if(String(s).indexOf('ยก')>-1) return '<span class="badge-status badge-canceled">❌ ยกเลิก</span>';
+  return '<span class="badge-status badge-completed">✅ เสร็จแล้ว</span>';
+}
+
+// ════════════════════════════════════
+// APEXCHARTS — Donut Status Chart
+// ════════════════════════════════════
+function renderApexChart(summary) {
+  try {
+    if (typeof ApexCharts === 'undefined') return;
+    if (CHART) { CHART.destroy(); CHART = null; }
+
+    var p = summary.pending || 0;
+    var ip = summary.inProgress || 0;
+    var c = summary.completed || 0;
+    var cx = summary.cancelled || 0;
+
+    CHART = new ApexCharts(document.querySelector('#jobStatusChart'), {
+      chart: { type: 'donut', height: 200, background: 'transparent' },
+      series: [p, ip, c, cx],
+      labels: ['🟡 รอดำเนินการ', '🔵 กำลังทำ', '🟢 เสร็จแล้ว', '🔴 ยกเลิก'],
+      colors: ['#f59e0b', '#3b82f6', '#10b981', '#ef4444'],
+      stroke: { width: 2, colors: ['#0f172a'] },
+      legend: {
+        position: 'bottom',
+        labels: { colors: '#94a3b8', useSeriesColors: false },
+        fontSize: '13px',
+        itemMargin: { horizontal: 8, vertical: 4 }
+      },
+      dataLabels: { enabled: true, style: { fontSize: '13px', colors: ['#f1f5f9'], fontWeight: 700 } },
+      plotOptions: {
+        pie: {
+          donut: {
+            size: '65%',
+            labels: {
+              show: true,
+              name: { show: true, fontSize: '14px', color: '#f1f5f9' },
+              value: { show: true, fontSize: '28px', fontWeight: 900, color: '#f1f5f9' },
+              total: {
+                show: true,
+                showAlways: true,
+                label: 'งานทั้งหมด',
+                fontSize: '13px',
+                color: '#94a3b8',
+                formatter: function() { return (p+ip+c+cx).toString(); }
+              }
+            }
+          }
+        }
+      },
+      tooltip: { theme: 'dark', style: { fontSize: '14px' } }
+    });
+    CHART.render();
+  } catch(e) { console.log('Chart error:', e); }
+}
+
+// ════════════════════════════════════
+// SWIPER — Job Cards
+// ════════════════════════════════════
+function renderSwiper(jobs) {
+  var wrapper = document.getElementById('swiperWrapper');
+  var emptyEl = document.getElementById('emptyJobs');
+  if(!wrapper) return;
+  wrapper.innerHTML = '';
+
+  if(!jobs || jobs.length === 0) {
+    if(emptyEl) emptyEl.style.display = 'block';
+    if(JOB_SWIPER) { JOB_SWIPER.destroy(); JOB_SWIPER = null; }
+    return;
+  }
+  if(emptyEl) emptyEl.style.display = 'none';
+
+  for(var i=0; i<jobs.length; i++) {
+    var j = jobs[i];
+    if(!j || !j.id) continue;
+
+    var slide = document.createElement('div');
+    slide.className = 'swiper-slide';
+
+    var card = document.createElement('div');
+    card.className = 'job-swiper-card ' + statusCardClass(j.status);
+
+    (function(xid){
+      card.addEventListener('click', function(){ viewJob(xid); });
+    })(j.id);
+
+    var inner = '';
+    inner += '<div class="d-flex justify-content-between align-items-center mb-1">';
+    inner += '<div class="d-flex align-items-center gap-2">';
+    inner += '<span class="job-swiper-id">'+esc(j.id)+'</span>';
+    inner += statusBadge(j.status);
+    inner += '</div>';
+    if(j.folder) {
+      inner += '<button class="btn btn-sm btn-outline-dark" style="padding:6px 12px;font-size:12px" onclick="event.stopPropagation();window.open('+JSON.stringify(j.folder)+',\'_blank\')">📁</button>';
+    }
+    inner += '</div>';
+    inner += '<div class="job-swiper-name">'+esc(j.customer)+'</div>';
+    if(j.symptom) inner += '<div class="job-swiper-symp">'+esc(j.symptom)+'</div>';
+    inner += '<div class="job-swiper-meta">';
+    inner += '<span>🔧 '+esc(j.tech||'-')+'</span>';
+    if(j.created) inner += '<span>🕐 '+j.created+'</span>';
+    inner += '</div>';
+
+    card.innerHTML = inner;
+    slide.appendChild(card);
+    wrapper.appendChild(slide);
+  }
+
+  // Init or re-init Swiper
+  if(JOB_SWIPER) { JOB_SWIPER.destroy(); }
+  JOB_SWIPER = new Swiper('.jobSwiper', {
+    slidesPerView: 'auto',
+    centeredSlides: true,
+    spaceBetween: 12,
+    grabCursor: true,
+    pagination: {
+      el: '.swiper-pagination',
+      clickable: true,
+      dynamicBullets: true
+    }
+  });
+}
+
+// ════════════════════════════════════
+// RENDER Dashboard
+// ════════════════════════════════════
+function renderDashboard(d) {
+  try {
+    var summary = (d && d.summary) || {};
+    var jobs = (d && d.jobs) || [];
+    var inv = (d && d.inventory) || [];
+
+    JOBS = jobs;
+    INVENTORY = inv;
+    ALL_JOBS = jobs.slice(0, 50);
+
+    // Clock
+    if(summary.date) { var ck=document.getElementById('clock'); if(ck) ck.textContent=summary.date; }
+
+    // ApexChart
+    renderApexChart(summary);
+
+    // Photo Queue
+    var pp = summary.pendingPhotos || 0;
+    var pc = document.getElementById('photoCard');
+    if(pc) {
+      pc.style.display = 'block';
+      if(pp > 0) {
+        pc.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center">' +
+          '<div><div style="font-size:28px;font-weight:900;color:var(--purple)">'+pp+'</div><div style="font-size:14px;color:var(--t2)">รูปที่รอจัดการ</div></div>' +
+          '<button onclick="processPhotos()" class="btn btn-purple btn-lg" style="width:auto;padding:12px 20px;font-size:15px">⏙ จัดรูป</button></div>';
+      } else {
+        pc.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center">' +
+          '<div><div style="font-size:24px;font-weight:900;color:var(--cyan)">0</div><div style="font-size:14px;color:var(--t2)">รูปจัดการเรียบร้อย ✅</div></div>' +
+          '<button onclick="processPhotos()" class="btn btn-cyan btn-lg" style="width:auto;padding:12px 20px;font-size:15px">🤖 ตรวจตามรูป</button></div>';
+      }
+    }
+
+    // Tech Filter
+    var tks = {};
+    for(var ti3=0; ti3<Math.min(jobs.length,50); ti3++){
+      var _j=jobs[ti3]; if(!_j) continue;
+      var jt=_j.tech; if(jt&&jt!=='-'&&jt!=='null'&&jt!=='undefined') tks[jt]=1;
+    }
+    var ft = document.getElementById('ft');
+    if(ft) {
+      var opts = '<option value="">ช่างทั้งหมด</option>';
+      var tkk = Object.keys(tks);
+      for(var ki=0; ki<tkk.length; ki++) opts += '<option value="'+esc(tkk[ki])+'">'+esc(tkk[ki])+'</option>';
+      ft.innerHTML = opts;
+    }
+
+    // Swiper
+    renderSwiper(ALL_JOBS);
+
+    // Inventory
+    var il = document.getElementById('inventoryList');
+    if(il) {
+      var invHtml = '';
+      for(var kk=0; kk<Math.min(inv.length,20); kk++) {
+        var it = inv[kk]; if(!it) continue;
+        var qc = it.alert ? 'lo' : 'ok';
+        invHtml += '<div class="inv-item">' +
+          '<div><div class="name">'+esc(it.name||'?')+'</div><div class="code">'+esc(it.code||'-')+'</div></div>' +
+          '<span class="qty '+qc+'">'+(it.qty!=null?it.qty:'-')+'</span></div>';
+      }
+      il.innerHTML = invHtml || '<div class="empty-state" style="padding:20px">ไม่มีข้อมูล</div>';
+    }
+
+    showContent();
+  } catch(e) { showError('Render error', e.message); }
+}
+
+// ── Filter Jobs (re-filter swiper) ──
+function filterJobs() {
+  try {
+    var si = document.getElementById('fs');
+    var ftE = document.getElementById('ft');
+    var fst = document.getElementById('fst');
+    if(!si || !ftE || !fst) return;
+
+    var q = (si.value||'').toLowerCase();
+    var t = (ftE.value||'').toLowerCase();
+    var s = fst.value || '';
+
+    var filtered = ALL_JOBS.filter(function(j) {
+      if(!j || !j.id) return false;
+      if(q) {
+        var cc = String(j.customer||'').toLowerCase();
+        var cj = String(j.id||'').toLowerCase();
+        var cs = String(j.symptom||'').toLowerCase();
+        if(cc.indexOf(q)===-1 && cj.indexOf(q)===-1 && cs.indexOf(q)===-1) return false;
+      }
+      if(t && String(j.tech||'').toLowerCase() !== t) return false;
+      if(s && String(j.status||'') !== s) return false;
+      return true;
+    });
+
+    renderSwiper(filtered.length > 0 ? filtered : ALL_JOBS);
+    if(filtered.length === 0 && (q||t||s)) {
+      var emptyEl = document.getElementById('emptyJobs');
+      if(emptyEl) emptyEl.style.display = 'block';
+    }
+  } catch(e) { console.log('filterJobs error:', e); }
+}
+
+// ── Load Data ──
+function loadData() {
+  try {
+    if(typeof google==='undefined'){ showError('Google Script ไม่พร้อม','เปิดผ่าน Web App URL เท่านั้น'); return; }
+    showLoading();
+
+    google.script.run
+      .withSuccessHandler(function(d) {
+        try { DATA=d; JOBS=(d&&d.jobs)||[]; INVENTORY=(d&&d.inventory)||[]; renderDashboard(d); }
+        catch(e3){ showError('Render', e3.message||e3); }
+      })
+      .withFailureHandler(function(e){ showError('Fail', e.message||e); })
+      .getDashboardData();
+  } catch(e){ showError('Load', e.message||e); }
+}
+
+// ── Tab ──
+function switchTab(tab) { loadData(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+console.log('✅ V366 Pro-Hybrid Part 1 loaded');
+</script>

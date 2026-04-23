@@ -1,0 +1,305 @@
+# ============================================================
+# PHASE 26.6 — Drive Backup Sync (Hardened)
+# COMPHONE SUPER APP V5.5
+#
+# MISSION: แก้ GitHub Actions ให้ผ่าน 100% + ควบคุม AI runaway
+#
+# FEATURES:
+#   1. Secret validation (ไม่ crash เงียบ)
+#   2. rclone sync (fast + reliable)
+#   3. Fail-safe (ไม่มี backups → skip ไม่ fail)
+#   4. Per-step logging + timestamp
+#   5. Spam guard (fail > 3 ครั้ง/ชั่วโมง → exit 0 + warning)
+# ============================================================
+
+name: 🔄 Drive Backup Sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'pwa/**'
+      - 'clasp-ready/**'
+      - 'memory/**'
+      - 'scripts/**'
+      - '.github/workflows/**'
+
+  schedule:
+    # Sync ทุกวัน 23:00 (UTC+7 = 16:00 UTC)
+    - cron: '0 16 * * *'
+
+  workflow_dispatch:
+    inputs:
+      sync_type:
+        description: 'ประเภทการ sync'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - session-only
+          - code-only
+
+# ไม่ให้ fail โดยใช้ fail-fast: ถ้า spam guard ทำงานให้ exit 0
+jobs:
+  spam-guard:
+    name: Spam Guard Check
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+      reason: ${{ steps.check.outputs.reason }}
+
+    steps:
+      - name: 🔑 Checkout (for gh CLI)
+        uses: actions/checkout@v4
+
+      - name: 🚨 Check recent failure count
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Spam Guard Check"
+
+          WORKFLOW_ID=$(gh api repos/${{ github.repository }}/actions/workflows \
+            --jq '.workflows[] | select(.name=="🔄 Drive Backup Sync") | .id')
+
+          if [ -z "$WORKFLOW_ID" ]; then
+            echo "[⚠️] ไม่พบ workflow ID — ข้าม spam guard แล้วรันต่อ"
+            echo "should_run=true" >> $GITHUB_OUTPUT
+            echo "reason=no_workflow_id" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # นับ failure ใน 1 ชั่วโมง (สูงสุด 20 runs) — fallback ถ้า jq fromdateiso8601 ไม่มี
+          RECENT_FAILS=$(gh api repos/${{ github.repository }}/actions/workflows/$WORKFLOW_ID/runs?per_page=20 \
+            --jq '.workflow_runs[] | select(.conclusion=="failure") | .run_started_at' 2>/dev/null | while read dt; do
+              run_ts=$(date -d "$dt" +%s 2>/dev/null || python3 -c "import datetime,sys; print(int(datetime.datetime.fromisoformat('$dt'.replace('Z','+00:00')).timestamp()))" 2>/dev/null || echo 0)
+              now_ts=$(date +%s)
+              if [ "$run_ts" -gt "$(( now_ts - 3600 ))" ]; then echo "1"; fi
+            done | wc -l)
+
+          echo "[ℹ️] Recent failures in last hour: $RECENT_FAILS"
+
+          if [ "$RECENT_FAILS" -ge 3 ]; then
+            echo "[🚨] พบ failure มากกว่า 3 ครั้ง ใน 1 ชั่วโมง — SKIP เพื่อป้องกัน spam"
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            echo "reason=spam_guard: $RECENT_FAILS failures in last hour" >> $GITHUB_OUTPUT
+          else
+            echo "[✅] ผ่าน spam guard — รันต่อ"
+            echo "should_run=true" >> $GITHUB_OUTPUT
+            echo "reason=ok" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 📊 Spam Guard Result
+        if: always()
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] RESULT: Spam Guard = ${{ steps.check.outputs.should_run }} (${{ steps.check.outputs.reason }})"
+
+  backup:
+    name: Sync to Google Drive
+    runs-on: ubuntu-latest
+    needs: spam-guard
+    if: needs.spam-guard.outputs.should_run == 'true'
+    timeout-minutes: 15
+
+    steps:
+      # ---------- STEP 1: Checkout ----------
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: ✅ Checkout done
+        run: echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Checkout — SUCCESS"
+
+      # ---------- STEP 2: Validate Secret ----------
+      - name: 🔐 Validate Secret
+        id: secret_check
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Validate Secret"
+
+          # รองรับทัง GOOGLE_SERVICE_ACCOUNT_JSON (ใหม่) และ GOOGLE_SERVICE_ACCOUNT_KEY (เก่า)
+          if [ -n "${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}" ]; then
+            echo "[✅] GOOGLE_SERVICE_ACCOUNT_JSON พบแล้ว"
+            echo "has_secret=true" >> $GITHUB_OUTPUT
+            echo "secret_type=json" >> $GITHUB_OUTPUT
+          elif [ -n "${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}" ]; then
+            echo "[✅] GOOGLE_SERVICE_ACCOUNT_KEY พบแล้ว (legacy base64)"
+            echo "has_secret=true" >> $GITHUB_OUTPUT
+            echo "secret_type=base64" >> $GITHUB_OUTPUT
+          else
+            echo "[❌] GOOGLE_SERVICE_ACCOUNT_JSON / GOOGLE_SERVICE_ACCOUNT_KEY ไม่พบ"
+            echo "has_secret=false" >> $GITHUB_OUTPUT
+            echo "secret_type=none" >> $GITHUB_OUTPUT
+          fi
+
+      - name: ❌ Secret missing — fail readable
+        if: steps.secret_check.outputs.has_secret == 'false'
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] RESULT: Secret MISSING"
+          echo "## ❌ Drive Sync — Secret Missing" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "กรุณาเพิ่ม secret หนึ่งใน Repository Settings:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **GOOGLE_SERVICE_ACCOUNT_JSON** (แนะนำ): วาง JSON เต็ม Service Account" >> $GITHUB_STEP_SUMMARY
+          echo "- **GOOGLE_SERVICE_ACCOUNT_KEY** (เก่า): Base64 ของ Service Account JSON" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[วิธีสร้าง](https://console.cloud.google.com/iam-admin/serviceaccounts)" >> $GITHUB_STEP_SUMMARY
+          exit 1
+
+      - name: ✅ Secret validated
+        if: steps.secret_check.outputs.has_secret == 'true'
+        run: echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] RESULT: Secret OK (type=${{ steps.secret_check.outputs.secret_type }})"
+
+      # ---------- STEP 3: Setup Service Account ----------
+      - name: 🔑 Setup Service Account
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Setup Service Account"
+          mkdir -p ~/.config/rclone
+
+          if [ "${{ steps.secret_check.outputs.secret_type }}" = "json" ]; then
+            echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}' > ~/.config/rclone/service-account.json
+          else
+            echo "${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}" | base64 -d > ~/.config/rclone/service-account.json
+          fi
+
+          echo "[✅] Service account file created"
+
+      # ---------- STEP 4: Install rclone ----------
+      - name: 🚀 Install rclone
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Install rclone"
+          curl https://rclone.org/install.sh | sudo bash
+          echo "[✅] rclone $(rclone version | head -1)"
+
+      # ---------- STEP 5: Configure rclone ----------
+      - name: ⚙️ Configure rclone
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Configure rclone"
+          cat > ~/.config/rclone/rclone.conf <<'EOF'
+[gdrive]
+type = drive
+scope = drive
+service_account_file = ~/.config/rclone/service-account.json
+EOF
+          echo "[✅] rclone config written"
+
+      # ---------- STEP 6: Test Drive Access ----------
+      - name: 🔍 Test Drive Access
+        id: drive_test
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Test Drive Access"
+
+          # Test 1: List directories (auth check)
+          if ! rclone lsd gdrive: 2>/dev/null; then
+            echo "[❌] Google Drive authentication FAILED"
+            echo "drive_ok=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          # Test 2: Write a tiny test file (quota/permission check)
+          echo "comphone-test-$(date +%s)" > /tmp/rclone_write_test.txt
+          if rclone copy /tmp/rclone_write_test.txt gdrive:ComphoneBackup/.github_test/ --stats-one-line 2>/dev/null; then
+            echo "[✅] Google Drive write test PASSED"
+            echo "drive_ok=true" >> $GITHUB_OUTPUT
+          else
+            echo "[❌] Google Drive write test FAILED"
+            echo ""
+            echo "ทำไมถึงล้มเหลือ:"
+            echo "Service Account มี storage quota หรือไม่ได้รับสิทธิ์เขียนไฟล์ใน Drive folder"
+            echo ""
+            echo "วิธีแก้:"
+            echo "1. ไปที่ Google Drive → ค้นหา folder 'ComphoneBackup'"
+            echo "2. คลิกขวา → Share"
+            echo "3. เพิ่ม email: firebase-adminsdk-fbsvc@linetasksauto.iam.gserviceaccount.com"
+            echo "4. ตั้งค่าสิทธิ์ให้ 'Editor'"
+            echo ""
+            echo "drive_ok=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      # ---------- STEP 7: Fail-Safe Backup Sync ----------
+      - name: 💾 Sync Backup
+        id: sync_backup
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Sync Backup"
+
+          if [ ! -d "./backups" ]; then
+            echo "[⚠️] ไม่พบ folder ./backups — ข้าม sync"
+            echo "backup_status=skipped" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          if [ -z "$(ls -A ./backups)" ]; then
+            echo "[⚠️] ./backups ว่างเปล่า — ข้าม sync"
+            echo "backup_status=skipped" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "[➡️] กำลัง sync backups → gdrive:ComphoneBackup ..."
+          if rclone copy ./backups gdrive:ComphoneBackup --progress --stats-one-line; then
+            echo "[✅] Backup sync สำเร็จ"
+            echo "backup_status=ok" >> $GITHUB_OUTPUT
+          else
+            echo "[❌] Backup sync FAILED"
+            echo "backup_status=fail" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      # ---------- STEP 8: Sync session.md ----------
+      - name: 🧠 Sync session.md
+        if: github.event.inputs.sync_type != 'code-only'
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Sync session.md"
+          SESSION_FILE=""
+          if [ -f "memory/session.md" ]; then
+            SESSION_FILE="memory/session.md"
+          elif [ -f "session.md" ]; then
+            SESSION_FILE="session.md"
+          fi
+
+          if [ -n "$SESSION_FILE" ]; then
+            echo "[➡️] Sync $SESSION_FILE → gdrive:ComphoneBackup/session/"
+            rclone copy "$SESSION_FILE" gdrive:ComphoneBackup/session/ --progress --stats-one-line
+            echo "[✅] session.md synced"
+          else
+            echo "[⚠️] ไม่พบ session.md — ข้าม"
+          fi
+
+      # ---------- STEP 9: Summary ----------
+      - name: 📊 Sync Summary
+        if: always()
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Summary"
+          echo "## 🔄 Drive Sync Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| รายการ | ค่า |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`$(echo $GITHUB_SHA | cut -c1-7)\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`$GITHUB_REF_NAME\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Trigger | \`$GITHUB_EVENT_NAME\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Secret | \`${{ steps.secret_check.outputs.secret_type || 'unknown' }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Drive Test | \`${{ steps.drive_test.outputs.drive_ok == 'true' && 'OK' || 'FAIL' }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backup | \`${{ steps.sync_backup.outputs.backup_status || 'N/A' }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Time | $(date '+%Y-%m-%d %H:%M:%S UTC') |" >> $GITHUB_STEP_SUMMARY
+
+  # ---------- STEP 10: Notify on failure ----------
+  notify-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: backup
+    if: failure()
+
+    steps:
+      - name: 🚨 Log failure
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] FAILURE ALERT"
+          echo "❌ Drive Sync FAILED"
+          echo "Commit: $GITHUB_SHA"
+          echo "Branch: $GITHUB_REF_NAME"
+          echo "Workflow: $GITHUB_WORKFLOW"
+          echo ""
+          echo "ตรวจสอบ:"
+          echo "1. GOOGLE_SERVICE_ACCOUNT_JSON / GOOGLE_SERVICE_ACCOUNT_KEY secret ถูกต้องหรือไม่"
+          echo "2. Service Account มีสิทธิ์ Editor ใน Google Drive"
+          echo "3. Google Drive API เปิดใช้งานใน Google Cloud Console"

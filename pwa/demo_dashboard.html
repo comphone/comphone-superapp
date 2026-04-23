@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COMPHONE SuperApp — PC Dashboard Demo</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ===== RESET & BASE ===== */
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:#0f1117;color:#e2e8f0;display:flex;height:100vh;overflow:hidden}
+
+/* ===== SIDEBAR ===== */
+#sidebar{width:220px;min-width:220px;background:#1a1d27;display:flex;flex-direction:column;border-right:1px solid #2d3148;transition:width .3s}
+.sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid #2d3148}
+.sidebar-logo .brand{font-size:15px;font-weight:700;color:#fff;letter-spacing:.5px}
+.sidebar-logo .ver{font-size:11px;color:#6b7280;margin-top:2px}
+.nav-group-label{font-size:10px;font-weight:600;color:#4b5563;text-transform:uppercase;letter-spacing:1px;padding:16px 16px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;border-radius:8px;margin:2px 8px;font-size:13.5px;color:#9ca3af;transition:all .2s;position:relative;text-decoration:none}
+.nav-item:hover{background:#252840;color:#e2e8f0}
+.nav-item.active{background:linear-gradient(135deg,#3b4fd8,#5b21b6);color:#fff;box-shadow:0 4px 12px rgba(59,79,216,.3)}
+.nav-item .icon{width:18px;text-align:center;font-size:14px}
+.nav-badge{margin-left:auto;background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center}
+.nav-badge.yellow{background:#f59e0b}
+.nav-badge.green{background:#10b981}
+.sidebar-footer{margin-top:auto;padding:12px 16px;border-top:1px solid #2d3148}
+.user-info{display:flex;align-items:center;gap:10px}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#3b4fd8,#7c3aed);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff}
+.user-name{font-size:13px;font-weight:600;color:#e2e8f0}
+.user-role{font-size:11px;color:#6b7280}
+
+/* ===== MAIN CONTENT ===== */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#topbar{background:#1a1d27;border-bottom:1px solid #2d3148;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#topbar h1{font-size:18px;font-weight:700;color:#fff}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.topbar-date{font-size:12px;color:#6b7280}
+.topbar-btn{width:34px;height:34px;border-radius:8px;background:#252840;border:none;color:#9ca3af;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s}
+.topbar-btn:hover{background:#3b4fd8;color:#fff}
+#content{flex:1;overflow-y:auto;padding:24px;background:#0f1117}
+
+/* ===== SECTIONS ===== */
+.section{display:none}
+.section.active{display:block}
+
+/* ===== KPI CARDS ===== */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.kpi-card{background:#1a1d27;border-radius:12px;padding:20px;border:1px solid #2d3148;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-card.blue::before{background:linear-gradient(90deg,#3b4fd8,#60a5fa)}
+.kpi-card.green::before{background:linear-gradient(90deg,#10b981,#34d399)}
+.kpi-card.yellow::before{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+.kpi-card.red::before{background:linear-gradient(90deg,#ef4444,#f87171)}
+.kpi-card.purple::before{background:linear-gradient(90deg,#7c3aed,#a78bfa)}
+.kpi-card.cyan::before{background:linear-gradient(90deg,#06b6d4,#67e8f9)}
+.kpi-icon{font-size:28px;margin-bottom:8px}
+.kpi-value{font-size:28px;font-weight:800;color:#fff;line-height:1}
+.kpi-label{font-size:12px;color:#6b7280;margin-top:4px}
+.kpi-trend{font-size:11px;margin-top:6px;font-weight:600}
+.kpi-trend.up{color:#10b981}
+.kpi-trend.down{color:#ef4444}
+
+/* ===== CARDS ===== */
+.card{background:#1a1d27;border-radius:12px;border:1px solid #2d3148;margin-bottom:20px}
+.card-header{padding:16px 20px;border-bottom:1px solid #2d3148;display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:14px;font-weight:700;color:#e2e8f0}
+.card-body{padding:20px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+
+/* ===== TABLE ===== */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#252840;color:#9ca3af;font-weight:600;padding:10px 14px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+td{padding:11px 14px;border-bottom:1px solid #1f2235;color:#e2e8f0}
+tr:hover td{background:#1f2235}
+.job-id{color:#60a5fa;font-weight:700;font-size:12px;cursor:pointer}
+.job-id:hover{text-decoration:underline}
+
+/* ===== BADGES ===== */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-success{background:#064e3b;color:#34d399}
+.badge-warning{background:#451a03;color:#fbbf24}
+.badge-danger{background:#450a0a;color:#f87171}
+.badge-info{background:#0c1a3b;color:#60a5fa}
+.badge-purple{background:#2e1065;color:#a78bfa}
+.badge-gray{background:#1f2937;color:#9ca3af}
+.badge-orange{background:#431407;color:#fb923c}
+.badge-cyan{background:#083344;color:#67e8f9}
+
+/* ===== BUTTONS ===== */
+.btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:linear-gradient(135deg,#3b4fd8,#5b21b6);color:#fff}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px)}
+.btn-secondary{background:#252840;color:#9ca3af;border:1px solid #2d3148}
+.btn-secondary:hover{background:#2d3148;color:#e2e8f0}
+.btn-success{background:#065f46;color:#34d399}
+.btn-danger{background:#450a0a;color:#f87171}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-warning{background:#451a03;color:#fbbf24}
+.btn-info{background:#0c1a3b;color:#60a5fa}
+.btn-facebook{background:#1877f2;color:#fff}
+.btn-facebook:hover{background:#1565c0}
+
+/* ===== SEARCH & FILTER ===== */
+.search-bar{display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
+.search-input{flex:1;min-width:200px;background:#252840;border:1px solid #2d3148;border-radius:8px;padding:9px 14px;color:#e2e8f0;font-size:13px;outline:none}
+.search-input:focus{border-color:#3b4fd8}
+.filter-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.filter-tab{padding:6px 14px;border-radius:20px;border:1px solid #2d3148;background:#252840;color:#9ca3af;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s}
+.filter-tab.active{background:linear-gradient(135deg,#3b4fd8,#5b21b6);color:#fff;border-color:transparent}
+
+/* ===== TIMELINE ===== */
+.timeline{list-style:none}
+.timeline-item{display:flex;gap:14px;padding:10px 0;border-bottom:1px solid #1f2235}
+.timeline-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:2px}
+.timeline-dot.green{background:#064e3b;color:#34d399}
+.timeline-dot.blue{background:#0c1a3b;color:#60a5fa}
+.timeline-dot.yellow{background:#451a03;color:#fbbf24}
+.timeline-dot.red{background:#450a0a;color:#f87171}
+.timeline-dot.purple{background:#2e1065;color:#a78bfa}
+.timeline-content .title{font-size:13px;font-weight:600;color:#e2e8f0}
+.timeline-content .sub{font-size:12px;color:#6b7280;margin-top:2px}
+
+/* ===== PROGRESS BAR ===== */
+.progress-bar-wrap{background:#252840;border-radius:4px;height:6px;overflow:hidden;margin-top:6px}
+.progress-bar-fill{height:100%;border-radius:4px;transition:width .5s}
+
+/* ===== POS SPECIFIC ===== */
+.pos-grid{display:grid;grid-template-columns:1fr 380px;gap:20px;height:calc(100vh - 160px)}
+.pos-products{overflow-y:auto}
+.product-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.product-card{background:#252840;border-radius:10px;padding:14px;cursor:pointer;border:2px solid transparent;transition:all .2s;text-align:center}
+.product-card:hover{border-color:#3b4fd8;background:#1f2235}
+.product-card .p-icon{font-size:32px;margin-bottom:8px}
+.product-card .p-name{font-size:12px;font-weight:600;color:#e2e8f0;margin-bottom:4px}
+.product-card .p-price{font-size:14px;font-weight:800;color:#34d399}
+.product-card .p-stock{font-size:11px;color:#6b7280}
+.pos-cart{background:#1a1d27;border-radius:12px;border:1px solid #2d3148;display:flex;flex-direction:column;overflow:hidden}
+.cart-header{padding:16px;border-bottom:1px solid #2d3148;font-weight:700;font-size:15px}
+.cart-items{flex:1;overflow-y:auto;padding:12px}
+.cart-item{display:flex;align-items:center;gap:10px;padding:10px;background:#252840;border-radius:8px;margin-bottom:8px}
+.cart-item-name{flex:1;font-size:13px;font-weight:600}
+.cart-item-price{font-size:13px;color:#34d399;font-weight:700}
+.qty-btn{width:26px;height:26px;border-radius:6px;border:none;background:#1a1d27;color:#e2e8f0;cursor:pointer;font-size:14px;font-weight:700}
+.cart-summary{padding:16px;border-top:1px solid #2d3148}
+.summary-row{display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;color:#9ca3af}
+.summary-total{display:flex;justify-content:space-between;font-size:18px;font-weight:800;color:#fff;margin-top:10px;padding-top:10px;border-top:1px solid #2d3148}
+
+/* ===== TAX SPECIFIC ===== */
+.tax-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+.tax-card{background:#1a1d27;border-radius:12px;padding:20px;border:1px solid #2d3148;text-align:center}
+.tax-card .tax-amount{font-size:26px;font-weight:800;color:#fbbf24}
+.tax-card .tax-label{font-size:12px;color:#6b7280;margin-top:4px}
+.tax-card .tax-sub{font-size:11px;color:#4b5563;margin-top:2px}
+
+/* ===== FACEBOOK SPECIFIC ===== */
+.fb-post-card{background:#1a1d27;border-radius:12px;border:1px solid #2d3148;padding:20px;margin-bottom:16px}
+.fb-post-header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.fb-avatar{width:40px;height:40px;border-radius:50%;background:#1877f2;display:flex;align-items:center;justify-content:center;font-size:18px}
+.fb-page-name{font-weight:700;font-size:14px;color:#e2e8f0}
+.fb-page-sub{font-size:11px;color:#6b7280}
+.fb-post-content{background:#252840;border-radius:8px;padding:14px;font-size:13px;color:#e2e8f0;line-height:1.6;margin-bottom:12px;border:1px solid #2d3148}
+.fb-post-image{width:100%;height:140px;background:linear-gradient(135deg,#1877f2,#42b72a);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:12px}
+.fb-stats{display:flex;gap:16px;font-size:12px;color:#6b7280}
+.fb-stat{display:flex;align-items:center;gap:4px}
+.fb-template-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
+.fb-template{background:#252840;border-radius:10px;padding:14px;cursor:pointer;border:2px solid transparent;transition:all .2s}
+.fb-template:hover{border-color:#1877f2}
+.fb-template.selected{border-color:#1877f2;background:#0c1a3b}
+.fb-template-title{font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:4px}
+.fb-template-desc{font-size:11px;color:#6b7280}
+
+/* ===== ALERT BANNER ===== */
+.alert-banner{background:#451a03;border:1px solid #92400e;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;font-size:13px;color:#fbbf24}
+
+/* ===== STAT ROW ===== */
+.stat-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #1f2235}
+.stat-row:last-child{border-bottom:none}
+.stat-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+.stat-name{flex:1;font-size:13px;font-weight:600;color:#e2e8f0}
+.stat-sub{font-size:11px;color:#6b7280}
+.stat-pct{font-size:14px;font-weight:800;margin-left:8px}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:#1a1d27}
+::-webkit-scrollbar-thumb{background:#2d3148;border-radius:3px}
+
+/* ===== MODAL ===== */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-box{background:#1a1d27;border-radius:16px;border:1px solid #2d3148;padding:28px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:700;color:#fff;margin-bottom:20px}
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;font-weight:600;color:#9ca3af;margin-bottom:6px;display:block}
+.form-input{width:100%;background:#252840;border:1px solid #2d3148;border-radius:8px;padding:9px 14px;color:#e2e8f0;font-size:13px;outline:none}
+.form-input:focus{border-color:#3b4fd8}
+textarea.form-input{resize:vertical;min-height:80px}
+select.form-input option{background:#252840}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* ===== RECEIPT ===== */
+.receipt-preview{background:#fff;color:#000;border-radius:10px;padding:20px;font-family:'Courier New',monospace;font-size:12px;max-width:320px;margin:0 auto}
+.receipt-preview h3{text-align:center;font-size:16px;margin-bottom:4px}
+.receipt-preview .r-sub{text-align:center;font-size:11px;color:#666;margin-bottom:12px}
+.receipt-preview hr{border:1px dashed #ccc;margin:10px 0}
+.receipt-preview .r-row{display:flex;justify-content:space-between;margin-bottom:4px}
+.receipt-preview .r-total{font-size:16px;font-weight:900;border-top:2px solid #000;padding-top:8px;margin-top:8px}
+</style>
+</head>
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div style="font-size:24px;margin-bottom:4px">📱</div>
+    <div class="brand">Comphone</div>
+    <div class="ver">SuperApp v5.5</div>
+  </div>
+
+  <div class="nav-group-label">หลัก</div>
+  <a class="nav-item active" onclick="showSection('dashboard')">
+    <span class="icon">📊</span> Dashboard
+  </a>
+  <a class="nav-item" onclick="showSection('jobs')">
+    <span class="icon">🔧</span> งานบริการ
+    <span class="nav-badge">7</span>
+  </a>
+  <a class="nav-item" onclick="showSection('pos')">
+    <span class="icon">🛒</span> ขายหน้าร้าน (POS)
+    <span class="nav-badge green">ใหม่</span>
+  </a>
+  <a class="nav-item" onclick="showSection('crm')">
+    <span class="icon">👥</span> ลูกค้า / CRM
+  </a>
+
+  <div class="nav-group-label">คลังสินค้า</div>
+  <a class="nav-item" onclick="showSection('inventory')">
+    <span class="icon">📦</span> คลังสินค้า
+    <span class="nav-badge">2</span>
+  </a>
+  <a class="nav-item" onclick="showSection('po')">
+    <span class="icon">🛍️</span> ใบสั่งซื้อ (PO)
+  </a>
+
+  <div class="nav-group-label">การเงิน</div>
+  <a class="nav-item" onclick="showSection('revenue')">
+    <span class="icon">💰</span> รายรับ
+  </a>
+  <a class="nav-item" onclick="showSection('tax')">
+    <span class="icon">🧾</span> ระบบภาษี
+    <span class="nav-badge yellow">!</span>
+  </a>
+
+  <div class="nav-group-label">การตลาด</div>
+  <a class="nav-item" onclick="showSection('facebook')">
+    <span class="icon">📘</span> Facebook Auto-Post
+    <span class="nav-badge green">ใหม่</span>
+  </a>
+
+  <a class="nav-item" onclick="showSection('warranty')">
+    <span class="icon">🛡️</span> ใบรับประกัน
+    <span class="nav-badge" id="nav-warranty-badge">3</span>
+  </a>
+  <div class="nav-group-label">ระบบ</div>
+  <a class="nav-item" onclick="showSection('branch')">
+    <span class="icon">🏢</span> สาขา
+  </a>
+  <a class="nav-item" onclick="showSection('health')">
+    <span class="icon">💚</span> สุขภาพระบบ
+  </a>
+  <a class="nav-item" onclick="showSection('settings')">
+    <span class="icon">⚙️</span> ตั้งค่า
+  </a>
+
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <div class="user-avatar">A</div>
+      <div>
+        <div class="user-name">Admin Comphone</div>
+        <div class="user-role">ผู้แลระบบ</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== MAIN ===== -->
+<div id="main">
+  <div id="topbar">
+    <h1 id="page-title">📊 Executive Dashboard</h1>
+    <div class="topbar-right">
+      <span class="topbar-date" id="topbar-date"></span>
+      <button class="topbar-btn" onclick="refreshSection()" title="รีเฟรช">🔄</button>
+      <button class="topbar-btn" title="แจ้งเตือน">🔔</button>
+      <button class="topbar-btn" title="ค้นหา">🔍</button>
+    </div>
+  </div>
+
+  <div id="content">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div id="section-dashboard" class="section active">
+      <div class="kpi-grid">
+        <div class="kpi-card blue">
+          <div class="kpi-icon">📋</div>
+          <div class="kpi-value">47</div>
+          <div class="kpi-label">งานทั้งหมดวันนี้</div>
+          <div class="kpi-trend up">▲ +12% จากเมื่อวาน</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-icon">✅</div>
+          <div class="kpi-value">31</div>
+          <div class="kpi-label">เสร็จแล้ว</div>
+          <div class="kpi-trend up">▲ 66% completion rate</div>
+        </div>
+        <div class="kpi-card yellow">
+          <div class="kpi-icon">💵</div>
+          <div class="kpi-value">฿28,450</div>
+          <div class="kpi-label">รายรับวันนี้</div>
+          <div class="kpi-trend up">▲ +8.3% จากเมื่อวาน</div>
+        </div>
+        <div class="kpi-card red">
+          <div class="kpi-icon">⚠️</div>
+          <div class="kpi-value">7</div>
+          <div class="kpi-label">งานค้างเกิน SLA</div>
+          <div class="kpi-trend down">▼ ต้องดำเนินการด่วน</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📈 รายรับ 7 วันล่าสุด</span>
+            <span class="badge badge-success">▲ +15.2%</span>
+          </div>
+          <div class="card-body">
+            <canvas id="chart-revenue" height="160"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🍩 สถานะงานทั้งหมด</span>
+          </div>
+          <div class="card-body">
+            <canvas id="chart-status" height="160"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">⚡ กิจกรรมล่าสุด</span></div>
+          <div class="card-body">
+            <ul class="timeline">
+              <li class="timeline-item">
+                <div class="timeline-dot green">✅</div>
+                <div class="timeline-content">
+                  <div class="title">ปิดงาน #CP-2026-0419-047</div>
+                  <div class="sub">iPhone 15 Pro — เปลี่ยนแบตเตอรี่ · เมื่อ 5 นาทีที่แล้ว</div>
+                </div>
+              </li>
+              <li class="timeline-item">
+                <div class="timeline-dot blue">💰</div>
+                <div class="timeline-content">
+                  <div class="title">ออกบิล ฿3,500</div>
+                  <div class="sub">ลูกค้า: คุณสมชาย ทำดี · เมื่อ 18 นาทีที่แล้ว</div>
+                </div>
+              </li>
+              <li class="timeline-item">
+                <div class="timeline-dot yellow">🆕</div>
+                <div class="timeline-content">
+                  <div class="title">เปิดงานใหม่ #CP-2026-0419-048</div>
+                  <div class="sub">Samsung S24 — จอแตก · เมื่อ 32 นาทีที่แล้ว</div>
+                </div>
+              </li>
+              <li class="timeline-item">
+                <div class="timeline-dot purple">🛒</div>
+                <div class="timeline-content">
+                  <div class="title">ขายหน้าร้าน ฿1,200</div>
+                  <div class="sub">หน้าจอ iPhone 14 × 1 ชิ้น · เมื่อ 45 นาทีที่แล้ว</div>
+                </div>
+              </li>
+              <li class="timeline-item">
+                <div class="timeline-dot red">⚠️</div>
+                <div class="timeline-content">
+                  <div class="title">แจ้งเตือน: สต็อกต่ำ</div>
+                  <div class="sub">หน้าจอ iPhone 14 — เหลือ 2 ชิ้น · เมื่อ 1 ชั่วโมงที่แล้ว</div>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">👨‍🔧 ประสิทธิภาพช่าง</span></div>
+          <div class="card-body">
+            <div class="stat-row">
+              <div class="stat-avatar" style="background:#3b4fd8">ส</div>
+              <div><div class="stat-name">สมชาย อ่างดี</div><div class="stat-sub">12 งาน / 10 เสร็จ</div></div>
+              <div><div class="progress-bar-wrap" style="width:100px"><div class="progress-bar-fill" style="width:83%;background:#3b4fd8"></div></div></div>
+              <div class="stat-pct" style="color:#60a5fa">83%</div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-avatar" style="background:#7c3aed">ว</div>
+              <div><div class="stat-name">วิชัย ซ่อมเก่ง</div><div class="stat-sub">9 งาน / 7 เสร็จ</div></div>
+              <div><div class="progress-bar-wrap" style="width:100px"><div class="progress-bar-fill" style="width:78%;background:#7c3aed"></div></div></div>
+              <div class="stat-pct" style="color:#a78bfa">78%</div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-avatar" style="background:#f59e0b">ป</div>
+              <div><div class="stat-name">ประสิทธิ์ มือปัง</div><div class="stat-sub">8 งาน / 5 เสร็จ</div></div>
+              <div><div class="progress-bar-wrap" style="width:100px"><div class="progress-bar-fill" style="width:63%;background:#f59e0b"></div></div></div>
+              <div class="stat-pct" style="color:#fbbf24">63%</div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-avatar" style="background:#10b981">น</div>
+              <div><div class="stat-name">นิรันดร์ ฝีมือดี</div><div class="stat-sub">6 งาน / 5 เสร็จ</div></div>
+              <div><div class="progress-bar-wrap" style="width:100px"><div class="progress-bar-fill" style="width:83%;background:#10b981"></div></div></div>
+              <div class="stat-pct" style="color:#34d399">83%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== JOBS ===== -->
+    <div id="section-jobs" class="section">
+      <div class="search-bar">
+        <input class="search-input" id="jobs-search" placeholder="ค้นหา Job ID, ชื่อลูกค้า, อาการ..." oninput="filterJobs(this.value)">
+        <button class="btn btn-primary" onclick="openNewJobModal()">➕ เปิดงานใหม่</button>
+        <button class="btn btn-secondary">🔽 กรอง</button>
+      </div>
+      <div class="filter-tabs" id="jobs-filter-tabs">
+        <div class="filter-tab active" onclick="setJobFilter('all',this)">ทั้งหมด <strong>47</strong></div>
+        <div class="filter-tab" onclick="setJobFilter('urgent',this)">ด่วน <strong>7</strong></div>
+        <div class="filter-tab" onclick="setJobFilter('inprogress',this)">กำลังดำเนินการ <strong>15</strong></div>
+        <div class="filter-tab" onclick="setJobFilter('waiting',this)">รอชิ้นส่วน <strong>9</strong></div>
+        <div class="filter-tab" onclick="setJobFilter('done',this)">เสร็จแล้ว <strong>31</strong></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">🔧 รายการงานทั้งหมด</span>
+          <span class="badge badge-info">47 รายการ</span>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div class="table-wrap">
+            <table id="jobs-table">
+              <thead><tr><th>JOB ID</th><th>ลูกค้า</th><th>อุปกรณ์ / อาการ</th><th>สถานะ</th><th>ช่าง</th><th>SLA</th><th>วันที่</th><th></th></tr></thead>
+              <tbody id="jobs-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== POS ===== -->
+    <div id="section-pos" class="section">
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="kpi-card green">
+          <div class="kpi-icon">🛒</div>
+          <div class="kpi-value">23</div>
+          <div class="kpi-label">บิลวันนี้</div>
+          <div class="kpi-trend up">▲ +5 จากเมื่อวาน</div>
+        </div>
+        <div class="kpi-card blue">
+          <div class="kpi-icon">💵</div>
+          <div class="kpi-value">฿18,650</div>
+          <div class="kpi-label">ยอดขายวันนี้</div>
+          <div class="kpi-trend up">▲ +12.4%</div>
+        </div>
+        <div class="kpi-card yellow">
+          <div class="kpi-icon">📦</div>
+          <div class="kpi-value">156</div>
+          <div class="kpi-label">ชิ้นที่ขายวันนี้</div>
+          <div class="kpi-trend up">▲ +8 ชิ้น</div>
+        </div>
+        <div class="kpi-card purple">
+          <div class="kpi-icon">🏆</div>
+          <div class="kpi-value">฿810</div>
+          <div class="kpi-label">เฉลี่ยต่อบิล</div>
+          <div class="kpi-trend up">▲ +3.2%</div>
+        </div>
+      </div>
+
+      <div class="pos-grid">
+        <div class="pos-products">
+          <div class="search-bar">
+            <input class="search-input" placeholder="ค้นหาสินค้า / สแกนบาร์โค้ด..." oninput="filterProducts(this.value)">
+            <button class="btn btn-secondary">📷 สแกน</button>
+          </div>
+          <div class="filter-tabs">
+            <div class="filter-tab active">ทั้งหมด</div>
+            <div class="filter-tab">หน้าจอ</div>
+            <div class="filter-tab">แบตเตอรี่</div>
+            <div class="filter-tab">อุปกรณ์เสริม</div>
+            <div class="filter-tab">ชิ้นส่วน</div>
+          </div>
+          <div class="product-grid" id="product-grid"></div>
+        </div>
+
+        <div class="pos-cart">
+          <div class="cart-header">🛒 ตะกร้าสินค้า <span id="cart-count" style="color:#60a5fa">(0 รายการ)</span></div>
+          <div class="cart-items" id="cart-items">
+            <div style="text-align:center;color:#4b5563;padding:40px 0;font-size:13px">
+              <div style="font-size:40px;margin-bottom:8px">🛒</div>
+              คลิกสินค้าเพื่อเพิ่มในตะกร้า
+            </div>
+          </div>
+          <div class="cart-summary">
+            <div class="summary-row"><span>ราคารวม</span><span id="subtotal">฿0</span></div>
+            <div class="summary-row"><span>ส่วนลด</span><span id="discount" style="color:#f87171">-฿0</span></div>
+            <div class="summary-row"><span>VAT 7%</span><span id="vat">฿0</span></div>
+            <div class="summary-total"><span>ยอดสุทธิ</span><span id="total" style="color:#34d399">฿0</span></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px">
+              <button class="btn btn-secondary" onclick="clearCart()">🗑️ ล้างตะกร้า</button>
+              <button class="btn btn-primary" onclick="checkoutPos()">💳 ชำระเงิน</button>
+            </div>
+            <button class="btn btn-success" style="width:100%;margin-top:8px" onclick="printReceipt()">🖨️ พิมพ์ใบเสร็จ</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CRM ===== -->
+    <div id="section-crm" class="section">
+      <div class="kpi-grid">
+        <div class="kpi-card blue"><div class="kpi-icon">👥</div><div class="kpi-value">1,247</div><div class="kpi-label">ลูกค้าทั้งหมด</div><div class="kpi-trend up">▲ +23 เดือนนี้</div></div>
+        <div class="kpi-card green"><div class="kpi-icon">⭐</div><div class="kpi-value">89</div><div class="kpi-label">ลูกค้า VIP</div><div class="kpi-trend up">▲ +5 ราย</div></div>
+        <div class="kpi-card yellow"><div class="kpi-icon">🔔</div><div class="kpi-value">14</div><div class="kpi-label">Follow-up วันนี้</div><div class="kpi-trend down">▼ ต้องติดตาม</div></div>
+        <div class="kpi-card purple"><div class="kpi-icon">💬</div><div class="kpi-value">4.8★</div><div class="kpi-label">คะแนนเฉลี่ย</div><div class="kpi-trend up">▲ +0.2</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">👥 รายชื่อลูกค้า</span>
+          <input class="search-input" style="width:220px" placeholder="ค้นหาลูกค้า...">
+        </div>
+        <div class="card-body" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>ชื่อ-นามสกุล</th><th>เบอร์โทร</th><th>งานทั้งหมด</th><th>ยอดรวม</th><th>ประเภท</th><th>ล่าสุด</th><th></th></tr></thead>
+              <tbody>
+                <tr><td>สมชาย ทำดี</td><td>081-234-5678</td><td>12</td><td>฿45,200</td><td><span class="badge badge-warning">⭐ VIP</span></td><td>19/04/69</td><td><button class="btn btn-sm btn-info">ดู</button></td></tr>
+                <tr><td>วิภา รักดี</td><td>089-876-5432</td><td>8</td><td>฿28,900</td><td><span class="badge badge-warning">⭐ VIP</span></td><td>18/04/69</td><td><button class="btn btn-sm btn-info">ดู</button></td></tr>
+                <tr><td>ประสิทธิ์ มั่นคง</td><td>062-345-6789</td><td>5</td><td>฿12,500</td><td><span class="badge badge-info">ปกติ</span></td><td>18/04/69</td><td><button class="btn btn-sm btn-info">ดู</button></td></tr>
+                <tr><td>นิรันดร์ สุขใจ</td><td>095-432-1098</td><td>3</td><td>฿8,700</td><td><span class="badge badge-info">ปกติ</span></td><td>17/04/69</td><td><button class="btn btn-sm btn-info">ดู</button></td></tr>
+                <tr><td>มาลี ลิ้มงาม</td><td>083-567-8901</td><td>2</td><td>฿4,200</td><td><span class="badge badge-success">ใหม่</span></td><td>17/04/69</td><td><button class="btn btn-sm btn-info">ดู</button></td></tr>
+                <tr><td>อมันต์ ไอดี</td><td>091-234-5670</td><td>7</td><td>฿19,800</td><td><span class="badge badge-warning">⭐ VIP</span></td><td>16/04/69</td><td><button class="btn btn-sm btn-info">ดู</button></td></tr>
+                <tr><td>สุดา รุ่งเรือง</td><td>086-789-0123</td><td>4</td><td>฿11,200</td><td><span class="badge badge-info">ปกติ</span></td><td>16/04/69</td><td><button class="btn btn-sm btn-info">ดู</button></td></tr>
+                <tr><td>ชัยวัฒน์ เก่งกาจ</td><td>087-654-3210</td><td>1</td><td>฿1,500</td><td><span class="badge badge-success">ใหม่</span></td><td>15/04/69</td><td><button class="btn btn-sm btn-info">ดู</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== INVENTORY ===== -->
+    <div id="section-inventory" class="section">
+      <div class="alert-banner">⚠️ สต็อกต่ำกว่าจุดสั่งซื้อ 2 รายการ: หน้าจอ iPhone 14 (เหลือ 2 ชิ้น) · แบตเตอรี่ Samsung S23 (เหลือ 1 ชิ้น)</div>
+      <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="kpi-card blue"><div class="kpi-icon">📦</div><div class="kpi-value">156</div><div class="kpi-label">รายการสินค้าทั้งหมด</div></div>
+        <div class="kpi-card green"><div class="kpi-icon">💰</div><div class="kpi-value">฿284,500</div><div class="kpi-label">มูลค่าสต็อครวม</div></div>
+        <div class="kpi-card red"><div class="kpi-icon">⚠️</div><div class="kpi-value">2</div><div class="kpi-label">สต็อกต่ำกว่า Reorder Point</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">📦 สินค้าคงคลัง (Top 8)</span><button class="btn btn-sm btn-secondary">ดูทั้งหมด</button></div>
+          <div class="card-body" style="padding:0">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>รหัส</th><th>ชื่อสินค้า</th><th>ราคา</th><th>คงเหลือ</th><th>สถานะ</th></tr></thead>
+                <tbody>
+                  <tr><td style="font-size:11px;color:#6b7280">SCR-IP15P</td><td>หน้าจอ iPhone 15 Pro</td><td>฿3,200</td><td style="color:#34d399;font-weight:700">8</td><td><span class="badge badge-success">ปกติ</span></td></tr>
+                  <tr><td style="font-size:11px;color:#6b7280">BAT-IP14</td><td>แบตเตอรี่ iPhone 14</td><td>฿850</td><td style="color:#34d399;font-weight:700">12</td><td><span class="badge badge-success">ปกติ</span></td></tr>
+                  <tr><td style="font-size:11px;color:#6b7280">SCR-IP14</td><td>หน้าจอ iPhone 14</td><td>฿2,800</td><td style="color:#f87171;font-weight:700">2</td><td><span class="badge badge-danger">⚠️ ต่ำ</span></td></tr>
+                  <tr><td style="font-size:11px;color:#6b7280">BAT-SS23</td><td>แบตเตอรี่ Samsung S23</td><td>฿680</td><td style="color:#f87171;font-weight:700">1</td><td><span class="badge badge-danger">⚠️ ต่ำ</span></td></tr>
+                  <tr><td style="font-size:11px;color:#6b7280">CAM-IP13F</td><td>กล้องหน้า iPhone 13</td><td>฿1,200</td><td style="color:#34d399;font-weight:700">6</td><td><span class="badge badge-success">ปกติ</span></td></tr>
+                  <tr><td style="font-size:11px;color:#6b7280">SPK-SA55</td><td>ลำโพง Samsung A55</td><td>฿450</td><td style="color:#34d399;font-weight:700">9</td><td><span class="badge badge-success">ปกติ</span></td></tr>
+                  <tr><td style="font-size:11px;color:#6b7280">KBD-MBA-M2</td><td>คีย์บอร์ด MacBook Air M2</td><td>฿4,500</td><td style="color:#fbbf24;font-weight:700">3</td><td><span class="badge badge-warning">ใกล้หมด</span></td></tr>
+                  <tr><td style="font-size:11px;color:#6b7280">KIT-IPADP</td><td>ชุดซ่อม iPad Pro 12.9"</td><td>฿2,100</td><td style="color:#fbbf24;font-weight:700">4</td><td><span class="badge badge-warning">ใกล้หมด</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">📉 การเคลื่อนไหวสต็อก 7 วัน</span></div>
+          <div class="card-body"><canvas id="chart-stock" height="200"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PO ===== -->
+    <div id="section-po" class="section">
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="kpi-card blue"><div class="kpi-icon">📋</div><div class="kpi-value">12</div><div class="kpi-label">PO ทั้งหมดเดือนนี้</div></div>
+        <div class="kpi-card yellow"><div class="kpi-icon">⏳</div><div class="kpi-value">3</div><div class="kpi-label">รออนุมัติ</div></div>
+        <div class="kpi-card green"><div class="kpi-icon">✅</div><div class="kpi-value">8</div><div class="kpi-label">รับของแล้ว</div></div>
+        <div class="kpi-card purple"><div class="kpi-icon">💰</div><div class="kpi-value">฿124,500</div><div class="kpi-label">มูลค่ารวม</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">🛍️ รายการใบสั่งซื้อ</span><button class="btn btn-sm btn-primary">➕ สร้าง PO ใหม่</button></div>
+        <div class="card-body" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>เลขที่ PO</th><th>ผู้จัดจำหน่าย</th><th>รายการ</th><th>มูลค่า</th><th>สถานะ</th><th>วันที่สั่ง</th><th></th></tr></thead>
+              <tbody>
+                <tr><td class="job-id">PO-2026-0419-012</td><td>บ.ไอทีซัพพลาย</td><td>หน้าจอ iPhone 14 × 10</td><td>฿28,000</td><td><span class="badge badge-warning">⏳ รออนุมัติ</span></td><td>19/04/69</td><td><button class="btn btn-sm btn-info">ดู</button></td></tr>
+                <tr><td class="job-id">PO-2026-0419-011</td><td>บ.โมบายพาร์ท</td><td>แบตเตอรี่ Samsung × 20</td><td>฿13,600</td><td><span class="badge badge-warning">⏳ รออนุมัติ</span></td><td>18/04/69</td><td><button class="btn btn-sm btn-info">ดู</button></td></tr>
+                <tr><td class="job-id">PO-2026-0418-010</td><td>บ.ไอทีซัพพลาย</td><td>ชุดซ่อม iPad × 5</td><td>฿10,500</td><td><span class="badge badge-info">🚚 กำลังจัดส่ง</span></td><td>18/04/69</td><td><button class="btn btn-sm btn-info">ดู</button></td></tr>
+                <tr><td class="job-id">PO-2026-0417-009</td><td>บ.เทคพาร์ท</td><td>กล้อง iPhone 13 × 8</td><td>฿9,600</td><td><span class="badge badge-success">✅ รับแล้ว</span></td><td>17/04/69</td><td><button class="btn btn-sm btn-info">ดู</button></td></tr>
+                <tr><td class="job-id">PO-2026-0416-008</td><td>บ.โมบายพาร์ท</td><td>หน้าจอ Samsung S24 × 6</td><td>฿21,000</td><td><span class="badge badge-success">✅ รับแล้ว</span></td><td>16/04/69</td><td><button class="btn btn-sm btn-info">ดู</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== REVENUE ===== -->
+    <div id="section-revenue" class="section">
+      <div class="kpi-grid">
+        <div class="kpi-card green"><div class="kpi-icon">💵</div><div class="kpi-value">฿28,450</div><div class="kpi-label">รายรับวันนี้</div><div class="kpi-trend up">▲ +8.3%</div></div>
+        <div class="kpi-card blue"><div class="kpi-icon">📅</div><div class="kpi-value">฿164,200</div><div class="kpi-label">รายรับสัปดาห์นี้</div><div class="kpi-trend up">▲ +15.2%</div></div>
+        <div class="kpi-card purple"><div class="kpi-icon">🗓️</div><div class="kpi-value">฿628,900</div><div class="kpi-label">รายรับเดือนนี้</div><div class="kpi-trend up">▲ +22.1%</div></div>
+        <div class="kpi-card yellow"><div class="kpi-icon">📈</div><div class="kpi-value">฿7.2M</div><div class="kpi-label">รายรับปีนี้</div><div class="kpi-trend up">▲ +18.7%</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">📊 รายรับรายวัน (30 วัน)</span></div>
+          <div class="card-body"><canvas id="chart-revenue-monthly" height="200"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">🍩 สัดส่วนรายรับตามประเภท</span></div>
+          <div class="card-body">
+            <canvas id="chart-revenue-type" height="160"></canvas>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px">
+              <div style="display:flex;align-items:center;gap:8px"><div style="width:12px;height:12px;border-radius:3px;background:#3b4fd8"></div><span style="font-size:12px;color:#9ca3af">ซ่อมมือถือ</span><strong style="color:#60a5fa;margin-left:auto">48%</strong></div>
+              <div style="display:flex;align-items:center;gap:8px"><div style="width:12px;height:12px;border-radius:3px;background:#7c3aed"></div><span style="font-size:12px;color:#9ca3af">ซ่อมคอม</span><strong style="color:#a78bfa;margin-left:auto">22%</strong></div>
+              <div style="display:flex;align-items:center;gap:8px"><div style="width:12px;height:12px;border-radius:3px;background:#10b981"></div><span style="font-size:12px;color:#9ca3af">ขายอะไหล่</span><strong style="color:#34d399;margin-left:auto">18%</strong></div>
+              <div style="display:flex;align-items:center;gap:8px"><div style="width:12px;height:12px;border-radius:3px;background:#f59e0b"></div><span style="font-size:12px;color:#9ca3af">อื่นๆ</span><strong style="color:#fbbf24;margin-left:auto">12%</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TAX ===== -->
+    <div id="section-tax" class="section">
+      <div class="alert-banner">⚠️ ครบกำหนดยื่นภาษีมูลค่าเพิ่ม (ภ.พ.30) วันที่ 15 พ.ค. 2569 — เหลือ 26 วัน</div>
+
+      <div class="tax-summary-grid">
+        <div class="tax-card">
+          <div style="font-size:28px;margin-bottom:8px">🧾</div>
+          <div class="tax-amount">฿43,823</div>
+          <div class="tax-label">VAT 7% เดือนนี้</div>
+          <div class="tax-sub">จากยอดขาย ฿626,042</div>
+        </div>
+        <div class="tax-card">
+          <div style="font-size:28px;margin-bottom:8px">📋</div>
+          <div class="tax-amount" style="color:#60a5fa">฿8,764</div>
+          <div class="tax-label">WHT 3% เดือนนี้</div>
+          <div class="tax-sub">ภาษีหัก ณ ที่จ่าย</div>
+        </div>
+        <div class="tax-card">
+          <div style="font-size:28px;margin-bottom:8px">📊</div>
+          <div class="tax-amount" style="color:#34d399">฿35,059</div>
+          <div class="tax-label">VAT ต้องชำระสุทธิ</div>
+          <div class="tax-sub">หลังหักภาษีซื้อ ฿8,764</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🧾 รายการบิลที่มี VAT</span>
+            <button class="btn btn-sm btn-primary">📥 Export ภ.พ.30</button>
+          </div>
+          <div class="card-body" style="padding:0">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>เลขที่บิล</th><th>ลูกค้า</th><th>ยอดก่อนภาษี</th><th>VAT 7%</th><th>ยอดรวม</th><th>ประเภท</th></tr></thead>
+                <tbody>
+                  <tr><td class="job-id">INV-2026-0419-089</td><td>สมชาย ทำดี</td><td>฿3,271</td><td>฿229</td><td>฿3,500</td><td><span class="badge badge-info">บุคคล</span></td></tr>
+                  <tr><td class="job-id">INV-2026-0419-088</td><td>บ.เทคโนโลยีไทย</td><td>฿9,346</td><td>฿654</td><td>฿10,000</td><td><span class="badge badge-purple">นิติบุคคล</span></td></tr>
+                  <tr><td class="job-id">INV-2026-0419-087</td><td>วิภา รักดี</td><td>฿1,869</td><td>฿131</td><td>฿2,000</td><td><span class="badge badge-info">บุคคล</span></td></tr>
+                  <tr><td class="job-id">INV-2026-0418-086</td><td>ร้านมือถือสุขุมวิท</td><td>฿14,019</td><td>฿981</td><td>฿15,000</td><td><span class="badge badge-purple">นิติบุคคล</span></td></tr>
+                  <tr><td class="job-id">INV-2026-0418-085</td><td>ประสิทธิ์ มั่นคง</td><td>฿2,804</td><td>฿196</td><td>฿3,000</td><td><span class="badge badge-info">บุคคล</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">📅 ปฏิทินภาษี 2569</span></div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>ภาษี</th><th>กำหนดยื่น</th><th>สถานะ</th></tr></thead>
+                <tbody>
+                  <tr><td>ภ.พ.30 (เม.ย.)</td><td>15 พ.ค. 2569</td><td><span class="badge badge-warning">⏳ รอยื่น</span></td></tr>
+                  <tr><td>ภ.ง.ด.1 (เม.ย.)</td><td>7 พ.ค. 2569</td><td><span class="badge badge-warning">⏳ รอยื่น</span></td></tr>
+                  <tr><td>ภ.พ.30 (มี.ค.)</td><td>15 เม.ย. 2569</td><td><span class="badge badge-success">✅ ยื่นแล้ว</span></td></tr>
+                  <tr><td>ภ.ง.ด.1 (มี.ค.)</td><td>7 เม.ย. 2569</td><td><span class="badge badge-success">✅ ยื่นแล้ว</span></td></tr>
+                  <tr><td>ภ.ง.ด.50 (ปี 2568)</td><td>31 พ.ค. 2569</td><td><span class="badge badge-info">📋 เตรียมข้อมูล</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-sm btn-primary">📄 ออกใบกำกับภาษี</button>
+              <button class="btn btn-sm btn-secondary">📋 รายงาน WHT</button>
+              <button class="btn btn-sm btn-warning">📊 สรุปภาษีปี</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== FACEBOOK AUTO-POST ===== -->
+    <div id="section-facebook" class="section">
+      <div class="kpi-grid">
+        <div class="kpi-card blue"><div class="kpi-icon">📘</div><div class="kpi-value">1,247</div><div class="kpi-label">Followers</div><div class="kpi-trend up">▲ +23 สัปดาห์นี้</div></div>
+        <div class="kpi-card green"><div class="kpi-icon">📢</div><div class="kpi-value">48</div><div class="kpi-label">โพสต์เดือนนี้</div><div class="kpi-trend up">▲ +8 จากเดือนก่อน</div></div>
+        <div class="kpi-card yellow"><div class="kpi-icon">❤️</div><div class="kpi-value">3,842</div><div class="kpi-label">Engagement รวม</div><div class="kpi-trend up">▲ +15.2%</div></div>
+        <div class="kpi-card purple"><div class="kpi-icon">🤖</div><div class="kpi-value">12</div><div class="kpi-label">Auto-Post รอส่ง</div><div class="kpi-trend up">▲ ตั้งเวลาไว้แล้ว</div></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🤖 สร้างโพสต์อัตโนมัติ</span>
+            <span class="badge badge-info">AI-Powered</span>
+          </div>
+          <div class="card-body">
+            <div style="margin-bottom:14px">
+              <div class="form-label">เลือกเทมเพลต</div>
+              <div class="fb-template-grid">
+                <div class="fb-template selected" onclick="selectTemplate(this,'service')">
+                  <div class="fb-template-title">🔧 โปรโมทงานซ่อม</div>
+                  <div class="fb-template-desc">แจ้งรับงาน, โปรโมชั่น, ผลงาน</div>
+                </div>
+                <div class="fb-template" onclick="selectTemplate(this,'sale')">
+                  <div class="fb-template-title">🛒 โปรโมทขายสินค้า</div>
+                  <div class="fb-template-desc">อะไหล่, อุปกรณ์เสริม, ราคาพิเศษ</div>
+                </div>
+                <div class="fb-template" onclick="selectTemplate(this,'review')">
+                  <div class="fb-template-title">⭐ รีวิวจากลูกค้า</div>
+                  <div class="fb-template-desc">แชร์ความประทับใจ, คะแนน 5 ดาว</div>
+                </div>
+                <div class="fb-template" onclick="selectTemplate(this,'tip')">
+                  <div class="fb-template-title">💡 เคล็ดลับดูแลมือถือ</div>
+                  <div class="fb-template-desc">Content Marketing, ให้ความรู้</div>
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">เนื้อหาโพสต์ (AI สร้างให้อัตโนมัติ)</label>
+              <textarea class="form-input" id="fb-post-text" rows="5">🔧 รับซ่อมมือถือทุกรุ่น ราคาเป็นธรรม!
+
+✅ iPhone ทุกรุ่น — เปลี่ยนจอ, แบต, กล้อง
+✅ Samsung Galaxy — ซ่อมด่วนภายใน 1 ชั่วโมง
+✅ รับประกันงานซ่อม 90 วัน
+
+📍 ร้านคอมโฟน — ใจกลางเมือง
+📞 โทร 081-234-5678
+⏰ เปิดทุกวัน 9:00-20:00
+
+#ซ่อมมือถือ #ร้านคอมโฟน #iPhone #Samsung</textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">วันที่โพสต์</label>
+                <input type="date" class="form-input" value="2026-04-20">
+              </div>
+              <div class="form-group">
+                <label class="form-label">เวลาโพสต์</label>
+                <input type="time" class="form-input" value="09:00">
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-secondary" onclick="generateAIPost()">🤖 AI สร้างเนื้อหา</button>
+              <button class="btn btn-facebook" onclick="schedulePost()">📘 ตั้งเวลาโพสต์</button>
+              <button class="btn btn-primary" onclick="postNow()">🚀 โพสต์เดี๋ยวนี้</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">📋 โพสต์ล่าสุด</span></div>
+          <div class="card-body">
+            <div class="fb-post-card">
+              <div class="fb-post-header">
+                <div class="fb-avatar">📱</div>
+                <div>
+                  <div class="fb-page-name">ร้านคอมโฟน</div>
+                  <div class="fb-page-sub">เมื่อ 2 ชั่วโมงที่แล้ว · 🌐</div>
+                </div>
+                <span class="badge badge-success" style="margin-left:auto">✅ โพสต์แล้ว</span>
+              </div>
+              <div class="fb-post-content">🎉 ขอบคุณลูกค้าที่ไว้วางใจ! เปลี่ยนจอ iPhone 15 Pro เสร็จภายใน 45 นาที ลูกค้าประทับใจมาก ⭐⭐⭐⭐⭐</div>
+              <div class="fb-stats">
+                <div class="fb-stat">❤️ 47 ถูกใจ</div>
+                <div class="fb-stat">💬 12 ความคิดเห็น</div>
+                <div class="fb-stat">↗️ 8 แชร์</div>
+              </div>
+            </div>
+            <div class="fb-post-card">
+              <div class="fb-post-header">
+                <div class="fb-avatar">📱</div>
+                <div>
+                  <div class="fb-page-name">ร้านคอมโฟน</div>
+                  <div class="fb-page-sub">เมื่อวาน 09:00 · 🤖 Auto</div>
+                </div>
+                <span class="badge badge-success" style="margin-left:auto">✅ โพสต์แล้ว</span>
+              </div>
+              <div class="fb-post-content">🔧 โปรโมชั่นพิเศษ! เปลี่ยนแบตเตอรี่ iPhone ทุกรุ่น ลด 20% วันนี้เท่านั้น! 📞 081-234-5678</div>
+              <div class="fb-stats">
+                <div class="fb-stat">❤️ 89 ถูกใจ</div>
+                <div class="fb-stat">💬 23 ความคิดเห็น</div>
+                <div class="fb-stat">↗️ 34 แชร์</div>
+              </div>
+            </div>
+            <div class="fb-post-card" style="border-color:#2d3148;opacity:.7">
+              <div class="fb-post-header">
+                <div class="fb-avatar">📱</div>
+                <div>
+                  <div class="fb-page-name">ร้านคอมโฟน</div>
+                  <div class="fb-page-sub">20 เม.ย. 2569 09:00 · 🤖 ตั้งเวลา</div>
+                </div>
+                <span class="badge badge-warning" style="margin-left:auto">⏳ รอโพสต์</span>
+              </div>
+              <div class="fb-post-content" style="color:#6b7280">💡 เคล็ดลับ: วิธีถนอมแบตเตอรี่มือถือให้อยู่นาน...</div>
+              <div style="display:flex;gap:8px;margin-top:8px">
+                <button class="btn btn-sm btn-secondary">✏️ แก้ไข</button>
+                <button class="btn btn-sm btn-danger">🗑️ ยกเลิก</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SETTINGS ===== -->
+    <div id="section-settings" class="section">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">👤 ข้อมูลผู้ใช้</span></div>
+          <div class="card-body">
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+              <div class="user-avatar" style="width:60px;height:60px;font-size:22px">A</div>
+              <div><div style="font-size:16px;font-weight:700;color:#fff">Admin Comphone</div><div style="font-size:12px;color:#6b7280">ผู้แลระบบ (OWNER)</div></div>
+            </div>
+            <table style="width:100%;font-size:13px">
+              <tr><td style="color:#6b7280;padding:6px 0">บริษัท</td><td style="color:#e2e8f0">หจก.คอมโฟน แอนด์ อิเล็คโทรนิคส์</td></tr>
+              <tr><td style="color:#6b7280;padding:6px 0">เลขภาษี</td><td style="color:#e2e8f0">1234567890123</td></tr>
+              <tr><td style="color:#6b7280;padding:6px 0">สาขา</td><td style="color:#e2e8f0">สำนักงานใหญ่ (HQ)</td></tr>
+              <tr><td style="color:#6b7280;padding:6px 0">GAS Version</td><td><span class="badge badge-success">@441 Online</span></td></tr>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">🔗 การเชื่อมต่อ API</span></div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>บริการ</th><th>สถานะ</th></tr></thead>
+                <tbody>
+                  <tr><td>GAS Backend API</td><td><span class="badge badge-success">✅ เชื่อมต่อแล้ว</span></td></tr>
+                  <tr><td>LINE Messaging API</td><td><span class="badge badge-success">✅ เชื่อมต่อแล้ว</span></td></tr>
+                  <tr><td>Gemini AI API</td><td><span class="badge badge-success">✅ เชื่อมต่อแล้ว</span></td></tr>
+                  <tr><td>Facebook Graph API</td><td><span class="badge badge-warning">⚠️ ต้องตั้งค่า Token</span></td></tr>
+                  <tr><td>PromptPay QR</td><td><span class="badge badge-success">✅ เชื่อมต่อแล้ว</span></td></tr>
+                  <tr><td>Google Drive</td><td><span class="badge badge-success">✅ เชื่อมต่อแล้ว</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== WARRANTY SECTION ===== -->
+    <div id="section-warranty" class="section">
+      <div style="background:#451a03;border:1px solid #92400e;border-radius:12px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px">⚠️</span>
+        <div><strong style="color:#fbbf24">ใบรับประกันใกล้หมดอายุ 3 รายการ</strong> — ภายใน 7 วัน</div>
+      </div>
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="kpi-card green"><div class="kpi-icon">🛡️</div><div class="kpi-value">47</div><div class="kpi-label">ใช้งาน (ACTIVE)</div></div>
+        <div class="kpi-card red"><div class="kpi-icon">⏰</div><div class="kpi-value">8</div><div class="kpi-label">หมดอายุ (EXPIRED)</div></div>
+        <div class="kpi-card yellow"><div class="kpi-icon">📝</div><div class="kpi-value">5</div><div class="kpi-label">เคลมแล้ว (CLAIMED)</div></div>
+        <div class="kpi-card" style="--c:#6b7280"><div class="kpi-icon">❌</div><div class="kpi-value">2</div><div class="kpi-label">ยกเลิก (VOIDED)</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">🛡️ รายการใบรับประกัน</span><button class="btn btn-sm btn-primary">➕ ออกใบรับประกัน</button></div>
+        <div class="card-body" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Warranty ID</th><th>Job ID</th><th>ลูกค้า</th><th>สินค้า/บริการ</th><th>สิ้นสุด</th><th>สถานะ</th><th>การดำเนินการ</th></tr></thead>
+              <tbody>
+                <tr><td class="job-id">WR-2026-0419-001</td><td class="job-id">JOB-0419-089</td><td>สมชาย ทำดี</td><td>ซ่อมหน้าจอ iPhone 15 Pro</td><td style="color:#fbbf24">25 เม..ย. 2569</td><td><span class="badge badge-warning">⚠️ ใกล้หมด</span></td><td><button class="btn btn-sm btn-info">ดูรายละเอียด</button></td></tr>
+                <tr><td class="job-id">WR-2026-0418-002</td><td class="job-id">JOB-0418-085</td><td>วิภา รักดี</td><td>เปลี่ยนแบตเตอรี่ Samsung S24</td><td style="color:#34d399">18 ก.ค. 2569</td><td><span class="badge badge-success">✅ ใช้งาน</span></td><td><button class="btn btn-sm btn-info">ดูรายละเอียด</button></td></tr>
+                <tr><td class="job-id">WR-2026-0417-003</td><td class="job-id">JOB-0417-081</td><td>ประสิทธิ์ มั่นคง</td><td>ซ่อมบอร์ด MacBook Air M2</td><td style="color:#34d399">17 ก.ค. 2569</td><td><span class="badge badge-success">✅ ใช้งาน</span></td><td><button class="btn btn-sm btn-info">ดูรายละเอียด</button></td></tr>
+                <tr><td class="job-id">WR-2026-0415-004</td><td class="job-id">JOB-0415-076</td><td>นิรันดร์ ฝีมือดี</td><td>เปลี่ยนหน้าจอ iPad Pro</td><td style="color:#f87171">01 เม..ย. 2569</td><td><span class="badge badge-warning">⚠️ ใกล้หมด</span></td><td><button class="btn btn-sm btn-info">ดูรายละเอียด</button></td></tr>
+                <tr><td class="job-id">WR-2026-0410-005</td><td class="job-id">JOB-0410-070</td><td>สมหมาย อ่างดี</td><td>ซ่อมหูฟัง AirPods Pro</td><td style="color:#f87171">10 เม..ย. 2569</td><td><span class="badge badge-warning">⚠️ ใกล้หมด</span></td><td><button class="btn btn-sm btn-info">ดูรายละเอียด</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== BRANCH SECTION ===== -->
+    <div id="section-branch" class="section">
+      <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="kpi-card blue"><div class="kpi-icon">🏢</div><div class="kpi-value">3</div><div class="kpi-label">สาขาทั้งหมด</div></div>
+        <div class="kpi-card green"><div class="kpi-icon">👥</div><div class="kpi-value">247</div><div class="kpi-label">ลูกค้ารวมทุกสาขา</div></div>
+        <div class="kpi-card yellow"><div class="kpi-icon">💰</div><div class="kpi-value">฿1.24M</div><div class="kpi-label">รายรับรวมเดือนนี้</div></div>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-header"><span class="card-title">🏢 สำนักงานใหญ่ (HQ)</span><span class="badge badge-success">สาขาหลัก</span></div>
+          <div class="card-body">
+            <table style="width:100%;font-size:13px">
+              <tr><td style="color:#6b7280;padding:5px 0">งานเปิดอยู่</td><td style="text-align:right;font-weight:700;color:#fbbf24">15 งาน</td></tr>
+              <tr><td style="color:#6b7280;padding:5px 0">งานเสร็จเดือนนี้</td><td style="text-align:right;font-weight:700;color:#34d399">89 งาน</td></tr>
+              <tr><td style="color:#6b7280;padding:5px 0">รายรับเดือนนี้</td><td style="text-align:right;font-weight:700;color:#60a5fa">฿524,800</td></tr>
+              <tr><td style="color:#6b7280;padding:5px 0">สต็อครายการ</td><td style="text-align:right;font-weight:700">142 รายการ</td></tr>
+              <tr><td style="color:#6b7280;padding:5px 0">ช่างประจำสาขา</td><td style="text-align:right;font-weight:700">4 คน</td></tr>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">🏢 สาขาสุขุมวิท</span></div>
+          <div class="card-body">
+            <table style="width:100%;font-size:13px">
+              <tr><td style="color:#6b7280;padding:5px 0">งานเปิดอยู่</td><td style="text-align:right;font-weight:700;color:#fbbf24">9 งาน</td></tr>
+              <tr><td style="color:#6b7280;padding:5px 0">งานเสร็จเดือนนี้</td><td style="text-align:right;font-weight:700;color:#34d399">61 งาน</td></tr>
+              <tr><td style="color:#6b7280;padding:5px 0">รายรับเดือนนี้</td><td style="text-align:right;font-weight:700;color:#60a5fa">฿412,600</td></tr>
+              <tr><td style="color:#6b7280;padding:5px 0">สต็อครายการ</td><td style="text-align:right;font-weight:700">98 รายการ</td></tr>
+              <tr><td style="color:#6b7280;padding:5px 0">ช่างประจำสาขา</td><td style="text-align:right;font-weight:700">3 คน</td></tr>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">🏢 สาขาสีลม</span></div>
+          <div class="card-body">
+            <table style="width:100%;font-size:13px">
+              <tr><td style="color:#6b7280;padding:5px 0">งานเปิดอยู่</td><td style="text-align:right;font-weight:700;color:#fbbf24">7 งาน</td></tr>
+              <tr><td style="color:#6b7280;padding:5px 0">งานเสร็จเดือนนี้</td><td style="text-align:right;font-weight:700;color:#34d399">43 งาน</td></tr>
+              <tr><td style="color:#6b7280;padding:5px 0">รายรับเดือนนี้</td><td style="text-align:right;font-weight:700;color:#60a5fa">฿301,200</td></tr>
+              <tr><td style="color:#6b7280;padding:5px 0">สต็อครายการ</td><td style="text-align:right;font-weight:700">76 รายการ</td></tr>
+              <tr><td style="color:#6b7280;padding:5px 0">ช่างประจำสาขา</td><td style="text-align:right;font-weight:700">2 คน</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== HEALTH SECTION ===== -->
+    <div id="section-health" class="section">
+      <div style="background:#064e3b;border:1px solid #065f46;border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:28px">💚</span>
+        <div><div style="font-size:16px;font-weight:700;color:#34d399">ระบบทำงานปกติ</div><div style="font-size:12px;color:#6b7280;margin-top:2px">ตรวจล่าสุด: วันนี้ 09:30 น. — ทุกรายการผ่าน</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">🔍 สถานะบริการ</span><button class="btn btn-sm btn-primary" onclick="alert('กำลังตรวจ...')">&#x1F504; ตรวจใหม่</button></div>
+          <div class="card-body">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#9ca3af">📄 Spreadsheet (DB)</span><span class="badge badge-success">✅ ปกติ (12ms)</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#9ca3af">📱 LINE Messaging API</span><span class="badge badge-success">✅ ปกติ (45ms)</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#9ca3af">🤖 Gemini AI API</span><span class="badge badge-success">✅ ปกติ (234ms)</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#9ca3af">📁 Google Drive</span><span class="badge badge-success">✅ ปกติ (89ms)</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#9ca3af">💳 PromptPay QR</span><span class="badge badge-success">✅ ปกตด (67ms)</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#9ca3af">📸 Facebook Graph API</span><span class="badge badge-warning">⚠️ ต้องตั้งค่า Token</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">📊 สถิติการใช้งาน</span></div>
+          <div class="card-body">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;color:#9ca3af">API Requests / วัน</span><span style="font-size:12px;font-weight:700">1,247 req</span></div><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:62%;background:#3b4fd8"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;color:#9ca3af">GAS Execution Time</span><span style="font-size:12px;font-weight:700">2.3s avg</span></div><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:23%;background:#10b981"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;color:#9ca3af">Cache Hit Rate</span><span style="font-size:12px;font-weight:700">78%</span></div><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:78%;background:#10b981"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;color:#9ca3af">Error Rate</span><span style="font-size:12px;font-weight:700;color:#34d399">0.3%</span></div><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:3%;background:#10b981"></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">📜 ประวัติ Health Check Log</span></div>
+        <div class="card-body" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>เวลา</th><th>สถานะ</th><th>Spreadsheet</th><th>LINE API</th><th>Gemini AI</th><th>Drive</th></tr></thead>
+              <tbody>
+                <tr><td style="font-size:12px;color:#6b7280">19/04/2569 09:30</td><td><span class="badge badge-success">✅ OK</span></td><td><span class="badge badge-success">OK</span></td><td><span class="badge badge-success">OK</span></td><td><span class="badge badge-success">OK</span></td><td><span class="badge badge-success">OK</span></td></tr>
+                <tr><td style="font-size:12px;color:#6b7280">19/04/2569 09:00</td><td><span class="badge badge-success">✅ OK</span></td><td><span class="badge badge-success">OK</span></td><td><span class="badge badge-success">OK</span></td><td><span class="badge badge-success">OK</span></td><td><span class="badge badge-success">OK</span></td></tr>
+                <tr><td style="font-size:12px;color:#6b7280">19/04/2569 08:30</td><td><span class="badge badge-warning">⚠️ WARN</span></td><td><span class="badge badge-success">OK</span></td><td><span class="badge badge-success">OK</span></td><td><span class="badge badge-warning">SLOW</span></td><td><span class="badge badge-success">OK</span></td></tr>
+                <tr><td style="font-size:12px;color:#6b7280">19/04/2569 08:00</td><td><span class="badge badge-success">✅ OK</span></td><td><span class="badge badge-success">OK</span></td><td><span class="badge badge-success">OK</span></td><td><span class="badge badge-success">OK</span></td><td><span class="badge badge-success">OK</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ===== RECEIPT MODAL ===== -->
+<div class="modal-overlay" id="receipt-modal">
+  <div class="modal-box">
+    <div class="modal-title">🖨️ ใบเสร็จรับเงิน</div>
+    <div class="receipt-preview" id="receipt-content"></div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-secondary" onclick="closeModal('receipt-modal')">ปิด</button>
+      <button class="btn btn-primary" onclick="window.print()">🖨️ พิมพ์</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== NEW JOB MODAL ===== -->
+<div class="modal-overlay" id="new-job-modal">
+  <div class="modal-box">
+    <div class="modal-title">➕ เปิดงานซ่อมใหม่</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">ชื่อลูกค้า *</label><input class="form-input" placeholder="ชื่อ-นามสกุล"></div>
+      <div class="form-group"><label class="form-label">เบอร์โทร *</label><input class="form-input" placeholder="0xx-xxx-xxxx"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">อุปกรณ์ *</label><input class="form-input" placeholder="iPhone 15 Pro, Samsung S24..."></div>
+      <div class="form-group"><label class="form-label">ประเภทงาน</label>
+        <select class="form-input"><option>ซ่อมมือถือ</option><option>ซ่อมคอมพิวเตอร์</option><option>ซ่อมแท็บเล็ต</option><option>อื่นๆ</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">อาการ / รายละเอียด *</label><textarea class="form-input" placeholder="อธิบายอาการเสีย..."></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">ช่างที่รับผิดชอบ</label>
+        <select class="form-input"><option>-- เลือกช่าง --</option><option>สมชาย อ่างดี</option><option>วิชัย ซ่อมเก่ง</option><option>ประสิทธิ์ มือปัง</option><option>นิรันดร์ ฝีมือดี</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">ระดับความด่วน</label>
+        <select class="form-input"><option>ปกติ</option><option>ด่วน</option><option>ด่วนมาก</option></select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+      <button class="btn btn-secondary" onclick="closeModal('new-job-modal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="submitNewJob()">✅ เปิดงาน</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== INIT =====
+const SECTIONS = {
+  'dashboard':'📊 Executive Dashboard',
+  'jobs':'🔧 งานบริการ',
+  'pos':'🛒 ขายหน้าร้าน (POS)',
+  'crm':'👥 ลูกค้า / CRM',
+  'inventory':'📦 คลังสินค้า',
+  'po':'🛍️ ใบสั่งซื้อ (PO)',
+  'revenue':'💰 รายรับ',
+  'tax':'🧾 ระบบภาษี',
+  'warranty':'🛡️ ใบรับประกัน',
+  'facebook':'📘 Facebook Auto-Post',
+  'branch':'🏢 สาขา',
+  'health':'💚 สุขภาพระบบ',
+  'settings':'⚙️ ตั้งค่า'
+};
+
+let currentSection = 'dashboard';
+let cartItems = [];
+let charts = {};
+
+// ===== DATE =====
+function updateDate(){
+  const d=new Date();
+  const days=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  document.getElementById('topbar-date').textContent=`วัน${days[d.getDay()]}ที่ ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}`;
+}
+updateDate();
+
+// ===== NAVIGATION =====
+function showSection(name){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('section-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    if(n.getAttribute('onclick')&&n.getAttribute('onclick').includes("'"+name+"'"))n.classList.add('active');
+  });
+  document.getElementById('page-title').textContent=SECTIONS[name]||name;
+  currentSection=name;
+  setTimeout(()=>initCharts(name),100);
+}
+
+function refreshSection(){showSection(currentSection);}
+
+// ===== CHARTS =====
+const chartColors={blue:'#3b4fd8',green:'#10b981',yellow:'#f59e0b',red:'#ef4444',purple:'#7c3aed',cyan:'#06b6d4'};
+
+function initCharts(section){
+  if(section==='dashboard'){
+    if(!charts.revenue){
+      const labels=['13/4','14/4','15/4','16/4','17/4','18/4','19/4'];
+      const data=[18200,22400,19800,25600,21300,28900,28450];
+      charts.revenue=new Chart(document.getElementById('chart-revenue'),{
+        type:'bar',data:{labels,datasets:[{data,backgroundColor:'rgba(59,79,216,.7)',borderColor:'#3b4fd8',borderWidth:2,borderRadius:6}]},
+        options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#1f2235'},ticks:{color:'#6b7280',font:{size:11}}},y:{grid:{color:'#1f2235'},ticks:{color:'#6b7280',font:{size:11},callback:v=>'฿'+v.toLocaleString()}}}}
+      });
+    }
+    if(!charts.status){
+      charts.status=new Chart(document.getElementById('chart-status'),{
+        type:'doughnut',data:{labels:['เสร็จแล้ว','กำลังดำเนินการ','รอชิ้นส่วน','ด่วน'],datasets:[{data:[31,15,9,7],backgroundColor:['#10b981','#3b4fd8','#f59e0b','#ef4444'],borderWidth:0,hoverOffset:4}]},
+        options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#9ca3af',font:{size:11},padding:12}}},cutout:'65%'}
+      });
+    }
+  }
+  if(section==='inventory'&&!charts.stock){
+    const labels=['13/4','14/4','15/4','16/4','17/4','18/4','19/4'];
+    charts.stock=new Chart(document.getElementById('chart-stock'),{
+      type:'line',data:{labels,datasets:[
+        {label:'เบิกออก',data:[12,8,15,10,18,9,14],borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,.1)',tension:.4,fill:true,pointRadius:4},
+        {label:'รับเข้า',data:[0,20,0,15,0,0,0],borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.1)',tension:.4,fill:true,pointRadius:4}
+      ]},
+      options:{responsive:true,plugins:{legend:{labels:{color:'#9ca3af',font:{size:11}}}},scales:{x:{grid:{color:'#1f2235'},ticks:{color:'#6b7280',font:{size:11}}},y:{grid:{color:'#1f2235'},ticks:{color:'#6b7280',font:{size:11}}}}}
+    });
+  }
+  if(section==='revenue'){
+    if(!charts.revenueMonthly){
+      const labels=[];const data=[];
+      for(let i=29;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);labels.push(`${d.getDate()}/${d.getMonth()+1}`);data.push(Math.floor(Math.random()*20000)+15000);}
+      charts.revenueMonthly=new Chart(document.getElementById('chart-revenue-monthly'),{
+        type:'line',data:{labels,datasets:[{data,borderColor:'#3b4fd8',backgroundColor:'rgba(59,79,216,.1)',tension:.4,fill:true,pointRadius:2}]},
+        options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#1f2235'},ticks:{color:'#6b7280',font:{size:10},maxTicksLimit:8}},y:{grid:{color:'#1f2235'},ticks:{color:'#6b7280',font:{size:11},callback:v=>'฿'+v.toLocaleString()}}}}
+      });
+    }
+    if(!charts.revenueType){
+      charts.revenueType=new Chart(document.getElementById('chart-revenue-type'),{
+        type:'doughnut',data:{labels:['ซ่อมมือถือ','ซ่อมคอม','ขายอะไหล่','อื่นๆ'],datasets:[{data:[48,22,18,12],backgroundColor:['#3b4fd8','#7c3aed','#10b981','#f59e0b'],borderWidth:0}]},
+        options:{responsive:true,plugins:{legend:{display:false}},cutout:'60%'}
+      });
+    }
+  }
+}
+
+// ===== JOBS DATA =====
+const jobsData=[
+  {id:'CP-2026-0419-047',customer:'สมชาย ทำดี',phone:'081-234-5678',device:'iPhone 15 Pro',issue:'เปลี่ยนแบตเตอรี่',status:'done',tech:'สมชาย อ่างดี',sla:'เสร็จแล้ว',date:'19/04 08:15',urgent:false},
+  {id:'CP-2026-0419-046',customer:'วิภา รักดี',phone:'089-876-5432',device:'Samsung S24',issue:'จอแตกเปลี่ยน',status:'inprogress',tech:'วิชัย ซ่อมเก่ง',sla:'เหลือ 4 ชม.',date:'19/04 07:30',urgent:false},
+  {id:'CP-2026-0419-045',customer:'ประสิทธิ์ มั่นคง',phone:'062-345-6789',device:'MacBook Air M2',issue:'เปิดไม่ติด',status:'urgent',tech:'ประสิทธิ์ มือปัง',sla:'เกิน 2 ชม.',date:'18/04 16:00',urgent:true},
+  {id:'CP-2026-0419-044',customer:'นิรันดร์ สุขใจ',phone:'095-432-1098',device:'iPad Pro 12.9"',issue:'แบตเสื่อม ชาร์จไม่เข้า',status:'waiting',tech:'นิรันดร์ ฝีมือดี',sla:'รอชิ้นส่วน',date:'18/04 14:20',urgent:false},
+  {id:'CP-2026-0419-043',customer:'มาลี ลิ้มงาม',phone:'083-567-8901',device:'iPhone 14 Plus',issue:'กล้องหน้าพัง',status:'done',tech:'สมชาย อ่างดี',sla:'เสร็จแล้ว',date:'18/04 11:45',urgent:false},
+  {id:'CP-2026-0419-042',customer:'อมันต์ ไอดี',phone:'091-234-5670',device:'ASUS ROG Phone 7',issue:'สายชาร์จไม่มีเสียง',status:'inprogress',tech:'วิชัย ซ่อมเก่ง',sla:'เหลือ 6 ชม.',date:'18/04 10:00',urgent:false},
+  {id:'CP-2026-0419-041',customer:'สุดา รุ่งเรือง',phone:'086-789-0123',device:'Lenovo ThinkPad',issue:'คีย์บอร์ดพัง',status:'urgent',tech:'ประสิทธิ์ มือปัง',sla:'เกิน 5 ชม.',date:'17/04 15:30',urgent:true},
+  {id:'CP-2026-0419-040',customer:'ชัยวัฒน์ เก่งกาจ',phone:'087-654-3210',device:'iPhone 13 mini',issue:'Face ID ไม่ทำงาน',status:'waiting',tech:'นิรันดร์ ฝีมือดี',sla:'รอชิ้นส่วน',date:'17/04 13:00',urgent:false},
+  {id:'CP-2026-0419-039',customer:'พรทิพย์ สวยงาม',phone:'092-345-6780',device:'Samsung A55',issue:'หน้าจอพัง',status:'done',tech:'สมชาย อ่างดี',sla:'เสร็จแล้ว',date:'17/04 10:15',urgent:false},
+  {id:'CP-2026-0419-038',customer:'ธนา มีทรัพย์',phone:'085-432-1087',device:'Xiaomi 14 Ultra',issue:'ชิมไม่อ่านสัญญาณ',status:'inprogress',tech:'วิชัย ซ่อมเก่ง',sla:'เหลือ 8 ชม.',date:'17/04 09:00',urgent:false},
+];
+
+const statusMap={
+  done:{label:'เสร็จแล้ว',cls:'badge-success'},
+  inprogress:{label:'กำลังดำเนินการ',cls:'badge-info'},
+  waiting:{label:'รอชิ้นส่วน',cls:'badge-warning'},
+  urgent:{label:'ด่วน!',cls:'badge-danger'}
+};
+
+function renderJobs(data){
+  const tbody=document.getElementById('jobs-tbody');
+  tbody.innerHTML=data.map(j=>`
+    <tr>
+      <td><span class="job-id">${j.id}</span></td>
+      <td><div style="font-weight:600;font-size:13px">${j.customer}</div><div style="font-size:11px;color:#6b7280">${j.phone}</div></td>
+      <td><div style="font-size:13px">${j.device}</div><div style="font-size:11px;color:#6b7280">${j.issue}</div></td>
+      <td><span class="badge ${statusMap[j.status].cls}">${j.status==='urgent'?'⚡ ':j.status==='done'?'✅ ':j.status==='waiting'?'⏳ ':'🔄 '}${statusMap[j.status].label}</span></td>
+      <td style="font-size:12px">${j.tech}</td>
+      <td style="font-size:12px;color:${j.sla.includes('เกิน')?'#f87171':j.sla.includes('รอ')?'#fbbf24':'#34d399'}">${j.sla}</td>
+      <td style="font-size:11px;color:#6b7280">${j.date}</td>
+      <td><button class="btn btn-sm btn-info">👁️ ดู</button></td>
+    </tr>`).join('');
+}
+
+let currentJobFilter='all';
+function filterJobs(q){
+  const filtered=jobsData.filter(j=>{
+    const match=!q||(j.id+j.customer+j.device+j.issue).toLowerCase().includes(q.toLowerCase());
+    const statusMatch=currentJobFilter==='all'||j.status===currentJobFilter;
+    return match&&statusMatch;
+  });
+  renderJobs(filtered);
+}
+
+function setJobFilter(f,el){
+  currentJobFilter=f;
+  document.querySelectorAll('#jobs-filter-tabs .filter-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  filterJobs(document.getElementById('jobs-search').value);
+}
+
+// ===== POS DATA =====
+const products=[
+  {id:'SCR-IP15P',name:'หน้าจอ iPhone 15 Pro',price:3200,stock:8,icon:'📱',cat:'หน้าจอ'},
+  {id:'BAT-IP14',name:'แบตเตอรี่ iPhone 14',price:850,stock:12,icon:'🔋',cat:'แบตเตอรี่'},
+  {id:'SCR-IP14',name:'หน้าจอ iPhone 14',price:2800,stock:2,icon:'📱',cat:'หน้าจอ'},
+  {id:'BAT-SS23',name:'แบตเตอรี่ Samsung S23',price:680,stock:1,icon:'🔋',cat:'แบตเตอรี่'},
+  {id:'CAM-IP13F',name:'กล้องหน้า iPhone 13',price:1200,stock:6,icon:'📷',cat:'ชิ้นส่วน'},
+  {id:'SPK-SA55',name:'ลำโพง Samsung A55',price:450,stock:9,icon:'🔊',cat:'ชิ้นส่วน'},
+  {id:'KBD-MBA-M2',name:'คีย์บอร์ด MacBook Air M2',price:4500,stock:3,icon:'⌨️',cat:'ชิ้นส่วน'},
+  {id:'KIT-IPADP',name:'ชุดซ่อม iPad Pro 12.9"',price:2100,stock:4,icon:'🛠️',cat:'ชุดซ่อม'},
+  {id:'CBL-USB-C',name:'สายชาร์จ USB-C 1m',price:290,stock:25,icon:'🔌',cat:'อุปกรณ์เสริม'},
+  {id:'CASE-IP15',name:'เคส iPhone 15 Series',price:350,stock:18,icon:'📦',cat:'อุปกรณ์เสริม'},
+  {id:'GLASS-IP14',name:'ฟิล์มกระจก iPhone 14',price:180,stock:30,icon:'🪟',cat:'อุปกรณ์เสริม'},
+  {id:'CHRG-20W',name:'หัวชาร์จ 20W',price:490,stock:15,icon:'⚡',cat:'อุปกรณ์เสริม'},
+];
+
+function renderProducts(data){
+  document.getElementById('product-grid').innerHTML=data.map(p=>`
+    <div class="product-card" onclick="addToCart('${p.id}')">
+      <div class="p-icon">${p.icon}</div>
+      <div class="p-name">${p.name}</div>
+      <div class="p-price">฿${p.price.toLocaleString()}</div>
+      <div class="p-stock" style="color:${p.stock<=2?'#f87171':p.stock<=5?'#fbbf24':'#6b7280'}">เหลือ ${p.stock} ชิ้น</div>
+    </div>`).join('');
+}
+
+function filterProducts(q){
+  renderProducts(q?products.filter(p=>(p.name+p.id).toLowerCase().includes(q.toLowerCase())):products);
+}
+
+function addToCart(id){
+  const p=products.find(x=>x.id===id);
+  if(!p)return;
+  const existing=cartItems.find(x=>x.id===id);
+  if(existing){existing.qty++;} else {cartItems.push({...p,qty:1});}
+  renderCart();
+}
+
+function renderCart(){
+  const el=document.getElementById('cart-items');
+  document.getElementById('cart-count').textContent=`(${cartItems.reduce((a,b)=>a+b.qty,0)} รายการ)`;
+  if(!cartItems.length){
+    el.innerHTML='<div style="text-align:center;color:#4b5563;padding:40px 0;font-size:13px"><div style="font-size:40px;margin-bottom:8px">🛒</div>คลิกสินค้าเพื่อเพิ่มในตะกร้า</div>';
+    updateCartSummary(0);return;
+  }
+  el.innerHTML=cartItems.map(item=>`
+    <div class="cart-item">
+      <div style="font-size:20px">${item.icon}</div>
+      <div class="cart-item-name">${item.name}<div style="font-size:11px;color:#6b7280">฿${item.price.toLocaleString()} × ${item.qty}</div></div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="qty-btn" onclick="changeQty('${item.id}',-1)">−</button>
+        <span style="font-size:13px;font-weight:700;min-width:20px;text-align:center">${item.qty}</span>
+        <button class="qty-btn" onclick="changeQty('${item.id}',1)">+</button>
+      </div>
+      <div class="cart-item-price">฿${(item.price*item.qty).toLocaleString()}</div>
+    </div>`).join('');
+  const subtotal=cartItems.reduce((a,b)=>a+b.price*b.qty,0);
+  updateCartSummary(subtotal);
+}
+
+function updateCartSummary(subtotal){
+  const vat=Math.round(subtotal*0.07);
+  const total=subtotal+vat;
+  document.getElementById('subtotal').textContent='฿'+subtotal.toLocaleString();
+  document.getElementById('vat').textContent='฿'+vat.toLocaleString();
+  document.getElementById('total').textContent='฿'+total.toLocaleString();
+}
+
+function changeQty(id,delta){
+  const item=cartItems.find(x=>x.id===id);
+  if(!item)return;
+  item.qty+=delta;
+  if(item.qty<=0)cartItems=cartItems.filter(x=>x.id!==id);
+  renderCart();
+}
+
+function clearCart(){cartItems=[];renderCart();}
+
+function checkoutPos(){
+  if(!cartItems.length){alert('กรุณาเพิ่มสินค้าในตะกร้าก่อน');return;}
+  alert('✅ ชำระเงินสำเร็จ!\nบันทึกการขายเรียบร้อยแล้ว');
+  clearCart();
+}
+
+function printReceipt(){
+  if(!cartItems.length){alert('กรุณาเพิ่มสินค้าในตะกร้าก่อน');return;}
+  const subtotal=cartItems.reduce((a,b)=>a+b.price*b.qty,0);
+  const vat=Math.round(subtotal*0.07);
+  const total=subtotal+vat;
+  const now=new Date();
+  document.getElementById('receipt-content').innerHTML=`
+    <h3>ร้านคอมโฟน</h3>
+    <div class="r-sub">หจก.คอมโฟน แอนด์ อิเล็คโทรนิคส์<br>เลขภาษี: 1234567890123<br>โทร: 081-234-5678</div>
+    <hr>
+    <div class="r-row"><span>เลขที่บิล:</span><span>POS-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(Math.floor(Math.random()*999)+1).padStart(3,'0')}</span></div>
+    <div class="r-row"><span>วันที่:</span><span>${now.toLocaleString('th-TH')}</span></div>
+    <hr>
+    ${cartItems.map(i=>`<div class="r-row"><span>${i.name} ×${i.qty}</span><span>฿${(i.price*i.qty).toLocaleString()}</span></div>`).join('')}
+    <hr>
+    <div class="r-row"><span>ราคารวม</span><span>฿${subtotal.toLocaleString()}</span></div>
+    <div class="r-row"><span>VAT 7%</span><span>฿${vat.toLocaleString()}</span></div>
+    <div class="r-row r-total"><span>ยอดสุทธิ</span><span>฿${total.toLocaleString()}</span></div>
+    <hr>
+    <div style="text-align:center;margin-top:8px">ขอบคุณที่ใช้บริการ 🙏</div>`;
+  document.getElementById('receipt-modal').classList.add('open');
+}
+
+// ===== FACEBOOK =====
+function selectTemplate(el,type){
+  document.querySelectorAll('.fb-template').forEach(t=>t.classList.remove('selected'));
+  el.classList.add('selected');
+  const templates={
+    service:'🔧 รับซ่อมมือถือทุกรุ่น ราคาเป็นธรรม!\n\n✅ iPhone ทุกรุ่น — เปลี่ยนจอ, แบต, กล้อง\n✅ Samsung Galaxy — ซ่อมด่วนภายใน 1 ชั่วโมง\n✅ รับประกันงานซ่อม 90 วัน\n\n📍 ร้านคอมโฟน\n📞 081-234-5678\n⏰ เปิดทุกวัน 9:00-20:00\n\n#ซ่อมมือถือ #ร้านคอมโฟน',
+    sale:'🛒 โปรโมชั่นพิเศษ! อะไหล่มือถือราคาส่ง\n\n📦 หน้าจอ iPhone ทุกรุ่น ราคาเริ่มต้น ฿1,500\n🔋 แบตเตอรี่ Samsung ราคาเริ่มต้น ฿450\n📷 กล้องมือถือ ราคาเริ่มต้น ฿800\n\n💬 สอบถามราคาเพิ่มเติม Inbox ได้เลย!\n📞 081-234-5678\n\n#อะไหล่มือถือ #ราคาส่ง #ร้านคอมโฟน',
+    review:'⭐⭐⭐⭐⭐ รีวิวจากลูกค้า\n\n"ซ่อมเร็ว ราคาเป็นธรรม ช่างฝีมือดีมาก เปลี่ยนจอ iPhone ภายใน 45 นาที ประทับใจมากครับ"\n— คุณสมชาย ทำดี\n\nขอบคุณที่ไว้วางใจร้านคอมโฟนนะครับ 🙏\n\n#รีวิว #ร้านคอมโฟน #ซ่อมมือถือ',
+    tip:'💡 เคล็ดลับ: วิธีถนอมแบตเตอรี่มือถือให้อยู่นาน\n\n1️⃣ อย่าชาร์จทิ้งไว้ข้ามคืนทุกวัน\n2️⃣ รักษาระดับแบตไว้ที่ 20-80%\n3️⃣ หลีกเลี่ยงความร้อนสูง\n4️⃣ ใช้หัวชาร์จของแท้เท่านั้น\n\n📞 มีปัญหาแบตเสื่อม โทรหาเราได้เลย 081-234-5678\n\n#เคล็ดลับมือถือ #แบตเตอรี่ #ร้านคอมโฟน'
+  };
+  document.getElementById('fb-post-text').value=templates[type]||'';
+}
+
+function generateAIPost(){
+  document.getElementById('fb-post-text').value='⏳ AI กำลังสร้างเนื้อหา...\n\n(ในระบบจริงจะเรียก Gemini API เพื่อสร้างโพสต์อัตโนมัติ)';
+  setTimeout(()=>{
+    document.getElementById('fb-post-text').value='🔧 วันนี้ทีมช่างของเราซ่อมสำเร็จ 31 งาน! 🎉\n\nผลงานเด่นวันนี้:\n✅ iPhone 15 Pro — เปลี่ยนแบตเตอรี่ เสร็จใน 30 นาที\n✅ Samsung S24 — เปลี่ยนจอ เสร็จใน 45 นาที\n✅ MacBook Air M2 — ซ่อมระบบ เสร็จใน 2 ชั่วโมง\n\nมีปัญหาอุปกรณ์? โทรหาเราได้เลย!\n📞 081-234-5678\n⏰ เปิดทุกวัน 9:00-20:00\n\n#ร้านคอมโฟน #ซ่อมมือถือ #iPhone #Samsung #MacBook';
+  },1500);
+}
+
+function schedulePost(){alert('✅ ตั้งเวลาโพสต์สำเร็จ!\nโพสต์จะถูกส่งอัตโนมัติตามเวลาที่กำหนด\n\n(ในระบบจริงจะเรียก Facebook Graph API)');}
+function postNow(){alert('✅ โพสต์สำเร็จ!\nเนื้อหาถูกส่งไปยัง Facebook Page แล้ว\n\n(ในระบบจริงจะเรียก Facebook Graph API)');}
+
+// ===== MODALS =====
+function openNewJobModal(){document.getElementById('new-job-modal').classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function submitNewJob(){
+  alert('✅ เปิดงานใหม่สำเร็จ!\nJob ID: CP-2026-0419-049\nระบบจะแจ้งเตือนช่างผ่าน LINE อัตโนมัติ');
+  closeModal('new-job-modal');
+}
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded',()=>{
+  renderJobs(jobsData);
+  renderProducts(products);
+  initCharts('dashboard');
+});
+</script>
+</body>
+</html>

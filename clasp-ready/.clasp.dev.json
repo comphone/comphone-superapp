@@ -1,0 +1,5 @@
+{
+  "scriptId": "YOUR_DEV_SCRIPT_ID_HERE",
+  "rootDir": ".",
+  "_comment": "ใช้ไฟล์นี้สำหรับ dev/test เท่านั้น — ไม่ใช้ production"
+}

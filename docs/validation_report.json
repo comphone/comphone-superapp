@@ -1,0 +1,519 @@
+{
+  "timestamp": "2026-04-18T21:05:07.536533",
+  "total": 102,
+  "passed": 102,
+  "failed": 0,
+  "score": "102/102",
+  "results": [
+    {
+      "name": "TaxEngine.gs exists",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "calculateTax() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "applyTaxToBilling() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "saveTaxReport() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "getTaxReport() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "taxAction() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "VAT7 mode supported",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "ZERO rate supported",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "EXEMPT mode supported",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "WHT calculation",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "roundMoney_ helper",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "TaxDocuments.gs exists",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "generateTaxInvoice() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "generateWhtDocument() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "cronTaxReminder() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "setupTaxReminderTrigger() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "BillingManager.gs exists",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "createBill() or billingAction()",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "generateReceiptPdf()",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "generateQrCode()",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "verifySlip()",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "VAT/Tax integration (TaxEngine)",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "PromptPay QR generation",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "customer_portal.html exists",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "No 'ร้านซ่อมมือถือ' text",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "No 'ระบบซ่อมมือถือ' text",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "COMPHONE brand present",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Job status check UI",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "QR scan feature",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "CustomerPortal.gs exists",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "getJobStatus() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "VisionAnalysis.gs exists",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "analyzeImage() or visionAction()",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Gemini API integration",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "billing_slip_verify.js exists",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "verifySlip function",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Security.gs exists",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "getSecurityStatus() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "trackFailedLogin_() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "validatePasswordPolicy_() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Auth.gs exists",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "login() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "logout() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "HealthMonitor.gs exists",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "verifyRequestToken_() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "checkRateLimit_() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "validateCorsOrigin_() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Reports.gs exists",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "getReportData_() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Revenue report",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Period-based report (week/month/quarter/year)",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "MultiBranch.gs exists",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "getCurrentBranchId() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "getBranchList() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "filterByBranch() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "ensureAllBranchIdColumns() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "getBranchSummary() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "WarrantyManager.gs exists",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "createWarranty() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "getWarrantyByJobId() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "listWarranties() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "updateWarrantyStatus() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "generateWarrantyPdfInternal_() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "getWarrantyDue() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "DatabaseIntegrity.gs exists",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "validateSchema_() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "safeWriteRow_() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "runIntegrityCheck() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "cleanAllData() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "runDatabaseMaintenance() defined",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Setup.gs exists",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "DB_TAX_REPORT schema",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "DB_WARRANTY schema",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "DB_HEALTH_LOG schema",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "DBJOBS schema",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "DB_BILLING schema",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "DB_CUSTOMERS schema",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "No 'ร้านซ่อมมือถือ' in PWA files",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "No 'ระบบซ่อมมือถือ' in PWA files",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "No 'งานซ่อมมือถือ' in PWA files",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "No 'ช่างมือถือ' in PWA files",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "No 'อะไหล่มือถือ' in PWA files",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Title = 'Comphone SuperApp AI'",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Description updated",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "manifest.json name = Comphone SuperApp AI",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "manifest.json description updated",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Router.gs exists",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Router has 'taxAction' case",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Router has 'calculateTax' case",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Router has 'getTaxReport' case",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Router has 'createWarranty' case",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Router has 'getWarrantyByJobId' case",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Router has 'listWarranties' case",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Router has 'healthCheck' case",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Router has 'getHealthHistory' case",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Router has 'getBranchList' case",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Router has 'getBranchSummary' case",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Router has 'branchAction' case",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Router has 'databaseMaintenance' case",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Router has 'validateSchema' case",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Router has 'runIntegrityCheck' case",
+      "status": "✅",
+      "detail": ""
+    },
+    {
+      "name": "Router has 'cleanAllData' case",
+      "status": "✅",
+      "detail": ""
+    }
+  ]
+}

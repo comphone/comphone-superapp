@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>ตรวจสอบสถานะงานซ่อม — COMPHONE</title>
+  <meta name="description" content="ตรวจสอบสถานะงานซ่อมคอมพิวเตอร์และมือถือ">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #1e3a5f 0%, #1e40af 100%);
+      min-height: 100vh;
+      padding: 1rem;
+    }
+    .container { max-width: 480px; margin: 0 auto; }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+      margin-bottom: 1rem;
+    }
+    .logo-area { text-align: center; padding: 1.5rem 0 1rem; color: #fff; }
+    .logo-area h1 { font-size: 1.4rem; font-weight: 800; margin-bottom: 0.25rem; }
+    .logo-area p { font-size: 0.85rem; opacity: 0.8; }
+    .input-group { margin-bottom: 1rem; }
+    .input-group label { display: block; font-size: 0.85rem; font-weight: 600; color: #374151; margin-bottom: 0.4rem; }
+    .input-group input {
+      width: 100%; border: 1.5px solid #e2e8f0; border-radius: 10px;
+      padding: 0.75rem 1rem; font-size: 1rem; outline: none; transition: border-color 0.2s;
+    }
+    .input-group input:focus { border-color: #1e40af; }
+    .btn-search {
+      width: 100%; background: #1e40af; color: #fff; border: none; border-radius: 10px;
+      padding: 0.85rem; font-size: 1rem; font-weight: 700; cursor: pointer;
+      transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    }
+    .btn-search:hover { background: #1e3a8a; }
+    .btn-search:disabled { background: #94a3b8; cursor: not-allowed; }
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.4rem 0.9rem; border-radius: 20px; font-size: 0.85rem; font-weight: 700;
+      color: #fff;
+    }
+    .progress-bar-wrap {
+      background: #e2e8f0; border-radius: 10px; height: 10px; overflow: hidden; margin: 0.75rem 0;
+    }
+    .progress-bar-fill {
+      height: 100%; border-radius: 10px; transition: width 0.8s ease;
+      background: linear-gradient(90deg, #1e40af, #3b82f6);
+    }
+    .info-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: #64748b; }
+    .info-value { font-weight: 600; color: #1e293b; text-align: right; max-width: 60%; }
+    .timeline-item {
+      display: flex; gap: 0.75rem; margin-bottom: 0.75rem; align-items: flex-start;
+    }
+    .timeline-dot {
+      width: 10px; height: 10px; border-radius: 50%; background: #1e40af;
+      margin-top: 4px; flex-shrink: 0;
+    }
+    .timeline-content { flex: 1; }
+    .timeline-event { font-size: 0.85rem; font-weight: 600; color: #1e293b; }
+    .timeline-time { font-size: 0.75rem; color: #94a3b8; }
+    .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+    .photo-item { aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #f1f5f9; }
+    .photo-item img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
+    .error-box {
+      background: #fef2f2; border: 1px solid #fca5a5; border-radius: 10px;
+      padding: 1rem; color: #dc2626; text-align: center; font-size: 0.9rem;
+    }
+    .section-title {
+      font-size: 0.9rem; font-weight: 700; color: #374151;
+      margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem;
+    }
+    .hidden { display: none !important; }
+    .spinner { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .lightbox-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .lightbox-overlay img { max-width: 95vw; max-height: 90vh; border-radius: 8px; }
+    .lightbox-close {
+      position: fixed; top: 1rem; right: 1rem; background: rgba(255,255,255,0.2);
+      border: none; color: #fff; font-size: 1.5rem; cursor: pointer; border-radius: 50%;
+      width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+    }
+    .share-btn {
+      display: flex; align-items: center; gap: 0.4rem; background: #f1f5f9;
+      border: none; border-radius: 8px; padding: 0.5rem 0.75rem;
+      font-size: 0.8rem; cursor: pointer; color: #374151;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Logo -->
+    <div class="logo-area">
+      <div style="font-size:2.5rem;">🔧</div>
+      <h1>COMPHONE</h1>
+      <p>ตรวจสอบสถานะงานซ่อมของคุณ</p>
+    </div>
+
+    <!-- Search Form -->
+    <div class="card">
+      <div class="section-title"><i class="bi bi-search"></i> ค้นหางาน</div>
+      <div class="input-group">
+        <label for="input-job-id">หมายเลขงาน <span style="color:#ef4444;">*</span></label>
+        <input type="text" id="input-job-id" placeholder="เช่น J0001" autocomplete="off"
+          style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
+      </div>
+      <div class="input-group">
+        <label for="input-phone">เบอร์โทรศัพท์ <span style="color:#94a3b8;font-weight:400;">(ไม่บังคับ)</span></label>
+        <input type="tel" id="input-phone" placeholder="เช่น 0812345678">
+      </div>
+      <button class="btn-search" id="btn-search" onclick="searchJob()">
+        <i class="bi bi-search"></i> ตรวจสอบสถานะ
+      </button>
+    </div>
+
+    <!-- Result Area -->
+    <div id="result-area"></div>
+  </div>
+
+  <!-- Lightbox -->
+  <div id="lightbox" class="lightbox-overlay hidden" onclick="closeLightbox()">
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <img id="lightbox-img" src="" alt="รูปภาพงาน">
+  </div>
+
+  <script>
+    // ── Config ──────────────────────────────────────────────
+    // เปลี่ยน GAS_URL เป็น WEB_APP_URL จริงของคุณ
+    var GAS_URL = ''; // ← ใส่ WEB_APP_URL ที่นี่ หรือ detect จาก URL params
+
+    // ── Auto-detect from URL params ──────────────────────────
+    (function() {
+      var params = new URLSearchParams(window.location.search);
+      var jobId = params.get('job') || params.get('job_id') || params.get('j');
+      var phone = params.get('phone') || params.get('p');
+      var gasUrl = params.get('api') || params.get('url');
+
+      if (gasUrl) GAS_URL = decodeURIComponent(gasUrl);
+      if (jobId) {
+        document.getElementById('input-job-id').value = jobId.toUpperCase();
+        if (phone) document.getElementById('input-phone').value = phone;
+        // Auto search ถ้ามี job_id ใน URL
+        window.addEventListener('load', function() { searchJob(); });
+      }
+    })();
+
+    // ── Search ───────────────────────────────────────────────
+    async function searchJob() {
+      var jobId = document.getElementById('input-job-id').value.trim();
+      var phone = document.getElementById('input-phone').value.trim();
+      var btn = document.getElementById('btn-search');
+      var resultArea = document.getElementById('result-area');
+
+      if (!jobId) {
+        resultArea.innerHTML = '<div class="error-box"><i class="bi bi-exclamation-circle"></i> กรุณากรอกหมายเลขงาน</div>';
+        return;
+      }
+      if (!GAS_URL) {
+        resultArea.innerHTML = '<div class="error-box"><i class="bi bi-exclamation-circle"></i> ยังไม่ได้ตั้งค่า API URL กรุณาติดต่อร้าน</div>';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="bi bi-hourglass-split spinner"></i> กำลังค้นหา...';
+      resultArea.innerHTML = '<div class="card" style="text-align:center;padding:2rem;color:#64748b;"><i class="bi bi-hourglass-split spinner" style="font-size:2rem;"></i><br><br>กำลังโหลดข้อมูล...</div>';
+
+      try {
+        var payload = { action: 'getJobStatusPublic', job_id: jobId };
+        if (phone) payload.phone = phone;
+
+        var res = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        var data = await res.json();
+
+        if (data.success) {
+          renderJobResult(data);
+          // อัปเดต URL โดยไม่ reload
+          var url = new URL(window.location.href);
+          url.searchParams.set('job', jobId);
+          window.history.replaceState({}, '', url.toString());
+        } else {
+          resultArea.innerHTML = '<div class="error-box"><i class="bi bi-exclamation-circle"></i> ' + (data.error || 'ไม่พบข้อมูล') + '</div>';
+        }
+      } catch (err) {
+        resultArea.innerHTML = '<div class="error-box"><i class="bi bi-wifi-off"></i> ไม่สามารถเชื่อมต่อได้ กรุณาลองใหม่</div>';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-search"></i> ตรวจสอบสถานะ';
+      }
+    }
+
+    // ── Render Result ────────────────────────────────────────
+    function renderJobResult(data) {
+      var job = data.job;
+      var timeline = data.timeline || [];
+      var photos = data.photos || [];
+
+      var timelineHtml = timeline.length === 0
+        ? '<div style="color:#94a3b8;font-size:0.85rem;text-align:center;padding:0.5rem;">ยังไม่มีประวัติการอัปเดต</div>'
+        : timeline.map(function(t) {
+            return '<div class="timeline-item">' +
+              '<div class="timeline-dot"></div>' +
+              '<div class="timeline-content">' +
+              '<div class="timeline-event">' + t.event + (t.note ? ' — ' + t.note : '') + '</div>' +
+              '<div class="timeline-time">' + t.time + '</div>' +
+              '</div></div>';
+          }).join('');
+
+      var photosHtml = photos.length === 0
+        ? '<div style="color:#94a3b8;font-size:0.85rem;text-align:center;padding:0.5rem;">ยังไม่มีรูปภาพ</div>'
+        : '<div class="photo-grid">' +
+          photos.map(function(p) {
+            return '<div class="photo-item"><img src="' + p.url + '" alt="' + p.type + '" loading="lazy" onclick="openLightbox(\'' + p.url + '\')" onerror="this.parentElement.style.display=\'none\'"></div>';
+          }).join('') + '</div>';
+
+      var shareUrl = window.location.origin + window.location.pathname + '?job=' + job.job_id + (GAS_URL ? '&api=' + encodeURIComponent(GAS_URL) : '');
+
+      document.getElementById('result-area').innerHTML = `
+        <!-- Status Card -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;">
+            <div>
+              <div style="font-size:0.8rem;color:#64748b;">หมายเลขงาน</div>
+              <div style="font-size:1.3rem;font-weight:800;color:#1e293b;">${job.job_id}</div>
+            </div>
+            <span class="status-badge" style="background:${job.status_color};">
+              ${job.status_icon} ${job.status_label}
+            </span>
+          </div>
+
+          <!-- Progress Bar -->
+          <div style="font-size:0.75rem;color:#64748b;margin-bottom:0.25rem;">ความคืบหน้า ${job.progress_percent}%</div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" style="width:${job.progress_percent}%;background:${job.status_color};"></div>
+          </div>
+
+          <!-- Info -->
+          <div style="margin-top:0.75rem;">
+            <div class="info-row">
+              <span class="info-label"><i class="bi bi-person"></i> ชื่อลูกค้า</span>
+              <span class="info-value">${job.customer_name}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label"><i class="bi bi-tools"></i> อาการ</span>
+              <span class="info-value">${job.symptom || '-'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label"><i class="bi bi-person-badge"></i> ช่างผู้รับผิดชอบ</span>
+              <span class="info-value">${job.technician || 'รอมอบหมาย'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label"><i class="bi bi-calendar-plus"></i> วันที่รับงาน</span>
+              <span class="info-value">${job.received_date || '-'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label"><i class="bi bi-clock-history"></i> อัปเดตล่าสุด</span>
+              <span class="info-value">${job.updated_date || '-'}</span>
+            </div>
+            ${job.estimated_price ? `
+            <div class="info-row">
+              <span class="info-label"><i class="bi bi-currency-exchange"></i> ราคาประเมิน</span>
+              <span class="info-value" style="color:#16a34a;font-weight:700;">฿${Number(job.estimated_price).toLocaleString('th-TH')}</span>
+            </div>` : ''}
+            ${job.public_note ? `
+            <div class="info-row">
+              <span class="info-label"><i class="bi bi-chat-text"></i> หมายเหตุ</span>
+              <span class="info-value">${job.public_note}</span>
+            </div>` : ''}
+          </div>
+
+          <!-- Share -->
+          <div style="margin-top:1rem;display:flex;gap:0.5rem;justify-content:flex-end;">
+            <button class="share-btn" onclick="copyShareLink('${shareUrl}')">
+              <i class="bi bi-share"></i> แชร์ลิงก์
+            </button>
+            <button class="share-btn" onclick="shareToLine('${shareUrl}','${job.job_id}','${job.status_label}')">
+              <i class="bi bi-chat-dots"></i> ส่ง LINE
+            </button>
+          </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="card">
+          <div class="section-title"><i class="bi bi-clock-history"></i> ประวัติการอัปเดต</div>
+          ${timelineHtml}
+        </div>
+
+        <!-- Photos -->
+        ${photos.length > 0 ? `
+        <div class="card">
+          <div class="section-title"><i class="bi bi-images"></i> รูปภาพงาน</div>
+          ${photosHtml}
+        </div>` : ''}
+
+        <!-- Contact -->
+        <div class="card" style="text-align:center;background:#f0f9ff;border:1px solid #bae6fd;">
+          <div style="font-size:0.85rem;color:#0369a1;margin-bottom:0.5rem;">มีคำถาม? ติดต่อร้านได้เลย</div>
+          <a href="tel:" style="display:inline-flex;align-items:center;gap:0.4rem;background:#0369a1;color:#fff;text-decoration:none;border-radius:8px;padding:0.5rem 1.25rem;font-size:0.9rem;font-weight:600;">
+            <i class="bi bi-telephone-fill"></i> โทรหาร้าน
+          </a>
+        </div>
+      `;
+    }
+
+    // ── Helpers ──────────────────────────────────────────────
+    function openLightbox(url) {
+      document.getElementById('lightbox-img').src = url;
+      document.getElementById('lightbox').classList.remove('hidden');
+    }
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.add('hidden');
+    }
+    function copyShareLink(url) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(function() { alert('คัดลอกลิงก์แล้ว!'); });
+      } else {
+        prompt('คัดลอกลิงก์นี้:', url);
+      }
+    }
+    function shareToLine(url, jobId, status) {
+      var text = encodeURIComponent('ตรวจสอบสถานะงาน ' + jobId + ' (' + status + '): ' + url);
+      window.open('https://line.me/R/msg/text/?' + text, '_blank');
+    }
+
+    // Enter key submit
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') searchJob();
+    });
+  </script>
+</body>
+</html>

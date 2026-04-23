@@ -1,0 +1,143 @@
+{
+  "_meta": {
+    "description": "COMPHONE SUPER APP AI — System Manifest (Machine-Readable Handover)",
+    "version": "v16.1.1-stable",
+    "generatedAt": "2026-04-20",
+    "commit": "32e1f63",
+    "tag": "v16.1.1-stable",
+    "branch": "main",
+    "repository": "https://github.com/comphone/comphone-superapp",
+    "status": "READY_FOR_CONTINUATION"
+  },
+  "system": {
+    "name": "COMPHONE SUPER APP AI",
+    "type": "Self-Evolving AI Dashboard (PWA)",
+    "architecture": "Single Flow + API_CONTROLLER",
+    "mainFile": "pwa/dashboard_pc.html",
+    "apiClient": "pwa/api_client.js",
+    "patchDir": "pwa/patches/"
+  },
+  "dataFlow": {
+    "description": "User Action / Timer → API_CONTROLLER.call() → Fetch API → Normalize Data → Render UI",
+    "entryPoint": "API_CONTROLLER.call()",
+    "forbidden": ["window.callApi direct call", "fetch direct call", "wrapper on callApi"]
+  },
+  "runtimeObjects": {
+    "description": "JavaScript runtime objects — ต้องโหลดจาก Browser ไม่ใช่ Native Capability ของ Agent",
+    "coreObjects": [
+      "API_CONTROLLER",
+      "DATA_INTEGRITY",
+      "safeArray",
+      "safeText",
+      "SYSTEM",
+      "REAL_HEALTH"
+    ],
+    "aiObjects": [
+      "AI_DECISION_ENGINE",
+      "AUTO_ORCHESTRATOR",
+      "PREDICTIVE_ENGINE",
+      "SYSTEM_BRAIN",
+      "IMPROVEMENT_LOOP"
+    ],
+    "safetyObjects": [
+      "SANITY_GUARD",
+      "ROLLBACK_MEMORY",
+      "FULL_ROLLBACK",
+      "TRUSTED_EXEC"
+    ],
+    "observabilityObjects": [
+      "XAI_LOG",
+      "PROD_REPLAY",
+      "ROOT_CAUSE_ENGINE",
+      "INCIDENT_MANAGER",
+      "GLOBAL_METRICS_ENGINE"
+    ],
+    "learningObjects": [
+      "FIX_LEARNING_ENGINE",
+      "FAILURE_MEMORY",
+      "ANOMALY_DETECTOR",
+      "EVOLUTION_SCORE",
+      "POLICY_ENGINE"
+    ],
+    "validationObjects": [
+      "V1600",
+      "V1610",
+      "__RUNTIME_FIX_CHECK"
+    ]
+  },
+  "patches": {
+    "description": "Patch history — ทุก patch ถูก inject เข้า dashboard_pc.html ก่อน </body>",
+    "history": [
+      { "version": "v7.0.0",  "file": "code_snapshot/v700_patch.js",  "description": "Core Reconstruction" },
+      { "version": "v8.0.0",  "file": "code_snapshot/v800_patch.js",  "description": "Self-Defending" },
+      { "version": "v8.1.0",  "file": "code_snapshot/v810_patch.js",  "description": "Anti-Fragile" },
+      { "version": "v9.0.0",  "file": "code_snapshot/v900_patch.js",  "description": "Anti-Fragile Ext" },
+      { "version": "v10.0.0", "file": "code_snapshot/v1000_patch.js", "description": "Intelligent Autonomous" },
+      { "version": "v11.0.0", "file": "code_snapshot/v1100_patch.js", "description": "Self-Learning" },
+      { "version": "v12.0.0", "file": "code_snapshot/v1200_patch.js", "description": "AI Safety" },
+      { "version": "v13.0.0", "file": "code_snapshot/v1300_patch.js", "description": "AI Governance" },
+      { "version": "v14.0.0", "file": "code_snapshot/v1400_patch.js", "description": "Production Observability" },
+      { "version": "v15.0.0", "file": "code_snapshot/v1500_patch.js", "description": "Autonomous Incident" },
+      { "version": "v16.0.0", "file": "code_snapshot/v1600_patch.js", "description": "Self-Evolving Debug System" },
+      { "version": "v16.1.1", "file": "patches/runtime_guard_v161_fix.js", "description": "Stabilization Patch — DATA_INTEGRITY + safeArray fix" }
+    ],
+    "latestPatch": "patches/runtime_guard_v161_fix.js",
+    "loadOrder": "LAST script before </body>"
+  },
+  "healthCheck": {
+    "command": "__RUNTIME_FIX_CHECK()",
+    "expectedResult": {
+      "dataIntegrityOK": true,
+      "apiPatched": true,
+      "safeArrayReady": true
+    },
+    "fullReport": "V1600.report()",
+    "validationSuite": "V1610.validate()"
+  },
+  "trustScores": {
+    "API": 0.98,
+    "CACHE": 0.95,
+    "MANUS": 0.90,
+    "ORCHESTRATOR": 0.85,
+    "HERMES": 0.85,
+    "OPENCLAW": 0.80,
+    "AI": 0.72,
+    "PREDICTOR": 0.68,
+    "minTrustToAct": 0.70,
+    "minTrustToOrchestrate": 0.75
+  },
+  "activeTimers": {
+    "_v800SyncTimer": "60s sync",
+    "_pingTimer": "30s ping"
+  },
+  "riskAreas": [
+    {
+      "area": "Cache",
+      "risk": "ข้อมูลเก่าค้างใน localStorage / ServiceWorker",
+      "mitigation": "รัน CACHE_RESET.full() หรือ localStorage.clear() + caches.keys().then(...)"
+    },
+    {
+      "area": "Runtime Load Order",
+      "risk": "Patch โหลดก่อน API_CONTROLLER ทำให้ wrap ไม่ได้",
+      "mitigation": "runtime_guard_v161_fix.js ต้องเป็น script สุดท้ายก่อน </body> เสมอ"
+    }
+  ],
+  "goldenRules": [
+    "ห้ามเพิ่ม wrapper ซ้อน window.callApi",
+    "ทุก API ต้องผ่าน API_CONTROLLER.call() เท่านั้น",
+    "ห้ามแก้หลายจุดพร้อมกัน",
+    "ต้อง validate ทุก step",
+    "ห้าม render function เรียก API โดยตรง",
+    "ห้ามแก้ runtime_guard_v161_fix.js โดยไม่จำเป็น"
+  ],
+  "readingOrder": [
+    "docs/BOOT_AGENT.md",
+    "docs/AGENT_HANDOVER.md",
+    "docs/AGENT_BOOT_SEQUENCE.md",
+    "docs/SYSTEM_ARCHITECTURE.md",
+    "docs/DEBUG_PLAYBOOK.md",
+    "memory/system_state.json",
+    "memory/FAILURE_MEMORY.json",
+    "memory/TRUST_SCORE.json"
+  ]
+}

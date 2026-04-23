@@ -1,0 +1,282 @@
+<!-- COMPHONE SUPER APP V5.5 -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>COMPHONE Photo Gallery</title>
+    <style>
+      :root {
+        --bg: #0f172a;
+        --panel: #111827;
+        --panel-2: #1f2937;
+        --line: #334155;
+        --text: #e5e7eb;
+        --muted: #94a3b8;
+        --accent: #22c55e;
+        --warn: #f59e0b;
+        --danger: #ef4444;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+      .wrap {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .hero, .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 18px;
+        margin-bottom: 16px;
+      }
+      h1, h2, h3 { margin: 0 0 10px; }
+      .muted { color: var(--muted); }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .chip {
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        font-size: 13px;
+      }
+      .toolbar {
+        display: grid;
+        grid-template-columns: 1fr 220px 220px;
+        gap: 12px;
+      }
+      .toolbar input, .toolbar select, .toolbar button {
+        width: 100%;
+        padding: 12px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: var(--panel-2);
+        color: var(--text);
+      }
+      .toolbar button {
+        cursor: pointer;
+        background: #1d4ed8;
+        border-color: #1d4ed8;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 14px;
+      }
+      .photo-card {
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .photo-card img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        display: block;
+        background: #000;
+      }
+      .photo-body {
+        padding: 12px;
+      }
+      .meta {
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+      .issue-ok { color: var(--accent); }
+      .issue-warn { color: var(--warn); }
+      .issue-danger { color: var(--danger); }
+      .section-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .collage {
+        width: 100%;
+        max-height: 540px;
+        object-fit: contain;
+        background: #000;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+      }
+      .empty {
+        padding: 18px;
+        border-radius: 12px;
+        background: var(--panel-2);
+        border: 1px dashed var(--line);
+        color: var(--muted);
+      }
+      .loading {
+        text-align: center;
+        padding: 24px;
+        color: var(--muted);
+      }
+      a.link { color: #93c5fd; text-decoration: none; }
+      @media (max-width: 860px) {
+        .toolbar { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="hero">
+        <h1>COMPHONE Photo Gallery</h1>
+        <div class="muted">Job ID: <strong id="jobIdLabel"><?= jobId ?></strong></div>
+        <div class="chips" id="summaryChips"></div>
+      </div>
+
+      <div class="panel">
+        <div class="toolbar">
+          <input id="jobIdInput" placeholder="กรอก Job ID" value="<?= jobId ?>">
+          <select id="categoryFilter">
+            <option value="ALL">ทุกหมวด</option>
+            <option value="Before">Before</option>
+            <option value="After">After</option>
+            <option value="Survey">Survey</option>
+            <option value="Equipment">Equipment</option>
+          </select>
+          <button onclick="loadGallery()">โหลดรูปงาน</button>
+        </div>
+      </div>
+
+      <div class="panel" id="collagePanel" style="display:none;">
+        <div class="section-title">
+          <h2>Before / After Collage</h2>
+          <a id="collageLink" class="link" target="_blank" rel="noopener">เปิดรูปเต็ม</a>
+        </div>
+        <img id="collageImage" class="collage" alt="Before After Collage">
+      </div>
+
+      <div id="gallerySections"></div>
+      <div id="loading" class="loading">กำลังโหลดข้อมูล...</div>
+    </div>
+
+    <script>
+      const apiBaseUrl = '<?= apiBaseUrl ?>';
+      const state = {
+        jobId: '<?= jobId ?>',
+        data: null
+      };
+
+      function buildUrl(params) {
+        const url = new URL(apiBaseUrl || window.location.href);
+        Object.keys(params).forEach(key => {
+          if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
+            url.searchParams.set(key, params[key]);
+          }
+        });
+        return url.toString();
+      }
+
+      async function loadGallery() {
+        const jobId = document.getElementById('jobIdInput').value.trim();
+        const category = document.getElementById('categoryFilter').value;
+        document.getElementById('jobIdLabel').textContent = jobId || '-';
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('gallerySections').innerHTML = '';
+        document.getElementById('collagePanel').style.display = 'none';
+
+        if (!jobId) {
+          document.getElementById('loading').textContent = 'กรุณาระบุ Job ID';
+          return;
+        }
+
+        try {
+          const resp = await fetch(buildUrl({ action: 'photoGalleryData', jobId: jobId }));
+          const json = await resp.json();
+          state.jobId = jobId;
+          state.data = json;
+          renderGallery(json, category);
+          document.getElementById('loading').style.display = 'none';
+        } catch (err) {
+          document.getElementById('loading').textContent = 'โหลดข้อมูลไม่สำเร็จ: ' + err;
+        }
+      }
+
+      function renderGallery(data, categoryFilter) {
+        const counts = data && data.counts ? data.counts : { before: 0, after: 0, survey: 0, equipment: 0, total: 0 };
+        const chips = [
+          ['Before', counts.before],
+          ['After', counts.after],
+          ['Survey', counts.survey],
+          ['Equipment', counts.equipment],
+          ['Total', counts.total]
+        ];
+        document.getElementById('summaryChips').innerHTML = chips.map(item => `<div class="chip">${item[0]}: <strong>${item[1]}</strong></div>`).join('');
+
+        if (data.latest_collage_url) {
+          document.getElementById('collagePanel').style.display = 'block';
+          document.getElementById('collageImage').src = data.latest_collage_url;
+          document.getElementById('collageLink').href = data.latest_collage_url;
+          document.getElementById('collageLink').textContent = 'เปิดรูปเต็ม';
+        }
+
+        const grouped = data.grouped || {};
+        const categories = ['Before', 'After', 'Survey', 'Equipment'];
+        const target = document.getElementById('gallerySections');
+        let html = '';
+
+        categories.forEach(category => {
+          if (categoryFilter !== 'ALL' && categoryFilter !== category) return;
+          const photos = grouped[category] || [];
+          html += `<div class="panel">`;
+          html += `<div class="section-title"><h2>${category}</h2><div class="muted">${photos.length} รูป</div></div>`;
+          if (!photos.length) {
+            html += `<div class="empty">ยังไม่มีรูปในหมวดนี้</div>`;
+          } else {
+            html += `<div class="grid">`;
+            photos.forEach(photo => {
+              const geoClass = photo.geofence && photo.geofence.status === 'OUT_OF_GEOFENCE' ? 'issue-danger' : (photo.geofence && photo.geofence.status ? 'issue-warn' : 'issue-ok');
+              html += `
+                <div class="photo-card">
+                  <a href="${photo.fileUrl}" target="_blank" rel="noopener">
+                    <img src="${photo.thumbnailUrl || photo.fileUrl}" alt="${photo.fileName || category}">
+                  </a>
+                  <div class="photo-body">
+                    <h3>${escapeHtml(photo.fileName || '-')}</h3>
+                    <div class="meta">
+                      เวลา: ${escapeHtml(photo.processedTimestamp || photo.timestamp || '-')}<br>
+                      ช่าง: ${escapeHtml(photo.techName || '-')}<br>
+                      Phase: ${escapeHtml(photo.aiPhase || '-')}<br>
+                      Geo: <span class="${geoClass}">${escapeHtml((photo.geofence && photo.geofence.status) || 'N/A')}</span>${photo.geofence && photo.geofence.distance_m ? ` (${photo.geofence.distance_m}m)` : ''}<br>
+                      Note: ${escapeHtml(photo.aiIssues || photo.aiSummary || (photo.geofence && photo.geofence.note) || '-')}
+                    </div>
+                    <div style="margin-top:10px;"><a class="link" href="${photo.fileUrl}" target="_blank" rel="noopener">เปิดรูป</a></div>
+                  </div>
+                </div>`;
+            });
+            html += `</div>`;
+          }
+          html += `</div>`;
+        });
+
+        target.innerHTML = html || '<div class="panel"><div class="empty">ไม่พบข้อมูลรูปภาพ</div></div>';
+      }
+
+      function escapeHtml(text) {
+        return String(text || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      loadGallery();
+    </script>
+  </body>
+</html>

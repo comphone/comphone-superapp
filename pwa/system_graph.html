@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COMPHONE — System Control Panel</title>
+<script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="api_client.js"></script>
+<script src="js/system_graph_data.js"></script>
+<style>
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;
+  --text:#e6edf3;--text2:#8b949e;
+  --ok:#3fb950;--warn:#d29922;--err:#f85149;
+  --blue:#58a6ff;--purple:#bc8cff;--cyan:#39d353;
+  --sidebar-w:340px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;display:flex;flex-direction:column;}
+
+/* TOPBAR */
+#topbar{height:52px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:8px;flex-shrink:0;z-index:10;}
+.logo{font-weight:700;font-size:15px;color:var(--blue);}
+.ver-badge{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:2px 10px;font-size:11px;color:var(--text2);}
+#health-badge{margin-left:auto;display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:4px 14px;}
+#health-badge .hl{font-size:11px;color:var(--text2);}
+#score-num{font-size:20px;font-weight:700;color:var(--ok);}
+#score-bar{width:80px;height:6px;background:var(--bg);border-radius:3px;overflow:hidden;}
+#score-fill{height:100%;background:var(--ok);border-radius:3px;transition:width .5s,background .5s;}
+#status-pill{display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);font-size:12px;}
+#status-dot{width:8px;height:8px;border-radius:50%;background:var(--text2);}
+.tbtn{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 12px;cursor:pointer;font-size:12px;text-decoration:none;transition:background .2s;}
+.tbtn:hover{background:var(--border);}
+.tbtn.act{background:var(--blue);border-color:var(--blue);color:#fff;}
+.tbtn.danger{background:#2d1b1b;border-color:var(--err);}
+.tbtn.danger:hover{background:var(--err);color:#fff;}
+
+/* ALERT BANNER */
+#alert-banner{display:none;background:#2d1b1b;border-bottom:2px solid var(--err);padding:8px 16px;font-size:12px;color:var(--err);flex-shrink:0;align-items:center;gap:10px;}
+#alert-banner.show{display:flex;}
+#alert-banner .ab-msg{flex:1;}
+#alert-banner .ab-close{cursor:pointer;color:var(--text2);font-size:16px;}
+
+/* STATSBAR */
+#statsbar{height:36px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:20px;flex-shrink:0;font-size:12px;}
+.si{display:flex;align-items:center;gap:5px;}
+.sd{width:8px;height:8px;border-radius:50%;}
+.sd.ok{background:var(--ok);}.sd.warn{background:var(--warn);}.sd.err{background:var(--err);}
+.sn{font-weight:600;}
+.sep{color:var(--border);}
+#lupd{margin-left:auto;color:var(--text2);font-size:11px;}
+
+/* LAYOUT */
+#layout{display:flex;flex:1;overflow:hidden;}
+
+/* GRAPH */
+#graph-area{flex:1;position:relative;overflow:hidden;}
+#graph-container{width:100%;height:100%;background:radial-gradient(ellipse at center,#1a2744 0%,#0d1117 70%);}
+
+/* LOADING */
+#loading-overlay{position:absolute;inset:0;background:rgba(13,17,23,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:20;}
+#loading-overlay.hidden{display:none;}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* VIEW CONTROLS */
+#vctrl{position:absolute;bottom:16px;left:16px;display:flex;gap:8px;z-index:5;flex-wrap:wrap;}
+.vbtn{background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:12px;}
+.vbtn:hover,.vbtn.act{background:var(--blue);border-color:var(--blue);color:#fff;}
+
+/* SIDEBAR */
+#sidebar{width:var(--sidebar-w);background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;transition:width .2s;}
+#sidebar.collapsed{width:0;}
+.ss{border-bottom:1px solid var(--border);flex-shrink:0;}
+.ssh{padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;}
+.ssh:hover{color:var(--text);}
+.ssb{padding:10px 14px;}
+.sscroll{overflow-y:auto;flex:1;}
+
+/* NODE DETAILS */
+#nd{padding:14px;}
+.ndh{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.ndi{font-size:24px;}
+.ndn{font-size:16px;font-weight:700;}
+.ndt{font-size:11px;color:var(--text2);margin-top:2px;}
+.dr{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;}
+.dr:last-child{border-bottom:none;}
+.dk{color:var(--text2);}
+.dv{font-weight:500;}
+.ssot-b{background:var(--purple);color:#000;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;}
+.dep-l{margin-top:8px;}
+.dep-i{background:var(--bg3);border-radius:4px;padding:3px 8px;margin:3px 4px 3px 0;font-size:11px;color:var(--text2);display:inline-block;}
+
+/* SUMMARY */
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 14px;}
+.sc{background:var(--bg3);border-radius:6px;padding:8px 10px;}
+.sc .sl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;}
+.sc .sv{font-size:14px;font-weight:700;margin-top:2px;}
+
+/* ACTION PANEL */
+#action-panel{padding:10px 14px;}
+.arow{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;}
+.abtn{flex:1;min-width:80px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 10px;cursor:pointer;font-size:11px;text-align:center;transition:all .2s;}
+.abtn:hover{background:var(--blue);border-color:var(--blue);color:#fff;}
+.abtn.warn-btn:hover{background:var(--warn);border-color:var(--warn);color:#000;}
+.abtn.err-btn:hover{background:var(--err);border-color:var(--err);color:#fff;}
+.abtn:disabled{opacity:.4;cursor:not-allowed;}
+#action-status{font-size:11px;color:var(--text2);margin-top:6px;min-height:16px;}
+
+/* DIAGNOSTIC */
+#dp{padding:10px 14px;}
+.di{background:var(--bg3);border-radius:6px;padding:10px;margin-bottom:8px;border-left:3px solid var(--warn);}
+.di.critical{border-left-color:var(--err);}
+.dsev{font-size:10px;font-weight:700;text-transform:uppercase;margin-bottom:4px;}
+.dsev.critical{color:var(--err);}.dsev.warning{color:var(--warn);}
+.dprob{font-size:12px;font-weight:600;margin-bottom:4px;}
+.dcause{font-size:11px;color:var(--text2);margin-bottom:4px;}
+.dfix{font-size:11px;color:var(--cyan);}
+.dempty{color:var(--text2);font-size:12px;text-align:center;padding:16px 0;}
+
+/* HEALTH LOG */
+#hlp{padding:10px 14px;}
+.li{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;}
+.li:last-child{border-bottom:none;}
+.ls{font-weight:700;}
+.ls.HEALTHY{color:var(--ok);}.ls.DEGRADED{color:var(--warn);}.ls.CRITICAL{color:var(--err);}
+.lt{color:var(--text2);}
+
+/* TREND CHARTS */
+#trend-panel{padding:10px 14px;}
+.chart-wrap{background:var(--bg3);border-radius:6px;padding:10px;margin-bottom:8px;}
+.chart-title{font-size:11px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
+canvas.trend-chart{width:100%!important;height:80px!important;}
+
+/* SNAPSHOT PANEL */
+#snap-panel{padding:10px 14px;}
+.snap-row{display:flex;gap:6px;margin-bottom:8px;}
+.snap-row input{flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:12px;}
+.snap-row input::placeholder{color:var(--text2);}
+.sbtn{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:12px;white-space:nowrap;}
+.sbtn:hover{background:var(--blue);border-color:var(--blue);color:#fff;}
+#snap-list{max-height:120px;overflow-y:auto;}
+.snap-item{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;}
+.snap-item:last-child{border-bottom:none;}
+.snap-score{font-weight:700;color:var(--ok);}
+.snap-ts{color:var(--text2);}
+
+/* LEGEND */
+#legend{padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px;}
+.lgi{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);}
+.lgd{width:10px;height:10px;border-radius:50%;}
+.lgl{width:20px;height:2px;}
+
+/* STATUS COLORS */
+.ok{color:var(--ok);}.warn{color:var(--warn);}.err{color:var(--err);}
+
+/* TOAST */
+#toast{position:fixed;bottom:20px;right:20px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 16px;font-size:12px;z-index:100;opacity:0;transition:opacity .3s;pointer-events:none;max-width:300px;}
+#toast.show{opacity:1;}
+#toast.ok-toast{border-color:var(--ok);color:var(--ok);}
+#toast.err-toast{border-color:var(--err);color:var(--err);}
+#toast.warn-toast{border-color:var(--warn);color:var(--warn);}
+
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- ALERT BANNER -->
+<div id="alert-banner">
+  <span>🚨</span>
+  <span class="ab-msg" id="ab-msg">Alert</span>
+  <span class="ab-close" onclick="dismissAlert()">✕</span>
+</div>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <span class="logo">⚡ COMPHONE</span>
+  <span class="ver-badge" id="ver-badge">v5.5.8</span>
+  <div id="status-pill"><span id="status-dot"></span><span id="status-text">กำลังเชื่อมต่อ...</span></div>
+  <div id="health-badge">
+    <span class="hl">SYSTEM HEALTH</span>
+    <span id="score-num">—</span>
+    <span style="color:var(--text2);font-size:12px">%</span>
+    <div id="score-bar"><div id="score-fill" style="width:0%"></div></div>
+  </div>
+  <button class="tbtn" id="btn-refresh" onclick="doRefresh()">↻ รีเฟรช</button>
+  <button class="tbtn" id="btn-panel" onclick="togglePanel()">☰</button>
+  <a class="tbtn" href="dashboard_pc.html">← Dashboard</a>
+</div>
+
+<!-- STATSBAR -->
+<div id="statsbar">
+  <div class="si"><span class="sd ok"></span><span class="sn" id="s-ok">0</span> OK</div>
+  <span class="sep">|</span>
+  <div class="si"><span class="sd warn"></span><span class="sn" id="s-warn">0</span> Warning</div>
+  <span class="sep">|</span>
+  <div class="si"><span class="sd err"></span><span class="sn" id="s-err">0</span> Error</div>
+  <span class="sep">|</span>
+  <div class="si">⚡ <span id="s-rt">—</span> ms</div>
+  <span class="sep">|</span>
+  <div class="si">🔄 Triggers: <span id="s-trig">—</span></div>
+  <span class="sep">|</span>
+  <div class="si">⚠ Failure Roots: <span id="s-fail">0</span></div>
+  <span id="lupd">—</span>
+</div>
+
+<!-- LAYOUT -->
+<div id="layout">
+  <!-- GRAPH AREA -->
+  <div id="graph-area">
+    <div id="graph-container"></div>
+    <div id="loading-overlay">
+      <div class="spinner"></div>
+      <div style="color:var(--text2);font-size:13px">กำลังโหลด System Graph...</div>
+    </div>
+    <!-- VIEW CONTROLS -->
+    <div id="vctrl">
+      <button class="vbtn act" id="v-normal"  onclick="setView('normal')">Normal</button>
+      <button class="vbtn"     id="v-latency" onclick="setView('latency')">Latency Heatmap</button>
+      <button class="vbtn"     id="v-failure" onclick="setView('failure')">Failure Chain</button>
+      <button class="vbtn"     id="v-ssot"    onclick="setView('ssot')">SSOT View</button>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sscroll">
+
+      <!-- NODE DETAILS -->
+      <div class="ss">
+        <div class="ssh">🔍 Node Details</div>
+        <div id="nd"><div style="color:var(--text2);font-size:12px;padding:8px 0;text-align:center;">คลิกที่ node เพื่อดูรายละเอียด</div></div>
+      </div>
+
+      <!-- SYSTEM SUMMARY -->
+      <div class="ss">
+        <div class="ssh">📊 System Summary</div>
+        <div class="sgrid">
+          <div class="sc"><div class="sl">Health</div><div class="sv" id="sum-h">—</div></div>
+          <div class="sc"><div class="sl">Version</div><div class="sv" id="sum-v">—</div></div>
+          <div class="sc"><div class="sl">Triggers</div><div class="sv" id="sum-t">—</div></div>
+          <div class="sc"><div class="sl">Response</div><div class="sv" id="sum-r">—</div></div>
+        </div>
+      </div>
+
+      <!-- ACTION PANEL -->
+      <div class="ss">
+        <div class="ssh" onclick="toggleSec('action-panel')">🎛️ Action Panel</div>
+        <div id="action-panel">
+          <div class="arow">
+            <button class="abtn" onclick="doAction('clearCache','all')">🗑️ Clear Cache</button>
+            <button class="abtn" onclick="doAction('restart','all')">🔄 Restart</button>
+            <button class="abtn" onclick="doAction('reFetch','dashboard')">⚡ Re-Fetch</button>
+          </div>
+          <div class="arow">
+            <button class="abtn warn-btn" onclick="doAction('sendAlert','',{severity:'warning',message:'Manual test alert from System Graph'})">⚠️ Send Warning</button>
+            <button class="abtn err-btn" onclick="doAction('sendAlert','',{severity:'critical',message:'CRITICAL alert from System Graph'})">🚨 Send Critical</button>
+          </div>
+          <div id="action-status"></div>
+        </div>
+      </div>
+
+      <!-- AUTO DIAGNOSTIC -->
+      <div class="ss">
+        <div class="ssh" onclick="toggleSec('dp')">🩺 Auto Diagnostic</div>
+        <div id="dp"><div class="dempty">กำลังวิเคราะห์...</div></div>
+      </div>
+
+      <!-- TREND CHARTS -->
+      <div class="ss">
+        <div class="ssh" onclick="toggleSec('trend-panel')">📈 Trend Analysis</div>
+        <div id="trend-panel">
+          <div class="chart-wrap">
+            <div class="chart-title">Health Score (24h)</div>
+            <canvas id="chart-health" class="trend-chart"></canvas>
+          </div>
+          <div class="chart-wrap">
+            <div class="chart-title">Response Latency (24h)</div>
+            <canvas id="chart-latency" class="trend-chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- HEALTH LOG -->
+      <div class="ss">
+        <div class="ssh" onclick="toggleSec('hlp')">📋 Health Log</div>
+        <div id="hlp"><div style="color:var(--text2);font-size:12px;text-align:center;padding:8px 0;">กำลังโหลด...</div></div>
+      </div>
+
+      <!-- SNAPSHOT VERSIONING -->
+      <div class="ss">
+        <div class="ssh" onclick="toggleSec('snap-panel')">📸 Snapshot Versioning</div>
+        <div id="snap-panel">
+          <div class="snap-row">
+            <input type="text" id="snap-label" placeholder="Label (optional)">
+            <button class="sbtn" onclick="saveSnapshot()">💾 Save</button>
+          </div>
+          <div class="snap-row">
+            <button class="sbtn" style="flex:1" onclick="loadSnapshots()">📋 Load History</button>
+            <button class="sbtn" onclick="downloadSnapshot()">⬇️ Export</button>
+          </div>
+          <div id="snap-list"><div style="color:var(--text2);font-size:11px;text-align:center;padding:8px 0;">กด Load History เพื่อดู</div></div>
+        </div>
+      </div>
+
+      <!-- LEGEND -->
+      <div class="ss">
+        <div class="ssh">📌 Legend</div>
+        <div id="legend">
+          <div class="lgi"><span class="lgd" style="background:#58a6ff"></span>Core</div>
+          <div class="lgi"><span class="lgd" style="background:#bc8cff"></span>Module</div>
+          <div class="lgi"><span class="lgd" style="background:#39d353"></span>Data</div>
+          <div class="lgi"><span class="lgd" style="background:var(--ok)"></span>OK</div>
+          <div class="lgi"><span class="lgd" style="background:var(--warn)"></span>Warning</div>
+          <div class="lgi"><span class="lgd" style="background:var(--err)"></span>Error</div>
+          <div class="lgi"><span class="lgd" style="background:var(--purple);border-radius:2px"></span>SSOT</div>
+          <div class="lgi"><span class="lgl" style="background:#58a6ff"></span>API Call</div>
+          <div class="lgi"><span class="lgl" style="background:#3fb950"></span>Data Flow</div>
+          <div class="lgi"><span class="lgl" style="background:#d29922"></span>Auth Flow</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+'use strict';
+let network=null,nodesDS=null,edgesDS=null,graphData=null,curView='normal',refreshTimer=null;
+let healthChart=null,latencyChart=null;
+const REFRESH_MS=5000;
+const ALERT_THRESHOLDS={health:90,latency:300,errors:0};
+
+// ── TOAST ──
+function toast(msg,type='ok',dur=3000){
+  const el=document.getElementById('toast');
+  el.textContent=msg;
+  el.className='show '+(type==='ok'?'ok-toast':type==='err'?'err-toast':'warn-toast');
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>{el.className='';},dur);
+}
+
+// ── ALERT BANNER ──
+function showAlert(msg){
+  const b=document.getElementById('alert-banner');
+  document.getElementById('ab-msg').textContent=msg;
+  b.classList.add('show');
+}
+function dismissAlert(){
+  document.getElementById('alert-banner').classList.remove('show');
+}
+
+// ── COLOR HELPERS ──
+function statusColor(s){return s==='ok'?'#3fb950':s==='warning'?'#d29922':s==='error'?'#f85149':'#8b949e';}
+function latColor(ms){if(!ms||ms<=0)return '#8b949e';if(ms<100)return '#3fb950';if(ms<300)return '#d29922';return '#f85149';}
+
+function nodeColor(n,view){
+  if(view==='latency') return latColor(n.meta&&n.meta.latency_ms?n.meta.latency_ms:0);
+  if(view==='failure'){
+    if(n.isFailureRoot) return '#f85149';
+    if(n.isAffected)    return '#d29922';
+    return '#3fb950';
+  }
+  if(view==='ssot') return n.isSSOT?'#bc8cff':'#30363d';
+  return statusColor(n.status);
+}
+
+function buildVisNode(n,view){
+  const c=nodeColor(n,view);
+  const shape=n.type==='data'?'database':n.type==='core'?'hexagon':'ellipse';
+  const lbl=n.icon+' '+n.label+(n.isSSOT?' ★':'')+(n.isFailureRoot?' ⚠':'');
+  return{
+    id:n.id,label:lbl,shape,
+    color:{background:c+'33',border:c,highlight:{background:c+'66',border:c},hover:{background:c+'44',border:c}},
+    font:{color:'#e6edf3',size:12,face:'Segoe UI'},
+    borderWidth:n.isFailureRoot?3:n.isSSOT?2:1,
+    size:n.type==='core'?30:n.type==='data'?25:22,
+    shadow:{enabled:true,color:c+'44',size:8,x:0,y:0},
+    title:buildTooltip(n),_nd:n
+  };
+}
+
+function buildTooltip(n){
+  const m=n.meta||{};
+  const c=statusColor(n.status);
+  return`<div style="background:#161b22;border:1px solid #30363d;border-radius:6px;padding:10px;font-size:12px;color:#e6edf3;min-width:180px">
+    <b>${n.icon} ${n.label}</b> ${n.isSSOT?'<span style="background:#bc8cff;color:#000;border-radius:3px;padding:1px 5px;font-size:10px">SSOT</span>':''}<br>
+    <span style="color:#8b949e">${n.type.toUpperCase()}</span><hr style="border-color:#30363d;margin:6px 0">
+    Status: <b style="color:${c}">${n.status.toUpperCase()}</b><br>
+    Version: ${m.version||'—'}<br>
+    Latency: ${m.latency_ms?m.latency_ms+'ms':'—'}<br>
+    Error Rate: ${m.error_rate||0}%<br>
+    Upstream: ${(m.upstream||[]).join(', ')||'—'}<br>
+    Downstream: ${(m.downstream||[]).join(', ')||'—'}
+  </div>`;
+}
+
+function buildVisEdge(e){
+  const tc={'API_CALL':'#58a6ff','DATA_FLOW':'#3fb950','AUTH_FLOW':'#d29922'};
+  const c=e.isFailing?'#f85149':(tc[e._type]||'#8b949e');
+  return{
+    id:e.id,from:e.from,to:e.to,label:'',
+    color:{color:c,highlight:c,hover:c,opacity:e.isFailing?1:0.6},
+    width:e.isFailing?2:1,
+    dashes:e._type==='AUTH_FLOW'?[4,4]:false,
+    arrows:{to:{enabled:true,scaleFactor:0.6}},
+    smooth:{type:'curvedCW',roundness:0.1},
+    title:e.label+(e.isFailing?' [FAILING]':'')
+  };
+}
+
+function getNetOpts(){
+  return{
+    physics:{enabled:true,solver:'forceAtlas2Based',
+      forceAtlas2Based:{gravitationalConstant:-60,centralGravity:0.01,springLength:120,springConstant:0.08,damping:0.4},
+      stabilization:{enabled:true,iterations:200,updateInterval:25,fit:false}},
+    interaction:{hover:true,tooltipDelay:200,navigationButtons:false,keyboard:false},
+    nodes:{borderWidth:1,borderWidthSelected:2},
+    edges:{selectionWidth:2},
+    layout:{randomSeed:42}
+  };
+}
+
+function initNet(data){
+  const cont=document.getElementById('graph-container');
+  cont.style.height=Math.max(400,window.innerHeight-88)+'px';
+  const vn=data.nodes.map(n=>buildVisNode(n,curView));
+  const ve=data.edges.map(e=>buildVisEdge(e));
+  nodesDS=new vis.DataSet(vn);
+  edgesDS=new vis.DataSet(ve);
+  if(network){network.destroy();network=null;}
+  network=new vis.Network(cont,{nodes:nodesDS,edges:edgesDS},getNetOpts());
+  network.once('stabilizationIterationsDone',()=>{
+    network.fit({animation:{duration:600,easingFunction:'easeInOutQuad'}});
+    document.getElementById('loading-overlay').classList.add('hidden');
+  });
+  network.on('click',p=>{
+    if(p.nodes.length>0){const n=data.nodes.find(x=>x.id===p.nodes[0]);if(n)showND(n);}
+    else clearND();
+  });
+  network.on('hoverNode',p=>{
+    const n=data.nodes.find(x=>x.id===p.node);
+    if(!n)return;
+    const rel=new Set([p.node,...(n.meta.upstream||[]),...(n.meta.downstream||[])]);
+    nodesDS.forEach(v=>nodesDS.update({id:v.id,opacity:rel.has(v.id)?1:0.25}));
+  });
+  network.on('blurNode',()=>nodesDS.forEach(v=>nodesDS.update({id:v.id,opacity:1})));
+}
+
+function updateNet(data){
+  if(!nodesDS||!edgesDS){initNet(data);return;}
+  data.nodes.forEach(n=>nodesDS.update(buildVisNode(n,curView)));
+  data.edges.forEach(e=>edgesDS.update(buildVisEdge(e)));
+}
+
+function setView(v){
+  curView=v;
+  document.querySelectorAll('.vbtn').forEach(b=>b.classList.remove('act'));
+  document.getElementById('v-'+v).classList.add('act');
+  if(!graphData)return;
+  graphData.nodes.forEach(n=>{
+    const vn=buildVisNode(n,v);
+    nodesDS.update({id:n.id,color:vn.color,label:vn.label});
+  });
+}
+
+// ── AUTO ALERT CHECK ──
+function checkAlerts(meta){
+  const score=meta.health_score||0;
+  const rt=meta.elapsed_ms||0;
+  const errs=(meta.diagnostics||[]).filter(d=>d.severity==='critical').length;
+  const msgs=[];
+  if(score<ALERT_THRESHOLDS.health) msgs.push('Health Score ต่ำ: '+score+'%');
+  if(rt>ALERT_THRESHOLDS.latency) msgs.push('Latency สูง: '+rt+'ms');
+  if(errs>ALERT_THRESHOLDS.errors) msgs.push('Critical errors: '+errs+' รายการ');
+  if(msgs.length>0){
+    showAlert(msgs.join(' | '));
+    // Auto-send LINE alert (once per session, debounced)
+    if(!window._lastAlertSent||(Date.now()-window._lastAlertSent)>300000){
+      window._lastAlertSent=Date.now();
+      callApi('controlAction',{action:'sendAlert',severity:errs>0?'critical':'warning',message:msgs.join('; ')}).catch(()=>{});
+    }
+  } else {
+    dismissAlert();
+  }
+}
+
+function updateUI(data){
+  const meta=data.meta||{},nodes=data.nodes||[];
+  const ok=nodes.filter(n=>n.status==='ok').length;
+  const warn=nodes.filter(n=>n.status==='warning').length;
+  const err=nodes.filter(n=>n.status==='error').length;
+  document.getElementById('s-ok').textContent=ok;
+  document.getElementById('s-warn').textContent=warn;
+  document.getElementById('s-err').textContent=err;
+  document.getElementById('s-rt').textContent=meta.elapsed_ms||'—';
+  document.getElementById('s-trig').textContent=meta.triggers?(meta.triggers.count+(meta.triggers.active?' ✓':'')):' —';
+  document.getElementById('s-fail').textContent=(meta.failure_roots||[]).length;
+  document.getElementById('lupd').textContent='อัปเดต: '+new Date().toLocaleString('th-TH',{dateStyle:'short',timeStyle:'medium'});
+
+  const score=meta.health_score||0;
+  document.getElementById('score-num').textContent=score;
+  const fill=document.getElementById('score-fill');
+  fill.style.width=score+'%';
+  const sc=score>=80?'#3fb950':score>=50?'#d29922':'#f85149';
+  fill.style.background=sc;
+  document.getElementById('score-num').style.color=sc;
+
+  const hs=(meta.health_status||'unknown').toUpperCase();
+  document.getElementById('status-text').textContent=hs;
+  document.getElementById('status-dot').style.background=hs==='HEALTHY'?'#3fb950':hs==='DEGRADED'?'#d29922':hs==='CRITICAL'?'#f85149':'#8b949e';
+  document.getElementById('ver-badge').textContent='v'+(meta.version||'5.5.8');
+
+  document.getElementById('sum-h').textContent=hs;
+  document.getElementById('sum-h').className='sv '+(hs==='HEALTHY'?'ok':hs==='DEGRADED'?'warn':'err');
+  document.getElementById('sum-v').textContent=meta.version||'5.5.8';
+  document.getElementById('sum-t').textContent=meta.triggers?meta.triggers.count+' active':'—';
+  document.getElementById('sum-r').textContent=(meta.elapsed_ms||'—')+' ms';
+
+  renderDiag(meta.diagnostics||[]);
+  renderLogs(meta.recent_logs||[]);
+  checkAlerts(meta);
+  updateTrendCharts(meta);
+}
+
+function renderDiag(diags){
+  const el=document.getElementById('dp');
+  if(!diags.length){el.innerHTML='<div class="dempty">✅ ไม่พบปัญหา — ระบบทำงานปกติ</div>';return;}
+  el.innerHTML=diags.map(d=>`
+    <div class="di ${d.severity}">
+      <div class="dsev ${d.severity}">${d.severity==='critical'?'🔴':'🟡'} ${d.severity.toUpperCase()} — ${d.node}</div>
+      <div class="dprob">${d.problem}</div>
+      <div class="dcause">สาเหตุ: ${d.cause}</div>
+      <div class="dfix">วิธีแก้: ${d.fix}</div>
+    </div>`).join('');
+}
+
+function renderLogs(logs){
+  const el=document.getElementById('hlp');
+  if(!logs.length){el.innerHTML='<div style="color:var(--text2);font-size:12px;text-align:center;padding:8px 0;">ไม่มีข้อมูล log</div>';return;}
+  el.innerHTML=logs.map(l=>{
+    const ts=l.timestamp?new Date(l.timestamp).toLocaleTimeString('th-TH'):'—';
+    return`<div class="li"><span class="ls ${l.status}">${l.status}</span><span>${l.response_time_ms||'—'}ms</span><span class="lt">${ts}</span></div>`;
+  }).join('');
+}
+
+// ── TREND CHARTS ──
+const trendData={health:[],latency:[],labels:[]};
+
+function updateTrendCharts(meta){
+  const now=new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+  trendData.labels.push(now);
+  trendData.health.push(meta.health_score||0);
+  trendData.latency.push(meta.elapsed_ms||0);
+  if(trendData.labels.length>24){trendData.labels.shift();trendData.health.shift();trendData.latency.shift();}
+
+  const hc=document.getElementById('chart-health');
+  const lc=document.getElementById('chart-latency');
+  const chartOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{display:false,grid:{display:false}},y:{display:true,grid:{color:'#30363d'},ticks:{color:'#8b949e',font:{size:9}}}}};
+
+  if(!healthChart){
+    healthChart=new Chart(hc,{type:'line',data:{labels:trendData.labels,datasets:[{data:trendData.health,borderColor:'#3fb950',backgroundColor:'#3fb95022',fill:true,tension:0.4,pointRadius:0,borderWidth:2}]},options:{...chartOpts,scales:{...chartOpts.scales,y:{...chartOpts.scales.y,min:0,max:100}}}});
+  } else {
+    healthChart.data.labels=trendData.labels;
+    healthChart.data.datasets[0].data=trendData.health;
+    healthChart.update('none');
+  }
+
+  if(!latencyChart){
+    latencyChart=new Chart(lc,{type:'line',data:{labels:trendData.labels,datasets:[{data:trendData.latency,borderColor:'#58a6ff',backgroundColor:'#58a6ff22',fill:true,tension:0.4,pointRadius:0,borderWidth:2}]},options:chartOpts});
+  } else {
+    latencyChart.data.labels=trendData.labels;
+    latencyChart.data.datasets[0].data=trendData.latency;
+    latencyChart.update('none');
+  }
+}
+
+async function loadTrendFromGAS(){
+  try{
+    const r=await callApi('getHealthTrend',{limit:24});
+    if(r&&r.success&&r.trend&&r.trend.length>0){
+      trendData.labels=r.trend.map(t=>t.timestamp?new Date(t.timestamp).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}):'—');
+      trendData.health=r.trend.map(t=>t.health_score||0);
+      trendData.latency=r.trend.map(t=>t.response_time_ms||0);
+      if(healthChart){healthChart.data.labels=trendData.labels;healthChart.data.datasets[0].data=trendData.health;healthChart.update();}
+      if(latencyChart){latencyChart.data.labels=trendData.labels;latencyChart.data.datasets[0].data=trendData.latency;latencyChart.update();}
+    }
+  }catch(e){console.warn('[loadTrendFromGAS]',e);}
+}
+
+// ── ACTION PANEL ──
+async function doAction(action,module,extra){
+  const btns=document.querySelectorAll('.abtn');
+  btns.forEach(b=>b.disabled=true);
+  const st=document.getElementById('action-status');
+  st.textContent='⏳ กำลังดำเนินการ...';
+  st.style.color='var(--text2)';
+  try{
+    const payload={action,module,...(extra||{})};
+    // Auto-heal: retry 2 times
+    let r=null,attempt=0;
+    while(attempt<2){
+      try{r=await callApi('controlAction',payload);break;}
+      catch(e){attempt++;if(attempt>=2)throw e;await new Promise(res=>setTimeout(res,1000));}
+    }
+    if(r&&r.success){
+      st.textContent='✅ '+( r.message||'สำเร็จ');
+      st.style.color='var(--ok)';
+      toast('✅ '+action+' สำเร็จ','ok');
+      setTimeout(doRefresh,1500);
+    } else {
+      st.textContent='❌ '+(r&&r.error?r.error:'ล้มเหลว');
+      st.style.color='var(--err)';
+      toast('❌ '+action+' ล้มเหลว','err');
+    }
+  }catch(e){
+    st.textContent='❌ '+e.message;
+    st.style.color='var(--err)';
+    toast('❌ Error: '+e.message,'err');
+  }
+  btns.forEach(b=>b.disabled=false);
+  setTimeout(()=>{st.textContent='';},5000);
+}
+
+// ── NODE DETAILS ──
+function showND(n){
+  const m=n.meta||{};
+  const c=statusColor(n.status);
+  const lc=latColor(m.latency_ms||0);
+  const up=(m.upstream||[]).map(id=>`<span class="dep-i">${id}</span>`).join('')||'<span style="color:var(--text2)">—</span>';
+  const dn=(m.downstream||[]).map(id=>`<span class="dep-i">${id}</span>`).join('')||'<span style="color:var(--text2)">—</span>';
+  document.getElementById('nd').innerHTML=`
+    <div class="ndh">
+      <span class="ndi">${n.icon}</span>
+      <div>
+        <div class="ndn">${n.label} ${n.isSSOT?'<span class="ssot-b">SSOT</span>':''}</div>
+        <div class="ndt">${n.type.toUpperCase()} · ${n.group.toUpperCase()}</div>
+      </div>
+    </div>
+    <div class="dr"><span class="dk">Status</span><span class="dv" style="color:${c}">${n.status.toUpperCase()}</span></div>
+    <div class="dr"><span class="dk">Version</span><span class="dv">${m.version||'—'}</span></div>
+    <div class="dr"><span class="dk">Latency</span><span class="dv" style="color:${lc}">${m.latency_ms?m.latency_ms+'ms':'—'}</span></div>
+    <div class="dr"><span class="dk">Error Rate</span><span class="dv">${m.error_rate||0}%</span></div>
+    ${m.users_count?`<div class="dr"><span class="dk">Users</span><span class="dv">${m.users_count}</span></div>`:''}
+    <div class="dr"><span class="dk">Failure Root</span><span class="dv">${n.isFailureRoot?'⚠ YES':'No'}</span></div>
+    <div class="dr"><span class="dk">Affected</span><span class="dv">${n.isAffected?'⚡ YES':'No'}</span></div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text2)">Upstream</div>
+    <div class="dep-l">${up}</div>
+    <div style="margin-top:8px;font-size:11px;color:var(--text2)">Downstream</div>
+    <div class="dep-l">${dn}</div>
+    <div style="margin-top:8px;font-size:10px;color:var(--text2)">Updated: ${m.last_updated?new Date(m.last_updated).toLocaleString('th-TH'):'—'}</div>`;
+}
+
+function clearND(){
+  document.getElementById('nd').innerHTML='<div style="color:var(--text2);font-size:12px;padding:8px 0;text-align:center;">คลิกที่ node เพื่อดูรายละเอียด</div>';
+}
+
+// ── SNAPSHOT ──
+async function saveSnapshot(){
+  if(!graphData){toast('ยังไม่มีข้อมูล graph','warn');return;}
+  const label=document.getElementById('snap-label').value||('snapshot_'+new Date().toISOString().slice(0,16));
+  const snap={
+    timestamp:new Date().toISOString(),
+    version:graphData.meta&&graphData.meta.version?{version:graphData.meta.version}:{version:'5.5.8'},
+    health_score:graphData.meta&&graphData.meta.health_score?graphData.meta.health_score:0,
+    health_status:graphData.meta&&graphData.meta.health_status?graphData.meta.health_status:'unknown',
+    stats:{ok_nodes:graphData.nodes.filter(n=>n.status==='ok').length,warn_nodes:graphData.nodes.filter(n=>n.status==='warning').length,error_nodes:graphData.nodes.filter(n=>n.status==='error').length},
+    nodes:graphData.nodes.map(n=>({id:n.id,status:n.status,version:n.meta&&n.meta.version?n.meta.version:'—',latency_ms:n.meta&&n.meta.latency_ms?n.meta.latency_ms:0,error_rate:n.meta&&n.meta.error_rate?n.meta.error_rate:0,isSSOT:n.isSSOT,isFailureRoot:n.isFailureRoot})),
+    diagnostics:graphData.meta&&graphData.meta.diagnostics?graphData.meta.diagnostics:[],
+    triggers:graphData.meta&&graphData.meta.triggers?graphData.meta.triggers:{}
+  };
+  // Save to GAS Sheets
+  try{
+    const r=await callApi('storeSnapshot',{label,snapshot:snap});
+    if(r&&r.success){toast('✅ Snapshot บันทึกลง Google Sheets: '+r.id,'ok');}
+    else{toast('⚠️ บันทึก GAS ไม่สำเร็จ: '+(r&&r.error?r.error:'unknown'),'warn');}
+  }catch(e){toast('⚠️ GAS offline — บันทึกเฉพาะ local','warn');}
+  document.getElementById('snap-label').value='';
+}
+
+function downloadSnapshot(){
+  if(!graphData){toast('ยังไม่มีข้อมูล graph','warn');return;}
+  const snap={timestamp:new Date().toISOString(),health_score:graphData.meta&&graphData.meta.health_score?graphData.meta.health_score:0,nodes:graphData.nodes.map(n=>({id:n.id,status:n.status,isSSOT:n.isSSOT}))};
+  const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='comphone_snapshot_'+new Date().toISOString().slice(0,19).replace(/:/g,'-')+'.json';
+  a.click();URL.revokeObjectURL(url);
+  toast('✅ Export สำเร็จ','ok');
+}
+
+async function loadSnapshots(){
+  const el=document.getElementById('snap-list');
+  el.innerHTML='<div style="color:var(--text2);font-size:11px;text-align:center;padding:8px 0;">⏳ กำลังโหลด...</div>';
+  try{
+    const r=await callApi('getSnapshots',{limit:10});
+    if(r&&r.success&&r.snapshots&&r.snapshots.length>0){
+      el.innerHTML=r.snapshots.map(s=>{
+        const ts=s.timestamp?new Date(s.timestamp).toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'}):'—';
+        const score=Number(s.health_score||0);
+        const sc=score>=80?'var(--ok)':score>=50?'var(--warn)':'var(--err)';
+        return`<div class="snap-item">
+          <span style="color:var(--text2);font-size:10px">${s.label||s.id||'—'}</span>
+          <span class="snap-score" style="color:${sc}">${score}%</span>
+          <span class="snap-ts">${ts}</span>
+        </div>`;
+      }).join('');
+    } else {
+      el.innerHTML='<div style="color:var(--text2);font-size:11px;text-align:center;padding:8px 0;">ยังไม่มี snapshot</div>';
+    }
+  }catch(e){
+    el.innerHTML='<div style="color:var(--err);font-size:11px;text-align:center;padding:8px 0;">โหลดไม่สำเร็จ</div>';
+  }
+}
+
+// ── MAIN REFRESH ──
+async function doRefresh(){
+  document.getElementById('btn-refresh').textContent='↻ กำลังโหลด...';
+  try{
+    const data=await buildSystemGraph();
+    graphData=data;
+    if(!network)initNet(data);else updateNet(data);
+    updateUI(data);
+  }catch(e){
+    console.error('[doRefresh]',e);
+    toast('❌ โหลดข้อมูลไม่สำเร็จ: '+e.message,'err');
+  }
+  document.getElementById('btn-refresh').textContent='↻ รีเฟรช';
+}
+
+function togglePanel(){
+  document.getElementById('sidebar').classList.toggle('collapsed');
+  document.getElementById('btn-panel').classList.toggle('act');
+  setTimeout(()=>{if(network)network.fit({animation:true});},250);
+}
+
+function toggleSec(id){
+  const el=document.getElementById(id);
+  if(el)el.style.display=el.style.display==='none'?'':'none';
+}
+
+document.addEventListener('DOMContentLoaded',async()=>{
+  document.getElementById('graph-container').style.height=Math.max(400,window.innerHeight-88)+'px';
+  await doRefresh();
+  loadTrendFromGAS();
+  refreshTimer=setInterval(doRefresh,REFRESH_MS);
+});
+
+window.addEventListener('resize',()=>{
+  document.getElementById('graph-container').style.height=Math.max(400,window.innerHeight-88)+'px';
+  if(network)network.fit();
+});
+</script>
+</body>
+</html>
