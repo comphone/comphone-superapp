@@ -72,6 +72,7 @@ function loginUser(username, password) {
 
       try { logActivity('LOGIN', rowUser, 'เข้าสู่ระบบสำเร็จ role=' + role); } catch(e) {}
       try { resetFailedLogin_(rowUser); } catch(e) {}
+      try { cleanupExpiredSessions_(); } catch(e) {}  // 🧹 Cleanup ทุกครั้งที่ login
 
       var forceChangePw = false;
       var colForce = idx['force_change_pw'] !== undefined ? idx['force_change_pw'] : -1;
@@ -92,8 +93,44 @@ function loginUser(username, password) {
     }
 
     return { success: false, error: 'ไม่พบ username นี้ในระบบ' };
-  } catch (e) {
+    } catch (e) {
     return { success: false, error: e.toString() };
+  }
+}
+
+// ============================================================
+// 🧹 Cleanup Expired Sessions — เรียกทุกครั้งที่ login
+// ============================================================
+function cleanupExpiredSessions_() {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var all   = props.getProperties();
+    var now   = new Date().getTime();
+    var deleted = 0;
+
+    for (var key in all) {
+      // ลบเฉพาะ SESSION_ ที่หมดอายุ
+      if (key.indexOf('SESSION_') !== 0) continue;
+      try {
+        var data = JSON.parse(all[key]);
+        var expires = new Date(data.expires_at).getTime();
+        if (expires < now) {
+          props.deleteProperty(key);
+          deleted++;
+        }
+      } catch (e) {
+        // JSON ไม่สมบูรณ์ → ลบเลย
+        props.deleteProperty(key);
+        deleted++;
+      }
+    }
+    if (deleted > 0) {
+      Logger.log('🧹 Cleaned up ' + deleted + ' expired sessions');
+    }
+    return deleted;
+  } catch (e) {
+    Logger.log('cleanupExpiredSessions error: ' + e);
+    return 0;
   }
 }
 
