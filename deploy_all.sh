@@ -1,7 +1,11 @@
 #!/bin/bash
 # COMPHONE SUPER APP — FULL AUTO DEPLOY PIPELINE
 # PHASE 24: Hardened Backup System + Deploy Pipeline
+# PHASE 25.5: OAuth2 env vars + CLASP_TOKEN auto-gen
 # RULES: No set -e on clasp, retry logic, timeout, verify, rclone backup
+
+# Load env vars (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN, CLASP_TOKEN)
+if [ -f "$HOME/.bashrc" ]; then source "$HOME/.bashrc" 2>/dev/null; fi
 
 # PATH — ให้หา rclone ที่ ~/bin ด้วย
 export PATH="$HOME/bin:$PATH"

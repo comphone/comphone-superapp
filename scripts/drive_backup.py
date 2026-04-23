@@ -31,28 +31,39 @@ def get_credentials():
 
 def upload_file_to_drive(local_path, drive_folder_id="1cExEgiIwmhBxZvLQpv10Wvq71ZTp4PfN"):
     """
-    Upload file ไปยัง Google Drive โดยใช้ Google Drive API
-    ต้องการ pip install google-api-python-client
+    Upload file ไปยัง Google Drive โดยใช้ OAuth2 จาก Environment Variables
+    ต้องการ: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN
     """
     try:
-        from google.oauth2 import service_account
+        from google.oauth2.credentials import Credentials
+        from google.auth.transport.requests import Request
         from googleapiclient.discovery import build
         from googleapiclient.http import MediaFileUpload
     except ImportError:
         print("ERROR: google-api-python-client ยังไม่ได้ติดตั้ง")
-        print("รัน: pip install google-api-python-client google-auth-httplib2")
+        print("รัน: pip install google-auth google-api-python-client")
         return False
 
-    cred_path = get_credentials()
-    if not cred_path:
-        print("ERROR: ไม่พบ Service Account credentials")
-        print("คำแนะนำ: วาง credentials JSON ไว้ที่ scripts/service_account.json")
+    # OAuth2 from Environment Variables
+    client_id = os.environ.get('GOOGLE_CLIENT_ID')
+    client_secret = os.environ.get('GOOGLE_CLIENT_SECRET')
+    refresh_token = os.environ.get('GOOGLE_REFRESH_TOKEN')
+
+    if not (client_id and client_secret and refresh_token):
+        print("ERROR: ไม่พบ OAuth2 env vars (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN)")
         return False
 
     try:
-        SCOPES = ['https://www.googleapis.com/auth/drive.file']
-        credentials = service_account.Credentials.from_service_account_file(
-            cred_path, scopes=SCOPES)
+        SCOPES = ['https://www.googleapis.com/auth/drive']
+        credentials = Credentials(
+            token=None,
+            refresh_token=refresh_token,
+            token_uri='https://oauth2.googleapis.com/token',
+            client_id=client_id,
+            client_secret=client_secret,
+            scopes=SCOPES,
+        )
+        credentials.refresh(Request())
         service = build('drive', 'v3', credentials=credentials)
 
         file_name = os.path.basename(local_path)
