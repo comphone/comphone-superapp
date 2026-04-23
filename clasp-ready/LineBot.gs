@@ -256,6 +256,13 @@ function handleStatus(classification, text, userId, userName) {
 
 function handleWorkNote(classification, text, userId, userName) {
   var jobId = classification.jobId || extractJobIdV55_(text);
+  var techName = userName || userId || 'LINE_TECH';
+
+  // Trigger reassign pending photos when JobID is mentioned
+  if (jobId && typeof reassignPendingPhotos === 'function') {
+    reassignPendingPhotos(techName, jobId);
+  }
+
   if (!jobId) return null;
 
   var result = callRouterActionV55_('addQuickNote', {
@@ -268,24 +275,33 @@ function handleWorkNote(classification, text, userId, userName) {
     return createTextMessage('บันทึกหมายเหตุไม่สำเร็จ: ' + (result && result.error || 'unknown'));
   }
 
-  return createTextMessage('บันทึกหมายเหตุแล้ว\nJobID: ' + jobId);
+  return createTextMessage('บันทึกหมายเหตุแล้ว\\nJobID: ' + jobId);
 }
 
 function handlePhotoReport(message, classification, userId, userName) {
   var jobId = classification.jobId || '';
-  if (!jobId) {
-    return createTextMessage('รับรูปแล้ว แต่ยังไม่พบ JobID กรุณาส่งรูปพร้อมข้อความ เช่น J0001 ถึงหน้างาน');
-  }
+  var techName = userName || userId || 'LINE_TECH';
 
   if (typeof queuePhotoFromLINE === 'function') {
-    var queueResult = queuePhotoFromLINE(message.id || '', jobId, userName || userId || 'LINE');
+    var queueResult = queuePhotoFromLINE(message.id || '', jobId, techName);
+
     if (queueResult && !queueResult.error) {
-      return createTextMessage('รับรูปเข้าคิวเรียบร้อย\nJobID: ' + jobId + '\nQueueID: ' + (queueResult.queueId || '-') + '\n' + (queueResult.message || 'รอประมวลผลอัตโนมัติ'));
+      if (!jobId) {
+        return createTextMessage(
+          '📸 รับรูปแล้ว เก็บเข้าระบบชั่วคราวเรียบร้อย (Pending Queue)\n' +
+          'กรุณาส่ง JobID หรือข้อความงานต่อไป\n' +
+          'ระบบจะใช้ AI จับคู่รูปให้อัตโนมัติเมื่อพบ JobID\n\n' +
+          'QueueID: ' + (queueResult.queueId || '-') + '\n' +
+          (queueResult.message || 'กำลังรอการจัดหมวดหมู่')
+        );
+      } else {
+        return createTextMessage('รับรูปเข้าคิวเรียบร้อย\nJobID: ' + jobId + '\nQueueID: ' + (queueResult.queueId || '-') + '\n' + (queueResult.message || 'รอประมวลผลอัตโนมัติ'));
+      }
     }
     return createTextMessage('รับรูปแล้ว แต่เข้าคิวไม่สำเร็จ: ' + (queueResult && queueResult.error || 'unknown'));
   }
 
-  return createTextMessage('รับรูปเรียบร้อย\nJobID: ' + jobId + '\nหมายเหตุ: ยังไม่เปิดใช้งานคิวรูปภาพอัตโนมัติในสคริปต์นี้');
+  return createTextMessage('📸 รับรูปเรียบร้อย (Buffer Mode)\nกรุณาส่ง JobID เพื่อให้ระบบเชื่อมโยงรูปภาพ');
 }
 
 // ── GROUP ID HELPERS ──
