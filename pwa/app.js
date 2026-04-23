@@ -1127,28 +1127,8 @@ async function callAPI(action, params = {}) {
     return null;
   }
 }
-// callApi(payload) — alias สำหรับ crm_attendance.js, purchase_order.js, dashboard.js
-window.callApi = async function(payload) {
-  payload = payload || {};
-  const action = payload.action;
-  if (!action) return { success: false, error: 'ไม่พบ action ใน payload' };
-
-  // ลบ action ออกจาก payload เพื่อส่งใน AI_EXECUTOR
-  const params = Object.assign({}, payload);
-  delete params.action;
-
-  try {
-    const method = isReadAction(action) ? 'query' : 'execute';
-    const data = await window.AI_EXECUTOR[method]({ action: action, payload: params });
-    if (data && data._headers) delete data._headers;
-    return data;
-  } catch (e) {
-    if (e.message && e.message.includes('APPROVAL_REQUIRED')) {
-      return { success: false, error: 'APPROVAL_REQUIRED', message: 'กรุณาขออนุมัติการดำเนินการ' };
-    }
-    return { success: false, error: e.message };
-  }
-};
+// callApi(payload) — REMOVED: api_client.js is the Single Source of Truth for window.callApi
+// See api_client.js line 427 — do NOT re-add window.callApi override here
 
 // ===== OFFLINE QUEUE =====
 function saveOfflineAction(action) {
