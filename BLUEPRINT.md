@@ -234,10 +234,10 @@ comphone-superapp/
 | `GOOGLE_REFRESH_TOKEN` | OAuth2 สำหรับ Drive sync |
 
 ### 8.3 GitHub Pages Auto-Deploy
-- **Trigger:** Push to `main` branch
-- **Action:** `auto-deploy.yml` uploads `./pwa/` as site root
-- **Result:** Files served at `https://comphone.github.io/comphone-superapp/`
-- **Important:** Paths in code use `/comphone-superapp/` NOT `/comphone-superapp/pwa/`
+- **Trigger:** Push to `main` branch (paths: `pwa/**`, `memory/session.md`)
+- **Action:** `auto-deploy.yml` builds and deploys to GitHub Pages
+- **Result:** Files served from repo root — PWA accessible at `https://comphone.github.io/comphone-superapp/pwa/`
+- **Important:** GitHub Pages serves from repo root. PWA is at `/comphone-superapp/pwa/` (NOT `/comphone-superapp/`). All paths in code MUST include `/pwa/`.
 
 ---
 
@@ -274,14 +274,18 @@ All these MUST match on deploy:
 
 | ปัญหา | สาเหตุ | แก้ไข |
 |-------|--------|-------|
-| Mobile PWA 404 | Path `/comphone-superapp/pwa/` ผิด (GitHub Pages ไม่มี /pwa/) | แก้ 5 ไฟล์: sw.js, manifest.json, index.html, app.js, push_notifications.js |
+| Mobile "เชื่อมต่อไม่ได้" | auth.js + api_client.js ใช้ POST → GAS 302 redirect ฆ่า body | เปลี่ยน POST → GET ทั้งหมด (auth.js, api_client.js, error_boundary.js) |
+| PWA Path สับสน | GitHub Pages serve จาก repo root → PWA อยู่ที่ `/pwa/` ไม่ใช่ root | คง path `/comphone-superapp/pwa/` (ไม่ตัด /pwa/ ออก) |
+| Version เก่า v5.5 | index.html hardcode "v5.5" | แก้เป็น v5.6.6 |
 | SW IndexedDB error | DB version mismatch (SW v2, offline_db v1) | Bump offline_db.js to v2, sync stores |
 | gas_config.js URL ผิด | Deploy จับ URL ผิด deployment | แก้ URL ตรง |
 | AI Validation 12/16 fail | Recursive test() bug + typeof mismatch | แก้ validation script, add context-aware skip |
 | Dashboard "กำลังพัฒนา" | loadSection() แสดง placeholder | เปลี่ยนเป็น live data loaders (6 sections) |
 | SW timeout 3s | API ใช้เวลา 11s แต่ timeout 3s | เพิ่มเป็น 15s |
-| POST → 405 error | GAS redirect POST → GET (302) | เปลี่ยนเป็น GET ทั้งหมด |
+| POST → 405 error (PC) | GAS redirect POST → GET (302) | เปลี่ยนเป็น GET ทั้งหมด (dashboard_pc.html, executive_dashboard.html) |
 | system_graph_data.js 404 | ไฟล์ไม่มี | สร้าง stub file |
+| 10 ไฟล์ blueprint ซ้ำซ้อน | 47 ไฟล์เอกสารกระจัดกระจาย | รวมเป็น BLUEPRINT.md ไฟล์เดียว + ลบ 10 ไฟล์ซ้ำ |
+| Google Drive backup เก่า | SA ไม่มี write quota | ใช้ OAuth2 upload + ลบ backup เก่า |
 
 ### ⚠️ Current Watchlist
 
@@ -290,6 +294,8 @@ All these MUST match on deploy:
 | Browser cache | ⚠️ | ผู้ใช้ต้อง Hard Refresh หลัง deploy |
 | Large data response | ⚠️ | getDashboardData ~11s, ต้อง optimize |
 | AI Validation on non-dashboard | ✅ | Schema tests skip gracefully |
+| POST calls in PWA | ✅ | Zero POST remaining — all GET now |
+| Google Drive SA quota | ⚠️ | SA ไม่มี write quota — ต้องใช้ OAuth2 สำหรับ upload |
 
 ---
 
