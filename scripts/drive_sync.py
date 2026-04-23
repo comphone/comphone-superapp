@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 """
-drive_sync.py — COMPHONE SUPER APP V5.5
-=========================================================
+drive_sync.py — COMPHONE SUPER APP V5.6.6
+==========================================================
 Sync โค้ดและ session.md ขึ้น Google Drive อัตโนมัติ
 
-รองรับ 2 วิธี Authentication:
-  1. Service Account (แนะนำสำหรับ CI/CD) — ไม่ต้อง login
-  2. OAuth2 (สำหรับใช้งานส่วนตัว) — login ครั้งแรกครั้งเดียว
+รองรับ OAuth2 จาก Environment Variables เท่านั้น (ห้ามใช้ Service Account):
+  - GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN
+  - Fallback: local token file (~/.comphone/token.json)
 
 ใช้งาน:
   python3 drive_sync.py --session session.md              # sync session เท่านั้น
   python3 drive_sync.py --code ./pwa ./clasp-ready        # sync โค้ด
   python3 drive_sync.py --all                             # sync ทุกอย่าง
   python3 drive_sync.py --dry-run --all                   # ทดสอบ
-  python3 drive_sync.py --setup                           # ตั้งค่าครั้งแรก
 """
 
 import os
@@ -51,7 +50,7 @@ CACHE_FILE  = Path.home() / '.comphone' / 'drive_cache.json'
 
 DEFAULT_CONFIG = {
     'auth_method':        'oauth2',          # 'oauth2' หรือ 'service_account'
-    'service_account_file': '',              # path ไปยัง service account JSON
+    'service_account_file': '',              # DEPRECATED — ห้ามใช้
     'credentials_file':   'credentials.json', # OAuth2 credentials
     'token_file':         str(Path.home() / '.comphone' / 'token.json'),
     'root_folder_name':   'COMPHONE_Backups',
@@ -62,7 +61,7 @@ DEFAULT_CONFIG = {
     'watch_dirs':         ['pwa', 'clasp-ready', 'memory', 'scripts'],
     'watch_extensions':   ['.js', '.gs', '.html', '.css', '.json', '.md', '.yml'],
     'ignore_patterns':    ['.git', 'node_modules', '__pycache__', 'backups'],
-    'version':            'v5.5.8',
+    'version':            'v5.6.6',
 }
 
 # ─── Auth ───────────────────────────────────────────────────
@@ -322,49 +321,27 @@ def sync_code(service, config, repo_path, version=None, dry_run=False):
 # ─── Setup ──────────────────────────────────────────────────
 
 def run_setup():
-    """แสดงขั้นตอนการตั้งค่าครั้งแรก"""
+    """แสดงขั้นตอนการตั้งค่าครั้งแรก — OAuth2 ONLY"""
     print(f"""
 {C.BOLD}{'='*60}
- COMPHONE Drive Sync — Setup Guide
+ COMPHONE Drive Sync — Setup Guide (OAuth2 ONLY)
 {'='*60}{C.RESET}
 
-{C.CYAN}วิธีที่ 1: Service Account (แนะนำสำหรับ CI/CD){C.RESET}
-─────────────────────────────────────────────────
-1. ไปที่ https://console.cloud.google.com
-2. สร้าง Project ใหม่หรือเลือก Project ที่มีอยู่
-3. เปิดใช้งาน Google Drive API
-   APIs & Services → Enable APIs → ค้นหา "Google Drive API"
-4. สร้าง Service Account
-   IAM & Admin → Service Accounts → Create Service Account
-5. ดาวน์โหลด JSON key
-   Service Account → Keys → Add Key → JSON
-6. บันทึกไฟล์ JSON ไว้ที่ปลอดภัย เช่น ~/.comphone/service_account.json
-7. แชร์ Google Drive folder ให้ Service Account email (Editor)
-
-จากนั้นรัน:
-  python3 drive_sync.py --config-sa ~/.comphone/service_account.json
-
-{C.CYAN}วิธีที่ 2: OAuth2 (สำหรับใช้งานส่วนตัว){C.RESET}
+{C.CYAN}วิธีตั้งค่า: OAuth2 via Environment Variables{C.RESET}
 ─────────────────────────────────────────────────
 1. ไปที่ https://console.cloud.google.com
 2. เปิดใช้งาน Google Drive API
 3. สร้าง OAuth2 Credentials
    APIs & Services → Credentials → Create Credentials → OAuth Client ID
    Application type: Desktop App
-4. ดาวน์โหลด JSON → บันทึกเป็น credentials.json ใน repo root
-5. รัน:
-   python3 drive_sync.py --setup-oauth
+4. ตั้ง Environment Variables:
+   export GOOGLE_CLIENT_ID="your_client_id"
+   export GOOGLE_CLIENT_SECRET="your_client_secret"
+   export GOOGLE_REFRESH_TOKEN="your_refresh_token"
 
-{C.CYAN}สำหรับ GitHub Actions:{C.RESET}
-─────────────────────────────────────────────────
-1. สร้าง Service Account (วิธีที่ 1)
-2. เข้ารหัส JSON ด้วย base64:
-   base64 -i service_account.json | tr -d '\\n'
-3. เพิ่มใน GitHub Secrets:
-   GOOGLE_SERVICE_ACCOUNT_KEY = (base64 string)
-4. GitHub Actions จะใช้ secret นี้อัตโนมัติ
+{C.RED}⚠️ ห้ามใช้ Service Account — Golden Rule: OAuth2 ONLY{C.RESET}
 
-{C.GREEN}ไฟล์ config จะถูกบันทึกที่: {CONFIG_FILE}{C.RESET}
+{C.GREEN}ทดสอบ: python3 drive_sync.py --all --dry-run{C.RESET}
 """)
 
 def setup_oauth(config):

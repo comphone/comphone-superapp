@@ -1,22 +1,14 @@
 #!/bin/bash
 # COMPHONE SUPER APP — FULL AUTO DEPLOY PIPELINE
 # PHASE 24: Hardened Backup System + Deploy Pipeline
-# PHASE 25.5: OAuth2 env vars + CLASP_TOKEN auto-gen
+# PHASE 25.6: OAuth2 ONLY — Service Account REMOVED (Golden Rule)
 # RULES: No set -e on clasp, retry logic, timeout, verify, rclone backup
 
-# Load env vars (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN, CLASP_TOKEN)
+# Load env vars (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN, CLASP_TOKEN, RCLONE_CONFIG)
 if [ -f "$HOME/.bashrc" ]; then source "$HOME/.bashrc" 2>/dev/null; fi
 
 # PATH — ให้หา rclone ที่ ~/bin ด้วย
 export PATH="$HOME/bin:$PATH"
-
-# PHASE 24.2: SERVICE ACCOUNT DETECTION
-SA_FILE="$HOME/.config/rclone/service-account.json"
-RCLONE_CONF="$HOME/.config/rclone/rclone.conf"
-SA_MODE=0
-if [ -f "$SA_FILE" ] && [ -f "$RCLONE_CONF" ] && grep -q "^\[gdrive\]" "$RCLONE_CONF" 2>/dev/null; then
-  SA_MODE=1
-fi
 
 # Redirect output เป็น log
 LOG_FILE="/mnt/c/Users/Server/comphone-superapp/deploy.log"
@@ -102,33 +94,24 @@ BACKUP_SIZE=$(du -h "$BACKUP_PATH" | cut -f1)
 echo "✅ Local backup: $BACKUP_PATH ($BACKUP_SIZE)"
 
 # ========================
-# 2. GOOGLE DRIVE BACKUP (rclone — SERVICE ACCOUNT MODE)
+# 2. GOOGLE DRIVE BACKUP (rclone — OAuth2 mode only, NO Service Account)
 # ========================
 DRIVE_OK=0
-if [ "$SA_MODE" -eq 1 ]; then
-  echo "☁️ Service Account Mode — uploading to Google Drive..."
-  rclone mkdir "gdrive:ComphoneBackup" 2>/dev/null || true
-  if rclone copy "$BACKUP_PATH" "gdrive:ComphoneBackup/" 2>&1; then
-    echo "✅ Drive backup success: $BACKUP_NAME (Service Account)"
-    DRIVE_OK=1
-  else
-    echo "⚠️ Service Account upload failed"
-  fi
-elif command -v rclone >/dev/null 2>&1; then
-  echo "☁️ Uploading backup to Google Drive..."
+if command -v rclone >/dev/null 2>&1; then
+  echo "☁️ Uploading backup to Google Drive (OAuth2)..."
   if rclone listremotes 2>/dev/null | grep -q "^gdrive:"; then
     rclone mkdir "gdrive:ComphoneBackup" 2>/dev/null || true
     if rclone copy "$BACKUP_PATH" "gdrive:ComphoneBackup/" 2>&1; then
       echo "✅ Drive backup success: $BACKUP_NAME"
       DRIVE_OK=1
     else
-      echo "⚠️ rclone copy failed — using fallback"
+      echo "⚠️ rclone copy failed — using Python fallback"
     fi
   else
-    echo "⚠️ rclone 'gdrive' remote not configured — using fallback"
+    echo "⚠️ rclone 'gdrive' remote not configured — using Python fallback"
   fi
 else
-  echo "⚠️ rclone not installed — using fallback"
+  echo "⚠️ rclone not installed — using Python fallback"
 fi
 
 # FALLBACK: Python Drive upload (ถ้า rclone ไม่ทำงาน)
@@ -156,7 +139,7 @@ LOCAL_COUNT=$(find backups/ -type f -name "backup_*.tar.gz" | wc -l)
 echo "✅ Local retention: $LOCAL_COUNT backups kept"
 
 # ลบ Drive backup เกิน 7 วัน (ถ้า rclone พร้อม)
-if [ "$SA_MODE" -eq 1 ] || (command -v rclone >/dev/null 2>&1 && rclone listremotes 2>/dev/null | grep -q "^gdrive:"); then
+if command -v rclone >/dev/null 2>&1 && rclone listremotes 2>/dev/null | grep -q "^gdrive:"; then
   rclone delete --min-age 7d "gdrive:ComphoneBackup/" 2>/dev/null || true
   echo "✅ Drive retention: deleted backups older than 7 days"
 fi
@@ -285,7 +268,7 @@ echo ""
 echo "================================================================"
 echo "📊 DEPLOY REPORT — $DATE"
 echo "================================================================"
-echo "SA Mode:            $([ "$SA_MODE" -eq 1 ] && echo '✅ ACTIVE' || echo '⚠️ NOT CONFIGURED')"
+echo "Auth Mode:          OAuth2 ONLY (SA removed)"
 echo "GitHub Push:        ✅"
 echo "GAS Deploy:         $([ "$GAS_OK" = "1" ] && echo '✅' || echo '❌')"
 echo "Local Backup:       $BACKUP_PATH ($BACKUP_SIZE)"

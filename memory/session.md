@@ -1,5 +1,5 @@
-# 🧠 Session Context — COMPHONE SUPER APP V5.5
-> **เวอร์ชัน:** v5.5.10 | **อัปเดต:** 18 เมษายน 2569 | **สถานะ:** MISSION COMPLETE ✅ (Phase 1-4) + Auto-Push ✅ + Drive Sync ✅ — คะแนน 100/100 | **Triple Backup:** ✅ Active
+# 🧠 Session Context — COMPHONE SUPER APP V5.6.6
+> **เวอร์ชัน:** v5.6.6 | **อัปเดต:** 23 เมษายน 2569 | **สถานะ:** PHASE 25.6 ✅ (OAuth2 ONLY, SA Removed) | **Triple Backup:** ✅ Active | **GAS:** 67 files | **PWA:** 42 files
 > **ไฟล์นี้คือ "สมองสำรอง" ของ AI — อ่านก่อนเริ่มงานทุกครั้ง ห้ามเดาสถานะโปรเจค**
 
 ---
@@ -174,37 +174,106 @@ return ContentService.createTextOutput(
 
 ---
 
-## 📡 Backend Structure (23 ไฟล์)
+## 📡 Backend Structure (67 ไฟล์ — clasp-ready/)
 
+### Core System (14 ไฟล์)
 | ไฟล์ | หน้าที่ |
 |------|---------|
 | `Router.gs` | HTTP Router — doPost(), dispatch, AUTH_REQUIRED_ACTIONS_ |
 | `Config.gs` | Script Properties wrapper, constants |
 | `Auth.gs` | Login PIN, verifySession, RBAC (4 roles) |
+| `Utils.gs` | Shared utilities |
+| `Setup.gs` | Initial setup + sheet creation |
+| `Security.gs` | Token verify, Rate limit, CORS |
+| `HealthMonitor.gs` | System health check + LINE alert |
+| `AutoBackup.gs` | Scheduled backup to Drive |
+| `Backup.gs` | Backup functions |
+| `DeployGuide.gs` | Deploy documentation |
+| `DatabaseIntegrity.gs` | DB integrity checks |
+| `DataSeeding.gs` | Seed initial data |
+| `SheetOptimizer.gs` | Sheet performance optimization |
+| `DriveSync.gs` | GAS-side Drive sync |
+
+### Business Modules (16 ไฟล์)
+| ไฟล์ | หน้าที่ |
+|------|---------|
 | `JobsHandler.gs` | Job CRUD + Timeline + Notes |
 | `JobStateMachine.gs` | 12-state machine + transition validation |
 | `BillingManager.gs` | Bill/Receipt + PromptPay QR + PDF + Slip Verify |
-| `Inventory.gs` + `InventoryManager.gs` | Stock 3-layer (Warehouse/Shop/Van) + PO + Barcode |
+| `Inventory.gs` | Stock 3-layer (Warehouse/Shop/Van) + PO + Barcode |
 | `CustomerManager.gs` | CRM CRUD + Follow-up schedule |
-| `LineBot.gs` | LINE Webhook handler + command parser |
-| `FlexMessage.gs` | 4 Flex Message templates |
-| `Notify.gs` | LINE Notify + Messaging API multi-channel |
-| `PhotoQueue.gs` | Photo upload queue → Drive storage |
-| `VisionAnalysis.gs` | Gemini Vision — slip verify + photo QC |
-| `GpsPipeline.gs` | GPS geofence + route optimization |
-| `SmartAssignment.gs` | AI-based tech assignment |
-| `Dashboard.gs` + `DashboardV55.gs` | Dashboard aggregation + KPI |
+| `CustomerPortal.gs` | Public customer portal |
 | `Attendance.gs` | Clock in/out + attendance report |
 | `AfterSales.gs` | Warranty + after-sales follow-up |
-| `PurchaseOrder.gs` | PO management |
-| `AutoBackup.gs` | Scheduled backup to Drive |
-| `Setup.gs` + `SystemSetup.gs` | Initial setup + sheet creation |
-| `Utils.gs` | Shared utilities |
+| `WarrantyManager.gs` | ระบบรับประกันสินค้า |
 | `TaxEngine.gs` | ระบบคำนวณภาษี VAT/WHT |
 | `TaxDocuments.gs` | สร้าง PDF ใบกำกับภาษี/ภงด. |
-| `WarrantyManager.gs` | ระบบรับประกันสินค้า |
 | `MultiBranch.gs` | ระบบจัดการหลายสาขา |
-| `HealthMonitor.gs` | ตรวจสอบสถานะระบบ + Security |
+| `RetailSale.gs` | ระบบขายปลีก |
+| `CRM.gs` | CRM functions |
+| `Reports.gs` | รายงานต่างๆ |
+| `PurchaseOrder.gs` | PO management (legacy) |
+
+### LINE Bot (6 ไฟล์)
+| ไฟล์ | หน้าที่ |
+|------|---------|
+| `LineBot.gs` | LINE Webhook handler + command parser |
+| `LineBotV2.gs` | LINE Bot v2 — enhanced commands |
+| `LineBotIntelligent.gs` | AI-powered LINE Bot responses |
+| `LineBotQuota.gs` | LINE API quota management |
+| `FlexMessage.gs` | Flex Message templates |
+| `Notify.gs` | LINE Notify + Messaging API multi-channel |
+
+### Dashboard & Analytics (5 ไฟล์)
+| ไฟล์ | หน้าที่ |
+|------|---------|
+| `Dashboard.gs` | Dashboard aggregation + KPI |
+| `DashboardV55.gs` | Dashboard v5.5 enhancements |
+| `DashboardBundle.gs` | Dashboard bundle/module |
+| `ExecutiveDashboard.gs` | Executive summary dashboard |
+| `BusinessMetrics.gs` | Business metrics tracking |
+
+### AI & Intelligence (12 ไฟล์)
+| ไฟล์ | หน้าที่ |
+|------|---------|
+| `BusinessAI.gs` | AI business decisions |
+| `BusinessAnalytics.gs` | Business analytics engine |
+| `SmartAssignment.gs` | AI-based tech assignment |
+| `VisionAnalysis.gs` | Gemini Vision — slip verify + photo QC |
+| `VisionPipeline.gs` | Vision processing pipeline |
+| `VisionLearning.gs` | Vision learning/improvement |
+| `GpsPipeline.gs` | GPS geofence + route optimization |
+| `PhotoQueue.gs` | Photo upload queue → Drive storage |
+| `AgentGateway.gs` | AI Agent gateway |
+| `AgentMemory.gs` | AI Agent memory/context |
+| `AgentScoring.gs` | AI Agent scoring/evaluation |
+| `AgentCollaboration.gs` | Multi-agent collaboration |
+
+### AI Governance (8 ไฟล์)
+| ไฟล์ | หน้าที่ |
+|------|---------|
+| `AIAuditLog.gs` | AI action audit logging |
+| `AuditLog.gs` | General audit logging |
+| `Approval.gs` | Approval workflow |
+| `DecisionGuard.gs` | AI decision safety guard |
+| `DecisionLayer.gs` | AI decision layer |
+| `LearningIntegration.gs` | AI learning integration |
+| `MemoryControl.gs` | AI memory control |
+| `SharedContext.gs` | Shared context between modules |
+
+### Infrastructure (6 ไฟล์)
+| ไฟล์ | หน้าที่ |
+|------|---------|
+| `PropertiesGuard.gs` | ป้องกัน Script Properties เกิน 50 (safeSetProperty) |
+| `PropertiesCleanup.gs` | Cleanup expired properties |
+| `WorkflowEngine.gs` | Workflow automation engine |
+| `WorkflowSafety.gs` | Workflow safety checks |
+| `RouterSplit.gs` | Router split/optimization |
+| `PushNotifications.gs` | Push notification support |
+
+### Archived (15 ไฟล์ — ARCHIVED_Shop_vnext/src/)
+> เก่ากว่า clasp-ready/ — ห้ามใช้ อ้างอิงเท่านั้น
+`Router.gs` `JobsHandler.gs` `JobStateMachine.gs` `Inventory.gs` `BillingManager.gs` `CustomerManager.gs` `Dashboard.gs` `LineBot.gs` `Notify.gs` `PhotoQueue.gs` `SmartAssignment.gs` `VisionAnalysis.gs` `GpsPipeline.gs` `AutoBackup.gs` `Utils.gs`
 
 ---
 
@@ -296,25 +365,41 @@ Event → Notify.gs → LINE Group ตามบทบาท
 ## 📂 File Structure
 
 ```
-comphone-superapp/                  ← GitHub repo
-├── clasp-ready/                    ← GAS Backend (23 ไฟล์ .gs)
+comphone-superapp/                  ← GitHub repo (v5.6.6)
+├── clasp-ready/                    ← GAS Backend (67 ไฟล์ .gs)
 │   ├── .clasp.json                 ← scriptId
 │   ├── appsscript.json             ← timezone: Asia/Bangkok, V8
-│   └── [23 ไฟล์ .gs ตามรายการใน Backend Structure]
-├── pwa/                            ← PWA Frontend (GitHub Pages)
-│   ├── index.html      (28,837 bytes)
-│   ├── app.js          (48,121 bytes)
-│   ├── style.css       (24,721 bytes)
-│   ├── auth.js, job_workflow.js, inventory.js
-│   ├── billing_customer.js, crm_attendance.js
-│   ├── purchase_order.js, dashboard.js
-│   ├── dashboard_pc.html, sw.js, manifest.json
-│   └── worker.js, worker_v425.js
+│   └── [67 ไฟล์ .gs — ดู Backend Structure ด้านบน]
+├── pwa/                            ← PWA Frontend (42 ไฟล์ — GitHub Pages)
+│   ├── Core: index.html, app.js, style.css, auth.js, sw.js, manifest.json
+│   ├── Dashboard: dashboard_pc.html, dashboard.js, analytics.js
+│   ├── Jobs: job_workflow.js, quick_actions.js
+│   ├── Inventory: inventory.js, inventory_ui.js
+│   ├── Billing: billing_customer.js, billing_ui.js, billing_slip_verify.js
+│   ├── CRM: crm_attendance.js, crm_ui.js
+│   ├── Customer: customer_portal.html, customer_portal.js, customer_sw.js, customer_manifest.json
+│   ├── AI: ai_executor_runtime.js, ai_executor_validation.js, business_ai.js, policy_engine.js
+│   ├── Safety: approval_guard.js, auth_guard.js, execution_lock.js, error_boundary.js, evidence_harness.js
+│   ├── UI Modules: attendance_ui.js, branch_health_ui.js, tax_ui.js, warranty_ui.js, notification_center.js, admin.js, admin_panel.js
+│   ├── Other: purchase_order.js, after_sales_enhanced.js, reports.js, offline_db.js, push_notifications.js, pwa_install.js
+│   └── Icons: icons/icon-{72,96,128,144,152,192,384,512}.png
+├── scripts/                        ← Deploy & Sync Scripts
+│   ├── deploy_all.sh               ← Main deploy pipeline (OAuth2 ONLY)
+│   ├── drive_sync.py               ← Google Drive sync (OAuth2 env vars)
+│   ├── drive_backup.py             ← Drive backup fallback
+│   ├── clasp_push.py               ← GAS push helper
+│   └── [อื่นๆ: auto_push.py, sync_all.py, etc.]
+├── ARCHIVED_Shop_vnext/src/        ← Archived GAS files (15 ไฟล์ — ห้ามใช้)
+├── memory/                         ← Session context + docs
+│   ├── session.md                  ← This file
+│   ├── API_KEYS_REGISTRY.md
+│   └── SKILLS_CONTEXT.md
 └── docs/
     ├── MASTER_BLUEPRINT.md         ← Blueprint หลัก (v5.5.4)
     ├── PWA_ROADMAP.md              ← Roadmap Phase 1-4
     ├── DEV_MEMORY.md               ← Design decisions
-    └── COMPHONE_MEMORY_LOG.md      ← Development history
+    ├── COMPHONE_MEMORY_LOG.md      ← Development history
+    └── DEPLOYMENT_BLUEPRINT.md     ← Deploy architecture rules
 ```
 
 ---
@@ -369,20 +454,20 @@ comphone-superapp/                  ← GitHub repo
 ### ⚠️ ด่วนที่สุด (ทำก่อน Deploy จริง)
 
 - [ ] **ตั้งค่า LINE Webhook URL** ใน LINE Developers Console → `https://comphone-line-webhook.narinoutagit.workers.dev/line/webhook`
-- [ ] **Seed ข้อมูลเริ่มต้น** — รัน `seedAllData()` ใน `DataSeeding.gs` (อยู่ใน delivery/)
+- [ ] **Seed ข้อมูลเริ่มต้น** — รัน `seedAllData()` ใน `DataSeeding.gs`
 - [ ] **เพิ่ม DB_USERS** — ต้องสร้าง user จริงก่อนใช้งาน
-- [ ] **จัดการงานค้าง 16 งาน** — J0001–J0018 ส่วนใหญ่ค้างเกิน 11-16 วัน ไม่มีช่างรับผิดชอบ
+- [ ] **จัดการงานค้าง** — J0001–J0018 ส่วนใหญ่ค้าง ไม่มีช่างรับผิดชอบ
 
-### 🔴 Phase 3 — ถัดไป (Backend พร้อมแล้ว)
+### 🔴 Phase 3 — PWA Integration (Backend มีแล้ว รอ PWA connect)
 
 | # | งาน | GAS Action | สถานะ |
 |---|-----|-----------|-------|
-| 3.1 | Customer Portal | `getJobStatusPublic` | ✅ สร้างแล้วใน delivery/ |
-| 3.2 | Photo Upload Before/After | `PhotoQueue.gs` | รอ integrate ใน PWA |
-| 3.3 | Inventory Management UI | `getInventoryItemDetail` | รอพัฒนา |
-| 3.4 | Barcode Scanner | `barcodeLookup` | รอพัฒนา |
-| 3.5 | Open Job Form (PWA) | `openJob` | ⚠️ ปัจจุบันเป็น showToast เท่านั้น |
-| 3.6 | Assign Tech (PWA) | `updateJobStatus` | ⚠️ ปัจจุบันเป็น showToast เท่านั้น |
+| 3.1 | Customer Portal | `CustomerPortal.gs` | ✅ GAS + PWA มีแล้ว |
+| 3.2 | Photo Upload Before/After | `PhotoQueue.gs` | ✅ GAS พร้อม — PWA มีแล้ว |
+| 3.3 | Inventory Management UI | `Inventory.gs` | ✅ GAS + inventory_ui.js มีแล้ว |
+| 3.4 | Barcode Scanner | `barcodeLookup` | ⚠️ GAS พร้อม — PWA ยังไม่เชื่อม |
+| 3.5 | Open Job Form (PWA) | `openJob` | ⚠️ ปัจจุบันเป็น showToast |
+| 3.6 | Assign Tech (PWA) | `updateJobStatus` | ⚠️ ปัจจุบันเป็น showToast |
 
 ### 🟡 Phase 4 — Advanced Features (เสร็จแล้ว ✅)
 
@@ -392,13 +477,21 @@ comphone-superapp/                  ← GitHub repo
 - [x] Auto-Tax Engine (VAT 7% / WHT 3%)
 - [x] Multi-branch Support
 - [x] Offline Sync (IndexedDB)
+- [x] Customer Portal (GAS + PWA)
+- [x] Photo Pipeline (GAS + PWA)
+- [x] Inventory UI (GAS + PWA)
+- [x] Business AI / Analytics (GAS)
+- [x] AI Governance (DecisionGuard, AuditLog, etc.)
+- [x] Properties Guard (safeSetProperty, overflow to sheet)
+- [x] OAuth2 Drive Sync (no Service Account)
 
 ### 🔧 Technical Debt
 
 - [ ] `app.js` ใหญ่มาก (48KB) — ควร refactor แยก modules
 - [ ] ทดสอบ Smart Assignment + GPS Pipeline กับข้อมูลจริง
-- [ ] ทดสอบ Photo Pipeline end-to-end
+- [ ] ทดสอบ Photo Pipeline end-to-end (GAS + PWA)
 - [ ] Functions ที่ยังเป็น `showToast()` เท่านั้น: `openNewJob()`, `assignJob()`, `createReceipt()`, `showQR()`, `addCustomer()`, `viewReport()`, `viewPL()`, `addAppointment()`, `nudgeTech()`
+- [ ] Barcode Scanner PWA integration
 
 ---
 
@@ -456,7 +549,7 @@ python3.11 /home/ubuntu/skills/comphone-superapp-dev/references/gas_status_check
 ## 🧩 Rules for Next AI
 
 1. **อ่าน session.md นี้ก่อนทุกครั้ง** — ห้ามเดาสถานะโปรเจค
-2. **ตรวจสอบ GitHub ก่อนเขียนโค้ดใหม่** — อาจมีไฟล์ที่ implement แล้ว (23 ไฟล์ใน clasp-ready/)
+2. **ตรวจสอบ GitHub ก่อนเขียนโค้ดใหม่** — อาจมีไฟล์ที่ implement แล้ว (67 ไฟล์ใน clasp-ready/)
 3. **API Contract ต้องสอดคล้อง** — action names ต้องตรงกับ Router.gs เสมอ
 4. **ห้าม hardcode** API Key หรือ URL — ใช้ Script Properties เสมอ
 5. **GAS ไม่มี `require()`** — ทุก function ต้องอยู่ใน global scope
