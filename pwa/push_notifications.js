@@ -130,8 +130,8 @@ function showLocalNotification(title, body, options) {
   navigator.serviceWorker.ready.then(reg => {
     reg.showNotification(title, {
       body: body,
-      icon: '/comphone-superapp/icons/icon-192.png',
-      badge: '/comphone-superapp/icons/icon-72.png',
+      icon: '/comphone-superapp/pwa/icons/icon-192.png',
+      badge: '/comphone-superapp/pwa/icons/icon-72.png',
       vibrate: [200, 100, 200],
       tag: (options && options.tag) || 'comphone',
       data: (options && options.data) || {},
@@ -182,8 +182,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: data.icon || '/comphone-superapp/icons/icon-192.png',
-      badge: data.badge || '/comphone-superapp/icons/icon-72.png',
+      icon: data.icon || '/comphone-superapp/pwa/icons/icon-192.png',
+      badge: data.badge || '/comphone-superapp/pwa/icons/icon-72.png',
       tag: data.tag || 'comphone',
       data: data.data || {}
     })
