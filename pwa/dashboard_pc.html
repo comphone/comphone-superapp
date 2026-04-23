@@ -270,10 +270,57 @@
     .kpi-row { grid-template-columns: 1fr 1fr; }
     .content { padding: 12px; }
   }
+
+  /* ===== LOGIN OVERLAY ===== */
+  #login-overlay {
+    position: fixed; inset: 0; z-index: 99999;
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Inter', sans-serif;
+  }
+  #login-overlay .login-card {
+    background: #fff; border-radius: 20px; padding: 40px 36px;
+    width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    text-align: center;
+  }
+  #login-overlay .login-logo { font-size: 40px; margin-bottom: 8px; }
+  #login-overlay .login-title { font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+  #login-overlay .login-sub { font-size: 12px; color: #94a3b8; margin-bottom: 28px; }
+  #login-overlay .login-field {
+    width: 100%; padding: 12px 16px; border: 1.5px solid #e2e8f0; border-radius: 10px;
+    font-size: 14px; margin-bottom: 12px; outline: none; transition: border 0.2s;
+    box-sizing: border-box;
+  }
+  #login-overlay .login-field:focus { border-color: #3b82f6; }
+  #login-overlay .login-btn {
+    width: 100%; padding: 13px; background: #3b82f6; color: #fff; border: none;
+    border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer;
+    transition: background 0.2s; margin-top: 4px;
+  }
+  #login-overlay .login-btn:hover { background: #2563eb; }
+  #login-overlay .login-btn:disabled { background: #94a3b8; cursor: wait; }
+  #login-overlay .login-error {
+    color: #ef4444; font-size: 13px; margin-top: 10px; min-height: 20px;
+  }
 </style>
 </head>
 <body>
   <div id="approval-panel" style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: white; border: 1px solid #ccc; padding: 10px; max-width: 300px; max-height: 400px; overflow-y: auto;"></div>
+
+<!-- ===== LOGIN OVERLAY ===== -->
+<div id="login-overlay">
+  <div class="login-card">
+    <div class="login-logo">📱</div>
+    <div class="login-title">COMPHONE Dashboard</div>
+    <div class="login-sub">กรุณาเข้าสู่ระบบเพื่อดำเนินการต่อ</div>
+    <form id="login-form" onsubmit="_doLogin(event)">
+      <input class="login-field" type="text" id="login-user" placeholder="Username" autocomplete="username" required>
+      <input class="login-field" type="password" id="login-pass" placeholder="Password" autocomplete="current-password" required>
+      <button class="login-btn" type="submit" id="login-btn">เข้าสู่ระบบ</button>
+    </form>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
 
 
 <!-- ===== SIDEBAR ===== -->
@@ -305,6 +352,9 @@
   <a class="nav-item" href="#" onclick="loadSection('revenue')">
     <i class="bi bi-currency-exchange"></i><span>รายรับ</span>
   </a>
+  <a class="nav-item" href="#" onclick="loadSection('tax')">
+    <i class="bi bi-receipt-cutoff"></i><span>ภาษี (VAT/WHT)</span>
+  </a>
   <a class="nav-item" href="#" onclick="loadSection('crm')">
     <i class="bi bi-people-fill"></i><span>ลูกค้า</span>
   </a>
@@ -324,6 +374,7 @@
         <div class="user-name-sm" id="pc-username">ผู้ดูแลระบบ</div>
         <div class="user-role-sm" id="pc-role">Admin</div>
       </div>
+      <div style="margin-left:auto;cursor:pointer;opacity:0.5;font-size:14px" onclick="_doLogout()" title="ออกจากระบบ">⏻</div>
     </div>
   </div>
 </aside>
@@ -401,22 +452,80 @@ window.__UI_REFRESH_MAP = {
 };
 
 
-// ===== INIT =====
-window.addEventListener('load', () => {
-  // Load user from PWA localStorage
+// ===== AUTH: Login / Logout / Session =====
+async function _doLogin(e) {
+  e.preventDefault();
+  const user = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-error');
+  if (!user || !pass) { err.textContent = 'กรุณากรอก Username และ Password'; return; }
+  btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ...'; err.textContent = '';
   try {
-    const saved = JSON.parse(localStorage.getItem('comphone_user') || '{}');
-    if (saved.name) {
-      document.getElementById('pc-avatar').textContent = saved.name[0].toUpperCase();
-      document.getElementById('pc-username').textContent = saved.name;
-      document.getElementById('pc-role').textContent = saved.role || 'user';
-    }
-    if (saved.scriptUrl) {
-      localStorage.setItem('comphone_gas_url', saved.scriptUrl);
+    const res = await callGas('loginUser', { username: user, password: pass });
+    if (!res.success) { err.textContent = res.error || 'เข้าสู่ระบบไม่สำเร็จ'; btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; return; }
+    // Save session
+    localStorage.setItem('comphone_session', JSON.stringify({
+      token: res.token, username: res.username, full_name: res.full_name,
+      role: res.role, role_label: res.role_label, level: res.level,
+      can_view_revenue: res.can_view_revenue, can_manage_users: res.can_manage_users,
+      login_at: new Date().toISOString()
+    }));
+    localStorage.setItem('comphone_user', JSON.stringify({
+      name: res.full_name, role: res.role_label
+    }));
+    _showDashboard();
+  } catch(ex) {
+    err.textContent = 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้: ' + ex.message;
+    btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ';
+  }
+}
+
+function _doLogout() {
+  try { const s = JSON.parse(localStorage.getItem('comphone_session')||'{}'); if (s.token) callGas('logoutUser', { token: s.token }).catch(()=>{}); } catch(e) {}
+  localStorage.removeItem('comphone_session');
+  localStorage.removeItem('comphone_user');
+  document.getElementById('login-overlay').style.display = 'flex';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').textContent = '';
+  document.getElementById('login-btn').disabled = false;
+  document.getElementById('login-btn').textContent = 'เข้าสู่ระบบ';
+}
+
+async function _checkSession() {
+  try {
+    const s = JSON.parse(localStorage.getItem('comphone_session') || '{}');
+    if (!s.token) return false;
+    const res = await callGas('verifySession', { token: s.token });
+    if (res.valid) return true;
+  } catch(e) {}
+  return false;
+}
+
+function _showDashboard() {
+  document.getElementById('login-overlay').style.display = 'none';
+  try {
+    const s = JSON.parse(localStorage.getItem('comphone_session') || '{}');
+    const u = JSON.parse(localStorage.getItem('comphone_user') || '{}');
+    if (u.name) {
+      document.getElementById('pc-avatar').textContent = u.name[0].toUpperCase();
+      document.getElementById('pc-username').textContent = u.name;
+      document.getElementById('pc-role').textContent = s.role_label || u.role || 'user';
     }
   } catch(e) {}
-
   loadDashboard();
+}
+
+// ===== INIT =====
+window.addEventListener('load', async () => {
+  const valid = await _checkSession();
+  if (valid) {
+    _showDashboard();
+  } else {
+    document.getElementById('login-overlay').style.display = 'flex';
+    document.getElementById('login-user').focus();
+  }
 });
 
 // ===== API =====
@@ -758,6 +867,7 @@ async function loadSection(section) {
       case 'revenue':  renderRevenueSection(data); break;
       case 'po':       renderPOSection(data); break;
       case 'crm':      renderCRMSection(data); break;
+      case 'tax':      renderTaxSection(); break;
       case 'settings': renderSettingsSection(); break;
       default:         renderGenericSection(section, data);
     }
@@ -1840,6 +1950,115 @@ function _copyTaxResult() {
     setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy'; }, 1500);
   });
 }
+
+function renderTaxSection() {
+  setActiveNav('tax');
+  document.getElementById('topbar-title').innerHTML =
+    '<i class="bi bi-receipt-cutoff" style="color:#059669;margin-right:8px"></i>คำนวณภาษี (VAT / WHT)';
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="card-box" style="max-width:640px;margin:0 auto">
+      <div class="card-title"><i class="bi bi-calculator" style="color:#059669"></i> คำนวณภาษีมูลค่าเพิ่ม + หัก ณ ที่จ่าย</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div>
+          <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px">จำนวนเงิน (ก่อน VAT)</label>
+          <input type="number" id="tax-page-amount" value="0" min="0" step="0.01"
+            style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:16px;font-weight:600;box-sizing:border-box"
+            oninput="_calcTaxPage()">
+        </div>
+        <div>
+          <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px">โหมด VAT</label>
+          <select id="tax-page-vat" style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box" onchange="_calcTaxPage()">
+            <option value="VAT7">VAT 7% (ขายในประเทศ)</option>
+            <option value="ZERO">VAT 0% (ส่งออก)</option>
+            <option value="EXEMPT">ไม่มี VAT (ยกเว้น)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px">อัตรา WHT (หัก ณ ที่จ่าย)</label>
+        <select id="tax-page-wht" style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box" onchange="_calcTaxPage()">
+          <option value="0">ไม่หัก ณ ที่จ่าย</option>
+          <option value="1">WHT 1% (ค่าขนส่ง)</option>
+          <option value="3">WHT 3% (ค่าบริการ)</option>
+          <option value="5">WHT 5% (ค่าโฆษณา/ค่าเช่า)</option>
+        </select>
+      </div>
+
+      <!-- Results -->
+      <div id="tax-page-results" style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:1.5px solid #bbf7d0;border-radius:12px;padding:20px">
+        <table style="width:100%;font-size:14px;border-collapse:collapse">
+          <tr style="border-bottom:1px solid #d1fae5">
+            <td style="padding:8px 0;color:#6b7280">จำนวนเงิน (ก่อน VAT)</td>
+            <td style="text-align:right;font-weight:600;padding:8px 0" id="tp-subtotal">฿0.00</td>
+          </tr>
+          <tr style="border-bottom:1px solid #d1fae5">
+            <td style="padding:8px 0;color:#6b7280">VAT <span id="tp-vat-pct">7</span>%</td>
+            <td style="text-align:right;font-weight:600;color:#059669;padding:8px 0" id="tp-vat">฿0.00</td>
+          </tr>
+          <tr style="border-bottom:1px solid #d1fae5">
+            <td style="padding:8px 0;color:#6b7280;font-weight:700">รวม (รวม VAT)</td>
+            <td style="text-align:right;font-weight:700;font-size:16px;padding:8px 0" id="tp-total">฿0.00</td>
+          </tr>
+          <tr style="border-bottom:1px solid #d1fae5">
+            <td style="padding:8px 0;color:#6b7280">หัก ณ ที่จ่าย <span id="tp-wht-pct">0</span>%</td>
+            <td style="text-align:right;font-weight:600;color:#ef4444;padding:8px 0" id="tp-wht">-฿0.00</td>
+          </tr>
+          <tr>
+            <td style="padding:12px 0 0;font-weight:800;font-size:16px">💰 ยอดสุทธิ</td>
+            <td style="text-align:right;font-weight:800;font-size:20px;color:#059669;padding:12px 0 0" id="tp-net">฿0.00</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+        <button onclick="_copyTaxPage()" style="background:#f1f5f9;color:#334155;border:none;padding:8px 16px;border-radius:8px;font-size:12px;cursor:pointer">
+          <i class="bi bi-clipboard"></i> Copy
+        </button>
+        <button onclick="document.getElementById('tax-page-amount').value=0;_calcTaxPage()" style="background:#fee2e2;color:#ef4444;border:none;padding:8px 16px;border-radius:8px;font-size:12px;cursor:pointer">
+          <i class="bi bi-x-circle"></i> ล้าง
+        </button>
+      </div>
+    </div>
+  `;
+  _calcTaxPage();
+}
+
+function _calcTaxPage() {
+  const amount = parseFloat(document.getElementById('tax-page-amount')?.value) || 0;
+  const vatMode = document.getElementById('tax-page-vat')?.value || 'VAT7';
+  const whtRate = parseInt(document.getElementById('tax-page-wht')?.value) || 0;
+  let vatPct = vatMode === 'VAT7' ? 7 : 0;
+  const vat = amount * vatPct / 100;
+  const total = amount + vat;
+  const wht = amount * whtRate / 100;
+  const net = total - wht;
+  const fmt = (v) => '฿' + v.toLocaleString('th-TH', {minimumFractionDigits:2});
+  document.getElementById('tp-subtotal').textContent = fmt(amount);
+  document.getElementById('tp-vat-pct').textContent = vatPct;
+  document.getElementById('tp-vat').textContent = fmt(vat);
+  document.getElementById('tp-total').textContent = fmt(total);
+  document.getElementById('tp-wht-pct').textContent = whtRate;
+  document.getElementById('tp-wht').textContent = '-' + fmt(wht);
+  document.getElementById('tp-net').textContent = fmt(net);
+}
+
+function _copyTaxPage() {
+  const amount = document.getElementById('tax-page-amount')?.value || '0';
+  const vatMode = document.getElementById('tax-page-vat')?.value || 'VAT7';
+  const whtRate = document.getElementById('tax-page-wht')?.value || '0';
+  const net = document.getElementById('tp-net')?.textContent || '';
+  const text = `🧮 คำนวณภาษี\\nจำนวน: ฿${parseFloat(amount).toLocaleString()}\\nVAT: ${vatMode}\\nWHT: ${whtRate}%\\nสุทธิ: ${net}`;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy'; }, 1500);
+  });
+}
+
+
 
 async function renderPOSection(data) {
   // Show loading first, then fetch real PO data
