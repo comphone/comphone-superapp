@@ -200,7 +200,7 @@ else
 fi
 
 echo "  → Running clasp push..."
-CLASP_OUTPUT=$(clasp push 2>&1)
+CLASP_OUTPUT=$(timeout 60 clasp push 2>&1)
 CLASP_EXIT=$?
 
 echo "$CLASP_OUTPUT"
@@ -212,14 +212,53 @@ elif [ $CLASP_EXIT -eq 0 ]; then
   echo "✅ GAS push exit 0"
   GAS_OK=1
 else
-  echo "⚠️ clasp exit = $CLASP_EXIT, output not verified. Retrying..."
-  CLASP_OUTPUT=$(retry clasp push 2>&1)
-  if echo "$CLASP_OUTPUT" | grep -q "Pushed"; then
-    echo "✅ GAS push verified on retry"
-    GAS_OK=1
-  else
-    echo "❌ GAS push failed after retry"
-    GAS_OK=0
+  echo "⚠️ clasp push failed/timed out (exit=$CLASP_EXIT). Trying Apps Script API fallback..."
+  # PHASE 27.3: Apps Script API fallback when clasp fails
+  SCRIPT_ID=$(grep -oP '"scriptId"\s*:\s*"\K[^"]+' .clasp.json | head -1)
+  if [ -n "$SCRIPT_ID" ] && [ -n "$CLASP_TOKEN" ]; then
+    # Get fresh access token from refresh_token
+    REFRESH_RT=$(python3 -c "import json; rc=json.load(open('$HOME/.clasprc.json')); t=rc.get('tokens',{}).get('default',{}) or rc.get('token',{}); print(t.get('refresh_token',''))" 2>/dev/null)
+    CID=$(python3 -c "import json; print(json.load(open('$HOME/.clasprc.json'))['oauth2ClientSettings']['clientId'])" 2>/dev/null)
+    CSEC=$(python3 -c "import json; print(json.load(open('$HOME/.clasprc.json'))['oauth2ClientSettings']['clientSecret'])" 2>/dev/null)
+    if [ -n "$REFRESH_RT" ] && [ -n "$CID" ] && [ -n "$CSEC" ]; then
+      API_TOKEN=$(curl -s -X POST https://oauth2.googleapis.com/token \
+        -d "client_id=$CID" -d "client_secret=$CSEC" \
+        -d "refresh_token=$REFRESH_RT" -d "grant_type=refresh_token" \
+        | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null)
+      if [ -n "$API_TOKEN" ]; then
+        echo "  → Uploading via Apps Script API (script ID: $SCRIPT_ID)..."
+        # Build JSON payload from clasp-ready files
+        API_PAYLOAD=$(python3 -c "
+import json, os, glob
+files = []
+for f in glob.glob('*.gs') + glob.glob('*.html') + glob.glob('*.json'):
+    name = os.path.splitext(f)[0]
+    ftype = 'JSON' if f.endswith('.json') else 'HTML' if f.endswith('.html') else 'SERVER_JS'
+    with open(f, 'r', encoding='utf-8', errors='replace') as fh:
+        files.append({'name': name, 'type': ftype, 'source': fh.read()})
+json.dump({'files': files}, sys.stdout)
+" 2>/dev/null)
+        API_RESULT=$(curl -s -X PUT \
+          "https://script.googleapis.com/v1/projects/$SCRIPT_ID/content" \
+          -H "Authorization: Bearer $API_TOKEN" \
+          -H "Content-Type: application/json" \
+          -d "$API_PAYLOAD" 2>&1)
+        if echo "$API_RESULT" | grep -q '"files"'; then
+          echo "✅ Apps Script API push success"
+          # Create new version
+          VER=$(curl -s -X POST "https://script.googleapis.com/v1/projects/$SCRIPT_ID/versions" \
+            -H "Authorization: Bearer $API_TOKEN" -H "Content-Type: application/json" \
+            -d '{"description":"Auto deploy (API fallback)"}' | python3 -c "import sys,json; print(json.load(sys.stdin).get('versionNumber',''))" 2>/dev/null)
+          echo "  → New version: $VER"
+          GAS_OK=1
+        else
+          echo "❌ Apps Script API push also failed: $(echo $API_RESULT | head -c 200)"
+        fi
+      fi
+    fi
+  fi
+  if [ "$GAS_OK" != "1" ]; then
+    echo "❌ GAS deploy failed (clasp + API fallback)"
   fi
 fi
 

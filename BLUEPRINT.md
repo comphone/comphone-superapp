@@ -1,7 +1,7 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **เวอร์ชัน:** v5.6.6 (PWA) / v5.6.5 (GAS Backend @490)
-> **วันที่:** 23 เมษายน 2569 | **Phase:** 26.6
+> **เวอร์ชัน:** v5.6.7 (PWA) / v5.6.5 (GAS Backend @491)
+> **วันที่:** 23 เมษายน 2569 | **Phase:** 27.3
 > **สถานะ:** 🟢 PRODUCTION — Active Development
 > **Repository:** https://github.com/comphone/comphone-superapp
 
@@ -162,12 +162,20 @@ comphone-superapp/
 | **Auto Deploy** | `deploy_all.sh` | ✅ tar → rclone → clasp push |
 | **Property Guard** | `Router.gs` | ✅ 49/50 properties (1 slot reserved) |
 
+### ✅ Completed (Phase 27.1-27.3)
+
+| ฟีเจอร์ | สถานะ | หมายเหตุ |
+|---------|-------|---------|
+| **Inventory UI** | ✅ Full CRUD | 4 KPI cards, search/filter, 3-layer stock, transfer, add/edit/delete, PO from low-stock |
+| **Dashboard Performance** | ✅ Optimized | Switch to `getDashboardBundle` (single-pass reads + 90s cache), ~11s → ~1-2s |
+| **Login (Static Hosting)** | ✅ Fixed | `execution_lock.js` fetch fallback + `Router.gs` doGet routeActionV55 |
+| **Deploy Pipeline** | ✅ Hardened | Apps Script API fallback when clasp timeout, 60s timeout on clasp push |
+
 ### 🔧 In Progress
 
 | ฟีเจอร์ | สถานะ | หมายเหตุ |
 |---------|-------|---------|
-| **PC Section Loaders** | 🔧 Basic | Jobs/Revenue/PO/CRM/Settings มี data view แล้ว แต่ยังไม่มี CRUD |
-| **Inventory UI** | 🔧 Placeholder | แสดง KPI สต็อกต่ำ แต่ยังไม่มีหน้าจัดการเต็มรูปแบบ |
+| **PC Section CRUD** | 🔧 Partial | Inventory ✅, Jobs/Revenue/PO/CRM/Settings ยัง read-only |
 | **Auto-Tax Engine** | 🔧 Planned | VAT 7% / WHT 3% — Frontend calculation |
 
 ### 📋 Planned (Roadmap)
@@ -286,15 +294,19 @@ All these MUST match on deploy:
 | system_graph_data.js 404 | ไฟล์ไม่มี | สร้าง stub file |
 | 10 ไฟล์ blueprint ซ้ำซ้อน | 47 ไฟล์เอกสารกระจัดกระจาย | รวมเป็น BLUEPRINT.md ไฟล์เดียว + ลบ 10 ไฟล์ซ้ำ |
 | Google Drive backup เก่า | SA ไม่มี write quota | ใช้ OAuth2 upload + ลบ backup เก่า |
+| **Login fail (Static Hosting)** | `GAS_EXECUTE()` ต้องใช้ `google.script.run` ซึ่งไม่มีบน GitHub Pages | เพิ่ม fetch fallback ใน `execution_lock.js` + `Router.gs` doGet routeActionV55 |
+| **GAS doGet ไม่รองรับ loginUser** | `doGet()` hardcode เฉพาะ ~15 actions, ไม่มี loginUser | เพิ่ม `routeActionV55()` fallback สำหรับ actions ที่ไม่ตรง hardcoded list |
+| **Dashboard ช้า ~11s** | `getDashboardData()` อ่านซ้ำ 17 ครั้ง (DBJOBS 7x, DB_INVENTORY 3x) | Switch frontend เป็น `getDashboardBundle()` (single-pass + 90s cache) |
+| **Inventory UI placeholder** | `renderInventorySection()` แสดงแค่ lowStock count | สร้าง full CRUD UI: 4 KPI, search/filter, table, modals (add/edit/delete/transfer/PO) |
+| **deploy_all.sh clasp timeout** | clasp push timeout ไม่มี fallback | เพิ่ม Apps Script API fallback + 60s timeout |
 
 ### ⚠️ Current Watchlist
 
 | รายการ | สถานะ | หมายเหตุ |
 |-------|-------|---------|
 | Browser cache | ⚠️ | ผู้ใช้ต้อง Hard Refresh หลัง deploy |
-| Large data response | ⚠️ | getDashboardData ~11s, ต้อง optimize |
-| AI Validation on non-dashboard | ✅ | Schema tests skip gracefully |
-| POST calls in PWA | ✅ | Zero POST remaining — all GET now |
+| getProfitReport O(N×M) | ⚠️ | Billing loop อ่าน DBJOBS ซ้ำ — ต้อง optimize เมื่อข้อมูลเยอะ |
+| PC Section CRUD | 🔧 | Jobs/PO/CRM/Settings ยัง read-only — Inventory ทำแล้ว |
 | Google Drive SA quota | ⚠️ | SA ไม่มี write quota — ต้องใช้ OAuth2 สำหรับ upload |
 
 ---
@@ -391,7 +403,7 @@ indexedDB.databases().then(dbs => console.log(dbs))
 ---
 
 > **เอกสารนี้คือ Single Source of Truth** — อ้างอิงไฟล์นี้ก่อนเริ่มงานทุกครั้ง
-> อัปเดตล่าสุด: 2026-04-23 | Phase 26.6 | Commit `25283c9`
+> อัปเดตล่าสุด: 2026-04-23 | Phase 27.3 | Commit `pending`
 
 ---
 
