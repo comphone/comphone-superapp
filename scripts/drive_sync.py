@@ -68,61 +68,62 @@ DEFAULT_CONFIG = {
 # ─── Auth ───────────────────────────────────────────────────
 
 def get_drive_service(config):
-    """สร้าง Google Drive service object"""
+    """สร้าง Google Drive service object — OAuth2 from Environment Variables (ไม่ใช้ Service Account แล้ว)"""
     try:
-        from google.oauth2 import service_account
         from google.oauth2.credentials import Credentials
-        from google_auth_oauthlib.flow import InstalledAppFlow
         from google.auth.transport.requests import Request
         from googleapiclient.discovery import build
     except ImportError:
         log_err("ไม่พบ Google API packages")
-        log_err("รัน: pip3 install google-auth google-auth-oauthlib google-api-python-client")
+        log_err("รัน: pip3 install google-auth google-api-python-client")
         sys.exit(1)
 
     SCOPES = ['https://www.googleapis.com/auth/drive']
     creds = None
 
-    if config.get('auth_method') == 'service_account':
-        sa_file = config.get('service_account_file', '')
-        if not sa_file or not Path(sa_file).exists():
-            log_err(f"ไม่พบ service account file: {sa_file}")
-            log_warn("รัน: python3 drive_sync.py --setup เพื่อตั้งค่า")
+    # ── METHOD 1: OAuth2 from Environment Variables (แนะนำ — ไม่ต้องมีไฟล์ local) ──
+    env_client_id     = os.environ.get('GOOGLE_CLIENT_ID')
+    env_client_secret = os.environ.get('GOOGLE_CLIENT_SECRET')
+    env_refresh_token = os.environ.get('GOOGLE_REFRESH_TOKEN')
+
+    if env_client_id and env_client_secret and env_refresh_token:
+        log_ok("Auth: Using OAuth2 from Environment Variables")
+        creds = Credentials(
+            token=None,
+            refresh_token=env_refresh_token,
+            token_uri='https://oauth2.googleapis.com/token',
+            client_id=env_client_id,
+            client_secret=env_client_secret,
+            scopes=SCOPES,
+        )
+        try:
+            creds.refresh(Request())
+            log_ok("Auth: OAuth2 token refreshed from env vars")
+        except Exception as e:
+            log_err(f"OAuth2 refresh failed: {e}")
+            log_warn("ตรวจสอบ GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN")
             return None
-        creds = service_account.Credentials.from_service_account_file(sa_file, scopes=SCOPES)
-        log_ok(f"Auth: Service Account ({Path(sa_file).name})")
 
-    else:  # oauth2
-        token_file = Path(config.get('token_file', str(Path.home() / '.comphone' / 'token.json')))
-        token_file.parent.mkdir(parents=True, exist_ok=True)
+    # ── METHOD 2: OAuth2 from local token file (fallback สำหรับ development) ──
+    elif config.get('token_file') and Path(config.get('token_file', '')).exists():
+        from google.oauth2.credentials import Credentials as _Creds
+        token_file = Path(config['token_file'])
+        log_ok(f"Auth: Using local token file ({token_file.name})")
+        creds = _Creds.from_authorized_user_file(str(token_file), SCOPES)
+        if not creds.valid and creds.expired and creds.refresh_token:
+            try:
+                creds.refresh(Request())
+                log_ok("Auth: Local token refreshed")
+            except Exception as e:
+                log_warn(f"Local token refresh failed: {e}")
+                creds = None
 
-        if token_file.exists():
-            creds = Credentials.from_authorized_user_file(str(token_file), SCOPES)
-
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                try:
-                    creds.refresh(Request())
-                    log_ok("Auth: OAuth2 token refreshed")
-                except Exception as e:
-                    log_warn(f"Token refresh failed: {e} — re-authenticating")
-                    creds = None
-
-            if not creds:
-                creds_file = config.get('credentials_file', 'credentials.json')
-                if not Path(creds_file).exists():
-                    log_err(f"ไม่พบ credentials file: {creds_file}")
-                    log_warn("ดาวน์โหลดจาก Google Cloud Console → APIs & Services → Credentials")
-                    log_warn("รัน: python3 drive_sync.py --setup เพื่อดูขั้นตอน")
-                    return None
-
-                flow = InstalledAppFlow.from_client_secrets_file(creds_file, SCOPES)
-                creds = flow.run_local_server(port=0)
-                log_ok("Auth: OAuth2 login สำเร็จ")
-
-            # บันทึก token
-            with open(str(token_file), 'w') as f:
-                f.write(creds.to_json())
+    # ── NO AUTH AVAILABLE ──
+    if not creds:
+        log_err("ไม่พบ credentials — ตั้งค่าอย่างน้อย 1 วิธี:")
+        log_warn("  1) ตั้ง Environment Variables: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN")
+        log_warn("  2) บันทึก token file ที่ ~/.comphone/token.json")
+        return None
 
     return build('drive', 'v3', credentials=creds)
 

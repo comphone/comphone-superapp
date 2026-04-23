@@ -196,6 +196,22 @@ fi
 echo "☁️ Deploying to GAS..."
 cd clasp-ready || { echo "❌ Cannot cd clasp-ready"; exit 1; }
 
+# PHASE 25.5: Generate ~/.clasprc.json from CLASP_TOKEN env var
+if [ -n "$CLASP_TOKEN" ]; then
+  echo "  → Writing ~/.clasprc.json from CLASP_TOKEN env var..."
+  CLASPRC="$HOME/.clasprc.json"
+  # Decode if base64, otherwise use raw value
+  if echo "$CLASP_TOKEN" | python3 -c "import sys,json; json.loads(sys.stdin.read())" 2>/dev/null; then
+    echo "$CLASP_TOKEN" > "$CLASPRC"
+  else
+    echo "$CLASP_TOKEN" | base64 -d > "$CLASPRC" 2>/dev/null || echo "$CLASP_TOKEN" > "$CLASPRC"
+  fi
+  chmod 600 "$CLASPRC"
+  echo "  ✅ ~/.clasprc.json written"
+else
+  echo "  ⚠️ CLASP_TOKEN not set — using existing ~/.clasprc.json"
+fi
+
 echo "  → Running clasp push..."
 CLASP_OUTPUT=$(clasp push 2>&1)
 CLASP_EXIT=$?
