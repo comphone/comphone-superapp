@@ -322,6 +322,128 @@
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+    /* ─── System Logs Viewer ──────────────────────────────── */
+    #sys-logs-section { margin-top: 4px; }
+    #sys-logs-filter {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    #sys-logs-filter .slog-btn {
+      background: #21262d;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 5px 14px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.15s;
+      letter-spacing: 0.3px;
+    }
+    #sys-logs-filter .slog-btn:hover { background: #30363d; color: var(--text); }
+    #sys-logs-filter .slog-btn.active { color: #fff; border-color: transparent; }
+    #sys-logs-filter .slog-btn[data-level="ALL"].active       { background: var(--blue); }
+    #sys-logs-filter .slog-btn[data-level="CRITICAL"].active  { background: #ff4444; }
+    #sys-logs-filter .slog-btn[data-level="ERROR"].active     { background: #ff8800; color: #000; }
+    #sys-logs-filter .slog-btn[data-level="WARNING"].active   { background: #ffbb33; color: #000; }
+    #sys-logs-filter .slog-btn[data-level="INFO"].active      { background: #33b5e5; color: #000; }
+    #sys-logs-count {
+      font-size: 11px;
+      color: var(--muted);
+      margin-left: auto;
+    }
+    #sys-logs-status {
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    #sys-logs-status .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      animation: pulse 2s infinite;
+    }
+    #sys-logs-table-wrap {
+      max-height: 420px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+    }
+    #sys-logs-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    #sys-logs-table thead th {
+      position: sticky;
+      top: 0;
+      background: #161b22;
+      z-index: 2;
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--muted);
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    #sys-logs-table tbody td {
+      padding: 8px 14px;
+      border-bottom: 1px solid #1c2128;
+      vertical-align: top;
+    }
+    #sys-logs-table tbody tr:last-child td { border-bottom: none; }
+    #sys-logs-table tbody tr:hover td { background: #1c2128; }
+    .slog-time {
+      color: var(--muted);
+      white-space: nowrap;
+      font-family: 'Consolas', monospace;
+      font-size: 12px;
+      min-width: 130px;
+    }
+    .slog-level {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      min-width: 80px;
+      text-align: center;
+    }
+    .slog-level.CRITICAL { background: rgba(255,68,68,0.15);   color: #ff4444; border: 1px solid rgba(255,68,68,0.3); }
+    .slog-level.ERROR    { background: rgba(255,136,0,0.15);   color: #ff8800; border: 1px solid rgba(255,136,0,0.3); }
+    .slog-level.WARNING  { background: rgba(255,187,51,0.15);  color: #ffbb33; border: 1px solid rgba(255,187,51,0.3); }
+    .slog-level.INFO     { background: rgba(51,181,229,0.15);  color: #33b5e5; border: 1px solid rgba(51,181,229,0.3); }
+    .slog-source {
+      color: var(--purple);
+      font-family: 'Consolas', monospace;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .slog-msg {
+      color: var(--text);
+      word-break: break-all;
+      font-size: 13px;
+    }
+    .slog-row-critical td { background: rgba(255,68,68,0.04); }
+    .slog-row-error td    { background: rgba(255,136,0,0.03); }
+    .slog-empty {
+      color: var(--muted);
+      text-align: center;
+      padding: 50px 20px;
+      font-size: 14px;
+    }
+    .slog-empty-icon { font-size: 28px; display: block; margin-bottom: 10px; }
   </style>
 </head>
 <body>
@@ -447,6 +569,35 @@
     </div>
     <div id="log-container">
       <div class="empty-log">กำลังโหลด security log...</div>
+    </div>
+  </div>
+
+  <!-- ═══ System Logs — Real-time Log Viewer ═══ -->
+  <div class="section-card" id="sys-logs-section">
+    <div class="section-title">📋 System Logs <span style="font-weight:400;font-size:11px;color:var(--muted)">(Real-time • auto-refresh 10s)</span></div>
+    <div id="sys-logs-filter">
+      <button class="slog-btn active" data-level="ALL" onclick="setSysLogLevel('ALL')">ALL</button>
+      <button class="slog-btn" data-level="CRITICAL" onclick="setSysLogLevel('CRITICAL')">CRITICAL</button>
+      <button class="slog-btn" data-level="ERROR" onclick="setSysLogLevel('ERROR')">ERROR</button>
+      <button class="slog-btn" data-level="WARNING" onclick="setSysLogLevel('WARNING')">WARNING</button>
+      <button class="slog-btn" data-level="INFO" onclick="setSysLogLevel('INFO')">INFO</button>
+      <span id="sys-logs-count">0 logs</span>
+      <span id="sys-logs-status"><span class="dot"></span> Connected</span>
+    </div>
+    <div id="sys-logs-table-wrap">
+      <table id="sys-logs-table">
+        <thead>
+          <tr>
+            <th style="min-width:130px">Time</th>
+            <th style="min-width:90px">Level</th>
+            <th style="min-width:120px">Source</th>
+            <th>Message</th>
+          </tr>
+        </thead>
+        <tbody id="sys-logs-tbody">
+          <tr><td colspan="4" class="slog-empty"><span class="slog-empty-icon">📡</span>Connecting to log stream...</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </main>

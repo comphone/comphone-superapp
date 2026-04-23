@@ -450,3 +450,76 @@ if (typeof window !== 'undefined') {
   window.validateToken = validateToken;
   window.isSessionExpired = isSessionExpired;
 }
+
+// ═══════════════════════════════════════════════════════
+// GLOBAL ERROR HANDLER — Send frontend errors to backend
+// ═══════════════════════════════════════════════════════
+(function() {
+  const ERROR_ENDPOINT = window.COMPHONE_GAS_URL || window.GAS_URL || '';
+  const MAX_ERRORS_PER_MINUTE = 5;
+  let errorCount = 0;
+  let lastReset = Date.now();
+
+  function shouldSendError() {
+    if (Date.now() - lastReset > 60000) {
+      errorCount = 0;
+      lastReset = Date.now();
+    }
+    return errorCount < MAX_ERRORS_PER_MINUTE;
+  }
+
+  function sendErrorToBackend(errorData) {
+    if (!ERROR_ENDPOINT || !shouldSendError()) return;
+    errorCount++;
+    try {
+      fetch(ERROR_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'logSystemError',
+          level: errorData.level || 'ERROR',
+          source: errorData.source || 'frontend',
+          message: errorData.message || 'Unknown error',
+          stack: errorData.stack || '',
+          userAgent: navigator.userAgent,
+          url: window.location.href,
+          userId: localStorage.getItem('comphone_user') || ''
+        }),
+        mode: 'no-cors' // GAS requires this
+      }).catch(() => {});
+    } catch (_) {}
+  }
+
+  // Catch uncaught JS errors
+  window.onerror = function(message, source, lineno, colno, error) {
+    sendErrorToBackend({
+      level: 'CRITICAL',
+      source: source || 'window.onerror',
+      message: message,
+      stack: error ? error.stack : ''
+    });
+    return false; // Don't suppress the error
+  };
+
+  // Catch unhandled promise rejections
+  window.addEventListener('unhandledrejection', function(event) {
+    sendErrorToBackend({
+      level: 'CRITICAL',
+      source: 'unhandledrejection',
+      message: event.reason ? event.reason.message || String(event.reason) : 'Unknown rejection',
+      stack: event.reason && event.reason.stack ? event.reason.stack : ''
+    });
+  });
+
+  // Expose manual error reporter
+  window.reportError = function(message, level, source) {
+    sendErrorToBackend({
+      level: level || 'WARNING',
+      source: source || 'manual',
+      message: message,
+      stack: ''
+    });
+  };
+
+  console.log('[ERROR_HANDLER] Global error handler installed — reporting to backend');
+})();

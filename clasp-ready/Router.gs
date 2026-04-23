@@ -219,7 +219,8 @@ function dispatchActionV55_(action, payload, args) {
             'getStockMovementHistory', 'createPurchaseOrder', 'listPurchaseOrders', 'receivePurchaseOrder',
             'checkStock', 'barcodeLookup', 'scanWithdrawStock', 'geminiReorderSuggestion',
             'createBilling', 'getBilling', 'generatePromptPayQR', 'updatePayment', 'listBillings',
-            'initSystem', 'systemStatus', 'setupAllTriggers', 'cleanupSessions', 'verifyToken', 'getSchemaInfo', 'validateConfig', 'getComphoneConfig', 'setScriptProperties'
+            'initSystem', 'systemStatus', 'setupAllTriggers', 'cleanupSessions', 'verifyToken', 'getSchemaInfo', 'validateConfig', 'getComphoneConfig', 'setScriptProperties',
+            'logSystemError', 'getSystemLogs'
           ]
         };
 
@@ -350,6 +351,16 @@ function dispatchActionV55_(action, payload, args) {
       case 'getSecurityLog':
         var _sl = (typeof getSecurityLog === 'function') ? getSecurityLog() : [];
         return { success: true, data: _sl, count: _sl.length };
+      case 'logSystemError':
+        // No auth required — frontend may not have token when error occurs
+        return logSystemError(payload);
+      case 'getSystemLogs':
+        // Admin only — require valid session
+        var _slToken = payload.token || payload.auth_token || '';
+        var _slAuth = verifySession(_slToken);
+        if (!_slAuth.success) return { success: false, error: 'Authentication required', code: 401 };
+        if (_slAuth.role !== 'admin' && _slAuth.role !== 'owner') return { success: false, error: 'Admin access required', code: 403 };
+        return getSystemLogs(payload);
       case 'setupTriggers':
       case 'setupAllTriggers':
         return setupAllTriggers();
