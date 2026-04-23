@@ -721,8 +721,8 @@ function drawRevenueChartPC(revenue) {
   });
 }
 
-// ===== SECTION LOADER =====
-function loadSection(section) {
+// ===== SECTION LOADER (PHASE 26.6 — Live Data) =====
+async function loadSection(section) {
   setActiveNav(section);
   if (section === 'dashboard') { loadDashboard(); return; }
 
@@ -731,12 +731,229 @@ function loadSection(section) {
 
   document.getElementById('main-content').innerHTML = `
     <div class="loading-state">
-      <i class="bi bi-${sectionIcon(section)}" style="font-size:48px;color:#d1d5db;display:block;margin-bottom:16px"></i>
-      <p style="font-size:16px;font-weight:700">กำลังพัฒนา: ${sectionLabel(section)}</p>
-      <p style="color:#9ca3af;margin-top:8px">ฟีเจอร์นี้จะพร้อมใช้งานเร็วๆ นี้</p>
-      <button class="btn-refresh" onclick="loadDashboard()" style="margin-top:16px">
-        <i class="bi bi-arrow-left"></i> กลับ Dashboard
-      </button>
+      <div class="spinner-pc"></div>
+      <p>กำลังโหลด${sectionLabel(section)}...</p>
+    </div>`;
+
+  try {
+    // ใช้ cache ก่อน ถ้าไม่มีค่อยดึงใหม่
+    if (!DASHBOARD_DATA) {
+      DASHBOARD_DATA = await callGas('getDashboardData');
+    }
+    const data = DASHBOARD_DATA;
+
+    switch (section) {
+      case 'jobs':     renderJobsSection(data); break;
+      case 'inventory': renderInventorySection(data); break;
+      case 'revenue':  renderRevenueSection(data); break;
+      case 'po':       renderPOSection(data); break;
+      case 'crm':      renderCRMSection(data); break;
+      case 'settings': renderSettingsSection(); break;
+      default:         renderGenericSection(section, data);
+    }
+  } catch(e) {
+    document.getElementById('main-content').innerHTML = `
+      <div class="loading-state">
+        <i class="bi bi-wifi-off" style="font-size:48px;color:#d1d5db;display:block;margin-bottom:16px"></i>
+        <p style="font-size:16px;font-weight:700">ไม่สามารถเชื่อมต่อได้</p>
+        <p style="color:#9ca3af;margin-top:8px">${e.message}</p>
+        <button class="btn-refresh" onclick="loadSection('${section}')" style="margin-top:16px">
+          <i class="bi bi-arrow-clockwise"></i> ลองใหม่
+        </button>
+      </div>`;
+  }
+}
+
+function renderJobsSection(data) {
+  const jobs = data.jobs || [];
+  const statuses = (data.status_distribution || {}).statuses || [];
+  const statusFilter = statuses.map(s => s.status || s.name).filter(Boolean);
+
+  let html = `<div class="card-box" style="margin-bottom:16px">
+    <div class="card-title"><i class="bi bi-funnel-fill" style="color:#1e40af"></i> กรองตามสถานะ
+      <span class="badge-count">${jobs.length} งาน</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+      <button class="btn-refresh" onclick="filterSectionJobs('')" style="font-size:12px;padding:4px 12px">ทั้งหมด</button>
+      ${statusFilter.map(s => `<button class="btn-refresh" onclick="filterSectionJobs('${s}')" style="font-size:12px;padding:4px 12px">${s}</button>`).join('')}
+    </div>
+    <div id="jobs-section-list">${_buildJobsTable(jobs)}</div>
+  </div>`;
+
+  // Overdue alert
+  const overdue = jobs.filter(j => j.sla_status === 'OVERDUE' || j.status === 'เกินกำหนด');
+  if (overdue.length > 0) {
+    html = `<div class="card-box" style="border-left:4px solid #dc2626;margin-bottom:16px">
+      <div class="card-title"><i class="bi bi-exclamation-triangle-fill" style="color:#dc2626"></i> งานเกิน SLA: ${overdue.length} งาน</div>
+      ${_buildJobsTable(overdue)}
+    </div>` + html;
+  }
+
+  document.getElementById('main-content').innerHTML = html;
+}
+
+function _buildJobsTable(jobs) {
+  if (!jobs.length) return '<p style="color:#9ca3af;font-size:13px;text-align:center;padding:20px">ไม่มีงาน</p>';
+  return `<div style="overflow-x:auto;max-height:500px;overflow-y:auto"><table class="job-table">
+    <thead><tr><th>Job ID</th><th>ลูกค้า</th><th>สถานะ</th><th>ช่าง</th><th>วันที่</th></tr></thead>
+    <tbody>${jobs.map(j => `<tr>
+      <td style="font-weight:600">${j.job_id || j.id || '-'}</td>
+      <td>${j.customer || j.customer_name || '-'}</td>
+      <td><span style="background:${_statusColor(j.status)};padding:2px 8px;border-radius:10px;font-size:11px;color:#fff">${j.status || '-'}</span></td>
+      <td>${j.technician || '-'}</td>
+      <td style="font-size:12px;color:#6b7280">${j.date || j.created || '-'}</td>
+    </tr>`).join('')}</tbody></table></div>`;
+}
+
+function _statusColor(s) {
+  const m = {'รอดำเนินการ':'#6b7280','PENDING':'#6b7280','กำลังดำเนินการ':'#3b82f6','IN_PROGRESS':'#3b82f6',
+    'เสร็จสิ้น':'#059669','COMPLETED':'#059669','เกินกำหนด':'#dc2626','OVERDUE':'#dc2626','ยกเลิก':'#9ca3af','CANCELLED':'#9ca3af'};
+  return m[s] || '#6b7280';
+}
+
+window.filterSectionJobs = function(status) {
+  const jobs = (DASHBOARD_DATA || {}).jobs || [];
+  const filtered = status ? jobs.filter(j => j.status === status) : jobs;
+  const el = document.getElementById('jobs-section-list');
+  if (el) el.innerHTML = _buildJobsTable(filtered);
+};
+
+function renderInventorySection(data) {
+  const jobs = data.jobs || [];
+  const lowStock = Number((data.summary || {}).lowStock || 0);
+
+  let html = `<div class="kpi-row" style="margin-bottom:16px">
+    ${kpiBox('bi-box-seam-fill', lowStock > 0 ? '#fef3c7' : '#f1f5f9', lowStock > 0 ? '#d97706' : '#6b7280', lowStock, 'สินค้าสต็อกต่ำ', lowStock > 0 ? '⚠️ ต้องสั่งซื้อ' : 'ปกติ')}
+  </div>
+  <div class="card-box">
+    <div class="card-title"><i class="bi bi-box-seam-fill" style="color:#d97706"></i> สินค้าคงคลัง</div>
+    <div id="inventory-section-list">
+      <p style="color:#9ca3af;font-size:13px;text-align:center;padding:20px">
+        ข้อมูลสต็อกจะแสดงเมื่อเชื่อมต่อ Inventory Module<br>
+        <small>ปัจจุบัน: ${lowStock} รายการสต็อกต่ำจาก Dashboard Summary</small>
+      </p>
+    </div>
+  </div>`;
+  document.getElementById('main-content').innerHTML = html;
+}
+
+function renderRevenueSection(data) {
+  const rev = (data.summary || {}).revenue || {};
+  const today = Number(rev.today || 0);
+  const week = Number(rev.week || 0);
+  const month = Number(rev.month || 0);
+
+  let html = `<div class="kpi-row" style="margin-bottom:16px">
+    ${kpiBox('bi-currency-exchange', '#d1fae5', '#059669', '฿'+today.toLocaleString(), 'วันนี้', '')}
+    ${kpiBox('bi-calendar-week', '#dbeafe', '#1e40af', '฿'+week.toLocaleString(), 'สัปดาห์นี้', '')}
+    ${kpiBox('bi-calendar-month', '#fef3c7', '#d97706', '฿'+month.toLocaleString(), 'เดือนนี้', '')}
+  </div>
+  <div class="card-box">
+    <div class="card-title"><i class="bi bi-bar-chart-fill" style="color:#d97706"></i> รายรับรายวัน</div>
+    <div class="chart-wrap"><canvas id="revenue-section-chart"></canvas></div>
+  </div>`;
+
+  document.getElementById('main-content').innerHTML = html;
+
+  // Render chart
+  setTimeout(() => {
+    const dailyRev = data.revenue_by_day || [];
+    const ctx = document.getElementById('revenue-section-chart');
+    if (ctx && dailyRev.length) {
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: dailyRev.map(d => d.date || d.day || ''),
+          datasets: [{ label: 'รายรับ (฿)', data: dailyRev.map(d => d.amount || d.total || 0),
+            backgroundColor: '#3b82f6', borderRadius: 6 }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } } }
+      });
+    }
+  }, 100);
+}
+
+function renderPOSection(data) {
+  const jobs = data.jobs || [];
+  const pendingPO = jobs.filter(j => j.status === 'รอดำเนินการ' || j.status === 'PENDING');
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="card-box">
+      <div class="card-title"><i class="bi bi-cart-fill" style="color:#1e40af"></i> ใบสั่งซื้อ / รออนุมัติ
+        <span class="badge-count">${pendingPO.length}</span>
+      </div>
+      ${pendingPO.length === 0 ? '<p style="color:#9ca3af;font-size:13px;text-align:center;padding:20px">ไม่มีรายการรออนุมัติ</p>' :
+        _buildJobsTable(pendingPO)}
+    </div>`;
+}
+
+function renderCRMSection(data) {
+  const jobs = data.jobs || [];
+  // Extract unique customers
+  const customers = {};
+  jobs.forEach(j => {
+    const name = j.customer || j.customer_name;
+    if (!name) return;
+    if (!customers[name]) customers[name] = { name, jobs: 0, totalSpent: 0 };
+    customers[name].jobs++;
+    customers[name].totalSpent += Number(j.total || j.amount || 0);
+  });
+  const custList = Object.values(customers).sort((a, b) => b.totalSpent - a.totalSpent);
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="card-box">
+      <div class="card-title"><i class="bi bi-people-fill" style="color:#059669"></i> รายชื่อลูกค้า
+        <span class="badge-count">${custList.length} ราย</span>
+      </div>
+      ${custList.length === 0 ? '<p style="color:#9ca3af;font-size:13px;text-align:center;padding:20px">ไม่มีข้อมูลลูกค้า</p>' :
+        `<div style="overflow-x:auto;max-height:500px;overflow-y:auto"><table class="job-table">
+          <thead><tr><th>ลูกค้า</th><th>จำนวนงาน</th><th>ยอดรวม (฿)</th></tr></thead>
+          <tbody>${custList.map(c => `<tr>
+            <td style="font-weight:600">${c.name}</td>
+            <td>${c.jobs}</td>
+            <td>฿${c.totalSpent.toLocaleString()}</td>
+          </tr>`).join('')}</tbody></table></div>`}
+    </div>`;
+}
+
+async function renderSettingsSection() {
+  let guardInfo = '';
+  try {
+    const resp = await callGas('guardstatus');
+    if (resp && resp.success !== false) {
+      guardInfo = `<div class="card-box" style="margin-bottom:16px">
+        <div class="card-title"><i class="bi bi-shield-check" style="color:#059669"></i> Property Guard</div>
+        <pre style="background:#f8fafc;padding:12px;border-radius:8px;font-size:12px;overflow:auto;max-height:300px">${JSON.stringify(resp, null, 2)}</pre>
+      </div>`;
+    }
+  } catch(_) {}
+
+  document.getElementById('main-content').innerHTML = `
+    ${guardInfo}
+    <div class="card-box">
+      <div class="card-title"><i class="bi bi-gear-fill" style="color:#6b7280"></i> ตั้งค่าระบบ</div>
+      <div style="padding:16px">
+        <p style="margin-bottom:12px"><strong>GAS URL:</strong><br><code style="font-size:11px;word-break:break-all">${GAS_URL}</code></p>
+        <p style="margin-bottom:12px"><strong>Version:</strong> v5.6.6</p>
+        <p style="margin-bottom:12px"><strong>Properties:</strong> 49/50</p>
+        <button class="btn-refresh" onclick="loadDashboard()" style="margin-top:8px">
+          <i class="bi bi-arrow-left"></i> กลับ Dashboard
+        </button>
+      </div>
+    </div>`;
+}
+
+function renderGenericSection(section, data) {
+  document.getElementById('main-content').innerHTML = `
+    <div class="card-box">
+      <div class="card-title"><i class="bi bi-${sectionIcon(section)}" style="color:#1e40af"></i> ${sectionLabel(section)}</div>
+      <p style="color:#9ca3af;font-size:13px;text-align:center;padding:20px">
+        ฟีเจอร์ ${sectionLabel(section)} อยู่ระหว่างการพัฒนา<br>
+        <button class="btn-refresh" onclick="loadDashboard()" style="margin-top:12px">
+          <i class="bi bi-arrow-left"></i> กลับ Dashboard
+        </button>
+      </p>
     </div>`;
 }
 

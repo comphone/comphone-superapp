@@ -40,7 +40,7 @@
   
   // Test 2: Check that DATA_SCHEMA has expected keys
   test('DATA_SCHEMA has stock, job, order keys',
-    test('DATA_SCHEMA exists') && 
+    typeof window.__DATA_SCHEMA === 'object' && window.__DATA_SCHEMA !== null &&
     'stock' in window.__DATA_SCHEMA &&
     'job' in window.__DATA_SCHEMA &&
     'order' in window.__DATA_SCHEMA);
@@ -52,14 +52,14 @@
   
   // Test 4: Check that ACTION_MAP has expected actions
   test('ACTION_MAP has getStockList, updateJobStatus, posCheckout',
-    test('ACTION_MAP exists') && 
+    typeof window.__ACTION_MAP === 'object' && window.__ACTION_MAP !== null &&
     'getStockList' in window.__ACTION_MAP &&
     'updateJobStatus' in window.__ACTION_MAP &&
     'posCheckout' in window.__ACTION_MAP);
   
   // Test 5: Check that ACTION_MAP entries have correct structure
   test('ACTION_MAP entries have api and type',
-    test('ACTION_MAP has getStockList, updateJobStatus, posCheckout') &&
+    typeof window.__ACTION_MAP === 'object' && window.__ACTION_MAP !== null &&
     Object.values(window.__ACTION_MAP).every(action => 
       action.hasOwnProperty('api') && 
       action.hasOwnProperty('type') &&
@@ -72,7 +72,7 @@
   
   // Test 7: Check that UI_REFRESH_MAP has expected actions
   test('UI_REFRESH_MAP has updateJobStatus, posCheckout',
-    test('UI_REFRESH_MAP exists') && 
+    typeof window.__UI_REFRESH_MAP === 'object' && window.__UI_REFRESH_MAP !== null &&
     'updateJobStatus' in window.__UI_REFRESH_MAP &&
     'posCheckout' in window.__UI_REFRESH_MAP);
   
@@ -82,7 +82,7 @@
   
   // Test 9: Check that AI_EXECUTOR has debug function
   test('AI_EXECUTOR.debug exists', 
-    test('AI_EXECUTOR function exists') &&
+    typeof window.AI_EXECUTOR === 'function' &&
     typeof window.AI_EXECUTOR.debug === 'function');
   
   // Test 10: Check that script tag is present

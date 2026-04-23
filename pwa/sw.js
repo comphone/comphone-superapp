@@ -164,7 +164,7 @@ async function _flushOfflineQueue_() {
   let db;
   try {
     db = await new Promise((res, rej) => {
-      const r = indexedDB.open(DB_NAME, 1);
+      const r = indexedDB.open(DB_NAME, 2);  // v2: force onupgradeneeded to create 'queue' store
       r.onupgradeneeded = e => {
         const d = e.target.result;
         if (!d.objectStoreNames.contains(STORE)) {
@@ -188,19 +188,6 @@ async function _flushOfflineQueue_() {
 
   db.close();
   console.log('[SW] Notified clients to flush', items.length, 'offline items');
-}
-
-// Background sync for offline actions
-self.addEventListener('sync', e => {
-  if (e.tag === 'sync-jobs') {
-    e.waitUntil(syncOfflineJobs());
-  }
-});
-
-async function syncOfflineJobs() {
-  // Will sync offline job updates when back online
-  const clients = await self.clients.matchAll();
-  clients.forEach(client => client.postMessage({ type: 'SYNC_COMPLETE' }));
 }
 
 // Push notifications
