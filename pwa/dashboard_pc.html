@@ -1658,14 +1658,14 @@ async function renderRevenueSection(data) {
               <td style="font-size:13px">${j.customer||'-'}</td>
               <td style="text-align:right;font-size:13px">฿${rev.toLocaleString()}</td>
               <td style="text-align:right;font-size:13px;color:#ef4444">฿${cost.toLocaleString()}</td>
-              <td style="text-align:right;font-weight:700;font-size:13px;color:${profit>=0?'#059669':'#ef4444'}">${profit>=0?':''}฿${Math.abs(profit).toLocaleString()}</td>
+              <td style="text-align:right;font-weight:700;font-size:13px;color:${profit>=0?'#059669':'#ef4444'}">${profit>=0?'':'−'}฿${Math.abs(profit).toLocaleString()}</td>
             </tr>`;
           }).join('')}
           <tr style="background:#f8fafc;font-weight:700">
             <td colspan="2" style="font-size:13px">รวม</td>
             <td style="text-align:right;font-size:13px">฿${totalRevenue.toLocaleString()}</td>
             <td style="text-align:right;font-size:13px;color:#ef4444">฿${totalCost.toLocaleString()}</td>
-            <td style="text-align:right;font-size:13px;color:${totalProfit>=0?'#059669':'#ef4444'}">${totalProfit>=0?':''}฿${Math.abs(totalProfit).toLocaleString()}</td>
+            <td style="text-align:right;font-size:13px;color:${totalProfit>=0?'#059669':'#ef4444'}">${totalProfit>=0?'':'−'}฿${Math.abs(totalProfit).toLocaleString()}</td>
           </tr>
         </table>
       </div>
