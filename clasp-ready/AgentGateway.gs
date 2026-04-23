@@ -233,7 +233,7 @@ function _agLog_(agentId, action, status, latencyMs, detail) {
     };
     logs.unshift(entry);
     if (logs.length > 500) logs = logs.slice(0, 500); // keep last 500
-    props.setProperty('AG_ACTIVITY_LOG', JSON.stringify(logs));
+    safeSetProperty('AG_ACTIVITY_LOG', JSON.stringify(logs));  // Guard
   } catch (e) {
     Logger.log('AgentGateway log error: ' + e.toString());
   }
@@ -502,7 +502,7 @@ function _agGetRegisteredAgents_() {
 }
 
 function _agSaveRegisteredAgents_(agents) {
-  PropertiesService.getScriptProperties().setProperty('AG_REGISTERED_AGENTS', JSON.stringify(agents));
+  safeSetProperty('AG_REGISTERED_AGENTS', JSON.stringify(agents));  // Guard
 }
 
 function _agGetApiKey_(agentId) {
@@ -510,7 +510,7 @@ function _agGetApiKey_(agentId) {
 }
 
 function _agSetApiKey_(agentId, apiKey) {
-  PropertiesService.getScriptProperties().setProperty('AG_KEY_' + agentId, apiKey);
+  safeSetProperty('AG_KEY_' + agentId, apiKey);  // Guard: dynamic key
 }
 
 function _agGenerateKey_() {

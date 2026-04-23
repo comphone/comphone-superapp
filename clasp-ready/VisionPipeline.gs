@@ -468,7 +468,7 @@ function _vpSetCache_(hash, type, result) {
   try {
     var key = 'vp_cache_' + type + '_' + hash.substring(0, 20);
     var entry = { savedAt: Date.now(), result: result };
-    PropertiesService.getScriptProperties().setProperty(key, JSON.stringify(entry));
+    safeSetProperty(key, JSON.stringify(entry));  // Guard: dynamic cache key
   } catch (e) { Logger.log('VisionPipeline setCache error: ' + e.toString()); }
 }
 

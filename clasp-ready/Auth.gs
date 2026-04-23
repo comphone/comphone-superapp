@@ -68,7 +68,7 @@ function loginUser(username, password) {
         login_at: new Date().toISOString(),
         expires_at: new Date(new Date().getTime() + 8 * 60 * 60 * 1000).toISOString()
       });
-      PropertiesService.getScriptProperties().setProperty(sessionKey, sessionData);
+      safeSetProperty(sessionKey, sessionData);  // Guard: prevent exceeding 50 props
 
       try { logActivity('LOGIN', rowUser, 'เข้าสู่ระบบสำเร็จ role=' + role); } catch(e) {}
       try { resetFailedLogin_(rowUser); } catch(e) {}

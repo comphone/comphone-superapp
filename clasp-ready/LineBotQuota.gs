@@ -500,7 +500,7 @@ function _isDuplicateAlert_(alertType) {
 
 function _recordAlertSent_(alertType) {
   var props = PropertiesService.getScriptProperties();
-  props.setProperty('LINE_LAST_ALERT_' + alertType, new Date().toISOString());
+  safeSetProperty('LINE_LAST_ALERT_' + alertType, new Date().toISOString());  // Guard: dynamic key
 }
 
 function _todayStr_() {

@@ -492,16 +492,21 @@ function syncApprovalAuditLogs() {
 // 11. EXPORT / BACKWARD COMPATIBILITY
 // ============================================================
 // ให้ window.__USER_ROLE อ่านจาก APP state (read-only getter)
-Object.defineProperty(window, '__USER_ROLE', {
-  get() {
-    const user = (typeof APP !== 'undefined' && APP.user) ? APP.user : null;
-    return user ? (user.role || 'guest') : 'guest';
-  },
-  set() {
-    console.warn('⛔ __USER_ROLE is read-only in production mode');
-  },
-  configurable: false
-});
+// Guard: ตรวจก่อน define เพื่อป้องกัน "Cannot redefine property"
+if (!Object.getOwnPropertyDescriptor(window, '__USER_ROLE')) {
+  Object.defineProperty(window, '__USER_ROLE', {
+    get() {
+      const user = (typeof APP !== 'undefined' && APP.user) ? APP.user : null;
+      return user ? (user.role || 'guest') : 'guest';
+    },
+    set() {
+      console.warn('⛔ __USER_ROLE is read-only in production mode');
+    },
+    configurable: false
+  });
+} else {
+  console.log('[APPROVAL_GUARD] __USER_ROLE already defined, skipping');
+}
 
 // เก็บ reference เดิม (ถ้ามี)
 if (typeof window.canApproveLegacy === 'undefined' && typeof window.canApprove !== 'undefined') {
