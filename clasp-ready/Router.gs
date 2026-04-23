@@ -123,9 +123,9 @@ function doGet(e) {
     // Default: API Ready response + redirect hint
     return jsonOutputV55_({
       status:       'ok',
-      version:      (typeof CONFIG !== 'undefined' ? CONFIG.VERSION : 'V5.5.8'),
+      version:      CONFIG.VERSION,
       message:      'COMPHONE API READY',
-      architecture: 'API-Only (V5.5.8)',
+      architecture: 'API-Only (V' + CONFIG.VERSION + ')',
       ui_url:       'https://comphone.github.io/comphone-superapp/pwa/',
       note:         'UI อยู่ที่ PWA เท่านั้น — GAS เป็น API Backend เท่านั้น'
     });
@@ -133,7 +133,7 @@ function doGet(e) {
     return jsonOutputV55_({
       status:  'error',
       error:   error.toString(),
-      version: (typeof CONFIG !== 'undefined' ? CONFIG.VERSION : 'V5.5.8')
+      version: CONFIG.VERSION
     });
   }
 }
@@ -206,7 +206,7 @@ function dispatchActionV55_(action, payload, args) {
         return {
           success: true,
           app: 'COMPHONE SUPER APP V5.5+',
-          version: CONFIG.VERSION || 'V5.5.7',
+          version: CONFIG.VERSION,
           actions: [
             'getDashboardData', 'getJobStateConfig', 'getJobTimeline', 'transitionJob', 'updateJobById',
             'addQuickNote', 'checkJobs', 'listJobs', 'openJob', 'updateJobStatus', 'getPhotoGalleryData', 'generateJobQR',
@@ -964,7 +964,7 @@ function jsonOutputV55_(data) {
     // เพิ่ม meta.version ในทุก response — Frontend ใช้ตรวจสอบ version mismatch
     if (!data.meta) {
       data.meta = {
-        version: (typeof CONFIG !== 'undefined' && CONFIG.VERSION) || 'V5.5.7',
+        version: CONFIG.VERSION,
         ts: Date.now()
       };
     }
@@ -1047,7 +1047,7 @@ function healthCheckV55_() {
 
   return {
     status:    overallOk ? 'healthy' : 'degraded',
-    version:   CONFIG.VERSION || 'V5.5.7',
+    version:   CONFIG.VERSION,
     timestamp: Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss'),
     elapsed_ms: elapsed,
     checks:    checks
@@ -1060,7 +1060,7 @@ function healthCheckV55_() {
 function getVersionV55_() {
   return {
     success: true,
-    version: CONFIG.VERSION || '6.2.0',
+    version: CONFIG.VERSION,
     build:   CONFIG.BUILD   || '2026-04-19',
     app:     CONFIG.APP_NAME || 'COMPHONE SUPER APP AI',
     timestamp: Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss')
@@ -1077,7 +1077,7 @@ function getSystemVersion() {
   return {
     success:   true,
     status:    'healthy',
-    version:   CONFIG.VERSION  || '6.2.2',
+    version:   CONFIG.VERSION,
     build:     CONFIG.BUILD    || '2026-04-20',
     app:       CONFIG.APP_NAME || 'COMPHONE SUPER APP AI',
     updated:   now.toISOString(),
