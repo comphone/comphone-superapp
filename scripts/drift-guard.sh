@@ -8,7 +8,7 @@
 
 set -euo pipefail
 
-BASELINE_TAG="${1:-v5.7.2-phase2b1}"
+BASELINE_TAG="${1:-v5.7.3-phase2b2}"
 BASELINE_COMMIT=$(git rev-list -n1 "$BASELINE_TAG" 2>/dev/null || echo "")
 DRIFT_FOUND=0
 ERRORS=()
