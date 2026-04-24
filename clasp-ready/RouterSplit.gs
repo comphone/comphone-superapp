@@ -351,6 +351,13 @@ var MODULE_ROUTER = {
   'verifyPaymentSlip': function(p) { return verifyPaymentSlip_(p); },
   // REMOVED: verifyToken — function doesn't exist
   'weightedConsensus': function(p) { return weightedConsensus(p); },
+  // ── Migrated from Router switch (Phase 2B-3) ──────────────────
+  'getSystemUserFromLine': function(p) { return getSystemUserFromLine(p.lineUserId || ''); },
+  'getAlertQueue':         function(p) { return { success: true, queue: getAlertQueue() }; },
+  'getUnnotifiedAlerts':   function(p) { return { success: true, alerts: getUnnotifiedAlerts() }; },
+  'getCachedResponse':     function(p) { return { success: true, data: getCachedResponse(p.key || '') }; },
+  'getDynamicThreshold':   function(p) { return { success: true, type: p.type, threshold: getDynamicThreshold(p.type || 'QC') }; },
+  'buildAdaptivePrompt':   function(p) { return { success: true, prompt: buildAdaptivePrompt(p.type || 'QC', p.input || {}) }; },
 };
 
 /**
