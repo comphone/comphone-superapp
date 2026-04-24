@@ -1,0 +1,48 @@
+#!/bin/bash
+echo "🔍 [pre-commit] Running checks..."
+ERRORS=0
+
+# 1. JS syntax check
+for file in $(git diff --cached --name-only --diff-filter=ACM | grep '\.js$'); do
+  if [ -f "$file" ]; then
+    node --check "$file" 2>&1
+    if [ $? -ne 0 ]; then
+      echo "❌ Syntax error: $file"
+      ERRORS=$((ERRORS + 1))
+    fi
+  fi
+done
+
+# 2. Security invariants (PHMP v1)
+if git diff --cached --name-only | grep -q "Router.gs"; then
+  echo "🔒 [pre-commit] Router.gs changed — checking security invariants..."
+  if ! grep -q '_checkAuthGateV55_' clasp-ready/Router.gs; then
+    echo "❌ CRITICAL: _checkAuthGateV55_ missing from Router.gs"
+    ERRORS=$((ERRORS + 1))
+  fi
+  if ! grep -q "functionName.charAt(0) === '_'" clasp-ready/Router.gs; then
+    echo "❌ CRITICAL: Underscore guard missing from invokeFunctionByNameV55_"
+    ERRORS=$((ERRORS + 1))
+  fi
+  if ! grep -q 'verifyLineSignature_' clasp-ready/Router.gs; then
+    echo "❌ CRITICAL: LINE signature verification missing"
+    ERRORS=$((ERRORS + 1))
+  fi
+fi
+
+# 3. Version sync (frontend must match)
+if git diff --cached --name-only | grep -q "sw.js\|dashboard_pc.html"; then
+  SW_V=$(grep -oP "comphone-v\K[0-9.]+" pwa/sw.js 2>/dev/null | head -1)
+  PC_V=$(grep -oP "__APP_VERSION.*v\K[0-9.]+" pwa/dashboard_pc.html 2>/dev/null | head -1)
+  if [ -n "$SW_V" ] && [ -n "$PC_V" ] && [ "$SW_V" != "$PC_V" ]; then
+    echo "❌ Version mismatch: sw.js=$SW_V vs dashboard=$PC_V"
+    ERRORS=$((ERRORS + 1))
+  fi
+fi
+
+if [ $ERRORS -gt 0 ]; then
+  echo "❌ $ERRORS issue(s) found — commit blocked"
+  exit 1
+fi
+echo "✅ All checks passed"
+exit 0
