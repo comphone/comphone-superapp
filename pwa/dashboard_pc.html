@@ -347,6 +347,12 @@
   <a class="nav-item" href="#" onclick="loadSection('inventory')">
     <i class="bi bi-box-seam-fill"></i><span>สต็อก</span>
   </a>
+  <a class="nav-item" href="#" onclick="loadSection('billing')">
+    <i class="bi bi-receipt"></i><span>ใบเสร็จ/วางบิล</span>
+  </a>
+  <a class="nav-item" href="#" onclick="loadSection('warranty')">
+    <i class="bi bi-shield-check"></i><span>รับประกัน</span>
+  </a>
 
   <div class="nav-section">รายงาน</div>
   <a class="nav-item" href="#" onclick="loadSection('revenue')">
@@ -357,6 +363,9 @@
   </a>
   <a class="nav-item" href="#" onclick="loadSection('crm')">
     <i class="bi bi-people-fill"></i><span>ลูกค้า</span>
+  </a>
+  <a class="nav-item" href="#" onclick="loadSection('attendance')">
+    <i class="bi bi-clock-history"></i><span>ลงเวลาทำงาน</span>
   </a>
 
   <div class="nav-section">ระบบ</div>
@@ -868,6 +877,9 @@ async function loadSection(section) {
       case 'po':       renderPOSection(data); break;
       case 'crm':      renderCRMSection(data); break;
       case 'tax':      renderTaxSection(); break;
+      case 'billing':  renderBillingSection(data); break;
+      case 'attendance': renderAttendanceSection(data); break;
+      case 'warranty': renderWarrantySection(data); break;
       case 'settings': renderSettingsSection(); break;
       default:         renderGenericSection(section, data);
     }
@@ -2784,7 +2796,7 @@ function sectionIcon(s) {
   return { jobs:'tools', po:'cart-fill', inventory:'box-seam-fill', revenue:'currency-exchange', crm:'people-fill', settings:'gear-fill' }[s] || 'grid';
 }
 function sectionLabel(s) {
-  return { jobs:'งานบริการ', po:'ใบสั่งซื้อ', inventory:'สต็อก', revenue:'รายรับ', crm:'ลูกค้า', settings:'ตั้งค่า' }[s] || s;
+  return { jobs:'งานบริการ', po:'ใบสั่งซื้อ', inventory:'สต็อก', billing:'ใบเสร็จ/วางบิล', warranty:'รับประกัน', revenue:'รายรับ', tax:'ภาษี', crm:'ลูกค้า', attendance:'ลงเวลา', settings:'ตั้งค่า' }[s] || s;
 }
 
 function setActiveNav(section) {
@@ -2802,6 +2814,9 @@ function setActiveNav(section) {
 <script src="policy_engine.js?v=566"></script>
 <script src="ai_executor_runtime.js?v=566"></script>
 <script src="approval_guard.js?v=566"></script>
+<script src="billing_section.js?v=280"></script>
+<script src="attendance_section.js?v=280"></script>
+<script src="warranty_section.js?v=280"></script>
 <script>
 // PHASE 25.3 — Register Service Worker on dashboard
 if ('serviceWorker' in navigator) {
