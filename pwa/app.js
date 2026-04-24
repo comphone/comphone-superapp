@@ -227,10 +227,10 @@ function startMainApp() {
   document.getElementById('greeting-text').textContent = greet + ' 👋';
   document.getElementById('user-name-display').textContent = APP.user.name;
 
-  // แสดง/ซ่อน nav-admin ตาม role
-  const navAdmin = document.getElementById('nav-admin');
-  if (navAdmin) {
-    navAdmin.style.display = (APP.role === 'owner' || APP.role === 'admin') ? '' : 'none';
+  // แสดง/ซ่อน admin ตาม role (now in More menu)
+  const moreAdmin = document.getElementById('more-admin-btn');
+  if (moreAdmin) {
+    moreAdmin.style.display = (APP.role === 'owner' || APP.role === 'admin') ? '' : 'none';
   }
 
   // Apply role-based UI guard (auth_guard.js)
@@ -569,7 +569,7 @@ function closeMoreMenu() {
 }
 function navigateFromMore(page) {
   closeMoreMenu();
-  // Find the matching nav-btn if one exists, else just navigate
-  const btn = document.getElementById('nav-' + page);
-  goPage(page, btn || null);
+  // Highlight the More button since these pages live under it
+  const moreBtn = document.getElementById('nav-more');
+  goPage(page, moreBtn);
 }

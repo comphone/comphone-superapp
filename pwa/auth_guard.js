@@ -197,9 +197,9 @@ function applyRoleUI() {
   });
 
   // Nav items
-  const navAdmin = document.getElementById('nav-admin');
-  if (navAdmin) {
-    navAdmin.style.display = (role === 'owner') ? '' : 'none';
+  const moreAdmin = document.getElementById('more-admin-btn');
+  if (moreAdmin) {
+    moreAdmin.style.display = (role === 'owner') ? '' : 'none';
   }
 
   // แสดง role badge ใน header (ถ้ามี)

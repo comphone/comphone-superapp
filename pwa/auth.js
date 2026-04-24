@@ -339,17 +339,17 @@ function applyRoleBasedUI() {
   const role = APP.role || 'tech';
   const level = AUTH.level || 0;
 
-  // ซ่อน/แสดง nav items ตาม role
-  const navInventory = document.getElementById('nav-inventory');
-  const navPO = document.getElementById('nav-po');
-  const navDashboard = document.getElementById('nav-dashboard');
+  // ซ่อน/แสดง More menu items ตาม role
+  const moreInventory = document.getElementById('more-inventory-btn');
+  const morePO = document.getElementById('more-po-btn');
+  const moreDashboard = document.getElementById('more-dashboard-btn');
 
   // ทุก role เห็น inventory
-  if (navInventory) navInventory.style.display = '';
+  if (moreInventory) moreInventory.style.display = '';
 
   // Admin/Acct/Exec เห็น PO และ Dashboard
-  if (navPO) navPO.style.display = (role === 'tech') ? 'none' : '';
-  if (navDashboard) navDashboard.style.display = (role === 'tech') ? 'none' : '';
+  if (morePO) morePO.style.display = (role === 'tech') ? 'none' : '';
+  if (moreDashboard) moreDashboard.style.display = (role === 'tech') ? 'none' : '';
 }
 
 // ============================================================

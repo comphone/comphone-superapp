@@ -186,7 +186,7 @@ function renderDashboard(data) {
           <div style="font-weight:700;color:#92400e">After-Sales ที่ต้องติดตาม</div>
           <div style="font-size:13px;color:#b45309">${pmDue} ราย รอการติดตาม</div>
         </div>
-        <button onclick="goPage('crm', document.getElementById('nav-crm'))" style="margin-left:auto;background:#d97706;color:white;border:none;border-radius:20px;padding:6px 14px;font-size:12px;cursor:pointer">ดูเลย</button>
+        <button onclick=\"goPage('crm', document.getElementById('nav-more'))\" style=\"margin-left:auto;background:#d97706;color:white;border:none;border-radius:20px;padding:6px 14px;font-size:12px;cursor:pointer\">ดูเลย</button>
       </div>
     </div>` : ''}
 
@@ -305,6 +305,6 @@ function refreshDashboard() {
 
 // ===== QUICK ACTION =====
 function viewDashboard() {
-  const navBtn = document.getElementById('nav-dashboard');
+  const navBtn = document.getElementById('nav-more');
   goPage('dashboard', navBtn);
 }

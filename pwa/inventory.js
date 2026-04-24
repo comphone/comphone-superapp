@@ -390,7 +390,7 @@ async function saveNewInventoryItem() {
 function openCreatePOFromItem(itemCode, itemName) {
   closeModal('modal-job');
   // เปิดหน้า PO พร้อมข้อมูลสินค้า
-  const navBtn = document.getElementById('nav-po');
+  const navBtn = document.getElementById('nav-more');
   goPage('po', navBtn);
   setTimeout(() => {
     if (typeof openCreatePOModal === 'function') {
