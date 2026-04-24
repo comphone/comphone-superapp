@@ -131,14 +131,26 @@ function geminiReorderSuggestion() {
     if (!invSheet) return { error: 'DB_INVENTORY not found' };
 
     var invAll = invSheet.getDataRange().getValues();
+
+    // Dynamic header mapping (Phase 2E data integrity fix)
+    var hdrs = invAll[0];
+    var colMap = { code:0, name:1, qty:2, cost:3 };
+    for (var hi = 0; hi < hdrs.length; hi++) {
+      var hv = String(hdrs[hi]).toLowerCase().replace(/_/g,'');
+      if (hv === 'itemcode' || hv === 'code') colMap.code = hi;
+      else if (hv === 'itemname' || hv === 'name') colMap.name = hi;
+      else if (hv === 'qty' || hv === 'quantity') colMap.qty = hi;
+      else if (hv === 'cost') colMap.cost = hi;
+    }
+
     var lowItems = [];
     var reservedItems = [];
 
     for (var i = 1; i < invAll.length; i++) {
-      var code = String(invAll[i][0]);
-      var name = String(invAll[i][1]);
-      var qty = Number(invAll[i][2] || 0);
-      var cost = Number(invAll[i][3] || 0);
+      var code = String(invAll[i][colMap.code]);
+      var name = String(invAll[i][colMap.name]);
+      var qty = Number(invAll[i][colMap.qty] || 0);
+      var cost = Number(invAll[i][colMap.cost] || 0);
       var reserved = 0;
 
       if (resSheet) {
@@ -278,24 +290,37 @@ function checkStock(data) {
     var all = sh.getDataRange().getValues();
     var resSheet = findSheetByName(ss, 'DB_RESERVATIONS');
     var search = (data.search || '').toLowerCase();
+
+    // Dynamic header mapping (Phase 2E data integrity fix)
+    var hdrs = all[0];
+    var colMap = { code:0, name:1, qty:2, cost:3, price:4 };
+    for (var hi = 0; hi < hdrs.length; hi++) {
+      var hv = String(hdrs[hi]).toLowerCase().replace(/_/g,'');
+      if (hv === 'itemcode' || hv === 'code') colMap.code = hi;
+      else if (hv === 'itemname' || hv === 'name') colMap.name = hi;
+      else if (hv === 'qty' || hv === 'quantity') colMap.qty = hi;
+      else if (hv === 'cost') colMap.cost = hi;
+      else if (hv === 'price') colMap.price = hi;
+    }
+
     var results = [];
     for (var i = 1; i < all.length; i++) {
-      var v = (String(all[i][0]) + ' ' + String(all[i][1])).toLowerCase();
+      var v = (String(all[i][colMap.code]) + ' ' + String(all[i][colMap.name])).toLowerCase();
       if (!search || v.indexOf(search) > -1) {
         var reserved = 0;
         if (resSheet) {
           var resAll = resSheet.getDataRange().getValues();
           for (var j = 1; j < resAll.length; j++) {
-            if (String(resAll[j][1]) === String(all[i][0]) && String(resAll[j][5]) === 'reserved') {
+            if (String(resAll[j][1]) === String(all[i][colMap.code]) && String(resAll[j][5]) === 'reserved') {
               reserved += Number(resAll[j][3] || 0);
             }
           }
         }
-        var qty = Number(all[i][2] || 0);
+        var qty = Number(all[i][colMap.qty] || 0);
         results.push({
-          code: String(all[i][0]), name: String(all[i][1]),
+          code: String(all[i][colMap.code]), name: String(all[i][colMap.name]),
           qty: qty, reserved: reserved, available: qty - reserved,
-          cost: Number(all[i][3] || 0), price: Number(all[i][4] || 0),
+          cost: Number(all[i][colMap.cost] || 0), price: Number(all[i][colMap.price] || 0),
           alert: (qty - reserved) < INVENTORY_ALERT_THRESHOLD
         });
       }
@@ -458,12 +483,23 @@ function checkLowStockAlert() {
     if (!sh) { _logError_('HIGH', 'checkLowStockAlert', 'DB_INVENTORY not found'); return { error: 'DB_INVENTORY not found' }; }
     var all = sh.getDataRange().getValues();
     var resSheet = findSheetByName(ss, 'DB_RESERVATIONS');
+
+    // Dynamic header mapping (Phase 2E data integrity fix)
+    var hdrs = all[0];
+    var colMap = { code:0, name:1, qty:2 };
+    for (var hi = 0; hi < hdrs.length; hi++) {
+      var hv = String(hdrs[hi]).toLowerCase().replace(/_/g,'');
+      if (hv === 'itemcode' || hv === 'code') colMap.code = hi;
+      else if (hv === 'itemname' || hv === 'name') colMap.name = hi;
+      else if (hv === 'qty' || hv === 'quantity') colMap.qty = hi;
+    }
+
     var lowItems = [];
     var ALERT_THRESHOLD = (typeof INVENTORY_ALERT_THRESHOLD !== 'undefined') ? INVENTORY_ALERT_THRESHOLD : 5;
     for (var i = 1; i < all.length; i++) {
-      var code = String(all[i][0]);
-      var name = String(all[i][1]);
-      var qty = Number(all[i][2] || 0);
+      var code = String(all[i][colMap.code]);
+      var name = String(all[i][colMap.name]);
+      var qty = Number(all[i][colMap.qty] || 0);
       var reserved = 0;
       if (resSheet) {
         var resAll = resSheet.getDataRange().getValues();
@@ -1040,10 +1076,10 @@ function addInventoryItem(data) {
     var sh = findSheetByName(ss, 'DB_INVENTORY');
     if (!sh) {
       sh = ss.insertSheet('DB_INVENTORY');
-      sh.getRange(1, 1, 1, 12).setValues([[
-        'Item_Code','Item_Name','Qty','Cost','Price',
-        'Location_Type','Location_Code','Assigned_To',
-        'Updated_At','Last_Job_ID','Notes','Reorder_Point'
+      sh.getRange(1, 1, 1, 14).setValues([[
+        'Item_Code','Item_Name','Category','Qty','Cost','Price',
+        'Location_Type','Location_Code','Assigned_To','Reorder_Point',
+        'Barcode','Updated_At','Last_Job_ID','Notes'
       ]]);
     }
 
@@ -1055,6 +1091,29 @@ function addInventoryItem(data) {
       }
     }
 
+    // Dynamic header mapping (same pattern as updateInventoryItem)
+    var hdrs = all[0];
+    var colMap = { code:0, name:1, category:2, qty:3, cost:4, price:5,
+                   locType:6, locCode:7, assignedTo:8, reorderPoint:9,
+                   barcode:10, updatedAt:11, lastJob:12, notes:13 };
+    for (var hi = 0; hi < hdrs.length; hi++) {
+      var hv = String(hdrs[hi]).toLowerCase().replace(/_/g,'');
+      if (hv === 'itemcode' || hv === 'code') colMap.code = hi;
+      else if (hv === 'itemname' || hv === 'name') colMap.name = hi;
+      else if (hv === 'category') colMap.category = hi;
+      else if (hv === 'qty' || hv === 'quantity') colMap.qty = hi;
+      else if (hv === 'cost') colMap.cost = hi;
+      else if (hv === 'price') colMap.price = hi;
+      else if (hv === 'locationtype') colMap.locType = hi;
+      else if (hv === 'locationcode') colMap.locCode = hi;
+      else if (hv === 'assignedto') colMap.assignedTo = hi;
+      else if (hv === 'reorderpoint') colMap.reorderPoint = hi;
+      else if (hv === 'barcode') colMap.barcode = hi;
+      else if (hv === 'updatedat') colMap.updatedAt = hi;
+      else if (hv === 'lastjobid') colMap.lastJob = hi;
+      else if (hv === 'notes') colMap.notes = hi;
+    }
+
     var locType = String(data.location_type || 'MAIN').toUpperCase();
     var locCode = String(data.location_code || 'MAIN-01');
     var assignedTo = String(data.assigned_to || '');
@@ -1063,12 +1122,27 @@ function addInventoryItem(data) {
     var price = Math.max(0, parseFloat(data.price) || 0);
     var notes = String(data.notes || '');
     var reorderPoint = Math.max(0, parseInt(data.reorder_point) || 5);
+    var category = String(data.category || '');
+    var barcode = String(data.barcode || '');
 
-    sh.appendRow([
-      code, name, qty, cost, price,
-      locType, locCode, assignedTo,
-      new Date(), '', notes, reorderPoint
-    ]);
+    // Build row array matching actual column positions
+    var numCols = Math.max(hdrs.length, 14);
+    var row = new Array(numCols);
+    row[colMap.code] = code;
+    row[colMap.name] = name;
+    row[colMap.category] = category;
+    row[colMap.qty] = qty;
+    row[colMap.cost] = cost;
+    row[colMap.price] = price;
+    row[colMap.locType] = locType;
+    row[colMap.locCode] = locCode;
+    row[colMap.assignedTo] = assignedTo;
+    row[colMap.reorderPoint] = reorderPoint;
+    row[colMap.barcode] = barcode;
+    row[colMap.updatedAt] = new Date();
+    row[colMap.lastJob] = '';
+    row[colMap.notes] = notes;
+    sh.appendRow(row);
 
     try { logActivity('ADD_ITEM', data.added_by || 'ADMIN', code + ' | ' + name + ' | qty:' + qty); } catch(le) {}
 
