@@ -359,42 +359,17 @@
       </div>
       <span>งาน</span>
     </button>
-    <button class="nav-btn" id="nav-crm" onclick="goPage('crm', this)">
-      <div class="nav-icon-wrap">
-        <i class="bi bi-people-fill"></i>
-        <span class="nav-badge-dot" id="crm-badge" style="display:none">0</span>
+    <!-- Camera — center FAB-style button -->
+    <button class="nav-btn nav-camera-btn" onclick="openCamera('job')">
+      <div class="nav-camera-circle">
+        <i class="bi bi-camera-fill"></i>
       </div>
-      <span>ลูกค้า</span>
+      <span>กล้อง</span>
     </button>
-    <button class="nav-btn" id="nav-dashboard" onclick="goPage('dashboard', this)">
-      <i class="bi bi-bar-chart-line-fill"></i>
-      <span>Dashboard</span>
-    </button>
-    <button class="nav-btn" id="nav-po" onclick="goPage('po', this)">
-      <div class="nav-icon-wrap">
-        <i class="bi bi-cart-fill"></i>
-        <span class="nav-badge-dot" id="po-badge" style="display:none">0</span>
-      </div>
-      <span>สั่งซื้อ</span>
-    </button>
-    <button class="nav-btn" id="nav-inventory" onclick="goPage('inventory', this)">
-      <div class="nav-icon-wrap">
-        <i class="bi bi-boxes"></i>
-        <span class="nav-badge-dot" id="inv-badge" style="display:none">0</span>
-      </div>
-      <span>สต็อก</span>
-    </button>
-    <button class="nav-btn" id="nav-attendance" onclick="goPage('attendance', this)">
-      <i class="bi bi-clock-fill"></i>
-      <span>เวลา</span>
-    </button>
-    <button class="nav-btn" id="nav-reports" onclick="goPage('reports', this)">
-      <i class="bi bi-graph-up-arrow"></i>
-      <span>รายงาน</span>
-    </button>
-    <button class="nav-btn" id="nav-admin" onclick="goPage('admin', this)" style="display:none">
-      <i class="bi bi-shield-fill-check"></i>
-      <span>Admin</span>
+    <!-- More — opens bottom sheet with remaining items -->
+    <button class="nav-btn" id="nav-more" onclick="showMoreMenu()">
+      <i class="bi bi-grid-3x3-gap-fill"></i>
+      <span>เพิ่มเติม</span>
     </button>
     <button class="nav-btn" id="nav-profile" onclick="goPage('profile', this)">
       <i class="bi bi-person-fill"></i>
@@ -403,6 +378,44 @@
   </nav>
 
 </div><!-- end main-app -->
+
+<!-- ===== MORE MENU BOTTOM SHEET ===== -->
+<div id="more-menu-overlay" class="cp-sheet-overlay" style="display:none" onclick="closeMoreMenu()">
+  <div class="cp-sheet more-menu-sheet" onclick="event.stopPropagation()">
+    <div class="cp-sheet-handle"></div>
+    <div class="more-menu-title">เพิ่มเติม</div>
+    <div class="more-menu-grid">
+      <button class="more-menu-item" onclick="navigateFromMore('crm')">
+        <div class="more-menu-icon"><i class="bi bi-people-fill"></i></div>
+        <span>ลูกค้า</span>
+      </button>
+      <button class="more-menu-item" onclick="navigateFromMore('dashboard')">
+        <div class="more-menu-icon"><i class="bi bi-bar-chart-line-fill"></i></div>
+        <span>Dashboard</span>
+      </button>
+      <button class="more-menu-item" onclick="navigateFromMore('po')">
+        <div class="more-menu-icon"><i class="bi bi-cart-fill"></i></div>
+        <span>สั่งซื้อ</span>
+      </button>
+      <button class="more-menu-item" onclick="navigateFromMore('inventory')">
+        <div class="more-menu-icon"><i class="bi bi-boxes"></i></div>
+        <span>สต็อก</span>
+      </button>
+      <button class="more-menu-item" onclick="navigateFromMore('attendance')">
+        <div class="more-menu-icon"><i class="bi bi-clock-fill"></i></div>
+        <span>เวลา</span>
+      </button>
+      <button class="more-menu-item" onclick="navigateFromMore('reports')">
+        <div class="more-menu-icon"><i class="bi bi-graph-up-arrow"></i></div>
+        <span>รายงาน</span>
+      </button>
+      <button class="more-menu-item" id="more-admin-btn" style="display:none" onclick="navigateFromMore('admin')">
+        <div class="more-menu-icon"><i class="bi bi-shield-fill-check"></i></div>
+        <span>Admin</span>
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- ===== MODALS ===== -->
 

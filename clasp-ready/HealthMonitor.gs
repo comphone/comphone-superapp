@@ -105,6 +105,19 @@ function healthCheck(data) {
   result.status = (result.spreadsheet_ok && result.drive_ok && result.errors.length === 0)
     ? 'HEALTHY' : (result.spreadsheet_ok ? 'DEGRADED' : 'CRITICAL');
 
+  // ── PropertiesService Capacity Check ──
+  try {
+    if (typeof getPropertiesCapacity === 'function') {
+      result.properties_capacity = getPropertiesCapacity();
+      if (result.properties_capacity && result.properties_capacity.pct >= 80) {
+        result.errors.push('PropertiesService at ' + result.properties_capacity.used_kb + 'KB / 500KB (' + result.properties_capacity.pct + '%)');
+        if (result.status === 'HEALTHY') result.status = 'DEGRADED';
+      }
+    }
+  } catch (pcErr) {
+    // Non-critical
+  }
+
   // บันทึก Health Log
   saveHealthLog_(result, data.triggered_by || 'API');
 

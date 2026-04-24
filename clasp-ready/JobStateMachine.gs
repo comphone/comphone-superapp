@@ -129,12 +129,74 @@ function createJob(data) {
 
     try { if (typeof logActivity === 'function') logActivity('JOB_CREATE', data.changed_by || data.user || 'SYSTEM', jobId + ' — ' + (data.customer_name || data.customer || data.name || 'ลูกค้าใหม่')); } catch (logErr) {}
 
+    // ── Smart Auto-Assign: มอบหมายช่างอัตโนมัติหลังสร้างงาน ──
+    var autoAssignResult = null;
+    try {
+      if (typeof smartAssignTech_ === 'function' && !data.technician && !data.tech && !data.assigned_to) {
+        var _gpsParts = buildGpsValue_(data);
+        var _lat = 0, _lng = 0;
+        if (_gpsParts && _gpsParts.indexOf(',') > -1) {
+          var _coords = _gpsParts.split(',');
+          _lat = parseFloat(_coords[0]) || 0;
+          _lng = parseFloat(_coords[1]) || 0;
+        }
+        var _assignPayload = {
+          job_id: jobId,
+          lat: _lat || parseFloat(data.lat || data.latitude || 0),
+          lng: _lng || parseFloat(data.lng || data.longitude || 0),
+          symptom: data.symptom || data.issue || '',
+          required_skills: data.required_skills || []
+        };
+        var _smartResult = smartAssignTech_(_assignPayload);
+        if (_smartResult && _smartResult.success && _smartResult.recommended && _smartResult.recommended.length > 0) {
+          var _bestTech = _smartResult.recommended[0];
+          // Auto-assign best tech to the job row
+          var _assignCtx = getJobSheetContext_(sh);
+          var _assignRowIdx = findJobRowIndexById_(sh, _assignCtx, jobId);
+          if (_assignRowIdx > -1) {
+            var _assignRow = sh.getRange(_assignRowIdx, 1, 1, _assignCtx.headers.length).getValues()[0];
+            setIfIndex_(_assignRow, _assignCtx.indices.tech, _bestTech.techName);
+            setIfIndex_(_assignRow, _assignCtx.indices.statusText, JOB_STATUS_MAP[2]); // status 2 = มอบหมายแล้ว
+            setIfIndex_(_assignRow, _assignCtx.indices.currentStatusCode, 2);
+            setIfIndex_(_assignRow, _assignCtx.indices.updatedAt, new Date());
+            var _prevNote = safeCellValue_(_assignRow, _assignCtx.indices.note);
+            var _assignNote = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss') + ' [AUTO-ASSIGN] ' + _bestTech.techName + ' — ' + _bestTech.reason;
+            setIfIndex_(_assignRow, _assignCtx.indices.note, _prevNote ? _prevNote + '\n' + _assignNote : _assignNote);
+            sh.getRange(_assignRowIdx, 1, 1, _assignCtx.headers.length).setValues([_assignRow]);
+          }
+          // Update status code for return value
+          statusCode = 2;
+          // Log the auto-assign transition
+          appendJobStatusLog_(jobId, JOB_STATUS_MAP[1], JOB_STATUS_MAP[2], 'AUTO-ASSIGN', _bestTech.techName + ' — ' + _bestTech.reason);
+          try { if (typeof logActivity === 'function') logActivity('AUTO_ASSIGN', 'SYSTEM', jobId + ' → ' + _bestTech.techName + ' (' + _bestTech.distKm + 'km, score=' + _bestTech.score + ')'); } catch (aaLogErr) {}
+          autoAssignResult = {
+            assigned: true,
+            tech_id: _bestTech.techId,
+            tech_name: _bestTech.techName,
+            score: _bestTech.score,
+            dist_km: _bestTech.distKm,
+            eta_min: _bestTech.etaMin,
+            reason: _bestTech.reason,
+            alternatives: _smartResult.recommended.slice(1) // other candidates
+          };
+        } else if (_smartResult && !_smartResult.success) {
+          autoAssignResult = { assigned: false, reason: _smartResult.error || 'No suitable tech found' };
+        } else {
+          autoAssignResult = { assigned: false, reason: 'No active techs available' };
+        }
+      }
+    } catch (aaErr) {
+      Logger.log('Auto-assign error for ' + jobId + ': ' + aaErr);
+      autoAssignResult = { assigned: false, reason: 'Auto-assign error: ' + aaErr.toString() };
+    }
+
     var qr = generateJobQR(jobId);
     return {
       success: true,
       job_id: jobId,
       status_code: statusCode,
       status_label: JOB_STATUS_MAP[statusCode],
+      auto_assign: autoAssignResult,
       reservation: reservationInfo,
       customer_sync: customerSync,
       qr: qr

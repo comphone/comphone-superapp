@@ -223,3 +223,85 @@ function propertiesGuardStatus() {
             count < PROP_GUARD.HARD_LIMIT ? '⚠️ WARNING' : '🔴 CRITICAL'
   };
 }
+
+// ============================================================
+// 5. BYTE-LEVEL CAPACITY MONITORING
+// ============================================================
+// GAS Limits: ScriptProperties = 500KB total, 4KB per key
+// https://developers.google.com/apps-script/guides/services/quotas
+var PROP_BYTE_LIMIT = 500 * 1024; // 500 KB
+var PROP_BYTE_ALERT_THRESHOLD = 0.80; // 80% warning
+
+/**
+ * getPropertiesCapacity — Returns byte-level capacity info
+ * @return {Object} { used_bytes, limit_bytes, pct, key_count, status, top_keys }
+ */
+function getPropertiesCapacity() {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var all = props.getProperties();
+    var keys = Object.keys(all);
+    var totalBytes = 0;
+    var keySizes = [];
+
+    for (var i = 0; i < keys.length; i++) {
+      var key = keys[i];
+      var value = all[key] || '';
+      // Each key-value pair: key bytes + value bytes (UTF-8 approximation)
+      var pairBytes = key.length + String(value).length;
+      totalBytes += pairBytes;
+      keySizes.push({ key: key, bytes: pairBytes });
+    }
+
+    // Sort by size descending for top consumers
+    keySizes.sort(function(a, b) { return b.bytes - a.bytes; });
+
+    var pct = Math.round((totalBytes / PROP_BYTE_LIMIT) * 100);
+    var status = '✅ OK';
+    if (pct >= 90) status = '🔴 CRITICAL';
+    else if (pct >= 80) status = '⚠️ WARNING';
+    else if (pct >= 60) status = '🟡 MONITOR';
+
+    return {
+      success: true,
+      used_bytes: totalBytes,
+      used_kb: Math.round(totalBytes / 1024 * 10) / 10,
+      limit_bytes: PROP_BYTE_LIMIT,
+      limit_kb: 500,
+      pct: pct,
+      status: status,
+      key_count: keys.length,
+      key_limit: PROP_GUARD.HARD_LIMIT,
+      alert_threshold_pct: Math.round(PROP_BYTE_ALERT_THRESHOLD * 100),
+      top_consumers: keySizes.slice(0, 10),
+      timestamp: new Date().toISOString()
+    };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * checkPropertiesCapacityAlert — Returns alert info if threshold exceeded
+ * @return {Object|null} Alert object or null if within limits
+ */
+function checkPropertiesCapacityAlert() {
+  var capacity = getPropertiesCapacity();
+  if (!capacity.success) return null;
+
+  if (capacity.pct >= PROP_BYTE_ALERT_THRESHOLD * 100) {
+    return {
+      alert: true,
+      level: capacity.pct >= 90 ? 'CRITICAL' : 'WARNING',
+      message: 'Script Properties ใช้งาน ' + capacity.used_kb + 'KB / ' + capacity.limit_kb + 'KB (' + capacity.pct + '%)',
+      used_kb: capacity.used_kb,
+      limit_kb: capacity.limit_kb,
+      pct: capacity.pct,
+      top_consumers: capacity.top_consumers.slice(0, 5),
+      recommendation: capacity.pct >= 90
+        ? '⚠️ ควร cleanup properties ทันที! รัน deepCleanupProperties()'
+        : '📊 เฝ้าดู — ใกล้ถึง limit แล้ว'
+    };
+  }
+  return null;
+}

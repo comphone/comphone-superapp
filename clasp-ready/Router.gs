@@ -90,6 +90,15 @@ function doGet(e) {
     if (action === 'guardstatus') {
       return jsonOutputV55_(propertiesGuardStatus());
     }
+    // Properties Capacity — GET ?action=getPropertiesCapacity
+    if (action === 'getpropertiescapacity') {
+      return jsonOutputV55_((typeof getPropertiesCapacity === 'function') ? getPropertiesCapacity() : { success: false, error: 'not available' });
+    }
+    // Properties Capacity Alert — GET ?action=checkPropertiesCapacityAlert
+    if (action === 'checkpropertiescapacityalert') {
+      var _capAlert = (typeof checkPropertiesCapacityAlert === 'function') ? checkPropertiesCapacityAlert() : null;
+      return jsonOutputV55_(_capAlert || { alert: false, status: 'OK' });
+    }
     // Init Agent Properties — GET ?action=initAgentProps
     if (action === 'initagentprops') {
       var props = PropertiesService.getScriptProperties();
@@ -258,6 +267,7 @@ function _checkAuthGateV55_(action, payload) {
     'getHealthTrend': 1, 'getSnapshots': 1, 'getSchemaInfo': 1,
     'validateConfig': 1, 'getComphoneConfig': 1, 'initSystem': 1,
     'getSecurityStatus': 1, 'getAuditSummary': 1,
+    'getPropertiesCapacity': 1, 'checkPropertiesCapacityAlert': 1,
     'getVisionDashboardStats': 1, 'getVisionPipelineVersion': 1,
     'getConfidenceCalibration': 1, 'getDynamicThreshold': 1,
     'getActiveRules': 1, 'getLearningDashboard': 1, 'getVisionLearningVersion': 1,

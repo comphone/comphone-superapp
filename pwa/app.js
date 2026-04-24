@@ -557,3 +557,19 @@ function formatDate() {
   const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   return `วัน${days[d.getDay()]}ที่ ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`;
 }
+
+// ===== MORE MENU (Bottom Sheet) =====
+function showMoreMenu() {
+  document.getElementById('more-menu-overlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeMoreMenu() {
+  document.getElementById('more-menu-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+function navigateFromMore(page) {
+  closeMoreMenu();
+  // Find the matching nav-btn if one exists, else just navigate
+  const btn = document.getElementById('nav-' + page);
+  goPage(page, btn || null);
+}
