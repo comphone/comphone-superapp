@@ -3,7 +3,7 @@
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ============================================================
-const CACHE_V = 'comphone-v5.6.8';
+const CACHE_V = 'comphone-v5.7.0';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
 const ASSETS = [
@@ -32,12 +32,12 @@ const NETWORK_ONLY = [
   /\/line\/webhook/,
   /action=health/,
   /action=ping/,
+  /script\.google\.com/,
+  /macros\/s\//,
 ];
 
 // API patterns (Network First)
 const API_PATTERNS = [
-  /script\.google\.com/,
-  /macros\/s\//,
   /workers\.dev/,
 ];
 
