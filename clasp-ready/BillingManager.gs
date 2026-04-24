@@ -821,9 +821,7 @@ function normalizeMoneyValue_(value, fallback) {
   return isNaN(num) ? roundMoney_(fallback || 0) : roundMoney_(num);
 }
 
-function roundMoney_(value) {
-  return Math.round(Number(value || 0) * 100) / 100;
-}
+// roundMoney_ consolidated to Utils.gs (PHMP v1 dedup)
 
 function normalizeDigits_(value) {
   return String(value || '').replace(/\D/g, '');

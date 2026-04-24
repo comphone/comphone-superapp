@@ -232,9 +232,4 @@ function _getOrCreateAuditSheet_(ss) {
  * @param {string} name
  * @return {number}
  */
-function _findColIdx_(headers, name) {
-  for (var i = 0; i < headers.length; i++) {
-    if (String(headers[i]).toLowerCase() === name.toLowerCase()) return i;
-  }
-  return -1;
-}
+// _findColIdx_ consolidated to Utils.gs (PHMP v1 dedup)

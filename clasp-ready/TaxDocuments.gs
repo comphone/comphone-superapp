@@ -317,13 +317,7 @@ function getBillingById_(billingId) {
   }
 }
 
-function getReceiptFolderSafe_() {
-  var folderId = getConfig('BILLING_RECEIPT_FOLDER_ID', '') || getConfig('FOLDER_BILLING_RECEIPTS', '');
-  if (folderId) {
-    try { return DriveApp.getFolderById(folderId); } catch (e) {}
-  }
-  return DriveApp.getRootFolder();
-}
+// getReceiptFolderSafe_ consolidated to Utils.gs (PHMP v1 dedup)
 
 function formatMoney_(value) {
   return Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -335,10 +329,4 @@ function getThaiMonthName_(monthIndex) {
   return months[monthIndex] || '';
 }
 
-function buildEmptyTaxSummary_(period) {
-  return {
-    period: period, record_count: 0,
-    total_subtotal: 0, total_vat_base: 0, total_vat_amount: 0,
-    total_wht_amount: 0, total_net_payable: 0, vat_mode_breakdown: {}
-  };
-}
+// buildEmptyTaxSummary_ consolidated to Utils.gs (PHMP v1 dedup)

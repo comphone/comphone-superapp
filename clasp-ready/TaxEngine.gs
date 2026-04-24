@@ -305,13 +305,7 @@ function buildTaxSummary_(records, period) {
   };
 }
 
-function buildEmptyTaxSummary_(period) {
-  return {
-    period: period, record_count: 0,
-    total_subtotal: 0, total_vat_base: 0, total_vat_amount: 0,
-    total_wht_amount: 0, total_net_payable: 0, vat_mode_breakdown: {}
-  };
-}
+// buildEmptyTaxSummary_ consolidated to Utils.gs (PHMP v1 dedup)
 
 // ============================================================
 // 🔧 API Handler: taxAction(data)
@@ -354,7 +348,4 @@ function taxAction(data) {
 
 // ============================================================
 // 🔧 Helper: roundMoney_ (ถ้ายังไม่ได้ประกาศใน scope นี้)
-// ============================================================
-function roundMoney_(value) {
-  return Math.round(Number(value || 0) * 100) / 100;
-}
+// roundMoney_ consolidated to Utils.gs (PHMP v1 dedup)

@@ -224,3 +224,52 @@ function generateWarrantyPDF(jobId) {
     return { error: e.toString() };
   }
 }
+
+// ══════════════════════════════════════════════════════════
+// CONSOLIDATED UTILITIES (PHMP v1 Dedup — 2026-04-24)
+// These functions were duplicated across multiple files.
+// Single source of truth: Utils.gs
+// ══════════════════════════════════════════════════════════
+
+/**
+ * Find column index by name (case-insensitive, null-safe)
+ * Consolidated from: Approval.gs, AuditLog.gs
+ */
+function _findColIdx_(headers, name) {
+  for (var i = 0; i < headers.length; i++) {
+    if (String(headers[i] || '').trim().toLowerCase() === name.toLowerCase()) return i;
+  }
+  return -1;
+}
+
+/**
+ * Round to 2 decimal places (money)
+ * Consolidated from: BillingManager.gs, TaxEngine.gs
+ */
+function roundMoney_(value) {
+  return Math.round(Number(value || 0) * 100) / 100;
+}
+
+/**
+ * Build empty tax summary object
+ * Consolidated from: TaxDocuments.gs, TaxEngine.gs
+ */
+function buildEmptyTaxSummary_(period) {
+  return {
+    period: period, record_count: 0,
+    total_subtotal: 0, total_vat_base: 0, total_vat_amount: 0,
+    total_wht_amount: 0, total_net_payable: 0, vat_mode_breakdown: {}
+  };
+}
+
+/**
+ * Get receipt folder safely (falls back to root)
+ * Consolidated from: TaxDocuments.gs, WarrantyManager.gs
+ */
+function getReceiptFolderSafe_() {
+  var folderId = getConfig('BILLING_RECEIPT_FOLDER_ID', '') || getConfig('FOLDER_BILLING_RECEIPTS', '');
+  if (folderId) {
+    try { return DriveApp.getFolderById(folderId); } catch (e) {}
+  }
+  return DriveApp.getRootFolder();
+}

@@ -457,10 +457,4 @@ function refreshWarrantyStatus_(sh, warranty) {
   return warranty;
 }
 
-function getReceiptFolderSafe_() {
-  var folderId = getConfig('BILLING_RECEIPT_FOLDER_ID', '') || getConfig('FOLDER_BILLING_RECEIPTS', '');
-  if (folderId) {
-    try { return DriveApp.getFolderById(folderId); } catch (e) {}
-  }
-  return DriveApp.getRootFolder();
-}
+// getReceiptFolderSafe_ consolidated to Utils.gs (PHMP v1 dedup)
