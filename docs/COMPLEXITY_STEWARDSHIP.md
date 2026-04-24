@@ -159,3 +159,38 @@ Frontend → Gateway.gs → ModuleRouter.gs → Module.gs → Sheets
 | Router size check | Monthly | wc -l Router.gs |
 | Dead code audit | Quarterly | Check action references |
 | Architecture review | Quarterly | Full coupling analysis |
+
+
+---
+
+## Dead Code Audit Results (Wave 1.3)
+
+### Summary
+- **155 actions** in Router.gs have no frontend reference
+- **~81 are legitimate** (Agent/AI internal: 31, LINE Bot: 36, System/Cron: 14)
+- **~74 need investigation** (UI actions that may be dead or called internally)
+
+### Categories
+
+| Category | Count | Status |
+|----------|-------|--------|
+| Agent/AI (internal) | 31 | ✅ Keep — called by other .gs files |
+| LINE Bot (webhook) | 36 | ✅ Keep — called by LINE webhook handler |
+| System/Cron | 14 | ✅ Keep — called by triggers/cron |
+| UI Actions | ~74 | ⚠️ Investigate — may include dead code |
+
+### UI Actions to Investigate (potential dead code)
+```
+checkGuard, checkGuardAndDecide, checkGuardAndTrigger
+cleanAllData, createRetailSale, createSale
+databaseMaintenance, decide, decideAndAct
+defineWorkflow, dryRunWorkflow
+ensureAllBranchIdColumns
+```
+
+### Recommendation
+Do NOT remove actions without verifying they're truly dead:
+1. Check if called by LINE Bot internal functions
+2. Check if called by scheduled triggers
+3. Check if called by other .gs files
+4. Only remove after full regression test
