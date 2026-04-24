@@ -104,6 +104,30 @@ jobs:
           if [ "$FAILED" -eq 1 ]; then exit 1; fi
           echo "[✅] All GS files passed basic validation"
 
+      # ── STEP 1a2: Regression Guard (mandatory pre-deploy gate) ──
+      - name: 🛡️ Regression Guard
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Regression Guard"
+          chmod +x scripts/regression-guard.sh
+          bash scripts/regression-guard.sh
+          echo "[✅] Regression guard passed"
+
+      # ── STEP 1a3: Drift Guard (mandatory pre-deploy gate) ──
+      - name: 🛡️ Drift Guard
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Drift Guard"
+          chmod +x scripts/drift-guard.sh
+          bash scripts/drift-guard.sh
+          echo "[✅] Drift guard passed"
+
+      # ── STEP 1a4: Guard Self-Test (mandatory pre-deploy gate) ──
+      - name: 🛡️ Guard Self-Test
+        run: |
+          echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Guard Self-Test"
+          chmod +x scripts/guard-self-test.sh
+          bash scripts/guard-self-test.sh
+          echo "[✅] Guard self-test passed"
+
       # ── STEP 1b: Check clasp config ──
       - name: ⚙️ Check clasp Config
         id: clasp_check

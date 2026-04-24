@@ -46,6 +46,24 @@ jobs:
             node --check "$f" && echo "✅ $f" || echo "❌ $f"
           done
 
+      - name: 🛡️ Regression Guard
+        run: |
+          echo "Running regression guard..."
+          chmod +x scripts/regression-guard.sh
+          bash scripts/regression-guard.sh
+
+      - name: 🛡️ Drift Guard
+        run: |
+          echo "Running drift guard..."
+          chmod +x scripts/drift-guard.sh
+          bash scripts/drift-guard.sh
+
+      - name: 🛡️ Guard Self-Test
+        run: |
+          echo "Running guard self-test..."
+          chmod +x scripts/guard-self-test.sh
+          bash scripts/guard-self-test.sh
+
       - name: Check file sizes
         run: |
           echo "📦 File sizes:"

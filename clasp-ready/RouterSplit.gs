@@ -163,6 +163,9 @@ var MODULE_ROUTER = {
 
   // Customer Portal (public)
   'getJobStatusPublic': function(p) { return getJobStatusPublic(p.job_id || p.jobId || '', p.phone || ''); },
+
+  // Telemetry (client-side metrics ingestion)
+  'logTelemetry': function(p) { return logTelemetry(p); },
 };
 
 /**

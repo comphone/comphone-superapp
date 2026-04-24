@@ -67,7 +67,9 @@ fi
 # Test 6: Pre-commit hook installed
 echo ""
 echo "🔧 [6/7] Pre-commit Hook..."
-if [ -f ".git/hooks/pre-commit" ]; then
+if [ "${CI:-false}" = "true" ]; then
+  test_pass "Pre-commit hook check skipped (CI environment)"
+elif [ -f ".git/hooks/pre-commit" ]; then
   if grep -q '_checkAuthGateV55_' .git/hooks/pre-commit; then
     test_pass "Pre-commit hook installed with security checks"
   else

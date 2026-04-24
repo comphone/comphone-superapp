@@ -225,7 +225,175 @@ function propertiesGuardStatus() {
 }
 
 // ============================================================
-// 5. BYTE-LEVEL CAPACITY MONITORING
+// 5. BYTE-AWARE SAFE WRITERS — prevent 500KB overflow
+// ============================================================
+// These check byte capacity BEFORE writing, unlike the key-count
+// based safeSetProperty above. Use these for cron jobs that may
+// write large or many values in a single execution.
+// ============================================================
+var PROP_BYTE_BLOCK_THRESHOLD = 0.90;  // block writes above 90%
+var PROP_BYTE_WARN_THRESHOLD  = 0.80;  // warn above 80%
+
+/**
+ * safeSetProperty_ — Byte-aware safe write (single key)
+ * Checks current byte usage BEFORE writing. Rejects if >90% full.
+ *
+ * @param {string} key   Property key
+ * @param {string} value Property value
+ * @return {Object} { success, method, detail, capacity_pct }
+ */
+function safeSetProperty_(key, value) {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var existing = props.getProperty(key);
+    var isUpdate = existing !== null;
+
+    // Updates to existing keys don't increase total size much — allow them
+    // but still check capacity if the new value is significantly larger
+    if (isUpdate) {
+      var sizeDelta = String(value).length - String(existing).length;
+      if (sizeDelta <= 0) {
+        props.setProperty(key, value);
+        return { success: true, method: 'property', detail: 'updated (smaller/same)', capacity_pct: null };
+      }
+      // Value grew — check capacity
+    }
+
+    // Check byte capacity
+    var capacity = getPropertiesCapacity();
+    if (!capacity.success) {
+      // Can't check capacity — allow write but warn
+      Logger.log('⚠️ safeSetProperty_: capacity check failed, allowing write for key=' + key);
+      props.setProperty(key, value);
+      return { success: true, method: 'property', detail: 'capacity check failed, write allowed', capacity_pct: null };
+    }
+
+    var pct = capacity.pct / 100; // convert to 0-1 range
+
+    // Estimate new usage after write
+    var newBytes = key.length + String(value).length;
+    var existingBytes = isUpdate ? (key.length + String(existing).length) : 0;
+    var deltaBytes = newBytes - existingBytes;
+    var projectedPct = Math.round(((capacity.used_bytes + deltaBytes) / PROP_BYTE_LIMIT) * 100);
+
+    // BLOCK if projected usage > 90%
+    if (projectedPct >= PROP_BYTE_BLOCK_THRESHOLD * 100) {
+      Logger.log('🔴 safeSetProperty_: BLOCKED key=' + key + ' — projected ' + projectedPct + '% (used=' + capacity.used_kb + 'KB + ' + deltaBytes + 'B)');
+
+      // Try overflow to sheet
+      try {
+        var overflowResult = overflowToSheet_(key, value);
+        if (overflowResult && overflowResult.success) {
+          return {
+            success: true, method: 'sheet',
+            detail: 'overflow to sheet (projected ' + projectedPct + '%)',
+            capacity_pct: projectedPct
+          };
+        }
+      } catch (oe) {}
+
+      return {
+        success: false, method: 'blocked',
+        detail: 'projected ' + projectedPct + '% exceeds 90% limit (' + capacity.used_kb + 'KB / 500KB)',
+        capacity_pct: projectedPct
+      };
+    }
+
+    // WARN if > 80%
+    if (projectedPct >= PROP_BYTE_WARN_THRESHOLD * 100) {
+      Logger.log('⚠️ safeSetProperty_: WARNING key=' + key + ' — projected ' + projectedPct + '%');
+    }
+
+    // Allow write
+    props.setProperty(key, value);
+    return {
+      success: true, method: 'property',
+      detail: (isUpdate ? 'updated' : 'new') + ' (projected ' + projectedPct + '%)',
+      capacity_pct: projectedPct
+    };
+  } catch (e) {
+    Logger.log('❌ safeSetProperty_ error: key=' + key + ' err=' + e);
+    return { success: false, method: 'error', detail: e.toString(), capacity_pct: null };
+  }
+}
+
+/**
+ * safeSetProperties_ — Byte-aware safe batch write
+ * Writes multiple properties, stopping if capacity exceeded.
+ *
+ * @param {Object} keyValueMap { key: value, ... }
+ * @return {Object} { written, overflow, blocked, errors, details }
+ */
+function safeSetProperties_(keyValueMap) {
+  var results = { written: 0, overflow: 0, blocked: 0, errors: 0, details: [] };
+  var keys = Object.keys(keyValueMap || {});
+
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+    var result = safeSetProperty_(key, keyValueMap[key]);
+
+    if (result.success) {
+      if (result.method === 'sheet') {
+        results.overflow++;
+      } else {
+        results.written++;
+      }
+    } else if (result.method === 'blocked') {
+      results.blocked++;
+      // Once blocked, remaining keys are likely blocked too — skip to save API calls
+      Logger.log('🔴 safeSetProperties_: stopping batch after block at key=' + key);
+      for (var j = i + 1; j < keys.length; j++) {
+        results.blocked++;
+        results.details.push({ key: keys[j], status: 'skipped (batch halted)' });
+      }
+      break;
+    } else {
+      results.errors++;
+    }
+    results.details.push({ key: key, status: result.method + ': ' + result.detail });
+  }
+
+  return results;
+}
+
+/**
+ * getPropertiesCapacityReport — Formatted human-readable report
+ * @return {string} Multi-line report text
+ */
+function getPropertiesCapacityReport() {
+  var capacity = getPropertiesCapacity();
+  if (!capacity.success) return '❌ Properties capacity check failed: ' + (capacity.error || 'unknown');
+
+  var lines = [
+    '═══ PropertiesService Capacity Report ═══',
+    'Status:    ' + capacity.status,
+    'Used:      ' + capacity.used_kb + ' KB / ' + capacity.limit_kb + ' KB (' + capacity.pct + '%)',
+    'Keys:      ' + capacity.key_count + ' / ' + capacity.key_limit,
+    'Remaining: ' + Math.round((capacity.limit_bytes - capacity.used_bytes) / 1024) + ' KB',
+    '',
+    '── Top Consumers ──'
+  ];
+
+  for (var i = 0; i < Math.min(5, capacity.top_consumers.length); i++) {
+    var tc = capacity.top_consumers[i];
+    lines.push('  ' + (i + 1) + '. ' + tc.key + ' (' + Math.round(tc.bytes / 1024 * 10) / 10 + ' KB)');
+  }
+
+  // Thresholds info
+  lines.push('');
+  lines.push('── Thresholds ──');
+  lines.push('  Warning:  ' + (PROP_BYTE_WARN_THRESHOLD * 100) + '% (' + Math.round(PROP_BYTE_LIMIT * PROP_BYTE_WARN_THRESHOLD / 1024) + ' KB)');
+  lines.push('  Block:    ' + (PROP_BYTE_BLOCK_THRESHOLD * 100) + '% (' + Math.round(PROP_BYTE_LIMIT * PROP_BYTE_BLOCK_THRESHOLD / 1024) + ' KB)');
+  lines.push('  Cleanup:  every 1 hour (auto trigger)');
+  lines.push('');
+  lines.push('Timestamp: ' + capacity.timestamp);
+  lines.push('═══════════════════════════════════════════');
+
+  return lines.join('\n');
+}
+
+// ============================================================
+// 6. BYTE-LEVEL CAPACITY MONITORING
 // ============================================================
 // GAS Limits: ScriptProperties = 500KB total, 4KB per key
 // https://developers.google.com/apps-script/guides/services/quotas

@@ -222,6 +222,8 @@ function _checkAuthGateV55_(action, payload) {
     'getDriveSyncStatus': 1,
     // Error logging (exception — frontend may not have token on error)
     'logSystemError': 1,
+    // Telemetry (client-side, best-effort, no auth needed)
+    'logTelemetry': 1,
     // Customer Portal (public by design)
     'getJobStatusPublic': 1,
     // AI / Vision (read-only queries)
@@ -1273,6 +1275,58 @@ function getSystemLogs(params) {
     }).reverse(); // newest first
     if (level) data = data.filter(function(d) { return d.level === level; });
     return { success: true, data: data, count: data.length };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+// ============================================================
+// logTelemetry — Client-side telemetry ingestion
+// ============================================================
+/**
+ * logTelemetry — Receive batched client telemetry data
+ * Writes to DB_TELEMETRY sheet (auto-created on first use)
+ * Schema: timestamp | session_start | duration | ua | page_views | api_latency | quick_actions | offline_stats | raw
+ *
+ * @param {Object} payload - { payload: JSON-stringified telemetry batch }
+ * @return {Object} { success }
+ */
+function logTelemetry(p) {
+  try {
+    var data = {};
+    try {
+      data = typeof p.payload === 'string' ? JSON.parse(p.payload) : (p.payload || {});
+    } catch (e) { data = { raw: String(p.payload || '').substring(0, 2000) }; }
+
+    var ssId = PropertiesService.getScriptProperties().getProperty('DB_SS_ID');
+    if (!ssId) return { success: false, error: 'DB_SS_ID not set' };
+    var ss = SpreadsheetApp.openById(ssId);
+    var sheet = ss.getSheetByName('DB_TELEMETRY');
+    if (!sheet) {
+      sheet = ss.insertSheet('DB_TELEMETRY');
+      sheet.appendRow(['timestamp', 'session_start', 'duration_ms', 'user_agent', 'page_views', 'api_latency', 'quick_actions', 'offline_stats', 'raw_events']);
+      sheet.setFrozenRows(1);
+    }
+
+    var now = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss');
+    sheet.appendRow([
+      now,
+      data.sessionStart || '',
+      data.duration || '',
+      (data.ua || '').substring(0, 200),
+      JSON.stringify(data.pageViews || {}),
+      JSON.stringify(data.latency || {}),
+      JSON.stringify(data.quickActions || {}),
+      JSON.stringify(data.offline || {}),
+      JSON.stringify(data.events || []).substring(0, 5000)
+    ]);
+
+    // Auto-prune: keep last 2000 rows
+    if (sheet.getLastRow() > 2001) {
+      sheet.deleteRows(2, sheet.getLastRow() - 2001);
+    }
+
+    return { success: true };
   } catch (e) {
     return { success: false, error: e.toString() };
   }

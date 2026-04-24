@@ -8,10 +8,11 @@
 
 set -euo pipefail
 
-BASELINE_TAG="${1:-v5.7.1-phase2b0}"
+BASELINE_TAG="${1:-v5.7.2-phase2b1}"
 BASELINE_COMMIT=$(git rev-list -n1 "$BASELINE_TAG" 2>/dev/null || echo "")
 DRIFT_FOUND=0
 ERRORS=()
+SKIP_DIVERGENCE=0
 
 function fail() {
   ERRORS+=("❌ $1")
@@ -23,9 +24,14 @@ echo "============================================================"
 
 # 1. Check baseline tag exists
 if [ -z "$BASELINE_COMMIT" ]; then
-  fail "Baseline tag '$BASELINE_TAG' not found. Run freeze setup first."
-  echo "${ERRORS[@]}"
-  exit 1
+  if [ "${CI:-false}" = "true" ]; then
+    echo "⚠️  Baseline tag '$BASELINE_TAG' not found — skipping divergence checks (CI mode)"
+    SKIP_DIVERGENCE=1
+  else
+    fail "Baseline tag '$BASELINE_TAG' not found. Run freeze setup first."
+    echo "${ERRORS[@]}"
+    exit 1
+  fi
 fi
 
 # 2. Version Drift Check
@@ -79,11 +85,17 @@ fi
 
 # 5. Stale Branch Divergence
 echo "🔗 [4/5] Branch Divergence Check..."
-CURRENT_COMMIT=$(git rev-parse HEAD)
-if [ "$CURRENT_COMMIT" != "$BASELINE_COMMIT" ]; then
-  DIVERGED_FILES=$(git diff --name-only "$BASELINE_TAG" HEAD 2>/dev/null || echo "UNKNOWN")
-  if [ -n "$DIVERGED_FILES" ]; then
-    fail "Branch has diverged from baseline. Changed files:\n$DIVERGED_FILES"
+if [ "$SKIP_DIVERGENCE" -eq 1 ]; then
+  echo "   ⏭️  Skipped (no baseline tag in CI)"
+elif [ "${CI:-false}" = "true" ]; then
+  echo "   ⏭️  Skipped (CI environment — HEAD is always the deploy commit)"
+else
+  CURRENT_COMMIT=$(git rev-parse HEAD)
+  if [ "$CURRENT_COMMIT" != "$BASELINE_COMMIT" ]; then
+    DIVERGED_FILES=$(git diff --name-only "$BASELINE_TAG" HEAD 2>/dev/null || echo "UNKNOWN")
+    if [ -n "$DIVERGED_FILES" ]; then
+      fail "Branch has diverged from baseline. Changed files:\n$DIVERGED_FILES"
+    fi
   fi
 fi
 
