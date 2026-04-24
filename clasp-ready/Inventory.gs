@@ -124,6 +124,7 @@ function cutStockAuto(jobId) {
 function geminiReorderSuggestion() {
   var apiKey = getConfig('GEMINI_API_KEY') || getConfig('GOOGLE_AI_API_KEY') || '';
   try {
+    _logInfo_('geminiReorderSuggestion', 'Starting reorder analysis', { hasApiKey: !!apiKey });
     var ss = getComphoneSheet();
     var invSheet = findSheetByName(ss, 'DB_INVENTORY');
     var resSheet = findSheetByName(ss, 'DB_RESERVATIONS');
@@ -170,7 +171,7 @@ function geminiReorderSuggestion() {
     var msg = _buildReorderMessage(lowItems);
     sendLineNotify({ message: msg, room: 'PROCUREMENT' });
     return { success: true, message: msg, items: lowItems };
-  } catch(e) { return { error: e.toString() }; }
+  } catch(e) { _logError_('MEDIUM', 'geminiReorderSuggestion', e); return { error: e.toString() }; }
 }
 
 function _geminiAnalyzeReorder(apiKey, lowItems) {
@@ -451,9 +452,10 @@ function scanWithdrawStock(data) {
 // ============================================================
 function checkLowStockAlert() {
   try {
+    _logInfo_('checkLowStockAlert', 'Starting low stock scan');
     var ss = getComphoneSheet();
     var sh = findSheetByName(ss, 'DB_INVENTORY');
-    if (!sh) return { error: 'DB_INVENTORY not found' };
+    if (!sh) { _logError_('HIGH', 'checkLowStockAlert', 'DB_INVENTORY not found'); return { error: 'DB_INVENTORY not found' }; }
     var all = sh.getDataRange().getValues();
     var resSheet = findSheetByName(ss, 'DB_RESERVATIONS');
     var lowItems = [];
@@ -480,7 +482,7 @@ function checkLowStockAlert() {
       _notifyLowStock(lowItems);
     }
     return { success: true, lowStock: lowItems.length, items: lowItems };
-  } catch(e) { return { error: e.toString() }; }
+  } catch(e) { _logError_('MEDIUM', 'checkLowStockAlert', e); return { error: e.toString() }; }
 }
 
 

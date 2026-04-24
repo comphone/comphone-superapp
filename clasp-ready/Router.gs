@@ -236,6 +236,8 @@ function _checkAuthGateV55_(action, payload) {
     'getDriveSyncStatus': 1,
     // Error logging (exception — frontend may not have token on error)
     'logSystemError': 1,
+    // Telemetry (cron & error observability)
+    'getCronTelemetryStats': 1, 'getErrorTelemetryStats': 1, 'getErrorTrendStatus': 1,
     // Telemetry (client-side, best-effort, no auth needed)
     'logTelemetry': 1,
     // Customer Portal (public by design)

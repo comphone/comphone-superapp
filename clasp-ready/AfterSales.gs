@@ -161,6 +161,7 @@ function logAfterSalesFollowUp(recordId, note, followUpBy, nextAction) {
 // ============================================================
 function sendAfterSalesAlerts() {
   try {
+    _logInfo_('sendAfterSalesAlerts', 'Starting after-sales alert scan');
     var due = getAfterSalesDue(7);
     if (!due.success || due.total === 0) return { success: true, sent: 0, message: 'ไม่มีรายการที่ต้องแจ้งเตือน' };
 
@@ -179,6 +180,7 @@ function sendAfterSalesAlerts() {
     sendLineNotify({ message: msg, room: 'SALES' });
     return { success: true, sent: due.total, message: 'ส่งแจ้งเตือน ' + due.total + ' รายการ' };
   } catch (e) {
+    _logError_('MEDIUM', 'sendAfterSalesAlerts', e);
     return { success: false, error: e.toString() };
   }
 }

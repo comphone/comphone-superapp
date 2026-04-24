@@ -159,6 +159,7 @@ function getTaxReminder(data) {
 
 function cronTaxReminder() {
   try {
+    _logInfo_('cronTaxReminder', 'Starting tax reminder check');
     var reminder = getTaxReminder({});
     var lineToken = getConfig('LINE_CHANNEL_ACCESS_TOKEN', '');
     var groupId   = getConfig('LINE_GROUP_ACCOUNTING', '');
@@ -180,6 +181,7 @@ function cronTaxReminder() {
     writeAuditLog('TAX_REMINDER_SENT', 'CRON', 'period=' + reminder.period, { result: 'success' });
     return { success: true, period: reminder.period, message: reminder.message };
   } catch (e) {
+    _logError_('HIGH', 'cronTaxReminder', e);
     writeAuditLog('TAX_REMINDER_ERROR', 'CRON', e.toString(), { result: 'error' });
     return { success: false, error: e.toString() };
   }

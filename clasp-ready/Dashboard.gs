@@ -427,6 +427,7 @@ function getCalendarJobs(days) {
 // ============================================================
 function getCRMSchedule() {
   try {
+    _logInfo_('getCRMSchedule', 'Starting CRM schedule scan');
     var ss = getComphoneSheet();
     var jsh = findSheetByName(ss, 'DBJOBS');
     if (!jsh) return { error: 'DBJOBS not found' };
@@ -504,6 +505,7 @@ function getCRMSchedule() {
       totalAlerts: due6m.length + due1y.length
     };
   } catch(e) {
+    _logError_('MEDIUM', 'getCRMSchedule', e);
     return { error: e.toString() };
   }
 }

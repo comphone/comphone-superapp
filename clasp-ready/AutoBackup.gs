@@ -7,16 +7,18 @@ var LOG_SHEET = 'DB_ACTIVITY_LOG';
 
 function autoBackup() {
   try {
+    _logInfo_('autoBackup', 'Starting scheduled backup');
     var ss = getComphoneSheet();
     var dateStr = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd_HHmmss');
     var copy = DriveApp.getFileById(ss.getId()).makeCopy('COMPHONE_BACKUP_' + dateStr);
     var folder = DriveApp.getFolderById(BACKUP_FOLDER_ID);
     folder.addFile(copy);
     DriveApp.getRootFolder().removeFile(copy);
-    Logger.log('Backup created: ' + copy.getUrl());
+    _logInfo_('autoBackup', 'Backup created', { url: copy.getUrl(), date: dateStr });
     return { success: true, url: copy.getUrl(), date: dateStr };
   } catch(e) {
-    Logger.log('Backup failed: ' + e);
+    _logError_('HIGH', 'autoBackup', e);
+    _logInfo_('autoBackup', 'Backup failed: ' + String(e).substring(0, 200));
     return { success: false, error: '' + e };
   }
 }
@@ -169,7 +171,7 @@ function setupAllTriggers() {
     }
   });
 
-  Logger.log('setupAllTriggers: ' + results.length + ' processed, ' + skipped.length + ' skipped');
+  _logInfo_('setupAllTriggers', 'Trigger setup complete', { processed: results.length, skipped: skipped.length });
   return {
     success: true,
     triggers: results,
@@ -190,7 +192,7 @@ function deleteAllTriggers() {
     ScriptApp.deleteTrigger(t);
     deleted.push(fn);
   });
-  Logger.log('deleteAllTriggers: removed ' + deleted.length);
+  _logInfo_('deleteAllTriggers', 'Triggers removed', { count: deleted.length });
   return { deleted: deleted, count: deleted.length };
 }
 

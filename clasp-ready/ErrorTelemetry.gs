@@ -531,3 +531,137 @@ function setupErrorTrendTrigger() {
 
   return { success: true, message: 'Error trend trigger set: daily at 7:00 AM' };
 }
+
+// ============================================================
+// Phase 2E-1: Structured Info Logging
+// ============================================================
+
+/**
+ * _logInfo_ — Structured info-level telemetry
+ * Replaces raw Logger.log with structured, queryable output.
+ * NEVER throws. Writes to both Logger.log (console) and DB_LOGS (sheet).
+ *
+ * @param {string} action — The function/section logging this message
+ * @param {string} message — Human-readable message
+ * @param {Object} [context] — Optional structured context
+ */
+function _logInfo_(action, message, context) {
+  try {
+    // Always write to Logger.log for GAS execution log
+    Logger.log('[INFO][' + action + '] ' + message);
+
+    // Lightweight sheet write — skip if DB_SS_ID not configured
+    var ssId = PropertiesService.getScriptProperties().getProperty('DB_SS_ID');
+    if (!ssId) return;
+
+    var ss = SpreadsheetApp.openById(ssId);
+    var sheet = ss.getSheetByName('DB_LOGS');
+    if (!sheet) {
+      sheet = ss.insertSheet('DB_LOGS');
+      sheet.appendRow(['timestamp', 'level', 'action', 'message', 'context']);
+      sheet.setFrozenRows(1);
+      sheet.setColumnWidth(1, 160);
+      sheet.setColumnWidth(3, 150);
+      sheet.setColumnWidth(4, 300);
+      sheet.setColumnWidth(5, 300);
+    }
+
+    var now = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss');
+    var ctxStr = '';
+    try { ctxStr = context ? JSON.stringify(context).substring(0, 1000) : ''; } catch (e) { ctxStr = String(context).substring(0, 1000); }
+
+    sheet.appendRow([now, 'INFO', action, message.substring(0, 500), ctxStr]);
+
+    // Auto-prune at 3000 rows (keep ~30 days at ~100 entries/day)
+    if (sheet.getLastRow() > 3001) {
+      sheet.deleteRows(2, sheet.getLastRow() - 3001);
+    }
+  } catch (e) {
+    // NEVER throw from logger — fallback to raw Logger.log
+    try { Logger.log('[INFO FALLBACK][' + action + '] ' + message); } catch (ignore) {}
+  }
+}
+
+/**
+ * _cronWrap_ — Instrumented cron execution wrapper
+ * Wraps a cron function with entry/exit telemetry, timing, and error capture.
+ * Use at the TOP of cron functions: return _cronWrap_('cronName', function() { ... });
+ *
+ * @param {string} name — Cron job name (e.g. 'autoBackup')
+ * @param {Function} fn — The cron function body
+ * @return {*} Original function return value
+ */
+function _cronWrap_(name, fn) {
+  var startMs = Date.now();
+  _logInfo_('cron:' + name, 'START');
+  try {
+    var result = fn();
+    var elapsed = Date.now() - startMs;
+    var summary = '';
+    try {
+      if (result && typeof result === 'object') {
+        summary = result.success === false ? 'FAIL' : 'OK';
+        if (result.error) summary += ' — ' + String(result.error).substring(0, 100);
+        if (result.message) summary += ' — ' + String(result.message).substring(0, 100);
+      } else {
+        summary = 'OK (no result object)';
+      }
+    } catch (e) { summary = 'OK (result parse error)'; }
+    _logInfo_('cron:' + name, 'END [' + elapsed + 'ms] ' + summary);
+    return result;
+  } catch (e) {
+    var elapsed2 = Date.now() - startMs;
+    _logError_('HIGH', 'cron:' + name, e, { elapsed_ms: elapsed2, cron: name });
+    _logInfo_('cron:' + name, 'CRASH [' + elapsed2 + 'ms] ' + String(e).substring(0, 200));
+    throw e; // Re-throw so GAS reports the failure
+  }
+}
+
+/**
+ * getCronTelemetryStats — Dashboard endpoint for cron execution stats
+ * Reads from DB_LOGS to show recent cron run history
+ */
+function getCronTelemetryStats() {
+  try {
+    var ssId = PropertiesService.getScriptProperties().getProperty('DB_SS_ID');
+    if (!ssId) return { success: true, cron_runs: [] };
+    var ss = SpreadsheetApp.openById(ssId);
+    var sheet = ss.getSheetByName('DB_LOGS');
+    if (!sheet || sheet.getLastRow() < 2) return { success: true, cron_runs: [] };
+
+    var lastRow = sheet.getLastRow();
+    var data = ss.getSheetByName('DB_LOGS').getRange(2, 1, Math.min(lastRow - 1, 500), 5).getValues();
+
+    var cronRuns = [];
+    for (var i = 0; i < data.length; i++) {
+      var action = String(data[i][2] || '');
+      if (action.indexOf('cron:') === 0) {
+        cronRuns.push({
+          timestamp: data[i][0],
+          level: data[i][1],
+          cron: action.replace('cron:', ''),
+          message: data[i][3],
+          context: data[i][4]
+        });
+      }
+    }
+
+    // Get last run per cron
+    var lastRun = {};
+    for (var j = 0; j < cronRuns.length; j++) {
+      var cronName = cronRuns[j].cron;
+      if (cronRuns[j].message.indexOf('END') === 0 || cronRuns[j].message.indexOf('CRASH') === 0) {
+        lastRun[cronName] = cronRuns[j];
+      }
+    }
+
+    return {
+      success: true,
+      recent_runs: cronRuns.slice(-20),
+      last_run_per_cron: lastRun,
+      total_log_entries: cronRuns.length
+    };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}

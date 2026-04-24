@@ -122,6 +122,7 @@ function _logNotifyFallback(reason, target, message) {
 // ============================================================
 function cronMorningAlert() {
   try {
+    _logInfo_('cronMorningAlert', 'Starting morning alert scan');
     var ss = getComphoneSheet();
     var sh = findSheetByName(ss, 'DB_INVENTORY');
     if (!sh) return { error: 'Sheet not found' };
@@ -157,7 +158,7 @@ function cronMorningAlert() {
       sendLineNotify({ message: '\ud83d\udcca สรุปเช้า\n\u23f3 รอดำเนินการ: ' + p + ' งาน\n\u2705 เสร็จแล้ว: ' + c + ' งาน', room: 'TECHNICIAN' });
     }
     return { success: true, lowStock: lowStock.length };
-  } catch (e) { return { error: e.toString() }; }
+  } catch (e) { _logError_('MEDIUM', 'cronMorningAlert', e); return { error: e.toString() }; }
 }
 
 // ============================================================

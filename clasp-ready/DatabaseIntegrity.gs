@@ -198,11 +198,11 @@ function runIntegrityCheck() {
       ? '✅ ผ่านการตรวจสอบทั้งหมด — ไม่พบปัญหา'
       : '⚠️ พบปัญหา ' + report.totalIssues + ' รายการ';
 
-    Logger.log('📊 Integrity Check: ' + report.summary);
+    _logInfo_('runIntegrityCheck', 'Integrity check complete', { summary: report.summary });
     return { success: true, report: report };
 
   } catch (e) {
-    Logger.log('❌ runIntegrityCheck error: ' + e.message);
+    _logError_('HIGH', 'runIntegrityCheck', e);
     return { success: false, error: e.message, report: report };
   }
 }

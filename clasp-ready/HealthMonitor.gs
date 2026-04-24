@@ -273,7 +273,15 @@ function invalidateCache_(pattern) {
 // Trigger function — รันทุก 30 นาที
 // ============================================================
 function cronHealthCheck() {
-  return healthCheck({ triggered_by: 'CRON' });
+  _logInfo_('cronHealthCheck', 'Starting scheduled health check');
+  try {
+    var result = healthCheck({ triggered_by: 'CRON' });
+    _logInfo_('cronHealthCheck', 'Health check complete', { status: result && result.status ? result.status : 'unknown' });
+    return result;
+  } catch (e) {
+    _logError_('HIGH', 'cronHealthCheck', e);
+    return { success: false, error: e.toString() };
+  }
 }
 
 function setupHealthCheckTrigger() {

@@ -162,7 +162,7 @@ function backupSessionToDrive(content) {
       new Date().toISOString()
     );
     
-    Logger.log('✅ Session backup: ' + tsFileName + ' (deleted ' + deleted + ' old files)');
+    _logInfo_('DriveSync:sessionBackup', 'Session backup complete', { file: tsFileName, deleted: deleted });
     
     return {
       success:  true,
@@ -173,7 +173,7 @@ function backupSessionToDrive(content) {
       deleted:  deleted,
     };
   } catch(e) {
-    Logger.log('❌ Session backup error: ' + e.message);
+    _logError_('MEDIUM', 'DriveSync:sessionBackup', e);
     return { success: false, error: e.message };
   }
 }
@@ -223,7 +223,7 @@ function syncCodeFiles_(payload) {
     // ลบ version folder เก่า (เก็บ 10 versions)
     cleanOldFiles_(folders.code, 'v', 10);
     
-    Logger.log('✅ Code sync: ' + synced.length + ' files, ' + errors.length + ' errors');
+    _logInfo_('DriveSync:codeSync', 'Code sync complete', { synced: synced.length, errors: errors.length });
     
     return {
       success:   errors.length === 0,
@@ -233,7 +233,7 @@ function syncCodeFiles_(payload) {
       folderUrl: versionFolder.getUrl(),
     };
   } catch(e) {
-    Logger.log('❌ Code sync error: ' + e.message);
+    _logError_('MEDIUM', 'DriveSync:codeSync', e);
     return { success: false, error: e.message };
   }
 }
