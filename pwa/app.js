@@ -144,8 +144,8 @@ window.addEventListener('load', () => {
   });
 
   // Offline detection
-  window.addEventListener('offline', () => showOfflineBar(true));
-  window.addEventListener('online', () => { showOfflineBar(false); syncOfflineQueue(); });
+  // online/offline listeners delegated to offline_db.js (avoids duplicate registration)
+  // offline_db.js handles: showOfflineBar + syncOfflineQueue
 
   // Start splash
   setTimeout(initApp, 1800);
@@ -468,17 +468,41 @@ async function callAPI(action, params = {}) {
 // See api_client.js line 427 — do NOT re-add window.callApi override here
 
 // ===== OFFLINE QUEUE =====
-function saveOfflineAction(action) {
-  const queue = JSON.parse(localStorage.getItem('comphone_offline_queue') || '[]');
-  queue.push(action);
-  localStorage.setItem('comphone_offline_queue', JSON.stringify(queue.slice(-50)));
+// saveOfflineAction — delegated to offline_db.js (single source of truth)
+// If offline_db.js hasn't loaded yet, fallback to localStorage
+if (typeof window.saveOfflineAction !== 'function') {
+  window.saveOfflineAction = function(action) {
+    const queue = JSON.parse(localStorage.getItem('comphone_offline_queue') || '[]');
+    queue.push(action);
+    localStorage.setItem('comphone_offline_queue', JSON.stringify(queue.slice(-50)));
+  };
 }
 
 async function syncOfflineQueue() {
+  // FIXED: Actually replay queued actions instead of deleting them
+  // Priority: IndexedDB (offline_db.js) > localStorage fallback
+  try {
+    if (typeof syncOfflineQueueLegacy === 'function') {
+      await syncOfflineQueueLegacy(); // Uses IndexedDB action_queue
+      return;
+    }
+  } catch(e) { console.warn('[Sync] IndexedDB sync failed, trying localStorage:', e); }
+
+  // Fallback: localStorage queue replay
   const queue = JSON.parse(localStorage.getItem('comphone_offline_queue') || '[]');
   if (!queue.length) return;
   showToast(`🔄 กำลัง Sync ${queue.length} รายการ...`);
+  let synced = 0;
+  for (const item of queue) {
+    try {
+      if (item.action && navigator.onLine) {
+        await callApi(item.action, item.params || {});
+        synced++;
+      }
+    } catch(e) { console.warn('[Sync] Failed:', item.action, e); }
+  }
   localStorage.removeItem('comphone_offline_queue');
+  showToast(`✅ Synced ${synced}/${queue.length} รายการ`);
 }
 
 // ===== OFFLINE BAR =====

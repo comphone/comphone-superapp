@@ -182,6 +182,9 @@ fi
 if grep -q '<script src="ai_executor_validation.js"' pwa/index.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in index.html"
 fi
+if [ -f pwa/ai_executor_validation.js ]; then
+  fail "RECURRENCE: ai_executor_validation.js file still exists in pwa/"
+fi
 
 if grep -A5 'async function callGas' pwa/dashboard_pc.html | grep -q 'window.AI_EXECUTOR'; then
   fail "RECURRENCE: callGas() routes through AI_EXECUTOR instead of direct fetch"

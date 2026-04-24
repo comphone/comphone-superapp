@@ -160,7 +160,7 @@ function _fetchWithTimeout_(request, ms) {
 
 async function _flushOfflineQueue_() {
   const DB_NAME = 'comphone_offline';
-  const STORE   = 'queue';
+  const STORE   = 'action_queue'; // FIXED: read from action_queue (where app writes)
   let db;
   try {
     db = await new Promise((res, rej) => {
