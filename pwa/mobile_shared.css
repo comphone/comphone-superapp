@@ -1,0 +1,421 @@
+/**
+ * mobile_shared.css — COMPHONE SUPER APP v5.6.9
+ * Mobile PWA Design System (Touch-Optimized)
+ *
+ * USAGE: <link rel="stylesheet" href="mobile_shared.css">
+ * Add class="cp-mobile" to <html> or <body>
+ *
+ * SHARES: Design tokens with dashboard_shared.css (--cp-* variables)
+ * ADDS:   Mobile-specific patterns — touch targets, bottom sheets,
+ *          field workflows, offline indicators, camera-first UX
+ */
+
+/* ═══════════════════════════════════════════════════════
+   §1  MOBILE TOKENS (extends dashboard_shared.css)
+   ═══════════════════════════════════════════════════════ */
+
+.cp-mobile {
+  /* Mobile-specific sizing */
+  --cp-touch-min:   48px;       /* WCAG 2.5.5 minimum touch target */
+  --cp-touch-comfy:  56px;      /* Comfortable touch target */
+  --cp-bottom-nav-h: 64px;      /* Bottom navigation height */
+  --cp-safe-bottom:  env(safe-area-inset-bottom, 0px);
+  --cp-safe-top:     env(safe-area-inset-top, 0px);
+
+  /* Mobile spacing (larger than desktop for thumbs) */
+  --cp-m-space-xs:  8px;
+  --cp-m-space-sm:  12px;
+  --cp-m-space-md:  20px;
+  --cp-m-space-lg:  28px;
+
+  /* Mobile typography (larger base for readability) */
+  --cp-m-font-base: 16px;       /* Prevents iOS zoom on input focus */
+  --cp-m-font-sm:   14px;
+  --cp-m-font-lg:   18px;
+  --cp-m-font-xl:   22px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   §2  MOBILE BASE
+   ═══════════════════════════════════════════════════════ */
+
+.cp-mobile {
+  font-size: var(--cp-m-font-base);
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: contain;  /* Prevent pull-to-refresh conflicts */
+}
+
+/* Prevent iOS rubber-band bounce on body */
+.cp-mobile body {
+  overscroll-behavior: none;
+}
+
+/* ═══════════════════════════════════════════════════════
+   §3  TOUCH-OPTIMIZED COMPONENTS
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Touch Button (min 48px) ────────────────────────── */
+.cp-touch-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--cp-touch-min);
+  min-width: var(--cp-touch-min);
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--cp-radius-md);
+  font-size: var(--cp-m-font-base);
+  font-weight: 600;
+  font-family: var(--cp-font);
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.1s;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.cp-touch-btn:active {
+  transform: scale(0.96);
+  opacity: 0.8;
+}
+.cp-touch-btn-primary {
+  background: var(--cp-blue);
+  color: #fff;
+}
+.cp-touch-btn-success {
+  background: var(--cp-green);
+  color: #fff;
+}
+.cp-touch-btn-danger {
+  background: var(--cp-red);
+  color: #fff;
+}
+.cp-touch-btn-ghost {
+  background: transparent;
+  color: var(--cp-text);
+  border: 1px solid var(--cp-border);
+}
+
+/* ── Touch List Item ────────────────────────────────── */
+.cp-touch-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--cp-m-space-sm);
+  min-height: var(--cp-touch-comfy);
+  padding: var(--cp-m-space-sm) var(--cp-m-space-md);
+  border-bottom: 1px solid var(--cp-border);
+  transition: background 0.1s;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.cp-touch-list-item:active {
+  background: var(--cp-hover-bg);
+}
+.cp-touch-list-item:last-child {
+  border-bottom: none;
+}
+
+/* ═══════════════════════════════════════════════════════
+   §4  BOTTOM SHEET (Mobile-Native Modal)
+   ═══════════════════════════════════════════════════════ */
+
+.cp-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  animation: cp-fadeIn 0.2s ease;
+}
+.cp-sheet {
+  background: var(--cp-card-bg);
+  border-radius: var(--cp-radius-lg) var(--cp-radius-lg) 0 0;
+  padding: var(--cp-m-space-md);
+  padding-bottom: calc(var(--cp-m-space-md) + var(--cp-safe-bottom));
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  animation: cp-slideUp 0.3s ease;
+}
+.cp-sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--cp-border);
+  margin: 0 auto var(--cp-m-space-md);
+}
+
+/* ═══════════════════════════════════════════════════════
+   §5  FIELD WORKFLOW COMPONENTS
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Job Card (Field-Optimized) ─────────────────────── */
+.cp-job-card {
+  background: var(--cp-card-bg);
+  border: 1px solid var(--cp-card-border);
+  border-radius: var(--cp-radius-md);
+  padding: var(--cp-m-space-md);
+  margin-bottom: var(--cp-m-space-sm);
+  transition: transform 0.1s, box-shadow 0.1s;
+  cursor: pointer;
+}
+.cp-job-card:active {
+  transform: scale(0.98);
+}
+.cp-job-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--cp-m-space-xs);
+}
+.cp-job-card-title {
+  font-size: var(--cp-m-font-base);
+  font-weight: 700;
+  color: var(--cp-text);
+}
+.cp-job-card-sub {
+  font-size: var(--cp-m-font-sm);
+  color: var(--cp-text2);
+  margin-bottom: var(--cp-m-space-xs);
+}
+.cp-job-card-actions {
+  display: flex;
+  gap: var(--cp-m-space-xs);
+  margin-top: var(--cp-m-space-sm);
+}
+
+/* ── Status Badge (Job Status) ──────────────────────── */
+.cp-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--cp-radius-full);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.cp-status-badge.urgent   { background: #fee2e2; color: #dc2626; }
+.cp-status-badge.inprog   { background: #dbeafe; color: #1e40af; }
+.cp-status-badge.waiting  { background: #fef3c7; color: #d97706; }
+.cp-status-badge.done     { background: #d1fae5; color: #065f46; }
+.cp-status-badge.new      { background: #f1f5f9; color: #475569; }
+
+/* ── Quick Action Grid (Field FAB) ──────────────────── */
+.cp-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--cp-m-space-sm);
+  margin: var(--cp-m-space-md) 0;
+}
+.cp-quick-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: var(--cp-m-space-sm);
+  border-radius: var(--cp-radius-md);
+  border: none;
+  background: var(--cp-card-bg);
+  cursor: pointer;
+  transition: transform 0.1s;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.cp-quick-action:active {
+  transform: scale(0.92);
+}
+.cp-quick-action-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--cp-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+.cp-quick-action-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--cp-text2);
+  text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════════
+   §6  OFFLINE INDICATOR
+   ═══════════════════════════════════════════════════════ */
+
+.cp-offline-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: var(--cp-red);
+  color: #fff;
+  text-align: center;
+  padding: 6px var(--cp-m-space-md);
+  font-size: 13px;
+  font-weight: 700;
+  transform: translateY(-100%);
+  transition: transform 0.3s ease;
+}
+.cp-offline-bar.visible {
+  transform: translateY(0);
+}
+.cp-offline-bar i {
+  margin-right: 6px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   §7  PULL-TO-REFRESH INDICATOR
+   ═══════════════════════════════════════════════════════ */
+
+.cp-pull-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--cp-m-space-sm);
+  color: var(--cp-text2);
+  font-size: 13px;
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: opacity 0.2s, transform 0.2s;
+}
+.cp-pull-indicator.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.cp-pull-indicator .spin {
+  animation: cp-spin 0.8s linear infinite;
+  margin-right: 8px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   §8  PHOTO / CAMERA COMPONENTS
+   ═══════════════════════════════════════════════════════ */
+
+.cp-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--cp-m-space-xs);
+}
+.cp-photo-thumb {
+  aspect-ratio: 1;
+  border-radius: var(--cp-radius-sm);
+  object-fit: cover;
+  width: 100%;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.cp-photo-thumb:active {
+  transform: scale(0.95);
+}
+.cp-camera-fab {
+  position: fixed;
+  bottom: calc(var(--cp-bottom-nav-h) + var(--cp-safe-bottom) + 16px);
+  right: 16px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--cp-blue);
+  color: #fff;
+  border: none;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(59,130,246,0.4);
+  z-index: 50;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.cp-camera-fab:active {
+  transform: scale(0.9);
+}
+
+/* ═══════════════════════════════════════════════════════
+   §9  SEARCH BAR (Mobile)
+   ═══════════════════════════════════════════════════════ */
+
+.cp-search-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--cp-m-space-xs);
+  background: var(--cp-input-bg);
+  border: 1px solid var(--cp-border);
+  border-radius: var(--cp-radius-md);
+  padding: 8px 14px;
+  margin-bottom: var(--cp-m-space-md);
+}
+.cp-search-bar input {
+  flex: 1;
+  border: none;
+  background: none;
+  color: var(--cp-text);
+  font-size: var(--cp-m-font-base);
+  font-family: var(--cp-font);
+  outline: none;
+}
+.cp-search-bar input::placeholder {
+  color: var(--cp-text3);
+}
+.cp-search-bar i {
+  color: var(--cp-text3);
+  font-size: 18px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   §10  EMPTY STATE (Mobile)
+   ═══════════════════════════════════════════════════════ */
+
+.cp-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--cp-m-space-xl) var(--cp-m-space-md);
+  text-align: center;
+  color: var(--cp-text3);
+}
+.cp-empty-state-icon {
+  font-size: 3rem;
+  margin-bottom: var(--cp-m-space-sm);
+  opacity: 0.4;
+}
+.cp-empty-state-title {
+  font-size: var(--cp-m-font-lg);
+  font-weight: 700;
+  margin-bottom: var(--cp-m-space-xs);
+}
+.cp-empty-state-sub {
+  font-size: var(--cp-m-font-sm);
+  max-width: 280px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   §11  RESPONSIVE ADJUSTMENTS
+   ═══════════════════════════════════════════════════════ */
+
+/* Bottom nav safe area padding */
+.cp-mobile .bottom-nav-bar {
+  padding-bottom: calc(6px + var(--cp-safe-bottom));
+}
+
+/* Content area padding for bottom nav */
+.cp-mobile .page-content,
+.cp-mobile #pages-container {
+  padding-bottom: calc(var(--cp-bottom-nav-h) + var(--cp-safe-bottom) + 8px);
+}
+
+/* Prevent zoom on input focus (iOS) */
+@media screen and (max-width: 768px) {
+  .cp-mobile input,
+  .cp-mobile select,
+  .cp-mobile textarea {
+    font-size: 16px !important; /* iOS zooms if < 16px */
+  }
+}
