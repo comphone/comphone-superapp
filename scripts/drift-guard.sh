@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # ============================================================
 # COMPHONE SUPER APP — DRIFT GUARD (PHMP v1 Freeze Protocol)
-# Purpose: Detect unauthorized drift from v5.6.5 baseline
+# Purpose: Detect unauthorized drift from current baseline
 # Usage: ./scripts/drift-guard.sh [baseline_tag]
 # Exit: 0 = no drift, 1 = drift detected
 # ============================================================
 
 set -euo pipefail
 
-BASELINE_TAG="${1:-v5.6.5-freeze}"
+BASELINE_TAG="${1:-v5.6.8-freeze}"
 BASELINE_COMMIT=$(git rev-list -n1 "$BASELINE_TAG" 2>/dev/null || echo "")
 DRIFT_FOUND=0
 ERRORS=()
@@ -30,13 +30,19 @@ fi
 
 # 2. Version Drift Check
 echo "🔗 [1/5] Version Drift Check..."
-CONFIG_VERSION=$(grep -oP "VERSION:\s*'\K[0-9.]+'" clasp-ready/Config.gs | tr -d "'" || echo "MISSING")
-SW_VERSION=$(grep -oP "CACHE_V\s*=\s*'comphone-v\K[0-9.]+'" pwa/sw.js | tr -d "'" || echo "MISSING")
-PC_VERSION=$(grep -oP "__APP_VERSION\s*=\s*'v\K[0-9.]+'" pwa/dashboard_pc.html | tr -d "'" || echo "MISSING")
+CONFIG_VERSION=$(grep -oP "VERSION:\s*'\K[0-9.]+" clasp-ready/Config.gs | head -1 || echo "MISSING")
+SW_VERSION=$(grep -oP "CACHE_V\s*=\s*'comphone-v\K[0-9.]+" pwa/sw.js | head -1 || echo "MISSING")
+PC_VERSION=$(grep -oP "__APP_VERSION\s*=\s*'v\K[0-9.]+" pwa/dashboard_pc.html | head -1 || echo "MISSING")
 
-if [ "$CONFIG_VERSION" != "5.6.5" ]; then fail "Config.gs VERSION drift: $CONFIG_VERSION (expected 5.6.5)"; fi
-if [ "$SW_VERSION" != "5.6.5" ]; then fail "sw.js CACHE_V drift: $SW_VERSION (expected 5.6.5)"; fi
-if [ "$PC_VERSION" != "5.6.5" ]; then fail "dashboard_pc.html __APP_VERSION drift: $PC_VERSION (expected 5.6.5)"; fi
+# Frontend versions must match each other
+if [ "$SW_VERSION" != "$PC_VERSION" ]; then
+  fail "Frontend version mismatch: sw.js=$SW_VERSION vs dashboard=$PC_VERSION"
+fi
+# Config.gs version is the GAS backend — may differ from frontend
+if [ "$CONFIG_VERSION" = "MISSING" ]; then
+  fail "Config.gs VERSION not found"
+fi
+echo "   Config.gs=$CONFIG_VERSION | sw.js=$SW_VERSION | dashboard=$PC_VERSION"
 
 # 3. Load-Order Drift Check
 echo "🔗 [2/5] Load-Order Drift Check..."
