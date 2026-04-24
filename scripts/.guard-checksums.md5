@@ -1,6 +1,8 @@
+44cf2612f239fae2e72805752d388ff8  scripts/guard-self-test.sh
+438ca9887ee1e6c66a9c0482e1c55237  scripts/guard-stewardship.sh
+b74379af34022c878d29d3ccaf490c04  scripts/guard-evolution-log.sh
 c7d832675e4dad9e9a84422e37ffd729  scripts/drift-guard.sh
 9b0b30568ac7bd64f73670c4f92dfdec  scripts/regression-guard.sh
-28fa0ce6de04ba93aa205ba70e813fcb  scripts/guard-self-test.sh
 876b756b2cd0eab4ee74a2f06c289b30  scripts/browser-smoke-test.py
 9922fa7ddb007575544eab0438473a78  scripts/pre-merge-gate.sh
 376aeb7641bb79ed7ef44d9043fb4576  scripts/install-hooks.sh

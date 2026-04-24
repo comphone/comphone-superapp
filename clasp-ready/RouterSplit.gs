@@ -119,7 +119,6 @@ var MODULE_ROUTER = {
   'updateUserRole': function(p) { return updateUserRole(p.token || '', p.username || '', p.role || ''); },
   'setUserActive': function(p) { return setUserActive(p.token || '', p.username || '', p.active !== false); },
   'setupUserSheet': function(p) { return setupUserSheet(); },
-  // REMOVED (Phase 2B-0): forceResetAdmin, cleanupSessions, verifyToken — functions don't exist
 
   // Security
   'changePassword': function(p) { return changePassword(p); },
@@ -150,7 +149,6 @@ var MODULE_ROUTER = {
   'storeSnapshot': function(p) { return (typeof storeSnapshot === 'function') ? storeSnapshot(p) : { success: false }; },
   'getSecurityLog': function(p) { var sl = (typeof getSecurityLog === 'function') ? getSecurityLog() : []; return { success: true, data: sl, count: sl.length }; },
   'seedAllData':  function(p) { return seedAllData(); },
-  // REMOVED (Phase 2B-0): runBackup — function doesn't exist
   'cronMorningAlert': function(p) { return cronMorningAlert(); },
 
   // Push Notifications
@@ -210,7 +208,6 @@ var MODULE_ROUTER = {
   'checkGuardAndDecide': function(p) { return checkGuardAndDecide(p); },
   'checkGuardAndTrigger': function(p) { return checkGuardAndTrigger(p); },
   'cleanAllData': function(p) { return jsonOutputV55_(p); },
-  // REMOVED: cleanupSessions — function doesn't exist
   'clearAlertQueue': function(p) { return clearAlertQueue(p); },
   'createRule': function(p) { return createRule(p); },
   'createSale': function(p) { return createRetailSale_(p); },
@@ -222,7 +219,6 @@ var MODULE_ROUTER = {
   'dryRunWorkflow': function(p) { return dryRunWorkflow(p); },
   'ensureAllBranchIdColumns': function(p) { return ensureAllBranchIdColumns(p); },
   'expireOldAlerts': function(p) { return expireOldAlerts(p); },
-  // REMOVED: forceResetAdmin — function doesn't exist
   'geminiSlipVerify': function(p) { return geminiSlipVerify_(p); },
   'generateTaxInvoice': function(p) { return generateTaxInvoice(p); },
   'generateWhtDocument': function(p) { return generateWhtDocument(p); },
@@ -310,7 +306,6 @@ var MODULE_ROUTER = {
   'registerAgent': function(p) { return registerAgent(p); },
   'resetAgentScore': function(p) { return resetAgentScore(p); },
   'resetCooldown': function(p) { return resetCooldown(p); },
-  // REMOVED: runBackup — function doesn't exist
   'runIntegrityCheck': function(p) { return jsonOutputV55_(p); },
   'runJobCompletionQC': function(p) { return runJobCompletionQC(p); },
   'runLearningCycle': function(p) { return runLearningCycle(p); },
@@ -349,7 +344,6 @@ var MODULE_ROUTER = {
   'updateWarrantyStatus': function(p) { return updateWarrantyStatus(p); },
   'validateSchema': function(p) { return jsonOutputV55_(p); },
   'verifyPaymentSlip': function(p) { return verifyPaymentSlip_(p); },
-  // REMOVED: verifyToken — function doesn't exist
   'weightedConsensus': function(p) { return weightedConsensus(p); },
   // ── Migrated from Router switch (Phase 2B-3) ──────────────────
   'getSystemUserFromLine': function(p) { return getSystemUserFromLine(p.lineUserId || ''); },

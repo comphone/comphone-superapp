@@ -81,7 +81,7 @@ fi
 
 # Test 7: Guard script integrity (anti-fragility)
 echo ""
-echo "🔐 [7/7] Guard Script Integrity..."
+echo "🔐 [7/8] Guard Script Integrity..."
 if [ -f "scripts/.guard-checksums.md5" ]; then
   if md5sum -c scripts/.guard-checksums.md5 --quiet 2>/dev/null; then
     test_pass "All governance scripts match checksums"
@@ -92,6 +92,20 @@ if [ -f "scripts/.guard-checksums.md5" ]; then
   fi
 else
   test_fail "Guard checksums file missing"
+fi
+
+
+echo ""
+echo "🏗️ [8/8] Architecture Stewardship Guard..."
+if [ -f "scripts/guard-stewardship.sh" ]; then
+  STEW_OUTPUT=$(bash scripts/guard-stewardship.sh 2>&1 || true)
+  if echo "$STEW_OUTPUT" | grep -q "0 failed"; then
+    test_pass "Architecture stewardship guard passing"
+  else
+    test_fail "Architecture stewardship guard has issues"
+  fi
+else
+  test_fail "guard-stewardship.sh missing"
 fi
 
 # Report
