@@ -1,0 +1,7 @@
+39d3ab171a84bd07c99c02daf9e24d3f  scripts/drift-guard.sh
+72ea7ed9c5ba7015aa07188e3c098310  scripts/regression-guard.sh
+9922fa7ddb007575544eab0438473a78  scripts/pre-merge-gate.sh
+7dfeeefd82f2193c9c449f5c119b0bc5  scripts/guard-self-test.sh
+84c2978ed979abc0bf031099b3029ab9  scripts/browser-smoke-test.py
+376aeb7641bb79ed7ef44d9043fb4576  scripts/install-hooks.sh
+72c824e29d835ee4faca8b8c722b61f2  deploy_all.sh
