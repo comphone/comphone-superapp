@@ -75,6 +75,35 @@ if [ ! -f "clasp-ready/.clasp.json" ]; then
 fi
 echo "✅ Clasp config OK"
 
+# ── PHMP v1 Guard Checks (2026-04-24) ──
+echo "🔒 Running security invariants..."
+GUARD_FAIL=0
+if ! grep -q '_checkAuthGateV55_' clasp-ready/Router.gs; then
+  echo "❌ CRITICAL: _checkAuthGateV55_ missing — deploy blocked"
+  GUARD_FAIL=1
+fi
+if ! grep -q "functionName.charAt(0) === '_'" clasp-ready/Router.gs; then
+  echo "❌ CRITICAL: Underscore guard missing — deploy blocked"
+  GUARD_FAIL=1
+fi
+if ! grep -q 'verifyLineSignature_' clasp-ready/Router.gs; then
+  echo "❌ CRITICAL: LINE signature check missing — deploy blocked"
+  GUARD_FAIL=1
+fi
+# Frontend version sync
+SW_V=$(grep -oP "comphone-v\K[0-9.]+" pwa/sw.js 2>/dev/null | head -1)
+PC_V=$(grep -oP "__APP_VERSION.*v\K[0-9.]+" pwa/dashboard_pc.html 2>/dev/null | head -1)
+if [ -n "$SW_V" ] && [ -n "$PC_V" ] && [ "$SW_V" != "$PC_V" ]; then
+  echo "❌ Version mismatch: sw.js=$SW_V vs dashboard=$PC_V — deploy blocked"
+  GUARD_FAIL=1
+fi
+if [ "$GUARD_FAIL" -eq 1 ]; then
+  echo "❌ SECURITY GUARD FAILED — ABORT DEPLOY"
+  echo "   Run: bash scripts/regression-guard.sh for details"
+  exit 1
+fi
+echo "✅ Security invariants OK"
+
 # ========================
 # 1. LOCAL BACKUP (PRIMARY)
 # ========================
