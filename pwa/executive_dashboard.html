@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" class="cp-dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>COMPHONE Executive Dashboard — KPI Overview</title>
+  <link rel="stylesheet" href="dashboard_shared.css">
 <script src="gas_config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="js/system_graph_data.js" defer></script>
@@ -11,19 +12,20 @@
   <style>
     /* ── Reset & Base ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    /* Local tokens bridged to shared design system (dashboard_shared.css) */
     :root {
-      --green:   #10b981;
-      --yellow:  #f59e0b;
-      --red:     #ef4444;
-      --blue:    #3b82f6;
-      --purple:  #8b5cf6;
-      --bg:      #0f172a;
-      --bg2:     #1e293b;
-      --bg3:     #334155;
-      --text:    #f1f5f9;
-      --text2:   #94a3b8;
-      --border:  #334155;
-      --card-shadow: 0 4px 24px rgba(0,0,0,0.3);
+      --green:   var(--cp-green);
+      --yellow:  var(--cp-yellow);
+      --red:     var(--cp-red);
+      --blue:    var(--cp-blue);
+      --purple:  var(--cp-purple);
+      --bg:      var(--cp-bg);
+      --bg2:     var(--cp-bg2);
+      --bg3:     var(--cp-bg3);
+      --text:    var(--cp-text);
+      --text2:   var(--cp-text2);
+      --border:  var(--cp-border);
+      --card-shadow: var(--cp-shadow);
     }
     html, body { height: 100%; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); }
 

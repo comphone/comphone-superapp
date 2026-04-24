@@ -1,23 +1,25 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" class="cp-dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>COMPHONE System Monitor — V5.5.8</title>
+  <link rel="stylesheet" href="dashboard_shared.css">
   <style>
+    /* Local tokens bridged to shared design system (dashboard_shared.css) */
     :root {
-      --bg:       #0d1117;
-      --surface:  #161b22;
-      --border:   #30363d;
-      --text:     #e6edf3;
-      --muted:    #8b949e;
-      --green:    #3fb950;
-      --yellow:   #d29922;
-      --red:      #f85149;
-      --blue:     #58a6ff;
-      --purple:   #bc8cff;
-      --orange:   #ffa657;
-      --font:     'Segoe UI', 'Noto Sans Thai', sans-serif;
+      --bg:       var(--cp-bg);
+      --surface:  var(--cp-bg2);
+      --border:   var(--cp-border);
+      --text:     var(--cp-text);
+      --muted:    var(--cp-text2);
+      --green:    var(--cp-green);
+      --yellow:   var(--cp-yellow);
+      --red:      var(--cp-red);
+      --blue:     var(--cp-blue);
+      --purple:   var(--cp-purple);
+      --orange:   var(--cp-orange);
+      --font:     var(--cp-font);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
