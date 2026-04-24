@@ -180,7 +180,7 @@ function _checkAuthGateV55_(action, payload) {
   // ── Public actions: no auth required ──
   var PUBLIC_ACTIONS = {
     // Auth entry points
-    'help': 1, 'loginUser': 1, 'verifySession': 1, 'verifyToken': 1,
+    'help': 1, 'loginUser': 1, 'verifySession': 1, 
     // Dashboard (read-only)
     'getDashboardBundle': 1, 'invalidateBundleCache': 1, 'getDashboardData': 1,
     'getJobStateConfig': 1, 'getJobTimeline': 1,
@@ -237,7 +237,7 @@ function _checkAuthGateV55_(action, payload) {
   // ── Admin-only actions: require role=admin|owner ──
   var ADMIN_ACTIONS = {
     'listUsers': 1, 'createUser': 1, 'updateUserRole': 1, 'setUserActive': 1,
-    'forceResetAdmin': 1, 'cleanupSessions': 1,
+     
     'setScriptProperties': 1, 'setupAllTriggers': 1, 'setupTriggers': 1,
     'setupUserSheet': 1, 'setupNotificationTriggers': 1,
     'forcePasswordChange': 1, 'lockAccount': 1, 'unlockAccount': 1,
@@ -246,7 +246,7 @@ function _checkAuthGateV55_(action, payload) {
     'controlAction': 1, 'storeSnapshot': 1,
     'setupLearningTriggers': 1, 'setupLineBotV2': 1, 'testLineBotV2': 1,
     'sendPushToAll': 1, 'sendDailyDigest': 1, 'setupDailyDigestTrigger': 1,
-    'cronMorningAlert': 1, 'runBackup': 1,
+    'cronMorningAlert': 1, 
     'sendDashboardSummary': 1, 'sendLineMessage': 1, 'sendLineAlert': 1,
     'nudgeSalesTeam': 1, 'nudgeTech': 1,
     'mapLineUser': 1
