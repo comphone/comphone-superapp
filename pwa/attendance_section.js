@@ -67,9 +67,8 @@ async function _loadKPIs() {
       const present = records.filter(r => r.status === 'PRESENT' || r.status === 'LATE').length;
       const hours = records.reduce((s, r) => s + (parseFloat(r.hours_worked) || 0), 0);
       const jobs = records.reduce((s, r) => s + (parseInt(r.jobs_done) || 0), 0);
-      const kpiEl = document.getElementById('att-kpi-records');
-    if (!kpiEl) return; // section was replaced
-    document.getElementById('att-kpi-records').textContent = records.length;
+      if (!document.getElementById('att-kpi-records')) return; // section replaced
+      document.getElementById('att-kpi-records').textContent = records.length;
       document.getElementById('att-kpi-present').textContent = present;
       document.getElementById('att-kpi-hours').textContent = hours.toFixed(1) + ' ชม.';
       document.getElementById('att-kpi-jobs').textContent = jobs;
