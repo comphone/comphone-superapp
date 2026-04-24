@@ -175,9 +175,12 @@ else
   warn "Python3 or browser-smoke-test.py unavailable — skipping browser tests"
 fi
 
-# E2: Post-incident recurrence patterns
-if grep -q 'ai_executor_validation.js' pwa/dashboard_pc.html; then
+# E2: Post-incident recurrence patterns (check ALL surfaces)
+if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"
+fi
+if grep -q '<script src="ai_executor_validation.js"' pwa/index.html; then
+  fail "RECURRENCE: ai_executor_validation.js loaded in index.html"
 fi
 
 if grep -A5 'async function callGas' pwa/dashboard_pc.html | grep -q 'window.AI_EXECUTOR'; then
