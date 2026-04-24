@@ -179,12 +179,44 @@ async function _onBarcodeDetected_(barcode) {
   } catch (_) { /* ไม่มีเสียงก็ไม่เป็นไร */ }
 
   try {
-    const result = await callAPI('barcodeLookup', { barcode });
+    const raw = await callAPI('barcodeLookup', { barcode });
+    // Adapter: map barcodeLookup flat response → expected nested format
+    const result = _adaptBarcodeResponse_(raw);
     _renderScanResult_(barcode, result);
   } catch (err) {
     if (status) status.textContent = `เกิดข้อผิดพลาด: ${err.message}`;
     showToast(`เกิดข้อผิดพลาด: ${err.message}`);
   }
+}
+
+/**
+ * _adaptBarcodeResponse_ — Map barcodeLookup flat response to _renderScanResult_ expected format
+ * Handles null/missing fields with safe defaults.
+ * @param {Object} raw — barcodeLookup response { found, code, name, qty, cost, price, alert, ... }
+ * @return {Object} — { success, item: { item_name, item_code, qty, cost_price, sell_price, ... } }
+ */
+function _adaptBarcodeResponse_(raw) {
+  if (!raw || !raw.found) {
+    return { success: false, item: null };
+  }
+  return {
+    success: true,
+    item: {
+      item_name: raw.name || '-',
+      item_code: raw.code || '-',
+      qty: Number(raw.qty || 0),
+      cost_price: Number(raw.cost || 0),
+      sell_price: Number(raw.price || 0),
+      category: raw.category || '',
+      location: raw.location || '',
+      unit: raw.unit || 'ชิ้น',
+      min_qty: raw.min_qty || 5,
+      effective: Number(raw.effective != null ? raw.effective : raw.qty || 0),
+      reserved: Number(raw.reserved || 0),
+      alert: !!raw.alert,
+      statusText: raw.statusText || ''
+    }
+  };
 }
 
 /**

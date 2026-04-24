@@ -73,7 +73,7 @@ function _renderInventoryUI(invData) {
         <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;white-space:nowrap">
           <input type="checkbox" id="inv-alert-filter" onchange="_filterInventory()"> ⚠️ สต็อกต่ำ
         </label>
-        <button class="btn-refresh" onclick="_showBarcodeScanner()" style="background:#059669;color:#fff;border:none">
+        <button class="btn-refresh" onclick="_openInventoryScanner_()" style="background:#059669;color:#fff;border:none">
           <i class="bi bi-upc-scan"></i> สแกน
         </button>
         <button class="btn-refresh" onclick="_showAddItemModal()" style="background:#1e40af;color:#fff;border:none">
@@ -612,4 +612,16 @@ async function _doBarcodeLookup() {
     }
   } catch(e) { resEl.innerHTML = `<span style="color:#ef4444;font-size:12px">❌ ${e.message}</span>`; }
 }
-
+// _openInventoryScanner_ — Camera scanner (if available) with text-input fallback
+// inventory_ui.js provides openBarcodeScanner() on mobile PWA
+function _openInventoryScanner_() {
+  if (typeof openBarcodeScanner === 'function') {
+    openBarcodeScanner((barcode) => {
+      const inp = document.getElementById('scan-input');
+      if (inp) inp.value = barcode;
+      _doBarcodeLookup();
+    });
+  } else {
+    _showBarcodeScanner();
+  }
+}
