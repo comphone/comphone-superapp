@@ -62,18 +62,9 @@ function doGet(e) {
     if (action === 'auditproperties') {
       return jsonOutputV55_(auditProperties());
     }
-    // Properties Cleanup — GET ?action=cleanupProperties
-    if (action === 'cleanupproperties') {
-      return jsonOutputV55_(cleanupAllProperties());
-    }
-    // Deep Cleanup — GET ?action=deepCleanup
-    if (action === 'deepcleanup') {
-      return jsonOutputV55_(deepCleanupProperties());
-    }
-    // Deep Cleanup Pass 2 — GET ?action=deepCleanup2
-    if (action === 'deepcleanup2') {
-      return jsonOutputV55_(deepCleanupPass2());
-    }
+    // REMOVED: cleanupProperties, deepCleanup, deepCleanup2
+    // These destructive operations now require auth via POST path
+    // Falls through to routeActionV55 → _checkAuthGateV55_ (PHMP v1 Phase 2B-0)
     // Executive Dashboard — GET ?action=getExecutiveDashboard
     if (action === 'getexecutivedashboard') {
       return jsonOutputV55_((typeof getExecutiveDashboard === 'function') ? getExecutiveDashboard(payload || {}) : { success: false, error: 'getExecutiveDashboard not available' });
@@ -82,10 +73,7 @@ function doGet(e) {
     if (action === 'getsystemlogs') {
       return jsonOutputV55_((typeof getSystemLogs === 'function') ? getSystemLogs(params) : { success: false, error: 'getSystemLogs not available' });
     }
-    // Log System Error — GET ?action=logSystemError&level=ERROR&message=...
-    if (action === 'logsystemerror') {
-      return jsonOutputV55_((typeof logSystemError === 'function') ? logSystemError(params) : { success: false, error: 'logSystemError not available' });
-    }
+    // REMOVED: logSystemError — write operation, requires auth via POST path (PHMP v1 Phase 2B-0)
     // Properties Guard Status — GET ?action=guardStatus
     if (action === 'guardstatus') {
       return jsonOutputV55_(propertiesGuardStatus());
@@ -99,48 +87,8 @@ function doGet(e) {
       var _capAlert = (typeof checkPropertiesCapacityAlert === 'function') ? checkPropertiesCapacityAlert() : null;
       return jsonOutputV55_(_capAlert || { alert: false, status: 'OK' });
     }
-    // Init Agent Properties — GET ?action=initAgentProps
-    if (action === 'initagentprops') {
-      var props = PropertiesService.getScriptProperties();
-      var init = {
-        "AG_REGISTERED_AGENTS": "[]",
-        "AG_ACTIVITY_LOG": "[]",
-        "AM_RULES": "[]",
-        "AM_PATTERNS": "{}",
-        "AM_STATS": '{"totalInteractions":0,"totalPatterns":0,"totalRules":0}',
-        "AM_SNAPSHOTS": "[]",
-        "AM_INCIDENTS": "[]",
-        "AS_AGENT_SCORES": "{}",
-        "AS_OUTCOME_HISTORY": "[]",
-        "ACO_SHARED_RESULTS": "[]",
-        "WF_CUSTOM_WORKFLOWS": "{}",
-        "WF_RUN_LOG": "[]",
-        "WS_CIRCUIT_STATE": '{"failures":0,"state":"closed","lastFailure":0}',
-        "WS_SAFETY_LOG": "[]",
-        "DG_COOLDOWN_STATE": "{}",
-        "DG_DEDUP_FINGERPRINTS": "{}",
-        "DG_RATE_COUNTERS": "{}",
-        "DG_GUARD_LOG": "[]",
-        "MC_ARCHIVE_INCIDENTS": "[]",
-        "MC_PRUNE_LOG": "[]",
-        "vl_calibration": '{"version":0,"rules":[]}',
-        "vl_rules": "[]",
-        "INTEL_ALERT_QUEUE": "[]",
-        "INTEL_ANALYTICS": "[]"
-      };
-      var set = 0;
-      for (var k in init) {
-        if (!props.getProperty(k)) {
-          props.setProperty(k, init[k]);
-          set++;
-        }
-      }
-      return jsonOutputV55_({ success: true, initialized: set, total: Object.keys(props.getProperties()).length });
-    }
-    // Setup Properties Guard Trigger — GET ?action=setupGuardTrigger
-    if (action === 'setupguardtrigger') {
-      return jsonOutputV55_(setupPropertiesGuardTrigger());
-    }
+    // REMOVED: initAgentProps, setupGuardTrigger
+    // These write operations now require auth via POST path (PHMP v1 Phase 2B-0)
     // Default: Route ALL unknown actions through routeActionV55 (PHASE 26.6)
     // This enables login, verifySession, and all other actions via GET
     // Previously this returned a static "API READY" response, blocking login on static hosting

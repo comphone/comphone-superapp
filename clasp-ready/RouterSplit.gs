@@ -48,15 +48,11 @@ var MODULE_ROUTER = {
   // Billing & POS
   'createBilling':        function(p) { return createBilling(p); },
   'getBilling':           function(p) { return getBilling(p); },
-  'listBillings':         function(p) { return listBillings(p); },
-  'updatePayment':        function(p) { return updatePayment(p); },
+  // REMOVED (Phase 2B-0): listBillings, updatePayment, createRefund, createBillingFromSale,
+  // deductStock, restoreStock — functions don't exist in codebase
   'generatePromptPayQR':  function(p) { return generatePromptPayQR(p); },
   'createRetailSale':     function(p) { return createRetailSale(p); },
   'listRetailSales':      function(p) { return listRetailSales(p); },
-  'createRefund':         function(p) { return createRefund(p); },
-  'createBillingFromSale': function(p) { return createBillingFromSale(p); },
-  'deductStock':          function(p) { return deductStock(p); },
-  'restoreStock':         function(p) { return restoreStock(p); },
 
   // Customers
   'createCustomer': function(p) { return createCustomer(p); },
@@ -123,9 +119,7 @@ var MODULE_ROUTER = {
   'updateUserRole': function(p) { return updateUserRole(p.token || '', p.username || '', p.role || ''); },
   'setUserActive': function(p) { return setUserActive(p.token || '', p.username || '', p.active !== false); },
   'setupUserSheet': function(p) { return setupUserSheet(); },
-  'forceResetAdmin': function(p) { return forceResetAdmin(p.password || p.newPassword || ''); },
-  'cleanupSessions': function(p) { return cleanupSessions(); },
-  'verifyToken':  function(p) { return verifyToken(p.token || ''); },
+  // REMOVED (Phase 2B-0): forceResetAdmin, cleanupSessions, verifyToken — functions don't exist
 
   // Security
   'changePassword': function(p) { return changePassword(p); },
@@ -156,7 +150,7 @@ var MODULE_ROUTER = {
   'storeSnapshot': function(p) { return (typeof storeSnapshot === 'function') ? storeSnapshot(p) : { success: false }; },
   'getSecurityLog': function(p) { var sl = (typeof getSecurityLog === 'function') ? getSecurityLog() : []; return { success: true, data: sl, count: sl.length }; },
   'seedAllData':  function(p) { return seedAllData(); },
-  'runBackup':    function(p) { return runBackup(); },
+  // REMOVED (Phase 2B-0): runBackup — function doesn't exist
   'cronMorningAlert': function(p) { return cronMorningAlert(); },
 
   // Push Notifications
