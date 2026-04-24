@@ -511,7 +511,7 @@
 // Config
 // ============================================================
 const GAS_URL = (window.GAS_CONFIG && window.GAS_CONFIG.url) || '';
-const CACHE_TTL = 15000; // 15s frontend cache
+// CACHE_TTL replaced by COMPHONE_CACHE_TTL (from api_client.js)
 const AUTO_REFRESH_MS = 30000; // 30s auto refresh
 
 // ============================================================
@@ -519,7 +519,7 @@ const AUTO_REFRESH_MS = 30000; // 30s auto refresh
 // ============================================================
 let _token = null;
 let _role = 'manager';
-let _cache = {};
+// _cache removed — managed by api_client.js cachedCallApi()
 let _charts = {};
 let _refreshTimer = null;
 let _countdown = AUTO_REFRESH_MS / 1000;
@@ -542,21 +542,10 @@ function showToast(msg, type = 'info', duration = 3500) {
   setTimeout(() => el.remove(), duration);
 }
 
-// ============================================================
-// API Call with Cache
-// ============================================================
+// Migrated: uses api_client.js cachedCallApi() for built-in caching + auth
+// Backwards-compatible alias for existing callGas() references
 async function callGas(action, payload = {}, force = false) {
-  const cacheKey = action + JSON.stringify(payload);
-  if (!force && _cache[cacheKey] && Date.now() - _cache[cacheKey].ts < CACHE_TTL) {
-    return _cache[cacheKey].data;
-  }
-  const body = Object.assign({ action, token: _token || '' }, payload);
-  if (force) body._nocache = 1;
-  const qs = new URLSearchParams(body).toString();
-  const res = await fetch(GAS_URL + '?' + qs);
-  const data = await res.json();
-  _cache[cacheKey] = { data, ts: Date.now() };
-  return data;
+  return cachedCallApi(action, payload, COMPHONE_CACHE_TTL, force);
 }
 
 // ============================================================
@@ -568,9 +557,14 @@ async function doLogin() {
   if (!user || !pass) { showLoginError('กรุณากรอกข้อมูล'); return; }
 
   try {
-    const res = await callGas('loginUser', { username: user, password: pass }, true);
+    const res = await callApi('loginUser', { username: user, password: pass }, { noAuth: true });
     if (res && res.success && res.token) {
       _token = res.token;
+      // Persist to standard localStorage key (api_client.js reads this)
+      localStorage.setItem('comphone_auth_session', JSON.stringify({
+        token: res.token, username: res.username, role: res.role,
+        full_name: res.user ? res.user.full_name : '', login_at: new Date().toISOString()
+      }));
       _role = (res.user && res.user.role) ? res.user.role.toLowerCase() : 'manager';
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('main-content').style.display = 'block';
@@ -617,7 +611,7 @@ async function loadDashboard(force = false) {
   icon.textContent = '↻';
 
   try {
-    const data = await callGas('getExecutiveDashboard', {}, force);
+    const data = await cachedCallApi('getExecutiveDashboard', {}, COMPHONE_CACHE_TTL, force);
     if (!data || !data.success) {
       showToast('โหลดข้อมูลไม่สำเร็จ: ' + (data && data.error ? data.error : 'unknown'), 'error');
       return;
@@ -1048,12 +1042,12 @@ function startAutoRefresh() {
 // ============================================================
 async function quickAction(type) {
   if (type === 'clearCache') {
-    _cache = {};
+    // Cache managed by api_client.js cachedCallApi — force=true in loadDashboard() bypasses it
     showToast('Cache cleared — กำลังโหลดข้อมูลใหม่', 'info');
     loadDashboard(true);
   } else if (type === 'sendSummary') {
     try {
-      const res = await callGas('sendDashboardSummary', {}, true);
+      const res = await callApi('sendDashboardSummary', {}, { noAuth: true });
       showToast(res && res.success ? 'ส่งสรุปรายวันสำเร็จ' : 'ส่งไม่สำเร็จ: ' + (res && res.error), res && res.success ? 'success' : 'error');
     } catch(e) {
       showToast('เกิดข้อผิดพลาด: ' + e.message, 'error');

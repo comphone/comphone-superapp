@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>COMPHONE Dashboard — PC</title>
 <script src="gas_config.js?v=282"></script>
+<script src="api_client.js?v=282"></script>
 <script>
   // ── XSS Sanitizer (PHMP v1 — 2026-04-24) ──
   // Lightweight HTML sanitizer for API data rendered via innerHTML.
@@ -429,8 +430,8 @@
 'use strict';
 
 // ===== CONFIG =====
-const GAS_URL = localStorage.getItem('comphone_gas_url') ||
-  (window.GAS_CONFIG && window.GAS_CONFIG.url) || '';
+// GAS_URL now delegates to api_client.js getGasUrl()
+const GAS_URL = getGasUrl();
 
 let CHARTS = {};
 let DASHBOARD_DATA = null;
@@ -485,13 +486,15 @@ async function _doLogin(e) {
   try {
     const res = await callGas('loginUser', { username: user, password: pass });
     if (!res.success) { err.textContent = res.error || 'เข้าสู่ระบบไม่สำเร็จ'; btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; return; }
-    // Save session
-    localStorage.setItem('comphone_session', JSON.stringify({
+    // Save session (dual keys: legacy + standard api_client.js key)
+    const sessionData = {
       token: res.token, username: res.username, full_name: res.full_name,
       role: res.role, role_label: res.role_label, level: res.level,
       can_view_revenue: res.can_view_revenue, can_manage_users: res.can_manage_users,
       login_at: new Date().toISOString()
-    }));
+    };
+    localStorage.setItem('comphone_session', JSON.stringify(sessionData));
+    localStorage.setItem('comphone_auth_session', JSON.stringify(sessionData)); // Standard key (api_client.js)
     localStorage.setItem('comphone_user', JSON.stringify({
       name: res.full_name, role: res.role_label
     }));
@@ -505,6 +508,7 @@ async function _doLogin(e) {
 function _doLogout() {
   try { const s = JSON.parse(localStorage.getItem('comphone_session')||'{}'); if (s.token) callGas('logoutUser', { token: s.token }).catch(()=>{}); } catch(e) {}
   localStorage.removeItem('comphone_session');
+  localStorage.removeItem('comphone_auth_session'); // Standard key (api_client.js)
   localStorage.removeItem('comphone_user');
   document.getElementById('login-overlay').style.display = 'flex';
   document.getElementById('login-user').value = '';
@@ -550,14 +554,10 @@ window.addEventListener('load', async () => {
 });
 
 // ===== API =====
-// PHASE 20.4: PC Dashboard — ใช้ fetch โดยตรง (ไม่ผ่าน AI_EXECUTOR)
-// เหตุผล: dashboard_pc.html ทำงานบน GitHub Pages (static) ไม่มี google.script.run
-// AI_EXECUTOR ใช้ได้เฉพาะกับ PWA ที่โหลดผ่าน GAS Web App
+// Migrated to api_client.js — callGas() is now a backwards-compatible alias
+// api_client.js handles: URL resolution, auth token, timeout, error logging
 async function callGas(action, params) {
-  const baseUrl = localStorage.getItem('comphone_gas_url') || GAS_URL;
-  const qs = new URLSearchParams({ action, ...params }).toString();
-  const r = await fetch(baseUrl + '?' + qs);
-  return r.json();
+  return callApi(action, params);
 }
 
 // ===== LOAD DASHBOARD =====

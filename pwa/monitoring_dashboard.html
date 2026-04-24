@@ -603,13 +603,12 @@
 </main>
 
 <script src="gas_config.js"></script>
+<script src="api_client.js"></script>
 <script>
 // ─── Config ───────────────────────────────────────────────────────────────────
-const DEFAULT_GAS_URL = (window.GAS_CONFIG && window.GAS_CONFIG.url) || '';
-const STORAGE_KEY     = 'comphone_monitor_gas_url';
-const REFRESH_INTERVAL = 5000; // 5 วินาที
-
-let gasUrl       = localStorage.getItem(STORAGE_KEY) || DEFAULT_GAS_URL;
+// API URL managed by api_client.js — use getGasUrl()/setGasUrl()
+const STORAGE_KEY = 'comphone_gas_url'; // Standard key (api_client.js compatible)
+let gasUrl        = getGasUrl(); // From api_client.js
 let logFilter    = 'ALL';
 let allLogs      = [];
 let latencyHistory   = [];
@@ -630,7 +629,7 @@ function saveGasUrl() {
   const val = document.getElementById('gas-url-input').value.trim();
   if (!val) return;
   gasUrl = val;
-  localStorage.setItem(STORAGE_KEY, val);
+  localStorage.setItem(STORAGE_KEY, val); // api_client.js reads this key
   fetchAll();
 }
 
@@ -672,20 +671,13 @@ async function fetchAll() {
 
 async function fetchMetrics() {
   const t0  = Date.now();
-  const url = gasUrl + '?action=getSystemMetrics';
-  const res = await fetch(url, { method: 'GET' });
-  const elapsed = Date.now() - t0;
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  const data = await res.json();
-  data._latency = elapsed;
+  const data = await callApi('getSystemMetrics', {}, { noAuth: true });
+  data._latency = Date.now() - t0;
   return data;
 }
 
 async function fetchSecurityLog() {
-  const url = gasUrl + '?action=getSecurityLog';
-  const res = await fetch(url, { method: 'GET' });
-  if (!res.ok) return [];
-  const data = await res.json();
+  const data = await callApi('getSecurityLog', {}, { noAuth: true });
   // getSecurityLog ส่งกลับ array โดยตรง หรือ { success, data }
   if (Array.isArray(data)) return data;
   if (data.success && Array.isArray(data.data)) return data.data;
@@ -1000,13 +992,10 @@ let allSysLogs = [];
 let sysLogsPollTimer = null;
 const SYS_LOGS_POLL_INTERVAL = 10000; // 10 seconds
 
-// Helper: call GAS API and return JSON
+// Migrated: uses api_client.js callApi() with noAuth (system monitor doesn't need auth)
+// Backwards-compatible alias for existing callGas() references
 async function callGas(action, params) {
-  const qs = new URLSearchParams({ action, ...params }).toString();
-  const url = gasUrl + '?' + qs;
-  const res = await fetch(url, { method: 'GET' });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  return await res.json();
+  return callApi(action, params, { noAuth: true });
 }
 
 // Set log level filter

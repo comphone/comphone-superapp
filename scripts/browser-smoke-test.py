@@ -83,11 +83,13 @@ def check_dashboard(html):
     else:
         checks.append("✅ No APPROVAL_REQUIRED error in HTML response")
 
-    # R4: Must have fetch POST call
-    if "fetch(" in html:
+    # R4: Must have fetch — either inline or via api_client.js
+    if "api_client.js" in html and "callApi" in html:
+        checks.append("✅ callGas() delegates to api_client.js callApi()")
+    elif "fetch(" in html:
         checks.append("✅ Direct fetch present in callGas")
     else:
-        errors.append("RECURRENCE: fetch() missing from callGas")
+        errors.append("RECURRENCE: fetch() missing — neither inline nor api_client.js")
 
     # --- FUNCTIONAL CHECKS ---
 
