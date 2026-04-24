@@ -94,6 +94,7 @@ function loginUser(username, password) {
 
     return { success: false, error: 'ไม่พบ username นี้ในระบบ' };
     } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'loginUser', e, {source: 'AUTH'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }
@@ -143,6 +144,7 @@ function logoutUser(token) {
     PropertiesService.getScriptProperties().deleteProperty('SESSION_' + token);
     return { success: true };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'logoutUser', e, {source: 'AUTH'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }
@@ -194,6 +196,7 @@ function listUsers(requestToken) {
     }
     return { success: true, users: users, total: users.length };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'listUsers', e, {source: 'AUTH'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }
@@ -226,6 +229,7 @@ function createUser(requestToken, userData) {
     try { logActivity('CREATE_USER', auth.session.username, 'สร้างผู้ใช้: ' + username + ' role=' + role); } catch(e) {}
     return { success: true, username: username, role: role };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'createUser', e, {source: 'AUTH'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }
@@ -251,6 +255,7 @@ function updateUserRole(requestToken, username, newRole) {
     }
     return { success: false, error: 'ไม่พบ username: ' + username };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'updateUserRole', e, {source: 'AUTH'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }
@@ -273,6 +278,7 @@ function setUserActive(requestToken, username, active) {
     }
     return { success: false, error: 'ไม่พบ username: ' + username };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'setUserActive', e, {source: 'AUTH'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }
@@ -296,6 +302,7 @@ function setupUserSheet() {
     }
     return { success: true, message: 'DB_USERS พร้อมใช้งาน', rows: sh.getLastRow() - 1 };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'setUserActive', e, {source: 'AUTH'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }
@@ -377,6 +384,7 @@ function listUsers_(payload) {
     }
     return { success: true, data: result };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'listUsers_', e, {source: 'AUTH'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }

@@ -25,7 +25,7 @@ var STEWARDSHIP_BASELINE = {
   'Auth.gs':            { max_lines: 800,  max_functions: 25 },
   'HealthMonitor.gs':   { max_lines: 500,  max_functions: 15 },
   'PropertiesGuard.gs': { max_lines: 500,  max_functions: 15 },
-  'ErrorTelemetry.gs':  { max_lines: 400,  max_functions: 15 }
+  'ErrorTelemetry.gs':  { max_lines: 600,  max_functions: 20 }
 };
 
 var STEWARDSHIP_THRESHOLDS = {

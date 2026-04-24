@@ -104,6 +104,13 @@ function doGet(e) {
       note:         'UI อยู่ที่ PWA เท่านั้น — GAS เป็น API Backend เท่านั้น'
     });
   } catch (error) {
+    // Phase 2D: Auto-capture ALL GET errors to DB_ERRORS
+    try {
+      if (typeof _logError_ === 'function') {
+        var _getAction = (e && e.parameter && e.parameter.action) || 'unknown';
+        _logError_('HIGH', 'doGet:' + _getAction, error, { source: 'doGet' });
+      }
+    } catch (_logErr3) { /* never break doGet */ }
     return jsonOutputV55_({
       status:  'error',
       error:   error.toString(),
@@ -154,6 +161,13 @@ function doPost(e) {
     var action = payload.action || payload.route || payload.fn || payload.method || 'help';
     return jsonOutputV55_(routeActionV55(action, payload));
   } catch (error) {
+    // Phase 2D: Auto-capture ALL POST errors to DB_ERRORS
+    try {
+      if (typeof _logError_ === 'function') {
+        var _sev2 = (typeof _classifyError_ === 'function') ? _classifyError_(action, error) : 'HIGH';
+        _logError_(_sev2, 'doPost:' + action, error, { source: 'doPost' });
+      }
+    } catch (_logErr2) { /* never break doPost */ }
     return jsonOutputV55_({ success: false, error: error.toString() });
   }
 }
@@ -293,6 +307,10 @@ function dispatchActionV55_(action, payload, args) {
   payload = payload || {};
   args = Array.isArray(args) ? args : [payload];
 
+  // Phase 2D: Generate request_id for cross-request correlation
+  var _reqId = 'R' + Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyyMMddHHmmss') + '_' + Utilities.getUuid().substring(0, 8);
+  payload._reqId = _reqId;
+
   // ══════════════════════════════════════════════════════════
   // SECURITY GATE: _checkAuthGateV55_ (PHMP v1 — 2026-04-24)
   // All actions require valid session EXCEPT public whitelist.
@@ -324,6 +342,17 @@ function dispatchActionV55_(action, payload, args) {
         return invokeFunctionByNameV55_(action, args);
     }
   } catch (error) {
+    // Phase 2D: Auto-capture ALL action errors to DB_ERRORS
+    try {
+      if (typeof _logError_ === 'function') {
+        var _sev = (typeof _classifyError_ === 'function') ? _classifyError_(action, error) : 'MEDIUM';
+        _logError_(_sev, action, error, {
+          source: 'dispatch',
+          requestId: (payload && payload._reqId) || '',
+          user: (payload && (payload.user || payload.token || '')).toString().substring(0, 50)
+        });
+      }
+    } catch (_logErr) { /* never break dispatch */ }
     return { success: false, action: action, error: error.toString() };
   }
 }

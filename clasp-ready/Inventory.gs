@@ -533,6 +533,7 @@ function getInventoryOverview(data) {
     out.sort(function(a, b) { return String(a.item_name).localeCompare(String(b.item_name)); });
     return { success: true, total_items: out.length, items: out };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'getInventoryOverview', e, {source: 'INVENTORY'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }
@@ -604,6 +605,7 @@ function transferStock(fromLocation, toLocation, itemId, qty, options) {
       remaining_source_qty: fromRow[sheetData.ctx.indices.qty]
     };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'transferStock', e, {source: 'INVENTORY'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   } finally {
     try { lock.releaseLock(); } catch (releaseErr) {}
@@ -623,6 +625,7 @@ function getVanStock(techId) {
       items: rows.items
     };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'getVanStock', e, {source: 'INVENTORY'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }
@@ -716,6 +719,7 @@ function predictiveStocking(data) {
 
     return { success: true, days: days, technicians: out };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'predictiveStocking', e, {source: 'INVENTORY'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }
@@ -757,6 +761,7 @@ function createWeeklyToolAuditChecklist(data) {
     }
     return { success: true, tech_id: techId, week_key: weekKey, total_items: checklist.length, checklist: checklist };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'createWeeklyToolAuditChecklist', e, {source: 'INVENTORY'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }
@@ -787,6 +792,7 @@ function getWeeklyToolAuditChecklist(data) {
     }
     return { success: true, week_key: weekKey, tech_id: techId, total: out.length, checklist: out };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'getWeeklyToolAuditChecklist', e, {source: 'INVENTORY'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }
@@ -816,6 +822,7 @@ function submitToolAudit(data) {
     auditSheet.appendRow([new Date(), weekKey, techId, itemCode, data.item_name || itemCode, status, data.checked_by || techId, data.note || 'Manual audit submit']);
     return { success: true, week_key: weekKey, tech_id: techId, item_code: itemCode, status: status, created: true };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'submitToolAudit', e, {source: 'INVENTORY'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }
@@ -843,6 +850,7 @@ function getInventoryRowsV55_(filters) {
     }
     return { success: true, total: out.length, items: out };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'getInventoryRowsV55_', e, {source: 'INVENTORY'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }

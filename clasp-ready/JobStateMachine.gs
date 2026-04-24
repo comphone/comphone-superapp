@@ -202,6 +202,7 @@ function createJob(data) {
       qr: qr
     };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'createJob', e, {source: 'JOB_STATE'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   } finally {
     try { lock.releaseLock(); } catch (releaseErr) {}
@@ -292,6 +293,7 @@ function transitionJob(jobId, newStatus, options) {
       automation: automation
     };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'transitionJob', e, {source: 'JOB_STATE'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   } finally {
     try { lock.releaseLock(); } catch (releaseErr) {}
@@ -428,6 +430,7 @@ function getJobDetailById_(jobId) {
 
     return { success: true, job: job, row_index: rowIndex };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'getJobDetailById_', e, {source: 'JOB_STATE'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }

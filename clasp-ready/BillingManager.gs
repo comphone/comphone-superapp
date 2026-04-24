@@ -70,6 +70,7 @@ function autoGenerateBillingForJob(jobId, options) {
       qr: qr
     };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'autoGenerateBillingForJob', e, {source: 'BILLING'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }
@@ -94,6 +95,7 @@ function getBilling(data) {
       billing: buildBillingObjectFromRow_(row, ctx.indices)
     };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'getBilling', e, {source: 'BILLING'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }
@@ -143,6 +145,7 @@ function generatePromptPayQR(data) {
       qr_image_url: qrImageUrl
     };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'generatePromptPayQR', e, {source: 'BILLING'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }
@@ -209,6 +212,7 @@ function verifyPaymentSlip(data) {
       verification: verification
     };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'verifyPaymentSlip', e, {source: 'BILLING'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }
@@ -286,6 +290,7 @@ function markBillingPaid(data) {
       receipt: receipt
     };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'markBillingPaid', e, {source: 'BILLING'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }
@@ -325,6 +330,7 @@ function generateReceiptPDF(data) {
       receipt_url: pdfFile.getUrl()
     };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'generateReceiptPDF', e, {source: 'BILLING'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }
@@ -399,6 +405,7 @@ function buildBillingSnapshotFromJob_(jobId, options) {
 
     return { success: true, billing: billing, job: job };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'buildBillingSnapshotFromJob_', e, {source: 'BILLING'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }
@@ -422,6 +429,7 @@ function upsertBillingRecord_(billing) {
     sh.appendRow(row);
     return { success: true, action: 'created', row_index: sh.getLastRow() };
   } catch (e) {
+        try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'buildBillingSnapshotFromJob_', e, {source: 'BILLING'}); } catch(_le) {}
     return { success: false, error: e.toString() };
   }
 }

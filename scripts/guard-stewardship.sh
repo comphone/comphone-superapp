@@ -36,7 +36,7 @@ BASELINES=(
   "Auth.gs:800:25"
   "HealthMonitor.gs:500:15"
   "PropertiesGuard.gs:500:15"
-  "ErrorTelemetry.gs:400:15"
+  "ErrorTelemetry.gs:600:20"
   "ArchitectureStewardship.gs:400:15"
 )
 

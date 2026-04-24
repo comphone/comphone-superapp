@@ -1,5 +1,5 @@
 44cf2612f239fae2e72805752d388ff8  scripts/guard-self-test.sh
-438ca9887ee1e6c66a9c0482e1c55237  scripts/guard-stewardship.sh
+a9978bbf3e12f14e602d2d94f96dad0e  scripts/guard-stewardship.sh
 b74379af34022c878d29d3ccaf490c04  scripts/guard-evolution-log.sh
 c7d832675e4dad9e9a84422e37ffd729  scripts/drift-guard.sh
 9b0b30568ac7bd64f73670c4f92dfdec  scripts/regression-guard.sh

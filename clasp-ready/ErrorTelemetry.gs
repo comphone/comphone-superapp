@@ -296,3 +296,238 @@ function _classifyError_(action, error) {
   // LOW: Expected/cosmetic
   return 'LOW';
 }
+
+
+// ============================================================
+// Phase 2D: Error Trend Analysis + Anomaly Detection
+// ============================================================
+
+/**
+ * runErrorTrendAnalysis — Daily cron to analyze error patterns
+ * Detects: error rate spikes, new error types, severity escalation
+ * @return {Object} Trend analysis report
+ */
+function runErrorTrendAnalysis() {
+  var report = {
+    timestamp: Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss'),
+    status: 'HEALTHY',
+    alerts: [],
+    trends: {}
+  };
+
+  try {
+    var ss = _getErrorSheet_();
+    if (!ss || ss.getLastRow() < 2) {
+      report.status = 'NO_DATA';
+      return { success: true, report: report };
+    }
+
+    var lastRow = ss.getLastRow();
+    var data = ss.getRange(2, 1, Math.min(lastRow - 1, 5000), 8).getValues();
+
+    // 1. Count errors by severity (last 24h vs previous 24h)
+    var now = Date.now();
+    var day1 = 24 * 60 * 60 * 1000;
+    var recent24h = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0, total: 0 };
+    var prev24h = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0, total: 0 };
+
+    for (var i = 0; i < data.length; i++) {
+      var rowTime = _parseTimestamp_(data[i][0]);
+      if (!rowTime) continue;
+      var age = now - rowTime;
+      var sev = data[i][1] || 'MEDIUM';
+      var count = Number(data[i][7]) || 1;
+
+      if (age < day1) {
+        recent24h[sev] = (recent24h[sev] || 0) + count;
+        recent24h.total += count;
+      } else if (age < day1 * 2) {
+        prev24h[sev] = (prev24h[sev] || 0) + count;
+        prev24h.total += count;
+      }
+    }
+
+    report.trends.recent_24h = recent24h;
+    report.trends.prev_24h = prev24h;
+
+    // 2. Detect error rate spike (>2x previous day)
+    if (prev24h.total > 0 && recent24h.total > prev24h.total * 2) {
+      report.alerts.push({
+        level: 'WARNING',
+        type: 'SPIKE',
+        message: 'Error rate spike: ' + recent24h.total + ' vs ' + prev24h.total + ' (prev day)'
+      });
+    }
+
+    // 3. Detect new CRITICAL errors
+    if (recent24h.CRITICAL > 0 && prev24h.CRITICAL === 0) {
+      report.alerts.push({
+        level: 'CRITICAL',
+        type: 'NEW_CRITICAL',
+        message: 'New CRITICAL errors detected: ' + recent24h.CRITICAL
+      });
+    }
+
+    // 4. Find top error sources
+    var byAction = {};
+    for (var j = 0; j < data.length; j++) {
+      var rowTime2 = _parseTimestamp_(data[j][0]);
+      if (!rowTime2 || (now - rowTime2) > day1) continue;
+      var act = data[j][2] || 'unknown';
+      byAction[act] = (byAction[act] || 0) + (Number(data[j][7]) || 1);
+    }
+
+    var topActions = Object.keys(byAction).sort(function(a, b) { return byAction[b] - byAction[a]; }).slice(0, 5);
+    report.trends.top_error_sources = topActions.map(function(a) { return { action: a, count: byAction[a] }; });
+
+    // 5. Determine overall status
+    if (report.alerts.some(function(a) { return a.level === 'CRITICAL'; })) {
+      report.status = 'CRITICAL';
+    } else if (report.alerts.length > 0) {
+      report.status = 'WARNING';
+    }
+
+    // 6. Save trend report
+    _saveTrendReport_(report);
+
+    // 7. Alert on CRITICAL
+    if (report.status === 'CRITICAL') {
+      _alertTrendCritical_(report);
+    }
+
+    return { success: true, report: report };
+  } catch (e) {
+    try { _logError_('HIGH', 'runErrorTrendAnalysis', e); } catch (ignore) {}
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * _parseTimestamp_ — Parse timestamp string to Date.getTime()
+ */
+function _parseTimestamp_(ts) {
+  try {
+    if (!ts) return null;
+    if (ts instanceof Date) return ts.getTime();
+    var d = new Date(String(ts));
+    return isNaN(d.getTime()) ? null : d.getTime();
+  } catch (e) { return null; }
+}
+
+/**
+ * _saveTrendReport_ — Save trend report to DB_ERROR_TRENDS sheet
+ */
+function _saveTrendReport_(report) {
+  try {
+    var ssId = PropertiesService.getScriptProperties().getProperty('DB_SS_ID');
+    if (!ssId) return;
+    var ss = SpreadsheetApp.openById(ssId);
+    var sheet = ss.getSheetByName('DB_ERROR_TRENDS');
+    if (!sheet) {
+      sheet = ss.insertSheet('DB_ERROR_TRENDS');
+      sheet.appendRow(['timestamp', 'status', 'total_24h', 'critical_24h', 'high_24h', 'top_sources', 'alerts']);
+      sheet.setFrozenRows(1);
+    }
+
+    var r = report.trends.recent_24h;
+    sheet.appendRow([
+      report.timestamp,
+      report.status,
+      r.total,
+      r.CRITICAL,
+      r.HIGH,
+      JSON.stringify(report.trends.top_error_sources || []),
+      JSON.stringify(report.alerts)
+    ]);
+
+    // Keep 90 days
+    if (sheet.getLastRow() > 92) {
+      sheet.deleteRows(2, sheet.getLastRow() - 92);
+    }
+  } catch (e) { /* non-critical */ }
+}
+
+/**
+ * _alertTrendCritical_ — LINE alert for critical error trends
+ */
+function _alertTrendCritical_(report) {
+  try {
+    var lineToken = getConfig('LINE_CHANNEL_ACCESS_TOKEN', '');
+    var groupId = getConfig('LINE_GROUP_EXECUTIVE', '') || getConfig('LINE_GROUP_ACCOUNTING', '');
+    if (!lineToken || !groupId) return;
+
+    var alertMsgs = report.alerts.filter(function(a) { return a.level === 'CRITICAL'; })
+                                 .map(function(a) { return '• ' + a.message; });
+
+    var topSrcs = (report.trends.top_error_sources || []).map(function(s) {
+      return '  ' + s.action + ': ' + s.count;
+    });
+
+    var msg = '📈 ERROR TREND ALERT\n' +
+              'Status: ' + report.status + '\n' +
+              'Time: ' + report.timestamp + '\n' +
+              'Errors (24h): ' + report.trends.recent_24h.total + '\n' +
+              'Alerts:\n' + alertMsgs.join('\n') + '\n' +
+              'Top Sources:\n' + topSrcs.join('\n');
+
+    UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', {
+      method: 'post',
+      contentType: 'application/json',
+      headers: { 'Authorization': 'Bearer ' + lineToken },
+      payload: JSON.stringify({ to: groupId, messages: [{ type: 'text', text: msg }] }),
+      muteHttpExceptions: true
+    });
+  } catch (e) { /* never throw */ }
+}
+
+/**
+ * getErrorTrendStatus — Dashboard endpoint for error trends
+ */
+function getErrorTrendStatus() {
+  try {
+    var ssId = PropertiesService.getScriptProperties().getProperty('DB_SS_ID');
+    if (!ssId) return { success: true, status: 'NO_DATA' };
+
+    var ss = SpreadsheetApp.openById(ssId);
+    var sheet = ss.getSheetByName('DB_ERROR_TRENDS');
+    if (!sheet || sheet.getLastRow() < 2) {
+      return { success: true, status: 'NO_DATA', message: 'No trend data yet' };
+    }
+
+    var lastRow = sheet.getLastRow();
+    var data = sheet.getRange(lastRow, 1, 1, 7).getValues()[0];
+
+    return {
+      success: true,
+      status: data[1],
+      last_analysis: data[0],
+      total_24h: data[2],
+      critical_24h: data[3],
+      high_24h: data[4],
+      top_sources: JSON.parse(data[5] || '[]'),
+      alerts: JSON.parse(data[6] || '[]')
+    };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * setupErrorTrendTrigger — Set up daily error trend analysis
+ */
+function setupErrorTrendTrigger() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'runErrorTrendAnalysis') {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+
+  ScriptApp.newTrigger('runErrorTrendAnalysis')
+    .timeBased()
+    .everyDays(1)
+    .atHour(7) // 7 AM daily (after stewardship at 6 AM)
+    .create();
+
+  return { success: true, message: 'Error trend trigger set: daily at 7:00 AM' };
+}
