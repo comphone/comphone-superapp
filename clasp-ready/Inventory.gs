@@ -1085,13 +1085,6 @@ function addInventoryItem(data) {
 
     // ตรวจสอบรหัสซ้ำ
     var all = sh.getDataRange().getValues();
-    for (var i = 1; i < all.length; i++) {
-      if (String(all[i][0]).trim().toLowerCase() === code.toLowerCase()) {
-        return { success: false, error: 'รหัสสินค้า "' + code + '" มีอยู่แล้วในระบบ' };
-      }
-    }
-
-    // Dynamic header mapping (same pattern as updateInventoryItem)
     var hdrs = all[0];
     var colMap = { code:0, name:1, category:2, qty:3, cost:4, price:5,
                    locType:6, locCode:7, assignedTo:8, reorderPoint:9,
@@ -1112,6 +1105,11 @@ function addInventoryItem(data) {
       else if (hv === 'updatedat') colMap.updatedAt = hi;
       else if (hv === 'lastjobid') colMap.lastJob = hi;
       else if (hv === 'notes') colMap.notes = hi;
+    }
+    for (var i = 1; i < all.length; i++) {
+      if (String(all[i][colMap.code]).trim().toLowerCase() === code.toLowerCase()) {
+        return { success: false, error: 'รหัสสินค้า "' + code + '" มีอยู่แล้วในระบบ' };
+      }
     }
 
     var locType = String(data.location_type || 'MAIN').toUpperCase();
