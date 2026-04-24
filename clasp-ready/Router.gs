@@ -207,9 +207,140 @@ function routeActionV55(action, payload) {
   return dispatchActionV55_(normalizedAction, payload || {}, args);
 }
 
+/**
+ * _checkAuthGateV55_ — Centralized Auth Gate (PHMP v1 — 2026-04-24)
+ *
+ * Called BEFORE every action dispatch. Returns:
+ *   null → action is allowed, proceed to handler
+ *   {success:false, error:...} → blocked, return this response
+ *
+ * Rules:
+ *   1. PUBLIC_ACTIONS — no auth required (read-only, login, system info)
+ *   2. ADMIN_ACTIONS — require valid session + role=admin|owner
+ *   3. All other actions — require valid session (any role)
+ */
+function _checkAuthGateV55_(action, payload) {
+  // ── Public actions: no auth required ──
+  var PUBLIC_ACTIONS = {
+    // Auth entry points
+    'help': 1, 'loginUser': 1, 'verifySession': 1, 'verifyToken': 1,
+    // Dashboard (read-only)
+    'getDashboardBundle': 1, 'invalidateBundleCache': 1, 'getDashboardData': 1,
+    'getJobStateConfig': 1, 'getJobTimeline': 1,
+    // Jobs (read-only)
+    'checkJobs': 1, 'listJobs': 1, 'getJobQRData': 1, 'generateJobQR': 1,
+    'getPhotoGalleryData': 1, 'photoGalleryData': 1,
+    // Inventory (read-only)
+    'inventoryOverview': 1, 'getInventoryItemDetail': 1, 'getStockMovementHistory': 1,
+    'checkStock': 1, 'barcodeLookup': 1,
+    // Purchase Orders (read-only)
+    'listPurchaseOrders': 1,
+    // Customers (read-only)
+    'listCustomers': 1, 'getCustomer': 1,
+    'getCustomerHistoryFull': 1, 'getCustomerListWithStats': 1,
+    // Attendance (read-only)
+    'getAttendanceReport': 1, 'getTechHistory': 1, 'getAllTechsSummary': 1,
+    // Billing (read-only)
+    'getBilling': 1, 'listBillings': 1, 'generatePromptPayQR': 1,
+    // CRM (read-only)
+    'getCRMFollowUpSchedule': 1, 'getCRMMetrics': 1,
+    // After-Sales (read-only)
+    'getAfterSalesDue': 1, 'getAfterSalesSummary': 1,
+    // Notifications (read-only)
+    'getAlertQueue': 1, 'getUnnotifiedAlerts': 1, 'getQuotaStatus': 1,
+    'getCachedResponse': 1, 'getIntelAlertQueue': 1,
+    'getPrioritizedAlerts': 1, 'getAlertsForRole': 1, 'getAlertsForUser': 1,
+    'getGroupedAlerts': 1, 'getAlertAnalytics': 1,
+    // Reports
+    'getReportData': 1,
+    // System (read-only)
+    'systemStatus': 1, 'getSystemMetrics': 1, 'getHealthMonitor': 1,
+    'getHealthTrend': 1, 'getSnapshots': 1, 'getSchemaInfo': 1,
+    'validateConfig': 1, 'getComphoneConfig': 1, 'initSystem': 1,
+    'getSecurityStatus': 1, 'getAuditSummary': 1,
+    'getVisionDashboardStats': 1, 'getVisionPipelineVersion': 1,
+    'getConfidenceCalibration': 1, 'getDynamicThreshold': 1,
+    'getActiveRules': 1, 'getLearningDashboard': 1, 'getVisionLearningVersion': 1,
+    'getDriveSyncStatus': 1,
+    // Error logging (exception — frontend may not have token on error)
+    'logSystemError': 1,
+    // Customer Portal (public by design)
+    'getJobStatusPublic': 1,
+    // AI / Vision (read-only queries)
+    'buildAdaptivePrompt': 1,
+    'getAdaptivePrompt': 1,
+    // LINE info (read-only)
+    'getSystemUserFromLine': 1, 'getAlertQueue': 1,
+    'getQuotaStatus': 1, 'getSecurityStatus': 1
+  };
+
+  // ── Admin-only actions: require role=admin|owner ──
+  var ADMIN_ACTIONS = {
+    'listUsers': 1, 'createUser': 1, 'updateUserRole': 1, 'setUserActive': 1,
+    'forceResetAdmin': 1, 'cleanupSessions': 1,
+    'setScriptProperties': 1, 'setupAllTriggers': 1, 'setupTriggers': 1,
+    'setupUserSheet': 1, 'setupNotificationTriggers': 1,
+    'forcePasswordChange': 1, 'lockAccount': 1, 'unlockAccount': 1,
+    'getAuditLog': 1, 'pruneAuditLog': 1, 'getSecurityLog': 1, 'getSystemLogs': 1,
+    'seedAllData': 1, 'storeSessionContent': 1,
+    'controlAction': 1, 'storeSnapshot': 1,
+    'setupLearningTriggers': 1, 'setupLineBotV2': 1, 'testLineBotV2': 1,
+    'sendPushToAll': 1, 'sendDailyDigest': 1, 'setupDailyDigestTrigger': 1,
+    'cronMorningAlert': 1, 'runBackup': 1,
+    'sendDashboardSummary': 1, 'sendLineMessage': 1, 'sendLineAlert': 1,
+    'nudgeSalesTeam': 1, 'nudgeTech': 1,
+    'mapLineUser': 1
+  };
+
+  // Skip if public
+  if (PUBLIC_ACTIONS[action]) return null;
+
+  // Extract token
+  var token = (payload && (payload.token || payload.auth_token)) || '';
+  if (!token) {
+    return { success: false, error: 'Authentication required', code: 401, action: action };
+  }
+
+  // Verify session
+  var session = null;
+  try {
+    session = verifySession(token);
+  } catch (e) {
+    return { success: false, error: 'Session verification failed', code: 401 };
+  }
+  if (!session || !session.success) {
+    return { success: false, error: 'Invalid or expired session', code: 401 };
+  }
+
+  // Admin check
+  if (ADMIN_ACTIONS[action]) {
+    if (session.role !== 'admin' && session.role !== 'owner') {
+      return { success: false, error: 'Admin access required', code: 403, action: action };
+    }
+  }
+
+  // Auth passed — attach session info to payload for downstream use
+  if (payload) {
+    payload._session = session;
+    payload._auth_user = session.username || '';
+    payload._auth_role = session.role || '';
+  }
+
+  return null; // null = allowed, proceed
+}
+
 function dispatchActionV55_(action, payload, args) {
   payload = payload || {};
   args = Array.isArray(args) ? args : [payload];
+
+  // ══════════════════════════════════════════════════════════
+  // SECURITY GATE: _checkAuthGateV55_ (PHMP v1 — 2026-04-24)
+  // All actions require valid session EXCEPT public whitelist.
+  // Admin-only actions require role=admin|owner.
+  // ══════════════════════════════════════════════════════════
+  var _authResult = _checkAuthGateV55_(action, payload);
+  if (_authResult !== null) return _authResult;
+
   // Phase 5: RouterSplit fast path — O(1) lookup vs O(n) switch
   try {
     if (typeof routeByModule === 'function' && action !== 'help') {
@@ -955,6 +1086,10 @@ function normalizeActionV55_(action) {
 function invokeFunctionByNameV55_(functionName, args) {
   functionName = String(functionName || '').trim();
   if (!functionName) return { success: false, error: 'Function name is required' };
+  // ── SECURITY: Block private/underscore functions ──
+  if (functionName.charAt(0) === '_') {
+    return { success: false, error: 'Access denied: private function', action: functionName, code: 403 };
+  }
   var globalScope = typeof globalThis !== 'undefined' ? globalThis : this;
   var fn = globalScope[functionName];
   if (typeof fn !== 'function') {
