@@ -1241,12 +1241,20 @@ function deleteInventoryItem(data) {
     if (!sh) return { success: false, error: 'DB_INVENTORY not found' };
 
     var all = sh.getDataRange().getValues();
+    // Dynamic header mapping (Phase 2E data integrity)
+    var hdrs = all[0];
+    var cCode = 0, cName = 1;
+    for (var hi = 0; hi < hdrs.length; hi++) {
+      var hv = String(hdrs[hi]).toLowerCase().replace(/_/g,'');
+      if (hv === 'itemcode' || hv === 'code') cCode = hi;
+      else if (hv === 'itemname' || hv === 'name') cName = hi;
+    }
     var deleteRow = -1;
     var deletedName = '';
     for (var i = 1; i < all.length; i++) {
-      if (String(all[i][0]).trim().toLowerCase() === code.toLowerCase()) {
+      if (String(all[i][cCode]).trim().toLowerCase() === code.toLowerCase()) {
         deleteRow = i + 1; // 1-indexed row number
-        deletedName = String(all[i][1]);
+        deletedName = String(all[i][cName]);
         break;
       }
     }
@@ -1280,8 +1288,15 @@ function getInventoryItemDetail(data) {
 
     var all = sh.getDataRange().getValues();
     var hdrs = all[0];
+    // Dynamic header mapping (Phase 2E data integrity)
+    var cCode = 0, cQty = 2;
+    for (var hi = 0; hi < hdrs.length; hi++) {
+      var hv = String(hdrs[hi]).toLowerCase().replace(/_/g,'');
+      if (hv === 'itemcode' || hv === 'code') cCode = hi;
+      else if (hv === 'qty' || hv === 'quantity') cQty = hi;
+    }
     for (var i = 1; i < all.length; i++) {
-      if (String(all[i][0]).trim().toLowerCase() === code.toLowerCase()) {
+      if (String(all[i][cCode]).trim().toLowerCase() === code.toLowerCase()) {
         var obj = {};
         for (var j = 0; j < hdrs.length; j++) {
           obj[String(hdrs[j]).toLowerCase().replace(/ /g,'_')] = all[i][j];
@@ -1292,13 +1307,13 @@ function getInventoryItemDetail(data) {
         if (resSheet) {
           var resAll = resSheet.getDataRange().getValues();
           for (var r = 1; r < resAll.length; r++) {
-            if (String(resAll[r][1]) === String(all[i][0]) && String(resAll[r][5]) === 'reserved') {
+            if (String(resAll[r][1]) === String(all[i][cCode]) && String(resAll[r][5]) === 'reserved') {
               reserved += Number(resAll[r][3] || 0);
             }
           }
         }
         obj.reserved = reserved;
-        obj.available = (Number(all[i][2]) || 0) - reserved;
+        obj.available = (Number(all[i][cQty]) || 0) - reserved;
         return { success: true, item: obj };
       }
     }
@@ -1483,6 +1498,23 @@ function receivePurchaseOrder(data) {
     if (!invSheet) return { success: false, error: 'DB_INVENTORY not found' };
 
     var invAll = invSheet.getDataRange().getValues();
+    // Dynamic header mapping for DB_INVENTORY (Phase 2E data integrity)
+    var invHdrs = invAll[0];
+    var iCode = 0, iName = 1, iQty = 3, iCost = 4, iPrice = 5,
+        iLocType = 6, iLocCode = 7, iUpdated = 11, iLastJob = 12, iNotes = 13;
+    for (var hi = 0; hi < invHdrs.length; hi++) {
+      var hv = String(invHdrs[hi]).toLowerCase().replace(/_/g,'');
+      if (hv === 'itemcode' || hv === 'code') iCode = hi;
+      else if (hv === 'itemname' || hv === 'name') iName = hi;
+      else if (hv === 'qty' || hv === 'quantity') iQty = hi;
+      else if (hv === 'cost') iCost = hi;
+      else if (hv === 'price') iPrice = hi;
+      else if (hv === 'locationtype') iLocType = hi;
+      else if (hv === 'locationcode') iLocCode = hi;
+      else if (hv === 'updatedat') iUpdated = hi;
+      else if (hv === 'lastjobid') iLastJob = hi;
+      else if (hv === 'notes') iNotes = hi;
+    }
     var received = [];
 
     for (var i = 1; i < all.length; i++) {
@@ -1493,16 +1525,28 @@ function receivePurchaseOrder(data) {
         // เพิ่มสต็อก
         var found = false;
         for (var j = 1; j < invAll.length; j++) {
-          if (String(invAll[j][0]) === itemCode) {
-            invAll[j][2] = Number(invAll[j][2] || 0) + qty;
-            invAll[j][8] = new Date();
+          if (String(invAll[j][iCode]) === itemCode) {
+            invAll[j][iQty] = Number(invAll[j][iQty] || 0) + qty;
+            invAll[j][iUpdated] = new Date();
             found = true;
             break;
           }
         }
         if (!found) {
           // เพิ่มสินค้าใหม่
-          invAll.push([itemCode, String(all[i][5]), qty, Number(all[i][7] || 0), 0, 'MAIN', 'MAIN-01', '', new Date(), poId, 'รับจาก PO: ' + poId, 5]);
+          var numCols = Math.max(invHdrs.length, 14);
+          var newRow = new Array(numCols);
+          newRow[iCode] = itemCode;
+          newRow[iName] = String(all[i][5]);
+          newRow[iQty] = qty;
+          newRow[iCost] = Number(all[i][7] || 0);
+          newRow[iPrice] = 0;
+          newRow[iLocType] = 'MAIN';
+          newRow[iLocCode] = 'MAIN-01';
+          newRow[iUpdated] = new Date();
+          newRow[iLastJob] = poId;
+          newRow[iNotes] = 'รับจาก PO: ' + poId;
+          invAll.push(newRow);
         }
 
         all[i][3] = 'RECEIVED';
