@@ -90,6 +90,85 @@ var MODULE_ROUTER = {
     var result = (typeof healthCheckV55_ === 'function') ? healthCheckV55_() : { success: true };
     return _ensureHealthStatus_(result);
   },
+
+  // Attendance & Tech History
+  'clockIn':     function(p) { return clockIn(p.tech || p.tech_name || '', p.note || ''); },
+  'clockOut':    function(p) { return clockOut(p.tech || p.tech_name || '', p.note || ''); },
+  'getAttendanceReport': function(p) { return getAttendanceReport(p); },
+  'getTechHistory': function(p) { return getTechHistory(p.tech || p.tech_name || '', p); },
+  'getAllTechsSummary': function(p) { return getAllTechsSummary(); },
+
+  // CRM Sprint 3
+  'getCustomerHistoryFull': function(p) { return getCustomerHistoryFull(p); },
+  'getCustomerListWithStats': function(p) { return getCustomerListWithStats(p); },
+  'scheduleFollowUp': function(p) { return scheduleFollowUp_(p); },
+  'logFollowUpResult': function(p) { return logFollowUpResult_(p); },
+  'getCRMFollowUpSchedule': function(p) { return getCRMFollowUpSchedule_(p); },
+  'getCRMMetrics': function(p) { return getCRMMetrics_(); },
+  'nudgeSalesTeam': function(p) { return nudgeSalesTeam_(p); },
+
+  // After-Sales Service
+  'createAfterSalesRecord': function(p) { return createAfterSalesRecord(p.job_id || p.jobId || ''); },
+  'getAfterSalesDue': function(p) { return getAfterSalesDue(p.days || 30); },
+  'logAfterSalesFollowUp': function(p) { return logAfterSalesFollowUp(p.record_id || '', p.note || '', p.followup_by || '', p.next_action || ''); },
+  'sendAfterSalesAlerts': function(p) { return sendAfterSalesAlerts(); },
+  'getAfterSalesSummary': function(p) { return getAfterSalesSummary(); },
+
+  // Auth & RBAC
+  'loginUser':    function(p) { return loginUser(p.username || '', p.password || ''); },
+  'logoutUser':   function(p) { return logoutUser(p.token || ''); },
+  'verifySession': function(p) { return verifySession(p.token || ''); },
+  'listUsers':    function(p) { return listUsers(p.token || ''); },
+  'createUser':   function(p) { return createUser(p.token || '', p); },
+  'updateUserRole': function(p) { return updateUserRole(p.token || '', p.username || '', p.role || ''); },
+  'setUserActive': function(p) { return setUserActive(p.token || '', p.username || '', p.active !== false); },
+  'setupUserSheet': function(p) { return setupUserSheet(); },
+  'forceResetAdmin': function(p) { return forceResetAdmin(p.password || p.newPassword || ''); },
+  'cleanupSessions': function(p) { return cleanupSessions(); },
+  'verifyToken':  function(p) { return verifyToken(p.token || ''); },
+
+  // Security
+  'changePassword': function(p) { return changePassword(p); },
+  'forcePasswordChange': function(p) { return forcePasswordChange(p); },
+  'lockAccount':  function(p) { return lockAccount(p); },
+  'unlockAccount': function(p) { return unlockAccount(p); },
+  'getSecurityStatus': function(p) { return getSecurityStatus(); },
+  'getAuditLog':  function(p) { return getAuditLog(p); },
+  'getAuditSummary': function(p) { return getAuditSummary(p.period || 'today'); },
+  'pruneAuditLog': function(p) { return pruneAuditLog(p.keep_days || 90); },
+
+  // System
+  'initSystem':   function(p) { return initSystem(); },
+  'systemStatus': function(p) { return systemStatus(); },
+  'setupTriggers': function(p) { return setupAllTriggers(); },
+  'setupAllTriggers': function(p) { return setupAllTriggers(); },
+  'getSchemaInfo': function(p) { return getSchemaInfo(); },
+  'validateConfig': function(p) { return validateRequiredConfigs(); },
+  'getComphoneConfig': function(p) { return getComphoneConfig(); },
+  'setScriptProperties': function(p) { return setScriptPropertiesFromPayload(p); },
+  'logSystemError': function(p) { return logSystemError(p); },
+  'getSystemLogs': function(p) { return getSystemLogs(p); },
+  'getSystemMetrics': function(p) { return (typeof getSystemMetrics === 'function') ? getSystemMetrics() : { success: false }; },
+  'getHealthMonitor': function(p) { return (typeof getHealthMonitor === 'function') ? getHealthMonitor(p) : { success: false }; },
+  'getHealthTrend': function(p) { return (typeof getHealthTrend === 'function') ? getHealthTrend(p) : { success: false }; },
+  'getSnapshots': function(p) { return (typeof getSnapshots === 'function') ? getSnapshots(p) : { success: false }; },
+  'controlAction': function(p) { return (typeof controlAction === 'function') ? controlAction(p) : { success: false }; },
+  'storeSnapshot': function(p) { return (typeof storeSnapshot === 'function') ? storeSnapshot(p) : { success: false }; },
+  'getSecurityLog': function(p) { var sl = (typeof getSecurityLog === 'function') ? getSecurityLog() : []; return { success: true, data: sl, count: sl.length }; },
+  'seedAllData':  function(p) { return seedAllData(); },
+  'runBackup':    function(p) { return runBackup(); },
+  'cronMorningAlert': function(p) { return cronMorningAlert(); },
+
+  // Push Notifications
+  'savePushSubscription': function(p) { return savePushSubscription(p); },
+  'removePushSubscription': function(p) { return removePushSubscription(p); },
+
+  // Drive Sync
+  'getDriveSyncStatus': function(p) { return getDriveSyncStatus(); },
+  'storeSessionContent': function(p) { return storeSessionContent(p.content || ''); },
+
+  // Customer Portal (public)
+  'getJobStatusPublic': function(p) { return getJobStatusPublic(p.job_id || p.jobId || '', p.phone || ''); },
 };
 
 /**
