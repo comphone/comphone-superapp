@@ -140,7 +140,7 @@ function geminiReorderSuggestion() {
       if (hv === 'itemcode' || hv === 'code') colMap.code = hi;
       else if (hv === 'itemname' || hv === 'name') colMap.name = hi;
       else if (hv === 'qty' || hv === 'quantity') colMap.qty = hi;
-      else if (hv === 'cost') colMap.cost = hi;
+      else if (hv === 'cost' || hv === 'costprice') colMap.cost = hi;
     }
 
     var lowItems = [];
@@ -299,8 +299,8 @@ function checkStock(data) {
       if (hv === 'itemcode' || hv === 'code') colMap.code = hi;
       else if (hv === 'itemname' || hv === 'name') colMap.name = hi;
       else if (hv === 'qty' || hv === 'quantity') colMap.qty = hi;
-      else if (hv === 'cost') colMap.cost = hi;
-      else if (hv === 'price') colMap.price = hi;
+      else if (hv === 'cost' || hv === 'costprice') colMap.cost = hi;
+      else if (hv === 'price' || hv === 'sellprice') colMap.price = hi;
     }
 
     var results = [];
@@ -349,8 +349,8 @@ function barcodeLookup(data) {
       if (hv === 'code' || hv === 'item_code' || hv.indexOf('รหัส') > -1) cCode = hi;
       else if (hv === 'name' || hv === 'item_name' || hv.indexOf('ชื่') > -1) cName = hi;
       else if (hv === 'qty' || hv === 'quantity' || hv.indexOf('จำนวน') > -1) cQty = hi;
-      else if (hv === 'cost' || hv.indexOf('ต้นทุน') > -1) cCost = hi;
-      else if (hv === 'price' || hv.indexOf('ราคาขาย') > -1) cPrice = hi;
+      else if (hv === 'cost' || hv === 'costprice' || hv.indexOf('ต้นทุน') > -1) cCost = hi;
+      else if (hv === 'price' || hv === 'sellprice' || hv.indexOf('ราคาขาย') > -1) cPrice = hi;
     }
 
     // คำนวณ reserved qty
@@ -1077,9 +1077,8 @@ function addInventoryItem(data) {
     if (!sh) {
       sh = ss.insertSheet('DB_INVENTORY');
       sh.getRange(1, 1, 1, 14).setValues([[
-        'Item_Code','Item_Name','Category','Qty','Cost','Price',
-        'Location_Type','Location_Code','Assigned_To','Reorder_Point',
-        'Barcode','Updated_At','Last_Job_ID','Notes'
+        'Item_Code','Item_Name','Category','Qty','Min_Qty','Unit','Cost_Price','Sell_Price',
+        'Location_Type','Location_Code','Assigned_To','Barcode','Updated_At','Last_Job_ID','Notes'
       ]]);
     }
 
@@ -1095,8 +1094,8 @@ function addInventoryItem(data) {
       else if (hv === 'itemname' || hv === 'name') colMap.name = hi;
       else if (hv === 'category') colMap.category = hi;
       else if (hv === 'qty' || hv === 'quantity') colMap.qty = hi;
-      else if (hv === 'cost') colMap.cost = hi;
-      else if (hv === 'price') colMap.price = hi;
+      else if (hv === 'cost' || hv === 'costprice') colMap.cost = hi;
+      else if (hv === 'price' || hv === 'sellprice') colMap.price = hi;
       else if (hv === 'locationtype') colMap.locType = hi;
       else if (hv === 'locationcode') colMap.locCode = hi;
       else if (hv === 'assignedto') colMap.assignedTo = hi;
@@ -1183,8 +1182,8 @@ function updateInventoryItem(data) {
       if (hv === 'itemcode' || hv === 'code') idx.code = hi;
       else if (hv === 'itemname' || hv === 'name') idx.name = hi;
       else if (hv === 'qty' || hv === 'quantity') idx.qty = hi;
-      else if (hv === 'cost') idx.cost = hi;
-      else if (hv === 'price') idx.price = hi;
+      else if (hv === 'cost' || hv === 'costprice') idx.cost = hi;
+      else if (hv === 'price' || hv === 'sellprice') idx.price = hi;
       else if (hv === 'locationtype') idx.locType = hi;
       else if (hv === 'locationcode') idx.locCode = hi;
       else if (hv === 'assignedto') idx.assignedTo = hi;
@@ -1507,8 +1506,8 @@ function receivePurchaseOrder(data) {
       if (hv === 'itemcode' || hv === 'code') iCode = hi;
       else if (hv === 'itemname' || hv === 'name') iName = hi;
       else if (hv === 'qty' || hv === 'quantity') iQty = hi;
-      else if (hv === 'cost') iCost = hi;
-      else if (hv === 'price') iPrice = hi;
+      else if (hv === 'cost' || hv === 'costprice') iCost = hi;
+      else if (hv === 'price' || hv === 'sellprice') iPrice = hi;
       else if (hv === 'locationtype') iLocType = hi;
       else if (hv === 'locationcode') iLocCode = hi;
       else if (hv === 'updatedat') iUpdated = hi;
@@ -1616,3 +1615,4 @@ function cancelPurchaseOrder_(data) {
     lock.releaseLock();
   }
 }
+
