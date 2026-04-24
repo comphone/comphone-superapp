@@ -301,7 +301,7 @@ All these MUST match on deploy:
 | SW IndexedDB error | DB version mismatch (SW v2, offline_db v1) | Bump offline_db.js to v2, sync stores |
 | gas_config.js URL ผิด | Deploy จับ URL ผิด deployment | แก้ URL ตรง |
 | AI Validation 12/16 fail | Recursive test() bug + typeof mismatch | แก้ validation script, add context-aware skip |
-| Dashboard "กำลังพัฒนา" | loadSection() แสดง placeholder | เปลี่ยนเป็น live data loaders (6 sections) |
+| Dashboard "กำลังพัฒนา" | loadSection() แสดง placeholder | เปลี่ยนเป็น live data loaders (11 sections) |
 | SW timeout 3s | API ใช้เวลา 11s แต่ timeout 3s | เพิ่มเป็น 15s |
 | POST → 405 error (PC) | GAS redirect POST → GET (302) | เปลี่ยนเป็น GET ทั้งหมด (dashboard_pc.html, executive_dashboard.html) |
 | system_graph_data.js 404 | ไฟล์ไม่มี | สร้าง stub file |
@@ -416,7 +416,7 @@ indexedDB.databases().then(dbs => console.log(dbs))
 ---
 
 > **เอกสารนี้คือ Single Source of Truth** — อ้างอิงไฟล์นี้ก่อนเริ่มงานทุกครั้ง
-> อัปเดตล่าสุด: 2026-04-23 | Phase 27.3 | Commit `4b6348f`
+> อัปเดตล่าสุด: 2026-04-24 | Phase 28.1 | Commit `634fa38`
 
 ---
 
