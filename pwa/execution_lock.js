@@ -128,6 +128,7 @@
     removePushSubscription: true,
     sendPushToAll: true,
     smartAssignTech: true,
+    smartAssignV2: true,
     optimizeRoute: true,
     analyzeWorkImage: true,
     runJobCompletionQC: true,

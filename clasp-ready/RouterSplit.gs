@@ -330,6 +330,7 @@ var MODULE_ROUTER = {
   'setupMemoryControlTrigger': function(p) { return setupMemoryControlTrigger(p); },
   'setupNotificationTriggers': function(p) { return setupNotificationTriggers(p); },
   'smartAssignTech': function(p) { return smartAssignTech_(p); },
+  'smartAssignV2':     function(p) { return smartAssignV2_(p); },
   'smartPushAlert': function(p) { return smartPushAlert(p); },
   'submitCustomerRating': function(p) { return jsonOutputV55_(p); },
   'submitHumanReview': function(p) { return submitHumanReview(p); },
