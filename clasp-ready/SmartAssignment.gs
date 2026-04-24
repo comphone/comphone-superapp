@@ -133,13 +133,13 @@ function smartAssignTech_(payload) {
     if (techs.length === 0) return { success: false, error: 'ไม่พบช่างที่ active' };
 
     // คำนวณ score = ระยะทาง (น้ำหนัก 60%) + workload (40%)
-    var jobSheet = ss.getSheetByName('DB_JOBS');
+    var jobSheet = findSheetByName(ss, 'DBJOBS'); // FIXED: was 'DB_JOBS' (wrong sheet name)
     var workloadMap = {};
     if (jobSheet) {
       var jobData = jobSheet.getDataRange().getValues();
       var jHeaders = jobData[0];
-      var techCol = jHeaders.indexOf('ช่างผู้รับผิดชอบ');
-      var statusCol = jHeaders.indexOf('สถานะ');
+      var techCol = findHeaderIndex_(jHeaders, ['ช่างที่รับงาน', 'Technician', 'tech', 'ช่างผู้รับผิดชอบ']); // FIXED: match actual column names
+      var statusCol = findHeaderIndex_(jHeaders, ['สถานะ', 'Status', 'status']);
       for (var j = 1; j < jobData.length; j++) {
         var jStatus = String(jobData[j][statusCol] || '');
         if (jStatus === 'done' || jStatus === 'closed') continue;

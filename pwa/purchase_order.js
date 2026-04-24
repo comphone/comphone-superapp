@@ -401,7 +401,7 @@ function updatePOBadge(orders) {
 
 // ===== QUICK ACTION from Home =====
 function openPurchaseOrders() {
-  const navBtn = document.getElementById('nav-po');
+  const navBtn = document.getElementById('nav-more'); // FIXED: nav-po removed in Phase 2A (9→5 nav)
   goPage('po', navBtn);
 }
 
