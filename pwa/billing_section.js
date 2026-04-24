@@ -104,8 +104,10 @@ function renderBillingSection(data) {
 async function _listBillings() {
   try {
     const res = await callGas('listBillings', {});
+    const tbody = document.getElementById('billing-tbody');
+    if (!tbody) return; // section was replaced
     if (!res || !res.success) {
-      document.getElementById('billing-tbody').innerHTML =
+      tbody.innerHTML =
         '<tr><td colspan="14" style="text-align:center;padding:24px;color:#ef4444;">ไม่สามารถโหลดข้อมูลได้</td></tr>';
       return;
     }
@@ -114,7 +116,8 @@ async function _listBillings() {
     _renderBillingRows(_billingData);
   } catch (e) {
     console.error('listBillings error', e);
-    document.getElementById('billing-tbody').innerHTML =
+    const tb = document.getElementById('billing-tbody');
+    if (tb) tb.innerHTML =
       '<tr><td colspan="14" style="text-align:center;padding:24px;color:#ef4444;">เกิดข้อผิดพลาด</td></tr>';
   }
 }

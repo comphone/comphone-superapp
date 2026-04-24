@@ -67,12 +67,14 @@ async function _loadKPIs() {
       const present = records.filter(r => r.status === 'PRESENT' || r.status === 'LATE').length;
       const hours = records.reduce((s, r) => s + (parseFloat(r.hours_worked) || 0), 0);
       const jobs = records.reduce((s, r) => s + (parseInt(r.jobs_done) || 0), 0);
-      document.getElementById('att-kpi-records').textContent = records.length;
+      const kpiEl = document.getElementById('att-kpi-records');
+    if (!kpiEl) return; // section was replaced
+    document.getElementById('att-kpi-records').textContent = records.length;
       document.getElementById('att-kpi-present').textContent = present;
       document.getElementById('att-kpi-hours').textContent = hours.toFixed(1) + ' ชม.';
       document.getElementById('att-kpi-jobs').textContent = jobs;
     }
-  } catch(e) { console.error('KPI load error', e); }
+  } catch(e) { if (document.getElementById('att-tbody')) console.error('KPI load error', e); }
 }
 
 async function _loadTechSummary() {
