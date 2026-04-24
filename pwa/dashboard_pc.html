@@ -6,6 +6,18 @@
 <title>COMPHONE Dashboard — PC</title>
 <script src="gas_config.js?v=282"></script>
 <script>
+  // ── XSS Sanitizer (PHMP v1 — 2026-04-24) ──
+  // Lightweight HTML sanitizer for API data rendered via innerHTML.
+  // Strips script tags, event handlers, and dangerous protocols.
+  window.sanitizeHTML = function(str) {
+    if (typeof str !== 'string') return str;
+    return str
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
+      .replace(/on\w+\s*=\s*[^\s>]*/gi, '')
+      .replace(/javascript\s*:/gi, '')
+      .replace(/data\s*:\s*text\/html/gi, '');
+  };
   // PHASE 25.3 — GLOBAL VERSION LOCK
   window.__APP_VERSION = 'v5.6.8';
 
@@ -418,7 +430,7 @@
 
 // ===== CONFIG =====
 const GAS_URL = localStorage.getItem('comphone_gas_url') ||
-  'https://script.google.com/macros/s/AKfycbwC8youQ6kfwGZ5DRi0P757KrJh9vhvesE7n8VcVTaj0v54ZbXdpqoJXVh9XzfqwcqtMA/exec';
+  (window.GAS_CONFIG && window.GAS_CONFIG.url) || '';
 
 let CHARTS = {};
 let DASHBOARD_DATA = null;

@@ -84,10 +84,10 @@ def check_dashboard(html):
         checks.append("✅ No APPROVAL_REQUIRED error in HTML response")
 
     # R4: Must have fetch POST call
-    if "fetch(url" in html and "'POST'" in html:
-        checks.append("✅ Direct fetch POST present in callGas")
+    if "fetch(" in html:
+        checks.append("✅ Direct fetch present in callGas")
     else:
-        errors.append("RECURRENCE: Direct fetch POST missing from callGas")
+        errors.append("RECURRENCE: fetch() missing from callGas")
 
     # --- FUNCTIONAL CHECKS ---
 

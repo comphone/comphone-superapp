@@ -654,6 +654,18 @@
 </div>
 
 <script src="gas_config.js"></script>
+<script>
+  // ── XSS Sanitizer (PHMP v1 — 2026-04-24) ──
+  window.sanitizeHTML = function(str) {
+    if (typeof str !== 'string') return str;
+    return str
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
+      .replace(/on\w+\s*=\s*[^\s>]*/gi, '')
+      .replace(/javascript\s*:/gi, '')
+      .replace(/data\s*:\s*text\/html/gi, '');
+  };
+</script>
 <script src="error_boundary.js"></script>
 <script src="execution_lock.js"></script>
 <script src="policy_engine.js"></script>

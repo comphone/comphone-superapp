@@ -510,7 +510,7 @@
 // ============================================================
 // Config
 // ============================================================
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwC8youQ6kfwGZ5DRi0P757KrJh9vhvesE7n8VcVTaj0v54ZbXdpqoJXVh9XzfqwcqtMA/exec';
+const GAS_URL = (window.GAS_CONFIG && window.GAS_CONFIG.url) || '';
 const CACHE_TTL = 15000; // 15s frontend cache
 const AUTO_REFRESH_MS = 30000; // 30s auto refresh
 
