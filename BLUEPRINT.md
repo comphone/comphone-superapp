@@ -181,7 +181,7 @@ comphone-superapp/
 | **Attendance Section** | ✅ Phase 28.1 | attendance_section.js (16KB), clock in/out, report, tech history |
 | **Warranty Section** | ✅ Phase 28.1 | warranty_section.js (583 lines), CRUD, due alerts, status mgmt |
 | **Dashboard 11 Sections** | ✅ Phase 28.1 | Dashboard, Jobs, PO, Stock, Billing, Warranty, Revenue, Tax, CRM, Attendance, Settings |
-| **POS (Retail Sale)** | ✅ Phase 28.2 | pos.js (240 lines), openPOS modal, add/remove items, VAT 7%, callAPI('createRetailSale'), quickActions button (bi-cash-stack) |
+| **POS (Retail Sale)** | ✅ Phase 28.2 | pos.js (240 lines), openPOS modal, add/remove items, VAT 7%, callAPI('createRetailSale'), quickActions button (bi-cash-stack), Deployed to GitHub (e1a92b4), Synced to Google Drive (v5.6.8_20260425_2051) |
 | **Error Telemetry** | ✅ Phase 2C | `ErrorTelemetry.gs` (667 lines), DB_ERRORS, trend analysis, severity classification |
 | **Logger Visibility** | ✅ Phase 2E-1 | `_logInfo_()` structured logging, DB_LOGS sheet, 17 call sites instrumented |
 | **Cron Observability** | ✅ Phase 2E-2 | All 8 cron jobs instrumented with `_logInfo_` entry + `_logError_` catch |
@@ -191,8 +191,7 @@ comphone-superapp/
 
 | ฟีเจอร์ | สถานะ | หมายเหตุ |
 |---------|-------|---------|
-| **POS/Retail** | 🔧 Backend stub | createSale → fallback createBilling, ไม่มี POS UI |
-| **Customer Portal** | 🔧 Minimal | getJobStatusPublic works, portal HTML minimal |
+| **Customer Portal** | 🔧 Minimal | getJobStatusPublic works, portal HTML minimal — ต้องทำ frontend ครบ |
 | **Photo Upload B/A** | 🔧 Backend only | PhotoQueue.gs works, no upload UI on PC Dashboard |
 | **Analytics** | 🔧 Backend only | BusinessAnalytics.gs exists, no frontend section |
 

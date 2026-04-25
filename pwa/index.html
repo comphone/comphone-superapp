@@ -336,10 +336,16 @@
       <div style="text-align:center;padding:3rem;color:#9ca3af">
         <i class="bi bi-bell" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
         กำลังโหลดการแจ้งเตือน...
-      </div>
     </div>
+  </div>
 
-  </div><!-- end pages-container -->
+  <!-- Analytics Page -->
+  <div id="page-analytics" class="page hidden">
+    <!-- Content will be rendered by analytics_section.js -->
+    <div id="section-content"></div>
+  </div>
+
+</div><!-- end pages-container -->
 
   <!-- FAB -->
   <button id="fab-btn" class="fab-main" onclick="fabAction()">
@@ -408,6 +414,10 @@
       <button class="more-menu-item" onclick="navigateFromMore('reports')">
         <div class="more-menu-icon"><i class="bi bi-graph-up-arrow"></i></div>
         <span>รายงาน</span>
+      </button>
+      <button class="more-menu-item" id="more-analytics-btn" onclick="navigateFromMore('analytics')">
+        <div class="more-menu-icon"><i class="bi bi-pie-chart-fill"></i></div>
+        <span>Analytics</span>
       </button>
       <button class="more-menu-item" id="more-admin-btn" style="display:none" onclick="navigateFromMore('admin')">
         <div class="more-menu-icon"><i class="bi bi-shield-fill-check"></i></div>
@@ -722,6 +732,8 @@
 <script src="branch_health_ui.js"></script>
     <script src="business_ai.js"></script>
     <script src="evidence_harness.js"></script>
+    <script src="analytics_section.js"></script>
+    <script src="customer_portal_section.js"></script>
 
     <!-- POS Modal -->
     <div id="modal-pos" class="modal-overlay hidden" onclick="closeModal('modal-pos')">

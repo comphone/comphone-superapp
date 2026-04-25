@@ -53,6 +53,7 @@ var MODULE_ROUTER = {
   'generatePromptPayQR':  function(p) { return generatePromptPayQR(p); },
   'createRetailSale':     function(p) { return createRetailSale_(p); },
   'listRetailSales':      function(p) { return listRetailSales(p); },
+  'analyzeBusiness':      function(p) { return analyzeBusiness_(p); },
 
   // Customers
   'createCustomer': function(p) { return createCustomer(p); },
@@ -297,6 +298,7 @@ var MODULE_ROUTER = {
   'nudgeTech': function(p) { return nudgeTechAction_(p); },
   'optimizeRoute': function(p) { return optimizeRoute(p); },
   'photoGalleryData': function(p) { return getPhotoGalleryData(p); },
+  'uploadPhoto': function(p) { return uploadPhoto_(p); },
   'processFeedbackLoop': function(p) { return processFeedbackLoop(p); },
   'prunePatterns': function(p) { return prunePatterns(p); },
   'qualityCheck': function(p) { return qualityCheck(p); },

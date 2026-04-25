@@ -819,3 +819,65 @@ function _createQueueRow_(length) {
 function _setQueueCell_(row, index, value) {
   if (index > -1) row[index] = value;
 }
+
+// ============================================================
+// STEP N: อัปโหลดรูปจาก PC Dashboard → Drive → Queue
+// ============================================================
+
+function uploadPhoto_(params) {
+  try {
+    var jobId = params.job_id || '';
+    var filename = params.filename || '';
+    var mimeType = params.mime_type || 'image/jpeg';
+    var base64Data = params.data || '';
+
+    if (!jobId) return { success: false, error: 'ต้องระบุ Job ID' };
+    if (!base64Data) return { success: false, error: 'ไม่พบข้อมูลรูปภาพ' };
+
+    // Decode base64 to blob
+    var blob = Utilities.newBlob(Utilities.base64Decode(base64Data), mimeType, filename);
+    if (!blob || blob.getBytes().length < 100) {
+      return { success: false, error: 'ข้อมูลรูปภาพไม่ถูกต้อง' };
+    }
+
+    var tempFolder = getOrCreateTempFolder();
+    var ts = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyyMMdd_HHmmss');
+    var finalName = ts + '_' + jobId + '_PCUpload_' + filename;
+    blob.setName(finalName);
+
+    var file = tempFolder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+    // Save to queue
+    var queueId = saveToPhotoQueue({
+      fileId: file.getId(),
+      fileName: finalName,
+      fileURL: file.getUrl(),
+      thumbnailURL: file.getUrl(), // Could generate thumbnail later
+      jobId: jobId,
+      techName: 'PC-User',
+      status: 'Pending',
+      timestamp: new Date(),
+      aiLabel: '',
+      aiPhase: '',
+      aiIssues: '',
+      jobPhotoURL: '',
+      processedTimestamp: '',
+      aiSummary: '',
+      geoStatus: 'NoCheck',
+      geoDistanceM: '',
+      geoNote: '',
+      collageURL: ''
+    });
+
+    return {
+      success: true,
+      queueId: queueId,
+      fileId: file.getId(),
+      fileURL: file.getUrl(),
+      message: 'อัปโหลดรูปสำเร็จ'
+    };
+  } catch (e) {
+    return { success: false, error: e.message, stack: e.stack };
+  }
+}

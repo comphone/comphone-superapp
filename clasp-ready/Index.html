@@ -203,6 +203,11 @@
               <i class="fas fa-warehouse me-1"></i>คลังสินค้า
             </a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showSection('photo-upload')">
+              <i class="fas fa-camera me-1"></i>อัปโหลดรูป
+            </a>
+          </li>
           <li class="nav-item ms-2">
             <button class="btn btn-success btn-sm" id="newJobBtn">
               <i class="fas fa-plus me-1"></i>งานใหม่
@@ -578,6 +583,12 @@
     </div>
     <!-- END SECTION: INVENTORY -->
     
+    <!-- ===== SECTION: PHOTO UPLOAD ===== -->
+    <div id="section-photo-upload" style="display:none">
+      <div id="section-photo-content"></div>
+    </div>
+    <!-- END SECTION: PHOTO UPLOAD -->
+    
   </div>
   <!-- END MAIN CONTENT -->
 
@@ -594,6 +605,10 @@
     <a class="nav-item" href="#" onclick="showSection('inventory')" id="bnav-inventory">
       <i class="fas fa-warehouse"></i>
       คลัง
+    </a>
+    <a class="nav-item" href="#" onclick="showSection('photo-upload')" id="bnav-photo">
+      <i class="fas fa-camera"></i>
+      อัปโหลดรูป
     </a>
     <a class="nav-item" href="#" id="bnav-newjob">
       <i class="fas fa-plus-circle"></i>

@@ -353,6 +353,9 @@ function goPage(page, btn) {
   if (page === 'notifications') {
     if (typeof loadNotificationCenter === 'function') loadNotificationCenter();
   }
+  if (page === 'analytics') {
+    if (typeof openAnalyticsSection === 'function') openAnalyticsSection();
+  }
 }
 
 // Actions + Search + Notifications → app_actions.js
