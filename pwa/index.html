@@ -722,5 +722,16 @@
 <script src="branch_health_ui.js"></script>
     <script src="business_ai.js"></script>
     <script src="evidence_harness.js"></script>
+
+    <!-- POS Modal -->
+    <div id="modal-pos" class="modal-overlay hidden" onclick="closeModal('modal-pos')">
+      <div class="modal-sheet" onclick="event.stopPropagation()" style="max-height:90vh;overflow-y:auto;padding:0 0 24px;max-width:480px">
+        <div class="modal-handle"></div>
+        <div class="modal-title"><i class="bi bi-cash-stack" style="color:#f59e0b"></i> ขายสินค้า (POS)</div>
+        <div id="modal-pos-content"></div>
+      </div>
+    </div>
+
+    <script src="pos.js"></script>
 </body>
 </html>
