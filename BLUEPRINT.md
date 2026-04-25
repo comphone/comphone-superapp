@@ -1,8 +1,8 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **เวอร์ชัน:** v5.9.0-phase2d (PWA) / v5.9.0-phase2d (GAS Backend @498)
-> **วันที่:** 24 เมษายน 2569 | **Phase:** 2E (Observability) / 28.1 (Features)
-> **สถานะ:** 🟢 PRODUCTION — Full Dashboard + Auth + 11 Sections
+> **เวอร์ชัน:** v5.9.0-phase29 (PWA) / v5.9.0-phase29 (GAS Backend @499)
+> **วันที่:** 25 เมษายน 2569 | **Phase:** 29 (Photo Upload + Analytics + Customer Portal)
+> **สถานะ:** 🟢 PRODUCTION — Phase 29 Complete + 14 Sections
 > **Repository:** https://github.com/comphone/comphone-superapp
 
 ---
@@ -23,7 +23,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    COMPHONE SUPER APP v5.9.0-phase2d                    │
+│                    COMPHONE SUPER APP v5.9.0-phase29                   │
 │                                                                 │
 │  ┌──────────────┐    ┌──────────────────┐    ┌──────────────┐  │
 │  │  LINE Bot    │───►│ Cloudflare Worker│───►│  GAS @498    │  │
@@ -180,20 +180,24 @@ comphone-superapp/
 | **Billing Section** | ✅ Phase 28.1 | billing_section.js (503 lines), CRUD, PromptPay QR, search/filter, CSV |
 | **Attendance Section** | ✅ Phase 28.1 | attendance_section.js (16KB), clock in/out, report, tech history |
 | **Warranty Section** | ✅ Phase 28.1 | warranty_section.js (583 lines), CRUD, due alerts, status mgmt |
-| **Dashboard 11 Sections** | ✅ Phase 28.1 | Dashboard, Jobs, PO, Stock, Billing, Warranty, Revenue, Tax, CRM, Attendance, Settings |
+| **Dashboard 14 Sections** | ✅ Phase 29 | Dashboard, Jobs, PO, Stock, Billing, Warranty, Revenue, Tax, CRM, Attendance, Settings, Photo Upload, Analytics, Customer Portal |
 | **POS (Retail Sale)** | ✅ Phase 28.2 | pos.js (240 lines), openPOS modal, add/remove items, VAT 7%, callAPI('createRetailSale'), quickActions button (bi-cash-stack), Deployed to GitHub (e1a92b4), Synced to Google Drive (v5.6.8_20260425_2051) |
 | **Error Telemetry** | ✅ Phase 2C | `ErrorTelemetry.gs` (667 lines), DB_ERRORS, trend analysis, severity classification |
 | **Logger Visibility** | ✅ Phase 2E-1 | `_logInfo_()` structured logging, DB_LOGS sheet, 17 call sites instrumented |
 | **Cron Observability** | ✅ Phase 2E-2 | All 8 cron jobs instrumented with `_logInfo_` entry + `_logError_` catch |
 | **Architecture Stewardship** | ✅ Phase 2E | Daily complexity/drift/coupling tracking via `ArchitectureStewardship.gs` |
 
-### 🔧 Partially Done (Backend Ready, Frontend Needed)
+### ✅ Completed (Phase 29)
 
 | ฟีเจอร์ | สถานะ | หมายเหตุ |
 |---------|-------|---------|
-| **Customer Portal** | 🔧 Minimal | getJobStatusPublic works, portal HTML minimal — ต้องทำ frontend ครบ |
-| **Photo Upload B/A** | 🔧 Backend only | PhotoQueue.gs works, no upload UI on PC Dashboard |
-| **Analytics** | 🔧 Backend only | BusinessAnalytics.gs exists, no frontend section |
+| **Photo Upload B/A** | ✅ Phase 29 | `uploadPhoto_` API + Router + UI (drag-drop, preview, base64 upload) |
+| **Analytics Section** | ✅ Phase 29 | `analytics_section.js` + dashboard routing + charts UI |
+| **Customer Portal** | ✅ Phase 29 | `customer_portal_section.js` + portal UI + job status |
+
+### 🔧 Partially Done (Backend Ready, Frontend Needed)
+
+*No items — all Phase 29 features completed.*
 
 ### 📋 Planned (Roadmap)
 
