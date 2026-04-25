@@ -181,6 +181,7 @@ comphone-superapp/
 | **Attendance Section** | ✅ Phase 28.1 | attendance_section.js (16KB), clock in/out, report, tech history |
 | **Warranty Section** | ✅ Phase 28.1 | warranty_section.js (583 lines), CRUD, due alerts, status mgmt |
 | **Dashboard 11 Sections** | ✅ Phase 28.1 | Dashboard, Jobs, PO, Stock, Billing, Warranty, Revenue, Tax, CRM, Attendance, Settings |
+| **POS (Retail Sale)** | ✅ Phase 28.2 | pos.js (240 lines), openPOS modal, add/remove items, VAT 7%, callAPI('createRetailSale'), quickActions button (bi-cash-stack) |
 | **Error Telemetry** | ✅ Phase 2C | `ErrorTelemetry.gs` (667 lines), DB_ERRORS, trend analysis, severity classification |
 | **Logger Visibility** | ✅ Phase 2E-1 | `_logInfo_()` structured logging, DB_LOGS sheet, 17 call sites instrumented |
 | **Cron Observability** | ✅ Phase 2E-2 | All 8 cron jobs instrumented with `_logInfo_` entry + `_logError_` catch |

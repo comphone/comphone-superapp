@@ -51,7 +51,7 @@ var MODULE_ROUTER = {
   // REMOVED (Phase 2B-0): listBillings, updatePayment, createRefund, createBillingFromSale,
   // deductStock, restoreStock — functions don't exist in codebase
   'generatePromptPayQR':  function(p) { return generatePromptPayQR(p); },
-  'createRetailSale':     function(p) { return createRetailSale(p); },
+  'createRetailSale':     function(p) { return createRetailSale_(p); },
   'listRetailSales':      function(p) { return listRetailSales(p); },
 
   // Customers
