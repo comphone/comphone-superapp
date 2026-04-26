@@ -1,6 +1,6 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **เวอร์ชัน:** v5.9.0-phase29 (PWA) / v5.9.0-phase29 (GAS Backend @499)
+> **เวอร์ชัน:** v5.9.0-phase2d (PWA) / v5.9.0-phase2d (GAS Backend @497)
 > **วันที่:** 25 เมษายน 2569 | **Phase:** 29 (Photo Upload + Analytics + Customer Portal)
 > **สถานะ:** 🟢 PRODUCTION — Phase 29 Complete + 14 Sections
 > **Repository:** https://github.com/comphone/comphone-superapp
@@ -23,7 +23,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    COMPHONE SUPER APP v5.9.0-phase29                   │
+│                    COMPHONE SUPER APP v5.9.0-phase2d                   │
 │                                                                 │
 │  ┌──────────────┐    ┌──────────────────┐    ┌──────────────┐  │
 │  │  LINE Bot    │───►│ Cloudflare Worker│───►│  GAS @498    │  │
@@ -128,7 +128,7 @@ comphone-superapp/
 │   ├── executive_dashboard.html
 │   ├── monitoring_dashboard.html
 │   ├── app.js                ← Mobile app logic
-│   ├── sw.js                 ← Service Worker (v5.7.0)
+│   ├── sw.js                 ← Service Worker (v5.9.0-phase2d)
 │   ├── gas_config.js         ← Auto-generated GAS URL
 │   ├── ai_executor_runtime.js ← AI execution framework
 │   ├── api_client.js         ← Unified API caller
@@ -182,7 +182,7 @@ comphone-superapp/
 | **Attendance Section** | ✅ Phase 28.1 | attendance_section.js (16KB), clock in/out, report, tech history |
 | **Warranty Section** | ✅ Phase 28.1 | warranty_section.js (583 lines), CRUD, due alerts, status mgmt |
 | **Dashboard 14 Sections** | ✅ Phase 29 | Dashboard, Jobs, PO, Stock, Billing, Warranty, Revenue, Tax, CRM, Attendance, Settings, Photo Upload, Analytics, Customer Portal |
-| **POS (Retail Sale)** | ✅ Phase 28.2 | pos.js (240 lines), openPOS modal, add/remove items, VAT 7%, callAPI('createRetailSale'), quickActions button (bi-cash-stack), Deployed to GitHub (e1a92b4), Synced to Google Drive (v5.6.8_20260425_2051) |
+| **POS (Retail Sale)** | ✅ Phase 28.2 | pos.js (240 lines), openPOS modal, add/remove items, VAT 7%, callAPI('createRetailSale'), quickActions button (bi-cash-stack), Deployed to GitHub (01d6635), Synced to Google Drive (v5.9.0-phase2d_20260426_1025) |
 | **Error Telemetry** | ✅ Phase 2C | `ErrorTelemetry.gs` (667 lines), DB_ERRORS, trend analysis, severity classification |
 | **Logger Visibility** | ✅ Phase 2E-1 | `_logInfo_()` structured logging, DB_LOGS sheet, 17 call sites instrumented |
 | **Cron Observability** | ✅ Phase 2E-2 | All 8 cron jobs instrumented with `_logInfo_` entry + `_logError_` catch |
