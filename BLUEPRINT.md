@@ -113,6 +113,7 @@ comphone-superapp/
 ├── deploy_all.sh             ← Master deploy script (WSL)
 ├── clasp-ready/              ← GAS Backend source (deploy ผ่าน clasp)
 │   ├── Router.gs             ← Main router (doGet/doPost)
+│   ├── RouterSplit.gs         ← Fast O(1) route lookup (283 actions)
 │   ├── Config.gs             ← Configuration & Script Properties
 │   ├── Dashboard.gs          ← Dashboard data provider
 │   ├── WorkflowEngine.gs     ← AI workflow engine

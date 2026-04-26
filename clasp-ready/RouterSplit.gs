@@ -355,6 +355,7 @@ var MODULE_ROUTER = {
   'getCachedResponse':     function(p) { return { success: true, data: getCachedResponse(p.key || '') }; },
   'getDynamicThreshold':   function(p) { return { success: true, type: p.type, threshold: getDynamicThreshold(p.type || 'QC') }; },
   'buildAdaptivePrompt':   function(p) { return { success: true, prompt: buildAdaptivePrompt(p.type || 'QC', p.input || {}) }; },
+  'runBackup':             function(p) { return backupToDrive(); },
 };
 
 /**
