@@ -1,6 +1,6 @@
 // ============================================================
 // TaxDocuments.gs — เอกสารภาษีไทย + Tax Reminder
-// COMPHONE SUPER APP V5.5+
+// COMPHONE SUPER APP v5.9.0-phase2d
 // ============================================================
 //
 // TASK 3: Tax Report รายเดือน (VAT + WHT)

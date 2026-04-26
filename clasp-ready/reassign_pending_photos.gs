@@ -1,3 +1,8 @@
+// COMPHONE SUPER APP v5.9.0-phase2d
+// ============================================================
+// reassign_pending_photos.gs
+// ============================================================
+
 // Reassign Pending Photos Function (Standalone for Router integration)
 function reassignPendingPhotos(techName, jobId) {
   try {

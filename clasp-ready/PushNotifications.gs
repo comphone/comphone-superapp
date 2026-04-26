@@ -1,6 +1,6 @@
 // ============================================================
 // PushNotifications.gs — Web Push + LINE Trigger
-// COMPHONE SUPER APP V5.5
+// COMPHONE SUPER APP v5.9.0-phase2d
 // ส่ง Push Notification ไปยัง PWA และ LINE พร้อมกัน
 // ============================================================
 

@@ -1,5 +1,5 @@
 // ============================================================
-// COMPHONE SUPER APP V5.5
+// COMPHONE SUPER APP v5.9.0-phase2d
 // DataSeeding.gs — Initial Data Setup (Idempotent)
 // Version: 5.6.0
 // ============================================================

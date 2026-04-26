@@ -1,4 +1,4 @@
-// COMPHONE SUPER APP V5.5
+// COMPHONE SUPER APP v5.9.0-phase2d
 // ============================================================
 // CustomerPortal.gs — Public Job Status Tracking (No Auth)
 // ลูกค้าตรวจสอบสถานะงานเองได้ผ่าน URL สาธารณะ

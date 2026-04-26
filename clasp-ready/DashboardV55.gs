@@ -1,3 +1,8 @@
+// COMPHONE SUPER APP v5.9.0-phase2d
+// ============================================================
+// DashboardV55.gs
+// ============================================================
+
 function getDashboardPayloadV55() {
   try {
     var base = typeof getDashboardData === 'function' ? getDashboardData() : { success: true };

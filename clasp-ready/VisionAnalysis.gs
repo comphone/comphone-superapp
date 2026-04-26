@@ -1,4 +1,4 @@
-// COMPHONE SUPER APP V5.5
+// COMPHONE SUPER APP v5.9.0-phase2d
 // VisionAnalysis.gs - AI วิเคราะห์รูปงานด้วย Gemini 2.0 Flash (V5.5)
 // Auto-Labeling, Photo Category, Quality Check, Job Completion QC
 // ============================================================

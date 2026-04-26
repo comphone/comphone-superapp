@@ -1,5 +1,5 @@
 // ============================================================
-// AgentMemory.gs — COMPHONE SUPER APP V5.5
+// AgentMemory.gs — COMPHONE SUPER APP v5.9.0-phase2d
 // AI Operating System — Phase 1: Agent Memory
 // ============================================================
 // ระบบความจำกลางสำหรับ AI Agents ทั้งหมด

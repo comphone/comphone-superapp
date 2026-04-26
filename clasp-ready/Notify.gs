@@ -1,5 +1,5 @@
 // ============================================================
-// COMPHONE SUPER APP V5.5
+// COMPHONE SUPER APP v5.9.0-phase2d
 // ============================================================
 // Notify.gs - LINE Messaging API + CRM + Cron
 // ⚠️ LINE Notify ปิดให้บริการแล้ว — ใช้ LINE Messaging API แทน

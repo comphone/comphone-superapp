@@ -1,5 +1,5 @@
 // ============================================================
-// COMPHONE SUPER APP v5.5 — DashboardBundle.gs
+// COMPHONE SUPER APP v5.9.0-phase2d — DashboardBundle.gs
 // Phase 1: API Aggregation — getDashboardBundle()
 // รวม dashboard + jobs + inventory + report ในการเรียกครั้งเดียว
 // เพื่อลด Latency จาก >4000ms → <800ms

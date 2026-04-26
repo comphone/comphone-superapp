@@ -1,3 +1,8 @@
+// COMPHONE SUPER APP v5.9.0-phase2d
+// ============================================================
+// ExecutiveDashboard.gs
+// ============================================================
+
 /**
  * ExecutiveDashboard.gs — COMPHONE V5.5.8
  * KPI Dashboard สำหรับผู้บริหาร

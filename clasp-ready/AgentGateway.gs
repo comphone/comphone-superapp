@@ -1,5 +1,5 @@
 // AgentGateway.gs — Multi-Agent Platform Gateway v1.0.0
-// COMPHONE SUPER APP V5.5
+// COMPHONE SUPER APP v5.9.0-phase2d
 // ============================================================
 // Phase 1: Entry Point — รองรับ agent ทั้งหมด (Manus, OpenClaw, Hermes, ...)
 // Phase 2: Standard API — action-based routing (vision.analyze, incident.create, ...)

@@ -1,6 +1,6 @@
 // ============================================================
 // TaxEngine.gs — VAT Flexible + WHT (ภงด.) + Auto-Tax Engine
-// COMPHONE SUPER APP V5.5+
+// COMPHONE SUPER APP v5.9.0-phase2d
 // ============================================================
 //
 // TASK 1: VAT Flexible (VAT7 / ZERO / EXEMPT / MIXED)

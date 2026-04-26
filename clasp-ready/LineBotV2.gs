@@ -1,5 +1,5 @@
 // ============================================================
-// COMPHONE SUPER APP V5.5
+// COMPHONE SUPER APP v5.9.0-phase2d
 // LineBotV2.gs — Enterprise LINE Messaging API Integration
 // Version: 2.0.0
 // ============================================================

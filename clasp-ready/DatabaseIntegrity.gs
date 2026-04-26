@@ -1,5 +1,5 @@
 // ============================================================
-// DatabaseIntegrity.gs — COMPHONE SUPER APP V5.5
+// DatabaseIntegrity.gs — COMPHONE SUPER APP v5.9.0-phase2d
 // ============================================================
 // ระบบตรวจสอบและรักษาความสมบูรณ์ของฐานข้อมูล Google Sheets
 // Functions:

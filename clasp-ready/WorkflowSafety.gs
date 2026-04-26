@@ -1,5 +1,5 @@
 // ============================================================
-// WorkflowSafety.gs — COMPHONE SUPER APP V5.5
+// WorkflowSafety.gs — COMPHONE SUPER APP v5.9.0-phase2d
 // AI-OS Stabilization — Phase 3: Workflow Safety
 // ============================================================
 // Max Depth: ป้องกัน infinite recursion ใน workflow chains

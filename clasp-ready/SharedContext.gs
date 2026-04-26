@@ -1,5 +1,5 @@
 // ============================================================
-// SharedContext.gs — COMPHONE SUPER APP V5.5
+// SharedContext.gs — COMPHONE SUPER APP v5.9.0-phase2d
 // AI Operating System — Phase 2: Shared Context
 // ============================================================
 // ให้ข้อมูล context กลางแก่ Agent ทุกตัว
