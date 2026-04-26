@@ -127,14 +127,14 @@ comphone-superapp/
 │   ├── executive_dashboard.html
 │   ├── monitoring_dashboard.html
 │   ├── app.js                ← Mobile app logic
-│   ├── sw.js                 ← Service Worker (v5.6.6)
+│   ├── sw.js                 ← Service Worker (v5.7.0)
 │   ├── gas_config.js         ← Auto-generated GAS URL
 │   ├── ai_executor_runtime.js ← AI execution framework
 │   ├── api_client.js         ← Unified API caller
 │   ├── offline_db.js         ← IndexedDB offline queue
 │   ├── style.css             ← Main stylesheet
 │   ├── manifest.json         ← PWA manifest
-│   └── ... (60 files total — 55 JS + 7 HTML)
+│   └── ... (63 files total — 53 JS + 7 HTML + 3 CSS)
 ├── workers/line-webhook/     ← Cloudflare Worker source
 ├── docs/                     ← Documentation
 ├── memory/                   ← AI session context
