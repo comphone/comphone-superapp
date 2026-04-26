@@ -783,7 +783,7 @@ function _buildPhotoNotification(photo, aiResult, folderInfo, jobUpdated, custom
     msg += '\n🖼️ Collage: ' + collage.collageUrl;
   }
 
-  var dashUrl = LINE_GAS_URL || 'https://script.google.com/macros/s/AKfycbwC8youQ6kfwGZ5DRi0P757KrJh9vhvesE7n8VcVTaj0v54ZbXdpqoJXVh9XzfqwcqtMA/exec';
+  var dashUrl = LINE_GAS_URL || 'https://script.google.com/macros/s/AKfycbwzJgj8ZMWqLYAsg9DklnrJIM2F-O0yH3gHhBjdn6WQDJ3uuLPI87pxAQAvXLdzDx__7A/exec';
   msg += '\n\n📊 ดู Dashboard: ' + dashUrl;
   if (photo.jobId) {
     msg += '\n📸 เพิ่มรูป: ' + dashUrl + '?action=openjob&id=' + photo.jobId;
