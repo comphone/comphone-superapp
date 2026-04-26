@@ -512,3 +512,86 @@ python3.11 /home/ubuntu/skills/comphone-superapp-dev/references/gas_status_check
 
 จากนั้นรอคำสั่งจากฉัน
 ```
+
+---
+
+## 🗺️ ROADMAP PREP: `reassign_pending_photos.gs` Analysis
+
+**วันที่**: 26 เมษายน 2026  
+**สถานะ**: ฟังก์ชันถูกทิ้งร้าง (Orphaned Function) - ยังไม่ได้ integrate เข้ากับ Router
+
+### 📊 โครงสร้างปัจจุบัน
+
+**ตำแหน่ง**: `clasp-ready/reassign_pending_photos.gs` (39 บรรทัด)
+
+**ฟังก์ชันหลัก**: `reassignPendingPhotos(techName, jobId)`
+- ดึงรูปที่ Pending ผ่าน `getPendingPhotos()`
+- กรองรูปที่ตรงกับ techName หรือไม่มี jobId
+- อัปเดตสถานะผ่าน `updateQueueStatus()` ให้เชื่อมกับ Job ใหม่
+- เรียก `processImageSorting()` เพื่อประมวลผลต่อ
+
+**การใช้งานปัจจุบัน**: ❌ ไม่มีการเรียกใช้ (orphaned)
+
+### 🔗 ความเชื่อมโยงกับระบบอื่น
+
+| ฟังก์ชันที่ใช้ | ตำแหน่ง | สถานะ |
+|--------------|----------|--------|
+| `getPendingPhotos()` | PhotoQueue.gs | ✅ ใช้งานได้ |
+| `updateQueueStatus()` | PhotoQueue.gs | ✅ ใช้งานได้ |
+| `processImageSorting()` | PhotoQueue.gs | ✅ ใช้งานได้ (มีเรียกจาก Dashboard.gs แล้ว) |
+
+### 🚀 คำแนะนำเบื้องต้น (Initial Recommendations)
+
+#### 1. **Integration ใน RouterSplit.gs**
+```javascript
+// เพิ่มใน RouterSplit.gs action map
+'assignphotos': {
+  module: 'PhotoQueue',
+  handler: 'reassignPendingPhotos',
+  auth: true,
+  description: 'เชื่อมรูป Pending เข้ากับ Job'
+},
+```
+
+#### 2. **API Endpoint สำหรับ Frontend (app.js)**
+```javascript
+// ใน app.js - เพิ่มปุ่ม "เชื่อมรูปเก่า"
+async function assignPendingPhotosToJob(techName, jobId) {
+  return await callAPI('assignphotos', { techName, jobId });
+}
+```
+
+#### 3. **UI Component (HTML)**
+- เพิ่มปุ่ม "เชื่อมรูปที่ค้าง" ในหน้า Jobs หรือ Photo Upload
+- แสดงรายการรูปที่ pending ตามช่างหรือ job ที่ว่างอยู่
+
+#### 4. **Integration Flow**
+```
+User clicks "เชื่อมรูปเก่า" 
+  → app.js: assignPendingPhotosToJob(techName, jobId)
+  → RouterSplit: action='assignphotos'
+  → PhotoQueue.reassignPendingPhotos(techName, jobId)
+  → processImageSorting() → แสดงรูปในหน้า Job
+```
+
+### 📋 ขั้นตอนการพัฒนาต่อ (Next Steps)
+
+| ลำดับ | ภารกิจ | ความสำคัญ | ระยะเวลา |
+|--------|---------|------------|----------|
+| 1 | เพิ่ม route ใน RouterSplit.gs | 🔴 สูง | 30 นาที |
+| 2 | สร้าง UI button ใน index.html | 🟡 ปานกลาง | 1 ชั่วโมง |
+| 3 | เพิ่ม JS handler ใน app.js | 🟡 ปานกลาง | 30 นาที |
+| 4 | ทดสอบ end-to-end | 🔴 สูง | 1 ชั่วโมง |
+| 5 | Deploy + Sync | 🟢 ต่ำ | 30 นาที |
+
+### ⚠️ ข้อควรระวัง
+1. **Orphaned Function**: ฟังก์ชันนี้มีอยู่แต่ไม่ได้ใช้ → ต้องทดสอบก่อนว่างานได้จริง
+2. **Logic Check**: ตรวจสอบว่า `p.techName === techName` เปรียบเทียบถูกต้องหรือไม่ (case-sensitive?)
+3. **processImageSorting()**: เรียกซ้ำอาจทำให้เกิด loop ถ้าไม่เช็ค conditions ให้ดี
+
+### 🎯 เป้าหมาย
+ให้ระบบสามารถ "นำรูปที่อัปโหลดมาค้างไว้ (pending) มาเชื่อมกับ Job ที่สร้างทีหลัง" ได้อัตโนมัติ
+
+---
+**วิเคราะห์โดย**: Hermes Agent  
+**วันที่**: 26 เมษายน 2026, 12:15 PM
