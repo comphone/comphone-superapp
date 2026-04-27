@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Load products from inventory
 async function loadProducts() {
   try {
-    const res = await callGas('listInventoryItems');
+    const res = await callApi('inventoryOverview');
     if (res && res.success && res.items) {
       products = res.items;
       renderProducts(products);
@@ -47,10 +47,18 @@ function renderProducts(items) {
     const price = product.sell_price || product.price || 0;
     const stock = product.current_stock || product.stock || 0;
     
+    // ตรวจสอบราคากลาง
+    let govCompareHtml = '';
+    if (typeof checkPriceAgainstGovRef === 'function') {
+      const checkResult = checkPriceAgainstGovRef(product.name || product.item_name, price);
+      govCompareHtml = renderGovPriceComparison(checkResult);
+    }
+    
     card.innerHTML = `
       <h5>${product.name || product.item_name || 'สินค้า'}</h5>
       <p class="text-primary fw-bold">฿${price.toLocaleString()}</p>
       <small class="text-muted">คงเหลือ: ${stock} ${product.unit || 'ชิ้น'}</small>
+      ${govCompareHtml}
     `;
     
     grid.appendChild(card);
@@ -213,7 +221,7 @@ async function processSale() {
       vat_rate: 0.07
     };
     
-    const res = await callGas('createSale', payload);
+    const res = await callApi('createRetailSale', payload);
     
     if (res && res.success) {
       showToast(`บันทึกการขายสำเร็จ! เลขที่: ${res.sale_id}`, 'success');

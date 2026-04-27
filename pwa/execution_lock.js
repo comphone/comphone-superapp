@@ -44,7 +44,6 @@
     getStockMovementHistory: true,
     checkStock: true,
     barcodeLookup: true,
-    listInventoryItems: true,
     listPurchaseOrders: true,
     getCustomer: true,
     listCustomers: true,

@@ -696,12 +696,13 @@ async function callGas(action, params) {
 
 ## 22. Phase 30: Enterprise Intelligence (Current)
 
-**วันที่:** 27 เมษายน 2569 | **สถานะ:** 🚀 IN PROGRESS — Frontend Expansion*
+**วันที่:** 27 เมษายน 2569 | **สถานะ:** 🟢 PROGRESS — Token Auth + Smart Quotation Complete*
 
 ### 22.1 Frontend Expansion (UI Enhancement)
 | Module | Description | Status |
 |--------|-------------|--------|
-| **POS/Retail UI** | สร้างหน้าขายหน้าร้านสมบูรณ์ (`pos.html` + `pos.js`) เชื่อมต่อกับ `createSale` API | ✅ Created |
+| **POS/Retail UI** | สร้างหน้าขายหน้าร้านสมบูรณ์ (`pos.html` + `pos.js`) เชื่อมต่อกับ `createRetailSale` API + Token-based Auth | ✅ Complete |
+| **Smart Quotation** | เพิ่มระบบเปรียบเทียบราคากลาง (คอมพิวเตอร์ 2568, CCTV 2564) ในหน้า POS | ✅ Complete |
 | **Customer Portal V2** | ปรับปรุงหน้าเว็บลูกค้า (track job status, view history, download receipts) | ⏳ Pending |
 | **Photo Upload UI (PC)** | เพิ่มส่วนจัดการรูปภาพ (Before/After) ใน PC Dashboard ให้สมบูรณ์เหมือน Mobile PWA | ⏳ Pending |
 
@@ -720,7 +721,7 @@ async function callGas(action, params) {
 | **Goal** | มุ่งสู่ Phase 30: เปลี่ยนข้อมูล (Data) ให้เป็นความฉลาดในการดำเนินธุรกิจ (Actionable Insights) | 🎯 Target |
 
 ### 22.4 Immediate Next Steps (Step-by-Step)
-1. ✅ **POS/Retail UI** — Created `pwa/pos.html` + `pwa/pos.js` (Next: Test API connection)
+1. ✅ **POS/Retail UI** — Created `pwa/pos.html` + `pwa/pos.js` + Token Auth (Router.gs) + Smart Quotation (`smart_quotation.js`) ✅ **COMPLETE**
 2. ⏳ **Customer Portal V2** — Enhance `pwa/customer_portal.js` + `pwa/customer_portal_section.js`
 3. ⏳ **Photo Upload UI (PC)** — Add to `pwa/dashboard_pc.html` + `pwa/photo_manager.js`
 4. ⏳ **Predictive Inventory** — Create `pwa/predictive_inventory.js` + update `Inventory.gs`
