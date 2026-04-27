@@ -255,31 +255,24 @@ function showToast(message, type = 'info') {
   }, 3000);
 }
 
-// GAS API call helper (should match existing pattern)
+// GAS API call helper - Use callApi() as per Rule 1 in api_client.js
 async function callGas(action, payload = {}) {
+  // callApi() handles authentication token automatically
+  if (typeof callApi === 'function') {
+    return callApi(action, payload);
+  }
+  // Fallback if callApi not available
   return new Promise((resolve, reject) => {
-    if (window.GAS_EXECUTE) {
-      // Use GAS_EXECUTE if available (PWA context)
-      window.GAS_EXECUTE(action, payload)
-        .then(resolve)
-        .catch(reject);
-    } else if (window.AI_EXECUTOR) {
-      // Use AI_EXECUTOR
-      window.AI_EXECUTOR.query({ action, payload })
-        .then(resolve)
-        .catch(reject);
-    } else {
-      // Fallback to fetch
-      const url = window.GAS_CONFIG?.url || window.COMPHONE_GAS_URL || '';
-      if (!url) {
-        reject(new Error('GAS URL not configured'));
-        return;
-      }
-      const qs = new URLSearchParams(Object.assign({}, payload, { action })).toString();
-      fetch(url + '?' + qs, { redirect: 'follow' })
-        .then(r => r.json())
-        .then(resolve)
-        .catch(reject);
+    const url = window.GAS_CONFIG?.url || window.COMPHONE_GAS_URL || '';
+    if (!url) {
+      reject(new Error('GAS URL not configured'));
+      return;
     }
+    const token = (typeof getAuthToken === 'function') ? getAuthToken() : '';
+    const qs = new URLSearchParams(Object.assign({}, payload, { action, token })).toString();
+    fetch(url + '?' + qs, { redirect: 'follow' })
+      .then(r => r.json())
+      .then(resolve)
+      .catch(reject);
   });
 }

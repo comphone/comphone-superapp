@@ -177,6 +177,11 @@ def upsert_file(service, folder_id, file_name, content, mime_type='text/plain', 
 
 def clean_old_files(service, folder_id, prefix, max_count, dry_run=False):
     """ลบไฟล์เก่าเกิน max_count ใน folder"""
+    # Dry-run: skip API call เนื่องใช้ placeholder folder ID
+    if dry_run:
+        log(f"[DRY-RUN] clean_old_files: would delete files with prefix '{prefix}' in folder {folder_id}", C.YELLOW)
+        return 0
+    
     query = f"name contains '{prefix}' and '{folder_id}' in parents and trashed=false"
     results = service.files().list(
         q=query, fields='files(id,name,createdTime)', orderBy='createdTime'
@@ -186,10 +191,8 @@ def clean_old_files(service, folder_id, prefix, max_count, dry_run=False):
     to_delete = len(files) - max_count
     deleted = 0
     for i in range(max(0, to_delete)):
-        if dry_run:
-            log(f"[DRY-RUN] delete: {files[i]['name']}", C.YELLOW)
-        else:
-            service.files().delete(fileId=files[i]['id']).execute()
+        log(f"delete: {files[i]['name']}", C.YELLOW)
+        service.files().delete(fileId=files[i]['id']).execute()
         deleted += 1
 
     return deleted
