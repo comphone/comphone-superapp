@@ -89,6 +89,12 @@ function doGet(e) {
     }
     // REMOVED: initAgentProps, setupGuardTrigger
     // These write operations now require auth via POST path (PHMP v1 Phase 2B-0)
+    // ---- POS Web App Deployment (Phase 30) ----
+    // Serve POS UI from GAS domain to fix Session issue
+    if (params.page === 'pos' || action === 'pos') {
+      return servePosUI();
+    }
+    
     // Default: Route ALL unknown actions through routeActionV55 (PHASE 26.6)
     // This enables login, verifySession, and all other actions via GET
     // Previously this returned a static "API READY" response, blocking login on static hosting
