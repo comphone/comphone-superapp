@@ -2,7 +2,7 @@
 
 > **เวอร์ชัน:** v5.9.0-phase2d (PWA) / v5.9.0-phase2d (GAS Backend @497)
 > **วันที่:** 25 เมษายน 2569 | **Phase:** 29 (Photo Upload + Analytics + Customer Portal)
-> **สถานะ:** 🟢 PRODUCTION — Phase 29 Complete + 14 Sections
+> **สถานะ:** 🟢 PRODUCTION — Phase 29 Complete + 4 Sections (PWA) / 11 Sections (System)
 > **Repository:** https://github.com/comphone/comphone-superapp
 
 ---
@@ -26,7 +26,7 @@
 │                    COMPHONE SUPER APP v5.9.0-phase2d                   │
 │                                                                 │
 │  ┌──────────────┐    ┌──────────────────┐    ┌──────────────┐  │
-│  │  LINE Bot    │───►│ Cloudflare Worker│───►│  GAS @498    │  │
+│  │  LINE Bot    │───►│ Cloudflare Worker│───►│  GAS @497    │  │
 │  │  (Webhook)   │    │ (Async Proxy)    │    │  (Backend)   │  │
 │  └──────────────┘    └──────────────────┘    └──────┬───────┘  │
 │                                                      │          │
@@ -181,7 +181,7 @@ comphone-superapp/
 | **Billing Section** | ✅ Phase 28.1 | billing_section.js (503 lines), CRUD, PromptPay QR, search/filter, CSV |
 | **Attendance Section** | ✅ Phase 28.1 | attendance_section.js (16KB), clock in/out, report, tech history |
 | **Warranty Section** | ✅ Phase 28.1 | warranty_section.js (583 lines), CRUD, due alerts, status mgmt |
-| **Dashboard 14 Sections** | ✅ Phase 29 | Dashboard, Jobs, PO, Stock, Billing, Warranty, Revenue, Tax, CRM, Attendance, Settings, Photo Upload, Analytics, Customer Portal |
+| **Dashboard 11 Sections** | ✅ Phase 29 | Dashboard, Jobs, PO, Stock, Billing, Warranty, Revenue, Tax, CRM, Attendance, Settings, Photo Upload, Analytics, Customer Portal |
 | **POS (Retail Sale)** | ✅ Phase 28.2 | pos.js (240 lines), openPOS modal, add/remove items, VAT 7%, callAPI('createRetailSale'), quickActions button (bi-cash-stack), Deployed to GitHub (01d6635), Synced to Google Drive (v5.9.0-phase2d_20260426_1025) |
 | **Error Telemetry** | ✅ Phase 2C | `ErrorTelemetry.gs` (667 lines), DB_ERRORS, trend analysis, severity classification |
 | **Logger Visibility** | ✅ Phase 2E-1 | `_logInfo_()` structured logging, DB_LOGS sheet, 17 call sites instrumented |
