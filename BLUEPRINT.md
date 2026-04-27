@@ -692,3 +692,35 @@ async function callGas(action, params) {
 | 8 | GET แทน POST | GAS redirect ฆ่า POST body |
 | 9 | SW timeout 15s | GAS cold start 5-10s |
 | 10 | OAuth2 แทน Service Account | Drive quota issues with SA |
+
+
+## 22. Phase 30: Enterprise Intelligence (Current)
+
+**วันที่:** 27 เมษายน 2569 | **สถานะ:** 🚀 IN PROGRESS — Frontend Expansion*
+
+### 22.1 Frontend Expansion (UI Enhancement)
+| Module | Description | Status |
+|--------|-------------|--------|
+| **POS/Retail UI** | สร้างหน้าขายหน้าร้านสมบูรณ์ (`pos.html` + `pos.js`) เชื่อมต่อกับ `createSale` API | ✅ Created |
+| **Customer Portal V2** | ปรับปรุงหน้าเว็บลูกค้า (track job status, view history, download receipts) | ⏳ Pending |
+| **Photo Upload UI (PC)** | เพิ่มส่วนจัดการรูปภาพ (Before/After) ใน PC Dashboard ให้สมบูรณ์เหมือน Mobile PWA | ⏳ Pending |
+
+### 22.2 Intelligence & Automation
+| Module | Description | Status |
+|--------|-------------|--------|
+| **Predictive Inventory** | ใช้ข้อมูล DB_LOGS + DB_INVENTORY ให้ AI (Gemini) ทำนายการสั่งซื้ออะไหล่ล่วงหน้า | ⏳ Pending |
+| **Smart Route Optimization** | พัฒนาระบบวางแผนเส้นทางเดินรถสำหรับช่างติดตั้ง (GPS Pipeline) | ⏳ Pending |
+| **Anomaly Detection** | ใช้ข้อมูลจาก ErrorTelemetry สร้างระบบแจ้งเตือนความผิดปกติเชิงรุก (Proactive Alerting) | ⏳ Pending |
+
+### 22.3 Sustainability & Hardening
+| Module | Description | Status |
+|--------|-------------|--------|
+| **Module Decomposition** | แยกไฟล์ขนาดใหญ่ (Inventory.gs, BillingManager.gs) เป็นโมดูลย่อยตามหลัก RouterSplit.gs | ⏳ Pending |
+| **Automated Testing** | เริ่มวางโครงสร้างการทดสอบอัตโนมัติ (Unit Test) สำหรับ API actions สำคัญ | ⏳ Pending |
+| **Goal** | มุ่งสู่ Phase 30: เปลี่ยนข้อมูล (Data) ให้เป็นความฉลาดในการดำเนินธุรกิจ (Actionable Insights) | 🎯 Target |
+
+### 22.4 Immediate Next Steps (Step-by-Step)
+1. ✅ **POS/Retail UI** — Created `pwa/pos.html` + `pwa/pos.js` (Next: Test API connection)
+2. ⏳ **Customer Portal V2** — Enhance `pwa/customer_portal.js` + `pwa/customer_portal_section.js`
+3. ⏳ **Photo Upload UI (PC)** — Add to `pwa/dashboard_pc.html` + `pwa/photo_manager.js`
+4. ⏳ **Predictive Inventory** — Create `pwa/predictive_inventory.js` + update `Inventory.gs`

@@ -1,240 +1,285 @@
-// ============================================================
-// POS (Point of Sale) — Retail Sale Interface
-// COMPHONE SUPER APP v5.9.0-phase2d
-// ============================================================
+// COMPHONE POS - JavaScript Logic
+// Version: v5.9.0-phase2d (Phase 30)
 
-const POS_STATE = {
-  items: [],
-  paymentMethod: 'cash',
-  customerName: '',
-  note: ''
-};
+// Global variables
+let cart = [];
+let products = [];
 
-// ===== 4.1 เปิด POS Modal =====
-function openPOS() {
-  document.getElementById('modal-pos-content').innerHTML = `
-    <div style="padding:0 16px 16px">
-      <h6 style="margin:0 0 12px;font-size:14px;color:#374151">🛒 รายการสินค้า</h6>
-      <!-- เพิ่มสินค้า -->
-      <div class="form-group-custom">
-        <label>ชื่อสินค้า / รหัส</label>
-        <div class="input-wrap">
-          <i class="bi bi-box-seam"></i>
-          <input type="text" id="pos-item-name" placeholder="เช่น iPhone 14 Pro Case" onkeydown="if(event.key==='Enter') addPOSItem()">
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;margin-bottom:12px">
-        <div class="form-group-custom" style="flex:1">
-          <label>ราคา (บาท)</label>
-          <div class="input-wrap">
-            <i class="bi bi-currency-dollar"></i>
-            <input type="number" id="pos-item-price" placeholder="0" min="0" step="1" onkeydown="if(event.key==='Enter') addPOSItem()">
-          </div>
-        </div>
-        <div class="form-group-custom" style="flex:1">
-          <label>จำนวน</label>
-          <div class="input-wrap">
-            <i class="bi bi-123"></i>
-            <input type="number" id="pos-item-qty" placeholder="1" min="1" value="1" onkeydown="if(event.key==='Enter') addPOSItem()">
-          </div>
-        </div>
-      </div>
-      <button class="btn-setup" onclick="addPOSItem()" style="width:100%;margin-bottom:16px">
-        <i class="bi bi-plus-circle"></i> เพิ่มสินค้า
-      </button>
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+  loadProducts();
+  setupSearch();
+});
 
-      <!-- ตารางสินค้า -->
-      <div id="pos-items-table" style="margin-bottom:16px;max-height:200px;overflow-y:auto">
-        <p style="color:#9ca3af;text-align:center;padding:16px">ยังไม่มีสินค้า</p>
-      </div>
-
-      <!-- สรุปยอด -->
-      <div style="background:#f9fafb;border-radius:12px;padding:12px;margin-bottom:16px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span style="color:#6b7280">รวม</span>
-          <span id="pos-subtotal">0</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span style="color:#6b7280">VAT 7%</span>
-          <span id="pos-vat">0</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-weight:600;font-size:16px;margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb">
-          <span>รวมทั้งสิ้น</span>
-          <span id="pos-total" style="color:#7c3aed">0</span>
-        </div>
-      </div>
-
-      <!-- วิธีชำระ -->
-      <div class="form-group-custom">
-        <label>วิธีชำระเงิน</label>
-        <div class="input-wrap" style="padding:0">
-          <i class="bi bi-wallet2"></i>
-          <select id="pos-payment" style="width:100%;border:none;background:transparent;padding:12px 14px 12px 40px;font-size:14px;outline:none;appearance:none;-webkit-appearance:none" onchange="POS_STATE.paymentMethod=this.value">
-            <option value="cash">เงินสด</option>
-            <option value="qr">สแกน QR</option>
-            <option value="transfer">โอนจ่าย</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- ลูกค้า (ไม่บังคับ) -->
-      <div class="form-group-custom">
-        <label>ชื่อลูกค้า (ไม่บังคับ)</label>
-        <div class="input-wrap">
-          <i class="bi bi-person"></i>
-          <input type="text" id="pos-customer" placeholder="ไม่ระบุ">
-        </div>
-      </div>
-
-      <!-- หมายเหตุ -->
-      <div class="form-group-custom">
-        <label>หมายเหตุ</label>
-        <div class="input-wrap">
-          <i class="bi bi-chat-left"></i>
-          <input type="text" id="pos-note" placeholder="หมายเหตุเพิ่มเติม">
-        </div>
-      </div>
-
-      <!-- ปุ่ม -->
-      <button class="btn-setup" id="pos-submit-btn" onclick="submitPOS()" style="width:100%">
-        <i class="bi bi-check-circle"></i> ยืนยันขายสินค้า
-      </button>
-    </div>
-  `;
-  document.getElementById('modal-pos').classList.remove('hidden');
-  setTimeout(() => document.getElementById('pos-item-name').focus(), 200);
-}
-
-// ===== 4.2 เพิ่มสินค้าเข้าตะกร้า =====
-function addPOSItem() {
-  const name = document.getElementById('pos-item-name').value.trim();
-  const price = parseFloat(document.getElementById('pos-item-price').value) || 0;
-  const qty = parseInt(document.getElementById('pos-item-qty').value) || 1;
-
-  if (!name) { showToast('กรุณาระบุชื่อสินค้า'); return; }
-  if (price <= 0) { showToast('กรุณาระบุราคา'); return; }
-
-  POS_STATE.items.push({ name, price, qty });
-  
-  // เคลียร์ input
-  document.getElementById('pos-item-name').value = '';
-  document.getElementById('pos-item-price').value = '';
-  document.getElementById('pos-item-qty').value = '1';
-  document.getElementById('pos-item-name').focus();
-
-  renderPOSTable();
-  calculatePOSTotals();
-}
-
-// ===== 4.3 ลบสินค้า =====
-function removePOSItem(index) {
-  POS_STATE.items.splice(index, 1);
-  renderPOSTable();
-  calculatePOSTotals();
-}
-
-// ===== 4.4 แสดงตารางสินค้า =====
-function renderPOSTable() {
-  const container = document.getElementById('pos-items-table');
-  if (POS_STATE.items.length === 0) {
-    container.innerHTML = '<p style="color:#9ca3af;text-align:center;padding:16px">ยังไม่มีสินค้า</p>';
-    return;
-  }
-
-  let html = `
-    <table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead>
-        <tr style="border-bottom:1px solid #e5e7eb;text-align:left;color:#6b7280">
-          <th style="padding:8px 4px">สินค้า</th>
-          <th style="padding:8px 4px;text-align:right">ราคา</th>
-          <th style="padding:8px 4px;text-align:center">จำนวน</th>
-          <th style="padding:8px 4px;text-align:right">รวม</th>
-          <th style="padding:8px 4px"></th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
-
-  POS_STATE.items.forEach((item, i) => {
-    const total = item.price * item.qty;
-    html += `
-      <tr style="border-bottom:1px solid #f3f4f6">
-        <td style="padding:8px 4px">${item.name}</td>
-        <td style="padding:8px 4px;text-align:right">${item.price.toLocaleString()}</td>
-        <td style="padding:8px 4px;text-align:center">${item.qty}</td>
-        <td style="padding:8px 4px;text-align:right">${total.toLocaleString()}</td>
-        <td style="padding:8px 4px;text-align:right">
-          <button onclick="removePOSItem(${i})" style="background:none;border:none;color:#ef4444;cursor:pointer">
-            <i class="bi bi-x-circle"></i>
-          </button>
-        </td>
-      </tr>
-    `;
-  });
-
-  html += '</tbody></table>';
-  container.innerHTML = html;
-}
-
-// ===== 4.5 คำนวณยอดรวม =====
-function calculatePOSTotals() {
-  const subtotal = POS_STATE.items.reduce((sum, item) => sum + (item.price * item.qty), 0);
-  const vatRate = 0.07;
-  const vatAmount = Math.round(subtotal * vatRate);
-  const total = subtotal + vatAmount;
-
-  document.getElementById('pos-subtotal').textContent = subtotal.toLocaleString() + ' ฿';
-  document.getElementById('pos-vat').textContent = vatAmount.toLocaleString() + ' ฿';
-  document.getElementById('pos-total').textContent = total.toLocaleString() + ' ฿';
-}
-
-// ===== 4.6 ส่งข้อมูลไป API =====
-async function submitPOS() {
-  if (POS_STATE.items.length === 0) {
-    showToast('กรุณาเพิ่มสินค้าอย่างน้อย 1 รายการ');
-    return;
-  }
-
-  const btn = document.getElementById('pos-submit-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<i class="bi bi-hourglass-split"></i> กำลังบันทึก...';
-
-  const customerName = document.getElementById('pos-customer').value.trim();
-  const note = document.getElementById('pos-note').value.trim();
-  const paymentMethod = document.getElementById('pos-payment').value;
-
+// Load products from inventory
+async function loadProducts() {
   try {
-    const res = await callAPI('createRetailSale', {
-      items: POS_STATE.items.map(item => ({
-        name: item.name,
-        price: item.price,
-        qty: item.qty
-      })),
-      payment_method: paymentMethod,
-      customer_name: customerName || undefined,
-      note: note || undefined,
-      cashier: (APP.user && APP.user.name) || APP.user || 'POS'
-    });
-
-    if (res && res.success) {
-      closeModal('modal-pos');
-      showToast(`✅ ขายสินค้าเรียบร้อย (${res.sale_id})`);
-      // รีเซ็ต state
-      POS_STATE.items = [];
-      POS_STATE.paymentMethod = 'cash';
-      POS_STATE.customerName = '';
-      POS_STATE.note = '';
+    const res = await callGas('listInventoryItems');
+    if (res && res.success && res.items) {
+      products = res.items;
+      renderProducts(products);
     } else {
-      showToast('❌ ' + (res && res.error ? res.error : 'เกิดข้อผิดพลาด'));
-      btn.disabled = false;
-      btn.innerHTML = '<i class="bi bi-check-circle"></i> ยืนยันขายสินค้า';
+      showToast('ไม่สามารถโหลดรายการสินค้าได้', 'error');
     }
-  } catch (e) {
-    showToast('❌ ไม่สามารถเชื่อมต่อได้');
-    btn.disabled = false;
-    btn.innerHTML = '<i class="bi bi-check-circle"></i> ยืนยันขายสินค้า';
+  } catch (error) {
+    console.error('Error loading products:', error);
+    showToast('เกิดข้อผิดพลาดในการโหลดสินค้า', 'error');
   }
 }
 
-// ===== Export function =====
-window.openPOS = openPOS;
+// Render products to grid
+function renderProducts(items) {
+  const grid = document.getElementById('productGrid');
+  if (!grid) return;
+  
+  grid.innerHTML = '';
+  
+  if (!items || items.length === 0) {
+    grid.innerHTML = '<p class="text-muted">ไม่พบสินค้า</p>';
+    return;
+  }
+  
+  items.forEach(product => {
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    card.onclick = () => addToCart(product);
+    
+    const price = product.sell_price || product.price || 0;
+    const stock = product.current_stock || product.stock || 0;
+    
+    card.innerHTML = `
+      <h5>${product.name || product.item_name || 'สินค้า'}</h5>
+      <p class="text-primary fw-bold">฿${price.toLocaleString()}</p>
+      <small class="text-muted">คงเหลือ: ${stock} ${product.unit || 'ชิ้น'}</small>
+    `;
+    
+    grid.appendChild(card);
+  });
+}
+
+// Setup search functionality
+function setupSearch() {
+  const searchInput = document.getElementById('searchProduct');
+  if (searchInput) {
+    searchInput.addEventListener('input', function(e) {
+      const query = e.target.value.toLowerCase();
+      const filtered = products.filter(p => 
+        (p.name || p.item_name || '').toLowerCase().includes(query)
+      );
+      renderProducts(filtered);
+    });
+  }
+}
+
+// Add product to cart
+function addToCart(product) {
+  const existing = cart.find(item => 
+    (item.code || item.item_code) === (product.code || product.item_code)
+  );
+  
+  if (existing) {
+    existing.qty += 1;
+  } else {
+    cart.push({
+      item_code: product.code || product.item_code,
+      name: product.name || product.item_name,
+      price: product.sell_price || product.price || 0,
+      qty: 1,
+      unit: product.unit || 'ชิ้น'
+    });
+  }
+  
+  renderCart();
+  showToast(`เพิ่ม ${product.name || product.item_name} แล้ว`, 'success');
+}
+
+// Render shopping cart
+function renderCart() {
+  const cartDiv = document.getElementById('cartItems');
+  const totalEl = document.getElementById('totalAmount');
+  const vatEl = document.getElementById('vatAmount');
+  const grandEl = document.getElementById('grandTotal');
+  
+  if (!cartDiv) return;
+  
+  if (cart.length === 0) {
+    cartDiv.innerHTML = '<p class="text-muted">ยังไม่มีสินค้าในตะกร้า</p>';
+    updateTotals(0, 0, 0);
+    return;
+  }
+  
+  cartDiv.innerHTML = '';
+  let subtotal = 0;
+  
+  cart.forEach((item, index) => {
+    const itemTotal = item.price * item.qty;
+    subtotal += itemTotal;
+    
+    const div = document.createElement('div');
+    div.className = 'cart-item';
+    div.innerHTML = `
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h6 class="mb-0">${item.name}</h6>
+          <small class="text-muted">฿${item.price.toLocaleString()} x ${item.qty}</small>
+        </div>
+        <div>
+          <button class="btn btn-sm btn-outline-secondary" onclick="updateQty(${index}, -1)">-</button>
+          <span class="mx-2">${item.qty}</span>
+          <button class="btn btn-sm btn-outline-primary" onclick="updateQty(${index}, 1)">+</button>
+          <button class="btn btn-sm btn-outline-danger ms-2" onclick="removeFromCart(${index})">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </div>
+      <div class="text-end mt-1">
+        <strong>฿${itemTotal.toLocaleString()}</strong>
+      </div>
+    `;
+    cartDiv.appendChild(div);
+  });
+  
+  const vat = Math.round(subtotal * 0.07);
+  const grandTotal = subtotal + vat;
+  updateTotals(subtotal, vat, grandTotal);
+}
+
+// Update quantity
+function updateQty(index, change) {
+  if (cart[index]) {
+    cart[index].qty += change;
+    if (cart[index].qty <= 0) {
+      cart.splice(index, 1);
+    }
+    renderCart();
+  }
+}
+
+// Remove from cart
+function removeFromCart(index) {
+  if (cart[index]) {
+    const name = cart[index].name;
+    cart.splice(index, 1);
+    renderCart();
+    showToast(`ลบ ${name} แล้ว`, 'info');
+  }
+}
+
+// Update total displays
+function updateTotals(subtotal, vat, grandTotal) {
+  const totalEl = document.getElementById('totalAmount');
+  const vatEl = document.getElementById('vatAmount');
+  const grandEl = document.getElementById('grandTotal');
+  
+  if (totalEl) totalEl.textContent = subtotal.toLocaleString();
+  if (vatEl) vatEl.textContent = vat.toLocaleString();
+  if (grandEl) grandEl.textContent = grandTotal.toLocaleString();
+}
+
+// Process sale
+async function processSale() {
+  if (cart.length === 0) {
+    showToast('กรุณาเพิ่มสินค้าอย่างน้อย 1 รายการ', 'warning');
+    return;
+  }
+  
+  const paymentMethod = document.getElementById('paymentMethod')?.value || 'cash';
+  const customerName = document.getElementById('customerName')?.value || '';
+  
+  const items = cart.map(item => ({
+    item_code: item.item_code,
+    name: item.name,
+    price: item.price,
+    qty: item.qty
+  }));
+  
+  const subtotal = items.reduce((sum, item) => sum + (item.price * item.qty), 0);
+  const vat = Math.round(subtotal * 0.07);
+  const total = subtotal + vat;
+  
+  // Show confirmation
+  if (!confirm(`ยืนยันการขาย?\nยอดรวม: ฿${total.toLocaleString()}\nวิธีชำระ: ${paymentMethod}`)) {
+    return;
+  }
+  
+  try {
+    showToast('กำลังบันทึกการขาย...', 'info');
+    
+    const payload = {
+      items: items,
+      payment_method: paymentMethod,
+      customer_name: customerName,
+      cashier: 'POS_USER', // Should get from login session
+      vat_rate: 0.07
+    };
+    
+    const res = await callGas('createSale', payload);
+    
+    if (res && res.success) {
+      showToast(`บันทึกการขายสำเร็จ! เลขที่: ${res.sale_id}`, 'success');
+      // Clear cart
+      cart = [];
+      renderCart();
+      document.getElementById('customerName').value = '';
+    } else {
+      showToast(res?.error || 'เกิดข้อผิดพลาด', 'error');
+    }
+  } catch (error) {
+    console.error('Error processing sale:', error);
+    showToast('เกิดข้อผิดพลาดในการบันทึกการขาย', 'error');
+  }
+}
+
+// Toast notification (reuse from main app)
+function showToast(message, type = 'info') {
+  // Create toast container if not exists
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999;';
+    document.body.appendChild(container);
+  }
+  
+  const toast = document.createElement('div');
+  toast.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible`;
+  toast.innerHTML = `
+    ${message}
+    <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+  `;
+  
+  container.appendChild(toast);
+  
+  setTimeout(() => {
+    if (toast.parentElement) toast.remove();
+  }, 3000);
+}
+
+// GAS API call helper (should match existing pattern)
+async function callGas(action, payload = {}) {
+  return new Promise((resolve, reject) => {
+    if (window.GAS_EXECUTE) {
+      // Use GAS_EXECUTE if available (PWA context)
+      window.GAS_EXECUTE(action, payload)
+        .then(resolve)
+        .catch(reject);
+    } else if (window.AI_EXECUTOR) {
+      // Use AI_EXECUTOR
+      window.AI_EXECUTOR.query({ action, payload })
+        .then(resolve)
+        .catch(reject);
+    } else {
+      // Fallback to fetch
+      const url = window.GAS_CONFIG?.url || window.COMPHONE_GAS_URL || '';
+      if (!url) {
+        reject(new Error('GAS URL not configured'));
+        return;
+      }
+      const qs = new URLSearchParams(Object.assign({}, payload, { action })).toString();
+      fetch(url + '?' + qs, { redirect: 'follow' })
+        .then(r => r.json())
+        .then(resolve)
+        .catch(reject);
+    }
+  });
+}
