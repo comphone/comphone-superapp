@@ -99,7 +99,7 @@ function doGet(e) {
     // This enables login, verifySession, and all other actions via GET
     // Previously this returned a static "API READY" response, blocking login on static hosting
     if (action) {
-      return jsonOutputV55_(routeActionV55(action, params));
+      return jsonOutputV55_(routeActionV55(action, params, e));
     }
     return jsonOutputV55_({
       status:       'ok',
@@ -165,7 +165,7 @@ function doPost(e) {
       return jsonOutputV55_(handleLineWebhook(e));
     }
     var action = payload.action || payload.route || payload.fn || payload.method || 'help';
-    return jsonOutputV55_(routeActionV55(action, payload));
+    return jsonOutputV55_(routeActionV55(action, payload, e));
   } catch (error) {
     // Phase 2D: Auto-capture ALL POST errors to DB_ERRORS
     try {
@@ -178,10 +178,10 @@ function doPost(e) {
   }
 }
 
-function routeActionV55(action, payload) {
+function routeActionV55(action, payload, e) {
   var normalizedAction = normalizeActionV55_(action || '');
   var args = Array.isArray(payload) ? payload : [payload || {}];
-  return dispatchActionV55_(normalizedAction, payload || {}, args);
+  return dispatchActionV55_(normalizedAction, payload || {}, args, e);
 }
 
 /**
@@ -196,7 +196,7 @@ function routeActionV55(action, payload) {
  *   2. ADMIN_ACTIONS — require valid session + role=admin|owner
  *   3. All other actions — require valid session (any role)
  */
-function _checkAuthGateV55_(action, payload) {
+function _checkAuthGateV55_(action, payload, e) {
   // ── Public actions: no auth required ──
   var PUBLIC_ACTIONS = {
     // Auth entry points
@@ -248,7 +248,7 @@ function _checkAuthGateV55_(action, payload) {
     'logTelemetry': 1,
     // Customer Portal (public by design)
     'getJobStatusPublic': 1,
-    // AI / Vision (read-only queries)
+    // AI / Vision (read-only)
     'buildAdaptivePrompt': 1,
     'getAdaptivePrompt': 1,
     // LINE info (read-only)
@@ -277,8 +277,30 @@ function _checkAuthGateV55_(action, payload) {
   // Skip if public
   if (PUBLIC_ACTIONS[action]) return null;
 
-  // Extract token
-  var token = (payload && (payload.token || payload.auth_token)) || '';
+  // Extract token — รองรับทั้ง query parameter (GET) และ POST body
+  // Note: GAS redirect POST → GET ทำให้ body หาย ต้องใช้ query parameter เท่านั้น
+  var token = '';
+  
+  // Method 1: จาก payload (ซึ่งคือ e.parameter สำหรับ GET)
+  if (payload) {
+    token = payload.token || payload.auth_token || payload.access_token || '';
+  }
+  
+  // Method 2: จาก e.parameter โดยตรง (fallback)
+  if (!token && e && e.parameter) {
+    token = e.parameter.token || e.parameter.auth_token || e.parameter.access_token || '';
+  }
+  
+  // Method 3: จาก e.queryString (สำหรับกรณีพิเศษ)
+  if (!token && e && e.queryString) {
+    var match = (e.queryString || '').match(/(?:^|&)token=([^&]+)/);
+    if (match) token = decodeURIComponent(match[1]);
+    if (!token) {
+      match = (e.queryString || '').match(/(?:^|&)auth_token=([^&]+)/);
+      if (match) token = decodeURIComponent(match[1]);
+    }
+  }
+  
   if (!token) {
     return { success: false, error: 'Authentication required', code: 401, action: action };
   }
@@ -311,20 +333,20 @@ function _checkAuthGateV55_(action, payload) {
   return null; // null = allowed, proceed
 }
 
-function dispatchActionV55_(action, payload, args) {
+function dispatchActionV55_(action, payload, args, e) {
   payload = payload || {};
   args = Array.isArray(args) ? args : [payload];
 
-  // Phase 2D: Generate request_id for cross-request correlation
+  // Phase2D: Generate request_id for cross-request correlation
   var _reqId = 'R' + Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyyMMddHHmmss') + '_' + Utilities.getUuid().substring(0, 8);
   payload._reqId = _reqId;
 
-  // ══════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════════
   // SECURITY GATE: _checkAuthGateV55_ (PHMP v1 — 2026-04-24)
   // All actions require valid session EXCEPT public whitelist.
   // Admin-only actions require role=admin|owner.
-  // ══════════════════════════════════════════════════════════
-  var _authResult = _checkAuthGateV55_(action, payload);
+  // ═════════════════════════════════════════════════════════
+  var _authResult = _checkAuthGateV55_(action, payload, e);
   if (_authResult !== null) return _authResult;
 
   // Phase 5: RouterSplit fast path — O(1) lookup vs O(n) switch
