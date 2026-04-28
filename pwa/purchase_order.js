@@ -239,13 +239,96 @@ function showPODetail(poId) {
       ${po.status === 'PENDING' ? `
       <button class="btn-setup" onclick="confirmReceivePO('${po.po_id}');closeModal('modal-po')" style="background:linear-gradient(135deg,#10b981,#059669)">
         <i class="bi bi-box-arrow-in-down"></i> รับสินค้าเข้าคลัง
+      </button>
+      <button class="btn-setup" onclick="exportPOToPDF('${po.po_id}')" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8)">
+        <i class="bi bi-file-earmark-pdf-fill"></i> ส่งออก PDF
       </button>` : ''}
     </div>
   `;
   document.getElementById('modal-po').classList.remove('hidden');
 }
 
-// ===== RECEIVE PO =====
+// ===== EXPORT PO TO PDF (PHASE 30) =====
+function exportPOToPDF(poId) {
+  const po = ALL_PO.find(o => o.po_id === poId);
+  if (!po) { showToast('❌ ไม่พบใบสั่งซื้อ'); return; }
+
+  showToast('⏳ กำลังสร้าง PDF...');
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+
+    // Header
+    doc.setFontSize(18);
+    doc.setTextColor(15, 23, 42);
+    doc.text('ใบสั่งซื้อ', 105, 20, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`เลขที่: ${po.po_id}`, 105, 26, { align: 'center' });
+    doc.text(`วันที่: ${new Date(po.created_at).toLocaleDateString('th-TH')}`, 105, 31, { align: 'center' });
+
+    // Supplier Info
+    doc.setFontSize(12);
+    doc.setTextColor(17, 24, 39);
+    doc.text('ผู้จำหน่าย:', 14, 40);
+    doc.setFontSize(11);
+    doc.setTextColor(55, 65, 81);
+    doc.text(po.supplier || 'ไม่ระบุ', 14, 46);
+
+    // Status
+    const statusLabel = po.status === 'RECEIVED' ? 'รับสินค้าแล้ว' : po.status === 'CANCELLED' ? 'ยกเลิก' : 'รอรับสินค้า';
+    doc.setFontSize(10);
+    doc.setTextColor(po.status === 'RECEIVED' ? 5 : po.status === 'CANCELLED' ? 220 : 180,
+                     po.status === 'RECEIVED' ? 150 : po.status === 'CANCELLED' ? 38 : 96,
+                     po.status === 'RECEIVED' ? 85 : po.status === 'CANCELLED' ? 38 : 96);
+    doc.text(`สถานะ: ${statusLabel}`, 14, 54);
+
+    // Items Table
+    const tableData = (po.items || []).map(item => [
+      item.item_name || '-',
+      item.qty || 0,
+      `฿${(item.unit_cost || 0).toLocaleString()}`,
+      `฿${(item.total_cost || 0).toLocaleString()}`
+    ]);
+
+    doc.autoTable({
+      startY: 60,
+      head: [['สินค้า', 'จำนวน', 'ราคา/หน่วย', 'รวม']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255] },
+      styles: { fontSize: 10 },
+      columnStyles: {
+        0: { cellWidth: 80 },
+        1: { cellWidth: 20, halign: 'center' },
+        2: { cellWidth: 30, halign: 'right' },
+        3: { cellWidth: 30, halign: 'right' }
+      }
+    });
+
+    // Total
+    const finalY = doc.lastAutoTable.finalY + 10;
+    doc.setFontSize(12);
+    doc.setTextColor(16, 185, 129);
+    doc.text(`ยอดรวม: ฿${(po.total_cost || 0).toLocaleString()}`, 196, finalY, { align: 'right' });
+
+    // Footer
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text('จัดทำโดย COMPHONE Super App AI', 105, 287, { align: 'center' });
+    doc.text(`พิมพ์เมื่อ: ${new Date().toLocaleString('th-TH')}`, 105, 292, { align: 'center' });
+
+    // Save
+    doc.save(`PO_${po.po_id}_${new Date().toISOString().slice(0,10)}.pdf`);
+    showToast('✅ Export PDF สำเร็จ');
+  } catch (e) {
+    console.error('PDF Export Error:', e);
+    showToast('❌ เกิดข้อผิดพลาดในการสร้าง PDF');
+  }
+}
+
+// ===== PRINT PO =====
 function confirmReceivePO(poId) {
   if (!confirm(`ยืนยันรับสินค้าตามใบสั่งซื้อ ${poId}?\n\nระบบจะเพิ่มสต็อกสินค้าทุกรายการในใบนี้อัตโนมัติ`)) return;
   showToast('⏳ กำลังรับสินค้าเข้าคลัง...');
