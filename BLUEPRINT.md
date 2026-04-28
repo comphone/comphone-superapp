@@ -195,8 +195,8 @@ comphone-superapp/
 | **Photo Upload B/A** | ✅ Phase 29 | `uploadPhoto_` API + Router + UI (drag-drop, preview, base64 upload) |
 | **Analytics Section** | ✅ Phase 29 | `analytics_section.js` + dashboard routing + charts UI |
 | **Customer Portal** | ✅ Phase 29 | `customer_portal_section.js` + portal UI + job status |
-
 ### ✅ Completed (Phase 30 - 28 เมษายน 2569)
+
 | ฟีเจอร์ | สถานะ | หมายเหตุ |
 |---------|-------|---------|
 | **Token-based Auth** | ✅ Phase 30 | Router.gs รองรับ token จาก query parameter (แก้ปัญหา 401 Unauthorized) |
@@ -210,6 +210,12 @@ comphone-superapp/
 | **Dashboard Retail Sales** | ✅ Phase 30 | เพิ่ม `DBRETAILSALES` ใน DashboardBundle + ฟังก์ชัน `_bundleBuildRetailSales_()` |
 | **POS Page Navigation** | ✅ Phase 30 | เพิ่ม `if (page === 'pos')` ใน `goPage()` (เปิดแท็บใหม่) |
 | **Version Sync** | ✅ Phase 30 | ตรวจสอบ v5.9.0-phase2d ตรงกันทุกจุด (PWA + GAS) |
+| **Menu Beautification** | ✅ Phase 30 | ปรับปรุงธีมเมนู PC (dashboard_pc.html) + Mobile (style.css) ให้สวยงาม ไม่มี bug |
+| **Customer Portal V2** | ✅ Phase 30 | เพิ่ม viewCustomerJobs + downloadCustomerReceipts + showJobDetail + showTimeline ใน crm_attendance.js |
+| **Dashboard Enhancement** | ✅ Phase 30 | เพิ่ม Retail Sales Widget + Quick Actions + Technician Performance (getTechPerformance) + Responsive KPI Grid |
+| **Stock Module** | ✅ Phase 30 | สร้าง stock.js ใหม่ (Full CRUD + Transfer + Movement + Low Stock Alerts + Role-based Access) |
+| **PDF Export (PO)** | ✅ Phase 30 | เพิ่ม exportPOToPDF() ใน purchase_order.js ใช้ jsPDF + jsPDF-autoTable |
+| **jsPDF Integration** | ✅ Phase 30 | เพิ่ม CDN jsPDF 2.5.2 + jsPDF-autoTable 3.8.2 ใน index.html |
 
 ### 🔧 Partially Done (Backend Ready, Frontend Needed)
 
