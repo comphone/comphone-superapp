@@ -316,9 +316,19 @@ async function migrateLocalStorageQueue() {
 }
 
 // ===== NETWORK LISTENER =====
+let networkToastTimer = null;
 window.addEventListener('online', () => {
   showOfflineBar(false);
-  showToast('🌐 ออนไลน์แล้ว — กำลัง Sync...');
+  // เคลียร์ toast เก่าก่อนแสดงใหม่ (ป้องกันซ้อน)
+  if (networkToastTimer) clearTimeout(networkToastTimer);
+  const existing = document.getElementById('toast-network');
+  if (existing) existing.remove();
+  const t = document.createElement('div');
+  t.id = 'toast-network';
+  t.className = 'toast-msg';
+  t.textContent = '🌐 ออนไลน์แล้ว — กำลัง Sync...';
+  document.body.appendChild(t);
+  networkToastTimer = setTimeout(() => { t.remove(); networkToastTimer = null; }, 2500);
   setTimeout(syncOfflineQueueLegacy, 1000);
 });
 

@@ -1,7 +1,7 @@
 // ============================================================
-// COMPHONE SUPER APP V5.5
+// COMPHONE SUPER APP v5.9.0-phase2d
 // analytics.js — Dashboard Analytics (Chart.js)
-// Version: 5.6.0
+// Version: v5.9.0-phase2d
 // ============================================================
 // ฟีเจอร์:
 //   3a. loadDashboardPage()   — โหลดข้อมูล + render ทั้งหมด

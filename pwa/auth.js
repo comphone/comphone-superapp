@@ -355,10 +355,10 @@ function applyRoleBasedUI() {
 // ============================================================
 // 3.9 OVERRIDE initApp เพื่อใช้ auth flow
 // ============================================================
-// เก็บ initApp เดิมไว้
-const _originalInitApp = typeof initApp === 'function' ? initApp : null;
-
-function initApp() {
+// ============================================================
+// 3.9 INIT APP (Modified for server-side auth check)
+// ============================================================
+async function initApp() {
   const splash = document.getElementById('splash-screen');
   if (splash) {
     splash.style.opacity = '0';
@@ -370,21 +370,45 @@ function initApp() {
   const savedUrl = localStorage.getItem('comphone_script_url');
   if (savedUrl) APP.scriptUrl = savedUrl;
 
-  // ตรวจสอบ auth session ก่อน
-  if (checkAuthState()) {
-    // มี session ที่ยังใช้ได้ — เริ่มแอปเลย
-    startMainApp();
-    return;
+  // ตรวจสอบ local session ก่อน
+  const hasLocalSession = checkAuthState();
+  
+  if (hasLocalSession) {
+    // มี session ท้องถิ่น — ตรวจสอบกับเซิร์ฟเวอร์
+    try {
+      const sessionStr = localStorage.getItem(AUTH_SESSION_KEY);
+      const session = JSON.parse(sessionStr);
+      
+      // เรียก verifySession ตรวจสอบ token กับ GAS
+      const result = await callApi('verifySession', { token: session.token });
+      
+      if (result && result.success) {
+        // Token ยัง valid — ข้ามหน้า Login ได้
+        console.log('[Auth] Server validated token — skip login');
+        startMainApp();
+        return;
+      } else {
+        // Token ไม่ valid แล้ว — ลบ session
+        console.warn('[Auth] Token invalid on server — clear session');
+        localStorage.removeItem(AUTH_SESSION_KEY);
+        localStorage.removeItem(AUTH_USER_KEY);
+      }
+    } catch (e) {
+      console.error('[Auth] Server validation failed:', e);
+      // ถ้าเชื่อมต่อไม่ได้ ให้ใช้งานต่อด้วย local session (offline mode)
+      console.warn('[Auth] Server unreachable — using local session');
+      startMainApp();
+      return;
+    }
   }
 
-  // ไม่มี session — ตรวจสอบ legacy user data
+  // ไม่มี session ที่ถูกต้อง — ตรวจสอบ legacy user data
   const savedUser = localStorage.getItem(AUTH_USER_KEY);
   if (savedUser) {
     try {
       const data = JSON.parse(savedUser);
       // ถ้ามี authToken แสดงว่าเคย login ผ่าน auth.js
       if (data.authToken) {
-        // Token อาจหมดอายุแล้ว ให้ login ใหม่
         showLoginScreen();
         return;
       }

@@ -523,7 +523,7 @@ function showOfflineBar(show, message) {
   } else {
     bar.classList.add('hidden');
     bar.style.display = 'none';
-    showToast('✅ เชื่อมต่ออินเทอร์เน็ตแล้ว');
+    // ไม่ต้อง showToast ที่นี่ (จัดการใน network listener แทน)
   }
 }
 
