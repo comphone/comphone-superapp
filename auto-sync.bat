@@ -1,30 +1,40 @@
 @echo off
 :: ============================================================
-:: COMPHONE SUPERAPP - Auto Sync to GitHub
-:: วางไฟล์นี้ไว้ที่ D:\Comphone-Superapp\auto-sync.bat
+:: COMPHONE SUPERAPP - Triple Backup Script
+:: 1. Local Backup to D:
+:: 2. Git Sync to GitHub
 :: ============================================================
 
-cd /d "D:\Comphone-Superapp"
+:: Step 1: Local Backup to D:
+echo [%date% %time%] Starting Local Backup to D:...
+xcopy "C:\Users\Server\comphone-superapp\*" "D:\Comphone-Superapp-Backup\" /E /H /C /I /Y
+if %errorlevel% == 0 (
+    echo [%date% %time%] SUCCESS: Local Backup to D: completed
+) else (
+    echo [%date% %time%] ERROR: Local Backup failed
+)
 
+:: Step 2: Git Sync (GitHub Backup)
 echo [%date% %time%] Starting GitHub sync...
+cd /d "C:\Users\Server\comphone-superapp"
 
-:: ดึงการเปลี่ยนแปลงล่าสุดจาก GitHub ก่อน
+:: Pull latest changes first
 git pull origin main
 
-:: เพิ่มไฟล์ที่เปลี่ยนแปลงทั้งหมด
+:: Add all changes
 git add -A
 
-:: ตรวจสอบว่ามีการเปลี่ยนแปลงหรือไม่
+:: Check if there are changes to commit
 git diff --cached --quiet
 if %errorlevel% == 0 (
     echo [%date% %time%] No changes to commit. Already up to date.
     exit /b 0
 )
 
-:: Commit พร้อม timestamp อัตโนมัติ
+:: Commit with timestamp
 git commit -m "auto-sync: %date% %time%"
 
-:: Push ขึ้น GitHub
+:: Push to GitHub
 git push origin main
 
 if %errorlevel% == 0 (
