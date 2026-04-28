@@ -796,3 +796,62 @@ async function callGas(action, params) {
 2. ⏳ **Customer Portal V2** — Enhance `pwa/customer_portal.js` + `pwa/customer_portal_section.js`
 3. ⏳ **Photo Upload UI (PC)** — Add to `pwa/dashboard_pc.html` + `pwa/photo_manager.js`
 4. ⏳ **Predictive Inventory** — Create `pwa/predictive_inventory.js` + update `Inventory.gs`
+---
+
+## 8. Lessons Learned (Phase 30-31 — 28 เมษายน 2569)
+
+### 🔴 Critical Issues Encountered & Resolutions
+
+| ปัญหา | สาเหตุ | วิธีแก้ไข | Commit |
+|-------|-------|----------|--------|
+| **Login ไม่ได้** | `gas_config.js` ไม่ได้โหลดใน `index.html` ทำให้ `api_client.js` ใช้ fallback URL เก่า (@501) | เพิ่ม `<script src="gas_config.js">` ก่อน `</head>` + อัปเดต fallback URL เป็น @502 ใน `api_client.js` | `b8ccd2f` |
+| **404 Error: mobile_shared.js** | ไฟล์ `mobile_shared.js` ไม่มีใน repo แต่ `index.html` อ้างอิงไว้ | สร้าง `mobile_shared.js` ว่างๆ (104 bytes) | `38a5ed5` |
+| **Version Mismatch** | `index.html` ใช้ v5.7.0, `dashboard_pc.html` ใช้ v5.6.8, `version_config.js` ใช้ v5.9.0-phase2d | สร้างระบบ Centralized Versioning (`version_config.js`) + Cache Buster (`?v=...&t=...`) | `0e5321f`, `0f68e2f` |
+| **Service Worker Cache** | SW ยังคงเสิร์ฟไฟล์ JS เวอร์ชันเก่า แม้ index.html จะอัปเดตแล้ว | เพิ่ม Cache Buster comment ใน `index.html` + แนะนำผู้ใช้ให้ล้าง Site Data | `0f68e2f` |
+| **Google Drive Sync Failed** | `SharedContext.gs` timeout ขณะ sync | ต้อง retry sync อีกครั้ง (pending) | - |
+| **Splash Screen ค้าง** | `initApp()` ไม่ทำงาน (สาเหตุที่แท้จริงยังคงอยู่) | ตรวจสอบ Console Error + ล้าง Service Worker Cache (ยังคงแก้ไขไม่สำเร็จ) | - |
+
+### ✅ Completed Work (Phase 30-31)
+
+| งาน | สถานะ | รายละเอียด |
+|------|-------|------------|
+| **Version Alignment** | ✅ เสร็จ | แก้ไข 4 ไฟล์ให้ใช้เวอร์ชันเดียวกัน (v5.9.0-phase2d) |
+| **Centralized Versioning** | ✅ เสร็จ | สร้าง `version_config.js` เป็นแหล่งข้อมูลเดียว |
+| **Cache Buster** | ✅ เสร็จ | เพิ่ม timestamp parameter + comment ในทุกไฟล์ PWA |
+| **Missing Files Fix** | ✅ เสร็จ | เพิ่ม `mobile_shared.js`, `favicon.ico` |
+| **gas_config.js Loading** | ✅ เสร็จ | เพิ่มใน `index.html` ก่อน `</head>` |
+| **API Fallback URL** | ✅ เสร็จ | อัปเดตเป็น @502 ใน `api_client.js` |
+| **Dashboard Modernization (Phase 31)** | ✅ เสร็จ | เพิ่ม 5 Chart.js v4 functions + CHARTS object |
+| **AI LINE Agent (3 บทบาท)** | ✅ Backend ready | สร้าง `AILinePrompts.gs` + อัปเดต `LineBot.gs` (รอ Group IDs จริง) |
+| **Dependency Checklist** | ✅ เสร็จ | เพิ่มใน BLUEPRINT Section 2.5 |
+| **GitHub Push** | ✅ เสร็จ | 5 commits (`b8ccd2f`, `8695600`, `38a5ed5`, `0f68e2f`, `c7cca60`) |
+
+### ❌ Pending Work (ยังไม่เสร็จ)
+
+| งาน | สถานะ | อุปสรรค |
+|------|-------|----------|
+| **Login Problem (เข้าระบบไม่ได้)** | ❌ **ยังแก้ไม่สำเร็จ** | Splash Screen ค้างอยู่ แม้จะแก้ไข URL แล้ว สาเหตุน่าจะเป็น Service Worker Cache หรือ JavaScript Error ที่ยังไม่พบ |
+| **AI LINE Agent Testing** | ❌ **รอ Group IDs** | ต้องเปลี่ยน Placeholder Group IDs ใน `AILinePrompts.gs` (บรรทัด 169-173) เป็น LINE Group ID จริง |
+| **Dashboard PC Testing** | ❌ **รอ Login แก้ไข** | ต้องทดสอบกราฟ Chart.js v4 ทั้ง 5 ตัวหลังจากเข้าระบบได้ |
+| **Google Drive Sync** | ❌ **Failed** | `SharedContext.gs` timeout (ต้อง retry) |
+| **Service Worker Debug** | ❌ **ยังไม่หาสาเหตุแท้จริง** | ต้องตรวจสอบ Console Error จากผู้ใช้ |
+
+### 🗄️ Backup Status (28 เมษายน 2569 — 15:05)
+
+| สถานที่ | สถานะ | รายละเอียด |
+|---------|-------|------------|
+| **GitHub Repository** | ✅ **ปัจจุบัน** | `main` branch — ล่าสุด commit `b8ccd2f` (5 commits วันนี้) |
+| **Google Drive (Code)** | ❌ **ล้มเหลว** | Sync failed (SharedContext.gs timeout) — ต้อง retry |
+| **Google Drive (Backups)** | ✅ **มี** | `backups/` folder — 6 ไฟล์ `.tar.gz` (2026-04-28) |
+| **Local Backups** | ✅ **ครบ** | `/mnt/c/Users/Server/comphone-superapp/backups/*.tar.gz` |
+| **Session Memory** | ✅ **อัปเดต** | `memory/session.md` + `memory/session_latest.md` |
+
+### 🔧 Next Steps (Priority Order)
+
+1. **🔴 HIGH: แก้ไข Login ไม่ได้** — ตรวจสอบ Console Error + ล้าง Service Worker Cache + ทดสอบบน Incognito
+2. **🟠 MEDIUM: ทดสอบ AI LINE Agent** — รอผู้ใช้ส่ง LINE Group IDs จริงมาแทนที่ Placeholder
+3. **🟡 LOW: Retry Google Drive Sync** — หลังจากแก้ไข Login ได้แล้ว
+4. **🟢 COMPLETE: Dashboard Testing** — ทดสอบกราฟ Chart.js v4 หลัง Login แก้ไข
+
+---
+
