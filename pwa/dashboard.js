@@ -76,7 +76,7 @@ function renderDashboard(data) {
     </div>
 
     <!-- KPI CARDS -->
-    <div style="padding:8px 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div id="kpi-cards-grid" style="padding:8px 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="kpi-card" style="background:linear-gradient(135deg,#1e40af,#3b82f6)">
         <div class="kpi-icon"><i class="bi bi-clipboard2-check-fill"></i></div>
         <div class="kpi-value">${totalJobs}</div>
@@ -190,7 +190,40 @@ function renderDashboard(data) {
       </div>
     </div>` : ''}
 
+    <!-- TECHNICIAN PERFORMANCE (PHASE 30) -->
+    ${topTech ? `
+    <div class="section-card" style="margin:0 12px 10px">
+      <div class="section-label">🏆 ประสิทธิภาพช่าง (7 วันล่าสุด)</div>
+      <div id="tech-performance-content" style="text-align:center;padding:12px;color:#9ca3af">
+        <div class="spinner" style="margin:0 auto 8px"></div>
+        <div style="font-size:12px">กำลังโหลดข้อมูลช่าง...</div>
+      </div>
+    </div>
+    ` : ''}
+
     <div style="height:16px"></div>
+    <!-- QUICK ACTIONS (PHASE 30) -->
+    <div class="section-card" style="margin:0 12px 10px">
+      <div class="section-label">⚡  Quick Actions</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+        <button class="btn-action" onclick="goPage('jobs',document.getElementById('nav-more'))" style="padding:12px 8px">
+          <i class="bi bi-clipboard2-plus-fill" style="font-size:20px;color:#3b82f6"></i>
+          <span style="font-size:11px;margin-top:4px">สร้างงาน</span>
+        </button>
+        <button class="btn-action" onclick="goPage('stock',document.getElementById('nav-more'))" style="padding:12px 8px">
+          <i class="bi bi-box-seam-fill" style="font-size:20px;color:#10b981"></i>
+          <span style="font-size:11px;margin-top:4px">สต็อก</span>
+        </button>
+        <button class="btn-action" onclick="goPage('reports',document.getElementById('nav-more'))" style="padding:12px 8px">
+          <i class="bi bi-bar-chart-fill" style="font-size:20px;color:#8b5cf6"></i>
+          <span style="font-size:11px;margin-top:4px">รายงาน</span>
+        </button>
+        <button class="btn-action" onclick="goPage('crm',document.getElementById('nav-more'))" style="padding:12px 8px">
+          <i class="bi bi-people-fill" style="font-size:20px;color:#f59e0b"></i>
+          <span style="font-size:11px;margin-top:4px">ลูกค้า</span>
+        </button>
+      </div>
+    </div>
     <!-- RETAIL SALES WIDGET (PHASE 30) -->
     <div id="retail-sales-widget" class="section-card" style="margin:0 12px 10px">
       <div class="section-label">🛒 ยอดขายปลีก 7 วันล่าสุด</div>
@@ -206,6 +239,12 @@ function renderDashboard(data) {
 
   // PHASE 30: Load Retail Sales data
   loadRetailSales();
+  
+  // PHASE 30: Adjust KPI grid for responsive
+  adjustKpiGrid();
+  
+  // PHASE 30: Load Technician Performance
+  loadTechPerformance();
   
   // PHASE 27: Render Business AI cards
   if (typeof renderBusinessAICards === 'function') {
@@ -305,6 +344,54 @@ function drawRevenueChart(revenue) {
         }
       }
     }
+  });
+}
+
+// ===== RESPONSIVE KPI GRID (PHASE 30) =====
+function adjustKpiGrid() {
+  const grid = document.getElementById('kpi-cards-grid');
+  if (!grid) return;
+  const width = window.innerWidth;
+  if (width < 480) {
+    grid.style.gridTemplateColumns = '1fr'; // Mobile: 1 column
+  } else if (width < 768) {
+    grid.style.gridTemplateColumns = '1fr 1fr'; // Tablet: 2 columns
+  } else {
+    grid.style.gridTemplateColumns = '1fr 1fr'; // PC: 2 columns (default)
+  }
+  // Adjust Quick Actions grid
+  const qaGrid = document.querySelector('#quick-actions-grid');
+  if (qaGrid) {
+    qaGrid.style.gridTemplateColumns = width < 480 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)';
+  }
+}
+
+// ===== TECHNICIAN PERFORMANCE (PHASE 30) =====
+function loadTechPerformance() {
+  const container = document.getElementById('tech-performance-content');
+  if (!container) return;
+  callApi({ action: 'getTechPerformance', days: 7 }).then(res => {
+    if (!res || !res.success || !res.techs || res.techs.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:12px;color:#9ca3af;font-size:12px">ไม่มีข้อมูลประสิทธิภาพช่าง</div>';
+      return;
+    }
+    const techs = res.techs; // [{ name, jobs_completed, rating, kudos }, ...]
+    container.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(160px,1fr));gap:10px;margin-top:8px">
+        ${techs.map(t => `
+          <div style="background:#f9fafb;border-radius:12px;padding:12px;text-align:center">
+            <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#fbbf24,#d97706);display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:18px;margin:0 auto 8px">
+              ${(t.name || '?')[0]}
+            </div>
+            <div style="font-size:14px;font-weight:800;color:#111827">${t.name || '-'}</div>
+            <div style="font-size:12px;color:#6b7280">${t.jobs_completed || 0} งาน · ${t.kudos || 0} Kudos</div>
+            <div style="color:#fbbf24;font-size:13px;margin-top:4px">${'★'.repeat(Math.min(5, Math.round(t.rating || 5)))}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }).catch(() => {
+    container.innerHTML = '<div style="text-align:center;padding:12px;color:#9ca3af;font-size:12px">ไม่สามารถโหลดข้อมูลได้</div>';
   });
 }
 
