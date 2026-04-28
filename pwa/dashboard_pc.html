@@ -4,8 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>COMPHONE Dashboard — PC</title>
-<script src="gas_config.js?v=282"></script>
-<script src="api_client.js?v=282"></script>
+<script src="version_config.js?v=5.9.0-phase2d&t=20260428_1130"></script>
+<script src="gas_config.js?v=5.9.0-phase2d&t=20260428_1130"></script>
+<script src="api_client.js?v=5.9.0-phase2d&t=20260428_1130"></script>
 <script>
   // ── XSS Sanitizer (PHMP v1 — 2026-04-24) ──
   // Lightweight HTML sanitizer for API data rendered via innerHTML.
@@ -20,7 +21,7 @@
       .replace(/data\s*:\s*text\/html/gi, '');
   };
   // PHASE 25.3 — GLOBAL VERSION LOCK
-  window.__APP_VERSION = 'v5.9.0-phase2d';
+  window.__APP_VERSION = window.__APP_VERSION || 'v5.9.0-phase2d';
 
   // Cache invalidation on version mismatch
   if (localStorage.__APP_VERSION !== window.__APP_VERSION) {
@@ -1224,21 +1225,21 @@ async function loadSection(section) {
 
 // [EXTRACTED] Settings section → section_settings.js (_showFollowUpSchedule, renderSettingsSection, _clearAllCaches, renderGenericSection, sectionIcon, sectionLabel, setActiveNav, updateVersionBadge)
 </script>
-<script src="error_boundary.js?v=282"></script>
-<script src="execution_lock.js?v=282"></script>
-<script src="policy_engine.js?v=282"></script>
-<script src="ai_executor_runtime.js?v=282"></script>
-<script src="approval_guard.js?v=282"></script>
-<script src="billing_section.js?v=282"></script>
-<script src="attendance_section.js?v=282"></script>
-<script src="warranty_section.js?v=282"></script>
-<script src="section_inventory.js?v=282"></script>
-<script src="section_jobs.js?v=282"></script>
-<script src="section_revenue.js?v=282"></script>
-<script src="section_tax.js?v=282"></script>
-<script src="section_po.js?v=282"></script>
-<script src="section_crm.js?v=282"></script>
-<script src="section_settings.js?v=282"></script>
+<script src="error_boundary.js?v=5.9.0-phase2d&t=20260428_1130"></script>
+<script src="execution_lock.js?v=5.9.0-phase2d&t=20260428_1130"></script>
+<script src="policy_engine.js?v=5.9.0-phase2d&t=20260428_1130"></script>
+<script src="ai_executor_runtime.js?v=5.9.0-phase2d&t=20260428_1130"></script>
+<script src="approval_guard.js?v=5.9.0-phase2d&t=20260428_1130"></script>
+<script src="billing_section.js?v=5.9.0-phase2d&t=20260428_1130"></script>
+<script src="attendance_section.js?v=5.9.0-phase2d&t=20260428_1130"></script>
+<script src="warranty_section.js?v=5.9.0-phase2d&t=20260428_1130"></script>
+<script src="section_inventory.js?v=5.9.0-phase2d&t=20260428_1130"></script>
+<script src="section_jobs.js?v=5.9.0-phase2d&t=20260428_1130"></script>
+<script src="section_revenue.js?v=5.9.0-phase2d&t=20260428_1130"></script>
+<script src="section_tax.js?v=5.9.0-phase2d&t=20260428_1130"></script>
+<script src="section_po.js?v=5.9.0-phase2d&t=20260428_1130"></script>
+<script src="section_crm.js?v=5.9.0-phase2d&t=20260428_1130"></script>
+<script src="section_settings.js?v=5.9.0-phase2d&t=20260428_1130"></script>
 <script>
 // PHASE 25.3 — Register Service Worker on dashboard
 if ('serviceWorker' in navigator) {

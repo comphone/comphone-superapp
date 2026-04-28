@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>COMPHONE — System Control Panel</title>
+<title>COMPHONE โ€” System Control Panel</title>
+<script src="version_config.js"></script>
 <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="api_client.js"></script>
@@ -172,25 +173,25 @@ canvas.trend-chart{width:100%!important;height:80px!important;}
 
 <!-- ALERT BANNER -->
 <div id="alert-banner">
-  <span>🚨</span>
+  <span>๐จ</span>
   <span class="ab-msg" id="ab-msg">Alert</span>
-  <span class="ab-close" onclick="dismissAlert()">✕</span>
+  <span class="ab-close" onclick="dismissAlert()">โ•</span>
 </div>
 
 <!-- TOPBAR -->
 <div id="topbar">
-  <span class="logo">⚡ COMPHONE</span>
-  <span class="ver-badge" id="ver-badge">v5.5.8</span>
-  <div id="status-pill"><span id="status-dot"></span><span id="status-text">กำลังเชื่อมต่อ...</span></div>
+  <span class="logo">โก COMPHONE</span>
+  <span class="ver-badge" id="ver-badge">v5.9.0-phase2d</span>
+  <div id="status-pill"><span id="status-dot"></span><span id="status-text">เธเธณเธฅเธฑเธเน€เธเธทเนเธญเธกเธ•เนเธญ...</span></div>
   <div id="health-badge">
     <span class="hl">SYSTEM HEALTH</span>
-    <span id="score-num">—</span>
+    <span id="score-num">โ€”</span>
     <span style="color:var(--text2);font-size:12px">%</span>
     <div id="score-bar"><div id="score-fill" style="width:0%"></div></div>
   </div>
-  <button class="tbtn" id="btn-refresh" onclick="doRefresh()">↻ รีเฟรช</button>
-  <button class="tbtn" id="btn-panel" onclick="togglePanel()">☰</button>
-  <a class="tbtn" href="dashboard_pc.html">← Dashboard</a>
+  <button class="tbtn" id="btn-refresh" onclick="doRefresh()">โป เธฃเธตเน€เธเธฃเธ</button>
+  <button class="tbtn" id="btn-panel" onclick="togglePanel()">โฐ</button>
+  <a class="tbtn" href="dashboard_pc.html">โ Dashboard</a>
 </div>
 
 <!-- STATSBAR -->
@@ -201,12 +202,12 @@ canvas.trend-chart{width:100%!important;height:80px!important;}
   <span class="sep">|</span>
   <div class="si"><span class="sd err"></span><span class="sn" id="s-err">0</span> Error</div>
   <span class="sep">|</span>
-  <div class="si">⚡ <span id="s-rt">—</span> ms</div>
+  <div class="si">โก <span id="s-rt">โ€”</span> ms</div>
   <span class="sep">|</span>
-  <div class="si">🔄 Triggers: <span id="s-trig">—</span></div>
+  <div class="si">๐” Triggers: <span id="s-trig">โ€”</span></div>
   <span class="sep">|</span>
-  <div class="si">⚠ Failure Roots: <span id="s-fail">0</span></div>
-  <span id="lupd">—</span>
+  <div class="si">โ  Failure Roots: <span id="s-fail">0</span></div>
+  <span id="lupd">โ€”</span>
 </div>
 
 <!-- LAYOUT -->
@@ -216,7 +217,7 @@ canvas.trend-chart{width:100%!important;height:80px!important;}
     <div id="graph-container"></div>
     <div id="loading-overlay">
       <div class="spinner"></div>
-      <div style="color:var(--text2);font-size:13px">กำลังโหลด System Graph...</div>
+      <div style="color:var(--text2);font-size:13px">เธเธณเธฅเธฑเธเนเธซเธฅเธ” System Graph...</div>
     </div>
     <!-- VIEW CONTROLS -->
     <div id="vctrl">
@@ -233,33 +234,33 @@ canvas.trend-chart{width:100%!important;height:80px!important;}
 
       <!-- NODE DETAILS -->
       <div class="ss">
-        <div class="ssh">🔍 Node Details</div>
-        <div id="nd"><div style="color:var(--text2);font-size:12px;padding:8px 0;text-align:center;">คลิกที่ node เพื่อดูรายละเอียด</div></div>
+        <div class="ssh">๐” Node Details</div>
+        <div id="nd"><div style="color:var(--text2);font-size:12px;padding:8px 0;text-align:center;">เธเธฅเธดเธเธ—เธตเน node เน€เธเธทเนเธญเธ”เธนเธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”</div></div>
       </div>
 
       <!-- SYSTEM SUMMARY -->
       <div class="ss">
-        <div class="ssh">📊 System Summary</div>
+        <div class="ssh">๐“ System Summary</div>
         <div class="sgrid">
-          <div class="sc"><div class="sl">Health</div><div class="sv" id="sum-h">—</div></div>
-          <div class="sc"><div class="sl">Version</div><div class="sv" id="sum-v">—</div></div>
-          <div class="sc"><div class="sl">Triggers</div><div class="sv" id="sum-t">—</div></div>
-          <div class="sc"><div class="sl">Response</div><div class="sv" id="sum-r">—</div></div>
+          <div class="sc"><div class="sl">Health</div><div class="sv" id="sum-h">โ€”</div></div>
+          <div class="sc"><div class="sl">Version</div><div class="sv" id="sum-v">โ€”</div></div>
+          <div class="sc"><div class="sl">Triggers</div><div class="sv" id="sum-t">โ€”</div></div>
+          <div class="sc"><div class="sl">Response</div><div class="sv" id="sum-r">โ€”</div></div>
         </div>
       </div>
 
       <!-- ACTION PANEL -->
       <div class="ss">
-        <div class="ssh" onclick="toggleSec('action-panel')">🎛️ Action Panel</div>
+        <div class="ssh" onclick="toggleSec('action-panel')">๐๏ธ Action Panel</div>
         <div id="action-panel">
           <div class="arow">
-            <button class="abtn" onclick="doAction('clearCache','all')">🗑️ Clear Cache</button>
-            <button class="abtn" onclick="doAction('restart','all')">🔄 Restart</button>
-            <button class="abtn" onclick="doAction('reFetch','dashboard')">⚡ Re-Fetch</button>
+            <button class="abtn" onclick="doAction('clearCache','all')">๐—‘๏ธ Clear Cache</button>
+            <button class="abtn" onclick="doAction('restart','all')">๐” Restart</button>
+            <button class="abtn" onclick="doAction('reFetch','dashboard')">โก Re-Fetch</button>
           </div>
           <div class="arow">
-            <button class="abtn warn-btn" onclick="doAction('sendAlert','',{severity:'warning',message:'Manual test alert from System Graph'})">⚠️ Send Warning</button>
-            <button class="abtn err-btn" onclick="doAction('sendAlert','',{severity:'critical',message:'CRITICAL alert from System Graph'})">🚨 Send Critical</button>
+            <button class="abtn warn-btn" onclick="doAction('sendAlert','',{severity:'warning',message:'Manual test alert from System Graph'})">โ ๏ธ Send Warning</button>
+            <button class="abtn err-btn" onclick="doAction('sendAlert','',{severity:'critical',message:'CRITICAL alert from System Graph'})">๐จ Send Critical</button>
           </div>
           <div id="action-status"></div>
         </div>
@@ -267,13 +268,13 @@ canvas.trend-chart{width:100%!important;height:80px!important;}
 
       <!-- AUTO DIAGNOSTIC -->
       <div class="ss">
-        <div class="ssh" onclick="toggleSec('dp')">🩺 Auto Diagnostic</div>
-        <div id="dp"><div class="dempty">กำลังวิเคราะห์...</div></div>
+        <div class="ssh" onclick="toggleSec('dp')">๐ฉบ Auto Diagnostic</div>
+        <div id="dp"><div class="dempty">เธเธณเธฅเธฑเธเธงเธดเน€เธเธฃเธฒเธฐเธซเน...</div></div>
       </div>
 
       <!-- TREND CHARTS -->
       <div class="ss">
-        <div class="ssh" onclick="toggleSec('trend-panel')">📈 Trend Analysis</div>
+        <div class="ssh" onclick="toggleSec('trend-panel')">๐“ Trend Analysis</div>
         <div id="trend-panel">
           <div class="chart-wrap">
             <div class="chart-title">Health Score (24h)</div>
@@ -288,29 +289,29 @@ canvas.trend-chart{width:100%!important;height:80px!important;}
 
       <!-- HEALTH LOG -->
       <div class="ss">
-        <div class="ssh" onclick="toggleSec('hlp')">📋 Health Log</div>
-        <div id="hlp"><div style="color:var(--text2);font-size:12px;text-align:center;padding:8px 0;">กำลังโหลด...</div></div>
+        <div class="ssh" onclick="toggleSec('hlp')">๐“ Health Log</div>
+        <div id="hlp"><div style="color:var(--text2);font-size:12px;text-align:center;padding:8px 0;">เธเธณเธฅเธฑเธเนเธซเธฅเธ”...</div></div>
       </div>
 
       <!-- SNAPSHOT VERSIONING -->
       <div class="ss">
-        <div class="ssh" onclick="toggleSec('snap-panel')">📸 Snapshot Versioning</div>
+        <div class="ssh" onclick="toggleSec('snap-panel')">๐“ธ Snapshot Versioning</div>
         <div id="snap-panel">
           <div class="snap-row">
             <input type="text" id="snap-label" placeholder="Label (optional)">
-            <button class="sbtn" onclick="saveSnapshot()">💾 Save</button>
+            <button class="sbtn" onclick="saveSnapshot()">๐’พ Save</button>
           </div>
           <div class="snap-row">
-            <button class="sbtn" style="flex:1" onclick="loadSnapshots()">📋 Load History</button>
-            <button class="sbtn" onclick="downloadSnapshot()">⬇️ Export</button>
+            <button class="sbtn" style="flex:1" onclick="loadSnapshots()">๐“ Load History</button>
+            <button class="sbtn" onclick="downloadSnapshot()">โฌ๏ธ Export</button>
           </div>
-          <div id="snap-list"><div style="color:var(--text2);font-size:11px;text-align:center;padding:8px 0;">กด Load History เพื่อดู</div></div>
+          <div id="snap-list"><div style="color:var(--text2);font-size:11px;text-align:center;padding:8px 0;">เธเธ” Load History เน€เธเธทเนเธญเธ”เธน</div></div>
         </div>
       </div>
 
       <!-- LEGEND -->
       <div class="ss">
-        <div class="ssh">📌 Legend</div>
+        <div class="ssh">๐“ Legend</div>
         <div id="legend">
           <div class="lgi"><span class="lgd" style="background:#58a6ff"></span>Core</div>
           <div class="lgi"><span class="lgd" style="background:#bc8cff"></span>Module</div>
@@ -339,7 +340,7 @@ let healthChart=null,latencyChart=null;
 const REFRESH_MS=5000;
 const ALERT_THRESHOLDS={health:90,latency:300,errors:0};
 
-// ── TOAST ──
+// โ”€โ”€ TOAST โ”€โ”€
 function toast(msg,type='ok',dur=3000){
   const el=document.getElementById('toast');
   el.textContent=msg;
@@ -348,7 +349,7 @@ function toast(msg,type='ok',dur=3000){
   el._t=setTimeout(()=>{el.className='';},dur);
 }
 
-// ── ALERT BANNER ──
+// โ”€โ”€ ALERT BANNER โ”€โ”€
 function showAlert(msg){
   const b=document.getElementById('alert-banner');
   document.getElementById('ab-msg').textContent=msg;
@@ -358,7 +359,7 @@ function dismissAlert(){
   document.getElementById('alert-banner').classList.remove('show');
 }
 
-// ── COLOR HELPERS ──
+// โ”€โ”€ COLOR HELPERS โ”€โ”€
 function statusColor(s){return s==='ok'?'#3fb950':s==='warning'?'#d29922':s==='error'?'#f85149':'#8b949e';}
 function latColor(ms){if(!ms||ms<=0)return '#8b949e';if(ms<100)return '#3fb950';if(ms<300)return '#d29922';return '#f85149';}
 
@@ -376,7 +377,7 @@ function nodeColor(n,view){
 function buildVisNode(n,view){
   const c=nodeColor(n,view);
   const shape=n.type==='data'?'database':n.type==='core'?'hexagon':'ellipse';
-  const lbl=n.icon+' '+n.label+(n.isSSOT?' ★':'')+(n.isFailureRoot?' ⚠':'');
+  const lbl=n.icon+' '+n.label+(n.isSSOT?' โ…':'')+(n.isFailureRoot?' โ ':'');
   return{
     id:n.id,label:lbl,shape,
     color:{background:c+'33',border:c,highlight:{background:c+'66',border:c},hover:{background:c+'44',border:c}},
@@ -395,11 +396,11 @@ function buildTooltip(n){
     <b>${n.icon} ${n.label}</b> ${n.isSSOT?'<span style="background:#bc8cff;color:#000;border-radius:3px;padding:1px 5px;font-size:10px">SSOT</span>':''}<br>
     <span style="color:#8b949e">${n.type.toUpperCase()}</span><hr style="border-color:#30363d;margin:6px 0">
     Status: <b style="color:${c}">${n.status.toUpperCase()}</b><br>
-    Version: ${m.version||'—'}<br>
-    Latency: ${m.latency_ms?m.latency_ms+'ms':'—'}<br>
+    Version: ${m.version||'โ€”'}<br>
+    Latency: ${m.latency_ms?m.latency_ms+'ms':'โ€”'}<br>
     Error Rate: ${m.error_rate||0}%<br>
-    Upstream: ${(m.upstream||[]).join(', ')||'—'}<br>
-    Downstream: ${(m.downstream||[]).join(', ')||'—'}
+    Upstream: ${(m.upstream||[]).join(', ')||'โ€”'}<br>
+    Downstream: ${(m.downstream||[]).join(', ')||'โ€”'}
   </div>`;
 }
 
@@ -472,15 +473,15 @@ function setView(v){
   });
 }
 
-// ── AUTO ALERT CHECK ──
+// โ”€โ”€ AUTO ALERT CHECK โ”€โ”€
 function checkAlerts(meta){
   const score=meta.health_score||0;
   const rt=meta.elapsed_ms||0;
   const errs=(meta.diagnostics||[]).filter(d=>d.severity==='critical').length;
   const msgs=[];
-  if(score<ALERT_THRESHOLDS.health) msgs.push('Health Score ต่ำ: '+score+'%');
-  if(rt>ALERT_THRESHOLDS.latency) msgs.push('Latency สูง: '+rt+'ms');
-  if(errs>ALERT_THRESHOLDS.errors) msgs.push('Critical errors: '+errs+' รายการ');
+  if(score<ALERT_THRESHOLDS.health) msgs.push('Health Score เธ•เนเธณ: '+score+'%');
+  if(rt>ALERT_THRESHOLDS.latency) msgs.push('Latency เธชเธนเธ: '+rt+'ms');
+  if(errs>ALERT_THRESHOLDS.errors) msgs.push('Critical errors: '+errs+' เธฃเธฒเธขเธเธฒเธฃ');
   if(msgs.length>0){
     showAlert(msgs.join(' | '));
     // Auto-send LINE alert (once per session, debounced)
@@ -501,10 +502,10 @@ function updateUI(data){
   document.getElementById('s-ok').textContent=ok;
   document.getElementById('s-warn').textContent=warn;
   document.getElementById('s-err').textContent=err;
-  document.getElementById('s-rt').textContent=meta.elapsed_ms||'—';
-  document.getElementById('s-trig').textContent=meta.triggers?(meta.triggers.count+(meta.triggers.active?' ✓':'')):' —';
+  document.getElementById('s-rt').textContent=meta.elapsed_ms||'โ€”';
+  document.getElementById('s-trig').textContent=meta.triggers?(meta.triggers.count+(meta.triggers.active?' โ“':'')):' โ€”';
   document.getElementById('s-fail').textContent=(meta.failure_roots||[]).length;
-  document.getElementById('lupd').textContent='อัปเดต: '+new Date().toLocaleString('th-TH',{dateStyle:'short',timeStyle:'medium'});
+  document.getElementById('lupd').textContent='เธญเธฑเธเน€เธ”เธ•: '+new Date().toLocaleString('th-TH',{dateStyle:'short',timeStyle:'medium'});
 
   const score=meta.health_score||0;
   document.getElementById('score-num').textContent=score;
@@ -517,13 +518,13 @@ function updateUI(data){
   const hs=(meta.health_status||'unknown').toUpperCase();
   document.getElementById('status-text').textContent=hs;
   document.getElementById('status-dot').style.background=hs==='HEALTHY'?'#3fb950':hs==='DEGRADED'?'#d29922':hs==='CRITICAL'?'#f85149':'#8b949e';
-  document.getElementById('ver-badge').textContent='v'+(meta.version||'5.5.8');
+  document.getElementById('ver-badge').textContent='v'+(meta.version||window.COMPHONE_VERSION || '5.9.0-phase2d');
 
   document.getElementById('sum-h').textContent=hs;
   document.getElementById('sum-h').className='sv '+(hs==='HEALTHY'?'ok':hs==='DEGRADED'?'warn':'err');
-  document.getElementById('sum-v').textContent=meta.version||'5.5.8';
-  document.getElementById('sum-t').textContent=meta.triggers?meta.triggers.count+' active':'—';
-  document.getElementById('sum-r').textContent=(meta.elapsed_ms||'—')+' ms';
+  document.getElementById('sum-v').textContent=meta.version||window.COMPHONE_VERSION || '5.9.0-phase2d';
+  document.getElementById('sum-t').textContent=meta.triggers?meta.triggers.count+' active':'โ€”';
+  document.getElementById('sum-r').textContent=(meta.elapsed_ms||'โ€”')+' ms';
 
   renderDiag(meta.diagnostics||[]);
   renderLogs(meta.recent_logs||[]);
@@ -533,26 +534,26 @@ function updateUI(data){
 
 function renderDiag(diags){
   const el=document.getElementById('dp');
-  if(!diags.length){el.innerHTML='<div class="dempty">✅ ไม่พบปัญหา — ระบบทำงานปกติ</div>';return;}
+  if(!diags.length){el.innerHTML='<div class="dempty">โ… เนเธกเนเธเธเธเธฑเธเธซเธฒ โ€” เธฃเธฐเธเธเธ—เธณเธเธฒเธเธเธเธ•เธด</div>';return;}
   el.innerHTML=diags.map(d=>`
     <div class="di ${d.severity}">
-      <div class="dsev ${d.severity}">${d.severity==='critical'?'🔴':'🟡'} ${d.severity.toUpperCase()} — ${d.node}</div>
+      <div class="dsev ${d.severity}">${d.severity==='critical'?'๐”ด':'๐ก'} ${d.severity.toUpperCase()} โ€” ${d.node}</div>
       <div class="dprob">${d.problem}</div>
-      <div class="dcause">สาเหตุ: ${d.cause}</div>
-      <div class="dfix">วิธีแก้: ${d.fix}</div>
+      <div class="dcause">เธชเธฒเน€เธซเธ•เธธ: ${d.cause}</div>
+      <div class="dfix">เธงเธดเธเธตเนเธเน: ${d.fix}</div>
     </div>`).join('');
 }
 
 function renderLogs(logs){
   const el=document.getElementById('hlp');
-  if(!logs.length){el.innerHTML='<div style="color:var(--text2);font-size:12px;text-align:center;padding:8px 0;">ไม่มีข้อมูล log</div>';return;}
+  if(!logs.length){el.innerHTML='<div style="color:var(--text2);font-size:12px;text-align:center;padding:8px 0;">เนเธกเนเธกเธตเธเนเธญเธกเธนเธฅ log</div>';return;}
   el.innerHTML=logs.map(l=>{
-    const ts=l.timestamp?new Date(l.timestamp).toLocaleTimeString('th-TH'):'—';
-    return`<div class="li"><span class="ls ${l.status}">${l.status}</span><span>${l.response_time_ms||'—'}ms</span><span class="lt">${ts}</span></div>`;
+    const ts=l.timestamp?new Date(l.timestamp).toLocaleTimeString('th-TH'):'โ€”';
+    return`<div class="li"><span class="ls ${l.status}">${l.status}</span><span>${l.response_time_ms||'โ€”'}ms</span><span class="lt">${ts}</span></div>`;
   }).join('');
 }
 
-// ── TREND CHARTS ──
+// โ”€โ”€ TREND CHARTS โ”€โ”€
 const trendData={health:[],latency:[],labels:[]};
 
 function updateTrendCharts(meta){
@@ -587,7 +588,7 @@ async function loadTrendFromGAS(){
   try{
     const r=await callApi('getHealthTrend',{limit:24});
     if(r&&r.success&&r.trend&&r.trend.length>0){
-      trendData.labels=r.trend.map(t=>t.timestamp?new Date(t.timestamp).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}):'—');
+      trendData.labels=r.trend.map(t=>t.timestamp?new Date(t.timestamp).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}):'โ€”');
       trendData.health=r.trend.map(t=>t.health_score||0);
       trendData.latency=r.trend.map(t=>t.response_time_ms||0);
       if(healthChart){healthChart.data.labels=trendData.labels;healthChart.data.datasets[0].data=trendData.health;healthChart.update();}
@@ -596,12 +597,12 @@ async function loadTrendFromGAS(){
   }catch(e){console.warn('[loadTrendFromGAS]',e);}
 }
 
-// ── ACTION PANEL ──
+// โ”€โ”€ ACTION PANEL โ”€โ”€
 async function doAction(action,module,extra){
   const btns=document.querySelectorAll('.abtn');
   btns.forEach(b=>b.disabled=true);
   const st=document.getElementById('action-status');
-  st.textContent='⏳ กำลังดำเนินการ...';
+  st.textContent='โณ เธเธณเธฅเธฑเธเธ”เธณเน€เธเธดเธเธเธฒเธฃ...';
   st.style.color='var(--text2)';
   try{
     const payload={action,module,...(extra||{})};
@@ -612,118 +613,118 @@ async function doAction(action,module,extra){
       catch(e){attempt++;if(attempt>=2)throw e;await new Promise(res=>setTimeout(res,1000));}
     }
     if(r&&r.success){
-      st.textContent='✅ '+( r.message||'สำเร็จ');
+      st.textContent='โ… '+( r.message||'เธชเธณเน€เธฃเนเธ');
       st.style.color='var(--ok)';
-      toast('✅ '+action+' สำเร็จ','ok');
+      toast('โ… '+action+' เธชเธณเน€เธฃเนเธ','ok');
       setTimeout(doRefresh,1500);
     } else {
-      st.textContent='❌ '+(r&&r.error?r.error:'ล้มเหลว');
+      st.textContent='โ '+(r&&r.error?r.error:'เธฅเนเธกเน€เธซเธฅเธง');
       st.style.color='var(--err)';
-      toast('❌ '+action+' ล้มเหลว','err');
+      toast('โ '+action+' เธฅเนเธกเน€เธซเธฅเธง','err');
     }
   }catch(e){
-    st.textContent='❌ '+e.message;
+    st.textContent='โ '+e.message;
     st.style.color='var(--err)';
-    toast('❌ Error: '+e.message,'err');
+    toast('โ Error: '+e.message,'err');
   }
   btns.forEach(b=>b.disabled=false);
   setTimeout(()=>{st.textContent='';},5000);
 }
 
-// ── NODE DETAILS ──
+// โ”€โ”€ NODE DETAILS โ”€โ”€
 function showND(n){
   const m=n.meta||{};
   const c=statusColor(n.status);
   const lc=latColor(m.latency_ms||0);
-  const up=(m.upstream||[]).map(id=>`<span class="dep-i">${id}</span>`).join('')||'<span style="color:var(--text2)">—</span>';
-  const dn=(m.downstream||[]).map(id=>`<span class="dep-i">${id}</span>`).join('')||'<span style="color:var(--text2)">—</span>';
+  const up=(m.upstream||[]).map(id=>`<span class="dep-i">${id}</span>`).join('')||'<span style="color:var(--text2)">โ€”</span>';
+  const dn=(m.downstream||[]).map(id=>`<span class="dep-i">${id}</span>`).join('')||'<span style="color:var(--text2)">โ€”</span>';
   document.getElementById('nd').innerHTML=`
     <div class="ndh">
       <span class="ndi">${n.icon}</span>
       <div>
         <div class="ndn">${n.label} ${n.isSSOT?'<span class="ssot-b">SSOT</span>':''}</div>
-        <div class="ndt">${n.type.toUpperCase()} · ${n.group.toUpperCase()}</div>
+        <div class="ndt">${n.type.toUpperCase()} ยท ${n.group.toUpperCase()}</div>
       </div>
     </div>
     <div class="dr"><span class="dk">Status</span><span class="dv" style="color:${c}">${n.status.toUpperCase()}</span></div>
-    <div class="dr"><span class="dk">Version</span><span class="dv">${m.version||'—'}</span></div>
-    <div class="dr"><span class="dk">Latency</span><span class="dv" style="color:${lc}">${m.latency_ms?m.latency_ms+'ms':'—'}</span></div>
+    <div class="dr"><span class="dk">Version</span><span class="dv">${m.version||'โ€”'}</span></div>
+    <div class="dr"><span class="dk">Latency</span><span class="dv" style="color:${lc}">${m.latency_ms?m.latency_ms+'ms':'โ€”'}</span></div>
     <div class="dr"><span class="dk">Error Rate</span><span class="dv">${m.error_rate||0}%</span></div>
     ${m.users_count?`<div class="dr"><span class="dk">Users</span><span class="dv">${m.users_count}</span></div>`:''}
-    <div class="dr"><span class="dk">Failure Root</span><span class="dv">${n.isFailureRoot?'⚠ YES':'No'}</span></div>
-    <div class="dr"><span class="dk">Affected</span><span class="dv">${n.isAffected?'⚡ YES':'No'}</span></div>
+    <div class="dr"><span class="dk">Failure Root</span><span class="dv">${n.isFailureRoot?'โ  YES':'No'}</span></div>
+    <div class="dr"><span class="dk">Affected</span><span class="dv">${n.isAffected?'โก YES':'No'}</span></div>
     <div style="margin-top:10px;font-size:11px;color:var(--text2)">Upstream</div>
     <div class="dep-l">${up}</div>
     <div style="margin-top:8px;font-size:11px;color:var(--text2)">Downstream</div>
     <div class="dep-l">${dn}</div>
-    <div style="margin-top:8px;font-size:10px;color:var(--text2)">Updated: ${m.last_updated?new Date(m.last_updated).toLocaleString('th-TH'):'—'}</div>`;
+    <div style="margin-top:8px;font-size:10px;color:var(--text2)">Updated: ${m.last_updated?new Date(m.last_updated).toLocaleString('th-TH'):'โ€”'}</div>`;
 }
 
 function clearND(){
-  document.getElementById('nd').innerHTML='<div style="color:var(--text2);font-size:12px;padding:8px 0;text-align:center;">คลิกที่ node เพื่อดูรายละเอียด</div>';
+  document.getElementById('nd').innerHTML='<div style="color:var(--text2);font-size:12px;padding:8px 0;text-align:center;">เธเธฅเธดเธเธ—เธตเน node เน€เธเธทเนเธญเธ”เธนเธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”</div>';
 }
 
-// ── SNAPSHOT ──
+// โ”€โ”€ SNAPSHOT โ”€โ”€
 async function saveSnapshot(){
-  if(!graphData){toast('ยังไม่มีข้อมูล graph','warn');return;}
+  if(!graphData){toast('เธขเธฑเธเนเธกเนเธกเธตเธเนเธญเธกเธนเธฅ graph','warn');return;}
   const label=document.getElementById('snap-label').value||('snapshot_'+new Date().toISOString().slice(0,16));
   const snap={
     timestamp:new Date().toISOString(),
-    version:graphData.meta&&graphData.meta.version?{version:graphData.meta.version}:{version:'5.5.8'},
+    version:graphData.meta&&graphData.meta.version?{version:graphData.meta.version}:{version:window.COMPHONE_VERSION || '5.9.0-phase2d'},
     health_score:graphData.meta&&graphData.meta.health_score?graphData.meta.health_score:0,
     health_status:graphData.meta&&graphData.meta.health_status?graphData.meta.health_status:'unknown',
     stats:{ok_nodes:graphData.nodes.filter(n=>n.status==='ok').length,warn_nodes:graphData.nodes.filter(n=>n.status==='warning').length,error_nodes:graphData.nodes.filter(n=>n.status==='error').length},
-    nodes:graphData.nodes.map(n=>({id:n.id,status:n.status,version:n.meta&&n.meta.version?n.meta.version:'—',latency_ms:n.meta&&n.meta.latency_ms?n.meta.latency_ms:0,error_rate:n.meta&&n.meta.error_rate?n.meta.error_rate:0,isSSOT:n.isSSOT,isFailureRoot:n.isFailureRoot})),
+    nodes:graphData.nodes.map(n=>({id:n.id,status:n.status,version:n.meta&&n.meta.version?n.meta.version:'โ€”',latency_ms:n.meta&&n.meta.latency_ms?n.meta.latency_ms:0,error_rate:n.meta&&n.meta.error_rate?n.meta.error_rate:0,isSSOT:n.isSSOT,isFailureRoot:n.isFailureRoot})),
     diagnostics:graphData.meta&&graphData.meta.diagnostics?graphData.meta.diagnostics:[],
     triggers:graphData.meta&&graphData.meta.triggers?graphData.meta.triggers:{}
   };
   // Save to GAS Sheets
   try{
     const r=await callApi('storeSnapshot',{label,snapshot:snap});
-    if(r&&r.success){toast('✅ Snapshot บันทึกลง Google Sheets: '+r.id,'ok');}
-    else{toast('⚠️ บันทึก GAS ไม่สำเร็จ: '+(r&&r.error?r.error:'unknown'),'warn');}
-  }catch(e){toast('⚠️ GAS offline — บันทึกเฉพาะ local','warn');}
+    if(r&&r.success){toast('โ… Snapshot เธเธฑเธเธ—เธถเธเธฅเธ Google Sheets: '+r.id,'ok');}
+    else{toast('โ ๏ธ เธเธฑเธเธ—เธถเธ GAS เนเธกเนเธชเธณเน€เธฃเนเธ: '+(r&&r.error?r.error:'unknown'),'warn');}
+  }catch(e){toast('โ ๏ธ GAS offline โ€” เธเธฑเธเธ—เธถเธเน€เธเธเธฒเธฐ local','warn');}
   document.getElementById('snap-label').value='';
 }
 
 function downloadSnapshot(){
-  if(!graphData){toast('ยังไม่มีข้อมูล graph','warn');return;}
+  if(!graphData){toast('เธขเธฑเธเนเธกเนเธกเธตเธเนเธญเธกเธนเธฅ graph','warn');return;}
   const snap={timestamp:new Date().toISOString(),health_score:graphData.meta&&graphData.meta.health_score?graphData.meta.health_score:0,nodes:graphData.nodes.map(n=>({id:n.id,status:n.status,isSSOT:n.isSSOT}))};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   a.href=url;a.download='comphone_snapshot_'+new Date().toISOString().slice(0,19).replace(/:/g,'-')+'.json';
   a.click();URL.revokeObjectURL(url);
-  toast('✅ Export สำเร็จ','ok');
+  toast('โ… Export เธชเธณเน€เธฃเนเธ','ok');
 }
 
 async function loadSnapshots(){
   const el=document.getElementById('snap-list');
-  el.innerHTML='<div style="color:var(--text2);font-size:11px;text-align:center;padding:8px 0;">⏳ กำลังโหลด...</div>';
+  el.innerHTML='<div style="color:var(--text2);font-size:11px;text-align:center;padding:8px 0;">โณ เธเธณเธฅเธฑเธเนเธซเธฅเธ”...</div>';
   try{
     const r=await callApi('getSnapshots',{limit:10});
     if(r&&r.success&&r.snapshots&&r.snapshots.length>0){
       el.innerHTML=r.snapshots.map(s=>{
-        const ts=s.timestamp?new Date(s.timestamp).toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'}):'—';
+        const ts=s.timestamp?new Date(s.timestamp).toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'}):'โ€”';
         const score=Number(s.health_score||0);
         const sc=score>=80?'var(--ok)':score>=50?'var(--warn)':'var(--err)';
         return`<div class="snap-item">
-          <span style="color:var(--text2);font-size:10px">${s.label||s.id||'—'}</span>
+          <span style="color:var(--text2);font-size:10px">${s.label||s.id||'โ€”'}</span>
           <span class="snap-score" style="color:${sc}">${score}%</span>
           <span class="snap-ts">${ts}</span>
         </div>`;
       }).join('');
     } else {
-      el.innerHTML='<div style="color:var(--text2);font-size:11px;text-align:center;padding:8px 0;">ยังไม่มี snapshot</div>';
+      el.innerHTML='<div style="color:var(--text2);font-size:11px;text-align:center;padding:8px 0;">เธขเธฑเธเนเธกเนเธกเธต snapshot</div>';
     }
   }catch(e){
-    el.innerHTML='<div style="color:var(--err);font-size:11px;text-align:center;padding:8px 0;">โหลดไม่สำเร็จ</div>';
+    el.innerHTML='<div style="color:var(--err);font-size:11px;text-align:center;padding:8px 0;">เนเธซเธฅเธ”เนเธกเนเธชเธณเน€เธฃเนเธ</div>';
   }
 }
 
-// ── MAIN REFRESH ──
+// โ”€โ”€ MAIN REFRESH โ”€โ”€
 async function doRefresh(){
-  document.getElementById('btn-refresh').textContent='↻ กำลังโหลด...';
+  document.getElementById('btn-refresh').textContent='โป เธเธณเธฅเธฑเธเนเธซเธฅเธ”...';
   try{
     const data=await buildSystemGraph();
     graphData=data;
@@ -731,9 +732,9 @@ async function doRefresh(){
     updateUI(data);
   }catch(e){
     console.error('[doRefresh]',e);
-    toast('❌ โหลดข้อมูลไม่สำเร็จ: '+e.message,'err');
+    toast('โ เนเธซเธฅเธ”เธเนเธญเธกเธนเธฅเนเธกเนเธชเธณเน€เธฃเนเธ: '+e.message,'err');
   }
-  document.getElementById('btn-refresh').textContent='↻ รีเฟรช';
+  document.getElementById('btn-refresh').textContent='โป เธฃเธตเน€เธเธฃเธ';
 }
 
 function togglePanel(){

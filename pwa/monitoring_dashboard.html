@@ -1,10 +1,11 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th" class="cp-dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>COMPHONE System Monitor — V5.5.8</title>
+  <title>COMPHONE System Monitor โ€” v5.9.0-phase2d</title>
   <link rel="stylesheet" href="dashboard_shared.css">
+  <script src="version_config.js"></script>
   <style>
     /* Local tokens bridged to shared design system (dashboard_shared.css) */
     :root {
@@ -30,7 +31,7 @@
       min-height: 100vh;
     }
 
-    /* ─── Header ─────────────────────────────────────────── */
+    /* โ”€โ”€โ”€ Header โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
     header {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
@@ -82,7 +83,7 @@
       text-align: right;
     }
 
-    /* ─── GAS URL Setup ──────────────────────────────────── */
+    /* โ”€โ”€โ”€ GAS URL Setup โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
     #setup-bar {
       background: #1c2128;
       border-bottom: 1px solid var(--border);
@@ -115,10 +116,10 @@
     }
     #save-url-btn:hover { opacity: 0.85; }
 
-    /* ─── Main Layout ────────────────────────────────────── */
+    /* โ”€โ”€โ”€ Main Layout โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
     main { padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
 
-    /* ─── Metric Cards ───────────────────────────────────── */
+    /* โ”€โ”€โ”€ Metric Cards โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
     .cards-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -167,7 +168,7 @@
       opacity: 0.15;
     }
 
-    /* ─── Charts Row ─────────────────────────────────────── */
+    /* โ”€โ”€โ”€ Charts Row โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
     .charts-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -192,7 +193,7 @@
     }
     canvas { width: 100% !important; }
 
-    /* ─── Trigger Table ──────────────────────────────────── */
+    /* โ”€โ”€โ”€ Trigger Table โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
     .section-card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -237,7 +238,7 @@
     .badge-yellow { background: #2a200d; color: var(--yellow);border: 1px solid #4a3a1a; }
     .badge-blue   { background: #0d1a2a; color: var(--blue);  border: 1px solid #1a2a4a; }
 
-    /* ─── Log Viewer ─────────────────────────────────────── */
+    /* โ”€โ”€โ”€ Log Viewer โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
     #log-container {
       background: var(--bg);
       border: 1px solid var(--border);
@@ -282,7 +283,7 @@
     .filter-btn.active { background: var(--blue); color: #000; border-color: var(--blue); font-weight: 600; }
     .empty-log { color: var(--muted); text-align: center; padding: 40px; }
 
-    /* ─── Properties Section ─────────────────────────────── */
+    /* โ”€โ”€โ”€ Properties Section โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
     .props-bar {
       background: var(--bg);
       border-radius: 6px;
@@ -296,7 +297,7 @@
       transition: width 0.5s, background 0.3s;
     }
 
-    /* ─── Loading Skeleton ───────────────────────────────── */
+    /* โ”€โ”€โ”€ Loading Skeleton โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
     .skeleton {
       background: linear-gradient(90deg, #21262d 25%, #30363d 50%, #21262d 75%);
       background-size: 200% 100%;
@@ -306,7 +307,7 @@
     }
     @keyframes shimmer { 0%{background-position:200%} 100%{background-position:-200%} }
 
-    /* ─── Error Banner ───────────────────────────────────── */
+    /* โ”€โ”€โ”€ Error Banner โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
     #error-banner {
       display: none;
       background: #2a0d0d;
@@ -319,13 +320,13 @@
     }
     #error-banner.show { display: flex; align-items: center; gap: 10px; }
 
-    /* ─── Scrollbar ──────────────────────────────────────── */
+    /* โ”€โ”€โ”€ Scrollbar โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
-    /* ─── System Logs Viewer ──────────────────────────────── */
+    /* โ”€โ”€โ”€ System Logs Viewer โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
     #sys-logs-section { margin-top: 4px; }
     #sys-logs-filter {
       display: flex;
@@ -453,14 +454,14 @@
 <!-- Header -->
 <header>
   <div class="header-left">
-    <span class="logo">⚡ COMPHONE Monitor</span>
-    <span class="version-badge" id="sys-version">V5.5.8</span>
+    <span class="logo">โก COMPHONE Monitor</span>
+    <span class="version-badge" id="sys-version">v5.9.0-phase2d</span>
     <div id="status-dot" class="loading"></div>
   </div>
   <div class="header-right">
-    <span id="last-update">กำลังโหลด...</span>
+    <span id="last-update">เธเธณเธฅเธฑเธเนเธซเธฅเธ”...</span>
     <span id="countdown">5s</span>
-    <button id="refresh-btn" onclick="fetchAll()">↻ Refresh</button>
+    <button id="refresh-btn" onclick="fetchAll()">โป Refresh</button>
   </div>
 </header>
 
@@ -468,65 +469,65 @@
 <div id="setup-bar">
   <label>GAS URL:</label>
   <input type="text" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec" />
-  <button id="save-url-btn" onclick="saveGasUrl()">บันทึก</button>
+  <button id="save-url-btn" onclick="saveGasUrl()">เธเธฑเธเธ—เธถเธ</button>
 </div>
 
 <main>
   <!-- Error Banner -->
   <div id="error-banner">
-    <span>⚠️</span>
-    <span id="error-msg">ไม่สามารถเชื่อมต่อ GAS API ได้</span>
+    <span>โ ๏ธ</span>
+    <span id="error-msg">เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เน€เธเธทเนเธญเธกเธ•เนเธญ GAS API เนเธ”เน</span>
   </div>
 
   <!-- Metric Cards -->
   <div class="cards-grid">
     <div class="card" id="card-health">
-      <div class="card-icon">💚</div>
+      <div class="card-icon">๐’</div>
       <div class="card-label">System Health</div>
-      <div class="card-value green" id="val-health">—</div>
-      <div class="card-sub" id="sub-health">กำลังตรวจสอบ...</div>
+      <div class="card-value green" id="val-health">โ€”</div>
+      <div class="card-sub" id="sub-health">เธเธณเธฅเธฑเธเธ•เธฃเธงเธเธชเธญเธ...</div>
     </div>
     <div class="card" id="card-latency">
-      <div class="card-icon">⚡</div>
+      <div class="card-icon">โก</div>
       <div class="card-label">API Latency</div>
-      <div class="card-value blue" id="val-latency">—</div>
+      <div class="card-value blue" id="val-latency">โ€”</div>
       <div class="card-sub" id="sub-latency">ms (health check)</div>
     </div>
     <div class="card" id="card-sessions">
-      <div class="card-icon">👤</div>
+      <div class="card-icon">๐‘ค</div>
       <div class="card-label">Active Sessions</div>
-      <div class="card-value purple" id="val-sessions">—</div>
+      <div class="card-value purple" id="val-sessions">โ€”</div>
       <div class="card-sub" id="sub-sessions">max 3 per user</div>
     </div>
     <div class="card" id="card-ratelimit">
-      <div class="card-icon">🚫</div>
+      <div class="card-icon">๐ซ</div>
       <div class="card-label">Rate Limit Hits</div>
-      <div class="card-value orange" id="val-ratelimit" style="color:var(--orange)">—</div>
-      <div class="card-sub" id="sub-ratelimit">ใน 100 events ล่าสุด</div>
+      <div class="card-value orange" id="val-ratelimit" style="color:var(--orange)">โ€”</div>
+      <div class="card-sub" id="sub-ratelimit">เนเธ 100 events เธฅเนเธฒเธชเธธเธ”</div>
     </div>
     <div class="card" id="card-errors">
-      <div class="card-icon">❌</div>
+      <div class="card-icon">โ</div>
       <div class="card-label">Error Events</div>
-      <div class="card-value red" id="val-errors">—</div>
+      <div class="card-value red" id="val-errors">โ€”</div>
       <div class="card-sub" id="sub-errors">invalid token + errors</div>
     </div>
     <div class="card" id="card-triggers">
-      <div class="card-icon">⏰</div>
+      <div class="card-icon">โฐ</div>
       <div class="card-label">Active Triggers</div>
-      <div class="card-value blue" id="val-triggers">—</div>
+      <div class="card-value blue" id="val-triggers">โ€”</div>
       <div class="card-sub" id="sub-triggers">GAS scheduled triggers</div>
     </div>
     <div class="card" id="card-props">
-      <div class="card-icon">🗄️</div>
+      <div class="card-icon">๐—๏ธ</div>
       <div class="card-label">Script Properties</div>
-      <div class="card-value" id="val-props">—</div>
+      <div class="card-value" id="val-props">โ€”</div>
       <div class="props-bar"><div class="props-fill" id="props-fill" style="width:0%;background:var(--green)"></div></div>
       <div class="card-sub" id="sub-props">limit: 50</div>
     </div>
     <div class="card" id="card-version">
-      <div class="card-icon">🔖</div>
+      <div class="card-icon">๐”–</div>
       <div class="card-label">Version</div>
-      <div class="card-value green" id="val-version">—</div>
+      <div class="card-value green" id="val-version">โ€”</div>
       <div class="card-sub" id="sub-version">Backend version</div>
     </div>
   </div>
@@ -534,18 +535,18 @@
   <!-- Charts Row -->
   <div class="charts-row">
     <div class="chart-card">
-      <div class="chart-title">📈 API Latency History (ms)</div>
+      <div class="chart-title">๐“ API Latency History (ms)</div>
       <canvas id="latency-chart" height="140"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">🔐 Security Events (ล่าสุด 20 รอบ)</div>
+      <div class="chart-title">๐” Security Events (เธฅเนเธฒเธชเธธเธ” 20 เธฃเธญเธ)</div>
       <canvas id="security-chart" height="140"></canvas>
     </div>
   </div>
 
   <!-- Trigger Table -->
   <div class="section-card">
-    <div class="section-title">⏰ Trigger Schedule</div>
+    <div class="section-title">โฐ Trigger Schedule</div>
     <table>
       <thead>
         <tr>
@@ -554,29 +555,29 @@
         </tr>
       </thead>
       <tbody id="trigger-table-body">
-        <tr><td colspan="2" style="color:var(--muted);text-align:center;padding:20px">กำลังโหลด...</td></tr>
+        <tr><td colspan="2" style="color:var(--muted);text-align:center;padding:20px">เธเธณเธฅเธฑเธเนเธซเธฅเธ”...</td></tr>
       </tbody>
     </table>
   </div>
 
   <!-- Security Log Viewer -->
   <div class="section-card">
-    <div class="section-title">🔍 Security Log Viewer</div>
+    <div class="section-title">๐” Security Log Viewer</div>
     <div class="log-filter">
-      <button class="filter-btn active" onclick="setFilter('ALL')">ทั้งหมด</button>
+      <button class="filter-btn active" onclick="setFilter('ALL')">เธ—เธฑเนเธเธซเธกเธ”</button>
       <button class="filter-btn" onclick="setFilter('RATE_LIMIT_EXCEEDED')">Rate Limit</button>
       <button class="filter-btn" onclick="setFilter('INVALID')">Invalid Token</button>
       <button class="filter-btn" onclick="setFilter('LOGIN')">Login</button>
-      <button class="filter-btn" onclick="setFilter('OTHER')">อื่นๆ</button>
+      <button class="filter-btn" onclick="setFilter('OTHER')">เธญเธทเนเธเน</button>
     </div>
     <div id="log-container">
-      <div class="empty-log">กำลังโหลด security log...</div>
+      <div class="empty-log">เธเธณเธฅเธฑเธเนเธซเธฅเธ” security log...</div>
     </div>
   </div>
 
-  <!-- ═══ System Logs — Real-time Log Viewer ═══ -->
+  <!-- โ•โ•โ• System Logs โ€” Real-time Log Viewer โ•โ•โ• -->
   <div class="section-card" id="sys-logs-section">
-    <div class="section-title">📋 System Logs <span style="font-weight:400;font-size:11px;color:var(--muted)">(Real-time • auto-refresh 10s)</span></div>
+    <div class="section-title">๐“ System Logs <span style="font-weight:400;font-size:11px;color:var(--muted)">(Real-time โ€ข auto-refresh 10s)</span></div>
     <div id="sys-logs-filter">
       <button class="slog-btn active" data-level="ALL" onclick="setSysLogLevel('ALL')">ALL</button>
       <button class="slog-btn" data-level="CRITICAL" onclick="setSysLogLevel('CRITICAL')">CRITICAL</button>
@@ -597,7 +598,7 @@
           </tr>
         </thead>
         <tbody id="sys-logs-tbody">
-          <tr><td colspan="4" class="slog-empty"><span class="slog-empty-icon">📡</span>Connecting to log stream...</td></tr>
+          <tr><td colspan="4" class="slog-empty"><span class="slog-empty-icon">๐“ก</span>Connecting to log stream...</td></tr>
         </tbody>
       </table>
     </div>
@@ -607,8 +608,8 @@
 <script src="gas_config.js"></script>
 <script src="api_client.js"></script>
 <script>
-// ─── Config ───────────────────────────────────────────────────────────────────
-// API URL managed by api_client.js — use getGasUrl()/setGasUrl()
+// โ”€โ”€โ”€ Config โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+// API URL managed by api_client.js โ€” use getGasUrl()/setGasUrl()
 const STORAGE_KEY = 'comphone_gas_url'; // Standard key (api_client.js compatible)
 let gasUrl        = getGasUrl(); // From api_client.js
 let logFilter    = 'ALL';
@@ -619,7 +620,7 @@ let countdownVal = 5;
 let countdownTimer;
 let refreshTimer;
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
+// โ”€โ”€โ”€ Init โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('gas-url-input').value = gasUrl;
   initCharts();
@@ -635,7 +636,7 @@ function saveGasUrl() {
   fetchAll();
 }
 
-// ─── Fetch All ────────────────────────────────────────────────────────────────
+// โ”€โ”€โ”€ Fetch All โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
 async function fetchAll() {
   setStatusDot('loading');
   clearTimeout(refreshTimer);
@@ -660,7 +661,7 @@ async function fetchAll() {
     }
 
     setStatusDot('ok');
-    document.getElementById('last-update').textContent = 'อัปเดต: ' + new Date().toLocaleTimeString('th-TH');
+    document.getElementById('last-update').textContent = 'เธญเธฑเธเน€เธ”เธ•: ' + new Date().toLocaleTimeString('th-TH');
   } catch(e) {
     setStatusDot('error');
     showError(e.message);
@@ -680,19 +681,19 @@ async function fetchMetrics() {
 
 async function fetchSecurityLog() {
   const data = await callApi('getSecurityLog', {}, { noAuth: true });
-  // getSecurityLog ส่งกลับ array โดยตรง หรือ { success, data }
+  // getSecurityLog เธชเนเธเธเธฅเธฑเธ array เนเธ”เธขเธ•เธฃเธ เธซเธฃเธทเธญ { success, data }
   if (Array.isArray(data)) return data;
   if (data.success && Array.isArray(data.data)) return data.data;
   return [];
 }
 
-// ─── Update UI ────────────────────────────────────────────────────────────────
+// โ”€โ”€โ”€ Update UI โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
 function updateMetricCards(data) {
   const m = data.metrics || {};
   const latency = data._latency || 0;
 
   // Version
-  const ver = m.version || data.version || 'N/A';
+  const ver = m.version || data.version || window.COMPHONE_VERSION || '5.9.0-phase2d';
   setText('val-version', ver);
   setText('sys-version', ver);
 
@@ -732,7 +733,7 @@ function updateMetricCards(data) {
 
   setText('val-ratelimit', rateLimitHits);
   setCardState('card-ratelimit', rateLimitHits > 5 ? 'alert' : rateLimitHits > 0 ? 'warn' : 'ok');
-  setText('sub-ratelimit', 'ใน ' + (sec.recent_events || 0) + ' events ล่าสุด');
+  setText('sub-ratelimit', 'เนเธ ' + (sec.recent_events || 0) + ' events เธฅเนเธฒเธชเธธเธ”');
 
   setText('val-errors', errTotal);
   const errEl = document.getElementById('val-errors');
@@ -764,24 +765,24 @@ function updateMetricCards(data) {
   fill.style.width = pct + '%';
   fill.style.background = propsTotal > 45 ? 'var(--red)' : propsTotal > 35 ? 'var(--yellow)' : 'var(--green)';
   const sessKeys = props.session_keys || 0;
-  setText('sub-props', 'SESSION_* keys: ' + sessKeys + (props.warning ? ' ⚠️ ' + props.warning : ''));
+  setText('sub-props', 'SESSION_* keys: ' + sessKeys + (props.warning ? ' โ ๏ธ ' + props.warning : ''));
 }
 
 function renderTriggerTable(functions) {
   const tbody = document.getElementById('trigger-table-body');
   if (!functions || functions.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="2" style="color:var(--muted);text-align:center;padding:20px">ไม่พบ trigger</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="2" style="color:var(--muted);text-align:center;padding:20px">เนเธกเนเธเธ trigger</td></tr>';
     return;
   }
   const known = {
-    'autoBackup':              { schedule: 'ทุกวัน 00:00', badge: 'badge-green' },
-    'autoSyncToDrive':         { schedule: 'ทุกวัน 02:00', badge: 'badge-green' },
-    'auditSessionLeak_':       { schedule: 'ทุกวัน 03:00', badge: 'badge-green' },
-    'cronMorningAlert':        { schedule: 'ทุกวัน 06:00', badge: 'badge-green' },
-    'sendAfterSalesAlerts':    { schedule: 'ทุกวัน 08:00', badge: 'badge-green' },
-    'geminiReorderSuggestion': { schedule: 'ทุกวัน 09:00', badge: 'badge-green' },
-    'cleanupSessions':         { schedule: 'ทุก 6 ชั่วโมง', badge: 'badge-blue'  },
-    'cronHealthCheck':         { schedule: 'ทุก 30 นาที',  badge: 'badge-blue'  },
+    'autoBackup':              { schedule: 'เธ—เธธเธเธงเธฑเธ 00:00', badge: 'badge-green' },
+    'autoSyncToDrive':         { schedule: 'เธ—เธธเธเธงเธฑเธ 02:00', badge: 'badge-green' },
+    'auditSessionLeak_':       { schedule: 'เธ—เธธเธเธงเธฑเธ 03:00', badge: 'badge-green' },
+    'cronMorningAlert':        { schedule: 'เธ—เธธเธเธงเธฑเธ 06:00', badge: 'badge-green' },
+    'sendAfterSalesAlerts':    { schedule: 'เธ—เธธเธเธงเธฑเธ 08:00', badge: 'badge-green' },
+    'geminiReorderSuggestion': { schedule: 'เธ—เธธเธเธงเธฑเธ 09:00', badge: 'badge-green' },
+    'cleanupSessions':         { schedule: 'เธ—เธธเธ 6 เธเธฑเนเธงเนเธกเธ', badge: 'badge-blue'  },
+    'cronHealthCheck':         { schedule: 'เธ—เธธเธ 30 เธเธฒเธ—เธต',  badge: 'badge-blue'  },
   };
   tbody.innerHTML = functions.map(fn => {
     const info = known[fn] || { schedule: 'Custom', badge: 'badge-yellow' };
@@ -792,16 +793,16 @@ function renderTriggerTable(functions) {
   }).join('');
 }
 
-// ─── Log Viewer ───────────────────────────────────────────────────────────────
+// โ”€โ”€โ”€ Log Viewer โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
 function setFilter(f) {
   logFilter = f;
   document.querySelectorAll('.filter-btn').forEach(b => {
     b.classList.toggle('active', b.textContent.trim() === f ||
-      (f === 'ALL' && b.textContent.trim() === 'ทั้งหมด') ||
+      (f === 'ALL' && b.textContent.trim() === 'เธ—เธฑเนเธเธซเธกเธ”') ||
       (f === 'RATE_LIMIT_EXCEEDED' && b.textContent.trim() === 'Rate Limit') ||
       (f === 'INVALID' && b.textContent.trim() === 'Invalid Token') ||
       (f === 'LOGIN' && b.textContent.trim() === 'Login') ||
-      (f === 'OTHER' && b.textContent.trim() === 'อื่นๆ')
+      (f === 'OTHER' && b.textContent.trim() === 'เธญเธทเนเธเน')
     );
   });
   renderLogs();
@@ -821,7 +822,7 @@ function renderLogs() {
     });
   }
   if (filtered.length === 0) {
-    container.innerHTML = '<div class="empty-log">ไม่มี security events ในช่วงนี้ ✅</div>';
+    container.innerHTML = '<div class="empty-log">เนเธกเนเธกเธต security events เนเธเธเนเธงเธเธเธตเน โ…</div>';
     return;
   }
   container.innerHTML = filtered.slice(0, 100).map(e => {
@@ -830,7 +831,7 @@ function renderLogs() {
     if (ev.includes('RATE_LIMIT')) evClass = 'rate';
     else if (ev.includes('INVALID') || ev.includes('ERROR')) evClass = 'token';
     else if (ev.includes('LOGIN')) evClass = 'login';
-    const ts = e.timestamp ? new Date(e.timestamp).toLocaleString('th-TH') : '—';
+    const ts = e.timestamp ? new Date(e.timestamp).toLocaleString('th-TH') : 'โ€”';
     const detail = e.endpoint ? `[${e.endpoint}]` + (e.details ? ' ' + JSON.stringify(e.details) : '') : (e.details ? JSON.stringify(e.details) : '');
     return `<div class="log-entry">
       <span class="log-time">${ts}</span>
@@ -840,7 +841,7 @@ function renderLogs() {
   }).join('');
 }
 
-// ─── Charts (Mini Canvas) ─────────────────────────────────────────────────────
+// โ”€โ”€โ”€ Charts (Mini Canvas) โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
 let latencyCtx, securityCtx;
 let latencyChart, securityChart;
 
@@ -949,7 +950,7 @@ function updateSecurityChart() {
   ctx.fillText('Invalid Token', 116, 18);
 }
 
-// ─── Countdown ────────────────────────────────────────────────────────────────
+// โ”€โ”€โ”€ Countdown โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
 function startCountdown() {
   countdownVal = 5;
   document.getElementById('countdown').textContent = countdownVal + 's';
@@ -963,7 +964,7 @@ function startCountdown() {
   }, 1000);
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// โ”€โ”€โ”€ Helpers โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
 function setText(id, val) {
   const el = document.getElementById(id);
   if (el) el.textContent = val;
@@ -988,7 +989,7 @@ function hideError() {
   document.getElementById('error-banner').classList.remove('show');
 }
 
-// ─── System Logs — Real-time Log Viewer ──────────────────────────────────────
+// โ”€โ”€โ”€ System Logs โ€” Real-time Log Viewer โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
 let sysLogLevelFilter = 'ALL';
 let allSysLogs = [];
 let sysLogsPollTimer = null;
@@ -1030,7 +1031,7 @@ async function fetchSystemLogs() {
   } catch (err) {
     console.error('fetchSystemLogs error:', err);
     const statusEl = document.getElementById('sys-logs-status');
-    statusEl.innerHTML = '⚠️ Fetch error — retrying...';
+    statusEl.innerHTML = 'โ ๏ธ Fetch error โ€” retrying...';
     statusEl.style.color = 'var(--orange)';
   }
 }
@@ -1059,13 +1060,13 @@ function renderSysLogsTable() {
   // Empty state
   if (filtered.length === 0) {
     tbody.innerHTML = '<tr><td colspan="4" class="slog-empty">' +
-      '<span class="slog-empty-icon">✅</span>' +
+      '<span class="slog-empty-icon">โ…</span>' +
       (total === 0 ? 'No logs available' : 'No ' + sysLogLevelFilter + ' logs') +
       '</td></tr>';
     return;
   }
 
-  // Build rows (newest first — reverse if needed)
+  // Build rows (newest first โ€” reverse if needed)
   const sorted = [...filtered].sort((a, b) => {
     const ta = new Date(a.timestamp || a.time || 0).getTime();
     const tb = new Date(b.timestamp || b.time || 0).getTime();
@@ -1074,13 +1075,13 @@ function renderSysLogsTable() {
 
   tbody.innerHTML = sorted.slice(0, 50).map(log => {
     const level = (log.level || log.severity || 'INFO').toUpperCase();
-    const source = log.source || log.module || log.component || '—';
-    const msg = log.message || log.detail || log.msg || '—';
+    const source = log.source || log.module || log.component || 'โ€”';
+    const msg = log.message || log.detail || log.msg || 'โ€”';
     const ts = log.timestamp || log.time;
     const timeStr = ts ? new Date(ts).toLocaleString('th-TH', {
       hour: '2-digit', minute: '2-digit', second: '2-digit',
       day: '2-digit', month: '2-digit'
-    }) : '—';
+    }) : 'โ€”';
 
     // Row class for critical/error highlighting
     let rowClass = '';

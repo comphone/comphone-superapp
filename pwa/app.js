@@ -2,10 +2,8 @@
 'use strict';
 
 // ===== STATE =====
-// URL source: window.COMPHONE_GAS_URL (from version_config.js) > gas_config.js > fallback
-const DEFAULT_SCRIPT_URL = window.COMPHONE_GAS_URL || 
-                        (window.GAS_CONFIG && window.GAS_CONFIG.url) || 
-                        'https://script.google.com/macros/s/AKfycbz8wmzBTNpPHEzOThB0x48TCBru9u74ucqQZ-kMwx9bhFQc4OAY_bc_jWnG4JrQU8EBUw/exec';
+// URL source: gas_config.js / version_config.js. Do not hardcode deployment URLs here.
+const DEFAULT_SCRIPT_URL = window.COMPHONE_GAS_URL || (window.GAS_CONFIG && window.GAS_CONFIG.url) || '';
 
 const APP = {
   user: null,
@@ -149,11 +147,6 @@ window.initApp = function() {
 
 
 window.addEventListener('load', () => {
-  // Register Service Worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/comphone-superapp/pwa/sw.js').catch(() => {});
-  }
-
   // PWA Install prompt
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();

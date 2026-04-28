@@ -13,8 +13,8 @@
 'use strict';
 
 // ===== CONFIG =====
-// URL source: GAS_CONFIG.url (from gas_config.js) > localStorage > fallback
-const COMPHONE_DEFAULT_GAS_URL = (window.GAS_CONFIG && window.GAS_CONFIG.url) || 'https://script.google.com/macros/s/AKfycbz8wmzBTNpPHEzOThB0x48TCBru9u74ucqQZ-kMwx9bhFQc4OAY_bc_jWnG4JrQU8EBUw/exec';
+// URL source: gas_config.js / version_config.js. Keep deployment URLs in config only.
+const COMPHONE_DEFAULT_GAS_URL = (window.GAS_CONFIG && window.GAS_CONFIG.url) || window.COMPHONE_GAS_URL || '';
 const COMPHONE_SESSION_KEY = 'comphone_auth_session';
 const COMPHONE_GAS_URL_KEY = 'comphone_gas_url';
 const COMPHONE_API_TIMEOUT = 30000; // 30s
@@ -25,7 +25,7 @@ const COMPHONE_CACHE_TTL_SLOW = 60000; // 60s for slow-changing data
  * getGasUrl() — ดึง GAS URL จาก localStorage หรือ default
  */
 function getGasUrl() {
-  return localStorage.getItem(COMPHONE_GAS_URL_KEY) || COMPHONE_DEFAULT_GAS_URL;
+  return COMPHONE_DEFAULT_GAS_URL || localStorage.getItem(COMPHONE_GAS_URL_KEY) || '';
 }
 
 /**
@@ -254,7 +254,7 @@ async function batchCallApi(calls, options) {
  * ถ้า major version ไม่ตรงกัน → แจ้เตือนและ reload
  */
 async function checkApiVersion() {
-  var CLIENT_VERSION = (typeof APP_VERSION !== 'undefined') ? APP_VERSION : '5.5.8'; // Version Lock V5.5.8
+  var CLIENT_VERSION = window.COMPHONE_VERSION || (typeof APP_VERSION !== 'undefined' ? APP_VERSION : 'unknown');
   try {
     var res = await callApi('getVersion', {}, { noAuth: true });
     var serverVersion = res && res.version ? String(res.version).replace(/^V/i, '') : null;

@@ -6,7 +6,6 @@ const APP_VERSION = '5.9.0-phase2d';
 const CACHE_VERSION = 'comphone-v5.9.0-phase2d';
 const BUILD_TIMESTAMP = '20260428_1130';
 const GAS_VERSION = '502';
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbz8wmzBTNpPHEzOThB0x48TCBru9u74ucqQZ-kMwx9bhFQc4OAY_bc_jW/exec';
 
 // Export for use in other modules
 window.COMPHONE_VERSION = APP_VERSION;

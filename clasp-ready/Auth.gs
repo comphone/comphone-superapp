@@ -164,9 +164,15 @@ function verifySession(token) {
       PropertiesService.getScriptProperties().deleteProperty('SESSION_' + token);
       return { valid: false, error: 'Session หมดอายุ กรุณาเข้าสู่ระบบใหม่' };
     }
-    return { valid: true, session: session };
+    return {
+      success: true,
+      valid: true,
+      username: session.username || '',
+      role: session.role || '',
+      session: session
+    };
   } catch (e) {
-    return { valid: false, error: e.toString() };
+    return { success: false, valid: false, error: e.toString() };
   }
 }
 

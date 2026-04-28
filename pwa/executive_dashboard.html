@@ -1,16 +1,17 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th" class="cp-dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>COMPHONE Executive Dashboard — KPI Overview</title>
+  <title>COMPHONE Executive Dashboard โ€” KPI Overview</title>
   <link rel="stylesheet" href="dashboard_shared.css">
+<script src="version_config.js"></script>
 <script src="gas_config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="js/system_graph_data.js" defer></script>
   <script src="api_client.js" defer></script>
   <style>
-    /* ── Reset & Base ── */
+    /* โ”€โ”€ Reset & Base โ”€โ”€ */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     /* Local tokens bridged to shared design system (dashboard_shared.css) */
     :root {
@@ -29,7 +30,7 @@
     }
     html, body { height: 100%; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); }
 
-    /* ── Topbar ── */
+    /* โ”€โ”€ Topbar โ”€โ”€ */
     .topbar {
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 24px; height: 56px; background: var(--bg2);
@@ -50,16 +51,16 @@
     .btn-refresh .spin { animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Role Badge ── */
+    /* โ”€โ”€ Role Badge โ”€โ”€ */
     .role-badge {
       padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700;
       background: var(--purple); color: #fff;
     }
 
-    /* ── Main Layout ── */
+    /* โ”€โ”€ Main Layout โ”€โ”€ */
     .main { padding: 24px; max-width: 1600px; margin: 0 auto; }
 
-    /* ── Alert Banner ── */
+    /* โ”€โ”€ Alert Banner โ”€โ”€ */
     .alert-banner { margin-bottom: 20px; }
     .alert-item {
       display: flex; align-items: center; gap: 10px; padding: 10px 16px;
@@ -71,7 +72,7 @@
     .alert-item.info     { background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.4); color: #93c5fd; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* ── KPI Cards Grid ── */
+    /* โ”€โ”€ KPI Cards Grid โ”€โ”€ */
     .kpi-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -95,7 +96,7 @@
     .kpi-card .kpi-drill { position: absolute; bottom: 10px; right: 12px; font-size: 0.72rem; color: var(--text2); opacity: 0.6; }
     .kpi-card:hover .kpi-drill { opacity: 1; color: var(--blue); }
 
-    /* ── KPI Comparison Row ── */
+    /* โ”€โ”€ KPI Comparison Row โ”€โ”€ */
     .kpi-comparison {
       display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;
     }
@@ -126,7 +127,7 @@
     .trend-down { background: rgba(239,68,68,0.15); color: var(--red); }
     .trend-flat { background: rgba(148,163,184,0.15); color: var(--text2); }
 
-    /* ── Target Progress Section ── */
+    /* โ”€โ”€ Target Progress Section โ”€โ”€ */
     .targets-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -147,7 +148,7 @@
     .target-bar-fill.red    { background: var(--red); }
     .target-bar-fill.blue   { background: var(--blue); }
 
-    /* ── Charts Grid ── */
+    /* โ”€โ”€ Charts Grid โ”€โ”€ */
     .charts-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
@@ -164,7 +165,7 @@
     .chart-legend-dot { width: 10px; height: 3px; border-radius: 2px; }
     .chart-legend-dot.dashed { border-top: 2px dashed; background: transparent; height: 0; }
 
-    /* ── Bottom Grid ── */
+    /* โ”€โ”€ Bottom Grid โ”€โ”€ */
     .bottom-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -189,7 +190,7 @@
     .badge.yellow { background: rgba(245,158,11,0.15); color: var(--yellow); }
     .badge.red    { background: rgba(239,68,68,0.15); color: var(--red); }
 
-    /* ── Health Score Ring ── */
+    /* โ”€โ”€ Health Score Ring โ”€โ”€ */
     .health-ring-wrap { display: flex; align-items: center; justify-content: center; gap: 20px; padding: 8px 0; }
     .health-ring { position: relative; width: 120px; height: 120px; }
     .health-ring svg { transform: rotate(-90deg); }
@@ -202,19 +203,19 @@
     .health-details .hd-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.82rem; }
     .health-details .hd-label { color: var(--text2); }
 
-    /* ── Low Stock List ── */
+    /* โ”€โ”€ Low Stock List โ”€โ”€ */
     .stock-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
     .stock-item:last-child { border-bottom: none; }
     .stock-bar { height: 4px; border-radius: 2px; background: var(--bg3); margin-top: 4px; overflow: hidden; }
     .stock-bar-fill { height: 100%; border-radius: 2px; background: var(--red); }
 
-    /* ── Skeleton Loading ── */
+    /* โ”€โ”€ Skeleton Loading โ”€โ”€ */
     .skeleton { background: linear-gradient(90deg, var(--bg3) 25%, var(--bg2) 50%, var(--bg3) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; }
     @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
     .skeleton-text { height: 14px; margin-bottom: 8px; }
     .skeleton-value { height: 40px; width: 60%; margin-bottom: 6px; }
 
-    /* ── Toast ── */
+    /* โ”€โ”€ Toast โ”€โ”€ */
     #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
     .toast {
       padding: 12px 20px; border-radius: 10px; font-size: 0.88rem; font-weight: 600;
@@ -227,7 +228,7 @@
     .toast.info    { background: rgba(59,130,246,0.9); color: #fff; }
     @keyframes slideIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
 
-    /* ── Auto Refresh Indicator ── */
+    /* โ”€โ”€ Auto Refresh Indicator โ”€โ”€ */
     #refresh-indicator {
       position: fixed; bottom: 24px; left: 24px; z-index: 9999;
       background: var(--bg2); border: 1px solid var(--border); border-radius: 20px;
@@ -237,7 +238,7 @@
     #refresh-indicator .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-    /* ── Login Screen ── */
+    /* โ”€โ”€ Login Screen โ”€โ”€ */
     #login-screen {
       position: fixed; inset: 0; background: var(--bg); z-index: 200;
       display: flex; align-items: center; justify-content: center;
@@ -264,10 +265,10 @@
     .btn-login:hover { background: #2563eb; }
     .login-error { color: var(--red); font-size: 0.82rem; margin-top: 8px; display: none; }
 
-    /* ── Section Title ── */
+    /* โ”€โ”€ Section Title โ”€โ”€ */
     .section-title { font-size: 0.75rem; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
 
-    /* ── Action Buttons ── */
+    /* โ”€โ”€ Action Buttons โ”€โ”€ */
     .action-btn {
       padding: 10px 16px; background: var(--bg3); border: 1px solid var(--border);
       border-radius: 8px; color: var(--text); cursor: pointer; font-size: 0.85rem;
@@ -275,13 +276,13 @@
     }
     .action-btn:hover { background: var(--blue); border-color: var(--blue); }
 
-    /* ── Forecast badge ── */
+    /* โ”€โ”€ Forecast badge โ”€โ”€ */
     .forecast-badge {
       display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.72rem; font-weight: 700;
       background: rgba(59,130,246,0.15); color: var(--blue); margin-left: 8px;
     }
 
-    /* ── Responsive ── */
+    /* โ”€โ”€ Responsive โ”€โ”€ */
     @media (max-width: 768px) {
       .main { padding: 16px; }
       .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
@@ -302,33 +303,33 @@
 <!-- Login Screen -->
 <div id="login-screen">
   <div class="login-card">
-    <div style="font-size:2rem;margin-bottom:12px;">📊</div>
+    <div style="font-size:2rem;margin-bottom:12px;">๐“</div>
     <h2>Executive Dashboard</h2>
-    <p>COMPHONE SUPER APP V5.5.8 — KPI Overview</p>
+    <p>COMPHONE SUPER APP v5.9.0-phase2d โ€” KPI Overview</p>
     <div class="form-group">
-      <label>ชื่อผู้ใช้</label>
+      <label>เธเธทเนเธญเธเธนเนเนเธเน</label>
       <input type="text" id="login-user" placeholder="username" autocomplete="username">
     </div>
     <div class="form-group">
-      <label>รหัสผ่าน</label>
+      <label>เธฃเธซเธฑเธชเธเนเธฒเธ</label>
       <input type="password" id="login-pass" placeholder="password" autocomplete="current-password">
     </div>
-    <button class="btn-login" onclick="doLogin()">เข้าสู่ระบบ</button>
-    <div class="login-error" id="login-error">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</div>
+    <button class="btn-login" onclick="doLogin()">เน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธ</button>
+    <div class="login-error" id="login-error">เธเธทเนเธญเธเธนเนเนเธเนเธซเธฃเธทเธญเธฃเธซเธฑเธชเธเนเธฒเธเนเธกเนเธ–เธนเธเธ•เนเธญเธ</div>
   </div>
 </div>
 
 <!-- Topbar -->
 <div class="topbar">
   <div class="topbar-brand">
-    <div class="logo">📊</div>
+    <div class="logo">๐“</div>
     <span>COMPHONE Executive Dashboard</span>
   </div>
   <div class="topbar-right">
-    <span class="last-updated" id="last-updated-label">กำลังโหลด...</span>
+    <span class="last-updated" id="last-updated-label">เธเธณเธฅเธฑเธเนเธซเธฅเธ”...</span>
     <span class="role-badge" id="role-badge">ADMIN</span>
     <button class="btn-refresh" id="btn-refresh" onclick="loadDashboard(true)">
-      <span id="refresh-icon">↻</span> รีเฟรช
+      <span id="refresh-icon">โป</span> เธฃเธตเน€เธเธฃเธ
     </button>
   </div>
 </div>
@@ -340,7 +341,7 @@
   <div class="alert-banner" id="alert-banner"></div>
 
   <!-- KPI Cards -->
-  <div class="section-title">📈 KPI Overview — คลิก card เพื่อดูรายละเอียด</div>
+  <div class="section-title">๐“ KPI Overview โ€” เธเธฅเธดเธ card เน€เธเธทเนเธญเธ”เธนเธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”</div>
   <div class="kpi-grid" id="kpi-grid">
     <!-- Skeleton -->
     <div class="kpi-card blue"><div class="skeleton skeleton-text" style="width:60%"></div><div class="skeleton skeleton-value"></div><div class="skeleton skeleton-text" style="width:40%"></div></div>
@@ -354,48 +355,48 @@
   </div>
 
   <!-- Monthly Targets -->
-  <div class="section-title">🎯 Monthly Targets — ความคืบหน้าเป้าหมายประจำเดือน</div>
+  <div class="section-title">๐ฏ Monthly Targets โ€” เธเธงเธฒเธกเธเธทเธเธซเธเนเธฒเน€เธเนเธฒเธซเธกเธฒเธขเธเธฃเธฐเธเธณเน€เธ”เธทเธญเธ</div>
   <div class="targets-grid" id="targets-grid">
     <div class="target-card">
       <div class="target-header">
-        <span class="target-label">💰 Revenue</span>
+        <span class="target-label">๐’ฐ Revenue</span>
         <span class="target-pct" id="tgt-rev-pct" style="color:var(--blue)">--%</span>
       </div>
       <div class="target-values">
-        <span id="tgt-rev-current">฿0</span>
-        <span>เป้า: <span id="tgt-rev-target">฿500,000</span></span>
+        <span id="tgt-rev-current">เธฟ0</span>
+        <span>เน€เธเนเธฒ: <span id="tgt-rev-target">เธฟ500,000</span></span>
       </div>
       <div class="target-bar"><div class="target-bar-fill blue" id="tgt-rev-bar" style="width:0%"></div></div>
     </div>
     <div class="target-card">
       <div class="target-header">
-        <span class="target-label">🔧 Jobs</span>
+        <span class="target-label">๐”ง Jobs</span>
         <span class="target-pct" id="tgt-jobs-pct" style="color:var(--green)">--%</span>
       </div>
       <div class="target-values">
-        <span id="tgt-jobs-current">0 งาน</span>
-        <span>เป้า: <span id="tgt-jobs-target">200 งาน</span></span>
+        <span id="tgt-jobs-current">0 เธเธฒเธ</span>
+        <span>เน€เธเนเธฒ: <span id="tgt-jobs-target">200 เธเธฒเธ</span></span>
       </div>
       <div class="target-bar"><div class="target-bar-fill green" id="tgt-jobs-bar" style="width:0%"></div></div>
     </div>
     <div class="target-card">
       <div class="target-header">
-        <span class="target-label">📋 SLA</span>
+        <span class="target-label">๐“ SLA</span>
         <span class="target-pct" id="tgt-sla-pct" style="color:var(--green)">--%</span>
       </div>
       <div class="target-values">
         <span id="tgt-sla-current">0%</span>
-        <span>เป้า: <span id="tgt-sla-target">90%</span></span>
+        <span>เน€เธเนเธฒ: <span id="tgt-sla-target">90%</span></span>
       </div>
       <div class="target-bar"><div class="target-bar-fill green" id="tgt-sla-bar" style="width:0%"></div></div>
     </div>
   </div>
 
   <!-- Charts -->
-  <div class="section-title">📊 Trend Analysis & Forecast</div>
+  <div class="section-title">๐“ Trend Analysis & Forecast</div>
   <div class="charts-grid">
     <div class="chart-card">
-      <h3>💰 Revenue Trend + Forecast <span class="forecast-badge" id="forecast-month-badge">คาดการณ์เดือนนี้: ฿0</span></h3>
+      <h3>๐’ฐ Revenue Trend + Forecast <span class="forecast-badge" id="forecast-month-badge">เธเธฒเธ”เธเธฒเธฃเธ“เนเน€เธ”เธทเธญเธเธเธตเน: เธฟ0</span></h3>
       <div class="chart-wrap"><canvas id="chart-revenue"></canvas></div>
       <div class="chart-legend">
         <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#3b82f6;height:3px;width:20px;border-radius:2px;"></div><span>Actual</span></div>
@@ -403,15 +404,15 @@
       </div>
     </div>
     <div class="chart-card">
-      <h3>🔧 Jobs by Status</h3>
+      <h3>๐”ง Jobs by Status</h3>
       <div class="chart-wrap"><canvas id="chart-jobs-status"></canvas></div>
     </div>
     <div class="chart-card">
-      <h3>📦 Inventory Status</h3>
+      <h3>๐“ฆ Inventory Status</h3>
       <div class="chart-wrap"><canvas id="chart-inventory"></canvas></div>
     </div>
     <div class="chart-card">
-      <h3>📈 Jobs Trend + Forecast</h3>
+      <h3>๐“ Jobs Trend + Forecast</h3>
       <div class="chart-wrap"><canvas id="chart-jobs-trend"></canvas></div>
       <div class="chart-legend">
         <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#10b981;height:3px;width:20px;border-radius:2px;"></div><span>Actual</span></div>
@@ -421,12 +422,12 @@
   </div>
 
   <!-- Bottom Info Cards -->
-  <div class="section-title">🔍 รายละเอียด</div>
+  <div class="section-title">๐” เธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”</div>
   <div class="bottom-grid">
 
     <!-- System Health -->
     <div class="info-card" style="cursor:pointer;" onclick="window.open('system_graph.html','_blank')">
-      <h3>💚 System Health <span style="font-size:0.7rem;color:var(--blue);font-weight:400;">↗ ดูรายละเอียด</span></h3>
+      <h3>๐’ System Health <span style="font-size:0.7rem;color:var(--blue);font-weight:400;">โ— เธ”เธนเธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”</span></h3>
       <div class="health-ring-wrap">
         <div class="health-ring">
           <svg viewBox="0 0 120 120" width="120" height="120">
@@ -450,49 +451,49 @@
 
     <!-- Revenue Summary -->
     <div class="info-card" style="cursor:pointer;" onclick="window.open('dashboard_pc.html#revenue','_blank')">
-      <h3>💰 Revenue Summary <span style="font-size:0.7rem;color:var(--blue);font-weight:400;">↗ ดูรายละเอียด</span></h3>
-      <div class="info-row"><span class="label">รายรับวันนี้</span><span class="value" id="rev-today">--</span></div>
-      <div class="info-row"><span class="label">รายรับสัปดาห์นี้</span><span class="value" id="rev-week">--</span></div>
-      <div class="info-row"><span class="label">รายรับเดือนนี้</span><span class="value" id="rev-month">--</span></div>
-      <div class="info-row"><span class="label">ยอดค้างชำระ</span><span class="value" id="rev-unpaid">--</span></div>
+      <h3>๐’ฐ Revenue Summary <span style="font-size:0.7rem;color:var(--blue);font-weight:400;">โ— เธ”เธนเธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”</span></h3>
+      <div class="info-row"><span class="label">เธฃเธฒเธขเธฃเธฑเธเธงเธฑเธเธเธตเน</span><span class="value" id="rev-today">--</span></div>
+      <div class="info-row"><span class="label">เธฃเธฒเธขเธฃเธฑเธเธชเธฑเธเธ”เธฒเธซเนเธเธตเน</span><span class="value" id="rev-week">--</span></div>
+      <div class="info-row"><span class="label">เธฃเธฒเธขเธฃเธฑเธเน€เธ”เธทเธญเธเธเธตเน</span><span class="value" id="rev-month">--</span></div>
+      <div class="info-row"><span class="label">เธขเธญเธ”เธเนเธฒเธเธเธณเธฃเธฐ</span><span class="value" id="rev-unpaid">--</span></div>
       <div class="info-row"><span class="label">Collection Rate</span><span class="value" id="rev-rate">--</span></div>
     </div>
 
     <!-- Operations Summary -->
     <div class="info-card" style="cursor:pointer;" onclick="window.open('dashboard_pc.html#jobs','_blank')">
-      <h3>🔧 Operations Summary <span style="font-size:0.7rem;color:var(--blue);font-weight:400;">↗ ดูรายละเอียด</span></h3>
-      <div class="info-row"><span class="label">งานทั้งหมด</span><span class="value" id="ops-total">--</span></div>
-      <div class="info-row"><span class="label">งานวันนี้</span><span class="value" id="ops-today">--</span></div>
-      <div class="info-row"><span class="label">กำลังดำเนินการ</span><span class="value" id="ops-inprogress">--</span></div>
-      <div class="info-row"><span class="label">เสร็จวันนี้</span><span class="value" id="ops-done">--</span></div>
-      <div class="info-row"><span class="label">เกินกำหนด</span><span class="value" id="ops-overdue">--</span></div>
+      <h3>๐”ง Operations Summary <span style="font-size:0.7rem;color:var(--blue);font-weight:400;">โ— เธ”เธนเธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”</span></h3>
+      <div class="info-row"><span class="label">เธเธฒเธเธ—เธฑเนเธเธซเธกเธ”</span><span class="value" id="ops-total">--</span></div>
+      <div class="info-row"><span class="label">เธเธฒเธเธงเธฑเธเธเธตเน</span><span class="value" id="ops-today">--</span></div>
+      <div class="info-row"><span class="label">เธเธณเธฅเธฑเธเธ”เธณเน€เธเธดเธเธเธฒเธฃ</span><span class="value" id="ops-inprogress">--</span></div>
+      <div class="info-row"><span class="label">เน€เธชเธฃเนเธเธงเธฑเธเธเธตเน</span><span class="value" id="ops-done">--</span></div>
+      <div class="info-row"><span class="label">เน€เธเธดเธเธเธณเธซเธเธ”</span><span class="value" id="ops-overdue">--</span></div>
     </div>
 
     <!-- Low Stock Alert -->
     <div class="info-card">
-      <h3>📦 Low Stock Alert</h3>
+      <h3>๐“ฆ Low Stock Alert</h3>
       <div id="low-stock-list">
-        <div style="color:var(--text2);font-size:0.85rem;">กำลังโหลด...</div>
+        <div style="color:var(--text2);font-size:0.85rem;">เธเธณเธฅเธฑเธเนเธซเธฅเธ”...</div>
       </div>
     </div>
 
     <!-- Customer Summary -->
     <div class="info-card" style="cursor:pointer;" onclick="window.open('dashboard_pc.html#customers','_blank')">
-      <h3>👥 Customer Summary <span style="font-size:0.7rem;color:var(--blue);font-weight:400;">↗ ดูรายละเอียด</span></h3>
-      <div class="info-row"><span class="label">ลูกค้าทั้งหมด</span><span class="value" id="cust-total">--</span></div>
-      <div class="info-row"><span class="label">ติดตามวันนี้</span><span class="value" id="cust-followup">--</span></div>
-      <div class="info-row"><span class="label">ค้างติดตาม</span><span class="value" id="cust-overdue">--</span></div>
-      <div class="info-row"><span class="label">เสร็จสัปดาห์นี้</span><span class="value" id="cust-done">--</span></div>
+      <h3>๐‘ฅ Customer Summary <span style="font-size:0.7rem;color:var(--blue);font-weight:400;">โ— เธ”เธนเธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”</span></h3>
+      <div class="info-row"><span class="label">เธฅเธนเธเธเนเธฒเธ—เธฑเนเธเธซเธกเธ”</span><span class="value" id="cust-total">--</span></div>
+      <div class="info-row"><span class="label">เธ•เธดเธ”เธ•เธฒเธกเธงเธฑเธเธเธตเน</span><span class="value" id="cust-followup">--</span></div>
+      <div class="info-row"><span class="label">เธเนเธฒเธเธ•เธดเธ”เธ•เธฒเธก</span><span class="value" id="cust-overdue">--</span></div>
+      <div class="info-row"><span class="label">เน€เธชเธฃเนเธเธชเธฑเธเธ”เธฒเธซเนเธเธตเน</span><span class="value" id="cust-done">--</span></div>
     </div>
 
     <!-- Quick Actions (Admin only) -->
     <div class="info-card" id="admin-actions-card">
-      <h3>⚡ Quick Actions</h3>
+      <h3>โก Quick Actions</h3>
       <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px;">
-        <button class="action-btn" onclick="quickAction('clearCache')">🗑️ Clear Cache</button>
-        <button class="action-btn" onclick="quickAction('sendSummary')">📤 ส่งสรุปรายวัน</button>
-        <button class="action-btn" onclick="window.open('system_graph.html','_blank')">🔗 System Graph</button>
-        <button class="action-btn" onclick="window.open('dashboard_pc.html','_blank')">🖥️ PC Dashboard</button>
+        <button class="action-btn" onclick="quickAction('clearCache')">๐—‘๏ธ Clear Cache</button>
+        <button class="action-btn" onclick="quickAction('sendSummary')">๐“ค เธชเนเธเธชเธฃเธธเธเธฃเธฒเธขเธงเธฑเธ</button>
+        <button class="action-btn" onclick="window.open('system_graph.html','_blank')">๐”— System Graph</button>
+        <button class="action-btn" onclick="window.open('dashboard_pc.html','_blank')">๐–ฅ๏ธ PC Dashboard</button>
       </div>
     </div>
 
@@ -521,7 +522,7 @@ const AUTO_REFRESH_MS = 30000; // 30s auto refresh
 // ============================================================
 let _token = null;
 let _role = 'manager';
-// _cache removed — managed by api_client.js cachedCallApi()
+// _cache removed โ€” managed by api_client.js cachedCallApi()
 let _charts = {};
 let _refreshTimer = null;
 let _countdown = AUTO_REFRESH_MS / 1000;
@@ -556,7 +557,7 @@ async function callGas(action, payload = {}, force = false) {
 async function doLogin() {
   const user = document.getElementById('login-user').value.trim();
   const pass = document.getElementById('login-pass').value.trim();
-  if (!user || !pass) { showLoginError('กรุณากรอกข้อมูล'); return; }
+  if (!user || !pass) { showLoginError('เธเธฃเธธเธ“เธฒเธเธฃเธญเธเธเนเธญเธกเธนเธฅ'); return; }
 
   try {
     const res = await callApi('loginUser', { username: user, password: pass }, { noAuth: true });
@@ -579,10 +580,10 @@ async function doLogin() {
       loadDashboard(true);
       startAutoRefresh();
     } else {
-      showLoginError(res && res.error ? res.error : 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+      showLoginError(res && res.error ? res.error : 'เธเธทเนเธญเธเธนเนเนเธเนเธซเธฃเธทเธญเธฃเธซเธฑเธชเธเนเธฒเธเนเธกเนเธ–เธนเธเธ•เนเธญเธ');
     }
   } catch(e) {
-    showLoginError('เชื่อมต่อ API ไม่ได้: ' + e.message);
+    showLoginError('เน€เธเธทเนเธญเธกเธ•เนเธญ API เนเธกเนเนเธ”เน: ' + e.message);
   }
 }
 
@@ -610,12 +611,12 @@ async function loadDashboard(force = false) {
   const icon = document.getElementById('refresh-icon');
   btn.classList.add('loading');
   icon.classList.add('spin');
-  icon.textContent = '↻';
+  icon.textContent = 'โป';
 
   try {
     const data = await cachedCallApi('getExecutiveDashboard', {}, COMPHONE_CACHE_TTL, force);
     if (!data || !data.success) {
-      showToast('โหลดข้อมูลไม่สำเร็จ: ' + (data && data.error ? data.error : 'unknown'), 'error');
+      showToast('เนเธซเธฅเธ”เธเนเธญเธกเธนเธฅเนเธกเนเธชเธณเน€เธฃเนเธ: ' + (data && data.error ? data.error : 'unknown'), 'error');
       return;
     }
     renderKPICards(data);
@@ -624,18 +625,18 @@ async function loadDashboard(force = false) {
     renderCharts(data);
     renderBottomCards(data);
     updateLastUpdated();
-    if (force) showToast('อัปเดตข้อมูลสำเร็จ', 'success', 2000);
+    if (force) showToast('เธญเธฑเธเน€เธ”เธ•เธเนเธญเธกเธนเธฅเธชเธณเน€เธฃเนเธ', 'success', 2000);
   } catch(e) {
-    showToast('เกิดข้อผิดพลาด: ' + e.message, 'error');
+    showToast('เน€เธเธดเธ”เธเนเธญเธเธดเธ”เธเธฅเธฒเธ”: ' + e.message, 'error');
   } finally {
     btn.classList.remove('loading');
     icon.classList.remove('spin');
-    icon.textContent = '↻';
+    icon.textContent = 'โป';
   }
 }
 
 // ============================================================
-// Render KPI Cards — with Comparison arrows & Drill Down
+// Render KPI Cards โ€” with Comparison arrows & Drill Down
 // ============================================================
 function renderKPICards(data) {
   const r = data.revenue    || {};
@@ -653,7 +654,7 @@ function renderKPICards(data) {
   function cmpBadge(cmpObj, label) {
     if (!cmpObj || cmpObj.value === undefined) return '';
     const dir = cmpObj.direction || (cmpObj.value >= 0 ? 'up' : 'down');
-    const arrow = dir === 'up' ? '↑' : dir === 'down' ? '↓' : '→';
+    const arrow = dir === 'up' ? 'โ‘' : dir === 'down' ? 'โ“' : 'โ’';
     const cls = dir === 'up' ? 'up' : dir === 'down' ? 'down' : 'flat';
     const sign = cmpObj.value > 0 ? '+' : '';
     return `<span class="kpi-cmp-badge ${cls}">${arrow} ${sign}${cmpObj.value}% ${label}</span>`;
@@ -661,75 +662,75 @@ function renderKPICards(data) {
 
   const cards = [
     {
-      color: 'blue', icon: 'blue', emoji: '💰', label: 'Revenue Today',
-      value: '฿' + formatNum(r.today_revenue || 0), valueColor: 'blue',
-      sub: 'สัปดาห์: ฿' + formatNum(r.week_revenue || 0),
-      trend: r.today_revenue > 0 ? '▲' : '–', trendClass: r.today_revenue > 0 ? 'trend-up' : 'trend-flat',
-      comparison: cmpBadge(cmp.revenue_vs_yesterday, 'เมื่อวาน') + cmpBadge(cmp.revenue_vs_last_week, 'สัปดาห์ก่อน'),
-      drillUrl: 'dashboard_pc.html#revenue', drillLabel: '↗ Revenue'
+      color: 'blue', icon: 'blue', emoji: '๐’ฐ', label: 'Revenue Today',
+      value: 'เธฟ' + formatNum(r.today_revenue || 0), valueColor: 'blue',
+      sub: 'เธชเธฑเธเธ”เธฒเธซเน: เธฟ' + formatNum(r.week_revenue || 0),
+      trend: r.today_revenue > 0 ? 'โ–ฒ' : 'โ€“', trendClass: r.today_revenue > 0 ? 'trend-up' : 'trend-flat',
+      comparison: cmpBadge(cmp.revenue_vs_yesterday, 'เน€เธกเธทเนเธญเธงเธฒเธ') + cmpBadge(cmp.revenue_vs_last_week, 'เธชเธฑเธเธ”เธฒเธซเนเธเนเธญเธ'),
+      drillUrl: 'dashboard_pc.html#revenue', drillLabel: 'โ— Revenue'
     },
     {
-      color: 'green', icon: 'green', emoji: '🔧', label: 'Jobs Today',
+      color: 'green', icon: 'green', emoji: '๐”ง', label: 'Jobs Today',
       value: o.today_jobs || 0, valueColor: 'green',
-      sub: 'ทั้งหมด: ' + (o.total_jobs || 0) + ' งาน',
+      sub: 'เธ—เธฑเนเธเธซเธกเธ”: ' + (o.total_jobs || 0) + ' เธเธฒเธ',
       trend: '+' + (o.today_jobs || 0), trendClass: 'trend-up',
-      comparison: cmpBadge(cmp.jobs_vs_yesterday, 'เมื่อวาน'),
-      drillUrl: 'dashboard_pc.html#jobs', drillLabel: '↗ Jobs'
+      comparison: cmpBadge(cmp.jobs_vs_yesterday, 'เน€เธกเธทเนเธญเธงเธฒเธ'),
+      drillUrl: 'dashboard_pc.html#jobs', drillLabel: 'โ— Jobs'
     },
     {
-      color: slaColor, icon: slaColor, emoji: '📋', label: 'SLA %',
+      color: slaColor, icon: slaColor, emoji: '๐“', label: 'SLA %',
       value: (o.sla_pct || 100) + '%', valueColor: slaColor,
-      sub: 'เกินกำหนด: ' + (o.overdue || 0) + ' งาน',
-      trend: o.sla_pct >= 90 ? '✓' : '!', trendClass: o.sla_pct >= 90 ? 'trend-up' : 'trend-down',
+      sub: 'เน€เธเธดเธเธเธณเธซเธเธ”: ' + (o.overdue || 0) + ' เธเธฒเธ',
+      trend: o.sla_pct >= 90 ? 'โ“' : '!', trendClass: o.sla_pct >= 90 ? 'trend-up' : 'trend-down',
       comparison: '',
-      drillUrl: 'dashboard_pc.html#jobs', drillLabel: '↗ Jobs'
+      drillUrl: 'dashboard_pc.html#jobs', drillLabel: 'โ— Jobs'
     },
     {
-      color: healthColor, icon: healthColor, emoji: '💚', label: 'Health Score',
+      color: healthColor, icon: healthColor, emoji: '๐’', label: 'Health Score',
       value: (s.health_score || 0) + '%', valueColor: healthColor,
-      sub: 'Version: ' + (s.version || '5.5.8'),
-      trend: s.health_score >= 90 ? '✓' : '!', trendClass: s.health_score >= 90 ? 'trend-up' : 'trend-down',
+      sub: 'Version: ' + (s.version || window.COMPHONE_VERSION || '5.9.0-phase2d'),
+      trend: s.health_score >= 90 ? 'โ“' : '!', trendClass: s.health_score >= 90 ? 'trend-up' : 'trend-down',
       comparison: '',
-      drillUrl: 'system_graph.html', drillLabel: '↗ System'
+      drillUrl: 'system_graph.html', drillLabel: 'โ— System'
     },
     {
-      color: overdueColor, icon: overdueColor, emoji: '⏰', label: 'Overdue Jobs',
+      color: overdueColor, icon: overdueColor, emoji: 'โฐ', label: 'Overdue Jobs',
       value: o.overdue || 0, valueColor: overdueColor,
-      sub: 'กำลังดำเนินการ: ' + (o.in_progress || 0),
-      trend: o.overdue === 0 ? '✓' : '!', trendClass: o.overdue === 0 ? 'trend-up' : 'trend-down',
+      sub: 'เธเธณเธฅเธฑเธเธ”เธณเน€เธเธดเธเธเธฒเธฃ: ' + (o.in_progress || 0),
+      trend: o.overdue === 0 ? 'โ“' : '!', trendClass: o.overdue === 0 ? 'trend-up' : 'trend-down',
       comparison: '',
-      drillUrl: 'dashboard_pc.html#jobs', drillLabel: '↗ Jobs'
+      drillUrl: 'dashboard_pc.html#jobs', drillLabel: 'โ— Jobs'
     },
     {
-      color: 'purple', icon: 'purple', emoji: '👥', label: 'Customers',
+      color: 'purple', icon: 'purple', emoji: '๐‘ฅ', label: 'Customers',
       value: formatNum(c.total_customers || 0), valueColor: 'white',
-      sub: 'ติดตามวันนี้: ' + (c.followup_today || 0),
-      trend: '–', trendClass: 'trend-flat',
+      sub: 'เธ•เธดเธ”เธ•เธฒเธกเธงเธฑเธเธเธตเน: ' + (c.followup_today || 0),
+      trend: 'โ€“', trendClass: 'trend-flat',
       comparison: '',
-      drillUrl: 'dashboard_pc.html#customers', drillLabel: '↗ Customers'
+      drillUrl: 'dashboard_pc.html#customers', drillLabel: 'โ— Customers'
     },
     {
-      color: 'yellow', icon: 'yellow', emoji: '📦', label: 'Low Stock',
+      color: 'yellow', icon: 'yellow', emoji: '๐“ฆ', label: 'Low Stock',
       value: i.low_stock_count || 0, valueColor: i.low_stock_count > 3 ? 'red' : 'yellow',
-      sub: 'หมดสต็อก: ' + (i.out_of_stock || 0) + ' รายการ',
-      trend: i.low_stock_count > 3 ? '!' : '–', trendClass: i.low_stock_count > 3 ? 'trend-down' : 'trend-flat',
+      sub: 'เธซเธกเธ”เธชเธ•เนเธญเธ: ' + (i.out_of_stock || 0) + ' เธฃเธฒเธขเธเธฒเธฃ',
+      trend: i.low_stock_count > 3 ? '!' : 'โ€“', trendClass: i.low_stock_count > 3 ? 'trend-down' : 'trend-flat',
       comparison: '',
-      drillUrl: 'dashboard_pc.html#inventory', drillLabel: '↗ Inventory'
+      drillUrl: 'dashboard_pc.html#inventory', drillLabel: 'โ— Inventory'
     },
     {
-      color: 'blue', icon: 'blue', emoji: '💳', label: 'Collection Rate',
+      color: 'blue', icon: 'blue', emoji: '๐’ณ', label: 'Collection Rate',
       value: (r.collection_rate || 0) + '%', valueColor: r.collection_rate >= 80 ? 'green' : 'yellow',
-      sub: 'ค้างชำระ: ฿' + formatNum(r.today_unpaid || 0),
-      trend: r.collection_rate >= 80 ? '▲' : '▼', trendClass: r.collection_rate >= 80 ? 'trend-up' : 'trend-down',
+      sub: 'เธเนเธฒเธเธเธณเธฃเธฐ: เธฟ' + formatNum(r.today_unpaid || 0),
+      trend: r.collection_rate >= 80 ? 'โ–ฒ' : 'โ–ผ', trendClass: r.collection_rate >= 80 ? 'trend-up' : 'trend-down',
       comparison: '',
-      drillUrl: 'dashboard_pc.html#billing', drillLabel: '↗ Billing'
+      drillUrl: 'dashboard_pc.html#billing', drillLabel: 'โ— Billing'
     }
   ];
 
   const grid = document.getElementById('kpi-grid');
   grid.innerHTML = cards.map(c => `
     <div class="kpi-card ${c.color}" style="animation:fadeIn 0.3s ease"
-         onclick="window.open('${c.drillUrl}','_blank')" title="คลิกเพื่อดู ${c.drillLabel}">
+         onclick="window.open('${c.drillUrl}','_blank')" title="เธเธฅเธดเธเน€เธเธทเนเธญเธ”เธน ${c.drillLabel}">
       <div class="kpi-icon ${c.icon}">${c.emoji}</div>
       <div class="kpi-label">${c.label}</div>
       <div class="kpi-value ${c.valueColor}">${c.value}</div>
@@ -742,7 +743,7 @@ function renderKPICards(data) {
 }
 
 // ============================================================
-// Render Alerts — Upgraded with SLA/Stock/Health checks
+// Render Alerts โ€” Upgraded with SLA/Stock/Health checks
 // ============================================================
 function renderAlerts(alerts, data) {
   const banner = document.getElementById('alert-banner');
@@ -755,21 +756,21 @@ function renderAlerts(alerts, data) {
     const s = data.system     || {};
 
     if (o.sla_pct !== undefined && o.sla_pct < 80) {
-      allAlerts.unshift({ type: 'critical', category: 'SLA', message: `SLA ต่ำกว่าเกณฑ์ ${o.sla_pct}% (เป้า 80%) — มีงานเกินกำหนด ${o.overdue || 0} รายการ` });
+      allAlerts.unshift({ type: 'critical', category: 'SLA', message: `SLA เธ•เนเธณเธเธงเนเธฒเน€เธเธ“เธ‘เน ${o.sla_pct}% (เน€เธเนเธฒ 80%) โ€” เธกเธตเธเธฒเธเน€เธเธดเธเธเธณเธซเธเธ” ${o.overdue || 0} เธฃเธฒเธขเธเธฒเธฃ` });
     } else if (o.sla_pct !== undefined && o.sla_pct < 90) {
-      allAlerts.unshift({ type: 'warning', category: 'SLA', message: `SLA ${o.sla_pct}% — ต่ำกว่าเป้า 90% กรุณาตรวจสอบงานที่ค้างอยู่` });
+      allAlerts.unshift({ type: 'warning', category: 'SLA', message: `SLA ${o.sla_pct}% โ€” เธ•เนเธณเธเธงเนเธฒเน€เธเนเธฒ 90% เธเธฃเธธเธ“เธฒเธ•เธฃเธงเธเธชเธญเธเธเธฒเธเธ—เธตเนเธเนเธฒเธเธญเธขเธนเน` });
     }
 
     if (i.low_stock_count > 5) {
-      allAlerts.unshift({ type: 'critical', category: 'STOCK', message: `สินค้าใกล้หมด ${i.low_stock_count} รายการ, หมดสต็อก ${i.out_of_stock || 0} รายการ — ควรสั่งซื้อด่วน` });
+      allAlerts.unshift({ type: 'critical', category: 'STOCK', message: `เธชเธดเธเธเนเธฒเนเธเธฅเนเธซเธกเธ” ${i.low_stock_count} เธฃเธฒเธขเธเธฒเธฃ, เธซเธกเธ”เธชเธ•เนเธญเธ ${i.out_of_stock || 0} เธฃเธฒเธขเธเธฒเธฃ โ€” เธเธงเธฃเธชเธฑเนเธเธเธทเนเธญเธ”เนเธงเธ` });
     } else if (i.low_stock_count > 2) {
-      allAlerts.unshift({ type: 'warning', category: 'STOCK', message: `สินค้าใกล้หมด ${i.low_stock_count} รายการ — กรุณาตรวจสอบสต็อก` });
+      allAlerts.unshift({ type: 'warning', category: 'STOCK', message: `เธชเธดเธเธเนเธฒเนเธเธฅเนเธซเธกเธ” ${i.low_stock_count} เธฃเธฒเธขเธเธฒเธฃ โ€” เธเธฃเธธเธ“เธฒเธ•เธฃเธงเธเธชเธญเธเธชเธ•เนเธญเธ` });
     }
 
     if (s.health_score !== undefined && s.health_score < 70) {
-      allAlerts.unshift({ type: 'critical', category: 'SYSTEM', message: `Health Score ต่ำ ${s.health_score}% — ระบบอาจมีปัญหา กรุณาตรวจสอบ System Graph` });
+      allAlerts.unshift({ type: 'critical', category: 'SYSTEM', message: `Health Score เธ•เนเธณ ${s.health_score}% โ€” เธฃเธฐเธเธเธญเธฒเธเธกเธตเธเธฑเธเธซเธฒ เธเธฃเธธเธ“เธฒเธ•เธฃเธงเธเธชเธญเธ System Graph` });
     } else if (s.health_score !== undefined && s.health_score < 85) {
-      allAlerts.unshift({ type: 'warning', category: 'SYSTEM', message: `Health Score ${s.health_score}% — ต่ำกว่าปกติ ควรตรวจสอบ` });
+      allAlerts.unshift({ type: 'warning', category: 'SYSTEM', message: `Health Score ${s.health_score}% โ€” เธ•เนเธณเธเธงเนเธฒเธเธเธ•เธด เธเธงเธฃเธ•เธฃเธงเธเธชเธญเธ` });
     }
   }
 
@@ -783,18 +784,18 @@ function renderAlerts(alerts, data) {
   });
 
   if (deduped.length === 0) {
-    banner.innerHTML = '<div class="alert-item info">✅ ระบบทำงานปกติ — ไม่พบปัญหา</div>';
+    banner.innerHTML = '<div class="alert-item info">โ… เธฃเธฐเธเธเธ—เธณเธเธฒเธเธเธเธ•เธด โ€” เนเธกเนเธเธเธเธฑเธเธซเธฒ</div>';
     return;
   }
   banner.innerHTML = deduped.map(a => `
     <div class="alert-item ${a.type}">
-      ${a.type === 'critical' ? '🚨' : '⚠️'} [${(a.category || '').toUpperCase()}] ${a.message}
+      ${a.type === 'critical' ? '๐จ' : 'โ ๏ธ'} [${(a.category || '').toUpperCase()}] ${a.message}
     </div>
   `).join('');
 }
 
 // ============================================================
-// Render Targets — Monthly Progress Bars
+// Render Targets โ€” Monthly Progress Bars
 // ============================================================
 function renderTargets(targets) {
   const rev  = targets.monthly_revenue || {};
@@ -806,8 +807,8 @@ function renderTargets(targets) {
   const revColor = revPct >= 100 ? 'green' : revPct >= 70 ? 'blue' : revPct >= 40 ? 'yellow' : 'red';
   document.getElementById('tgt-rev-pct').textContent = revPct + '%';
   document.getElementById('tgt-rev-pct').style.color = `var(--${revColor})`;
-  document.getElementById('tgt-rev-current').textContent = '฿' + formatNum(rev.current || 0);
-  document.getElementById('tgt-rev-target').textContent = '฿' + formatNum(rev.target || 500000);
+  document.getElementById('tgt-rev-current').textContent = 'เธฟ' + formatNum(rev.current || 0);
+  document.getElementById('tgt-rev-target').textContent = 'เธฟ' + formatNum(rev.target || 500000);
   const revBar = document.getElementById('tgt-rev-bar');
   revBar.className = 'target-bar-fill ' + revColor;
   revBar.style.width = Math.min(100, revPct) + '%';
@@ -817,8 +818,8 @@ function renderTargets(targets) {
   const jobsColor = jobsPct >= 100 ? 'green' : jobsPct >= 70 ? 'green' : jobsPct >= 40 ? 'yellow' : 'red';
   document.getElementById('tgt-jobs-pct').textContent = jobsPct + '%';
   document.getElementById('tgt-jobs-pct').style.color = `var(--${jobsColor})`;
-  document.getElementById('tgt-jobs-current').textContent = (jobs.current || 0) + ' งาน';
-  document.getElementById('tgt-jobs-target').textContent = (jobs.target || 200) + ' งาน';
+  document.getElementById('tgt-jobs-current').textContent = (jobs.current || 0) + ' เธเธฒเธ';
+  document.getElementById('tgt-jobs-target').textContent = (jobs.target || 200) + ' เธเธฒเธ';
   const jobsBar = document.getElementById('tgt-jobs-bar');
   jobsBar.className = 'target-bar-fill ' + jobsColor;
   jobsBar.style.width = Math.min(100, jobsPct) + '%';
@@ -836,7 +837,7 @@ function renderTargets(targets) {
 }
 
 // ============================================================
-// Render Charts — with Forecast (dashed line)
+// Render Charts โ€” with Forecast (dashed line)
 // ============================================================
 function renderCharts(data) {
   const trends   = data.trends   || {};
@@ -845,8 +846,8 @@ function renderCharts(data) {
   Chart.defaults.color = '#94a3b8';
   Chart.defaults.borderColor = '#334155';
 
-  // ── Revenue Trend + Forecast ──
-  const revLabels = forecast.labels || trends.labels || ['–','–','–','–','–','–','–'];
+  // โ”€โ”€ Revenue Trend + Forecast โ”€โ”€
+  const revLabels = forecast.labels || trends.labels || ['โ€“','โ€“','โ€“','โ€“','โ€“','โ€“','โ€“'];
   const revActual = trends.revenue || revLabels.map(() => 0);
   const revForecast = forecast.revenue || revActual;
   const FORECAST_DAYS = forecast.forecast_days || 3;
@@ -860,11 +861,11 @@ function renderCharts(data) {
   // Update forecast badge
   const monthForecast = forecast.month_revenue_forecast || 0;
   const forecastBadge = document.getElementById('forecast-month-badge');
-  if (forecastBadge) forecastBadge.textContent = 'คาดการณ์เดือนนี้: ฿' + formatNum(monthForecast);
+  if (forecastBadge) forecastBadge.textContent = 'เธเธฒเธ”เธเธฒเธฃเธ“เนเน€เธ”เธทเธญเธเธเธตเน: เธฟ' + formatNum(monthForecast);
 
   renderChart('chart-revenue', 'line', revLabels, [
     {
-      label: 'Revenue (฿)',
+      label: 'Revenue (เธฟ)',
       data: revActualData,
       borderColor: '#3b82f6',
       backgroundColor: 'rgba(59,130,246,0.1)',
@@ -872,7 +873,7 @@ function renderCharts(data) {
       spanGaps: false
     },
     {
-      label: 'Forecast (฿)',
+      label: 'Forecast (เธฟ)',
       data: revForecastData,
       borderColor: '#93c5fd',
       backgroundColor: 'rgba(147,197,253,0.05)',
@@ -883,8 +884,8 @@ function renderCharts(data) {
     }
   ]);
 
-  // ── Jobs Trend + Forecast ──
-  const jobLabels = forecast.labels || trends.labels || ['–','–','–','–','–','–','–'];
+  // โ”€โ”€ Jobs Trend + Forecast โ”€โ”€
+  const jobLabels = forecast.labels || trends.labels || ['โ€“','โ€“','โ€“','โ€“','โ€“','โ€“','โ€“'];
   const jobActual = trends.jobs || jobLabels.map(() => 0);
   const jobForecast = forecast.jobs || jobActual;
   const jobActualData = jobForecast.map((v, i) => i < actualLen ? v : null);
@@ -910,22 +911,22 @@ function renderCharts(data) {
     }
   ]);
 
-  // ── Jobs by Status ──
+  // โ”€โ”€ Jobs by Status โ”€โ”€
   const ops = data.operations || {};
   const jobsByStatus = ops.jobs_by_status || [];
   const statusLabels = jobsByStatus.map(j => j.status || '?');
   const statusData   = jobsByStatus.map(j => j.count || 0);
   renderChart('chart-jobs-status', 'bar', statusLabels, [{
-    label: 'จำนวนงาน',
+    label: 'เธเธณเธเธงเธเธเธฒเธ',
     data: statusData,
     backgroundColor: ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16']
   }]);
 
-  // ── Inventory ──
+  // โ”€โ”€ Inventory โ”€โ”€
   const inv = data.inventory || {};
   const normalStock = Math.max(0, (inv.total_items || 0) - (inv.low_stock_count || 0) - (inv.out_of_stock || 0));
   renderChart('chart-inventory', 'doughnut',
-    ['ปกติ', 'ใกล้หมด', 'หมดสต็อก'],
+    ['เธเธเธ•เธด', 'เนเธเธฅเนเธซเธกเธ”', 'เธซเธกเธ”เธชเธ•เนเธญเธ'],
     [{
       data: [normalStock, inv.low_stock_count || 0, inv.out_of_stock || 0],
       backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
@@ -968,10 +969,10 @@ function renderBottomCards(data) {
   const s = data.system     || {};
 
   // Revenue
-  document.getElementById('rev-today').textContent  = '฿' + formatNum(r.today_revenue || 0);
-  document.getElementById('rev-week').textContent   = '฿' + formatNum(r.week_revenue || 0);
-  document.getElementById('rev-month').textContent  = '฿' + formatNum(r.month_revenue || 0);
-  document.getElementById('rev-unpaid').innerHTML   = '<span class="badge ' + (r.today_unpaid > 0 ? 'yellow' : 'green') + '">฿' + formatNum(r.today_unpaid || 0) + '</span>';
+  document.getElementById('rev-today').textContent  = 'เธฟ' + formatNum(r.today_revenue || 0);
+  document.getElementById('rev-week').textContent   = 'เธฟ' + formatNum(r.week_revenue || 0);
+  document.getElementById('rev-month').textContent  = 'เธฟ' + formatNum(r.month_revenue || 0);
+  document.getElementById('rev-unpaid').innerHTML   = '<span class="badge ' + (r.today_unpaid > 0 ? 'yellow' : 'green') + '">เธฟ' + formatNum(r.today_unpaid || 0) + '</span>';
   document.getElementById('rev-rate').innerHTML     = '<span class="badge ' + (r.collection_rate >= 80 ? 'green' : 'yellow') + '">' + (r.collection_rate || 0) + '%</span>';
 
   // Operations
@@ -999,7 +1000,7 @@ function renderBottomCards(data) {
   const pctEl = document.getElementById('health-pct');
   if (pctEl) pctEl.textContent = score + '%';
   const statusColor = s.health_status === 'healthy' ? 'green' : 'yellow';
-  document.getElementById('hd-version').textContent  = s.version || '5.5.8';
+  document.getElementById('hd-version').textContent  = s.version || window.COMPHONE_VERSION || '5.9.0-phase2d';
   document.getElementById('hd-status').innerHTML     = '<span class="badge ' + statusColor + '">' + (s.health_status || 'unknown') + '</span>';
   document.getElementById('hd-triggers').textContent = s.trigger_count || 0;
   document.getElementById('hd-response').textContent = (s.response_ms || 0) + 'ms';
@@ -1008,7 +1009,7 @@ function renderBottomCards(data) {
   const stockList = document.getElementById('low-stock-list');
   const lowItems = i.low_stock_items || [];
   if (lowItems.length === 0) {
-    stockList.innerHTML = '<div style="color:var(--green);font-size:0.85rem;">✅ สต็อกอยู่ในระดับปกติ</div>';
+    stockList.innerHTML = '<div style="color:var(--green);font-size:0.85rem;">โ… เธชเธ•เนเธญเธเธญเธขเธนเนเนเธเธฃเธฐเธ”เธฑเธเธเธเธ•เธด</div>';
   } else {
     stockList.innerHTML = lowItems.map(item => `
       <div class="stock-item">
@@ -1044,15 +1045,15 @@ function startAutoRefresh() {
 // ============================================================
 async function quickAction(type) {
   if (type === 'clearCache') {
-    // Cache managed by api_client.js cachedCallApi — force=true in loadDashboard() bypasses it
-    showToast('Cache cleared — กำลังโหลดข้อมูลใหม่', 'info');
+    // Cache managed by api_client.js cachedCallApi โ€” force=true in loadDashboard() bypasses it
+    showToast('Cache cleared โ€” เธเธณเธฅเธฑเธเนเธซเธฅเธ”เธเนเธญเธกเธนเธฅเนเธซเธกเน', 'info');
     loadDashboard(true);
   } else if (type === 'sendSummary') {
     try {
       const res = await callApi('sendDashboardSummary', {}, { noAuth: true });
-      showToast(res && res.success ? 'ส่งสรุปรายวันสำเร็จ' : 'ส่งไม่สำเร็จ: ' + (res && res.error), res && res.success ? 'success' : 'error');
+      showToast(res && res.success ? 'เธชเนเธเธชเธฃเธธเธเธฃเธฒเธขเธงเธฑเธเธชเธณเน€เธฃเนเธ' : 'เธชเนเธเนเธกเนเธชเธณเน€เธฃเนเธ: ' + (res && res.error), res && res.success ? 'success' : 'error');
     } catch(e) {
-      showToast('เกิดข้อผิดพลาด: ' + e.message, 'error');
+      showToast('เน€เธเธดเธ”เธเนเธญเธเธดเธ”เธเธฅเธฒเธ”: ' + e.message, 'error');
     }
   }
 }
@@ -1067,7 +1068,7 @@ function formatNum(n) {
 function updateLastUpdated() {
   const now = new Date();
   const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  document.getElementById('last-updated-label').textContent = 'อัปเดต: ' + timeStr;
+  document.getElementById('last-updated-label').textContent = 'เธญเธฑเธเน€เธ”เธ•: ' + timeStr;
 }
 
 // Pause auto refresh when tab hidden

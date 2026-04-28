@@ -200,60 +200,15 @@ function _checkAuthGateV55_(action, payload, e) {
   // ── Public actions: no auth required ──
   var PUBLIC_ACTIONS = {
     // Auth entry points
-    'help': 1, 'loginUser': 1, 'verifySession': 1, 
-    // Dashboard (read-only)
-    'getDashboardBundle': 1, 'invalidateBundleCache': 1, 'getDashboardData': 1,
-    'getJobStateConfig': 1, 'getJobTimeline': 1,
-    // Jobs (read-only)
-    'checkJobs': 1, 'listJobs': 1, 'getJobQRData': 1, 'generateJobQR': 1,
-    'getPhotoGalleryData': 1, 'photoGalleryData': 1,
-    // Inventory (read-only)
-    'inventoryOverview': 1, 'getInventoryItemDetail': 1, 'getStockMovementHistory': 1,
-    'checkStock': 1, 'barcodeLookup': 1,
-    // Purchase Orders (read-only)
-    'listPurchaseOrders': 1,
-    // Customers (read-only)
-    'listCustomers': 1, 'getCustomer': 1,
-    'getCustomerHistoryFull': 1, 'getCustomerListWithStats': 1,
-    // Attendance (read-only)
-    'getAttendanceReport': 1, 'getTechHistory': 1, 'getAllTechsSummary': 1,
-    // Billing (read-only)
-    'getBilling': 1, 'listBillings': 1, 'generatePromptPayQR': 1,
-    // CRM (read-only)
-    'getCRMFollowUpSchedule': 1, 'getCRMMetrics': 1,
-    // After-Sales (read-only)
-    'getAfterSalesDue': 1, 'getAfterSalesSummary': 1,
-    // Notifications (read-only)
-    'getAlertQueue': 1, 'getUnnotifiedAlerts': 1, 'getQuotaStatus': 1,
-    'getCachedResponse': 1, 'getIntelAlertQueue': 1,
-    'getPrioritizedAlerts': 1, 'getAlertsForRole': 1, 'getAlertsForUser': 1,
-    'getGroupedAlerts': 1, 'getAlertAnalytics': 1,
-    // Reports
-    'getReportData': 1,
-    // System (read-only)
-    'systemStatus': 1, 'getSystemMetrics': 1, 'getHealthMonitor': 1,
-    'getHealthTrend': 1, 'getSnapshots': 1, 'getSchemaInfo': 1,
-    'validateConfig': 1, 'getComphoneConfig': 1, 'initSystem': 1,
-    'getSecurityStatus': 1, 'getAuditSummary': 1,
-    // getPropertiesCapacity + checkPropertiesCapacityAlert — MOVED to auth-required (info disclosure risk)
-    'getVisionDashboardStats': 1, 'getVisionPipelineVersion': 1,
-    'getConfidenceCalibration': 1, 'getDynamicThreshold': 1,
-    'getActiveRules': 1, 'getLearningDashboard': 1, 'getVisionLearningVersion': 1,
-    'getDriveSyncStatus': 1,
-    // Error logging (exception — frontend may not have token on error)
+    'help': 1, 'loginUser': 1, 'verifySession': 1,
+    // Public diagnostics
+    'health': 1, 'getVersion': 1, 'version': 1,
+    // Error logging: frontend may not have a token while reporting boot failures.
     'logSystemError': 1,
-    // Telemetry (cron & error observability)
-    'getCronTelemetryStats': 1, 'getErrorTelemetryStats': 1, 'getErrorTrendStatus': 1,
-    // Telemetry (client-side, best-effort, no auth needed)
+    // Client telemetry is best-effort and must not block login recovery.
     'logTelemetry': 1,
-    // Customer Portal (public by design)
-    'getJobStatusPublic': 1,
-    // AI / Vision (read-only)
-    'buildAdaptivePrompt': 1,
-    'getAdaptivePrompt': 1,
-    // LINE info (read-only)
-    'getSystemUserFromLine': 1, 'getAlertQueue': 1,
-    'getQuotaStatus': 1, 'getSecurityStatus': 1
+    // Customer Portal public endpoint by design.
+    'getJobStatusPublic': 1
   };
 
   // ── Admin-only actions: require role=admin|owner ──
@@ -306,19 +261,21 @@ function _checkAuthGateV55_(action, payload, e) {
   }
 
   // Verify session
-  var session = null;
+  var auth = null;
   try {
-    session = verifySession(token);
+    auth = verifySession(token);
   } catch (e) {
     return { success: false, error: 'Session verification failed', code: 401 };
   }
-  if (!session || !session.success) {
+  if (!auth || !(auth.success || auth.valid)) {
     return { success: false, error: 'Invalid or expired session', code: 401 };
   }
+  var session = auth.session || auth;
+  var role = String(session.role || auth.role || '').toLowerCase();
 
   // Admin check
   if (ADMIN_ACTIONS[action]) {
-    if (session.role !== 'admin' && session.role !== 'owner') {
+    if (role !== 'admin' && role !== 'owner') {
       return { success: false, error: 'Admin access required', code: 403, action: action };
     }
   }
@@ -326,8 +283,8 @@ function _checkAuthGateV55_(action, payload, e) {
   // Auth passed — attach session info to payload for downstream use
   if (payload) {
     payload._session = session;
-    payload._auth_user = session.username || '';
-    payload._auth_role = session.role || '';
+    payload._auth_user = session.username || auth.username || '';
+    payload._auth_role = session.role || auth.role || '';
   }
 
   return null; // null = allowed, proceed
