@@ -375,19 +375,29 @@ function loadTechPerformance() {
       container.innerHTML = '<div style="text-align:center;padding:12px;color:#9ca3af;font-size:12px">ไม่มีข้อมูลประสิทธิภาพช่าง</div>';
       return;
     }
-    const techs = res.techs; // [{ name, jobs_completed, rating, kudos }, ...]
+    const techs = res.techs; // [{ name, completed, avgDays, rating }, ...]
     container.innerHTML = `
-      <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(160px,1fr));gap:10px;margin-top:8px">
-        ${techs.map(t => `
-          <div style="background:#f9fafb;border-radius:12px;padding:12px;text-align:center">
-            <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#fbbf24,#d97706);display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:18px;margin:0 auto 8px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(180px,1fr));gap:12px;margin-top:8px">
+        ${techs.map(t => {
+          const avgMinutes = (t.avgDays || 0) * 24 * 60; // แปลงวันเป็นนาที
+          const avgHours = (t.avgDays || 0) * 24; // แปลงวันเป็นชั่วโมง
+          const timeLabel = avgHours >= 1 ? `${avgHours.toFixed(1)} ชม.` : `${avgMinutes.toFixed(0)} นาที`;
+          const satisfaction = t.rating || 4.5; // คะแนนความพึงพอใจ (0-5)
+          return `
+          <div style="background:#f9fafb;border-radius:12px;padding:14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.05)">
+            <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#1d4ed8);display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:20px;margin:0 auto 10px">
               ${(t.name || '?')[0]}
             </div>
-            <div style="font-size:14px;font-weight:800;color:#111827">${t.name || '-'}</div>
-            <div style="font-size:12px;color:#6b7280">${t.jobs_completed || 0} งาน · ${t.kudos || 0} Kudos</div>
-            <div style="color:#fbbf24;font-size:13px;margin-top:4px">${'★'.repeat(Math.min(5, Math.round(t.rating || 5)))}</div>
+            <div style="font-size:15px;font-weight:800;color:#111827;margin-bottom:4px">${t.name || '-'}</div>
+            <div style="font-size:13px;color:#059669;font-weight:600;margin-bottom:6px">${t.completed || 0} งานที่ปิดได้</div>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:6px">⏱ เฉลี่ย: ${timeLabel}</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:6px">
+              <span style="color:#fbbf24;font-size:14px">${'★'.repeat(Math.min(5, Math.round(satisfaction)))}</span>
+              <span style="font-size:12px;color:#374151;font-weight:600">${satisfaction}/5</span>
+            </div>
           </div>
-        `).join('')}
+          `;
+        }).join('')}
       </div>
     `;
   }).catch(() => {
