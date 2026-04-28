@@ -355,9 +355,11 @@ function adjustKpiGrid() {
   if (width < 480) {
     grid.style.gridTemplateColumns = '1fr'; // Mobile: 1 column
   } else if (width < 768) {
-    grid.style.gridTemplateColumns = '1fr 1fr'; // Tablet: 2 columns
+    grid.style.gridTemplateColumns = 'repeat(2, 1fr)'; // Tablet: 2 columns
+  } else if (width < 1024) {
+    grid.style.gridTemplateColumns = 'repeat(3, 1fr)'; // Small PC: 3 columns
   } else {
-    grid.style.gridTemplateColumns = '1fr 1fr'; // PC: 2 columns (default)
+    grid.style.gridTemplateColumns = 'repeat(4, 1fr)'; // Large PC: 4 columns
   }
   // Adjust Quick Actions grid
   const qaGrid = document.querySelector('#quick-actions-grid');
