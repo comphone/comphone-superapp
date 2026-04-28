@@ -723,3 +723,199 @@ html, body {
   0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
   50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
 }
+
+/* ===== PHASE 30 UI POLISH ===== */
+:root {
+  --cp-mobile-bg: #f4f7fb;
+  --cp-surface: #ffffff;
+  --cp-surface-soft: #f8fafc;
+  --cp-border-soft: rgba(15, 23, 42, 0.08);
+  --cp-text-strong: #0f172a;
+  --cp-text-muted: #64748b;
+  --cp-brand: #2563eb;
+  --cp-brand-2: #06b6d4;
+  --cp-brand-3: #4f46e5;
+  --cp-shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --cp-shadow-lift: 0 18px 42px rgba(15, 23, 42, 0.14);
+}
+
+html, body,
+#main-app {
+  background: var(--cp-mobile-bg);
+  color: var(--cp-text-strong);
+}
+
+#splash-screen,
+#setup-screen {
+  background:
+    linear-gradient(145deg, rgba(37, 99, 235, 0.95) 0%, rgba(79, 70, 229, 0.92) 46%, rgba(6, 182, 212, 0.88) 100%);
+}
+
+.setup-card,
+.section-card,
+.stat-card,
+.job-card,
+.bill-row,
+.profile-section,
+.chart-card,
+.modal-sheet,
+.modal-search-box,
+.install-banner {
+  border: 1px solid var(--cp-border-soft);
+  box-shadow: var(--cp-shadow-soft);
+}
+
+.setup-card,
+.section-card,
+.modal-sheet,
+.modal-search-box,
+.install-banner {
+  border-radius: 18px;
+}
+
+.stat-card,
+.job-card,
+.bill-row,
+.profile-section,
+.chart-card {
+  border-radius: 14px;
+}
+
+.top-bar,
+.profile-header {
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+}
+
+.theme-tech .top-bar,
+.theme-tech .profile-header,
+.theme-tech .fab-main {
+  background: linear-gradient(135deg, #2563eb 0%, #0891b2 100%);
+}
+
+.theme-admin .top-bar,
+.theme-admin .profile-header,
+.theme-admin .fab-main {
+  background: linear-gradient(135deg, #4f46e5 0%, #0f766e 100%);
+}
+
+.theme-acct .top-bar,
+.theme-acct .profile-header,
+.theme-acct .fab-main {
+  background: linear-gradient(135deg, #0e7490 0%, #16a34a 100%);
+}
+
+.theme-exec .top-bar,
+.theme-exec .profile-header {
+  background: linear-gradient(135deg, #111827 0%, #2563eb 100%);
+}
+
+.theme-exec .fab-main {
+  background: linear-gradient(135deg, #f59e0b 0%, #2563eb 100%);
+}
+
+.theme-tech .nav-btn.active,
+.theme-admin .nav-btn.active,
+.theme-acct .nav-btn.active,
+.theme-exec .nav-btn.active {
+  color: var(--cp-brand);
+}
+
+.theme-tech .filter-tab.active,
+.theme-admin .filter-tab.active,
+.theme-acct .filter-tab.active,
+.theme-exec .filter-tab.active,
+.theme-tech .voice-mini,
+.theme-admin .voice-mini,
+.theme-acct .voice-mini {
+  background: var(--cp-brand);
+}
+
+.theme-tech .stat-card,
+.theme-admin .stat-card,
+.theme-acct .stat-card,
+.theme-exec .stat-card {
+  border-top-color: var(--cp-brand);
+}
+
+.bottom-nav-bar {
+  background: rgba(255, 255, 255, 0.94);
+  border-top: 1px solid var(--cp-border-soft);
+  box-shadow: 0 -10px 32px rgba(15, 23, 42, 0.1);
+  backdrop-filter: blur(16px);
+}
+
+.nav-btn {
+  color: #94a3b8;
+}
+
+.nav-btn.active::after {
+  background: var(--cp-brand);
+}
+
+.nav-camera-circle,
+.btn-setup,
+.setup-logo,
+.install-icon {
+  background: linear-gradient(135deg, var(--cp-brand) 0%, var(--cp-brand-2) 100%);
+  box-shadow: 0 10px 26px rgba(37, 99, 235, 0.28);
+}
+
+.fab-main {
+  box-shadow: var(--cp-shadow-lift);
+}
+
+.qa-btn-item,
+.more-menu-item,
+.filter-tab,
+.profile-item,
+.icon-btn {
+  transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+
+.qa-btn-item:hover,
+.more-menu-item:hover,
+.job-card:hover,
+.stat-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--cp-shadow-lift);
+}
+
+.input-wrap input,
+.search-bar-inline,
+.search-modal-bar,
+.more-menu-item {
+  border: 1px solid var(--cp-border-soft);
+  background: var(--cp-surface-soft);
+}
+
+.input-wrap input:focus {
+  border-color: rgba(37, 99, 235, 0.42);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+.section-label,
+.stat-label,
+.job-id,
+.bill-sub,
+.profile-item i:first-child {
+  color: var(--cp-text-muted);
+}
+
+.job-title,
+.stat-value,
+.bill-amount,
+.page-header h5,
+.profile-name-large,
+.more-menu-title,
+.modal-title {
+  color: var(--cp-text-strong);
+}
+
+@media (max-width: 420px) {
+  .section-card { margin: 10px; padding: 14px; }
+  .qa-grid-4,
+  .qa-grid-8,
+  .more-menu-grid { gap: 7px; }
+  .qa-btn-item { min-height: 76px; }
+  .nav-btn { font-size: 10px; }
+}

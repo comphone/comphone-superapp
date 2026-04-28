@@ -1,9 +1,9 @@
 // ============================================================
-// COMPHONE SUPER APP v5.9.0-phase2d — Service Worker v5.9.0-phase2d
+// COMPHONE SUPER APP v5.9.0-phase2d - Service Worker v5.9.0-phase2d
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ============================================================
-const CACHE_V = 'comphone-v5.9.0-phase2d-20260428_1725';
+const CACHE_V = 'comphone-v5.9.0-phase2d-20260428_1800';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
 const ASSETS = [
@@ -51,10 +51,10 @@ const API_PATTERNS = [
   /workers\.dev/,
 ];
 
-const NETWORK_TIMEOUT_MS = 15000;  // 15s — GAS cold start can take 5-10s
+const NETWORK_TIMEOUT_MS = 15000;  // 15s - GAS cold start can take 5-10s
 const SYNC_TAG = 'comphone-offline-queue';
 
-// Install: pre-cache static assets (graceful — ไม่ fail ถ้า asset ไม่พบ)
+// Install: pre-cache static assets (graceful - ไม่ fail ถ้า asset ไม่พบ)
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_V)
@@ -89,23 +89,23 @@ self.addEventListener('fetch', e => {
   // ข้าม non-GET และ chrome-extension
   if (request.method !== 'GET' || url.startsWith('chrome-extension:')) return;
 
-  // 1. Network Only — LINE webhook, health check
+  // 1. Network Only - LINE webhook, health check
   if (NETWORK_ONLY.some(p => p.test(url))) {
     e.respondWith(fetch(request));
     return;
   }
 
-  // 2. Network First (timeout 3s) — API calls
+  // 2. Network First (timeout 3s) - API calls
   if (API_PATTERNS.some(p => p.test(url))) {
     e.respondWith(_networkFirst_(request));
     return;
   }
 
-  // 3. Cache First — static assets
+  // 3. Cache First - static assets
   e.respondWith(_cacheFirst_(request));
 });
 
-// Background Sync — flush offline queue จาก error_boundary.js
+// Background Sync - flush offline queue จาก error_boundary.js
 self.addEventListener('sync', e => {
   if (e.tag === SYNC_TAG || e.tag === 'sync-jobs') {
     console.log('[SW] Background sync:', e.tag);
