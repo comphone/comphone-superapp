@@ -1,6 +1,6 @@
 # 🧠 Session Context — COMPHONE SUPER APP AI
-> **App Version:** v5.9.0-phase2d (GAS @497) | **Dashboard:** v5.9.0-phase2d | **PWA:** v5.9.0-phase2d | **อัปเดต:** 26 เมษายน 2569 | **สถานะ:** PHASE 29 ✅ (Production Ready)
-> **GAS:** 67 files | **PWA:** 47 files | **Triple Backup:** ✅ Active | **ไฟล์นี้คือ "สมองสำรอง" ของ AI — อ่านก่อนเริ่มงานทุกครั้ง ห้ามเดาสถานะโปรเจค**
+> **App Version:** v5.9.0-phase2d (GAS @501) | **Dashboard:** v5.9.0-phase2d | **PWA:** v5.9.0-phase2d | **อัปเดต:** 28 เมษายน 2569 | **สถานะ:** PHASE 30 ✅ (AI LINE Agent + BLUEPRINT Complete)
+> **GAS:** 69 files | **PWA:** 53 files | **Triple Backup:** ✅ Active | **ไฟล์นี้คือ "สมองสำรอง" ของ AI — อ่านก่อนเริ่มงานทุกครั้ง ห้ามลืมสถานะโปรเจค**
 
 ---
 
@@ -43,15 +43,15 @@
 | **Frontend** | PWA — HTML5 + Bootstrap 5.3 + Font Awesome 6 | SPA ซ่อน/แสดง `<div id="section-xxx">` |
 | **Database** | Google Sheets | 13 sheets ครบ |
 | **Notification** | LINE Messaging API + LINE Notify | Multi-channel, role-based routing (5 กลุ่ม) |
-| **AI** | Gemini API (Flash) | Slip verification, Smart Assignment, Vision Analysis |
-| **Storage** | Google Drive | รูปภาพงาน (ROOT_FOLDER_ID), PDF ใบเสร็จ |
-| **Charts** | Chart.js | Dashboard KPI |
+| **AI** | Gemini API (Flash) | Slip verification, Smart Assignment, Vision Analysis, LINE Agent (Dispatcher, Sales Analyst, BI) |
+| **Storage** | Google Drive | รูปภาพงาน, PDF ใบเสร็จ, Backup |
+| **Charts** | Chart.js 4.x | Dashboard KPI, Revenue charts |
 | **Voice** | Web Speech API | Voice Search (th-TH) |
 | **GPS** | GpsPipeline.gs | Geofence + Route Optimization |
 | **Proxy** | Cloudflare Worker | LINE Webhook async proxy |
-| **Hosting** | GitHub Pages | PWA hosting |
-
----
+| **Hosting** | GitHub Pages | PWA hosting (static) |
+| **Deploy** | clasp + rclone + GitHub Actions | Auto-deploy pipeline |
+| **Offline** | Service Worker + IndexedDB | Cache-first, offline queue |
 
 ## 🌐 Environment / Config
 
@@ -174,13 +174,13 @@ return ContentService.createTextOutput(
 
 ---
 
-## 📡 Backend Structure (67 ไฟล์ — clasp-ready/)
+## 📡 Backend Structure (69 ไฟล์ — clasp-ready/)
 
-### Core System (14 ไฟล์)
+### Core System (19 ไฟล์)
 | ไฟล์ | หน้าที่ |
 |------|---------|
 | `Router.gs` | HTTP Router — doPost(), dispatch, AUTH_REQUIRED_ACTIONS_ |
-| `Config.gs` | Script Properties wrapper, constants |
+| `Config.gs` | Script Properties wrapper, constants, VERSION |
 | `Auth.gs` | Login PIN, verifySession, RBAC (4 roles) |
 | `Utils.gs` | Shared utilities |
 | `Setup.gs` | Initial setup + sheet creation |
@@ -188,11 +188,15 @@ return ContentService.createTextOutput(
 | `HealthMonitor.gs` | System health check + LINE alert |
 | `AutoBackup.gs` | Scheduled backup to Drive |
 | `Backup.gs` | Backup functions |
-| `DeployGuide.gs` | Deploy documentation |
-| `DatabaseIntegrity.gs` | DB integrity checks |
+| `DatabaseIntegrity.gs` | DB integrity checks + Schema validation + Header Cache |
 | `DataSeeding.gs` | Seed initial data |
 | `SheetOptimizer.gs` | Sheet performance optimization |
 | `DriveSync.gs` | GAS-side Drive sync |
+| `DeployGuide.gs` | Deploy documentation |
+| `ErrorTelemetry.gs` | Centralized error telemetry + trend analysis |
+| `ArchitectureStewardship.gs` | Daily complexity/drift/coupling tracking |
+| `PropertiesGuard.gs` | ป้องกัน Script Properties เกิน 50 |
+| `PropertiesCleanup.gs` | Cleanup expired properties |
 
 ### Business Modules (16 ไฟล์)
 | ไฟล์ | หน้าที่ |
@@ -214,13 +218,14 @@ return ContentService.createTextOutput(
 | `Reports.gs` | รายงานต่างๆ |
 | `PurchaseOrder.gs` | PO management (legacy) |
 
-### LINE Bot (6 ไฟล์)
+### LINE Bot (7 ไฟล์)
 | ไฟล์ | หน้าที่ |
 |------|---------|
-| `LineBot.gs` | LINE Webhook handler + command parser |
+| `LineBot.gs` | LINE Webhook handler + command parser + AI Agent routing |
 | `LineBotV2.gs` | LINE Bot v2 — enhanced commands |
 | `LineBotIntelligent.gs` | AI-powered LINE Bot responses |
 | `LineBotQuota.gs` | LINE API quota management |
+| `AILinePrompts.gs` | AI Agent prompts (Dispatcher, Sales Analyst, BI) + Gemini Pro |
 | `FlexMessage.gs` | Flex Message templates |
 | `Notify.gs` | LINE Notify + Messaging API multi-channel |
 
@@ -365,23 +370,23 @@ Event → Notify.gs → LINE Group ตามบทบาท
 ## 📂 File Structure
 
 ```
-comphone-superapp/                  ← GitHub repo (v6.2.2 @475)
-├── clasp-ready/                    ← GAS Backend (67 ไฟล์ .gs)
+| comphone-superapp/                  ← GitHub repo (v5.9.0-phase2d @501)
+├── clasp-ready/                    ← GAS Backend (69 ไฟล์ .gs)
 │   ├── .clasp.json                 ← scriptId
 │   ├── appsscript.json             ← timezone: Asia/Bangkok, V8
-│   └── [67 ไฟล์ .gs — ดู Backend Structure ด้านบน]
-├── pwa/                            ← PWA Frontend (42 ไฟล์ — GitHub Pages)
-│   ├── Core: index.html, app.js, style.css, auth.js, sw.js, manifest.json
-│   ├── Dashboard: dashboard_pc.html, dashboard.js, analytics.js
+│   └── [69 ไฟล์ .gs — ดู Backend Structure ด้านบน]
+├── pwa/                            ← PWA Frontend (53 ไฟล์ — GitHub Pages)
+│   ├── Core: index.html, app.js, style.css, auth.js, sw.js (v5.9.0-phase2d), manifest.json
+│   ├── Dashboard: dashboard_pc.html (v5.9.0-phase2d), dashboard.js, analytics.js
 │   ├── Jobs: job_workflow.js, quick_actions.js
-│   ├── Inventory: inventory.js, inventory_ui.js
+│   ├── Inventory: inventory.js, inventory_ui.js, stock.js (ใหม่)
 │   ├── Billing: billing_customer.js, billing_ui.js, billing_slip_verify.js
-│   ├── CRM: crm_attendance.js, crm_ui.js
+│   ├── CRM: crm_attendance.js (Customer Portal V2), crm_ui.js
 │   ├── Customer: customer_portal.html, customer_portal.js, customer_sw.js, customer_manifest.json
-│   ├── AI: ai_executor_runtime.js, ai_executor_validation.js, business_ai.js, policy_engine.js
+│   ├── AI: ai_executor_runtime.js, ai_executor_validation.js, business_ai.js, policy_engine.js, AILinePrompts.gs (ใหม่)
 │   ├── Safety: approval_guard.js, auth_guard.js, execution_lock.js, error_boundary.js, evidence_harness.js
 │   ├── UI Modules: attendance_ui.js, branch_health_ui.js, tax_ui.js, warranty_ui.js, notification_center.js, admin.js, admin_panel.js
-│   ├── Other: purchase_order.js, after_sales_enhanced.js, reports.js, offline_db.js, push_notifications.js, pwa_install.js
+│   ├── Other: purchase_order.js (PDF Export), after_sales_enhanced.js, reports.js, offline_db.js, push_notifications.js, pwa_install.js
 │   └── Icons: icons/icon-{72,96,128,144,152,192,384,512}.png
 ├── scripts/                        ← Deploy & Sync Scripts
 │   ├── deploy_all.sh               ← Main deploy pipeline (OAuth2 ONLY)
@@ -389,18 +394,7 @@ comphone-superapp/                  ← GitHub repo (v6.2.2 @475)
 │   ├── drive_backup.py             ← Drive backup fallback
 │   ├── clasp_push.py               ← GAS push helper
 │   └── [อื่นๆ: auto_push.py, sync_all.py, etc.]
-├── ARCHIVED_Shop_vnext/src/        ← Archived GAS files (15 ไฟล์ — ห้ามใช้)
-├── Comphone AI Move New/           ← Handover docs + credentials + code snapshots
-│   ├── 🔐 CREDENTIALS & ACCESS KEYS.md   ← API keys, tokens, access info
-│   ├── 🧠 Master Handover Document.md    ← AI system handover context
-│   ├── 🚀 Agent Boot Sequence.md         ← Boot sequence 7 ขั้นตอน
-│   ├── 📦 Final Handover Report.md       ← รายงานส่งมอบ
-│   └── code_snapshot/                    ← Code snapshots v700-v1600
-├── delivery/                       ← Pending delivery files (3 GAS + 3 PWA + 2 docs)
-│   ├── clasp-ready/                ← CustomerPortal.gs, DataSeeding.gs, Router_patch.gs
-│   ├── docs/                       ← LINE_WEBHOOK_SETUP.md, LINE_WEBHOOK_CHECKLIST.md
-│   └── pwa/                        ← after_sales_enhanced.js, billing_slip_verify.js, customer_portal.html
-├── Skill-2026/                     ← v16.1.0 handover + skill files
+├── backups/                        ← Local backup files (.tar.gz)
 ├── memory/                         ← Session context + docs
 │   ├── session.md                  ← This file
 │   ├── API_KEYS_REGISTRY.md
@@ -446,18 +440,39 @@ comphone-superapp/                  ← GitHub repo (v6.2.2 @475)
 
 ---
 
-## ✅ งานที่เสร็จในเซสชันล่าสุด (18 เมษายน 2569 — เซสชัน 3: MISSION COMPLETE)
+## ✅ งานที่เสร็จในเซสชันล่าสุด (28 เมษายน 2569 — เซสชัน 4: BLUEPRINT + AI LINE Agent)
 
+### Documentation & Alignment
 | ไฟล์ | ประเภท | หน้าที่ |
 |------|--------|--------|
-| `TaxEngine.gs` | GAS | VAT Flexible (VAT7/ZERO/EXEMPT/MIXED) + WHT ภงด. 1%/3%/5% |
-| `TaxDocuments.gs` | GAS | ใบกำกับภาษีอย่างย่อ PDF + รายงาน ภงด. PDF รายเดือน + Tax Reminder |
-| `WarrantyManager.gs` | GAS | สร้างใบรับประกัน PDF + เชื่อม AfterSales + แจ้งเตือนใกล้หมดอายุ |
-| `MultiBranch.gs` | GAS | branch_id ทุก 7 tables + filter query + getBranchSummary() |
-| `HealthMonitor.gs` | GAS | Token verify, Rate limit, CORS, Health Check auto + LINE alert |
-| `sync_all.py` | Script | แก้ไข Google Drive Sync Token Validation |
-| `API_KEYS_REGISTRY.md` | Docs | รวบรวม API Keys และ Endpoints ทั้งหมด |
-| `SKILLS_CONTEXT.md` | Docs | รวบรวม Skills ที่ใช้ในโปรเจกต์ |
+| `BLUEPRINT.md` | Docs | อัปเดตเป็น v5.9.0-phase2d สมบูรณ์ + เพิ่ม API ใหม่ (getTechPerformance, exportPOToPDF, sendLineNotify) + มาร์คงานเสร็จแล้ว 7 รายการ |
+
+### AI LINE Agent (Phase 2D/2E)
+| ไฟล์ | ประเภท | หน้าที่ |
+|------|--------|--------|
+| `AILinePrompts.gs` | GAS | สร้าง Prompt 3 บทบาท (Dispatcher, Sales Analyst, BI) ใช้ Gemini Pro ภาษาไทย |
+| `LineBot.gs` | GAS | แก้ไขให้รองรับ Group ID routing + เรียก AI Agent อัตโนมัติ |
+
+### Menu Beautification & UI Enhancement
+| ไฟล์ | ประเภท | หน้าที่ |
+|------|--------|--------|
+| `dashboard_pc.html` | PWA | อัปเดตเวอร์ชัน v5.9.0-phase2d + ปรับปรุงเมนู PC |
+| `style.css` | PWA | ปรับปรุง CSS เมนู Mobile (padding, active state, hover effects) |
+| `crm_attendance.js` | PWA | เพิ่ม Customer Portal V2 (viewCustomerJobs, downloadCustomerReceipts, showTimeline, showJobDetail) |
+| `dashboard.js` | PWA | เพิ่ม Retail Sales Widget + Technician Performance (getTechPerformance) + Responsive KPI Grid |
+| `stock.js` | PWA | สร้างโมดูลสต็อกใหม่ (Full CRUD + Transfer + Movement + Role-based Access) |
+| `purchase_order.js` | PWA | เพิ่ม PDF Export (exportPOToPDF) ใช้ jsPDF + jsPDF-autoTable |
+| `index.html` | PWA | เพิ่ม CDN jsPDF 2.5.2 + jsPDF-autoTable 3.8.2 + Modals (CRM, Job, Stock) |
+
+### Commits (เซสชันนี้)
+- `b4b0d7f` - docs(phase-30): update BLUEPRINT.md to v5.9.0-phase2d complete
+- `6501adc` - feat(phase-30): add AI LINE Agent with 3 roles (Dispatcher, Sales Analyst, BI)
+- `5979d0f` - docs(phase-30): update BLUEPRINT.md with AI LINE Agent sections
+- `cf02305` - feat(phase-30): complete Technician Performance
+- `227fcb2` - style(phase-30): improve responsive KPI grid
+- `651c158` - feat(phase-30): add PDF export for Purchase Orders
+- `01d6635` - AUTO DEPLOY 2026-04-26 (POS + Smart Quotation)
+
 ---
 
 ## 🚧 Pending Tasks
