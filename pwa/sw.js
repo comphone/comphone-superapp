@@ -3,39 +3,16 @@
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ============================================================
-const CACHE_V = 'comphone-v5.9.0-phase2d-20260428_1815';
+const CACHE_V = 'comphone-v5.9.0-phase2d-20260428_1830';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
-const ASSETS = [
-  BASE + '/',
-  BASE + '/index.html',
-  BASE + '/app.js',
-  BASE + '/app_home.js',
-  BASE + '/app_jobs.js',
-  BASE + '/app_actions.js',
-  BASE + '/dashboard.js',
-  BASE + '/crm_attendance.js',
-  BASE + '/purchase_order.js',
-  BASE + '/reports.js',
-  BASE + '/customer_portal.js',
-  BASE + '/analytics_section.js',
-  BASE + '/admin_panel.js',
-  BASE + '/style.css',
-  BASE + '/manifest.json',
-  BASE + '/icons/icon-192.png',
-  BASE + '/icons/icon-512.png',
-  BASE + '/inventory.js',
-  BASE + '/inventory_ui.js',
-  BASE + '/quick_actions.js',
-  BASE + '/error_boundary.js',
-  BASE + '/auth_guard.js',
-  BASE + '/analytics.js',
-  BASE + '/purchase_order.js',
-  BASE + '/attendance_ui.js',
-  BASE + '/pwa_install.js',
+importScripts(BASE + '/pwa_asset_manifest.js');
+const ASSETS = (self.COMPHONE_PWA_ASSETS && self.COMPHONE_PWA_ASSETS.precache || []).map(asset => (
+  asset === '/' ? BASE + '/' : BASE + '/' + asset
+)).concat([
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css',
   'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css'
-];
+]);
 
 // Network Only patterns (never cache)
 const NETWORK_ONLY = [

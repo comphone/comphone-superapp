@@ -6,8 +6,9 @@ const PWA = path.join(ROOT, 'pwa');
 const INDEX = path.join(PWA, 'index.html');
 const VERSION = path.join(PWA, 'version_config.js');
 const SW = path.join(PWA, 'sw.js');
+const ASSET_MANIFEST = path.join(PWA, 'pwa_asset_manifest.js');
 
-const mustExist = [INDEX, VERSION, SW];
+const mustExist = [INDEX, VERSION, SW, ASSET_MANIFEST];
 const badMarkers = [
   '\u00e0\u00b8',
   '\u00e0\u00b9',
@@ -38,6 +39,7 @@ for (const file of mustExist) readUtf8(file);
 const indexHtml = readUtf8(INDEX);
 const versionJs = readUtf8(VERSION);
 const swJs = readUtf8(SW);
+const assetManifestJs = readUtf8(ASSET_MANIFEST);
 
 const buildMatch = versionJs.match(/BUILD_TIMESTAMP\s*=\s*'([^']+)'/);
 const cacheMatch = versionJs.match(/CACHE_VERSION\s*=\s*'([^']+)'/);
@@ -71,6 +73,37 @@ for (const match of indexHtml.matchAll(/<script\b[^>]+src="([^"]+)"/g)) {
   if (!fs.existsSync(file)) fail(`index.html loads missing script: ${src}`);
 }
 
+function parseManifestList(name) {
+  const match = assetManifestJs.match(new RegExp(`${name}:\\s*\\[([\\s\\S]*?)\\]`));
+  if (!match) return [];
+  return [...match[1].matchAll(/'([^']+)'/g)].map(item => item[1]);
+}
+
+const manifestStyles = parseManifestList('styles');
+const manifestScripts = parseManifestList('scripts');
+const manifestPrecache = parseManifestList('precache');
+const indexStyles = [...indexHtml.matchAll(/<link\b[^>]+rel="stylesheet"[^>]+href="([^"]+)"/g)]
+  .map(match => match[1].split('?')[0])
+  .filter(src => !src.startsWith('http') && !src.startsWith('//'));
+const indexScripts = [...indexHtml.matchAll(/<script\b[^>]+src="([^"]+)"/g)]
+  .map(match => match[1].split('?')[0])
+  .filter(src => !src.startsWith('http') && !src.startsWith('//'));
+
+for (const asset of manifestStyles) {
+  if (!indexStyles.includes(asset)) fail(`index.html is missing stylesheet from pwa_asset_manifest.js: ${asset}`);
+}
+for (const asset of manifestScripts) {
+  if (!indexScripts.includes(asset)) fail(`index.html is missing script from pwa_asset_manifest.js: ${asset}`);
+}
+for (const asset of [...manifestStyles, ...manifestScripts]) {
+  if (!manifestPrecache.includes(asset)) fail(`pwa_asset_manifest.js precache is missing loaded asset: ${asset}`);
+}
+for (const asset of manifestPrecache) {
+  if (asset === '/') continue;
+  const file = path.join(PWA, asset);
+  if (!fs.existsSync(file)) fail(`pwa_asset_manifest.js pre-caches missing asset: ${asset}`);
+}
+
 for (const match of swJs.matchAll(/BASE \+ '\/([^']+)'/g)) {
   const asset = match[1];
   if (asset === '' || asset === '/') continue;
@@ -78,7 +111,7 @@ for (const match of swJs.matchAll(/BASE \+ '\/([^']+)'/g)) {
   if (!fs.existsSync(file)) fail(`sw.js pre-caches missing asset: ${asset}`);
 }
 
-const filesToScan = ['index.html', 'version_config.js', 'sw.js', 'api_client.js', 'app.js', 'auth.js', 'auth_guard.js', 'app_home.js'];
+const filesToScan = ['index.html', 'version_config.js', 'sw.js', 'pwa_asset_manifest.js', 'api_client.js', 'app.js', 'auth.js', 'auth_guard.js', 'app_home.js'];
 for (const name of filesToScan) {
   const file = path.join(PWA, name);
   const text = readUtf8(file);
