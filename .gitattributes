@@ -4,6 +4,7 @@
 # Shell scripts — ต้องเป็น LF เสมอ (Windows Git Bash จะรันไม่ได้ถ้าเป็น CRLF)
 *.sh    text eol=lf
 *.bash  text eol=lf
+scripts/hooks/* text eol=lf
 
 # Python scripts
 *.py    text eol=lf

@@ -11,6 +11,9 @@ on:
     branches: [ main ]
     paths:
       - 'pwa/**'
+      - 'scripts/pwa_static_guard.js'
+      - 'scripts/pwa_api_smoke.js'
+      - '.github/workflows/auto-deploy.yml'
       - 'memory/session.md'
   workflow_dispatch:    # รันด้วยตนเองได้จาก GitHub UI
 
@@ -42,9 +45,34 @@ jobs:
       - name: Check JS syntax (PWA files)
         run: |
           echo "🔍 Checking JS syntax..."
+          FAILED=0
           for f in pwa/*.js; do
-            node --check "$f" && echo "✅ $f" || echo "❌ $f"
+            if node --check "$f"; then
+              echo "✅ $f"
+            else
+              echo "❌ $f"
+              FAILED=1
+            fi
           done
+          for f in scripts/pwa_static_guard.js scripts/pwa_api_smoke.js; do
+            if node --check "$f"; then
+              echo "✅ $f"
+            else
+              echo "❌ $f"
+              FAILED=1
+            fi
+          done
+          if [ "$FAILED" -ne 0 ]; then exit 1; fi
+
+      - name: PWA Static Guard
+        run: |
+          echo "Running PWA static guard..."
+          node scripts/pwa_static_guard.js
+
+      - name: PWA API Smoke
+        run: |
+          echo "Running public PWA API smoke checks..."
+          node scripts/pwa_api_smoke.js
 
       - name: 🛡️ Regression Guard
         run: |
