@@ -515,14 +515,5 @@
 <script src="pwa_install.js?v=5.9.0-phase2d&t=20260428_1130"></script>
 <script src="push_notifications.js?v=5.9.0-phase2d&t=20260428_1130"></script>
 
-<script>
-// Register Service Worker with version
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js?v=5.9.0-phase2d&t=20260428_1130')
-    .then(reg => { console.log('[SW] Registered:', reg); reg.update(); })
-    .catch(err => console.error('[SW] Registration failed:', err));
-}
-</script>
-
 </body>
 </html>

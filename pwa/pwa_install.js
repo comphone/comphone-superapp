@@ -32,9 +32,14 @@ function registerServiceWorker() {
     return;
   }
 
-  navigator.serviceWorker.register('./sw.js', { scope: './' })
+  const swUrl = typeof getVersionedUrl === 'function'
+    ? getVersionedUrl('sw.js')
+    : './sw.js';
+
+  navigator.serviceWorker.register(swUrl, { scope: './' })
     .then(registration => {
       console.log('[PWA] SW registered:', registration.scope);
+      registration.update();
 
       // ตรวจสอบ update
       registration.addEventListener('updatefound', () => {

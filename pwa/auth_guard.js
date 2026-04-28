@@ -146,9 +146,10 @@ function requireAuth() {
   // ยังไม่ login
   if (typeof goPage === 'function') {
     goPage('login', null);
+  } else if (typeof showLoginScreen === 'function') {
+    showLoginScreen();
   } else {
-    // Fallback: reload
-    window.location.reload();
+    console.warn('[AuthGuard] Login screen unavailable; staying on current page');
   }
   return false;
 }

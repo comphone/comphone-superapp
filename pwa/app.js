@@ -129,23 +129,6 @@ function normalizeJob(j) {
 
 // ===== INIT =====
 
-// Loop Protection for initApp
-let initAppCount = 0;
-const MAX_INIT_APP = 3;
-
-// Override initApp with protection
-const originalInitApp = initApp;
-window.initApp = function() {
-  initAppCount++;
-  console.log('[APP] initApp() called ' + initAppCount + ' times');
-  if (initAppCount > MAX_INIT_APP) {
-    console.error('[APP] Loop detected! Stopping initApp()');
-    return; // Stop the loop
-  }
-  if (originalInitApp) originalInitApp();
-};
-
-
 window.addEventListener('load', () => {
   // PWA Install prompt
   window.addEventListener('beforeinstallprompt', e => {
@@ -161,8 +144,14 @@ window.addEventListener('load', () => {
   // online/offline listeners delegated to offline_db.js (avoids duplicate registration)
   // offline_db.js handles: showOfflineBar + syncOfflineQueue
 
-  // Start splash
-  setTimeout(initApp, 1800);
+  // Start splash via the final auth-aware boot function.
+  setTimeout(() => {
+    if (typeof window.initApp === 'function') {
+      window.initApp();
+    } else {
+      initApp();
+    }
+  }, 1800);
 });
 
 function initApp() {
