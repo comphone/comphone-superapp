@@ -636,7 +636,7 @@ function renderDashboard(data) {
       ${kpiBox('bi-box-seam-fill', lowStock > 0 ? '#fef3c7' : '#f1f5f9', lowStock > 0 ? '#d97706' : '#6b7280', lowStock, 'สต็อกต่ำ', lowStock > 0 ? '⚠️ ต้องสั่งซื้อเพิ่ม' : 'ปกติ')}
     </div>
 
-    <!-- REVENUE + STATUS -->
+    <!-- REVENUE + STATUS + TREND -->
     <div class="grid-3">
       <div class="card-box">
         <div class="card-title"><i class="bi bi-bar-chart-fill" style="color:#d97706"></i> รายรับ (บาท)</div>
@@ -644,11 +644,25 @@ function renderDashboard(data) {
       </div>
       <div class="card-box">
         <div class="card-title"><i class="bi bi-pie-chart-fill" style="color:#3b82f6"></i> สถานะงาน</div>
-        <div class="status-dist" id="status-dist-pc">
-          ${statuses.length === 0 ? '<p style="color:#9ca3af;font-size:13px">ไม่มีข้อมูล</p>' :
-            statuses.filter(s => s.job_count > 0).map(s => statusDistRow(s, totalForBar)).join('')}
-        </div>
+        <div class="chart-wrap"><canvas id="status-doughnut-pc"></canvas></div>
       </div>
+      <div class="card-box">
+        <div class="card-title"><i class="bi bi-graph-up" style="color:#10b981"></i> แนวโน้ม 12 เดือน</div>
+        <div class="chart-wrap"><canvas id="trend-line-pc"></canvas></div>
+      </div>
+    </div>
+
+    <!-- TECH PERFORMANCE + INVENTORY -->
+    <div class="grid-2" style="margin-top:16px">
+      <div class="card-box">
+        <div class="card-title"><i class="bi bi-person-check-fill" style="color:#8b5cf6"></i> ผลงานช่าง (Top 5)</div>
+        <div class="chart-wrap" style="height:280px"><canvas id="tech-bar-pc"></canvas></div>
+      </div>
+      <div class="card-box">
+        <div class="card-title"><i class="bi bi-boxes" style="color:#f59e0b"></i> มูลค่าสต็อกแยกหมวด</div>
+        <div class="chart-wrap" style="height:280px"><canvas id="inventory-polar-pc"></canvas></div>
+      </div>
+    </div>
       <div class="card-box">
         <div class="card-title"><i class="bi bi-bell-fill" style="color:#ef4444"></i> แจ้งเตือน
           ${alertItems.length > 0 ? `<span class="badge-count" style="background:#fee2e2;color:#dc2626">${alertItems.length}</span>` : ''}
