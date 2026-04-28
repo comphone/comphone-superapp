@@ -3,7 +3,7 @@
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ============================================================
-const CACHE_V = 'comphone-v5.9.0-phase2d-20260428_1830';
+const CACHE_V = 'comphone-v5.9.0-phase2d-20260428_1845';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
 importScripts(BASE + '/pwa_asset_manifest.js');
@@ -30,6 +30,7 @@ const API_PATTERNS = [
 
 const NETWORK_TIMEOUT_MS = 15000;  // 15s - GAS cold start can take 5-10s
 const SYNC_TAG = 'comphone-offline-queue';
+let SHOULD_ACTIVATE_NOW = false;
 
 // Install: pre-cache static assets (graceful - ไม่ fail ถ้า asset ไม่พบ)
 self.addEventListener('install', e => {
@@ -40,11 +41,11 @@ self.addEventListener('install', e => {
           console.warn('[SW] Pre-cache skip:', url, err.message)
         ))
       ))
-      .then(() => { console.log('[SW] Installed:', CACHE_V); return self.skipWaiting(); })
+      .then(() => { console.log('[SW] Installed:', CACHE_V); })
   );
 });
 
-// Activate: clear old caches + reload all tabs (PHASE 25.4)
+// Activate: clear old caches and notify clients without forcing navigation.
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
@@ -53,7 +54,11 @@ self.addEventListener('activate', e => {
     .then(() => self.clients.claim())
     .then(() => self.clients.matchAll({ type: 'window' }))
     .then(clientsArr => {
-      clientsArr.forEach(client => client.navigate(client.url));
+      clientsArr.forEach(client => client.postMessage({
+        type: 'SW_ACTIVATED',
+        version: CACHE_V,
+        activatedByUser: SHOULD_ACTIVATE_NOW
+      }));
     })
   );
 });
@@ -93,7 +98,10 @@ self.addEventListener('sync', e => {
 // Message handler
 self.addEventListener('message', e => {
   if (!e.data) return;
-  if (e.data.type === 'SKIP_WAITING') self.skipWaiting();
+  if (e.data.type === 'SKIP_WAITING') {
+    SHOULD_ACTIVATE_NOW = true;
+    self.skipWaiting();
+  }
   if (e.data.type === 'GET_VERSION') e.ports[0]?.postMessage({ version: CACHE_V });
 });
 

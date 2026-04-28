@@ -19,6 +19,8 @@ const PWA_INSTALLED_KEY = 'cpa_installed';
 const SHOW_BANNER_AFTER = 3; // แสดงหลังเข้าใช้ครั้งที่ 3
 
 let _deferredPrompt = null;
+let _reloadAfterSwUpdate = false;
+let _didReloadForSwUpdate = false;
 
 // ============================================================
 // SERVICE WORKER REGISTRATION
@@ -75,7 +77,25 @@ function registerServiceWorker() {
     if (event.data.type === 'SYNC_COMPLETE') {
       console.log('[PWA] Sync complete from SW');
     }
+    if (event.data.type === 'SW_ACTIVATED') {
+      console.log('[PWA] SW activated:', event.data.version);
+      if (_reloadAfterSwUpdate || event.data.activatedByUser) {
+        _reloadForSwUpdate_();
+      }
+    }
   });
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (_reloadAfterSwUpdate) {
+      _reloadForSwUpdate_();
+    }
+  });
+}
+
+function _reloadForSwUpdate_() {
+  if (_didReloadForSwUpdate) return;
+  _didReloadForSwUpdate = true;
+  window.location.reload();
 }
 
 // ============================================================
@@ -273,12 +293,14 @@ function _showUpdateBanner_() {
 
   document.getElementById('pwa-update-btn')
     .addEventListener('click', () => {
+      _reloadAfterSwUpdate = true;
       navigator.serviceWorker.getRegistration()
         .then(reg => {
           if (reg && reg.waiting) {
             reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          } else {
+            _reloadForSwUpdate_();
           }
-          window.location.reload();
         });
     });
 }

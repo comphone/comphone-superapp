@@ -126,6 +126,17 @@ if (appJs.includes('window.AI_EXECUTOR[method]')) {
   fail('app.js callAPI() still depends on AI_EXECUTOR; mobile PWA should delegate to api_client.js callApi().');
 }
 
+if (swJs.includes('client.navigate(client.url)')) {
+  fail('sw.js must not force-navigate clients during activate; use SW_ACTIVATED messaging instead.');
+}
+if (!swJs.includes('SW_ACTIVATED')) {
+  fail('sw.js must notify clients with SW_ACTIVATED after activation.');
+}
+const pwaInstallJs = readUtf8(path.join(PWA, 'pwa_install.js'));
+if (!pwaInstallJs.includes('_reloadAfterSwUpdate')) {
+  fail('pwa_install.js must gate reloads behind explicit update acceptance.');
+}
+
 const apiClientJs = readUtf8(path.join(PWA, 'api_client.js'));
 if (!apiClientJs.includes('normalizeCallApiArgs')) {
   fail('api_client.js must normalize both callApi(action, payload) and callApi({ action, ...payload }) signatures.');
