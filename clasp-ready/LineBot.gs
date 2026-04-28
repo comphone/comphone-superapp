@@ -70,7 +70,30 @@ function processLineMessage(message, userId, userName, groupId) {
   var text = message.text || '';
   var hasImage = message.type === 'image';
   var hasLocation = message.type === 'location';
-   var classification = classifyMessage(text, hasImage, hasLocation);
+  
+  // ── AI LINE Agent: ตรวจสอบว่า Group นี้เปิดใช้ AI Agent หรือไม่ ──
+  var aiRole = detectRoleFromGroupId_(groupId);
+  if (aiRole && text) {
+    // ตรวจสอบว่าข้อความนี้ควรให้ AI ประมวลผลหรือไม่
+    var lowerText = text.toLowerCase();
+    var aiKeywords = ['สรุป', 'summary', 'รายงาน', 'report', 'วิเคราะห์', 'analyze', 'เช็ค', 'check', 'งานใหม่', 'แจ้งเตือน'];
+    var shouldUseAI = false;
+    
+    for (var k = 0; k < aiKeywords.length; k++) {
+      if (lowerText.indexOf(aiKeywords[k]) > -1) {
+        shouldUseAI = true;
+        break;
+      }
+    }
+    
+    // ถ้าเป็น Dispatcher group และมีคำสั่งที่เกี่ยวข้องกับงาน
+    if (shouldUseAI || aiRole === 'DISPATCHER') {
+      var aiResult = processWithAILineAgent(groupId, text, userName);
+      if (aiResult) return aiResult;
+    }
+  }
+  
+  var classification = classifyMessage(text, hasImage, hasLocation);
   if (classification.type === 'casual') return null;
   switch (classification.type) {
     case 'command':
