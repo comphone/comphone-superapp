@@ -216,6 +216,7 @@ comphone-superapp/
 | **Stock Module** | ✅ Phase 30 | สร้าง stock.js ใหม่ (Full CRUD + Transfer + Movement + Low Stock Alerts + Role-based Access) |
 | **PDF Export (PO)** | ✅ Phase 30 | เพิ่ม exportPOToPDF() ใน purchase_order.js ใช้ jsPDF + jsPDF-autoTable |
 | **jsPDF Integration** | ✅ Phase 30 | เพิ่ม CDN jsPDF 2.5.2 + jsPDF-autoTable 3.8.2 ใน index.html |
+| **AI LINE Agent (Phase2D)** | ✅ Phase 30 | สร้าง AI Agent 3 บทบาท (Dispatcher, Sales Analyst, BI) ใช้ Gemini Pro + Group ID routing + Dispatcher summarize jobs + notify technicians |
 
 ### 🔧 Partially Done (Backend Ready, Frontend Needed)
 
@@ -734,10 +735,12 @@ async function callGas(action, params) {
 | **Report Module (รายงาน)** | สร้างหน้ารายงานสรุปยอดขาย/สต็อก/งาน + PDF Export | ⏳ Pending | MEDIUM |
 | **Analytics V2** | เพิ่ม Predictive Inventory + Anomaly Detection + AI Insights ในหน้า Analytics | ⏳ Pending | MEDIUM |
 | **Photo Upload UI (PC)** | เพิ่มส่วนจัดการรูปภาพ (Before/After) ใน PC Dashboard ให้สมบูรณ์เหมือน Mobile PWA | ⏳ Pending | LOW |
+| **AI LINE Agent (Phase2D)** | สร้าง AI Agent 3 บทบาท (Dispatcher, Sales Analyst, BI) ใช้ Gemini Pro + รองรับ Group ID routing | ✅ Complete | HIGH |
 
 ### 22.2 Intelligence & Automation
 | Module | Description | Status |
 |--------|-------------|--------|
+| **AI LINE Agent (Phase2D)** | สร้าง AI Agent 3 บทบาท (Dispatcher, Sales Analyst, BI) ใช้ Gemini Pro + รองรับ Group ID routing + Auto-notification | ✅ Complete |
 | **Predictive Inventory** | ใช้ข้อมูล DB_LOGS + DB_INVENTORY ให้ AI (Gemini) ทำนายการสั่งซื้ออะไหล่ล่วงหน้า | ⏳ Pending |
 | **Smart Route Optimization** | พัฒนาระบบวางแผนเส้นทางเดินรถสำหรับช่างติดตั้ง (GPS Pipeline) | ⏳ Pending |
 | **Anomaly Detection** | ใช้ข้อมูลจาก ErrorTelemetry สร้างระบบแจ้งเตือนความผิดปกติเชิงรุก (Proactive Alerting) | ⏳ Pending |
