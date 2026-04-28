@@ -130,6 +130,24 @@ function normalizeJob(j) {
 }
 
 // ===== INIT =====
+
+// Loop Protection for initApp
+let initAppCount = 0;
+const MAX_INIT_APP = 3;
+
+// Override initApp with protection
+const originalInitApp = initApp;
+window.initApp = function() {
+  initAppCount++;
+  console.log('[APP] initApp() called ' + initAppCount + ' times');
+  if (initAppCount > MAX_INIT_APP) {
+    console.error('[APP] Loop detected! Stopping initApp()');
+    return; // Stop the loop
+  }
+  if (originalInitApp) originalInitApp();
+};
+
+
 window.addEventListener('load', () => {
   // Register Service Worker
   if ('serviceWorker' in navigator) {
