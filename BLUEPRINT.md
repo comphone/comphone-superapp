@@ -1,6 +1,6 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **เวอร์ชัน:** v5.9.0-phase2d (PWA) / v5.9.0-phase2d (GAS Backend @501)
+> **เวอร์ชัน:** v5.9.0-phase2d (PWA) / v5.9.0-phase2d (GAS Backend @502)
 > **วันที่:** 28 เมษายน 2569 | **Phase:** 30 (Enterprise Intelligence + Auth Enhancement)
 > **สถานะ:** 🟢 PRODUCTION — Phase 30 In Progress (Token Auth + Smart Quotation + Notification Fix)
 > **Repository:** https://github.com/comphone/comphone-superapp
@@ -58,6 +58,45 @@ User (PWA) → GET GAS_URL?action=xxx
 → GAS ประมวลผล → ส่ง JSON กลับ
 → PWA แสดงผล (SPA — ไม่ reload หน้า)
 ```
+
+---
+
+## 2.5 🔗 Dependency Checklist (Automated Dependency Mapping)
+> **คำสั่ง Mentor:** Hermes ต้องตรวจสอบโมดูลที่เกี่ยวข้องทุกครั้งก่อน Commit งาน  
+> **วัตถุประสงค์:** ป้องกันปัญหาฟีเจอร์ไม่สอดคล้องกัน (Version Mismatch)
+
+### กฎการตรวจสอบ (Mandatory Check Before Commit)
+
+| หากแก้ไขโมดูล... | ต้องตรวจสอบโมดูลเหล่านี้ด้วย... | เหตุผล |
+|-------------------|----------------------------|---------|
+| **Inventory** (สต็อก) | POS, หน้าเบิกอะไหล่, รายงานสต็อก, Dashboard | ระบบสต็อกเชื่อมโยงกับขาย-เบิก-รายงาน |
+| **Job System** (งานซ่อม) | Workflow Engine, LINE Bot, Notification, Dashboard | เปลี่ยน state machine ต้องอัปเดตทุกจุด |
+| **GAS API** (Backend) | PWA api_client.js, dashboard_pc.html, LINE Bot | API เปลี่ยนต้องอัปเดต frontend ที่เรียกใช้ |
+| **PWA Version** (เวอร์ชัน) | index.html, dashboard_pc.html, section_settings.js, version_config.js, sw.js | เวอร์ชันต้องตรงกันทุกจุด (Single Source: version_config.js) |
+| **Database Schema** | DatabaseIntegrity.gs, ทุกฟอร์มเพิ่มแก้ไขข้อมูล | Schema เปลี่ยนต้องอัปเดต validation และ UI |
+| **LINE Bot** | AILinePrompts.gs, LineBot.gs, LineHandler.gs | เพิ่มบทบาทใหม่ต้องอัปเดต routing และ prompts |
+| **Auth/Login** | auth_guard.js, Config.gs, GAS Script Properties | เปลี่ยนระบบล็อกอินต้องตรวจสอบทุกหน้าที่มี login gate |
+| **Dashboard** | Dashboard_pc.html, executive_dashboard.html, monitoring_dashboard.html | เปลี่ยน KPI/Charts ต้องอัปเดตทุก dashboard |
+| **Tax Engine** | TaxEngine.gs, TaxDocuments.gs, POS, Billing | เปลี่ยนสูตรภาษีต้องตรวจสอบทุกจุดคำนวณ |
+| **Notification** | PushNotifications.gs, notification_center.js, LINE Bot | เปลี่ยนรูปแบบการแจ้งเตือนต้องอัปเดตทุกช่องทาง |
+
+### แบบฟอร์มตรวจสอบ (Checklist Template)
+```markdown
+## Pre-Commit Validation (Copy to commit message)
+- [ ] ตรวจสอบโมดูลที่เกี่ยวข้องตาม Dependency Checklist
+- [ ] ทดสอบ Cross-Module (Backend ↔ Frontend)
+- [ ] อัปเดตเวอร์ชันใน version_config.js (ถ้ามีการเปลี่ยนแปลง)
+- [ ] เพิ่ม Cache Busting parameter (ถ้าแก้ไข JS/CSS)
+- [ ] ทดสอบบน PWA Mobile (ผ่าน GitHub Pages)
+- [ ] ทดสอบบน PC Dashboard
+- [ ] Commit message ระบุเหตุผลและผลกระทบต่อโมดูลอื่น
+```
+
+### ระบบ Centralized Versioning (Single Source of Truth)
+- **Source File:** `pwa/version_config.js`
+- **ตัวแปรหลัก:** `APP_VERSION`, `CACHE_VERSION`, `BUILD_TIMESTAMP`
+- **การใช้งาน:** ทุกไฟล์ที่ต้องการเวอร์ชัน ให้อ่านจาก `window.COMPHONE_VERSION`
+- **ห้าม:** ระบุเวอร์ชันแบบ hardcode ในไฟล์อื่น (ยกเว้น sw.js ซึ่งอ่านจากตัวแปรเดียวกัน)
 
 ---
 
