@@ -1,8 +1,8 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **เวอร์ชัน:** v5.9.0-phase2d (PWA) / v5.9.0-phase2d (GAS Backend @497)
-> **วันที่:** 25 เมษายน 2569 | **Phase:** 29 (Photo Upload + Analytics + Customer Portal)
-> **สถานะ:** 🟢 PRODUCTION — Phase 29 Complete + 4 Sections (PWA) / 11 Sections (System)
+> **เวอร์ชัน:** v5.9.0-phase2d (PWA) / v5.9.0-phase2d (GAS Backend @501)
+> **วันที่:** 28 เมษายน 2569 | **Phase:** 30 (Enterprise Intelligence + Auth Enhancement)
+> **สถานะ:** 🟢 PRODUCTION — Phase 30 In Progress (Token Auth + Smart Quotation + Notification Fix)
 > **Repository:** https://github.com/comphone/comphone-superapp
 
 ---
@@ -26,7 +26,7 @@
 │                    COMPHONE SUPER APP v5.9.0-phase2d                   │
 │                                                                 │
 │  ┌──────────────┐    ┌──────────────────┐    ┌──────────────┐  │
-│  │  LINE Bot    │───►│ Cloudflare Worker│───►│  GAS @497    │  │
+│  │  LINE Bot    │───►│ Cloudflare Worker│───►│  GAS @501    │  │
 │  │  (Webhook)   │    │ (Async Proxy)    │    │  (Backend)   │  │
 │  └──────────────┘    └──────────────────┘    └──────┬───────┘  │
 │                                                      │          │
@@ -195,6 +195,16 @@ comphone-superapp/
 | **Photo Upload B/A** | ✅ Phase 29 | `uploadPhoto_` API + Router + UI (drag-drop, preview, base64 upload) |
 | **Analytics Section** | ✅ Phase 29 | `analytics_section.js` + dashboard routing + charts UI |
 | **Customer Portal** | ✅ Phase 29 | `customer_portal_section.js` + portal UI + job status |
+
+### ✅ Completed (Phase 30 - 28 เมษายน 2569)
+| ฟีเจอร์ | สถานะ | หมายเหตุ |
+|---------|-------|---------|
+| **Token-based Auth** | ✅ Phase 30 | Router.gs รองรับ token จาก query parameter (แก้ปัญหา 401 Unauthorized) |
+| **Smart Quotation** | ✅ Phase 30 | `smart_quotation.js` ใช้งานเกณฑ์ราคากลาง (คอมฯ 2568, CCTV 2564) |
+| **Notification Loop Fix** | ✅ Phase 30 | แก้ไข toast ซ้อนกันใน `offline_db.js` (ใช้ ID `toast-network`) |
+| **Server-side Auth** | ✅ Phase 30 | `auth.js` ตรวจสอบ token กับ GAS (`verifySession`) ก่อนข้ามหน้า Login |
+| **Version Update** | ✅ Phase 30 | อัปเดตเวอร์ชันเป็น v5.9.0-phase2d ทุกไฟล์ (analytics.js, sw.js, auth_guard.js) |
+| **GAS Deploy @501** | ✅ Phase 30 | Deploy ใหม่ @501 (ลบ photo_upload_section.js ที่ทำให้เกิด Error) |
 
 ### 🔧 Partially Done (Backend Ready, Frontend Needed)
 
