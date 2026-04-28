@@ -2,8 +2,10 @@
 'use strict';
 
 // ===== STATE =====
-// URL source: GAS_CONFIG.url (from gas_config.js) > fallback
-const DEFAULT_SCRIPT_URL = (window.GAS_CONFIG && window.GAS_CONFIG.url) || 'https://script.google.com/macros/s/AKfycbwy8k85i74jsnaIM2LmUJob733ewmU7Tk8MpukLKcV5f2Tl-7LTzy450ovmoh7ez105Hw/exec';
+// URL source: window.COMPHONE_GAS_URL (from version_config.js) > gas_config.js > fallback
+const DEFAULT_SCRIPT_URL = window.COMPHONE_GAS_URL || 
+                        (window.GAS_CONFIG && window.GAS_CONFIG.url) || 
+                        'https://script.google.com/macros/s/AKfycbz8wmzBTNpPHEzOThB0x48TCBru9u74ucqQZ-kMwx9bhFQc4OAY_bc_jWnG4JrQU8EBUw/exec';
 
 const APP = {
   user: null,
