@@ -356,6 +356,13 @@ function goPage(page, btn) {
   if (page === 'analytics') {
     if (typeof openAnalyticsSection === 'function') openAnalyticsSection();
   }
+  if (page === 'pos') {
+    // POS page is standalone - open in new tab or redirect
+    const posUrl = '/comphone-superapp/pwa/pos.html';
+    if (confirm('เปิดหน้าขายหน้าร้าน (POS)?\nกด OK เพื่อเปิดในแท็บใหม่')) {
+      window.open(posUrl, '_blank');
+    }
+  }
 }
 
 // Actions + Search + Notifications → app_actions.js

@@ -51,6 +51,7 @@ function getDashboardBundle(params) {
   var summary   = _bundleBuildSummary_(sheetData, jobs, inventory);
   var alerts    = _bundleBuildAlerts_(sheetData, summary);
   var report    = _bundleBuildReport_(sheetData, jobs);
+  var retailSales = _bundleBuildRetailSales_(sheetData);
   var statusDist = _bundleBuildStatusDist_(jobs);
   var health    = _bundleBuildHealth_(start, jobs, inventory, alerts);
 
@@ -66,6 +67,8 @@ function getDashboardBundle(params) {
     alerts: alerts,
     // Report section
     report: report,
+    // Retail Sales section (POS)
+    retail_sales: retailSales,
     // Health section
     health: health,
     // Meta
@@ -112,7 +115,7 @@ function invalidateBundleCache() {
 // ============================================================
 function _bundleReadAllSheets_(ss) {
   var data = {};
-  var sheetNames = ['DBJOBS', 'DBINVENTORY', 'DBBILLING', 'DBCUSTOMER', 'DBATTENDANCE'];
+  var sheetNames = ['DBJOBS', 'DBINVENTORY', 'DBBILLING', 'DBCUSTOMER', 'DBATTENDANCE', 'DBRETAILSALES'];
   sheetNames.forEach(function(name) {
     try {
       var sh = findSheetByName(ss, name);
@@ -346,6 +349,100 @@ function _bundleBuildReport_(sheetData, jobs) {
     };
   } catch(e) {
     return { period: 'month', total_jobs: 0, completed_jobs: 0, completion_rate: 0, revenue: { today: 0, week: 0, month: 0 } };
+  }
+}
+
+// ============================================================
+// PRIVATE: Build Retail Sales from shared data
+// Aggregate by product category (CCTV, Computer, IT Devices, etc.)
+// ============================================================
+function _bundleBuildRetailSales_(sheetData) {
+  try {
+    var d = sheetData['DBRETAILSALES'];
+    if (!d || !d.rows || d.rows.length === 0) {
+      return { success: true, total_sales: 0, categories: [], items: [] };
+    }
+    
+    var headers = d.headers;
+    var rows = d.rows;
+    
+    // Dynamic header mapping
+    var colMap = { sale_id: 0, created_at: 1, items_json: 3, total: 7 };
+    for (var hi = 0; hi < headers.length; hi++) {
+      var h = String(headers[hi]).toLowerCase().replace(/_/g,'');
+      if (h === 'saleid' || h === 'sale_id') colMap.sale_id = hi;
+      else if (h === 'createdat' || h === 'created_at') colMap.created_at = hi;
+      else if (h === 'itemsjson' || h === 'items_json') colMap.items_json = hi;
+      else if (h === 'total') colMap.total = hi;
+    }
+    
+    // Aggregate by category
+    var categoryMap = {};
+    var now = new Date();
+    var todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    var totalSales = 0;
+    var todaySales = 0;
+    var monthSales = 0;
+    
+    rows.forEach(function(row) {
+      try {
+        var itemsJson = String(row[colMap.items_json] || '');
+        if (!itemsJson) return;
+        
+        var items = JSON.parse(itemsJson);
+        if (!Array.isArray(items)) return;
+        
+        var saleDate = new Date(row[colMap.created_at] || '');
+        var isToday = saleDate >= todayStart;
+        var isThisMonth = saleDate >= thisMonthStart;
+        
+        items.forEach(function(item) {
+          var name = String(item.name || item.item_name || '');
+          var price = Number(item.price || 0);
+          var qty = Number(item.qty || 1);
+          var amount = price * qty;
+          
+          totalSales += amount;
+          if (isToday) todaySales += amount;
+          if (isThisMonth) monthSales += amount;
+          
+          // Categorize by product name
+          var category = 'อื่นๆ';
+          var nameUpper = name.toUpperCase();
+          if (nameUpper.indexOf('CAMERA') > -1 || nameUpper.indexOf('กล้อง') > -1) category = 'CCTV';
+          else if (nameUpper.indexOf('SERVER') > -1) category = 'Server';
+          else if (nameUpper.indexOf('DESKTOP') > -1 || nameUpper.indexOf('คอมพิวเตอร์') > -1) category = 'Desktop';
+          else if (nameUpper.indexOf('LAPTOP') > -1 || nameUpper.indexOf('โน็ตบุ๊ค') > -1) category = 'Laptop';
+          else if (nameUpper.indexOf('ALL_IN_ONE') > -1 || nameUpper.indexOf('AIO') > -1) category = 'All-in-One';
+          else if (nameUpper.indexOf('BATTERY') > -1 || nameUpper.indexOf('แบตเตอรี่') > -1) category = 'Battery';
+          else if (nameUpper.indexOf('CHARGER') > -1 || nameUpper.indexOf('ชาร์จ') > -1) category = 'Charger';
+          else if (nameUpper.indexOf('CABLE') > -1 || nameUpper.indexOf('สาย') > -1) category = 'Cable';
+          
+          if (!categoryMap[category]) {
+            categoryMap[category] = { name: category, total_amount: 0, item_count: 0 };
+          }
+          categoryMap[category].total_amount += amount;
+          categoryMap[category].item_count += qty;
+        });
+      } catch(e) {}
+    });
+    
+    var categories = Object.values(categoryMap).sort(function(a, b) {
+      return b.total_amount - a.total_amount;
+    });
+    
+    return {
+      success: true,
+      total_sales: totalSales,
+      today_sales: todaySales,
+      month_sales: monthSales,
+      categories: categories,
+      total_transactions: rows.length
+    };
+  } catch(e) {
+    return { success: false, error: e.message, categories: [], total_sales: 0 };
   }
 }
 

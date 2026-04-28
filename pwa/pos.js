@@ -45,9 +45,18 @@ function renderProducts(items) {
     card.onclick = () => addToCart(product);
     
     const price = product.sell_price || product.price || 0;
+    const cost = product.cost_price || product.cost || 0;
     const stock = product.current_stock || product.stock || 0;
     
-    // ตรวจสอบราคากลาง
+    // Calculate profit margin
+    let profitMargin = 0;
+    let marginClass = '';
+    if (price > 0 && cost > 0) {
+      profitMargin = Math.round((price - cost) / price * 100);
+      marginClass = profitMargin >= 30 ? 'text-success' : profitMargin >= 15 ? 'text-warning' : 'text-danger';
+    }
+    
+    // Government price comparison
     let govCompareHtml = '';
     if (typeof checkPriceAgainstGovRef === 'function') {
       const checkResult = checkPriceAgainstGovRef(product.name || product.item_name, price);
@@ -58,6 +67,7 @@ function renderProducts(items) {
       <h5>${product.name || product.item_name || 'สินค้า'}</h5>
       <p class="text-primary fw-bold">฿${price.toLocaleString()}</p>
       <small class="text-muted">คงเหลือ: ${stock} ${product.unit || 'ชิ้น'}</small>
+      ${cost > 0 ? `<p class="${marginClass} fw-bold mb-1"><i class="bi bi-graph-up"></i> กำไร: ${profitMargin}% (฿${(price - cost).toLocaleString()})</p>` : ''}
       ${govCompareHtml}
     `;
     
@@ -69,13 +79,50 @@ function renderProducts(items) {
 function setupSearch() {
   const searchInput = document.getElementById('searchProduct');
   if (searchInput) {
+    // Search on typing (for name search)
     searchInput.addEventListener('input', function(e) {
       const query = e.target.value.toLowerCase();
-      const filtered = products.filter(p => 
-        (p.name || p.item_name || '').toLowerCase().includes(query)
-      );
-      renderProducts(filtered);
+      if (query.length === 0) {
+        renderProducts(products);
+        return;
+      }
+      // ถ้าเป็นตัวเลข ≥ 3 หลัก สมมติเป็นบาร์โค้ด
+      if (/^\d{3,}$/.test(query)) {
+        searchByBarcode(query);
+      } else {
+        const filtered = products.filter(p => 
+          (p.name || p.item_name || '').toLowerCase().includes(query)
+        );
+        renderProducts(filtered);
+      }
     });
+
+    // Search on Enter key (for barcode scanner)
+    searchInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        const query = e.target.value.trim();
+        if (query) {
+          searchByBarcode(query);
+        }
+      }
+    });
+  }
+}
+
+// Search by barcode using API
+async function searchByBarcode(barcode) {
+  try {
+    const res = await callApi('barcodeLookup', { barcode: barcode });
+    if (res && res.success && res.item) {
+      renderProducts([res.item]);
+      showToast(`พบสินค้า: ${res.item.name || res.item.item_name}`, 'success');
+    } else {
+      showToast(`ไม่พบสินค้าบาร์โค้ด: ${barcode}`, 'warning');
+      renderProducts([]);
+    }
+  } catch (error) {
+    console.error('Barcode search error:', error);
+    showToast('เกิดข้อผิดพลาดในการค้นหาบาร์โค้ด', 'error');
   }
 }
 
