@@ -29,9 +29,21 @@ const AUTH_USER_KEY = 'comphone_user';
 // Role mapping จาก GAS → PWA role
 const AUTH_ROLE_MAP = {
   'OWNER':      'admin',
+  'owner':      'admin',
+  'ADMIN':      'admin',
+  'admin':      'admin',
   'ACCOUNTANT': 'acct',
+  'accountant': 'acct',
+  'ACCT':       'acct',
+  'acct':       'acct',
   'SALES':      'admin',
+  'sales':      'admin',
   'TECHNICIAN': 'tech',
+  'technician': 'tech',
+  'TECH':       'tech',
+  'tech':       'tech',
+  'EXEC':       'exec',
+  'exec':       'exec',
 };
 
 // ============================================================

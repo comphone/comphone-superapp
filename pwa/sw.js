@@ -3,13 +3,23 @@
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ============================================================
-const CACHE_V = 'comphone-v5.9.0-phase2d-20260428_1715';
+const CACHE_V = 'comphone-v5.9.0-phase2d-20260428_1725';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
 const ASSETS = [
   BASE + '/',
   BASE + '/index.html',
   BASE + '/app.js',
+  BASE + '/app_home.js',
+  BASE + '/app_jobs.js',
+  BASE + '/app_actions.js',
+  BASE + '/dashboard.js',
+  BASE + '/crm_attendance.js',
+  BASE + '/purchase_order.js',
+  BASE + '/reports.js',
+  BASE + '/customer_portal.js',
+  BASE + '/analytics_section.js',
+  BASE + '/admin_panel.js',
   BASE + '/style.css',
   BASE + '/manifest.json',
   BASE + '/icons/icon-192.png',
