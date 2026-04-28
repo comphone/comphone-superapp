@@ -191,11 +191,22 @@ function renderDashboard(data) {
     </div>` : ''}
 
     <div style="height:16px"></div>
+    <!-- RETAIL SALES WIDGET (PHASE 30) -->
+    <div id="retail-sales-widget" class="section-card" style="margin:0 12px 10px">
+      <div class="section-label">🛒 ยอดขายปลีก 7 วันล่าสุด</div>
+      <div id="retail-sales-content" style="text-align:center;padding:12px;color:#9ca3af">
+        <div class="spinner" style="margin:0 auto 8px"></div>
+        <div style="font-size:12px">กำลังโหลดยอดขาย...</div>
+      </div>
+    </div>
   `;
 
   // Draw revenue chart
   drawRevenueChart(revenue);
 
+  // PHASE 30: Load Retail Sales data
+  loadRetailSales();
+  
   // PHASE 27: Render Business AI cards
   if (typeof renderBusinessAICards === 'function') {
     setTimeout(renderBusinessAICards, 100);
@@ -294,6 +305,32 @@ function drawRevenueChart(revenue) {
         }
       }
     }
+  });
+}
+
+// ===== RETAIL SALES (PHASE 30) =====
+function loadRetailSales() {
+  const container = document.getElementById('retail-sales-content');
+  if (!container) return;
+  callApi({ action: 'getRetailSales', days: 7 }).then(res => {
+    if (!res || !res.success || !res.sales || res.sales.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:12px;color:#9ca3af;font-size:12px">ไม่มีข้อมูลยอดขายปลีก</div>';
+      return;
+    }
+    const sales = res.sales; // สมมติรูปแบบ [{ date, amount }, ...]
+    container.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:8px">
+        ${sales.map(s => `
+          <div style="text-align:center">
+            <div style="font-size:10px;color:#9ca3af;margin-bottom:4px">${s.date || '-'}</div>
+            <div style="background:linear-gradient(180deg,#10b981,#059669);border-radius:6px;height:${Math.max(20, Math.min(80, (s.amount||0)/100))}px;margin-bottom:4px"></div>
+            <div style="font-size:10px;font-weight:700;color:#111827">฿${(s.amount||0).toLocaleString()}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }).catch(() => {
+    container.innerHTML = '<div style="text-align:center;padding:12px;color:#9ca3af;font-size:12px">ไม่สามารถโหลดข้อมูลได้</div>';
   });
 }
 
