@@ -257,7 +257,7 @@ function startMainApp() {
 
 async function loadLiveData() {
   try {
-    const data = await window.AI_EXECUTOR.query({ action: 'getDashboardData' });
+    const data = await callApi('getDashboardData');
     if (!data || !data.success) return;
 
     // เก็บ jobs จาก API
@@ -272,8 +272,8 @@ async function loadLiveData() {
     // ถ้าอยู่หน้า jobs ให้ re-render
     if (APP.currentPage === 'jobs') renderJobsPage();
   } catch(e) {
-    // ไม่มี internet — แสดง offline state
-    showOfflineBar(true);
+    // Keep the shell usable; page modules show their own retry states.
+    console.warn('[App] loadLiveData failed:', e && e.message ? e.message : e);
   }
 }
 
@@ -438,7 +438,7 @@ function startVoiceSearch() {
 
 // ===== API CALL =====
 // callAPI(action, params) — ใช้ใน job_workflow.js และทั่วไป
-// PHASE 20.4: เปลี่ยนจาก fetch โดยตรง → AI_EXECUTOR
+// Mobile PWA delegates to api_client.js so every module uses one auth/session path.
 const READ_ACTIONS = {
   getDashboardData: true, getJobStateConfig: true, getJobTimeline: true,
   getJobQRData: true, getPhotoGalleryData: true, inventoryOverview: true,
@@ -465,8 +465,10 @@ async function callAPI(action, params = {}) {
     return null;
   }
   try {
-    const method = isReadAction(action) ? 'query' : 'execute';
-    const data = await window.AI_EXECUTOR[method]({ action: action, payload: params });
+    if (typeof window.callApi !== 'function') {
+      throw new Error('callApi is not available');
+    }
+    const data = await window.callApi(action, params);
     if (data && data._headers) delete data._headers;
     return data;
   } catch (e) {

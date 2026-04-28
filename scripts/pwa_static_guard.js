@@ -78,7 +78,7 @@ for (const match of swJs.matchAll(/BASE \+ '\/([^']+)'/g)) {
   if (!fs.existsSync(file)) fail(`sw.js pre-caches missing asset: ${asset}`);
 }
 
-const filesToScan = ['index.html', 'version_config.js', 'sw.js', 'app.js', 'auth.js', 'auth_guard.js', 'app_home.js'];
+const filesToScan = ['index.html', 'version_config.js', 'sw.js', 'api_client.js', 'app.js', 'auth.js', 'auth_guard.js', 'app_home.js'];
 for (const name of filesToScan) {
   const file = path.join(PWA, name);
   const text = readUtf8(file);
@@ -87,6 +87,16 @@ for (const name of filesToScan) {
 }
 
 if (!/[ก-๙]/.test(indexHtml)) fail('index.html no longer contains Thai text; encoding may be damaged.');
+
+const appJs = readUtf8(path.join(PWA, 'app.js'));
+if (appJs.includes('window.AI_EXECUTOR[method]')) {
+  fail('app.js callAPI() still depends on AI_EXECUTOR; mobile PWA should delegate to api_client.js callApi().');
+}
+
+const apiClientJs = readUtf8(path.join(PWA, 'api_client.js'));
+if (!apiClientJs.includes('normalizeCallApiArgs')) {
+  fail('api_client.js must normalize both callApi(action, payload) and callApi({ action, ...payload }) signatures.');
+}
 
 if (failures.length) {
   console.error('[PWA Static Guard] FAILED');

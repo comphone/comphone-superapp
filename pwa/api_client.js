@@ -119,8 +119,43 @@ function clearApiCache(action) {
   }
 }
 
+function normalizeCallApiArgs(action, payload, options) {
+  if (action && typeof action === 'object') {
+    const request = action;
+    const nestedPayload = request.payload && typeof request.payload === 'object' ? request.payload : {};
+    const directPayload = Object.assign({}, request);
+    delete directPayload.action;
+    delete directPayload.payload;
+
+    return {
+      action: request.action,
+      payload: Object.assign({}, nestedPayload, directPayload),
+      options: payload && typeof payload === 'object' ? payload : (options || {}),
+    };
+  }
+
+  return {
+    action,
+    payload: payload || {},
+    options: options || {},
+  };
+}
+
 async function callApi(action, payload = {}, options = {}) {
+  const args = normalizeCallApiArgs(action, payload, options);
+  action = args.action;
+  payload = args.payload;
+  options = args.options;
+
+  if (!action || typeof action !== 'string') {
+    return { success: false, error: 'Invalid API action' };
+  }
+
   const url = getGasUrl();
+  if (!url) {
+    return { success: false, error: 'GAS URL is not configured' };
+  }
+
   const timeout = options.timeout || COMPHONE_API_TIMEOUT;
   // Build GET URL with query params (POST body หายตอน GAS 302 redirect)
   const token = options.noAuth ? '' : getAuthToken();
@@ -431,6 +466,7 @@ if (typeof window !== 'undefined') {
   window.getAuthSession = getAuthSession;
   window.getAuthToken = getAuthToken;
   window.getGasUrl = getGasUrl;
+  window.normalizeCallApiArgs = normalizeCallApiArgs;
   window.normalizeApiResponse = normalizeApiResponse;
   window.batchCallApi = batchCallApi;
   window.cachedCallApi = cachedCallApi;
