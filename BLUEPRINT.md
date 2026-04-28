@@ -712,15 +712,22 @@ async function callGas(action, params) {
 ## 22. Phase 30: Enterprise Intelligence (Current)
 **วันที่:** 28 เมษายน 2569 | **สถานะ:** 🟢 PRODUCTION — Token Auth + Smart Quotation + GAS URL Fix Complete*
 
-### 22.1 Frontend Expansion (UI Enhancement)
+### 22.1 Frontend Expansion (UI Enhancement + Menu Beautification)
 
-| Module | Description | Status |
-|--------|-------------|--------|
-| **POS/Retail UI** | สร้างหน้าขายหน้าร้านสมบูรณ์ (`pos.html` + `pos.js`) เชื่อมต่อกับ `createRetailSale` API + Token-based Auth | ✅ Complete |
-| **Smart Quotation** | เพิ่มระบบเปรียบเทียบราคากลาง (คอมพิวเตอร์ 2568, CCTV 2564) ในหน้า POS | ✅ Complete |
-| **GAS URL Fix** | อัปเดต `gas_config.js` + `api_client.js` เป็น GAS @501 (fix login/analytics errors) | ✅ Complete |
-| **Customer Portal V2** | ปรับปรุงหน้าเว็บลูกค้า (track job status, view history, download receipts) | ⏳ Pending |
-| **Photo Upload UI (PC)** | เพิ่มส่วนจัดการรูปภาพ (Before/After) ใน PC Dashboard ให้สมบูรณ์เหมือน Mobile PWA | ⏳ Pending |
+| Module | Description | Status | Priority |
+|--------|-------------|--------|----------|
+| **POS/Retail UI** | สร้างหน้าขายหน้าร้านสมบูรณ์ (`pos.html` + `pos.js`) เชื่อมต่อกับ `createRetailSale` API + Token-based Auth | ✅ Complete | - |
+| **Smart Quotation** | เพิ่มระบบเปรียบเทียบราคากลาง (คอมพิวเตอร์ 2568, CCTV 2564) ในหน้า POS | ✅ Complete | - |
+| **GAS URL Fix** | อัปเดต `gas_config.js` + `api_client.js` เป็น GAS @501 (fix login/analytics errors) | ✅ Complete | - |
+| **Menu Beautification (PC+Mobile)** | ตรวจสอบและพัฒนาธีมเมนูให้สวยงาม ไม่มี bug (ลูกค้า, Dashboard, สั่งซื้อ, สต็อก, เวลา, รายงาน, Analytics) | 🔴 In Progress | IMMEDIATE |
+| **Customer Portal V2 (ลูกค้า)** | ปรับปรุงหน้าเว็บลูกค้า (track job status, view history, download receipts) + integrate เมนู | ⏳ Pending | HIGH |
+| **Dashboard Enhancement** | เพิ่ม Retail Sales + Analytics widgets + Responsive design ใน PC/Mobile Dashboard | ⏳ Pending | HIGH |
+| **Order Module (สั่งซื้อ)** | สร้างหน้าสร้าง/ติดตามใบสั่งซื้อ (Purchase Order) + เชื่อมต่อ API `createPurchaseOrder` | ⏳ Pending | HIGH |
+| **Stock Module (สต็อก)** | เพิ่ม Stock Transfer + Movement History + Barcode lookup ในหน้าสต็อก | ⏳ Pending | MEDIUM |
+| **Time/Attendance (เวลา)** | ปรับปรุงหน้าบันทึกเวลาเข้างาน + รายงานการลงเวลาช่าง (Attendance Report) | ⏳ Pending | MEDIUM |
+| **Report Module (รายงาน)** | สร้างหน้ารายงานสรุปยอดขาย/สต็อก/งาน + PDF Export | ⏳ Pending | MEDIUM |
+| **Analytics V2** | เพิ่ม Predictive Inventory + Anomaly Detection + AI Insights ในหน้า Analytics | ⏳ Pending | MEDIUM |
+| **Photo Upload UI (PC)** | เพิ่มส่วนจัดการรูปภาพ (Before/After) ใน PC Dashboard ให้สมบูรณ์เหมือน Mobile PWA | ⏳ Pending | LOW |
 
 ### 22.2 Intelligence & Automation
 | Module | Description | Status |
