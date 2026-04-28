@@ -200,15 +200,15 @@ function _checkAuthGateV55_(action, payload, e) {
   // ── Public actions: no auth required ──
   var PUBLIC_ACTIONS = {
     // Auth entry points
-    'help': 1, 'loginUser': 1, 'verifySession': 1,
+    'help': 1, 'loginuser': 1, 'loginUser': 1, 'verifysession': 1, 'verifySession': 1,
     // Public diagnostics
-    'health': 1, 'getVersion': 1, 'version': 1,
+    'health': 1, 'getversion': 1, 'getVersion': 1, 'version': 1,
     // Error logging: frontend may not have a token while reporting boot failures.
-    'logSystemError': 1,
+    'logsystemerror': 1, 'logSystemError': 1,
     // Client telemetry is best-effort and must not block login recovery.
-    'logTelemetry': 1,
+    'logtelemetry': 1, 'logTelemetry': 1,
     // Customer Portal public endpoint by design.
-    'getJobStatusPublic': 1
+    'getjobstatuspublic': 1, 'getJobStatusPublic': 1
   };
 
   // ── Admin-only actions: require role=admin|owner ──
