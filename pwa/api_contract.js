@@ -13,6 +13,7 @@
         label: 'Dashboard',
         icon: 'bi-speedometer2',
         actions: [
+          { action: 'getDashboardBundle', read: true, optional: true },
           { action: 'getDashboardData', required: true, read: true },
           { action: 'getTechPerformance', payload: { days: 7 }, read: true },
           { action: 'getRetailSales', payload: { days: 7 }, read: true },

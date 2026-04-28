@@ -4,11 +4,12 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const PWA = path.join(ROOT, 'pwa');
 const INDEX = path.join(PWA, 'index.html');
+const DASHBOARD_PC = path.join(PWA, 'dashboard_pc.html');
 const VERSION = path.join(PWA, 'version_config.js');
 const SW = path.join(PWA, 'sw.js');
 const ASSET_MANIFEST = path.join(PWA, 'pwa_asset_manifest.js');
 
-const mustExist = [INDEX, VERSION, SW, ASSET_MANIFEST];
+const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST];
 const badMarkers = [
   '\u00e0\u00b8',
   '\u00e0\u00b9',
@@ -37,6 +38,7 @@ const failures = [];
 for (const file of mustExist) readUtf8(file);
 
 const indexHtml = readUtf8(INDEX);
+const dashboardPcHtml = readUtf8(DASHBOARD_PC);
 const versionJs = readUtf8(VERSION);
 const swJs = readUtf8(SW);
 const assetManifestJs = readUtf8(ASSET_MANIFEST);
@@ -54,15 +56,21 @@ if (cacheMatch && swCacheMatch && cacheMatch[1] !== swCacheMatch[1]) {
 
 if (buildMatch) {
   const expectedToken = `t=${buildMatch[1]}`;
-  const localRefs = [...indexHtml.matchAll(/<(?:script|link)\b[^>]+(?:src|href)="([^"]+)"/g)]
-    .map(match => match[1])
-    .filter(src => !src.startsWith('http') && !src.startsWith('//') && !src.startsWith('/comphone-superapp/pwa/manifest.json'));
 
-  for (const src of localRefs) {
-    if (src.includes('?') && !src.includes(expectedToken)) {
-      fail(`Cache bust token mismatch in index.html: ${src}`);
+  function checkCacheBustTokens(html, pageName) {
+    const localRefs = [...html.matchAll(/<(?:script|link)\b[^>]+(?:src|href)="([^"]+)"/g)]
+      .map(match => match[1])
+      .filter(src => !src.startsWith('http') && !src.startsWith('//') && !src.startsWith('/comphone-superapp/pwa/manifest.json'));
+
+    for (const src of localRefs) {
+      if (src.includes('?') && !src.includes(expectedToken)) {
+        fail(`Cache bust token mismatch in ${pageName}: ${src}`);
+      }
     }
   }
+
+  checkCacheBustTokens(indexHtml, 'index.html');
+  checkCacheBustTokens(dashboardPcHtml, 'dashboard_pc.html');
 }
 
 for (const match of indexHtml.matchAll(/<script\b[^>]+src="([^"]+)"/g)) {
@@ -71,6 +79,13 @@ for (const match of indexHtml.matchAll(/<script\b[^>]+src="([^"]+)"/g)) {
   const clean = src.split('?')[0].replace(/^\/comphone-superapp\/pwa\//, '');
   const file = path.join(PWA, clean);
   if (!fs.existsSync(file)) fail(`index.html loads missing script: ${src}`);
+}
+for (const match of dashboardPcHtml.matchAll(/<script\b[^>]+src="([^"]+)"/g)) {
+  const src = match[1];
+  if (src.startsWith('http') || src.startsWith('//')) continue;
+  const clean = src.split('?')[0].replace(/^\/comphone-superapp\/pwa\//, '');
+  const file = path.join(PWA, clean);
+  if (!fs.existsSync(file)) fail(`dashboard_pc.html loads missing script: ${src}`);
 }
 
 function parseManifestList(name) {
@@ -111,7 +126,7 @@ for (const match of swJs.matchAll(/BASE \+ '\/([^']+)'/g)) {
   if (!fs.existsSync(file)) fail(`sw.js pre-caches missing asset: ${asset}`);
 }
 
-const filesToScan = ['index.html', 'version_config.js', 'sw.js', 'pwa_asset_manifest.js', 'api_contract.js', 'api_client.js', 'app.js', 'auth.js', 'auth_guard.js', 'app_home.js', 'admin_panel.js', 'menu_health.js'];
+const filesToScan = ['index.html', 'dashboard_pc.html', 'version_config.js', 'sw.js', 'pwa_asset_manifest.js', 'api_contract.js', 'api_client.js', 'app.js', 'auth.js', 'auth_guard.js', 'app_home.js', 'admin_panel.js', 'menu_health.js'];
 for (const name of filesToScan) {
   const file = path.join(PWA, name);
   const text = readUtf8(file);
@@ -120,6 +135,7 @@ for (const name of filesToScan) {
 }
 
 if (!/[ก-๙]/.test(indexHtml)) fail('index.html no longer contains Thai text; encoding may be damaged.');
+if (!/[ก-๙]/.test(dashboardPcHtml)) fail('dashboard_pc.html no longer contains Thai text; encoding may be damaged.');
 
 const appJs = readUtf8(path.join(PWA, 'app.js'));
 if (appJs.includes('window.AI_EXECUTOR[method]')) {
@@ -151,6 +167,32 @@ if (!adminPanelJs.includes("data-tab=\"health\"") || !adminPanelJs.includes('ren
 const apiContractJs = readUtf8(path.join(PWA, 'api_contract.js'));
 if (!apiContractJs.includes('COMPHONE_API_CONTRACT') || !apiContractJs.includes('protectedActions')) {
   fail('api_contract.js must publish COMPHONE_API_CONTRACT with protectedActions.');
+}
+
+const pcContractIndex = dashboardPcHtml.indexOf('api_contract.js');
+const pcApiClientIndex = dashboardPcHtml.indexOf('api_client.js');
+if (pcContractIndex === -1) fail('dashboard_pc.html must load api_contract.js.');
+if (pcApiClientIndex === -1) fail('dashboard_pc.html must load api_client.js.');
+if (pcContractIndex !== -1 && pcApiClientIndex !== -1 && pcContractIndex > pcApiClientIndex) {
+  fail('dashboard_pc.html must load api_contract.js before api_client.js.');
+}
+if (!dashboardPcHtml.includes('dashboard_shared.css?')) {
+  fail('dashboard_pc.html must cache-bust dashboard_shared.css.');
+}
+if (dashboardPcHtml.includes('20260428_1130') || dashboardPcHtml.includes('v=282')) {
+  fail('dashboard_pc.html contains stale cache-bust token.');
+}
+if (dashboardPcHtml.includes('localStorage.clear()')) {
+  fail('dashboard_pc.html must not clear all localStorage during version changes.');
+}
+if (dashboardPcHtml.includes('serviceWorker.getRegistrations()') || dashboardPcHtml.includes('location.reload(true)')) {
+  fail('dashboard_pc.html must not unregister service workers or force reload during boot.');
+}
+if (!dashboardPcHtml.includes('updatePcVersionBadge') || dashboardPcHtml.includes('<div id="version_badge">v5.9.0-phase2d')) {
+  fail('dashboard_pc.html must render version_badge from version_config.js at runtime.');
+}
+if (!apiContractJs.includes('getDashboardBundle')) {
+  fail('api_contract.js should track getDashboardBundle for PC dashboard fallback health.');
 }
 
 if (failures.length) {
