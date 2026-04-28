@@ -593,6 +593,128 @@
       <i class="bi bi-x-lg"></i> ปิด
     </button>
   </div>
+    </div>
+</div>
+<!-- STOCK MODALS (PHASE 30) -->
+<!-- Create Stock Modal -->
+<div id="modal-create-stock" class="modal-overlay hidden" onclick="closeModal('modal-create-stock')">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><i class="bi bi-box-seam" style="color:#f59e0b"></i> เพิ่มสต็อกใหม่</div>
+    <div style="padding:0 16px">
+      <div class="form-group-custom">
+        <label>รหัสสต็อก *</label>
+        <div class="input-wrap">
+          <i class="bi bi-upc-scan"></i>
+          <input type="text" id="stock-item-code" placeholder="เช่น PART-001">
+        </div>
+      </div>
+      <div class="form-group-custom">
+        <label>ชื่อสต็อก *</label>
+        <div class="input-wrap">
+          <i class="bi bi-box"></i>
+          <input type="text" id="stock-item-name" placeholder="เช่น จอ iPhone 14">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+        <div class="form-group-custom">
+          <label>จำนวนเริ่มต้น</label>
+          <input type="number" id="stock-qty" value="0" min="0" class="form-select" style="border-radius:12px;border:1.5px solid #e5e7eb;padding:10px 14px">
+        </div>
+        <div class="form-group-custom">
+          <label>จำนวนขั้นต่ำ</label>
+          <input type="number" id="stock-min-qty" value="10" min="0" class="form-select" style="border-radius:12px;border:1.5px solid #e5e7eb;padding:10px 14px">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+        <div class="form-group-custom">
+          <label>ราคาต่อหน่วย (฿)</label>
+          <input type="number" id="stock-unit-cost" value="0" min="0" step="0.01" class="form-select" style="border-radius:12px;border:1.5px solid #e5e7eb;padding:10px 14px">
+        </div>
+        <div class="form-group-custom">
+          <label>หน่วยนับ</label>
+          <input type="text" id="stock-unit" value="ชิ้น" class="form-select" style="border-radius:12px;border:1.5px solid #e5e7eb;padding:10px 14px">
+        </div>
+      </div>
+      <div class="form-group-custom">
+        <label>หมวดหมู่</label>
+        <div class="input-wrap">
+          <i class="bi bi-tag"></i>
+          <input type="text" id="stock-category" placeholder="เช่น อะไหล่, อุปกรณ์">
+        </div>
+      </div>
+      <button class="btn-setup" onclick="saveNewStock()" style="margin-top:8px">
+        <i class="bi bi-plus-lg"></i> เพิ่มสต็อก
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Adjust Stock Modal -->
+<div id="modal-adjust-stock" class="modal-overlay hidden" onclick="closeModal('modal-adjust-stock')">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><i class="bi bi-arrow-left-right" style="color:#3b82f6"></i> ปรับปรุงสต็อก</div>
+    <div style="padding:0 16px">
+      <input type="hidden" id="adjust-item-code">
+      <div class="form-group-custom">
+        <label>จำนวนที่เปลี่ยนแปลง *</label>
+        <input type="number" id="adjust-qty-change" value="0" class="form-select" style="border-radius:12px;border:1.5px solid #e5e7eb;padding:10px 14px">
+        <small style="color:#6b7280;font-size:11px">ใส่ค่าบวกเพื่อเพิ่ม, ค่าลบเพื่อลด</small>
+      </div>
+      <div class="form-group-custom">
+        <label>เหตุผล</label>
+        <div class="input-wrap">
+          <i class="bi bi-chat-left-text"></i>
+          <input type="text" id="adjust-reason" placeholder="เช่น ชำรุด, สูญหาย">
+        </div>
+      </div>
+      <button class="btn-action" onclick="adjustStock()" style="margin-top:8px">
+        <i class="bi bi-check-lg"></i> ยืนยันการปรับปรุง
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Transfer Stock Modal -->
+<div id="modal-transfer-stock" class="modal-overlay hidden" onclick="closeModal('modal-transfer-stock')">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><i class="bi bi-truck" style="color:#8b5cf6"></i> โอนย้ายสต็อก</div>
+    <div style="padding:0 16px">
+      <input type="hidden" id="transfer-item-code">
+      <div class="form-group-custom">
+        <label>จำนวนที่โอน *</label>
+        <input type="number" id="transfer-qty" value="0" min="1" class="form-select" style="border-radius:12px;border:1.5px solid #e5e7eb;padding:10px 14px">
+      </div>
+      <div class="form-group-custom">
+        <label>สถานที่ปลายทาง *</label>
+        <div class="input-wrap">
+          <i class="bi bi-geo-alt"></i>
+          <input type="text" id="transfer-to-location" placeholder="เช่น สาขา A, โกดัง B">
+        </div>
+      </div>
+      <div class="form-group-custom">
+        <label>เหตุผล</label>
+        <div class="input-wrap">
+          <i class="bi bi-chat-left-text"></i>
+          <input type="text" id="transfer-reason" placeholder="เช่น ย้ายไปสาขาใหม่">
+        </div>
+      </div>
+      <button class="btn-action" onclick="transferStock()" style="margin-top:8px">
+        <i class="bi bi-check-lg"></i> ยืนยันการโอนย้าย
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Stock Detail Modal -->
+<div id="modal-stock-detail" class="modal-overlay hidden" onclick="closeModal('modal-stock-detail')">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="max-height:90vh;overflow-y:auto;padding:0 0 24px">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><i class="bi bi-box-seam" style="color:#10b981"></i> รายละเอียดสต็อก</div>
+    <div id="stock-detail-content"></div>
+  </div>
 </div>
 
 <!-- Quick Note Modal -->
