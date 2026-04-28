@@ -753,7 +753,12 @@ function renderDashboard(data) {
   `;
 
   // Draw chart
+  // Draw all Chart.js v4 charts
   drawRevenueChartPC(revenue);
+  drawStatusDoughnutPC(statuses);
+  drawTrendLinePC(data.monthly || []);
+  drawTechBarPC(data.topTechs || []);
+  drawInventoryPolarPC(data.inventory || []);
 }
 
 // ===== HELPERS =====
