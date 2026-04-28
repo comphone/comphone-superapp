@@ -442,7 +442,7 @@ indexedDB.databases().then(dbs => console.log(dbs))
 ---
 
 > **เอกสารนี้คือ Single Source of Truth** — อ้างอิงไฟล์นี้ก่อนเริ่มงานทุกครั้ง
-> อัปเดตล่าสุด: 2026-04-24 | Phase 2E/28.1 | Commit `bb33f5d` — Smart Assignment V2
+> อัปเดตล่าสุด: 2026-04-28 | Phase 30 Complete | Commit `cf02305` — Dashboard + Stock + PDF Export + Menu Beautification
 
 ---
 
@@ -535,9 +535,9 @@ async function callGas(action, params) {
 | **PO** | `createPO`, `getPOs`, `updatePOStatus`, `approvePO` |
 | **Attendance** | `clockIn`, `clockOut`, `getAttendance` |
 | **After Sales** | `createAfterSales`, `getAfterSales`, `updateAfterSales`, `createAfterSalesRecord` |
-| **Dashboard** | `getDashboardData`, `systemStatus`, `getExecutiveDashboard`, `getSystemMetrics`, `getSystemLogs` |
-| **LINE** | Webhook (auto-detect via `destination` + `events`) |
-| **Notification** | `sendNotify`, `sendLineMessage` |
+| **Dashboard** | `getDashboardData`, `getDashboardBundle`, `systemStatus`, `getExecutiveDashboard`, `getSystemMetrics`, `getSystemLogs`, `getTechPerformance` |
+| **Reports** | `exportPOToPDF`, `getProfitReport` |
+| **LINE** | Webhook (auto-detect via `destination` + `events`), `sendLineNotify` |
 | **AI/Smart** | `smartAssignment`, `gpsPipeline`, `geminiReorderSuggestion` |
 | **System** | `healthCheck`, `guardstatus`, `auditproperties`, `cleanupproperties`, `logSystemError` |
 | **Public** | `getJobStatusPublic` (ไม่ต้อง Auth) |
@@ -716,14 +716,14 @@ async function callGas(action, params) {
 
 | Module | Description | Status | Priority |
 |--------|-------------|--------|----------|
-| **POS/Retail UI** | สร้างหน้าขายหน้าร้านสมบูรณ์ (`pos.html` + `pos.js`) เชื่อมต่อกับ `createRetailSale` API + Token-based Auth | ✅ Complete | - |
+| **POS/Retail UI** | สร้างหน้าขายหน้าร้านสมบูรณ์ (`pos.js`) + เชื่อมต่อกับ `createRetailSale` API + Token-based Auth + Barcode Search + Profit Margin | ✅ Complete | - |
 | **Smart Quotation** | เพิ่มระบบเปรียบเทียบราคากลาง (คอมพิวเตอร์ 2568, CCTV 2564) ในหน้า POS | ✅ Complete | - |
 | **GAS URL Fix** | อัปเดต `gas_config.js` + `api_client.js` เป็น GAS @501 (fix login/analytics errors) | ✅ Complete | - |
-| **Menu Beautification (PC+Mobile)** | ตรวจสอบและพัฒนาธีมเมนูให้สวยงาม ไม่มี bug (ลูกค้า, Dashboard, สั่งซื้อ, สต็อก, เวลา, รายงาน, Analytics) | 🔴 In Progress | IMMEDIATE |
-| **Customer Portal V2 (ลูกค้า)** | ปรับปรุงหน้าเว็บลูกค้า (track job status, view history, download receipts) + integrate เมนู | ⏳ Pending | HIGH |
-| **Dashboard Enhancement** | เพิ่ม Retail Sales + Analytics widgets + Responsive design ใน PC/Mobile Dashboard | ⏳ Pending | HIGH |
-| **Order Module (สั่งซื้อ)** | สร้างหน้าสร้าง/ติดตามใบสั่งซื้อ (Purchase Order) + เชื่อมต่อ API `createPurchaseOrder` | ⏳ Pending | HIGH |
-| **Stock Module (สต็อก)** | เพิ่ม Stock Transfer + Movement History + Barcode lookup ในหน้าสต็อก | ⏳ Pending | MEDIUM |
+| **Menu Beautification (PC+Mobile)** | ปรับปรุงธีมเมนู PC + Mobile ให้สวยงาม (Bootstrap Icons, active states, hover effects, responsive) | ✅ Complete | IMMEDIATE |
+| **Customer Portal V2 (ลูกค้า)** | เพิ่มประวัติงาน (viewCustomerJobs) + ดาวน์โหลดใบเสร็จ (downloadCustomerReceipts) + Timeline (showTimeline) + Job Detail (showJobDetail) | ✅ Complete | HIGH |
+| **Dashboard Enhancement** | เพิ่ม Retail Sales Widget + Quick Actions + Technician Performance (getTechPerformance: completed jobs, avg days, rating) + Responsive KPI Grid (4/3/2/1 columns) | ✅ Complete | HIGH |
+| **Order Module (สั่งซื้อ)** | สร้างหน้าสร้าง/ติดตามใบสั่งซื้อ (Purchase Order) + PDF Export (exportPOToPDF ด้วย jsPDF) + Receive/Cancel | ✅ Complete | HIGH |
+| **Stock Module (สต็อก)** | สร้างโมดูลสต็อกใหม่ (stock.js) + Full CRUD + Stock Transfer + Movement History + Low Stock Alerts + ตรวจสอบสิทธิ์ (Admin/Owner เท่านั้น) | ✅ Complete | MEDIUM |
 | **Time/Attendance (เวลา)** | ปรับปรุงหน้าบันทึกเวลาเข้างาน + รายงานการลงเวลาช่าง (Attendance Report) | ⏳ Pending | MEDIUM |
 | **Report Module (รายงาน)** | สร้างหน้ารายงานสรุปยอดขาย/สต็อก/งาน + PDF Export | ⏳ Pending | MEDIUM |
 | **Analytics V2** | เพิ่ม Predictive Inventory + Anomaly Detection + AI Insights ในหน้า Analytics | ⏳ Pending | MEDIUM |
