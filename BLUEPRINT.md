@@ -710,14 +710,15 @@ async function callGas(action, params) {
 
 
 ## 22. Phase 30: Enterprise Intelligence (Current)
-
-**วันที่:** 27 เมษายน 2569 | **สถานะ:** 🟢 PROGRESS — Token Auth + Smart Quotation Complete*
+**วันที่:** 28 เมษายน 2569 | **สถานะ:** 🟢 PRODUCTION — Token Auth + Smart Quotation + GAS URL Fix Complete*
 
 ### 22.1 Frontend Expansion (UI Enhancement)
+
 | Module | Description | Status |
 |--------|-------------|--------|
 | **POS/Retail UI** | สร้างหน้าขายหน้าร้านสมบูรณ์ (`pos.html` + `pos.js`) เชื่อมต่อกับ `createRetailSale` API + Token-based Auth | ✅ Complete |
 | **Smart Quotation** | เพิ่มระบบเปรียบเทียบราคากลาง (คอมพิวเตอร์ 2568, CCTV 2564) ในหน้า POS | ✅ Complete |
+| **GAS URL Fix** | อัปเดต `gas_config.js` + `api_client.js` เป็น GAS @501 (fix login/analytics errors) | ✅ Complete |
 | **Customer Portal V2** | ปรับปรุงหน้าเว็บลูกค้า (track job status, view history, download receipts) | ⏳ Pending |
 | **Photo Upload UI (PC)** | เพิ่มส่วนจัดการรูปภาพ (Before/After) ใน PC Dashboard ให้สมบูรณ์เหมือน Mobile PWA | ⏳ Pending |
 
