@@ -301,9 +301,54 @@ function loadWeeklyAttendance() {
   }).catch(() => {});
 }
 
+function viewCustomerJobs(customerId, customerName) {
+  closeModal('modal-customer');
+  const jobsContainer = document.getElementById('crm-jobs-modal');
+  if (!jobsContainer) {
+    showToast('❌ ไม่พบ container สำหรับแสดงงาน');
+    return;
+  }
+  jobsContainer.innerHTML = '<div style="text-align:center;padding:20px;color:#9ca3af"><div class="spinner-pc"></div><p>กำลังโหลดประวัติงาน...</p></div>';
+  
+  callApi({ action: 'getCustomerHistory', customer_id: customerId }).then(res => {
+    if (!res || !res.success || !res.jobs || res.jobs.length === 0) {
+      jobsContainer.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i><p>ไม่มีประวัติงาน</p></div>';
+      return;
+    }
+    const jobs = res.jobs;
+    jobsContainer.innerHTML = `
+      <div style="padding:16px">
+        <div style="font-weight:700;font-size:16px;color:#111827;margin-bottom:12px">ประวัติงานของ ${customerName || 'ลูกค้า'}</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${jobs.map(job => `
+            <div class="job-card" onclick="showJobDetail('${job.id || job.job_id}')">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div style="font-weight:600;font-size:13px;color:#111827">${job.symptom || job.device || 'ไม่ระบุอาการ'}</div>
+                <span class="status-badge" style="background:${getStatusColor(job.status)};color:#fff">${job.status || '-'}</span>
+              </div>
+              <div style="font-size:11px;color:#6b7280;margin-top:4px">${job.created || job.created_at || '-'} | ${job.tech || job.technician || 'ไม่ระบุช่าง'}</div>
+              ${job.price ? `<div style="font-size:12px;font-weight:600;color:#10b981;margin-top:4px">฿${Number(job.price).toLocaleString()}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }).catch(() => {
+    jobsContainer.innerHTML = '<div class="empty-state"><i class="bi bi-wifi-off"></i><p>ไม่สามารถโหลดข้อมูลได้</p></div>';
+  });
+}
+
+function getStatusColor(status) {
+  const s = (status || '').toLowerCase();
+  if (/เสร็จ|completed|done/.test(s)) return '#10b981';
+  if (/กำลัง|in.prog/.test(s)) return '#3b82f6';
+  if (/รอชิ้น|waiting/.test(s)) return '#f59e0b';
+  if (/ด่วน|urgent/.test(s)) return '#ef4444';
+  return '#6b7280';
+}
+
 function showClockModal(type) {
   CLOCK_ACTION = type;
-  document.getElementById('clockin-modal-title').textContent = type === 'in' ? '🟢 เช็คอิน' : '🔴 เช็คเอาท์';
   document.getElementById('clockin-confirm-btn').innerHTML = type === 'in' ? '<i class="bi bi-clock-fill"></i> ยืนยันเช็คอิน' : '<i class="bi bi-clock-fill"></i> ยืนยันเช็คเอาท์';
   document.getElementById('clockin-note').value = '';
   document.getElementById('modal-clockin').classList.remove('hidden');

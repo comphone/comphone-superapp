@@ -572,6 +572,18 @@
     <div id="modal-assign-content"></div>
   </div>
 </div>
+<!-- CRM Jobs History Modal -->
+<div id="modal-crm-jobs" class="modal-overlay hidden" onclick="closeModal('modal-crm-jobs')">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="max-height:90vh;overflow-y:auto;padding:0 0 24px">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><i class="bi bi-clock-history" style="color:#3b82f6"></i> ประวัติงานลูกค้า</div>
+    <div id="crm-jobs-modal" style="padding:0 16px"></div>
+    <button class="btn-secondary" style="margin:16px 16px 0" onclick="closeModal('modal-crm-jobs')">
+      <i class="bi bi-x-lg"></i> ปิด
+    </button>
+  </div>
+</div>
+
 <!-- Quick Note Modal -->
 <div id="modal-note" class="modal-overlay hidden" onclick="closeModal('modal-note')">
   <div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px">
