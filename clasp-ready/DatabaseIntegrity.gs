@@ -7,7 +7,78 @@
 //   safeWriteRow_(sheetName, data)   — เขียนข้อมูลโดย map column ตามชื่อ
 //   runIntegrityCheck()              — ตรวจสอบ job_id unique, relation ถูกต้อง
 //   cleanAllData()                   — trim, normalize, fix date format
+//   getHeaderCache_(sheetName)      — ดึง header positions จาก ScriptProperties cache
+//   updateHeaderCache_(sheetName)    — อัปเดต header positions ลง ScriptProperties cache
+//   notifySchemaDrift_(sheetName, missingHeaders) — แจ้งเตือน BI group เมื่อ mapping fail
 // ============================================================
+
+// ============================================================
+// 0. Header Cache Helpers (ScriptProperties)
+// ============================================================
+
+/**
+ * ดึง header positions จาก ScriptProperties cache
+ * @param {string} sheetName - ชื่อและใน SCHEMA
+ * @returns {Object|null} - {header1: index1, header2: index2, ...} หรือ null ถ้าไม่มี cache
+ */
+function getHeaderCache_(sheetName) {
+  try {
+    var schema = SCHEMA[sheetName];
+    if (!schema) return null;
+    var cacheKey = 'HEADER_CACHE_' + schema.sheetName;
+    var cached = getConfig(cacheKey);
+    if (!cached) return null;
+    return JSON.parse(cached);
+  } catch (e) {
+    Logger.log('getHeaderCache_ error: ' + e);
+    return null;
+  }
+}
+
+/**
+ * อัปเดต header positions ลง ScriptProperties cache
+ * @param {string} sheetName - ชื่อและใน SCHEMA
+ * @param {Array} headers - actual headers จาก sheet (array of strings)
+ */
+function updateHeaderCache_(sheetName, headers) {
+  try {
+    var schema = SCHEMA[sheetName];
+    if (!schema) return;
+    var cacheKey = 'HEADER_CACHE_' + schema.sheetName;
+    var headerMap = {};
+    headers.forEach(function(header, i) {
+      if (header) headerMap[header] = i;
+    });
+    setConfig(cacheKey, JSON.stringify(headerMap));
+    Logger.log('✅ Updated header cache for ' + schema.sheetName);
+  } catch (e) {
+    Logger.log('updateHeaderCache_ error: ' + e);
+  }
+}
+
+/**
+ * แจ้งเตือน BI LINE group เมื่อเกิด Schema Drift (mapping fail)
+ * @param {string} sheetName - ชื่อ sheet
+ * @param {Array} missingHeaders - headers ที่หาไม่เจอ
+ */
+function notifySchemaDrift_(sheetName, missingHeaders) {
+  try {
+    var schema = SCHEMA[sheetName];
+    var sheetDisplayName = schema ? schema.sheetName : sheetName;
+    var msg = '⚠️ SCHEMA DRIFT ALERT\n\n';
+    msg += 'Sheet: ' + sheetDisplayName + '\n';
+    msg += 'Missing Headers: ' + missingHeaders.join(', ') + '\n\n';
+    msg += '⏳ ระบบกำลังเพิ่ม column ที่ขาดอัตโนมัติ...\n';
+    msg += 'กรุณาตรวจสอบโครงสร้าง Sheet ว่าเปลี่ยนแปลงโดยสาเหตุใด';
+    
+    if (typeof sendLineNotify === 'function') {
+      sendLineNotify({ message: msg, room: 'EXECUTIVE' }); // EXECUTIVE group = BI role
+    }
+    _logError_('HIGH', 'notifySchemaDrift_', new Error('Schema drift: ' + missingHeaders.join(', ')));
+  } catch (e) {
+    Logger.log('notifySchemaDrift_ error: ' + e);
+  }
+}
 
 // ============================================================
 // 1. validateSchema_(sheetName) — ตรวจสอบ header + เพิ่ม column ที่ขาด
@@ -48,6 +119,9 @@ function validateSchema_(sheetName) {
       result.status = 'CREATED';
       result.added = schema.headers;
       Logger.log('✅ สร้าง sheet ใหม่: ' + schema.sheetName);
+      
+      // อัปเดต header cache
+      updateHeaderCache_(sheetName, schema.headers);
       return result;
     }
 
@@ -75,6 +149,10 @@ function validateSchema_(sheetName) {
       result.status = 'UPDATED';
       result.added = missingHeaders;
       Logger.log('✅ เพิ่ม column ใน ' + sheetName + ': ' + missingHeaders.join(', '));
+      
+      // อัปเดต header cache
+      var updatedHeaders = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function(h) { return String(h).trim(); });
+      updateHeaderCache_(sheetName, updatedHeaders);
     }
 
     return result;
@@ -111,32 +189,73 @@ function safeWriteRow_(sheetName, data) {
     var sh = ss.getSheetByName(schema.sheetName);
     if (!sh) throw new Error('ไม่พบ sheet: ' + schema.sheetName);
 
-    // อ่าน header จาก sheet จริง (ไม่ใช้จาก SCHEMA เพื่อรองรับ column เพิ่มเติม)
-    var lastCol = sh.getLastColumn();
-    if (lastCol === 0) {
-      // sheet ว่าง ให้เขียน header ก่อน
-      sh.getRange(1, 1, 1, schema.headers.length).setValues([schema.headers]);
-      lastCol = schema.headers.length;
-    }
-    var actualHeaders = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) {
-      return String(h).trim();
-    });
-
-    // Map data ตาม header จริง
-    var row = new Array(actualHeaders.length).fill('');
-    actualHeaders.forEach(function(header, i) {
-      if (data.hasOwnProperty(header)) {
-        var val = data[header];
-        // Normalize value
-        if (val === null || val === undefined) {
-          row[i] = '';
-        } else if (val instanceof Date) {
-          row[i] = Utilities.formatDate(val, 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss');
-        } else {
-          row[i] = String(val).trim();
-        }
+    // อ่าน header จาก Cache ก่อน (ลดการเรียก getRange)
+    var actualHeaders = getHeaderCache_(sheetName);
+    var useCache = true;
+    
+    if (!actualHeaders) {
+      // Cache miss — อ่านจาก sheet จริง
+      var lastCol = sh.getLastColumn();
+      if (lastCol === 0) {
+        // sheet ว่าง ให้เขียน header ก่อน
+        sh.getRange(1, 1, 1, schema.headers.length).setValues([schema.headers]);
+        sh.getRange(1, 1, 1, schema.headers.length)
+          .setBackground(schema.color || '#1a73e8')
+          .setFontColor('#ffffff')
+          .setFontWeight('bold');
+        lastCol = schema.headers.length;
+        result.status = 'CREATED';
+        result.added = schema.headers;
+        Logger.log('✅ สร้าง sheet ใหม่: ' + schema.sheetName);
       }
-    });
+      var headerArr = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) {
+        return String(h).trim();
+      });
+      // แปลง array เป็น object {header: index}
+      actualHeaders = {};
+      headerArr.forEach(function(h, i) { if (h) actualHeaders[h] = i; });
+      // อัปเดต cache
+      updateHeaderCache_(sheetName, headerArr);
+      useCache = false;
+    }
+    
+    // ตรวจสอบ header ที่ขาด (สำหรับ sheet ที่มีอยู่แล้ว)
+    if (useCache && !sh) {
+      sh = ss.getSheetByName(schema.sheetName);
+    }
+    var headerArr = Object.keys(actualHeaders).length > 0 ? Object.keys(actualHeaders) : [];
+    if (headerArr.length === 0) {
+      headerArr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function(h) { return String(h).trim(); });
+    }
+
+    // Map data ตาม header จริง (actualHeaders is {header: index})
+  var maxIndex = Object.keys(actualHeaders).length > 0 ? 
+    Math.max.apply(null, Object.values(actualHeaders)) + 1 : schema.headers.length;
+  var row = new Array(maxIndex).fill('');
+  var missingHeaders = [];
+  
+  Object.keys(data).forEach(function(header) {
+    if (actualHeaders.hasOwnProperty(header)) {
+      var idx = actualHeaders[header];
+      var val = data[header];
+      // Normalize value
+      if (val === null || val === undefined) {
+        row[idx] = '';
+      } else if (val instanceof Date) {
+        row[idx] = Utilities.formatDate(val, 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss');
+      } else {
+        row[idx] = String(val).trim();
+      }
+    } else {
+      missingHeaders.push(header);
+    }
+  });
+  
+  // Notify if headers are missing (Schema Drift) — Safety Net
+  if (missingHeaders.length > 0) {
+    Logger.log('⚠️ Schema Drift detected in ' + sheetName + ': ' + missingHeaders.join(', '));
+    notifySchemaDrift_(sheetName, missingHeaders);
+  }
 
     // เพิ่มแถวใหม่
     var nextRow = sh.getLastRow() + 1;
