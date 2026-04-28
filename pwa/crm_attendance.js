@@ -338,6 +338,32 @@ function viewCustomerJobs(customerId, customerName) {
   });
 }
 
+function downloadCustomerReceipts(customerId) {
+  showToast('⏳ กำลังเตรียมใบเสร็จ...');
+  callApi({ action: 'getCustomerReceipts', customer_id: customerId }).then(res => {
+    if (!res || !res.success || !res.receipts || res.receipts.length === 0) {
+      showToast('❌ ไม่พบใบเสร็จสำหรับลูกค้ารายนี้');
+      return;
+    }
+    // ดาวน์โหลดใบเสร็จแรก (หรือแสดงรายการให้เลือก)
+    const receipt = res.receipts[0];
+    if (receipt.url) {
+      // กรณีมี URL สำหรับดาวน์โหลด
+      window.open(receipt.url, '_blank');
+      showToast('✅ กำลังดาวน์โหลดใบเสร็จ...');
+    } else if (receipt.base64) {
+      // กรณีได้ข้อมูล Base64 (PDF/รูปภาพ)
+      const link = document.createElement('a');
+      link.href = 'data:application/pdf;base64,' + receipt.base64;
+      link.download = `receipt_${customerId}_${Date.now()}.pdf`;
+      link.click();
+      showToast('✅ ดาวน์โหลดใบเสร็จสำเร็จ!');
+    } else {
+      showToast('❌ รูปแบบใบเสร็จไม่รองรับ');
+    }
+  }).catch(() => showToast('❌ ไม่สามารถเชื่อมต่อเพื่อดาวน์โหลดใบเสร็จได้'));
+}
+
 function getStatusColor(status) {
   const s = (status || '').toLowerCase();
   if (/เสร็จ|completed|done/.test(s)) return '#10b981';
