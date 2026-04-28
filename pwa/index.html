@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <!-- Cache Buster: 2026-04-28 14:00 ICT -->
 <html lang="th" class="cp-dark cp-mobile">
 <head>
@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Comphone">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="description" content="Comphone SuperApp AI โ€” เธฃเธฐเธเธเธเธฃเธดเธซเธฒเธฃเธเธฒเธเธเธฃเธดเธเธฒเธฃ IT เนเธฅเธฐเนเธเธฅเธนเธเธฑเธเน€เธ—เธเนเธเนเธฅเธขเธต">
+<meta name="description" content="Comphone SuperApp AI — ระบบบริหารงานบริการ IT และโซลูชันเทคโนโลยี">
 <link rel="manifest" href="/comphone-superapp/pwa/manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -50,20 +50,20 @@
 <div class="setup-logo">
 <i class="bi bi-phone-fill"></i>
 </div>
-<h2>เธขเธดเธเธ”เธตเธ•เนเธญเธเธฃเธฑเธ</h2>
-<p class="setup-desc">เธเธฃเธญเธเธเนเธญเธกเธนเธฅเธเธฃเธฑเนเธเน€เธ”เธตเธขเธง<br>เธฃเธฐเธเธเธเธฐเธเธ”เธเธณเนเธซเนเธญเธฑเธ•เนเธเธกเธฑเธ•เธด</p>
+<h2>ยินดีต้อนรับ</h2>
+<p class="setup-desc">กรอกข้อมูลครั้งเดียว<br>ระบบจะจดจำให้อัตโนมัติ</p>
 
 <div class="setup-form">
 <div class="form-group-custom">
-<label>เธเธทเนเธญ-เธเธฒเธกเธชเธเธธเธฅ</label>
+<label>ชื่อ-นามสกุล</label>
 <div class="input-wrap">
 <i class="bi bi-person-fill"></i>
-<input type="text" id="setup-name" placeholder="เน€เธเนเธ เธชเธกเธเธฒเธข เธ—เธณเธ”เธต" autocomplete="name">
+<input type="text" id="setup-name" placeholder="เช่น สมชาย ทำดี" autocomplete="name">
 </div>
 </div>
 
 <div class="form-group-custom">
-<label>เน€เธเธญเธฃเนเนเธ—เธฃเธจเธฑเธเธ—เน</label>
+<label>เบอร์โทรศัพท์</label>
 <div class="input-wrap">
 <i class="bi bi-telephone-fill"></i>
 <input type="tel" id="setup-phone" placeholder="081-234-5678" autocomplete="tel">
@@ -71,23 +71,23 @@
 </div>
 
 <div class="form-group-custom">
-<label>เธเธ—เธเธฒเธ—เธเธญเธเธเธธเธ“</label>
+<label>บทบาทของคุณ</label>
 <div class="role-picker">
 <div class="role-option" data-role="tech" onclick="selectRole(this)">
 <div class="role-icon" style="background:#dbeafe;color:#1e40af;"><i class="bi bi-tools"></i></div>
-<span>เธเนเธฒเธ</span>
+<span>ช่าง</span>
 </div>
 <div class="role-option" data-role="admin" onclick="selectRole(this)">
 <div class="role-icon" style="background:#ede9fe;color:#5b21b6;"><i class="bi bi-headset"></i></div>
-<span>เนเธญเธ”เธกเธดเธ</span>
+<span>แอดมิน</span>
 </div>
 <div class="role-option" data-role="acct" onclick="selectRole(this)">
 <div class="role-icon" style="background:#cffafe;color:#164e63;"><i class="bi bi-calculator"></i></div>
-<span>เธเธฑเธเธเธต</span>
+<span>บัญชี</span>
 </div>
 <div class="role-option" data-role="exec" onclick="selectRole(this)">
 <div class="role-icon" style="background:#fef9c3;color:#713f12;"><i class="bi bi-bar-chart-line"></i></div>
-<span>เธเธนเนเธเธฃเธดเธซเธฒเธฃ</span>
+<span>ผู้บริหาร</span>
 </div>
 </div>
 </div>
@@ -98,12 +98,12 @@
 <i class="bi bi-link-45deg"></i>
 <input type="url" id="setup-url" placeholder="https://script.google.com/macros/s/..." autocomplete="url">
 </div>
-<small style="color:#9ca3af;font-size:11px;margin-top:4px;display:block;">เธงเธฒเธ URL เธเธฒเธ Google Apps Script เธ—เธตเน Deploy เนเธฅเนเธง</small>
+<small style="color:#9ca3af;font-size:11px;margin-top:4px;display:block;">วาง URL จาก Google Apps Script ที่ Deploy แล้ว</small>
 </div>
 
 <button class="btn-setup" onclick="completeSetup()">
 <i class="bi bi-arrow-right-circle-fill"></i>
-เน€เธฃเธดเนเธกเนเธเนเธเธฒเธ
+เริ่มใช้งาน
 </button>
 </div>
 </div>
@@ -134,7 +134,7 @@
 <!-- OFFLINE BAR -->
 <div id="offline-bar" class="hidden" style="background:#f59e0b;color:#fff;font-size:11px;font-weight:700;text-align:center;padding:4px 12px;display:flex;align-items:center;justify-content:center;gap:6px;">
 <i class="bi bi-wifi-off"></i>
-<span>เธญเธญเธเนเธฅเธเน โ€” เธเนเธญเธกเธนเธฅเธเธฐ Sync เน€เธกเธทเนเธญเน€เธเธทเนเธญเธกเธ•เนเธญ</span>
+<span>ออฟไลน์ — ข้อมูลจะ Sync เมื่อเชื่อมต่อ</span>
 <span class="offline-queue-count" style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1px 6px;"></span>
 </div>
 
@@ -146,7 +146,7 @@
 
 <!-- QUICK ACTIONS (role-based) -->
 <div class="section-card" id="quick-actions-section">
-<div class="section-label">เธเธธเนเธกเธ”เนเธงเธ</div>
+<div class="section-label">ปุ่มด่วน</div>
 <div id="quick-actions-grid" class="qa-grid-4"></div>
 </div>
 
@@ -161,49 +161,49 @@
 <!-- JOBS PAGE -->
 <div id="page-jobs" class="page hidden">
 <div class="page-header">
-<h5>เธเธฒเธเธ—เธฑเนเธเธซเธกเธ”</h5>
+<h5>งานทั้งหมด</h5>
 <div class="search-bar-inline">
 <i class="bi bi-search"></i>
-<input type="text" id="jobs-search" placeholder="เธเนเธเธซเธฒ Job ID, เธเธทเนเธญเธฅเธนเธเธเนเธฒ..." oninput="filterJobs(this.value)">
+<input type="text" id="jobs-search" placeholder="ค้นหา Job ID, ชื่อลูกค้า..." oninput="filterJobs(this.value)">
 <button onclick="startVoiceSearch()" class="voice-mini"><i class="bi bi-mic-fill"></i></button>
 </div>
 </div>
 <div class="filter-tabs">
-<button class="filter-tab active" onclick="filterByStatus('all', this)">เธ—เธฑเนเธเธซเธกเธ”</button>
-<button class="filter-tab" onclick="filterByStatus('urgent', this)">เธ”เนเธงเธ</button>
-<button class="filter-tab" onclick="filterByStatus('inprog', this)">เธเธณเธฅเธฑเธเธ”เธณเน€เธเธดเธเธเธฒเธฃ</button>
-<button class="filter-tab" onclick="filterByStatus('waiting', this)">เธฃเธญเธเธดเนเธเธชเนเธงเธ</button>
-<button class="filter-tab" onclick="filterByStatus('done', this)">เน€เธชเธฃเนเธเนเธฅเนเธง</button>
+<button class="filter-tab active" onclick="filterByStatus('all', this)">ทั้งหมด</button>
+<button class="filter-tab" onclick="filterByStatus('urgent', this)">ด่วน</button>
+<button class="filter-tab" onclick="filterByStatus('inprog', this)">กำลังดำเนินการ</button>
+<button class="filter-tab" onclick="filterByStatus('waiting', this)">รอชิ้นส่วน</button>
+<button class="filter-tab" onclick="filterByStatus('done', this)">เสร็จแล้ว</button>
 </div>
 <div id="jobs-list"></div>
 </div>
 
 <!-- CAMERA / PHOTO PAGE -->
 <div id="page-camera" class="page hidden">
-<div class="page-header"><h5>เธ–เนเธฒเธขเธฃเธนเธ / เธชเนเธเธ</h5></div>
+<div class="page-header"><h5>ถ่ายรูป / สแกน</h5></div>
 <div class="camera-section">
 <div class="camera-options">
 <div class="cam-option" onclick="openCamera('job')">
 <i class="bi bi-camera-fill"></i>
-<span>เธฃเธนเธเธซเธเนเธฒเธเธฒเธ</span>
+<span>รูปหน้างาน</span>
 </div>
 <div class="cam-option" onclick="openCamera('slip')">
 <i class="bi bi-receipt"></i>
-<span>เธชเนเธเธเธชเธฅเธดเธ</span>
+<span>สแกนสลิป</span>
 </div>
 <div class="cam-option" onclick="openCamera('bill')">
 <i class="bi bi-file-earmark-image"></i>
-<span>เธชเนเธเธเธเธดเธฅ</span>
+<span>สแกนบิล</span>
 </div>
 <div class="cam-option" onclick="openCamera('qr')">
 <i class="bi bi-qr-code-scan"></i>
-<span>เธชเนเธเธ QR</span>
+<span>สแกน QR</span>
 </div>
 </div>
 <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
 <div id="photo-preview-area"></div>
 <div id="recent-photos" class="recent-photos">
-<div class="section-label">เธฃเธนเธเธฅเนเธฒเธชเธธเธ”</div>
+<div class="section-label">รูปล่าสุด</div>
 <div id="photo-grid" class="photo-thumb-grid"></div>
 </div>
 </div>
@@ -212,18 +212,18 @@
 <!-- CRM PAGE -->
 <div id="page-crm" class="page hidden">
 <div class="page-header">
-<h5>เธฅเธนเธเธเนเธฒ / CRM</h5>
+<h5>ลูกค้า / CRM</h5>
 <div class="search-bar-inline">
 <i class="bi bi-search"></i>
-<input type="text" id="crm-search" placeholder="เธเนเธเธซเธฒเธเธทเนเธญ, เน€เธเธญเธฃเน, เธเธฃเธฐเธงเธฑเธ•เธด..." oninput="filterCustomers(this.value)">
+<input type="text" id="crm-search" placeholder="ค้นหาชื่อ, เบอร์, ประวัติ..." oninput="filterCustomers(this.value)">
 <button onclick="startVoiceSearch()" class="voice-mini"><i class="bi bi-mic-fill"></i></button>
 </div>
 </div>
 <div class="filter-tabs">
-<button class="filter-tab active" onclick="filterCRMType('all', this)">เธ—เธฑเนเธเธซเธกเธ”</button>
+<button class="filter-tab active" onclick="filterCRMType('all', this)">ทั้งหมด</button>
 <button class="filter-tab" onclick="filterCRMType('vip', this)">VIP</button>
-<button class="filter-tab" onclick="filterCRMType('due', this)">เธ•เธดเธ”เธ•เธฒเธก</button>
-<button class="filter-tab" onclick="filterCRMType('new', this)">เนเธซเธกเน</button>
+<button class="filter-tab" onclick="filterCRMType('due', this)">ติดตาม</button>
+<button class="filter-tab" onclick="filterCRMType('new', this)">ใหม่</button>
 </div>
 <div id="crm-list"></div>
 <div id="crm-after-sales-section" style="margin-top:8px"></div>
@@ -240,23 +240,23 @@
 <!-- PURCHASE ORDER PAGE -->
 <div id="page-po" class="page hidden">
 <div class="page-header">
-<h5>เนเธเธชเธฑเนเธเธเธทเนเธญ (PO)</h5>
+<h5>ใบสั่งซื้อ (PO)</h5>
 <div class="search-bar-inline">
 <i class="bi bi-search"></i>
-<input type="text" id="po-search" placeholder="เธเนเธเธซเธฒ PO ID, เธเธนเนเธเธณเธซเธเนเธฒเธข..." oninput="filterPOSearch(this.value)">
+<input type="text" id="po-search" placeholder="ค้นหา PO ID, ผู้จำหน่าย..." oninput="filterPOSearch(this.value)">
 </div>
 </div>
 <div class="filter-tabs">
-<button class="filter-tab active" onclick="filterPOStatus('all', this)">เธ—เธฑเนเธเธซเธกเธ”</button>
-<button class="filter-tab" onclick="filterPOStatus('pending', this)">เธฃเธญเธฃเธฑเธเธชเธดเธเธเนเธฒ</button>
-<button class="filter-tab" onclick="filterPOStatus('received', this)">เธฃเธฑเธเนเธฅเนเธง</button>
+<button class="filter-tab active" onclick="filterPOStatus('all', this)">ทั้งหมด</button>
+<button class="filter-tab" onclick="filterPOStatus('pending', this)">รอรับสินค้า</button>
+<button class="filter-tab" onclick="filterPOStatus('received', this)">รับแล้ว</button>
 </div>
 <div id="po-list"></div>
 </div>
 
 <!-- ATTENDANCE PAGE -->
 <div id="page-attendance" class="page hidden">
-<div class="page-header"><h5>เน€เธงเธฅเธฒเธ—เธณเธเธฒเธ</h5></div>
+<div class="page-header"><h5>เวลาทำงาน</h5></div>
 <div id="attendance-content"></div>
 </div>
 
@@ -270,42 +270,42 @@
 <div class="profile-section">
 <div class="profile-item" onclick="editProfile()">
 <i class="bi bi-pencil-fill"></i>
-<span>เนเธเนเนเธเธเนเธญเธกเธนเธฅเธชเนเธงเธเธ•เธฑเธง</span>
+<span>แก้ไขข้อมูลส่วนตัว</span>
 <i class="bi bi-chevron-right ms-auto"></i>
 </div>
 <div class="profile-item" onclick="changeRole()">
 <i class="bi bi-person-badge-fill"></i>
-<span>เน€เธเธฅเธตเนเธขเธเธเธ—เธเธฒเธ—</span>
+<span>เปลี่ยนบทบาท</span>
 <i class="bi bi-chevron-right ms-auto"></i>
 </div>
 <div class="profile-item" onclick="showSettings()">
 <i class="bi bi-gear-fill"></i>
-<span>เธ•เธฑเนเธเธเนเธฒ Script URL</span>
+<span>ตั้งค่า Script URL</span>
 <i class="bi bi-chevron-right ms-auto"></i>
 </div>
 <div class="profile-item" onclick="toggleNotifications()">
 <i class="bi bi-bell-fill"></i>
-<span>เธเธฒเธฃเนเธเนเธเน€เธ•เธทเธญเธ</span>
+<span>การแจ้งเตือน</span>
 <div class="toggle-switch ms-auto" id="notif-toggle"></div>
 </div>
 <div class="profile-item" onclick="clearCache()">
 <i class="bi bi-arrow-clockwise"></i>
-<span>เธฅเนเธฒเธเธเนเธญเธกเธนเธฅเนเธเธ</span>
+<span>ล้างข้อมูลแคช</span>
 <i class="bi bi-chevron-right ms-auto"></i>
 </div>
 <div class="profile-item danger" onclick="resetApp()">
 <i class="bi bi-trash-fill"></i>
-<span>เธฃเธตเน€เธเนเธ•เนเธญเธ</span>
+<span>รีเซ็ตแอป</span>
 <i class="bi bi-chevron-right ms-auto"></i>
 </div>
 </div>
-<div class="app-version">Comphone SuperApp AI v5.9.0-phase2d<br><span>PWA โ€” เธ—เธณเธเธฒเธเนเธ”เนเนเธกเนเนเธกเนเธกเธตเธญเธดเธเน€เธ—เธญเธฃเนเน€เธเนเธ•</span></div>
+<div class="app-version">Comphone SuperApp AI v5.9.0-phase2d<br><span>PWA — ทำงานได้แม้ไม่มีอินเทอร์เน็ต</span></div>
 </div>
 
 <!-- REPORTS PAGE -->
 <div id="page-reports" class="page hidden">
 <div class="page-header">
-<h5><i class="bi bi-graph-up-arrow" style="color:#10b981"></i> เธฃเธฒเธขเธเธฒเธ & เธงเธดเน€เธเธฃเธฒเธฐเธซเน</h5>
+<h5><i class="bi bi-graph-up-arrow" style="color:#10b981"></i> รายงาน & วิเคราะห์</h5>
 </div>
 <div id="reports-content"></div>
 </div>
@@ -323,7 +323,7 @@
 <!-- Content will be rendered by inventory.js -->
 <div style="text-align:center;padding:3rem;color:#9ca3af">
 <i class="bi bi-boxes" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
-เธเธณเธฅเธฑเธเนเธซเธฅเธ”เธเธฅเธฑเธเธชเธดเธเธเนเธฒ...
+กำลังโหลดคลังสินค้า...
 </div>
 </div>
 
@@ -332,7 +332,7 @@
 <!-- Content will be rendered by customer_portal.js -->
 <div style="text-align:center;padding:3rem;color:#9ca3af">
 <i class="bi bi-search" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
-เธ•เธฃเธงเธเธชเธญเธเธชเธ–เธฒเธเธฐเธเธฒเธ...
+ตรวจสอบสถานะงาน...
 </div>
 </div>
 
@@ -341,7 +341,7 @@
 <!-- Content will be rendered by notification_center.js -->
 <div style="text-align:center;padding:3rem;color:#9ca3af">
 <i class="bi bi-bell" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
-เธเธณเธฅเธฑเธเนเธซเธฅเธ”เธเธฒเธฃเนเธเนเธเน€เธ•เธทเธญเธ...
+กำลังโหลดการแจ้งเตือน...
 </div>
 </div>
 
@@ -362,30 +362,30 @@
 <nav class="bottom-nav-bar">
 <button class="nav-btn active" id="nav-home" onclick="goPage('home', this)">
 <i class="bi bi-house-fill"></i>
-<span>เธซเธเนเธฒเธซเธฅเธฑเธ</span>
+<span>หน้าหลัก</span>
 </button>
 <button class="nav-btn" id="nav-jobs" onclick="goPage('jobs', this)">
 <div class="nav-icon-wrap">
 <i class="bi bi-clipboard2-check-fill"></i>
 <span class="nav-badge-dot" id="jobs-badge">3</span>
 </div>
-<span>เธเธฒเธ</span>
+<span>งาน</span>
 </button>
-<!-- Camera โ€” center FAB-style button -->
+<!-- Camera — center FAB-style button -->
 <button class="nav-btn nav-camera-btn" onclick="openCamera('job')">
 <div class="nav-camera-circle">
 <i class="bi bi-camera-fill"></i>
 </div>
-<span>เธเธฅเนเธญเธ</span>
+<span>กล้อง</span>
 </button>
-<!-- More โ€” opens bottom sheet with remaining items -->
+<!-- More — opens bottom sheet with remaining items -->
 <button class="nav-btn" id="nav-more" onclick="showMoreMenu()">
 <i class="bi bi-grid-3x3-gap-fill"></i>
-<span>เน€เธเธดเนเธกเน€เธ•เธดเธก</span>
+<span>เพิ่มเติม</span>
 </button>
 <button class="nav-btn" id="nav-profile" onclick="goPage('profile', this)">
 <i class="bi bi-person-fill"></i>
-<span>เนเธเธฃเนเธเธฅเน</span>
+<span>โปรไฟล์</span>
 </button>
 </nav>
 
@@ -395,11 +395,11 @@
 <div id="more-menu-overlay" class="cp-sheet-overlay" style="display:none" onclick="closeMoreMenu()">
 <div class="cp-sheet more-menu-sheet" onclick="event.stopPropagation()">
 <div class="cp-sheet-handle"></div>
-<div class="more-menu-title">เน€เธเธดเนเธกเน€เธ•เธดเธก</div>
+<div class="more-menu-title">เพิ่มเติม</div>
 <div class="more-menu-grid">
 <button class="more-menu-item" id="more-crm-btn" onclick="navigateFromMore('crm')">
 <div class="more-menu-icon"><i class="bi bi-people-fill"></i></div>
-<span>เธฅเธนเธเธเนเธฒ</span>
+<span>ลูกค้า</span>
 </button>
 <button class="more-menu-item" id="more-dashboard-btn" onclick="navigateFromMore('dashboard')">
 <div class="more-menu-icon"><i class="bi bi-bar-chart-line-fill"></i></div>
@@ -407,19 +407,19 @@
 </button>
 <button class="more-menu-item" id="more-po-btn" onclick="navigateFromMore('po')">
 <div class="more-menu-icon"><i class="bi bi-cart-fill"></i></div>
-<span>เธชเธฑเนเธเธเธทเนเธญ</span>
+<span>สั่งซื้อ</span>
 </button>
 <button class="more-menu-item" id="more-inventory-btn" onclick="navigateFromMore('inventory')">
 <div class="more-menu-icon"><i class="bi bi-boxes"></i></div>
-<span>เธชเธ•เนเธญเธ</span>
+<span>สต็อก</span>
 </button>
 <button class="more-menu-item" id="more-attendance-btn" onclick="navigateFromMore('attendance')">
 <div class="more-menu-icon"><i class="bi bi-clock-fill"></i></div>
-<span>เน€เธงเธฅเธฒ</span>
+<span>เวลา</span>
 </button>
 <button class="more-menu-item" onclick="navigateFromMore('reports')">
 <div class="more-menu-icon"><i class="bi bi-graph-up-arrow"></i></div>
-<span>เธฃเธฒเธขเธเธฒเธ</span>
+<span>รายงาน</span>
 </button>
 <button class="more-menu-item" id="more-analytics-btn" onclick="navigateFromMore('analytics')">
 <div class="more-menu-icon"><i class="bi bi-pie-chart-fill"></i></div>
@@ -448,9 +448,9 @@
 <div class="modal-search-box" onclick="event.stopPropagation()">
 <div class="search-modal-bar">
 <i class="bi bi-search"></i>
-<input type="text" id="global-search-input" placeholder="เธเนเธเธซเธฒ Job ID, เธเธทเนเธญเธฅเธนเธเธเนเธฒ, เน€เธเธญเธฃเน..." autofocus oninput="globalSearch(this.value)">
+<input type="text" id="global-search-input" placeholder="ค้นหา Job ID, ชื่อลูกค้า, เบอร์..." autofocus oninput="globalSearch(this.value)">
 <button onclick="startVoiceSearch()" class="voice-mini"><i class="bi bi-mic-fill"></i></button>
-<button onclick="closeModal('modal-search')" style="background:none;border:none;color:#6b7280;font-size:14px;padding:4px 8px;">เธขเธเน€เธฅเธดเธ</button>
+<button onclick="closeModal('modal-search')" style="background:none;border:none;color:#6b7280;font-size:14px;padding:4px 8px;">ยกเลิก</button>
 </div>
 <div id="search-results"></div>
 </div>
@@ -468,15 +468,15 @@
 <div id="modal-add-customer" class="modal-overlay hidden" onclick="closeModal('modal-add-customer')">
 <div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px">
 <div class="modal-handle"></div>
-<div class="modal-title">เน€เธเธดเนเธกเธฅเธนเธเธเนเธฒเนเธซเธกเน</div>
+<div class="modal-title">เพิ่มลูกค้าใหม่</div>
 <div style="padding:0 16px">
-<div class="form-group-custom"><label>เธเธทเนเธญ-เธเธฒเธกเธชเธเธธเธฅ *</label><div class="input-wrap"><i class="bi bi-person-fill"></i><input type="text" id="new-cust-name" placeholder="เน€เธเนเธ เธชเธกเธเธฒเธข เธ—เธณเธ”เธต"></div></div>
-<div class="form-group-custom"><label>เน€เธเธญเธฃเนเนเธ—เธฃ *</label><div class="input-wrap"><i class="bi bi-telephone-fill"></i><input type="tel" id="new-cust-phone" placeholder="081-234-5678"></div></div>
-<div class="form-group-custom"><label>เธ—เธตเนเธญเธขเธนเน</label><div class="input-wrap"><i class="bi bi-geo-alt-fill"></i><input type="text" id="new-cust-address" placeholder="เธ—เธตเนเธญเธขเธนเนเธซเธฃเธทเธญเธชเธ–เธฒเธเธ—เธตเนเธ—เธณเธเธฒเธ"></div></div>
-<div class="form-group-custom"><label>เธเธฃเธฐเน€เธ เธ—เธฅเธนเธเธเนเธฒ</label><select id="new-cust-type" class="form-select" style="border-radius:12px;border:1.5px solid #e5e7eb;padding:10px 14px"><option value="regular">เธ—เธฑเนเธงเนเธ</option><option value="vip">VIP</option><option value="corporate">เธญเธเธเนเธเธฃ</option></select></div>
-<div class="form-group-custom"><label>เธซเธกเธฒเธขเน€เธซเธ•เธธ</label><div class="input-wrap"><i class="bi bi-chat-left-text"></i><input type="text" id="new-cust-notes" placeholder="เธซเธกเธฒเธขเน€เธซเธ•เธธเน€เธเธดเนเธกเน€เธ•เธดเธก"></div></div>
+<div class="form-group-custom"><label>ชื่อ-นามสกุล *</label><div class="input-wrap"><i class="bi bi-person-fill"></i><input type="text" id="new-cust-name" placeholder="เช่น สมชาย ทำดี"></div></div>
+<div class="form-group-custom"><label>เบอร์โทร *</label><div class="input-wrap"><i class="bi bi-telephone-fill"></i><input type="tel" id="new-cust-phone" placeholder="081-234-5678"></div></div>
+<div class="form-group-custom"><label>ที่อยู่</label><div class="input-wrap"><i class="bi bi-geo-alt-fill"></i><input type="text" id="new-cust-address" placeholder="ที่อยู่หรือสถานที่ทำงาน"></div></div>
+<div class="form-group-custom"><label>ประเภทลูกค้า</label><select id="new-cust-type" class="form-select" style="border-radius:12px;border:1.5px solid #e5e7eb;padding:10px 14px"><option value="regular">ทั่วไป</option><option value="vip">VIP</option><option value="corporate">องค์กร</option></select></div>
+<div class="form-group-custom"><label>หมายเหตุ</label><div class="input-wrap"><i class="bi bi-chat-left-text"></i><input type="text" id="new-cust-notes" placeholder="หมายเหตุเพิ่มเติม"></div></div>
 <button class="btn-setup" onclick="saveNewCustomer()" style="margin-top:8px">
-<i class="bi bi-person-plus-fill"></i> เธเธฑเธเธ—เธถเธเธฅเธนเธเธเนเธฒ
+<i class="bi bi-person-plus-fill"></i> บันทึกลูกค้า
 </button>
 </div>
 </div>
@@ -486,7 +486,7 @@
 <div id="modal-aftersales" class="modal-overlay hidden" onclick="closeModal('modal-aftersales')">
 <div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px">
 <div class="modal-handle"></div>
-<div class="modal-title">เธ•เธดเธ”เธ•เธฒเธก After-Sales</div>
+<div class="modal-title">ติดตาม After-Sales</div>
 <div id="modal-aftersales-content" style="padding:0 16px"></div>
 </div>
 </div>
@@ -495,11 +495,11 @@
 <div id="modal-clockin" class="modal-overlay hidden" onclick="closeModal('modal-clockin')">
 <div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px">
 <div class="modal-handle"></div>
-<div class="modal-title" id="clockin-modal-title">เน€เธเนเธเธญเธดเธ</div>
+<div class="modal-title" id="clockin-modal-title">เช็คอิน</div>
 <div style="padding:0 16px">
-<div class="form-group-custom"><label>เธซเธกเธฒเธขเน€เธซเธ•เธธ (เนเธกเนเธเธฑเธเธเธฑเธ)</label><div class="input-wrap"><i class="bi bi-chat-left-text"></i><input type="text" id="clockin-note" placeholder="เน€เธเนเธ เธกเธฒเธชเธฒเธขเนเธฅเนเธง, เธญเธญเธเธเธญเธเธชเธ–เธฒเธเธ—เธตเน"></div></div>
+<div class="form-group-custom"><label>หมายเหตุ (ไม่บังคับ)</label><div class="input-wrap"><i class="bi bi-chat-left-text"></i><input type="text" id="clockin-note" placeholder="เช่น มาสายแล้ว, ออกนอกสถานที่"></div></div>
 <button class="btn-setup" id="clockin-confirm-btn" onclick="confirmClockAction()" style="margin-top:8px">
-<i class="bi bi-clock-fill"></i> เธขเธทเธเธขเธฑเธ
+<i class="bi bi-clock-fill"></i> ยืนยัน
 </button>
 </div>
 </div>
