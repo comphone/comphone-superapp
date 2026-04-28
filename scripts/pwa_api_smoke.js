@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
+const API_CONTRACT = require(path.join(ROOT, 'pwa', 'api_contract.js'));
 const gasConfig = fs.readFileSync(path.join(ROOT, 'pwa', 'gas_config.js'), 'utf8');
 const urlMatch = gasConfig.match(/url:\s*'([^']+)'/);
 const GAS_URL = process.env.COMPHONE_GAS_URL || (urlMatch && urlMatch[1]);
@@ -12,18 +13,8 @@ if (!GAS_URL) {
   process.exit(1);
 }
 
-const publicActions = [
-  { action: 'health', expect: body => body.status === 'healthy' || body.success === true },
-  { action: 'getVersion', expect: body => body.success === true && !!body.version },
-];
-
-const protectedActions = [
-  'getDashboardData',
-  'listCustomers',
-  'inventoryOverview',
-  'listPurchaseOrders',
-  'getReportData',
-];
+const publicActions = API_CONTRACT.publicActions.map(item => item.action);
+const protectedActions = API_CONTRACT.protectedActions.filter(item => item.required);
 
 async function request(action, payload = {}) {
   const qs = new URLSearchParams(Object.assign({ action, _t: Date.now() }, payload));
@@ -41,12 +32,15 @@ async function request(action, payload = {}) {
 async function run() {
   const failures = [];
 
-  for (const item of publicActions) {
+  for (const action of publicActions) {
     try {
-      const result = await request(item.action);
-      const ok = result.status === 200 && item.expect(result.body);
-      console.log(`[public] ${item.action}: ${ok ? 'OK' : 'FAIL'} ${result.status}`);
-      if (!ok) failures.push(`${item.action} returned unexpected body`);
+      const result = await request(action);
+      const ok = result.status === 200 && (
+        result.body.status === 'healthy' ||
+        result.body.success === true
+      );
+      console.log(`[public] ${action}: ${ok ? 'OK' : 'FAIL'} ${result.status}`);
+      if (!ok) failures.push(`${action} returned unexpected body`);
     } catch (err) {
       console.log(`[public] ${item.action}: FAIL ${err.message}`);
       failures.push(err.message);
@@ -56,12 +50,16 @@ async function run() {
   if (!TOKEN) {
     console.log('[protected] skipped: set COMPHONE_AUTH_TOKEN to smoke-test menu data actions.');
   } else {
-    for (const action of protectedActions) {
+    for (const item of protectedActions) {
       try {
-        const result = await request(action, { token: TOKEN });
+        const payload = Object.assign({}, item.payload || {}, { token: TOKEN });
+        Object.keys(payload).forEach(key => {
+          if (payload[key] === '__SMOKE_EMPTY__') payload[key] = '';
+        });
+        const result = await request(item.action, payload);
         const ok = result.status === 200 && result.body && result.body.success !== false;
-        console.log(`[protected] ${action}: ${ok ? 'OK' : 'FAIL'} ${result.status}`);
-        if (!ok) failures.push(`${action}: ${result.body && (result.body.error || result.body.message) || 'unexpected response'}`);
+        console.log(`[protected] ${item.menu}/${item.action}: ${ok ? 'OK' : 'FAIL'} ${result.status}`);
+        if (!ok) failures.push(`${item.menu}/${item.action}: ${result.body && (result.body.error || result.body.message) || 'unexpected response'}`);
       } catch (err) {
         console.log(`[protected] ${action}: FAIL ${err.message}`);
         failures.push(err.message);

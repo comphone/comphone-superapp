@@ -111,7 +111,7 @@ for (const match of swJs.matchAll(/BASE \+ '\/([^']+)'/g)) {
   if (!fs.existsSync(file)) fail(`sw.js pre-caches missing asset: ${asset}`);
 }
 
-const filesToScan = ['index.html', 'version_config.js', 'sw.js', 'pwa_asset_manifest.js', 'api_client.js', 'app.js', 'auth.js', 'auth_guard.js', 'app_home.js'];
+const filesToScan = ['index.html', 'version_config.js', 'sw.js', 'pwa_asset_manifest.js', 'api_contract.js', 'api_client.js', 'app.js', 'auth.js', 'auth_guard.js', 'app_home.js', 'admin_panel.js', 'menu_health.js'];
 for (const name of filesToScan) {
   const file = path.join(PWA, name);
   const text = readUtf8(file);
@@ -140,6 +140,17 @@ if (!pwaInstallJs.includes('_reloadAfterSwUpdate')) {
 const apiClientJs = readUtf8(path.join(PWA, 'api_client.js'));
 if (!apiClientJs.includes('normalizeCallApiArgs')) {
   fail('api_client.js must normalize both callApi(action, payload) and callApi({ action, ...payload }) signatures.');
+}
+if (!apiClientJs.includes('classifyApiError') || !apiClientJs.includes('apiErrorState')) {
+  fail('api_client.js must expose classifyApiError() and apiErrorState() for precise menu error states.');
+}
+const adminPanelJs = readUtf8(path.join(PWA, 'admin_panel.js'));
+if (!adminPanelJs.includes("data-tab=\"health\"") || !adminPanelJs.includes('renderMenuHealthPanel')) {
+  fail('admin_panel.js must expose the Menu Health tab.');
+}
+const apiContractJs = readUtf8(path.join(PWA, 'api_contract.js'));
+if (!apiContractJs.includes('COMPHONE_API_CONTRACT') || !apiContractJs.includes('protectedActions')) {
+  fail('api_contract.js must publish COMPHONE_API_CONTRACT with protectedActions.');
 }
 
 if (failures.length) {

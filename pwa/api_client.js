@@ -58,7 +58,52 @@ function getAuthSession() {
 function normalizeApiResponse(data) {
   if (!data) return { success: false, error: 'No response' };
   if (data._headers) delete data._headers;
+  if (data.success === false) {
+    data._errorKind = classifyApiError(data.error || data.message || data.status || 'BACKEND_ERROR').kind;
+  }
   return data;
+}
+
+function classifyApiError(error) {
+  const raw = String(error || '').trim();
+  const normalized = raw.toUpperCase();
+  if ((typeof navigator !== 'undefined' && !navigator.onLine) || normalized === 'OFFLINE' || /NETWORK|FAILED TO FETCH|LOAD FAILED/.test(normalized)) {
+    return { kind: 'offline', title: 'ออฟไลน์', message: 'เชื่อมต่อเครือข่ายหรือเซิร์ฟเวอร์ไม่ได้' };
+  }
+  if (/AUTH|TOKEN|SESSION|LOGIN/.test(normalized)) {
+    return { kind: 'auth', title: 'ต้องเข้าสู่ระบบใหม่', message: 'Session หมดอายุหรือ token ไม่ถูกต้อง' };
+  }
+  if (/PERMISSION|FORBIDDEN|DENIED|ROLE/.test(normalized)) {
+    return { kind: 'permission', title: 'ไม่มีสิทธิ์เข้าถึง', message: 'บัญชีนี้ยังไม่มีสิทธิ์ใช้เมนูนี้' };
+  }
+  if (/NOT_FOUND|UNKNOWN ACTION|NO_HANDLER|ACTION/.test(normalized)) {
+    return { kind: 'contract', title: 'API contract ไม่ตรงกัน', message: 'Frontend เรียก action ที่ backend ยังไม่รองรับ' };
+  }
+  if (/TIMEOUT|ABORT/.test(normalized)) {
+    return { kind: 'timeout', title: 'เซิร์ฟเวอร์ตอบช้า', message: 'คำขอนี้ใช้เวลานานเกินกำหนด' };
+  }
+  return { kind: 'backend', title: 'Backend error', message: raw || 'เกิดข้อผิดพลาดจาก backend' };
+}
+
+function apiErrorState(error, retryFn) {
+  const info = classifyApiError(error);
+  const icon = {
+    offline: 'bi-wifi-off',
+    auth: 'bi-person-lock',
+    permission: 'bi-shield-lock',
+    contract: 'bi-diagram-3',
+    timeout: 'bi-hourglass-split',
+    backend: 'bi-exclamation-triangle',
+  }[info.kind] || 'bi-exclamation-triangle';
+  return `
+    <div class="api-error-state api-error-${info.kind}">
+      <i class="bi ${icon}"></i>
+      <div>
+        <strong>${info.title}</strong>
+        <p>${info.message}</p>
+        ${retryFn ? `<button onclick="${retryFn}"><i class="bi bi-arrow-clockwise"></i> ลองใหม่</button>` : ''}
+      </div>
+    </div>`;
 }
 
 /**
@@ -186,10 +231,11 @@ async function callApi(action, payload = {}, options = {}) {
     const _elapsed = Date.now() - _t0;
     if (e.name === 'AbortError') {
       console.error('[callApi] ⏱ ' + action + ' | TIMEOUT ' + _elapsed + 'ms');
-      return { success: false, error: 'Request timeout (' + (timeout / 1000) + 's)' };
+      return { success: false, error: 'Request timeout (' + (timeout / 1000) + 's)', _errorKind: 'timeout' };
     }
     console.error('[callApi] ❌ ' + action + ' | ' + _elapsed + 'ms | ' + e.message);
-    return { success: false, error: e.message };
+    const info = classifyApiError(e.message);
+    return { success: false, error: e.message, _errorKind: info.kind };
   } finally {
     clearTimeout(timeoutId);
   }
@@ -468,6 +514,8 @@ if (typeof window !== 'undefined') {
   window.getGasUrl = getGasUrl;
   window.normalizeCallApiArgs = normalizeCallApiArgs;
   window.normalizeApiResponse = normalizeApiResponse;
+  window.classifyApiError = classifyApiError;
+  window.apiErrorState = apiErrorState;
   window.batchCallApi = batchCallApi;
   window.cachedCallApi = cachedCallApi;
   window.clearApiCache = clearApiCache;

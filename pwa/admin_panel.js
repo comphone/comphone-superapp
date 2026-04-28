@@ -32,7 +32,7 @@ const ADMIN_PANEL = {
  * โหลด Admin Panel — เรียกเมื่อ goPage('admin')
  */
 async function loadAdminPanel() {
-  const container = document.getElementById('admin-panel-content');
+  const container = document.getElementById('admin-panel-content') || document.getElementById('admin-content');
   if (!container) return;
 
   /* ตรวจสิทธิ์ */
@@ -57,6 +57,7 @@ function buildAdminPanelShell_(container) {
   container.innerHTML = `
     <div class="admin-tab-bar" id="admin-tab-bar">
       <button class="admin-tab active" data-tab="security"><i class="bi bi-shield-check"></i> Security</button>
+      <button class="admin-tab" data-tab="health"><i class="bi bi-activity"></i> Health</button>
       <button class="admin-tab" data-tab="users"><i class="bi bi-people-fill"></i> Users</button>
       <button class="admin-tab" data-tab="config"><i class="bi bi-gear-fill"></i> Config</button>
       <button class="admin-tab" data-tab="audit"><i class="bi bi-journal-text"></i> Audit Log</button>
@@ -79,6 +80,10 @@ function switchAdminTab_(tab) {
 
   switch (tab) {
     case 'security': renderSecurityDashboard_(content); break;
+    case 'health':
+      if (typeof renderMenuHealthPanel === 'function') renderMenuHealthPanel(content);
+      else content.innerHTML = '<div style="padding:24px;text-align:center;color:#64748b">Menu Health module is not loaded.</div>';
+      break;
     case 'users':    renderUserManagement_(content);    break;
     case 'config':   renderConfigPanel_(content);       break;
     case 'audit':    renderAuditLogViewer_(content);    break;
