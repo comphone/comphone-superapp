@@ -878,6 +878,282 @@ function drawRevenueChartPC(revenue) {
   });
 }
 
+const CHARTS = {};
+
+// ===== MODERN CHARTS (Phase 31 - Chart.js v4 Features) =====
+
+// 0. Enhanced Revenue Chart (v4 features)
+function drawRevenueChartPC(revenue) {
+  const canvas = document.getElementById('revenue-chart-pc');
+  if (!canvas) return;
+  if (CHARTS.revenue) { CHARTS.revenue.destroy(); }
+  
+  // Chart.js v4: Enhanced with animation & better tooltips
+  CHARTS.revenue = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: ['วันนี้', 'สัปดาห์นี้', 'เดือนนี้'],
+      datasets: [{
+        data: [revenue.today||0, revenue.week||0, revenue.month||0],
+        backgroundColor: [
+          'rgba(16, 185, 129, 0.8)',
+          'rgba(59, 130, 246, 0.8)',
+          'rgba(217, 119, 6, 0.8)'
+        ],
+        borderColor: ['#10b981', '#3b82f6', '#d97706'],
+        borderWidth: 2,
+        borderRadius: 12,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.9)',
+          titleFont: { size: 13, weight: 'bold' },
+          bodyFont: { size: 12 },
+          padding: 12,
+          cornerRadius: 8,
+          callbacks: {
+            label: ctx => '฿' + Number(ctx.raw||0).toLocaleString()
+          }
+        }
+      },
+      scales: {
+        x: { 
+          grid: { display: false }, 
+          ticks: { font: { size: 12 }, color: '#6b7280' } 
+        },
+        y: {
+          grid: { color: '#f1f5f9' },
+          ticks: { 
+            font: { size: 11 }, 
+            color: '#6b7280',
+            callback: v => v >= 1000 ? '฿'+(v/1000).toFixed(0)+'K' : '฿'+v 
+          }
+        }
+      },
+      animation: {
+        duration: 1000,
+        easing: 'easeOutQuart'
+      }
+    }
+  });
+}
+
+// 1. Status Doughnut Chart (Job Status Distribution)
+function drawStatusDoughnutPC(statuses) {
+  const canvas = document.getElementById('status-doughnut-pc');
+  if (!canvas) return;
+  if (CHARTS.status) { CHARTS.status.destroy(); }
+  
+  const colors = {
+    'รอรับเครื่อง': '#f59e0b',
+    'กำลังซ่อม': '#3b82f6',
+    'ซ่อมเสร็จ': '#10b981',
+    'ส่งเครื่องแล้ว': '#8b5cf6',
+    'ยกเลิก': '#ef4444'
+  };
+  
+  const labels = statuses.map(s => s.status);
+  const data = statuses.map(s => s.job_count);
+  const bgColors = statuses.map(s => colors[s.status] || '#6b7280');
+  
+  CHARTS.status = new Chart(canvas.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: bgColors,
+        borderWidth: 2,
+        borderColor: '#fff',
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { padding: 12, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.label + ': ' + ctx.raw + ' งาน'
+          }
+        }
+      },
+      animation: {
+        animateRotate: true,
+        duration: 1200
+      }
+    }
+  });
+}
+
+// 2. Monthly Trend Line Chart (12 months)
+function drawTrendLinePC(monthlyData) {
+  const canvas = document.getElementById('trend-line-pc');
+  if (!canvas) return;
+  if (CHARTS.trend) { CHARTS.trend.destroy(); }
+  
+  const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+  
+  // Generate sample data if not provided
+  const data = monthlyData || [65000, 59000, 80000, 72000, 95000, 88000, 102000, 115000, 98000, 110000, 125000, 130000];
+  
+  CHARTS.trend = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [{
+        label: 'รายรับ',
+        data: data,
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBackgroundColor: '#10b981',
+        borderWidth: 3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            label: ctx => '฿' + Number(ctx.raw||0).toLocaleString()
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+        y: { 
+          grid: { color: '#f1f5f9' },
+          ticks: { callback: v => v >= 1000 ? '฿'+(v/1000).toFixed(0)+'K' : '฿'+v }
+        }
+      },
+      animation: {
+        duration: 1500,
+        easing: 'easeInOutQuart'
+      }
+    }
+  });
+}
+
+// 3. Tech Performance Horizontal Bar Chart (Top 5)
+function drawTechBarPC(techs) {
+  const canvas = document.getElementById('tech-bar-pc');
+  if (!canvas) return;
+  if (CHARTS.tech) { CHARTS.tech.destroy(); }
+  
+  const top5 = (techs || []).slice(0, 5);
+  const names = top5.map(t => t.name || '?');
+  const jobs = top5.map(t => t.jobs_completed || 0);
+  
+  CHARTS.tech = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: names,
+      datasets: [{
+        label: 'งานเสร็จ',
+        data: jobs,
+        backgroundColor: 'rgba(139, 92, 246, 0.8)',
+        borderColor: '#8b5cf6',
+        borderWidth: 2,
+        borderRadius: 8,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      indexAxis: 'y',  // Horizontal bar
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.raw + ' งาน'
+          }
+        }
+      },
+      scales: {
+        x: { 
+          grid: { color: '#f1f5f9' },
+          ticks: { callback: v => v + ' งาน' }
+        },
+        y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+      },
+      animation: {
+        duration: 1000,
+        easing: 'easeOutBounce'
+      }
+    }
+  });
+}
+
+// 4. Inventory Value Polar Area Chart (by Category)
+function drawInventoryPolarPC(inventory) {
+  const canvas = document.getElementById('inventory-polar-pc');
+  if (!canvas) return;
+  if (CHARTS.inventory) { CHARTS.inventory.destroy(); }
+  
+  // Group by category
+  const cats = {};
+  (inventory || []).forEach(item => {
+    const cat = item.category || 'อื่นๆ';
+    cats[cat] = (cats[cat] || 0) + (item.qty * (item.cost_price || 0));
+  });
+  
+  const labels = Object.keys(cats);
+  const data = Object.values(cats);
+  const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+  
+  CHARTS.inventory = new Chart(canvas.getContext('2d'), {
+    type: 'polarArea',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: colors.map(c => c + '99'),
+        borderColor: colors,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: { padding: 12, usePointStyle: true, font: { size: 10 } }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.label + ': ฿' + Number(ctx.raw||0).toLocaleString()
+          }
+        }
+      },
+      animation: {
+        animateRotate: true,
+        duration: 1200
+      }
+    }
+  });
+}
+
 // ===== SECTION LOADER (PHASE 26.6 — Live Data) =====
 async function loadSection(section) {
   setActiveNav(section);
