@@ -205,6 +205,11 @@ comphone-superapp/
 | **Server-side Auth** | ✅ Phase 30 | `auth.js` ตรวจสอบ token กับ GAS (`verifySession`) ก่อนข้ามหน้า Login |
 | **Version Update** | ✅ Phase 30 | อัปเดตเวอร์ชันเป็น v5.9.0-phase2d ทุกไฟล์ (analytics.js, sw.js, auth_guard.js) |
 | **GAS Deploy @501** | ✅ Phase 30 | Deploy ใหม่ @501 (ลบ photo_upload_section.js ที่ทำให้เกิด Error) |
+| **POS Barcode Search** | ✅ Phase 30 | เพิ่มการค้นหาด้วยบาร์โค้ดใน `pos.js` (API: `barcodeLookup`) |
+| **POS Profit Margin** | ✅ Phase 30 | แสดงส่วนต่างกำไรในหน้า POS (≥30% เขียว, ≥15% เหลือง, <15% แดง) |
+| **Dashboard Retail Sales** | ✅ Phase 30 | เพิ่ม `DBRETAILSALES` ใน DashboardBundle + ฟังก์ชัน `_bundleBuildRetailSales_()` |
+| **POS Page Navigation** | ✅ Phase 30 | เพิ่ม `if (page === 'pos')` ใน `goPage()` (เปิดแท็บใหม่) |
+| **Version Sync** | ✅ Phase 30 | ตรวจสอบ v5.9.0-phase2d ตรงกันทุกจุด (PWA + GAS) |
 
 ### 🔧 Partially Done (Backend Ready, Frontend Needed)
 
