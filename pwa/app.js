@@ -3,7 +3,7 @@
 
 // ===== STATE =====
 // URL source: GAS_CONFIG.url (from gas_config.js) > fallback
-const DEFAULT_SCRIPT_URL = (window.GAS_CONFIG && window.GAS_CONFIG.url) || 'https://script.google.com/macros/s/AKfycbwzJgj8ZMWqLYAsg9DklnrJIM2F-O0yH3gHhBjdn6WQDJ3uuLPI87pxAQAvXLdzDx__7A/exec';
+const DEFAULT_SCRIPT_URL = (window.GAS_CONFIG && window.GAS_CONFIG.url) || 'https://script.google.com/macros/s/AKfycbwy8k85i74jsnaIM2LmUJob733ewmU7Tk8MpukLKcV5f2Tl-7LTzy450ovmoh7ez105Hw/exec';
 
 const APP = {
   user: null,
