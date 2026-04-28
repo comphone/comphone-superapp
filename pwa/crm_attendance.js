@@ -364,6 +364,63 @@ function downloadCustomerReceipts(customerId) {
   }).catch(() => showToast('❌ ไม่สามารถเชื่อมต่อเพื่อดาวน์โหลดใบเสร็จได้'));
 }
 
+function showJobDetail(jobId) {
+  if (!jobId) return;
+  closeModal('modal-crm-jobs');
+  const detailContainer = document.getElementById('job-detail-modal-content');
+  if (!detailContainer) {
+    showToast('❌ ไม่พบ container สำหรับรายละเอียดงาน');
+    return;
+  }
+  detailContainer.innerHTML = '<div style="text-align:center;padding:20px;color:#9ca3af"><div class="spinner-pc"></div><p>กำลังโหลดรายละเอียดงาน...</p></div>';
+  
+  callApi({ action: 'getJobDetail', job_id: jobId }).then(res => {
+    if (!res || !res.success || !res.job) {
+      detailContainer.innerHTML = '<div class="empty-state"><i class="bi bi-exclamation-triangle"></i><p>ไม่พบรายละเอียดงาน</p></div>';
+      return;
+    }
+    const job = res.job;
+    detailContainer.innerHTML = `
+      <div style="padding:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div style="font-weight:700;font-size:16px;color:#111827">งาน #${job.id || jobId}</div>
+          <span class="status-badge" style="background:${getStatusColor(job.status)};color:#fff">${job.status || '-'}</span>
+        </div>
+        <div style="background:#f9fafb;border-radius:14px;padding:14px;margin-bottom:12px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px">
+            <div><div style="color:#9ca3af;font-weight:600">อุปกรณ์</div><div style="font-weight:700;color:#111827">${job.device || job.symptom || '-'}</div></div>
+            <div><div style="color:#9ca3af;font-weight:600">ช่างเทคนิค</div><div style="font-weight:700;color:#111827">${job.tech || job.technician || '-'}</div></div>
+            <div><div style="color:#9ca3af;font-weight:600">วันที่สร้าง</div><div style="font-weight:700;color:#111827">${job.created || job.created_at || '-'}</div></div>
+            <div><div style="color:#9ca3af;font-weight:600">ราคา</div><div style="font-weight:700;color:#10b981">${job.price ? '฿'+Number(job.price).toLocaleString() : '-'}</div></div>
+          </div>
+          ${job.address ? `<div style="margin-top:10px;font-size:12px"><div style="color:#9ca3af;font-weight:600">ที่อยู่</div><div style="font-weight:600;color:#374151">${job.address}</div></div>` : ''}
+          ${job.note ? `<div style="margin-top:10px;font-size:12px"><div style="color:#9ca3af;font-weight:600">หมายเหตุ</div><div style="font-weight:600;color:#374151">${job.note}</div></div>` : ''}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <button class="btn-action" onclick="downloadCustomerReceipts('${job.customer_id || job.customerId}')" style="background:#10b981;color:#fff">
+            <i class="bi bi-download"></i> ดาวน์โหลดใบเสร็จ
+          </button>
+          <button class="btn-action btn-secondary" onclick="showTimeline('${jobId}')">
+            <i class="bi bi-clock-history"></i> ประวัติสถานะ
+          </button>
+        </div>
+      </div>
+    `;
+    document.getElementById('modal-job-detail').classList.remove('hidden');
+  }).catch(() => {
+    detailContainer.innerHTML = '<div class="empty-state"><i class="bi bi-wifi-off"></i><p>ไม่สามารถโหลดข้อมูลได้</p></div>';
+  });
+}
+
+function showTimeline(jobId) {
+  // เรียกใช้ modal-timeline ที่มีอยู่แล้ว
+  if (typeof loadJobTimeline === 'function') {
+    loadJobTimeline(jobId);
+  }
+  closeModal('modal-job-detail');
+  document.getElementById('modal-timeline').classList.remove('hidden');
+}
+
 function getStatusColor(status) {
   const s = (status || '').toLowerCase();
   if (/เสร็จ|completed|done/.test(s)) return '#10b981';
