@@ -199,6 +199,11 @@ function loadStockMovements(itemCode) {
 
 // ===== CREATE STOCK MODAL =====
 function showCreateStockModal() {
+  // ตรวจสอบสิทธิ์ (เฉพาะ Admin/Owner)
+  if (APP && APP.user && !['admin', 'owner'].includes(APP.user.role)) {
+    showToast('⚠️ ไม่มีสิทธิ์เพิ่มสต็อก');
+    return;
+  }
   document.getElementById('stock-item-code').value = '';
   document.getElementById('stock-item-name').value = '';
   document.getElementById('stock-category').value = '';
@@ -246,6 +251,11 @@ function saveNewStock() {
 
 // ===== ADJUST STOCK MODAL =====
 function showAdjustStockModal(itemCode) {
+  // ตรวจสอบสิทธิ์ (เฉพาะ Admin/Owner)
+  if (APP && APP.user && !['admin', 'owner'].includes(APP.user.role)) {
+    showToast('⚠️ ไม่มีสิทธิ์ปรับปรุงสต็อก');
+    return;
+  }
   document.getElementById('adjust-item-code').value = itemCode || '';
   document.getElementById('adjust-qty-change').value = 0;
   document.getElementById('adjust-reason').value = '';
@@ -254,6 +264,11 @@ function showAdjustStockModal(itemCode) {
 
 // ===== TRANSFER STOCK MODAL =====
 function showTransferStockModal(itemCode) {
+  // ตรวจสอบสิทธิ์ (เฉพาะ Admin/Owner)
+  if (APP && APP.user && !['admin', 'owner'].includes(APP.user.role)) {
+    showToast('⚠️ ไม่มีสิทธิ์โอนย้ายสต็อก');
+    return;
+  }
   document.getElementById('transfer-item-code').value = itemCode || '';
   document.getElementById('transfer-qty').value = 0;
   document.getElementById('transfer-to-location').value = '';
