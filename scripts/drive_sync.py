@@ -471,9 +471,15 @@ def main():
     print(f" DRIVE SYNC SUMMARY")
     print(f"{'='*50}{C.RESET}")
     for key, result in results.items():
-        status = f"{C.GREEN}✅ SUCCESS{C.RESET}" if result.get('success') else f"{C.RED}❌ FAILED{C.RESET}"
-        print(f"  {key.upper():<10} {status}")
+        status = f"{C.GREEN}[OK] SUCCESS{C.RESET}" if result.get('success') else f"{C.RED}[FAIL] FAILED{C.RESET}"
+        try:
+            print(f"  {key.upper():<10} {status}")
+        except UnicodeEncodeError:
+            print(f"  {key.upper():<10} SUCCESS" if result.get('success') else f"  {key.upper():<10} FAILED")
     print(f"{C.BOLD}{'='*50}{C.RESET}\n")
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except UnicodeEncodeError:
+        pass
