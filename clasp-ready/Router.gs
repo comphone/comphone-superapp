@@ -184,6 +184,48 @@ function routeActionV55(action, payload, e) {
   return dispatchActionV55_(normalizedAction, payload || {}, args, e);
 }
 
+function _apiErrorKindV55_(error, code) {
+  var raw = String(error || code || '').toUpperCase();
+  if (code === 401 || /AUTH|TOKEN|SESSION|LOGIN|401/.test(raw)) return 'auth';
+  if (code === 403 || /PERMISSION|FORBIDDEN|DENIED|ROLE|ADMIN ACCESS|403/.test(raw)) return 'permission';
+  if (/NOT_FOUND|UNKNOWN ACTION|NO_HANDLER|FUNCTION NOT FOUND|ACTION/.test(raw)) return 'contract';
+  if (/TIMEOUT|ABORT/.test(raw)) return 'timeout';
+  return 'backend';
+}
+
+function _normalizeApiResponseV55_(result, action, requestId) {
+  if (result === null || result === undefined) {
+    return {
+      success: false,
+      error: 'No response from action handler',
+      code: 'NO_RESPONSE',
+      kind: 'contract',
+      action: action,
+      request_id: requestId || ''
+    };
+  }
+  if (typeof result !== 'object') {
+    return {
+      success: true,
+      data: result,
+      meta: { action: action, request_id: requestId || '' }
+    };
+  }
+  if (result.success === undefined && result.valid === true) result.success = true;
+  if (result.success === undefined && !result.error) result.success = true;
+  if (result.success === false) {
+    result.code = result.code || 'BACKEND_ERROR';
+    result.kind = result.kind || _apiErrorKindV55_(result.error || result.message, result.code);
+    result.action = result.action || action;
+    result.request_id = result.request_id || requestId || '';
+  } else {
+    result.meta = result.meta || {};
+    result.meta.action = result.meta.action || action;
+    result.meta.request_id = result.meta.request_id || requestId || '';
+  }
+  return result;
+}
+
 /**
  * _checkAuthGateV55_ — Centralized Auth Gate (PHMP v1 — 2026-04-24)
  *
@@ -257,7 +299,7 @@ function _checkAuthGateV55_(action, payload, e) {
   }
   
   if (!token) {
-    return { success: false, error: 'Authentication required', code: 401, action: action };
+    return { success: false, error: 'Authentication required', code: 401, kind: 'auth', action: action };
   }
 
   // Verify session
@@ -265,10 +307,10 @@ function _checkAuthGateV55_(action, payload, e) {
   try {
     auth = verifySession(token);
   } catch (e) {
-    return { success: false, error: 'Session verification failed', code: 401 };
+    return { success: false, error: 'Session verification failed', code: 401, kind: 'auth', action: action };
   }
   if (!auth || !(auth.success || auth.valid)) {
-    return { success: false, error: 'Invalid or expired session', code: 401 };
+    return { success: false, error: 'Invalid or expired session', code: 401, kind: 'auth', action: action };
   }
   var session = auth.session || auth;
   var role = String(session.role || auth.role || '').toLowerCase();
@@ -276,7 +318,7 @@ function _checkAuthGateV55_(action, payload, e) {
   // Admin check
   if (ADMIN_ACTIONS[action]) {
     if (role !== 'admin' && role !== 'owner') {
-      return { success: false, error: 'Admin access required', code: 403, action: action };
+      return { success: false, error: 'Admin access required', code: 403, kind: 'permission', action: action };
     }
   }
 
@@ -310,23 +352,23 @@ function dispatchActionV55_(action, payload, args, e) {
   try {
     if (typeof routeByModule === 'function' && action !== 'help') {
       var _fast = routeByModule(action, payload);
-      if (_fast !== null) return _fast;
+      if (_fast !== null) return _normalizeApiResponseV55_(_fast, action, _reqId);
     }
   } catch(_re) { /* fall through to switch */ }
   try {
     switch (action) {
       case 'help':
-        return {
+        return _normalizeApiResponseV55_({
           success: true,
           app: 'COMPHONE SUPER APP V5.5+',
           version: CONFIG.VERSION,
           status: 'healthy',
           note: 'Full action list: call getModuleRouterStats() or visit /exec?action=help',
           total_routes: (typeof MODULE_ROUTER !== 'undefined') ? Object.keys(MODULE_ROUTER).length : 'unknown'
-        };
+        }, action, _reqId);
 
       default:
-        return invokeFunctionByNameV55_(action, args);
+        return _normalizeApiResponseV55_(invokeFunctionByNameV55_(action, args), action, _reqId);
     }
   } catch (error) {
     // Phase 2D: Auto-capture ALL action errors to DB_ERRORS
@@ -340,7 +382,7 @@ function dispatchActionV55_(action, payload, args, e) {
         });
       }
     } catch (_logErr) { /* never break dispatch */ }
-    return { success: false, action: action, error: error.toString() };
+    return { success: false, action: action, error: error.toString(), code: 'GAS_ERROR', kind: 'backend', request_id: _reqId };
   }
 }
 

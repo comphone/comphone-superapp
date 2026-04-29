@@ -68,24 +68,24 @@ function classifyApiError(error) {
   const raw = String(error || '').trim();
   const normalized = raw.toUpperCase();
   if ((typeof navigator !== 'undefined' && !navigator.onLine) || normalized === 'OFFLINE' || /NETWORK|FAILED TO FETCH|LOAD FAILED/.test(normalized)) {
-    return { kind: 'offline', title: 'ออฟไลน์', message: 'เชื่อมต่อเครือข่ายหรือเซิร์ฟเวอร์ไม่ได้' };
+    return { kind: 'offline', code: 'OFFLINE', title: 'ออฟไลน์', message: 'เชื่อมต่อเครือข่ายหรือเซิร์ฟเวอร์ไม่ได้' };
   }
-  if (/AUTH|TOKEN|SESSION|LOGIN/.test(normalized)) {
-    return { kind: 'auth', title: 'ต้องเข้าสู่ระบบใหม่', message: 'Session หมดอายุหรือ token ไม่ถูกต้อง' };
+  if (/AUTH|TOKEN|SESSION|LOGIN|401/.test(normalized)) {
+    return { kind: 'auth', code: 'AUTH_REQUIRED', title: 'ต้องเข้าสู่ระบบใหม่', message: 'Session หมดอายุหรือ token ไม่ถูกต้อง' };
   }
-  if (/PERMISSION|FORBIDDEN|DENIED|ROLE/.test(normalized)) {
-    return { kind: 'permission', title: 'ไม่มีสิทธิ์เข้าถึง', message: 'บัญชีนี้ยังไม่มีสิทธิ์ใช้เมนูนี้' };
+  if (/PERMISSION|FORBIDDEN|DENIED|ROLE|ADMIN ACCESS|403/.test(normalized)) {
+    return { kind: 'permission', code: 'PERMISSION_DENIED', title: 'ไม่มีสิทธิ์เข้าถึง', message: 'บัญชีนี้ยังไม่มีสิทธิ์ใช้เมนูนี้' };
   }
-  if (/NOT_FOUND|UNKNOWN ACTION|NO_HANDLER|ACTION/.test(normalized)) {
-    return { kind: 'contract', title: 'API contract ไม่ตรงกัน', message: 'Frontend เรียก action ที่ backend ยังไม่รองรับ' };
+  if (/NOT_FOUND|UNKNOWN ACTION|NO_HANDLER|FUNCTION NOT FOUND|ACTION/.test(normalized)) {
+    return { kind: 'contract', code: 'ACTION_NOT_FOUND', title: 'API contract ไม่ตรงกัน', message: 'Frontend เรียก action ที่ backend ยังไม่รองรับ' };
   }
   if (/TIMEOUT|ABORT/.test(normalized)) {
-    return { kind: 'timeout', title: 'เซิร์ฟเวอร์ตอบช้า', message: 'คำขอนี้ใช้เวลานานเกินกำหนด' };
+    return { kind: 'timeout', code: 'TIMEOUT', title: 'เซิร์ฟเวอร์ตอบช้า', message: 'คำขอนี้ใช้เวลานานเกินกำหนด' };
   }
-  return { kind: 'backend', title: 'Backend error', message: raw || 'เกิดข้อผิดพลาดจาก backend' };
+  return { kind: 'backend', code: 'BACKEND_ERROR', title: 'Backend error', message: raw || 'เกิดข้อผิดพลาดจาก backend' };
 }
 
-function apiErrorState(error, retryFn) {
+function apiErrorInfo(error, context) {
   const info = classifyApiError(error);
   const icon = {
     offline: 'bi-wifi-off',
@@ -95,9 +95,22 @@ function apiErrorState(error, retryFn) {
     timeout: 'bi-hourglass-split',
     backend: 'bi-exclamation-triangle',
   }[info.kind] || 'bi-exclamation-triangle';
+  return Object.assign({}, info, {
+    icon,
+    detail: context ? info.message + ' (' + context + ')' : info.message,
+    action: info.kind === 'auth' ? 'กรุณาเข้าสู่ระบบใหม่' :
+      info.kind === 'permission' ? 'ติดต่อผู้ดูแลเพื่อเพิ่มสิทธิ์' :
+      info.kind === 'contract' ? 'ตรวจ API contract หรือ deploy backend ให้ตรงเวอร์ชัน' :
+      info.kind === 'timeout' ? 'ลองใหม่อีกครั้ง หรือเช็ค GAS execution time' :
+      info.kind === 'offline' ? 'ตรวจอินเทอร์เน็ตและลองใหม่' : 'ตรวจ log backend และ request context',
+  });
+}
+
+function apiErrorState(error, retryFn) {
+  const info = apiErrorInfo(error);
   return `
     <div class="api-error-state api-error-${info.kind}">
-      <i class="bi ${icon}"></i>
+      <i class="bi ${info.icon}"></i>
       <div>
         <strong>${info.title}</strong>
         <p>${info.message}</p>
@@ -515,6 +528,7 @@ if (typeof window !== 'undefined') {
   window.normalizeCallApiArgs = normalizeCallApiArgs;
   window.normalizeApiResponse = normalizeApiResponse;
   window.classifyApiError = classifyApiError;
+  window.apiErrorInfo = apiErrorInfo;
   window.apiErrorState = apiErrorState;
   window.batchCallApi = batchCallApi;
   window.cachedCallApi = cachedCallApi;

@@ -160,6 +160,9 @@ if (!apiClientJs.includes('normalizeCallApiArgs')) {
 if (!apiClientJs.includes('classifyApiError') || !apiClientJs.includes('apiErrorState')) {
   fail('api_client.js must expose classifyApiError() and apiErrorState() for precise menu error states.');
 }
+if (!apiClientJs.includes('apiErrorInfo')) {
+  fail('api_client.js must expose apiErrorInfo() for object-based error panels.');
+}
 const adminPanelJs = readUtf8(path.join(PWA, 'admin_panel.js'));
 if (!adminPanelJs.includes("data-tab=\"health\"") || !adminPanelJs.includes('renderMenuHealthPanel')) {
   fail('admin_panel.js must expose the Menu Health tab.');
@@ -193,6 +196,14 @@ if (!dashboardPcHtml.includes('updatePcVersionBadge') || dashboardPcHtml.include
 }
 if (!apiContractJs.includes('getDashboardBundle')) {
   fail('api_contract.js should track getDashboardBundle for PC dashboard fallback health.');
+}
+if (!apiContractJs.includes('responseShape') || !apiContractJs.includes('generatePromptPayQR')) {
+  fail('api_contract.js must include responseShape and billing actions for API matrix parity.');
+}
+
+const smokeJs = readUtf8(path.join(ROOT, 'scripts', 'pwa_api_smoke.js'));
+if (!smokeJs.includes('COMPHONE_SMOKE_REPORT') || !smokeJs.includes('AUTH_FAIL') || !smokeJs.includes('CONTRACT')) {
+  fail('pwa_api_smoke.js must emit classified protected API smoke reports.');
 }
 
 if (failures.length) {

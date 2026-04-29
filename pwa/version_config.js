@@ -3,9 +3,9 @@
 // Single Source of Truth for all version numbers
 // ============================================================
 const APP_VERSION = '5.9.0-phase2d';
-const CACHE_VERSION = 'comphone-v5.9.0-phase2d-20260428_1900';
-const BUILD_TIMESTAMP = '20260428_1900';
-const GAS_VERSION = '503';
+const CACHE_VERSION = 'comphone-v5.9.0-phase2d-20260429_1200';
+const BUILD_TIMESTAMP = '20260429_1200';
+const GAS_VERSION = '504';
 
 // Export for use in other modules
 window.COMPHONE_VERSION = APP_VERSION;

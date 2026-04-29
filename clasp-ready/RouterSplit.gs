@@ -115,9 +115,11 @@ var MODULE_ROUTER = {
   'loginUser':    function(p) { return loginUser(p.username || '', p.password || ''); },
   'logoutUser':   function(p) { return logoutUser(p.token || ''); },
   'verifySession': function(p) { return verifySession(p.token || ''); },
-  'listUsers':    function(p) { return listUsers(p.token || ''); },
+  'listUsers':    function(p) {
+    return (typeof listUsers_ === 'function') ? listUsers_(p) : listUsers(p.token || '');
+  },
   'createUser':   function(p) { return createUser(p.token || '', p); },
-  'updateUserRole': function(p) { return updateUserRole(p.token || '', p.username || '', p.role || ''); },
+  'updateUserRole': function(p) { return updateUserRole(p.token || '', p.username || '', p.newRole || p.role || ''); },
   'setUserActive': function(p) { return setUserActive(p.token || '', p.username || '', p.active !== false); },
   'setupUserSheet': function(p) { return setupUserSheet(); },
 

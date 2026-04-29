@@ -2,7 +2,11 @@
   'use strict';
 
   const API_CONTRACT = {
-    version: '2026-04-28.phase30',
+    version: '2026-04-29.phase30-api-stability',
+    responseShape: {
+      success: '{ success: true, data?, meta? }',
+      failure: '{ success: false, error, code, kind?, action?, request_id? }',
+    },
     publicActions: [
       { action: 'health', menu: 'System', description: 'GAS health check', noAuth: true },
       { action: 'getVersion', menu: 'System', description: 'Backend version', noAuth: true },
@@ -17,6 +21,7 @@
           { action: 'getDashboardData', required: true, read: true },
           { action: 'getTechPerformance', payload: { days: 7 }, read: true },
           { action: 'getRetailSales', payload: { days: 7 }, read: true },
+          { action: 'getAllTechsSummary', read: true },
         ],
       },
       {
@@ -27,6 +32,8 @@
           { action: 'listCustomers', required: true, read: true },
           { action: 'getAfterSalesDue', read: true },
           { action: 'getAttendanceReport', payload: { days: 7 }, read: true },
+          { action: 'getCustomerListWithStats', read: true },
+          { action: 'getCRMMetrics', read: true },
         ],
       },
       {
@@ -36,6 +43,7 @@
         actions: [
           { action: 'inventoryOverview', required: true, read: true },
           { action: 'barcodeLookup', payload: { barcode: '__SMOKE_EMPTY__' }, read: true, optional: true },
+          { action: 'checkStock', read: true },
         ],
       },
       {
@@ -55,10 +63,19 @@
         ],
       },
       {
+        id: 'billing',
+        label: 'Billing',
+        icon: 'bi-receipt-cutoff',
+        actions: [
+          { action: 'getBilling', payload: { job_id: '__SMOKE_EMPTY__' }, read: true, optional: true },
+          { action: 'generatePromptPayQR', payload: { amount: 1, ref: 'SMOKE' }, read: true, optional: true },
+        ],
+      },
+      {
         id: 'admin',
         label: 'Admin',
         icon: 'bi-shield-fill-check',
-        roles: ['admin', 'owner'],
+        roles: ['admin', 'owner', 'ADMIN', 'OWNER'],
         actions: [
           { action: 'getSecurityStatus', required: true, read: true },
           { action: 'getAuditLog', payload: { limit: 5 }, read: true },
