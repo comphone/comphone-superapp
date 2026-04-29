@@ -138,8 +138,20 @@ if (!/[ก-๙]/.test(indexHtml)) fail('index.html no longer contains Thai text;
 if (!/[ก-๙]/.test(dashboardPcHtml)) fail('dashboard_pc.html no longer contains Thai text; encoding may be damaged.');
 
 const appJs = readUtf8(path.join(PWA, 'app.js'));
+const appActionsJs = readUtf8(path.join(PWA, 'app_actions.js'));
 if (appJs.includes('window.AI_EXECUTOR[method]')) {
   fail('app.js callAPI() still depends on AI_EXECUTOR; mobile PWA should delegate to api_client.js callApi().');
+}
+for (const fn of ['openNewJob', 'submitNewJob', 'addCustomer', 'saveNewCustomer', 'openPO', 'openPOS', 'openAICompanion', 'openSmartAssignV2']) {
+  if (!appActionsJs.includes(`function ${fn}`)) {
+    fail(`app_actions.js must provide mobile quick action function: ${fn}().`);
+  }
+}
+if (!appActionsJs.includes("callAPI('openJob'") || !appActionsJs.includes("callAPI('createCustomer'")) {
+  fail('app_actions.js mobile quick actions must create jobs and customers through the unified callAPI path.');
+}
+if (appActionsJs.includes("showToast('กำลังเปิดฟอร์มงานใหม่") || appActionsJs.includes("showToast('กำลังเปิดฟอร์มลูกค้าใหม่")) {
+  fail('app_actions.js must not leave openNewJob/addCustomer as toast-only stubs.');
 }
 
 if (swJs.includes('client.navigate(client.url)')) {

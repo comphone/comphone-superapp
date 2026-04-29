@@ -97,6 +97,32 @@ function openCamera(type) {
   input.click();
 }
 
+function ensureActionModal(id, title) {
+  let modal = document.getElementById(id);
+  if (modal) return modal;
+  modal = document.createElement('div');
+  modal.id = id;
+  modal.className = 'modal-overlay hidden';
+  modal.onclick = () => closeModal(id);
+  modal.innerHTML = `
+    <div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px">
+      <div class="modal-handle"></div>
+      <div class="modal-title">${title}</div>
+      <div id="${id}-content" style="padding:0 16px"></div>
+    </div>`;
+  document.body.appendChild(modal);
+  return modal;
+}
+
+function safeActionText(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function openCameraQuick() { openCamera('job'); }
 function markDone() { showToast('เลือกงานที่ต้องการก่อน'); goPage('jobs', document.getElementById('nav-jobs')); }
 function markWaiting() { showToast('เลือกงานที่ต้องการก่อน'); goPage('jobs', document.getElementById('nav-jobs')); }
@@ -115,21 +141,107 @@ function callForHelp() {
   }
 }
 function openNewJob() {
-  // job_workflow.js โหลดแล้ว เรียกได้ตรงๆ
-  if (document.getElementById('modal-new-job-content')) {
-    // openNewJob จาก job_workflow.js override window.openNewJob แล้ว
-    // แต่ถ้ายังไม่โหลด ใช้ fallback
-    showToast('กำลังเปิดฟอร์มงานใหม่...');
-  } else {
-    showToast('กำลังเปิดฟอร์มงานใหม่...');
-  }
+  const modal = ensureActionModal('modal-new-job', 'เปิดงานใหม่');
+  const content = document.getElementById('modal-new-job-content');
+  content.innerHTML = `
+    <div class="form-group-custom">
+      <label>ชื่อลูกค้า <span style="color:#ef4444">*</span></label>
+      <div class="input-wrap"><i class="bi bi-person-fill"></i><input id="nj-customer" type="text" placeholder="ชื่อลูกค้า"></div>
+    </div>
+    <div class="form-group-custom">
+      <label>เบอร์โทร</label>
+      <div class="input-wrap"><i class="bi bi-telephone-fill"></i><input id="nj-phone" type="tel" placeholder="0812345678"></div>
+    </div>
+    <div class="form-group-custom">
+      <label>อุปกรณ์</label>
+      <div class="input-wrap"><i class="bi bi-phone-fill"></i><input id="nj-device" type="text" placeholder="เช่น iPhone, Notebook, Printer"></div>
+    </div>
+    <div class="form-group-custom">
+      <label>อาการ / ปัญหา <span style="color:#ef4444">*</span></label>
+      <div class="input-wrap"><i class="bi bi-tools"></i><input id="nj-symptom" type="text" placeholder="อธิบายอาการเสีย"></div>
+    </div>
+    <div class="form-group-custom">
+      <label>ราคาประเมิน</label>
+      <div class="input-wrap"><i class="bi bi-currency-exchange"></i><input id="nj-price" type="number" min="0" step="50" placeholder="0"></div>
+    </div>
+    <div class="form-group-custom">
+      <label>หมายเหตุ</label>
+      <div class="input-wrap"><i class="bi bi-chat-left-text"></i><input id="nj-note" type="text" placeholder="รายละเอียดเพิ่มเติม"></div>
+    </div>
+    <button class="btn-setup" id="nj-submit-btn" onclick="submitNewJob()" style="margin-top:8px">
+      <i class="bi bi-plus-circle-fill"></i> สร้างงานใหม่
+    </button>`;
+  modal.classList.remove('hidden');
+  setTimeout(() => document.getElementById('nj-customer')?.focus(), 150);
 }
+
+async function submitNewJob() {
+  const customer = document.getElementById('nj-customer')?.value.trim();
+  const symptom = document.getElementById('nj-symptom')?.value.trim();
+  if (!customer) { showToast('กรุณากรอกชื่อลูกค้า'); return; }
+  if (!symptom) { showToast('กรุณากรอกอาการ/ปัญหา'); return; }
+
+  const btn = document.getElementById('nj-submit-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> กำลังสร้างงาน...'; }
+  const device = document.getElementById('nj-device')?.value.trim();
+  const payload = {
+    customer_name: customer,
+    phone: document.getElementById('nj-phone')?.value.trim() || '',
+    symptom: symptom + (device ? ` [${device}]` : ''),
+    device,
+    estimated_price: Number(document.getElementById('nj-price')?.value || 0),
+    note: document.getElementById('nj-note')?.value.trim() || '',
+    changed_by: (APP.user && (APP.user.name || APP.user.username)) || 'PWA',
+  };
+
+  const res = await callAPI('openJob', payload);
+  if (res && res.success) {
+    closeModal('modal-new-job');
+    showToast('สร้างงานใหม่สำเร็จ');
+    await loadLiveData();
+    goPage('jobs', document.getElementById('nav-jobs'));
+    return;
+  }
+  const info = typeof apiErrorInfo === 'function' ? apiErrorInfo(res && (res.error || res.message), 'openJob') : null;
+  showToast(info ? `${info.title}: ${info.message}` : ((res && res.error) || 'สร้างงานไม่สำเร็จ'));
+  if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-plus-circle-fill"></i> สร้างงานใหม่'; }
+}
+
 function openNewJob_delayed() { const fn = setInterval(() => { if(typeof openNewJob === 'function' && document.getElementById('modal-new-job-content')) { clearInterval(fn); openNewJob(); } }, 100); setTimeout(() => clearInterval(fn), 3000); }
 function addCustomer() {
-  if (typeof openAddCustomerModal === 'function') openAddCustomerModal();
-  else showToast('กำลังเปิดฟอร์มลูกค้าใหม่...');
+  if (typeof openAddCustomerModal === 'function') { openAddCustomerModal(); return; }
+  const modal = document.getElementById('modal-add-customer') || ensureActionModal('modal-add-customer', 'เพิ่มลูกค้าใหม่');
+  modal.classList.remove('hidden');
+  setTimeout(() => document.getElementById('new-cust-name')?.focus(), 150);
 }
-function callCustomer(phone) { if (phone) window.location.href = 'tel:' + phone; else showToast('กำลังเปิดรายชื่อลูกค้า...'); }
+
+async function saveNewCustomer() {
+  const name = document.getElementById('new-cust-name')?.value.trim();
+  const phone = document.getElementById('new-cust-phone')?.value.trim();
+  if (!name) { showToast('กรุณากรอกชื่อลูกค้า'); return; }
+  if (!phone) { showToast('กรุณากรอกเบอร์โทร'); return; }
+
+  const res = await callAPI('createCustomer', {
+    name,
+    customer_name: name,
+    phone,
+    address: document.getElementById('new-cust-address')?.value.trim() || '',
+    type: document.getElementById('new-cust-type')?.value || 'regular',
+    notes: document.getElementById('new-cust-notes')?.value.trim() || '',
+  });
+  if (res && res.success) {
+    closeModal('modal-add-customer');
+    showToast('บันทึกลูกค้าใหม่สำเร็จ');
+    if (APP.currentPage === 'crm' && typeof loadCRMPage === 'function') loadCRMPage();
+    return;
+  }
+  const info = typeof apiErrorInfo === 'function' ? apiErrorInfo(res && (res.error || res.message), 'createCustomer') : null;
+  showToast(info ? `${info.title}: ${info.message}` : ((res && res.error) || 'บันทึกลูกค้าไม่สำเร็จ'));
+}
+function callCustomer(phone) {
+  if (phone) window.location.href = 'tel:' + phone;
+  else goPage('crm', document.getElementById('nav-more'));
+}
 function sendLine() {
   if (typeof QA !== 'undefined' && typeof QA.sendLine === 'function') QA.sendLine();
   else showToast('กำลังเปิด LINE...');
@@ -162,7 +274,13 @@ function moreActions() {
     goPage('admin', document.getElementById('nav-more'));
   }
 }
-function openPO() { openPurchaseOrders(); }
+function openPO() {
+  if (typeof openPurchaseOrders === 'function') openPurchaseOrders();
+  else goPage('po', document.getElementById('nav-more'));
+}
+function openPOS() {
+  window.location.href = '/comphone-superapp/pwa/pos.html';
+}
 function scanSlip() { openCamera('slip'); }
 function createReceipt() {
   // เปิด Billing modal — เลือกงานจากรายการงาน
@@ -204,6 +322,25 @@ function viewPL() {
   REPORTS.currentTab = 'pl';
   goPage('reports', document.getElementById('nav-more'));
 }
+
+function openAICompanion() {
+  showToast('AI ช่วยซ่อมจะเปิดในรอบถัดไป ตอนนี้พาไปหน้า Dashboard ก่อน');
+  goPage('dashboard', document.getElementById('nav-more'));
+}
+
+function openSmartAssignV2() {
+  showToast('เลือกงานก่อน แล้วใช้เมนูมอบหมายช่างในรายการงาน');
+  goPage('jobs', document.getElementById('nav-jobs'));
+}
+
+function openCSAT() {
+  goPage('reports', document.getElementById('nav-more'));
+}
+
+function openTOR() {
+  goPage('reports', document.getElementById('nav-more'));
+}
+
 function fabAction() {
   const actions = { tech: openCameraQuick, admin: openNewJob, acct: scanSlip, exec: viewDashboard };
   (actions[APP.role] || openNewJob)();
