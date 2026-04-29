@@ -40,6 +40,64 @@ function getDashboardData() {
   };
 }
 
+function getTechPerformance(payload) {
+  try {
+    payload = payload || {};
+    var period = payload.period || 'month';
+    var report = (typeof getReportData === 'function') ? getReportData({ period: period }) : getReportData_(period);
+    var techs = report && report.data && report.data.techPerformance ? report.data.techPerformance : [];
+    return {
+      success: true,
+      techs: techs,
+      data: techs,
+      period: period
+    };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+function getRetailSales(payload) {
+  try {
+    payload = payload || {};
+    var days = Math.max(1, parseInt(payload.days || 7, 10));
+    var summary = (typeof getRetailSaleSummary_ === 'function') ? getRetailSaleSummary_(payload) : { success: true, summary: {} };
+    var list = (typeof listRetailSales_ === 'function') ? listRetailSales_({ limit: 1000 }) : { success: true, items: [] };
+    if (summary && summary.success === false) return summary;
+    if (list && list.success === false) return list;
+
+    var buckets = {};
+    var labels = [];
+    for (var i = days - 1; i >= 0; i--) {
+      var d = new Date();
+      d.setDate(d.getDate() - i);
+      var key = Utilities.formatDate(d, 'Asia/Bangkok', 'dd/MM');
+      buckets[key] = 0;
+      labels.push(key);
+    }
+
+    var items = (list && list.items) || [];
+    items.forEach(function(item) {
+      var rawDate = String(item.created_at || '');
+      var key = rawDate.substring(0, 5);
+      if (buckets[key] !== undefined) buckets[key] += Number(item.total || 0);
+    });
+
+    var sales = labels.map(function(label) {
+      return { date: label, amount: buckets[label] || 0 };
+    });
+
+    return {
+      success: true,
+      sales: sales,
+      summary: (summary && summary.summary) || {},
+      total_count: items.length
+    };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
 // ============================================================
 // 🖼️ จัดการคิวรูปภาพ (สำหรับปุ่มใน Dashboard)
 // ============================================================

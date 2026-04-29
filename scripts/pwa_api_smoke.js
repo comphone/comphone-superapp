@@ -112,6 +112,21 @@ async function run() {
     console.log('[protected] skipped: set COMPHONE_AUTH_TOKEN to smoke-test menu data actions.');
   } else {
     for (const item of protectedActions) {
+      if (item.smoke === false) {
+        record({
+          scope: 'protected',
+          menu: item.menu,
+          action: item.action,
+          required: !!item.required,
+          optional: !!item.optional || !item.required,
+          ok: true,
+          status_label: 'SKIP',
+          http_status: 0,
+          elapsed_ms: 0,
+          error: item.smokeReason || 'smoke disabled for this action',
+        });
+        continue;
+      }
       const started = Date.now();
       try {
         const payload = Object.assign(sanitizePayload(item.payload), { token: TOKEN });

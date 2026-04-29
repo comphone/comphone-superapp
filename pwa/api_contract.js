@@ -67,7 +67,7 @@
         label: 'Billing',
         icon: 'bi-receipt-cutoff',
         actions: [
-          { action: 'getBilling', payload: { job_id: '__SMOKE_EMPTY__' }, read: true, optional: true },
+          { action: 'getBilling', payload: { job_id: '__SMOKE_EMPTY__' }, read: true, optional: true, smoke: false, smokeReason: 'requires a real job_id with an existing billing record' },
           { action: 'generatePromptPayQR', payload: { amount: 1, ref: 'SMOKE' }, read: true, optional: true },
         ],
       },

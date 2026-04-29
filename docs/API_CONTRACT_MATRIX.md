@@ -28,7 +28,7 @@ This matrix is the operational checklist for menu/API parity between Mobile PWA,
 | Inventory | `checkStock` | Protected | Optional | Stock status/checking helper. |
 | Purchase Orders | `listPurchaseOrders` | Protected | Yes | PO list view. |
 | Reports | `getReportData` | Protected | Yes | Reports dashboard for selected period. |
-| Billing | `getBilling` | Protected | Optional | Billing detail by job. Empty smoke payload may fail gracefully. |
+| Billing | `getBilling` | Protected | Optional | Billing detail by job. Smoke skipped because it requires a real `job_id`. |
 | Billing | `generatePromptPayQR` | Protected | Optional | QR generation smoke with tiny synthetic amount. |
 | Admin | `getSecurityStatus` | Admin/Owner | Yes | Security status panel. |
 | Admin | `getAuditLog` | Admin/Owner | Optional | Recent audit log panel. |

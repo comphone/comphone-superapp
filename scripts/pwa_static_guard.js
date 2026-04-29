@@ -200,10 +200,17 @@ if (!apiContractJs.includes('getDashboardBundle')) {
 if (!apiContractJs.includes('responseShape') || !apiContractJs.includes('generatePromptPayQR')) {
   fail('api_contract.js must include responseShape and billing actions for API matrix parity.');
 }
+if (!apiContractJs.includes('smoke: false') || !apiContractJs.includes('smokeReason')) {
+  fail('api_contract.js must mark record-specific actions that cannot be smoke-tested safely.');
+}
 
 const smokeJs = readUtf8(path.join(ROOT, 'scripts', 'pwa_api_smoke.js'));
-if (!smokeJs.includes('COMPHONE_SMOKE_REPORT') || !smokeJs.includes('AUTH_FAIL') || !smokeJs.includes('CONTRACT')) {
+if (!smokeJs.includes('COMPHONE_SMOKE_REPORT') || !smokeJs.includes('AUTH_FAIL') || !smokeJs.includes('CONTRACT') || !smokeJs.includes('SKIP')) {
   fail('pwa_api_smoke.js must emit classified protected API smoke reports.');
+}
+const menuHealthJs = readUtf8(path.join(PWA, 'menu_health.js'));
+if (!menuHealthJs.includes('exportMenuHealthReport') || !menuHealthJs.includes('smoke === false')) {
+  fail('menu_health.js must support skipped smoke actions and exportable reports.');
 }
 
 if (failures.length) {

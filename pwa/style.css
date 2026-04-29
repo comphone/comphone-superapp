@@ -945,6 +945,15 @@ html, body,
   font-size: 12px;
   font-weight: 800;
 }
+.menu-health-run.secondary {
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+}
+.menu-health-run:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 .api-error-auth > i,
 .api-error-permission > i { color: #dc2626; }
 .api-error-offline > i,
@@ -1015,6 +1024,7 @@ html, body,
   background: #e2e8f0;
 }
 .menu-health-row.ok .menu-health-status { color: #065f46; background: #d1fae5; }
+.menu-health-row.skip .menu-health-status { color: #475569; background: #e2e8f0; }
 .menu-health-row.auth .menu-health-status,
 .menu-health-row.permission .menu-health-status { color: #991b1b; background: #fee2e2; }
 .menu-health-row.offline .menu-health-status,

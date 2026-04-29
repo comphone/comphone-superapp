@@ -30,6 +30,9 @@
           <button class="menu-health-run" id="menu-health-run-btn">
             <i class="bi bi-play-fill"></i> Run
           </button>
+          <button class="menu-health-run secondary" id="menu-health-export-btn" ${rows.length ? '' : 'disabled'}>
+            <i class="bi bi-download"></i> Export
+          </button>
         </div>
         <div class="menu-health-meta">
           ${MENU_HEALTH.lastRun ? `Last run: ${new Date(MENU_HEALTH.lastRun).toLocaleString('th-TH')}` : 'ยังไม่ได้ตรวจ'}
@@ -41,6 +44,8 @@
 
     const btn = document.getElementById('menu-health-run-btn');
     if (btn) btn.addEventListener('click', () => runMenuHealth(container));
+    const exportBtn = document.getElementById('menu-health-export-btn');
+    if (exportBtn) exportBtn.addEventListener('click', exportMenuHealthReport);
   }
 
   function renderMenuHealthEmpty() {
@@ -67,12 +72,12 @@
 
   function renderMenuHealthRow(row) {
     const cls = row.ok ? 'ok' : row.kind || 'backend';
-    const label = row.ok ? 'OK' : (row.kind || 'FAIL').toUpperCase();
+    const label = row.skipped ? 'SKIP' : (row.ok ? 'OK' : (row.kind || 'FAIL').toUpperCase());
     return `
       <div class="menu-health-row ${cls}">
         <div>
           <strong>${row.action}</strong>
-          <span>${row.elapsedMs}ms${row.required ? ' · required' : ''}</span>
+          <span>${row.skipped ? 'skipped' : row.elapsedMs + 'ms'}${row.required ? ' · required' : ''}${row.error ? ' · ' + row.error : ''}</span>
         </div>
         <div class="menu-health-status">${label}</div>
       </div>`;
@@ -98,6 +103,20 @@
     for (const menu of menus) {
       if (menu.roles && !menu.roles.includes(global.APP && global.APP.user && global.APP.user.role)) continue;
       for (const item of menu.actions) {
+        if (item.smoke === false) {
+          results.push({
+            menu: menu.id,
+            menuLabel: menu.label,
+            action: item.action,
+            required: !!item.required,
+            ok: true,
+            kind: 'skip',
+            skipped: true,
+            elapsedMs: 0,
+            error: item.smokeReason || 'smoke disabled for this action'
+          });
+          continue;
+        }
         const started = Date.now();
         const payload = Object.assign({}, item.payload || {});
         Object.keys(payload).forEach(key => {
@@ -124,7 +143,29 @@
     renderMenuHealthPanel(container);
   }
 
+  function exportMenuHealthReport() {
+    const payload = {
+      generated_at: new Date().toISOString(),
+      contract_version: global.COMPHONE_API_CONTRACT && global.COMPHONE_API_CONTRACT.version,
+      user: global.APP && global.APP.user ? {
+        username: global.APP.user.username || global.APP.user.name || '',
+        role: global.APP.user.role || ''
+      } : null,
+      results: MENU_HEALTH.results
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'comphone-menu-health-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   global.MENU_HEALTH = MENU_HEALTH;
   global.renderMenuHealthPanel = renderMenuHealthPanel;
   global.runMenuHealth = runMenuHealth;
+  global.exportMenuHealthReport = exportMenuHealthReport;
 })(window);

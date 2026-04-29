@@ -14,6 +14,8 @@ var MODULE_ROUTER = {
   'invalidateBundleCache':  function(p) { return invalidateBundleCache(); },
   'getDashboardData':       function(p) { return getDashboardData(); },
   'getDashboardPayloadV55': function(p) { return getDashboardPayloadV55(); },
+  'getTechPerformance':     function(p) { return getTechPerformance(p); },
+  'getRetailSales':         function(p) { return getRetailSales(p); },
 
   // Jobs
   'checkJobs':    function(p) { return checkJobs(p); },
@@ -52,7 +54,7 @@ var MODULE_ROUTER = {
   // deductStock, restoreStock — functions don't exist in codebase
   'generatePromptPayQR':  function(p) { return generatePromptPayQR(p); },
   'createRetailSale':     function(p) { return createRetailSale_(p); },
-  'listRetailSales':      function(p) { return listRetailSales(p); },
+  'listRetailSales':      function(p) { return listRetailSales_(p); },
   'analyzeBusiness':      function(p) { return analyzeBusiness_(p); },
 
   // Customers
