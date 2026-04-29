@@ -1,12 +1,44 @@
 ﻿// ============================================================
 // SharedContext.gs — COMPHONE SUPER APP v5.9.0-phase31a
-// AI Operating System — Phase 2: Shared Context
-// ============================================================
-// ให้ข้อมูล context กลางแก่ Agent ทุกตัว
-// getSystemContext() → { health, alerts, workload, memory }
+// AI Operating System — Phase 31: Shared Context + DriveSync Retry
+// Added exponential backoff retry + Drive Sync recovery
 // ============================================================
 
-var SC_VERSION = '1.0.0';
+var SC_VERSION = '1.1.0';
+var SC_DRIVESYNC_RETRY_CONFIG = {
+  maxRetries: 3,
+  baseDelayMs: 2000,
+  maxDelayMs: 30000,
+  timeoutMs: 45000
+};
+
+// ─── DRIVE SYNC RETRY ──────────────────────────────────────
+
+/**
+ * syncWithRetry_ — Retry wrapper with exponential backoff for Drive operations
+ */
+function syncWithRetry_(operationFn, operationName) {
+  var config = SC_DRIVESYNC_RETRY_CONFIG;
+  var lastError = null;
+  for (var attempt = 0; attempt <= config.maxRetries; attempt++) {
+    try {
+      if (attempt > 0) {
+        var delay = Math.min(config.baseDelayMs * Math.pow(2, attempt - 1), config.maxDelayMs);
+        Utilities.sleep(delay);
+        _logInfo_('syncWithRetry_', 'Retry attempt ' + attempt + ' for ' + operationName + ' after ' + delay + 'ms');
+      }
+      var result = operationFn();
+      return result;
+    } catch (e) {
+      lastError = e;
+      if (attempt < config.maxRetries) {
+        Logger.log('syncWithRetry_ attempt ' + attempt + ' failed for ' + operationName + ': ' + e);
+      }
+    }
+  }
+  _logError_('HIGH', 'syncWithRetry_', operationName + ' failed after ' + config.maxRetries + ' retries: ' + lastError);
+  return { success: false, error: operationName + ' failed after ' + config.maxRetries + ' retries: ' + lastError };
+}
 
 // ─── MAIN: getSystemContext ─────────────────────────────────
 

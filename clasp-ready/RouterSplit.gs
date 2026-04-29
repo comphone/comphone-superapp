@@ -68,6 +68,17 @@ var MODULE_ROUTER = {
     return (typeof getReportData === 'function') ? getReportData(p) : getReportData_(p.period || 'month');
   },
 
+  // Analytics Index (Phase 31 — Data Indexing)
+  'getDashboardAnalytics': function(p) {
+    return (typeof getDashboardAnalytics === 'function') ? getDashboardAnalytics(p) : { success: false, error: 'AnalyticsIndex not loaded' };
+  },
+  'searchWithIndex': function(p) {
+    return (typeof searchWithIndex === 'function') ? searchWithIndex(p.query || p.q || '') : { success: false, error: 'AnalyticsIndex not loaded' };
+  },
+  'invalidateAllIndexes': function(p) {
+    return (typeof invalidateAllIndexes === 'function') ? invalidateAllIndexes() : { success: false, error: 'AnalyticsIndex not loaded' };
+  },
+
   // Version
   'getSystemVersion': function(p) {
     return (typeof getSystemVersion === 'function') ? getSystemVersion() : getVersionV55_();

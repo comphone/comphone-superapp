@@ -1,9 +1,9 @@
-// ============================================================
-// COMPHONE SUPER APP v5.9.0-phase2d - Service Worker v5.9.0-phase2d
+﻿// ============================================================
+// COMPHONE SUPER APP v5.9.0-phase31a - Service Worker v5.9.0-phase31a
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ============================================================
-const CACHE_V = 'comphone-v5.9.0-phase2d-20260429_1345';
+const CACHE_V = 'comphone-v5.9.0-phase31a-20260429_1345';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
 importScripts(BASE + '/pwa_asset_manifest.js');
