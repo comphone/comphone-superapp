@@ -1,8 +1,8 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.9.0-phase31 (PWA) / v5.9.0-phase31 (GAS Backend @507)
-> **Date:** 2026-04-29 | **Phase:** 31 (Inventory & Billing Refactoring - PRODUCTION-STABLE)
-> **Status:** PRODUCTION-STABLE - Phase 31 Refactoring Complete, All APIs Green, 7-Check Protocol Passed
+> **Version:** v5.9.0-phase31a (PWA) / v5.9.0-phase31a (GAS Backend @506)
+> **Date:** 2026-04-29 | **Phase:** 31 (Inventory & Billing Refactoring + QA Loop — PRODUCTION-STABLE)
+> **Status:** 🟢 PRODUCTION-STABLE — 89 files deployed, 6/6 Watchlist items cleared, Hermes 7-Check PASSED
 > **Repository:** https://github.com/comphone/comphone-superapp
 
 ---
@@ -11,10 +11,10 @@
 
 | Item | Current Value | Source of Truth |
 |---|---|---|
-| App Version | `5.9.0-phase2d` | `pwa/version_config.js` |
+| App Version | `5.9.0-phase31a` | `pwa/version_config.js` |
 | Cache Version | `comphone-v5.9.0-phase31-20260429_1345` | `pwa/version_config.js`, `pwa/sw.js` |
 | Build Timestamp | `20260429_1345` | `pwa/version_config.js` |
-| GAS Backend Deploy | `506` | `pwa/gas_config.js`, `pwa/version_config.js` |
+| GAS Backend Deploy | `506` (v5.9.0-phase31a, 89 files) | `pwa/gas_config.js`, `clasp-ready/.clasp.json` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbw0438mOqn-RR7zbs_n-Sq_xaEJIst27thPrLPn49KN_dffOGVVaU1TxOJcd0WHt_LuhA/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-04-29.phase30-api-stability` | `pwa/api_contract.js` |
 | Last Production Commit | `4512c5f` | GitHub `main` |
@@ -446,10 +446,17 @@ All these MUST match on deploy:
 |-------|-------|---------|
 | Browser cache | ⚠️ | ผู้ใช้ต้อง Hard Refresh หลัง deploy |
 | Google Drive SA quota | ⚠️ | SA ไม่มี write quota — ต้องใช้ OAuth2 สำหรับ upload |
-| Inventory.gs decomposition | 🔴 | 1,502 lines — coupling สูง, ต้อง extract utils ก่อน split |
-| BillingManager.gs decomposition | 🔴 | 1,071 lines — same coupling risk as Inventory |
+| Inventory.gs decomposition | ✅ Phase 31 | แยกเป็น 6 modules (InventoryReservation, StockCheck, CRUD, Transfer, PO, ReorderAI) — 1,469L → 22L |
+| BillingManager.gs decomposition | ✅ Phase 31 | แยกเป็น 3 modules (BillingCore, Payment, Export) — 958L → 22L |
+| DriveSync retry | ✅ Phase 31 | SharedContext.gs v1.1.0 เพิ่ม syncWithRetry_() exponential backoff 3 retries |
+| Analytics Index | ✅ Phase 31 | AnalyticsIndex.gs (369L) TTL cache + searchWithIndex <2s query |
+| Self-Improving QA Loop | ✅ Phase 31 | 7-Check Protocol (Hermes sub-agent) → Master → Deploy loop |
 | Anomaly Detection baseline | ⏳ | Phase 2E telemetry active, needs 14 days of data for σ-deviation alerts |
-| Blueprint reconciliation | ✅ | File map, versions, phase labels synced 2026-04-24 |
+| Time/Attendance UI | ⏳ Phase 32 | ระบบลงเวลา + รายงานชั่วโมงการทำงาน |
+| Report Module UI | ⏳ Phase 32 | หน้าสรุปรายงานรายเดือน/รายปี + PDF Export |
+| Automated Unit Testing | ⏳ Phase 32 | Framework สำหรับรัน API unit tests อัตโนมัติ |
+| Predictive Inventory AI | 🔮 Future | AI คาดการณ์สต็อกจาก DB_LOGS + DB_INVENTORY |
+| Blueprint reconciliation | ✅ | File map, versions, phase labels synced 2026-04-29 |
 
 ---
 
@@ -873,7 +880,7 @@ async function callGas(action, params) {
 ### 22.3 Sustainability & Hardening
 | Module | Description | Status |
 |--------|-------------|--------|
-| **Module Decomposition** | แยกไฟล์ขนาดใหญ่ (Inventory.gs, BillingManager.gs) เป็นโมดูลย่อยตามหลัก RouterSplit.gs | ⏳ Pending |
+| **Module Decomposition** | แยกไฟล์ขนาดใหญ่ (Inventory.gs, BillingManager.gs) เป็นโมดูลย่อยตามหลัก RouterSplit.gs | ✅ Phase 31 |
 | **Automated Testing** | เริ่มวางโครงสร้างการทดสอบอัตโนมัติ (Unit Test) สำหรับ API actions สำคัญ | ⏳ Pending |
 | **Goal** | มุ่งสู่ Phase 30: เปลี่ยนข้อมูล (Data) ให้เป็นความฉลาดในการดำเนินธุรกิจ (Actionable Insights) | 🎯 Target |
 
