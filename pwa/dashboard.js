@@ -21,20 +21,26 @@ function loadDashboardPage() {
       DASHBOARD_DATA = res;
       renderDashboard(res);
     } else {
-      renderDashboardError(res && res.error ? res.error : 'ไม่สามารถโหลดข้อมูลได้');
+      renderDashboardError(res || { error: 'Dashboard API returned an unsuccessful response' });
     }
   }).catch(err => {
-    renderDashboardError('ไม่สามารถเชื่อมต่อ GAS ได้');
+    renderDashboardError(err);
   });
 }
 
 function renderDashboardError(msg) {
   const container = document.getElementById('dashboard-content');
   if (!container) return;
+  const raw = msg && (msg.error || msg.message) ? (msg.error || msg.message) : String(msg || 'Dashboard error');
+  const state = typeof apiErrorInfo === 'function'
+    ? apiErrorInfo(raw, 'mobile dashboard')
+    : { icon: 'bi-exclamation-triangle', title: 'โหลด Dashboard ไม่สำเร็จ', message: raw, action: '' };
   container.innerHTML = `
     <div class="empty-state" style="padding:48px 16px">
-      <i class="bi bi-wifi-off" style="font-size:40px;color:#d1d5db;display:block;margin-bottom:12px"></i>
-      <p style="color:#6b7280;font-size:14px">${msg}</p>
+      <i class="bi ${state.icon}" style="font-size:40px;color:#d1d5db;display:block;margin-bottom:12px"></i>
+      <p style="color:#111827;font-size:15px;font-weight:800;margin-bottom:4px">${state.title}</p>
+      <p style="color:#6b7280;font-size:13px;margin-bottom:4px">${state.message || raw}</p>
+      ${state.action ? `<p style="color:#94a3b8;font-size:11px;margin-bottom:12px">${state.action}</p>` : ''}
       <button class="btn-add-job" onclick="loadDashboardPage()" style="margin-top:12px">
         <i class="bi bi-arrow-clockwise"></i> ลองใหม่
       </button>

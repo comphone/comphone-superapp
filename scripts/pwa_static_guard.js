@@ -163,6 +163,23 @@ if (!apiClientJs.includes('classifyApiError') || !apiClientJs.includes('apiError
 if (!apiClientJs.includes('apiErrorInfo')) {
   fail('api_client.js must expose apiErrorInfo() for object-based error panels.');
 }
+if (!indexHtml.includes('offline_db.js?')) {
+  fail('index.html must load offline_db.js so mobile queue/sync/offline banner state is consistent.');
+}
+if (!indexHtml.includes('notification_center.js?')) {
+  fail('index.html must load notification_center.js for the notifications menu.');
+}
+if (!appJs.includes('if (!isReadAction(action)) saveOfflineAction')) {
+  fail('app.js must not queue read-only API failures as offline write actions.');
+}
+const dashboardJs = readUtf8(path.join(PWA, 'dashboard.js'));
+if (!dashboardJs.includes('apiErrorInfo(raw,') || dashboardJs.includes('bi-wifi-off')) {
+  fail('dashboard.js must use classified API errors instead of showing every dashboard failure as offline.');
+}
+const authJs = readUtf8(path.join(PWA, 'auth.js'));
+if (!authJs.includes('session.loginAt || session.login_at') || !authJs.includes('result.success || result.valid') || !authJs.includes("result._errorKind === 'offline'")) {
+  fail('auth.js must accept loginAt/login_at, success/valid verifySession contracts, and keep local sessions during temporary offline/timeout checks.');
+}
 const adminPanelJs = readUtf8(path.join(PWA, 'admin_panel.js'));
 if (!adminPanelJs.includes("data-tab=\"health\"") || !adminPanelJs.includes('renderMenuHealthPanel')) {
   fail('admin_panel.js must expose the Menu Health tab.');
@@ -187,6 +204,9 @@ if (dashboardPcHtml.includes('20260428_1130') || dashboardPcHtml.includes('v=282
 }
 if (dashboardPcHtml.includes('localStorage.clear()')) {
   fail('dashboard_pc.html must not clear all localStorage during version changes.');
+}
+if (!dashboardPcHtml.includes("res._errorKind === 'offline'") || !dashboardPcHtml.includes('res.valid || res.success')) {
+  fail('dashboard_pc.html must accept success/valid session contracts and preserve local sessions on temporary offline/timeout checks.');
 }
 if (dashboardPcHtml.includes('serviceWorker.getRegistrations()') || dashboardPcHtml.includes('location.reload(true)')) {
   fail('dashboard_pc.html must not unregister service workers or force reload during boot.');

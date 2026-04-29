@@ -56,7 +56,8 @@ function checkAuthState() {
     if (sessionStr) {
       const session = JSON.parse(sessionStr);
       // ตรวจสอบว่า session ยังไม่หมดอายุ (24 ชั่วโมง)
-      const loginAge = Date.now() - (session.loginAt || 0);
+      const loginTime = session.loginAt || session.login_at || session.loginAtMs || 0;
+      const loginAge = Date.now() - (new Date(loginTime).getTime() || Number(loginTime) || 0);
       const maxAge = 24 * 60 * 60 * 1000; // 24 hours
       if (loginAge < maxAge && session.token && session.username) {
         // Session ยังใช้ได้
@@ -83,7 +84,7 @@ function applyAuthSession(session) {
   AUTH.level = session.level || 0;
   AUTH.canViewRevenue = session.canViewRevenue || session.can_view_revenue || false;
   AUTH.canManageUsers = session.canManageUsers || session.can_manage_users || false;
-  AUTH.loginAt = session.loginAt || Date.now();
+  AUTH.loginAt = session.loginAt || session.login_at || Date.now();
 
   // Map role ไป PWA role
   const pwaRole = AUTH_ROLE_MAP[AUTH.role] || 'tech';
@@ -394,9 +395,13 @@ async function initApp() {
       // เรียก verifySession ตรวจสอบ token กับ GAS
       const result = await callApi('verifySession', { token: session.token });
       
-      if (result && result.success) {
+      if (result && (result.success || result.valid)) {
         // Token ยัง valid — ข้ามหน้า Login ได้
         console.log('[Auth] Server validated token — skip login');
+        startMainApp();
+        return;
+      } else if (result && (result._errorKind === 'offline' || result._errorKind === 'timeout')) {
+        console.warn('[Auth] Server temporarily unavailable — using local session');
         startMainApp();
         return;
       } else {

@@ -12,8 +12,8 @@
 | Item | Current Value | Source of Truth |
 |---|---|---|
 | App Version | `5.9.0-phase2d` | `pwa/version_config.js` |
-| Cache Version | `comphone-v5.9.0-phase2d-20260429_1245` | `pwa/version_config.js`, `pwa/sw.js` |
-| Build Timestamp | `20260429_1245` | `pwa/version_config.js` |
+| Cache Version | `comphone-v5.9.0-phase2d-20260429_1330` | `pwa/version_config.js`, `pwa/sw.js` |
+| Build Timestamp | `20260429_1330` | `pwa/version_config.js` |
 | GAS Backend Deploy | `506` | `pwa/gas_config.js`, `pwa/version_config.js` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbw0438mOqn-RR7zbs_n-Sq_xaEJIst27thPrLPn49KN_dffOGVVaU1TxOJcd0WHt_LuhA/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-04-29.phase30-api-stability` | `pwa/api_contract.js` |
@@ -22,7 +22,9 @@
 
 ### Current Stability Baseline
 - Mobile PWA loads `api_client.js`, `api_contract.js`, `auth_guard.js`, and versioned assets correctly.
+- Mobile PWA loads `offline_db.js` and `notification_center.js`; read-only API failures are not queued as offline write actions.
 - PC Dashboard uses central GAS/version/API contract config and does not clear session storage during boot.
+- PC + Mobile auth accepts both `success` and `valid` session contracts and preserves local sessions during temporary offline/timeout checks.
 - GAS Router normalizes responses: `{ success:true, data?, meta? }` / `{ success:false, error, code, kind, action, request_id }`.
 - Required + optional API smoke passes. `getBilling` is intentionally SKIP when no real `job_id` exists.
 - Read-only workflow smoke passes for Job, Billing, Inventory/POS, CRM/After-sales, and Observability.
@@ -392,7 +394,7 @@ Latest local reports are generated under `test_reports/*_latest.json` and are in
 - **RULE:** Never exceed 50 — system will reject writes
 
 ### 9.2 Service Worker
-- **Version:** `CACHE_V = 'comphone-v5.9.0-phase2d-20260429_1245'`
+- **Version:** `CACHE_V = 'comphone-v5.9.0-phase2d-20260429_1330'`
 - **Timeout:** 15 seconds for API/network fallback
 - **Strategies:** Cache First (static) | Network First (API) | Network Only (webhook)
 - **Offline Queue:** IndexedDB `comphone_offline` v2 (action_queue, data_cache, queue)
@@ -404,9 +406,9 @@ All these MUST match on deploy:
 
 | Surface | File | Key |
 |---------|------|-----|
-| SW Cache | `sw.js` | `CACHE_V = 'comphone-v5.9.0-phase2d-20260429_1245'` |
+| SW Cache | `sw.js` | `CACHE_V = 'comphone-v5.9.0-phase2d-20260429_1330'` |
 | PWA Version | `version_config.js` | `APP_VERSION = '5.9.0-phase2d'` |
-| Build Timestamp | `version_config.js` | `BUILD_TIMESTAMP = '20260429_1245'` |
+| Build Timestamp | `version_config.js` | `BUILD_TIMESTAMP = '20260429_1330'` |
 | GAS Version | `version_config.js` | `GAS_VERSION = '506'` |
 | GAS Config | `gas_config.js` | Production deploy URL @506 |
 | API Contract | `api_contract.js` | `2026-04-29.phase30-api-stability` |
@@ -913,7 +915,7 @@ async function callGas(action, params) {
 
 | งาน | สถานะ | อุปสรรค |
 |------|-------|----------|
-| **Login / Splash / Menu Recovery** | OK **resolved in current baseline** | `api_client.js`, auth guard, service worker activation, menu restore, and API contract smoke are stable at GAS @506 / cache `20260429_1245`. |
+| **Login / Splash / Menu Recovery** | OK **resolved in current baseline** | `api_client.js`, auth guard, service worker activation, menu restore, and API contract smoke are stable at GAS @506 / cache `20260429_1330`. |
 | **AI LINE Agent Testing** | ❌ **รอ Group IDs** | ต้องเปลี่ยน Placeholder Group IDs ใน `AILinePrompts.gs` (บรรทัด 169-173) เป็น LINE Group ID จริง |
 | **Dashboard PC Runtime Baseline** | OK **validated** | PC dashboard uses central version/GAS/API config and no longer clears session storage during boot. Continue visual/UX QA after each feature batch. |
 | **Google Drive Sync** | ❌ **Failed** | `SharedContext.gs` timeout (ต้อง retry) |

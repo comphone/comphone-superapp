@@ -258,7 +258,12 @@ function startMainApp() {
 async function loadLiveData() {
   try {
     const data = await callApi('getDashboardData');
-    if (!data || !data.success) return;
+    if (!data || !data.success) {
+      APP.dashboardError = data || { error: 'Dashboard API returned an unsuccessful response' };
+      renderHome();
+      if (APP.currentPage === 'dashboard' && typeof loadDashboardPage === 'function') loadDashboardPage();
+      return;
+    }
 
     // เก็บ jobs จาก API
     const rawJobs = data.jobs || data.summary && data.summary.recentJobs || [];
@@ -461,7 +466,7 @@ function isReadAction(action) {
 
 async function callAPI(action, params = {}) {
   if (!navigator.onLine) {
-    saveOfflineAction({ action, params, time: Date.now() });
+    if (!isReadAction(action)) saveOfflineAction({ action, params, time: Date.now() });
     return null;
   }
   try {
@@ -475,7 +480,7 @@ async function callAPI(action, params = {}) {
     if (e.message && e.message.includes('APPROVAL_REQUIRED')) {
       showToast('กรุณาขออนุมัติการดำเนินการ', 'warning');
     }
-    saveOfflineAction({ action, params, time: Date.now() });
+    if (!isReadAction(action)) saveOfflineAction({ action, params, time: Date.now() });
     return null;
   }
 }
