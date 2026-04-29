@@ -1,6 +1,6 @@
-// ============================================================
+﻿// ============================================================
 // HealthMonitor.gs — Health Monitoring + Performance + Security Hardening
-// COMPHONE SUPER APP v5.9.0-phase2d
+// COMPHONE SUPER APP v5.9.0-phase31a
 // ============================================================
 //
 // TASK 8: Security Hardening — token verify, CORS, rate limit

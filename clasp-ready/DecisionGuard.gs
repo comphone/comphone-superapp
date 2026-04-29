@@ -1,5 +1,5 @@
-// ============================================================
-// DecisionGuard.gs — COMPHONE SUPER APP v5.9.0-phase2d
+﻿// ============================================================
+// DecisionGuard.gs — COMPHONE SUPER APP v5.9.0-phase31a
 // AI-OS Stabilization — Phase 2: Decision Guard
 // ============================================================
 // Cooldown: ป้องกัน alert/action เดิมยิงซ้ำในช่วงเวลาสั้น

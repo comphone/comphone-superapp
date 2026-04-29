@@ -1,5 +1,5 @@
-// ============================================================
-// AgentCollaboration.gs — COMPHONE SUPER APP v5.9.0-phase2d
+﻿// ============================================================
+// AgentCollaboration.gs — COMPHONE SUPER APP v5.9.0-phase31a
 // AI Operating System — Phase 3: Agent Collaboration
 // ============================================================
 // ให้ Agent เรียกใช้ Agent อื่นได้ + แชร์ผลลัพธ์

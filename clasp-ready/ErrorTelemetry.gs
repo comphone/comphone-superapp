@@ -1,5 +1,5 @@
-// ============================================================
-// COMPHONE SUPER APP v5.9.0-phase2d — ErrorTelemetry.gs
+﻿// ============================================================
+// COMPHONE SUPER APP v5.9.0-phase31a — ErrorTelemetry.gs
 // Phase 2C: Centralized Error Telemetry + Failure Classification
 // ============================================================
 // PURPOSE: Single sink for ALL server-side errors.

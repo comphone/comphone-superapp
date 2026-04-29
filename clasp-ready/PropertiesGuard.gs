@@ -1,4 +1,4 @@
-// COMPHONE SUPER APP v5.9.0-phase2d
+﻿// COMPHONE SUPER APP v5.9.0-phase31a
 // ============================================================
 // PropertiesGuard.gs — ป้องกัน Script Properties เกิน 50
 // ============================================================

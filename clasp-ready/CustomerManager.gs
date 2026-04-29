@@ -1,4 +1,4 @@
-// COMPHONE SUPER APP v5.9.0-phase2d
+﻿// COMPHONE SUPER APP v5.9.0-phase31a
 // ============================================================
 // CustomerManager.gs - Customer Management & CRM V5.5
 // CRUD ลูกค้า / Auto-fill ตอนเปิดงาน / Customer History / Predictive Maintenance

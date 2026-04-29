@@ -1,6 +1,6 @@
-// ============================================================
+﻿// ============================================================
 // MultiBranch.gs — Multi-branch Support (Basic)
-// COMPHONE SUPER APP v5.9.0-phase2d
+// COMPHONE SUPER APP v5.9.0-phase31a
 // ============================================================
 //
 // TASK 7: เพิ่ม branch_id ทุก table + filter query

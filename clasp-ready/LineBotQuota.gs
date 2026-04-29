@@ -1,5 +1,5 @@
-// ============================================================
-// COMPHONE SUPER APP v5.9.0-phase2d
+﻿// ============================================================
+// COMPHONE SUPER APP v5.9.0-phase31a
 // LineBotQuota.gs — LINE Quota Optimization Engine
 // Version: 1.0.0
 // Strategy: Queue → Pull → Smart Push (max 5/day) → Daily Digest → Cache

@@ -1,5 +1,5 @@
-// ============================================================
-// COMPHONE SUPER APP v5.9.0-phase2d
+﻿// ============================================================
+// COMPHONE SUPER APP v5.9.0-phase31a
 // Approval.gs — Server-side Approval Validation (SOURCE OF TRUTH)
 // PHASE 20.1 + 20.3: Production Approval Hardening + Trusted Execution Enforcement
 // Version: 5.6.3-PROD

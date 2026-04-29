@@ -1,10 +1,10 @@
-// COMPHONE SUPER APP v5.9.0-phase2d
+﻿// COMPHONE SUPER APP v5.9.0-phase31a
 // ============================================================
 // Config.gs - Script Properties Based Configuration
 // ============================================================
 
 var CONFIG = {
-  APP_NAME: 'COMPHONE SUPER APP V5.9.0-phase2d',
+  APP_NAME: 'COMPHONE SUPER APP v5.9.0-phase31a',
   VERSION: '5.9.0-phase2d',
   TIMEZONE: 'Asia/Bangkok',
 

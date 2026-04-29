@@ -1,5 +1,5 @@
-// ============================================================
-// MemoryControl.gs — COMPHONE SUPER APP v5.9.0-phase2d
+﻿// ============================================================
+// MemoryControl.gs — COMPHONE SUPER APP v5.9.0-phase31a
 // AI-OS Stabilization — Phase 1: Memory Control
 // ============================================================
 // Retention Policy: ลบข้อมูลเก่าตาม TTL

@@ -1,5 +1,5 @@
-// ============================================================
-// WorkflowEngine.gs — COMPHONE SUPER APP v5.9.0-phase2d
+﻿// ============================================================
+// WorkflowEngine.gs — COMPHONE SUPER APP v5.9.0-phase31a
 // AI Operating System — Phase 4: Workflow Engine
 // ============================================================
 // กำหนดและรัน Workflows อัตโนมัติสำหรับสถานการณ์ต่างๆ

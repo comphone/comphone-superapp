@@ -1,5 +1,5 @@
-// ============================================================
-// DecisionLayer.gs — COMPHONE SUPER APP v5.9.0-phase2d
+﻿// ============================================================
+// DecisionLayer.gs — COMPHONE SUPER APP v5.9.0-phase31a
 // AI Operating System — Phase 5: Decision Layer
 // ============================================================
 // ศูนย์กลางการตัดสินใจ: รับ context → วิเคราะห์ → เลือก action

@@ -1,5 +1,5 @@
-// ============================================================
-// AgentScoring.gs — COMPHONE SUPER APP v5.9.0-phase2d
+﻿// ============================================================
+// AgentScoring.gs — COMPHONE SUPER APP v5.9.0-phase31a
 // AI-OS Stabilization — Phase 4: Agent Scoring
 // ============================================================
 // Track Accuracy: บันทึกผลลัพธ์ของ agent แต่ละตัว

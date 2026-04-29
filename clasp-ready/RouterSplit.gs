@@ -1,5 +1,5 @@
-// ============================================================
-// COMPHONE SUPER APP v5.9.0-phase2d — RouterSplit.gs
+﻿// ============================================================
+// COMPHONE SUPER APP v5.9.0-phase31a — RouterSplit.gs
 // Phase 5: Router Split — map action → module handler
 // Phase 6: Health Fix — ensure status: 'healthy' in responses
 // ============================================================

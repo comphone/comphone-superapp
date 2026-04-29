@@ -1,5 +1,5 @@
-// ============================================================
-// COMPHONE SUPER APP v5.9.0-phase2d
+﻿// ============================================================
+// COMPHONE SUPER APP v5.9.0-phase31a
 // LineBotIntelligent.gs — Intelligent Notification System
 // Version: 1.0.0
 // Features: Priority Queue, Alert TTL, User Targeting,

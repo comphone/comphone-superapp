@@ -1,6 +1,6 @@
-// ============================================================
+﻿// ============================================================
 // WarrantyManager.gs — Warranty Management System
-// COMPHONE SUPER APP v5.9.0-phase2d
+// COMPHONE SUPER APP v5.9.0-phase31a
 // ============================================================
 //
 // TASK 6: Warranty Management — UI + Logic เชื่อม AfterSales

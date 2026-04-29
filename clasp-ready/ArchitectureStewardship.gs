@@ -1,5 +1,5 @@
-// ============================================================
-// COMPHONE SUPER APP v5.9.0-phase2d — ArchitectureStewardship.gs
+﻿// ============================================================
+// COMPHONE SUPER APP v5.9.0-phase31a — ArchitectureStewardship.gs
 // Phase 2C: Architecture Health Monitoring + Drift Detection
 // ============================================================
 // PURPOSE: Daily architecture stewardship report.

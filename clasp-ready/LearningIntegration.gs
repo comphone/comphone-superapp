@@ -1,5 +1,5 @@
-// ============================================================
-// LearningIntegration.gs — COMPHONE SUPER APP v5.9.0-phase2d
+﻿// ============================================================
+// LearningIntegration.gs — COMPHONE SUPER APP v5.9.0-phase31a
 // AI Operating System — Phase 6: Learning Integration
 // ============================================================
 // เชื่อม VisionLearning → AgentMemory

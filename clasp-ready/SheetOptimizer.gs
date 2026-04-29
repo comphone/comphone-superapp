@@ -1,5 +1,5 @@
-// ============================================================
-// COMPHONE SUPER APP v5.9.0-phase2d — SheetOptimizer.gs
+﻿// ============================================================
+// COMPHONE SUPER APP v5.9.0-phase31a — SheetOptimizer.gs
 // Phase 4: Sheet Optimization — preload, reuse, reduce reads
 // ============================================================
 

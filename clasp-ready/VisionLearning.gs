@@ -1,5 +1,5 @@
-// VisionLearning.gs — Self-Learning Vision System v1.0.0
-// COMPHONE SUPER APP v5.9.0-phase2d
+﻿// VisionLearning.gs — Self-Learning Vision System v1.0.0
+// COMPHONE SUPER APP v5.9.0-phase31a
 // ============================================================
 // Phase 1: Feedback Loop        — อ่าน VISION_REVIEW, compare AI vs human
 // Phase 2: Confidence Calibration — คำนวณ real accuracy per feature
