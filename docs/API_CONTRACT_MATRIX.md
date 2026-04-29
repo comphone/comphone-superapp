@@ -43,3 +43,22 @@ $env:COMPHONE_SMOKE_OPTIONAL='1'; $env:COMPHONE_AUTH_TOKEN='YOUR_SESSION_TOKEN';
 ```
 
 Latest report path: `test_reports/pwa_api_smoke_latest.json`
+
+## Workflow Smoke
+
+Workflow smoke checks validate business flows with read-only production data. They do not create jobs, change statuses, move stock, mark payments, or schedule follow-ups.
+
+```powershell
+$env:COMPHONE_AUTH_TOKEN='YOUR_SESSION_TOKEN'
+node scripts\pwa_workflow_smoke.js
+```
+
+Latest workflow report path: `test_reports/pwa_workflow_smoke_latest.json`
+
+| Workflow | Read-only checks |
+|---|---|
+| Job Workflow | `getDashboardData`, `checkJobs`, `getJobStateConfig`, `getJobTimeline` for the latest visible job |
+| Billing & Payment | `getDashboardData`, `getBilling` for latest job when available, `listBillings`, `generatePromptPayQR` |
+| Inventory & POS | `inventoryOverview`, `barcodeLookup`, `checkStock`, `listPurchaseOrders` |
+| CRM & After-sales | `listCustomers`, `getCustomerListWithStats`, `getCRMFollowUpSchedule`, `getAfterSalesDue`, `getCRMMetrics` |
+| Observability | `health`, `getVersion`, `healthCheck`, `getAuditLog`, `getSecurityStatus` |

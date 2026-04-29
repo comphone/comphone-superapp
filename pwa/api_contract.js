@@ -83,6 +83,85 @@
         ],
       },
     ],
+    workflows: [
+      {
+        id: 'job_e2e',
+        label: 'Job Workflow',
+        description: 'Open job -> timeline -> status -> billing chain',
+        readOnly: [
+          { action: 'getDashboardData', required: true },
+          { action: 'checkJobs', payload: { limit: 10 }, required: true },
+          { action: 'getJobStateConfig', required: true },
+          { action: 'getJobTimeline', payloadFrom: 'latestJob', required: true },
+        ],
+        writeActions: [
+          { action: 'openJob', destructive: true },
+          { action: 'addQuickNote', destructive: true },
+          { action: 'transitionJob', destructive: true },
+        ],
+      },
+      {
+        id: 'billing_payment',
+        label: 'Billing & Payment',
+        description: 'Billing lookup, QR, payment, receipt, tax handoff',
+        readOnly: [
+          { action: 'getDashboardData', required: true },
+          { action: 'getBilling', payloadFrom: 'latestJob', optional: true },
+          { action: 'listBillings', payload: { limit: 10 }, required: true },
+          { action: 'generatePromptPayQR', payload: { amount: 1, ref: 'SMOKE' }, required: true },
+        ],
+        writeActions: [
+          { action: 'createBilling', destructive: true },
+          { action: 'markBillingPaid', destructive: true },
+          { action: 'generateTaxInvoice', destructive: true },
+        ],
+      },
+      {
+        id: 'inventory_pos',
+        label: 'Inventory & POS',
+        description: 'Stock overview, barcode, transfer, low-stock, PO',
+        readOnly: [
+          { action: 'inventoryOverview', required: true },
+          { action: 'barcodeLookup', payload: { barcode: '__SMOKE_EMPTY__' }, optional: true },
+          { action: 'checkStock', required: true },
+          { action: 'listPurchaseOrders', payload: { limit: 10 }, required: true },
+        ],
+        writeActions: [
+          { action: 'transferStock', destructive: true },
+          { action: 'addInventoryItem', destructive: true },
+          { action: 'createPurchaseOrder', destructive: true },
+        ],
+      },
+      {
+        id: 'crm_after_sales',
+        label: 'CRM & After-sales',
+        description: 'Customer, history, schedule, follow-up, nudges',
+        readOnly: [
+          { action: 'listCustomers', required: true },
+          { action: 'getCustomerListWithStats', required: true },
+          { action: 'getCRMFollowUpSchedule', required: true },
+          { action: 'getAfterSalesDue', payload: { days: 7 }, required: true },
+          { action: 'getCRMMetrics', required: true },
+        ],
+        writeActions: [
+          { action: 'scheduleFollowUp', destructive: true },
+          { action: 'logFollowUpResult', destructive: true },
+          { action: 'nudgeSalesTeam', destructive: true },
+        ],
+      },
+      {
+        id: 'observability',
+        label: 'Observability',
+        description: 'Health, menu, audit, router, error telemetry',
+        readOnly: [
+          { action: 'health', noAuth: true, required: true },
+          { action: 'getVersion', noAuth: true, required: true },
+          { action: 'healthCheck', required: true },
+          { action: 'getAuditLog', payload: { limit: 5 }, required: true },
+          { action: 'getSecurityStatus', required: true },
+        ],
+      },
+    ],
   };
 
   API_CONTRACT.protectedActions = API_CONTRACT.menus

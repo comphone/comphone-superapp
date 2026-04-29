@@ -37,6 +37,12 @@
         <div class="menu-health-meta">
           ${MENU_HEALTH.lastRun ? `Last run: ${new Date(MENU_HEALTH.lastRun).toLocaleString('th-TH')}` : 'ยังไม่ได้ตรวจ'}
         </div>
+        <div class="menu-health-observe">
+          <div><strong>App</strong><span>${global.COMPHONE_VERSION || '-'}</span></div>
+          <div><strong>Build</strong><span>${global.COMPHONE_BUILD || '-'}</span></div>
+          <div><strong>GAS</strong><span>${global.COMPHONE_GAS_VER || (global.GAS_CONFIG && global.GAS_CONFIG.version) || '-'}</span></div>
+          <div><strong>Contract</strong><span>${global.COMPHONE_API_CONTRACT && global.COMPHONE_API_CONTRACT.version || '-'}</span></div>
+        </div>
         <div id="menu-health-results">
           ${rows.length ? renderMenuHealthRows(rows) : renderMenuHealthEmpty()}
         </div>

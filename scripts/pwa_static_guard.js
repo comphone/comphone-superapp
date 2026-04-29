@@ -200,6 +200,9 @@ if (!apiContractJs.includes('getDashboardBundle')) {
 if (!apiContractJs.includes('responseShape') || !apiContractJs.includes('generatePromptPayQR')) {
   fail('api_contract.js must include responseShape and billing actions for API matrix parity.');
 }
+if (!apiContractJs.includes('workflows') || !apiContractJs.includes('job_e2e') || !apiContractJs.includes('observability')) {
+  fail('api_contract.js must include workflow contracts for data workflow stabilization.');
+}
 if (!apiContractJs.includes('smoke: false') || !apiContractJs.includes('smokeReason')) {
   fail('api_contract.js must mark record-specific actions that cannot be smoke-tested safely.');
 }
@@ -208,9 +211,13 @@ const smokeJs = readUtf8(path.join(ROOT, 'scripts', 'pwa_api_smoke.js'));
 if (!smokeJs.includes('COMPHONE_SMOKE_REPORT') || !smokeJs.includes('AUTH_FAIL') || !smokeJs.includes('CONTRACT') || !smokeJs.includes('SKIP')) {
   fail('pwa_api_smoke.js must emit classified protected API smoke reports.');
 }
+const workflowSmokeJs = readUtf8(path.join(ROOT, 'scripts', 'pwa_workflow_smoke.js'));
+if (!workflowSmokeJs.includes('COMPHONE_WORKFLOW_REPORT') || !workflowSmokeJs.includes('read-only') || !workflowSmokeJs.includes('latestJob')) {
+  fail('pwa_workflow_smoke.js must provide read-only workflow smoke checks.');
+}
 const menuHealthJs = readUtf8(path.join(PWA, 'menu_health.js'));
-if (!menuHealthJs.includes('exportMenuHealthReport') || !menuHealthJs.includes('smoke === false')) {
-  fail('menu_health.js must support skipped smoke actions and exportable reports.');
+if (!menuHealthJs.includes('exportMenuHealthReport') || !menuHealthJs.includes('smoke === false') || !menuHealthJs.includes('menu-health-observe')) {
+  fail('menu_health.js must support skipped smoke actions, observability summary, and exportable reports.');
 }
 
 if (failures.length) {
