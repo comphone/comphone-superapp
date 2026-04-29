@@ -1,6 +1,6 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.9.0-phase2d (PWA) / v5.9.0-phase2d (GAS Backend @506)
+> **Version:** v5.9.0-phase31 (PWA) / v5.9.0-phase31 (GAS Backend @506)
 > **Date:** 2026-04-29 | **Phase:** 30 (API Stability + Data Workflow Stabilization)
 > **Status:** PRODUCTION - Core API, Menu Health, Optional Smoke, Workflow Smoke passed
 > **Repository:** https://github.com/comphone/comphone-superapp
@@ -12,7 +12,7 @@
 | Item | Current Value | Source of Truth |
 |---|---|---|
 | App Version | `5.9.0-phase2d` | `pwa/version_config.js` |
-| Cache Version | `comphone-v5.9.0-phase2d-20260429_1345` | `pwa/version_config.js`, `pwa/sw.js` |
+| Cache Version | `comphone-v5.9.0-phase31-20260429_1345` | `pwa/version_config.js`, `pwa/sw.js` |
 | Build Timestamp | `20260429_1345` | `pwa/version_config.js` |
 | GAS Backend Deploy | `506` | `pwa/gas_config.js`, `pwa/version_config.js` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbw0438mOqn-RR7zbs_n-Sq_xaEJIst27thPrLPn49KN_dffOGVVaU1TxOJcd0WHt_LuhA/exec` | `pwa/gas_config.js` |
@@ -54,7 +54,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    COMPHONE SUPER APP v5.9.0-phase2d                   │
+│                    COMPHONE SUPER APP v5.9.0-phase31                   │
 │                                                                 │
 │  ┌──────────────┐    ┌──────────────────┐    ┌──────────────┐  │
 │  │  LINE Bot    │───►│ Cloudflare Worker│───►│  GAS @506    │  │
@@ -198,7 +198,7 @@ comphone-superapp/
 │   ├── executive_dashboard.html
 │   ├── monitoring_dashboard.html
 │   ├── app.js                ← Mobile app logic
-│   ├── sw.js                 ← Service Worker (v5.9.0-phase2d)
+│   ├── sw.js                 ← Service Worker (v5.9.0-phase31)
 │   ├── gas_config.js         ← Auto-generated GAS URL
 │   ├── ai_executor_runtime.js ← AI execution framework
 │   ├── api_client.js         ← Unified API caller
@@ -252,7 +252,7 @@ comphone-superapp/
 | **Attendance Section** | ✅ Phase 28.1 | attendance_section.js (16KB), clock in/out, report, tech history |
 | **Warranty Section** | ✅ Phase 28.1 | warranty_section.js (583 lines), CRUD, due alerts, status mgmt |
 | **Dashboard 11 Sections** | ✅ Phase 29 | Dashboard, Jobs, PO, Stock, Billing, Warranty, Revenue, Tax, CRM, Attendance, Settings, Photo Upload, Analytics, Customer Portal |
-| **POS (Retail Sale)** | ✅ Phase 28.2 | pos.js (240 lines), openPOS modal, add/remove items, VAT 7%, callAPI('createRetailSale'), quickActions button (bi-cash-stack), Deployed to GitHub (01d6635), Synced to Google Drive (v5.9.0-phase2d_20260426_1025) |
+| **POS (Retail Sale)** | ✅ Phase 28.2 | pos.js (240 lines), openPOS modal, add/remove items, VAT 7%, callAPI('createRetailSale'), quickActions button (bi-cash-stack), Deployed to GitHub (01d6635), Synced to Google Drive (v5.9.0-phase31_20260426_1025) |
 | **Error Telemetry** | ✅ Phase 2C | `ErrorTelemetry.gs` (667 lines), DB_ERRORS, trend analysis, severity classification |
 | **Logger Visibility** | ✅ Phase 2E-1 | `_logInfo_()` structured logging, DB_LOGS sheet, 17 call sites instrumented |
 | **Cron Observability** | ✅ Phase 2E-2 | All 8 cron jobs instrumented with `_logInfo_` entry + `_logError_` catch |
@@ -273,13 +273,13 @@ comphone-superapp/
 | **Smart Quotation** | ✅ Phase 30 | `smart_quotation.js` ใช้งานเกณฑ์ราคากลาง (คอมฯ 2568, CCTV 2564) |
 | **Notification Loop Fix** | ✅ Phase 30 | แก้ไข toast ซ้อนกันใน `offline_db.js` (ใช้ ID `toast-network`) |
 | **Server-side Auth** | ✅ Phase 30 | `auth.js` ตรวจสอบ token กับ GAS (`verifySession`) ก่อนข้ามหน้า Login |
-| **Version Update** | ✅ Phase 30 | อัปเดตเวอร์ชันเป็น v5.9.0-phase2d ทุกไฟล์ (analytics.js, sw.js, auth_guard.js) |
+| **Version Update** | ✅ Phase 30 | อัปเดตเวอร์ชันเป็น v5.9.0-phase31 ทุกไฟล์ (analytics.js, sw.js, auth_guard.js) |
 | **GAS Deploy @506** | OK Phase 30 | Current production deploy for API contract + smoke/workflow stability baseline |
 | **POS Barcode Search** | ✅ Phase 30 | เพิ่มการค้นหาด้วยบาร์โค้ดใน `pos.js` (API: `barcodeLookup`) |
 | **POS Profit Margin** | ✅ Phase 30 | แสดงส่วนต่างกำไรในหน้า POS (≥30% เขียว, ≥15% เหลือง, <15% แดง) |
 | **Dashboard Retail Sales** | ✅ Phase 30 | เพิ่ม `DBRETAILSALES` ใน DashboardBundle + ฟังก์ชัน `_bundleBuildRetailSales_()` |
 | **POS Page Navigation** | ✅ Phase 30 | เพิ่ม `if (page === 'pos')` ใน `goPage()` (เปิดแท็บใหม่) |
-| **Version Sync** | ✅ Phase 30 | ตรวจสอบ v5.9.0-phase2d ตรงกันทุกจุด (PWA + GAS) |
+| **Version Sync** | ✅ Phase 30 | ตรวจสอบ v5.9.0-phase31 ตรงกันทุกจุด (PWA + GAS) |
 | **Menu Beautification** | ✅ Phase 30 | ปรับปรุงธีมเมนู PC (dashboard_pc.html) + Mobile (style.css) ให้สวยงาม ไม่มี bug |
 | **Customer Portal V2** | ✅ Phase 30 | เพิ่ม viewCustomerJobs + downloadCustomerReceipts + showJobDetail + showTimeline ใน crm_attendance.js |
 | **Dashboard Enhancement** | ✅ Phase 30 | เพิ่ม Retail Sales Widget + Quick Actions + Technician Performance (getTechPerformance) + Responsive KPI Grid |
@@ -395,7 +395,7 @@ Latest local reports are generated under `test_reports/*_latest.json` and are in
 - **RULE:** Never exceed 50 — system will reject writes
 
 ### 9.2 Service Worker
-- **Version:** `CACHE_V = 'comphone-v5.9.0-phase2d-20260429_1345'`
+- **Version:** `CACHE_V = 'comphone-v5.9.0-phase31-20260429_1345'`
 - **Timeout:** 15 seconds for API/network fallback
 - **Strategies:** Cache First (static) | Network First (API) | Network Only (webhook)
 - **Offline Queue:** IndexedDB `comphone_offline` v2 (action_queue, data_cache, queue)
@@ -407,7 +407,7 @@ All these MUST match on deploy:
 
 | Surface | File | Key |
 |---------|------|-----|
-| SW Cache | `sw.js` | `CACHE_V = 'comphone-v5.9.0-phase2d-20260429_1345'` |
+| SW Cache | `sw.js` | `CACHE_V = 'comphone-v5.9.0-phase31-20260429_1345'` |
 | PWA Version | `version_config.js` | `APP_VERSION = '5.9.0-phase2d'` |
 | Build Timestamp | `version_config.js` | `BUILD_TIMESTAMP = '20260429_1345'` |
 | GAS Version | `version_config.js` | `GAS_VERSION = '506'` |
@@ -537,7 +537,7 @@ indexedDB.databases().then(dbs => console.log(dbs))
 - ✅ **ต้อง** error logging ทุก API failure
 
 ### 13.3 Deploy Rules (PHMP v1)
-- **Freeze tag:** `v5.9.0-phase2d-freeze`
+- **Freeze tag:** `v5.9.0-phase31-freeze`
 - **Hotfix branch:** `hotfix/{YYYYMMDD}-{description}`
 - **No direct push to main** for architecture changes
 - **Regression test required** before merge
@@ -892,7 +892,7 @@ async function callGas(action, params) {
 |-------|-------|----------|--------|
 | **Login/API config mismatch** | `gas_config.js` was missing from `index.html`, causing old fallback endpoint use | Added `gas_config.js`, centralized runtime config, and aligned fallback to GAS @506 | `b8ccd2f` + Phase 30 stability commits |
 | **404 Error: mobile_shared.js** | ไฟล์ `mobile_shared.js` ไม่มีใน repo แต่ `index.html` อ้างอิงไว้ | สร้าง `mobile_shared.js` ว่างๆ (104 bytes) | `38a5ed5` |
-| **Version Mismatch** | `index.html` ใช้ v5.7.0, `dashboard_pc.html` ใช้ v5.6.8, `version_config.js` ใช้ v5.9.0-phase2d | สร้างระบบ Centralized Versioning (`version_config.js`) + Cache Buster (`?v=...&t=...`) | `0e5321f`, `0f68e2f` |
+| **Version Mismatch** | `index.html` ใช้ v5.7.0, `dashboard_pc.html` ใช้ v5.6.8, `version_config.js` ใช้ v5.9.0-phase31 | สร้างระบบ Centralized Versioning (`version_config.js`) + Cache Buster (`?v=...&t=...`) | `0e5321f`, `0f68e2f` |
 | **Service Worker Cache** | SW ยังคงเสิร์ฟไฟล์ JS เวอร์ชันเก่า แม้ index.html จะอัปเดตแล้ว | เพิ่ม Cache Buster comment ใน `index.html` + แนะนำผู้ใช้ให้ล้าง Site Data | `0f68e2f` |
 | **Google Drive Sync Failed** | `SharedContext.gs` timeout ขณะ sync | ต้อง retry sync อีกครั้ง (pending) | - |
 | **Splash Screen ค้าง** | `initApp()` ไม่ทำงาน (สาเหตุที่แท้จริงยังคงอยู่) | ตรวจสอบ Console Error + ล้าง Service Worker Cache (ยังคงแก้ไขไม่สำเร็จ) | - |
@@ -901,7 +901,7 @@ async function callGas(action, params) {
 
 | งาน | สถานะ | รายละเอียด |
 |------|-------|------------|
-| **Version Alignment** | ✅ เสร็จ | แก้ไข 4 ไฟล์ให้ใช้เวอร์ชันเดียวกัน (v5.9.0-phase2d) |
+| **Version Alignment** | ✅ เสร็จ | แก้ไข 4 ไฟล์ให้ใช้เวอร์ชันเดียวกัน (v5.9.0-phase31) |
 | **Centralized Versioning** | ✅ เสร็จ | สร้าง `version_config.js` เป็นแหล่งข้อมูลเดียว |
 | **Cache Buster** | ✅ เสร็จ | เพิ่ม timestamp parameter + comment ในทุกไฟล์ PWA |
 | **Missing Files Fix** | ✅ เสร็จ | เพิ่ม `mobile_shared.js`, `favicon.ico` |
