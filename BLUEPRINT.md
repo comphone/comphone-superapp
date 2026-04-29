@@ -1,9 +1,37 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **เวอร์ชัน:** v5.9.0-phase2d (PWA) / v5.9.0-phase2d (GAS Backend @502)
-> **วันที่:** 28 เมษายน 2569 | **Phase:** 30 (Enterprise Intelligence + Auth Enhancement)
-> **สถานะ:** 🟢 PRODUCTION — Phase 30 In Progress (Token Auth + Smart Quotation + Notification Fix)
+> **Version:** v5.9.0-phase2d (PWA) / v5.9.0-phase2d (GAS Backend @506)
+> **Date:** 2026-04-29 | **Phase:** 30 (API Stability + Data Workflow Stabilization)
+> **Status:** PRODUCTION - Core API, Menu Health, Optional Smoke, Workflow Smoke passed
 > **Repository:** https://github.com/comphone/comphone-superapp
+
+---
+
+## 0. Current Runtime Snapshot (2026-04-29)
+
+| Item | Current Value | Source of Truth |
+|---|---|---|
+| App Version | `5.9.0-phase2d` | `pwa/version_config.js` |
+| Cache Version | `comphone-v5.9.0-phase2d-20260429_1245` | `pwa/version_config.js`, `pwa/sw.js` |
+| Build Timestamp | `20260429_1245` | `pwa/version_config.js` |
+| GAS Backend Deploy | `506` | `pwa/gas_config.js`, `pwa/version_config.js` |
+| GAS Production URL | `https://script.google.com/macros/s/AKfycbw0438mOqn-RR7zbs_n-Sq_xaEJIst27thPrLPn49KN_dffOGVVaU1TxOJcd0WHt_LuhA/exec` | `pwa/gas_config.js` |
+| API Contract Version | `2026-04-29.phase30-api-stability` | `pwa/api_contract.js` |
+| Last Production Commit | `4512c5f` | GitHub `main` |
+| Validation Status | Static Guard OK, Required API Smoke OK, Optional API Smoke OK, Read-only Workflow Smoke OK | `scripts/` + `test_reports/*_latest.json` |
+
+### Current Stability Baseline
+- Mobile PWA loads `api_client.js`, `api_contract.js`, `auth_guard.js`, and versioned assets correctly.
+- PC Dashboard uses central GAS/version/API contract config and does not clear session storage during boot.
+- GAS Router normalizes responses: `{ success:true, data?, meta? }` / `{ success:false, error, code, kind, action, request_id }`.
+- Required + optional API smoke passes. `getBilling` is intentionally SKIP when no real `job_id` exists.
+- Read-only workflow smoke passes for Job, Billing, Inventory/POS, CRM/After-sales, and Observability.
+- Admin > Health includes Menu Health, observability summary, skipped-action reasons, and JSON export.
+
+### Secret Handling Rule
+- Do not store live secret/token/key values in this repository or in BLUEPRINT.md.
+- BLUEPRINT.md records key names, storage locations, owners, and redacted/configured status only.
+- Live secrets must stay in GAS Script Properties, GitHub Secrets, Cloudflare Secrets, or local environment variables.
 
 ---
 
@@ -26,7 +54,7 @@
 │                    COMPHONE SUPER APP v5.9.0-phase2d                   │
 │                                                                 │
 │  ┌──────────────┐    ┌──────────────────┐    ┌──────────────┐  │
-│  │  LINE Bot    │───►│ Cloudflare Worker│───►│  GAS @501    │  │
+│  │  LINE Bot    │───►│ Cloudflare Worker│───►│  GAS @506    │  │
 │  │  (Webhook)   │    │ (Async Proxy)    │    │  (Backend)   │  │
 │  └──────────────┘    └──────────────────┘    └──────┬───────┘  │
 │                                                      │          │
@@ -104,13 +132,13 @@ User (PWA) → GET GAS_URL?action=xxx
 
 | รายการ | URL | สถานะ |
 |--------|-----|-------|
-| **GAS Web App (Production)** | `https://script.google.com/macros/s/AKfycbwzJgj8ZMWqLYAsg9DklnrJIM2F-O0yH3gHhBjdn6WQDJ3uuLPI87pxAQAvXLdzDx__7A/exec` | ✅ Active |
+| **GAS Web App (Production)** | `https://script.google.com/macros/s/AKfycbw0438mOqn-RR7zbs_n-Sq_xaEJIst27thPrLPn49KN_dffOGVVaU1TxOJcd0WHt_LuhA/exec` | ✅ Active |
 | **LINE Webhook** | `https://comphone-line-webhook.narinoutagit.workers.dev/line/webhook` | ✅ Active |
 | **PWA Mobile App** | `https://comphone.github.io/comphone-superapp/pwa/` | ✅ Active |
 | **PC Dashboard** | `https://comphone.github.io/comphone-superapp/pwa/dashboard_pc.html` | ✅ Active |
 | **Executive Dashboard** | `https://comphone.github.io/comphone-superapp/pwa/executive_dashboard.html` | ✅ Active |
 | **Monitoring Dashboard** | `https://comphone.github.io/comphone-superapp/pwa/monitoring_dashboard.html` | ✅ Active |
-| **GitHub Repository** | `https://github.com/comphone/comphone-superapp` | ✅ Public |
+| **GitHub Repository** | `https://github.com/comphone/comphone-superapp` | Active / main baseline `4512c5f` before this BLUEPRINT update |
 | **Google Sheets DB** | `https://docs.google.com/spreadsheets/d/19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA` | ✅ Active |
 | **Google Drive Root** | `https://drive.google.com/drive/folders/1YRZRG9r1Y_jMHg2XFFKYjK4Hx-sW0Eq0` | ✅ Active |
 | **Google Drive Sync** | `https://drive.google.com/drive/folders/1cExEgiIwmhBxZvLQpv10Wvq71ZTp4PfN` | ✅ Active |
@@ -243,7 +271,7 @@ comphone-superapp/
 | **Notification Loop Fix** | ✅ Phase 30 | แก้ไข toast ซ้อนกันใน `offline_db.js` (ใช้ ID `toast-network`) |
 | **Server-side Auth** | ✅ Phase 30 | `auth.js` ตรวจสอบ token กับ GAS (`verifySession`) ก่อนข้ามหน้า Login |
 | **Version Update** | ✅ Phase 30 | อัปเดตเวอร์ชันเป็น v5.9.0-phase2d ทุกไฟล์ (analytics.js, sw.js, auth_guard.js) |
-| **GAS Deploy @501** | ✅ Phase 30 | Deploy ใหม่ @501 (ลบ photo_upload_section.js ที่ทำให้เกิด Error) |
+| **GAS Deploy @506** | OK Phase 30 | Current production deploy for API contract + smoke/workflow stability baseline |
 | **POS Barcode Search** | ✅ Phase 30 | เพิ่มการค้นหาด้วยบาร์โค้ดใน `pos.js` (API: `barcodeLookup`) |
 | **POS Profit Margin** | ✅ Phase 30 | แสดงส่วนต่างกำไรในหน้า POS (≥30% เขียว, ≥15% เหลือง, <15% แดง) |
 | **Dashboard Retail Sales** | ✅ Phase 30 | เพิ่ม `DBRETAILSALES` ใน DashboardBundle + ฟังก์ชัน `_bundleBuildRetailSales_()` |
@@ -330,6 +358,29 @@ comphone-superapp/
 - **Result:** Files served from repo root — PWA accessible at `https://comphone.github.io/comphone-superapp/pwa/`
 - **Important:** GitHub Pages serves from repo root. PWA is at `/comphone-superapp/pwa/` (NOT `/comphone-superapp/`). All paths in code MUST include `/pwa/`.
 
+
+## 8.4 Validation Commands (Current Mandatory Checks)
+
+```powershell
+# Static frontend/backend contract guard
+node scripts\pwa_static_guard.js
+
+# Public + required protected API smoke
+$env:COMPHONE_AUTH_TOKEN='YOUR_SESSION_TOKEN'
+node scripts\pwa_api_smoke.js
+
+# Optional API smoke
+$env:COMPHONE_SMOKE_OPTIONAL='1'
+$env:COMPHONE_AUTH_TOKEN='YOUR_SESSION_TOKEN'
+node scripts\pwa_api_smoke.js
+
+# Read-only business workflow smoke
+$env:COMPHONE_AUTH_TOKEN='YOUR_SESSION_TOKEN'
+node scripts\pwa_workflow_smoke.js
+```
+
+Latest local reports are generated under `test_reports/*_latest.json` and are intentionally ignored by Git.
+
 ---
 
 ## 9. Configuration Rules
@@ -341,21 +392,24 @@ comphone-superapp/
 - **RULE:** Never exceed 50 — system will reject writes
 
 ### 9.2 Service Worker
-- **Version:** `CACHE_V = 'comphone-v5.9.0-phase2d'`
-- **Timeout:** 15 seconds (GAS cold start can take 5-10s)
+- **Version:** `CACHE_V = 'comphone-v5.9.0-phase2d-20260429_1245'`
+- **Timeout:** 15 seconds for API/network fallback
 - **Strategies:** Cache First (static) | Network First (API) | Network Only (webhook)
-- **Offline Queue:** IndexedDB `comphone_offline` v2 (3 stores: action_queue, data_cache, queue)
-- **Cache Invalidation:** On version bump, SW clears old caches and reloads all tabs
+- **Offline Queue:** IndexedDB `comphone_offline` v2 (action_queue, data_cache, queue)
+- **Activation Rule:** SW sends `SW_ACTIVATED`; it must not force navigate/reload clients during activate.
+- **Update Rule:** reload is gated by explicit user update acceptance through `pwa_install.js`.
 
 ### 9.3 Version Synchronization
 All these MUST match on deploy:
 
 | Surface | File | Key |
 |---------|------|-----|
-| SW Cache | `sw.js` | `CACHE_V = 'comphone-v5.9.0-phase2d'` |
-| PC Dashboard | `dashboard_pc.html` | `__APP_VERSION = 'v5.9.0-phase2d'` |
-| GAS Config | `Config.gs` | `CONFIG.VERSION = '5.9.0-phase2d'` |
-| gas_config.js | `gas_config.js` | Auto-generated by deploy |
+| SW Cache | `sw.js` | `CACHE_V = 'comphone-v5.9.0-phase2d-20260429_1245'` |
+| PWA Version | `version_config.js` | `APP_VERSION = '5.9.0-phase2d'` |
+| Build Timestamp | `version_config.js` | `BUILD_TIMESTAMP = '20260429_1245'` |
+| GAS Version | `version_config.js` | `GAS_VERSION = '506'` |
+| GAS Config | `gas_config.js` | Production deploy URL @506 |
+| API Contract | `api_contract.js` | `2026-04-29.phase30-api-stability` |
 
 ---
 
@@ -488,7 +542,7 @@ indexedDB.databases().then(dbs => console.log(dbs))
 ---
 
 > **เอกสารนี้คือ Single Source of Truth** — อ้างอิงไฟล์นี้ก่อนเริ่มงานทุกครั้ง
-> อัปเดตล่าสุด: 2026-04-28 | Phase 30 Complete | Commit `cf02305` — Dashboard + Stock + PDF Export + Menu Beautification
+> อัปเดตล่าสุด: 2026-04-29 | Phase 30 Stability + Workflow Smoke | Commit `4512c5f` - API contract, optional smoke, workflow smoke, Menu Health
 
 ---
 
@@ -514,6 +568,35 @@ indexedDB.databases().then(dbs => console.log(dbs))
 | `ALLOWED_ORIGINS` | `*` | CORS Origins |
 
 **RULE:** ห้ามเกิน 50 properties — ใช้ Spreadsheet แทนสำหรับข้อมูล high-frequency
+
+---
+
+
+## 14.1 Secret / API Key Inventory (Redacted)
+
+> Security rule: this table records key names and storage locations only. Never commit live secret values.
+
+| Key / Secret | Storage | Runtime Consumer | Status | Notes |
+|---|---|---|---|---|
+| `DB_SS_ID` | GAS Script Properties | all GAS data modules | configured | Spreadsheet ID is operational identifier, not an auth secret. |
+| `ROOT_FOLDER_ID` | GAS Script Properties | Drive/PDF/backup modules | configured | Drive folder ID, not an auth secret. |
+| `WEB_APP_URL` | GAS Script Properties + `pwa/gas_config.js` | PWA, LINE, internal links | configured @506 | Must match production GAS URL. |
+| `LINE_CHANNEL_ACCESS_TOKEN` | GAS Script Properties / Cloudflare Secret when proxied | LINE Bot / Worker | configured / redacted | Do not place token in Git. |
+| `LINE_CHANNEL_SECRET` | GAS Script Properties / Cloudflare Secret | LINE signature validation | configured / redacted | Required for webhook verification when enabled. |
+| `GEMINI_API_KEY` | GAS Script Properties | Vision, Smart Assign, AI LINE Agent, reorder suggestion | configured / redacted | Rotate if ever exposed in logs/chat. |
+| `PROMPTPAY_BILLER_ID` or `PROMPTPAY_ID` | GAS Script Properties | BillingManager.gs | configured / redacted | Used to generate PromptPay QR. |
+| `CLASP_TOKEN` | GitHub Secret / local env | deploy_all.sh, manual clasp deploy | configured / redacted | Reconstructs `~/.clasprc.json`; never commit. |
+| `GOOGLE_CLIENT_ID` | GitHub Secret / local env | Drive sync / OAuth2 | configured / redacted | OAuth client id. |
+| `GOOGLE_CLIENT_SECRET` | GitHub Secret / local env | Drive sync / OAuth2 | configured / redacted | OAuth secret. |
+| `GOOGLE_REFRESH_TOKEN` | GitHub Secret / local env | Drive sync / OAuth2 | configured / redacted | Rotate if exposed. |
+| `CLOUDFLARE_API_TOKEN` | local env / Cloudflare dashboard / GitHub Secret if automated | Worker deploy | configured / redacted | Scope to Worker deploy only. |
+| `COMPHONE_AUTH_TOKEN` | local shell env only | smoke scripts | temporary / never commit | Session token for validation; logout/login after use. |
+
+### Public Identifiers Kept In Blueprint
+- GAS Script ID: `1-aoCd5gXoo1dX4FjW62l8JknR3ZPiaf1W7YEmEdtq8gnRzSp4Hwj6043`
+- Spreadsheet ID: `19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA`
+- GitHub Pages URL: `https://comphone.github.io/comphone-superapp/pwa/`
+- LINE Group IDs are operational routing identifiers already used in Script Properties. Treat them as internal metadata, not authentication secrets.
 
 ---
 
@@ -764,7 +847,7 @@ async function callGas(action, params) {
 |--------|-------------|--------|----------|
 | **POS/Retail UI** | สร้างหน้าขายหน้าร้านสมบูรณ์ (`pos.js`) + เชื่อมต่อกับ `createRetailSale` API + Token-based Auth + Barcode Search + Profit Margin | ✅ Complete | - |
 | **Smart Quotation** | เพิ่มระบบเปรียบเทียบราคากลาง (คอมพิวเตอร์ 2568, CCTV 2564) ในหน้า POS | ✅ Complete | - |
-| **GAS URL Fix** | อัปเดต `gas_config.js` + `api_client.js` เป็น GAS @501 (fix login/analytics errors) | ✅ Complete | - |
+| **GAS URL Fix** | อัปเดต `gas_config.js` + `api_client.js` เป็น GAS @506 (fix login/analytics errors) | ✅ Complete | - |
 | **Menu Beautification (PC+Mobile)** | ปรับปรุงธีมเมนู PC + Mobile ให้สวยงาม (Bootstrap Icons, active states, hover effects, responsive) | ✅ Complete | IMMEDIATE |
 | **Customer Portal V2 (ลูกค้า)** | เพิ่มประวัติงาน (viewCustomerJobs) + ดาวน์โหลดใบเสร็จ (downloadCustomerReceipts) + Timeline (showTimeline) + Job Detail (showJobDetail) | ✅ Complete | HIGH |
 | **Dashboard Enhancement** | เพิ่ม Retail Sales Widget + Quick Actions + Technician Performance (getTechPerformance: completed jobs, avg days, rating) + Responsive KPI Grid (4/3/2/1 columns) | ✅ Complete | HIGH |
@@ -804,7 +887,7 @@ async function callGas(action, params) {
 
 | ปัญหา | สาเหตุ | วิธีแก้ไข | Commit |
 |-------|-------|----------|--------|
-| **Login ไม่ได้** | `gas_config.js` ไม่ได้โหลดใน `index.html` ทำให้ `api_client.js` ใช้ fallback URL เก่า (@501) | เพิ่ม `<script src="gas_config.js">` ก่อน `</head>` + อัปเดต fallback URL เป็น @502 ใน `api_client.js` | `b8ccd2f` |
+| **Login/API config mismatch** | `gas_config.js` was missing from `index.html`, causing old fallback endpoint use | Added `gas_config.js`, centralized runtime config, and aligned fallback to GAS @506 | `b8ccd2f` + Phase 30 stability commits |
 | **404 Error: mobile_shared.js** | ไฟล์ `mobile_shared.js` ไม่มีใน repo แต่ `index.html` อ้างอิงไว้ | สร้าง `mobile_shared.js` ว่างๆ (104 bytes) | `38a5ed5` |
 | **Version Mismatch** | `index.html` ใช้ v5.7.0, `dashboard_pc.html` ใช้ v5.6.8, `version_config.js` ใช้ v5.9.0-phase2d | สร้างระบบ Centralized Versioning (`version_config.js`) + Cache Buster (`?v=...&t=...`) | `0e5321f`, `0f68e2f` |
 | **Service Worker Cache** | SW ยังคงเสิร์ฟไฟล์ JS เวอร์ชันเก่า แม้ index.html จะอัปเดตแล้ว | เพิ่ม Cache Buster comment ใน `index.html` + แนะนำผู้ใช้ให้ล้าง Site Data | `0f68e2f` |
@@ -820,38 +903,50 @@ async function callGas(action, params) {
 | **Cache Buster** | ✅ เสร็จ | เพิ่ม timestamp parameter + comment ในทุกไฟล์ PWA |
 | **Missing Files Fix** | ✅ เสร็จ | เพิ่ม `mobile_shared.js`, `favicon.ico` |
 | **gas_config.js Loading** | ✅ เสร็จ | เพิ่มใน `index.html` ก่อน `</head>` |
-| **API Fallback URL** | ✅ เสร็จ | อัปเดตเป็น @502 ใน `api_client.js` |
+| **API Fallback URL** | OK Done | Aligned to `gas_config.js` / GAS @506 in `api_client.js` |
 | **Dashboard Modernization (Phase 31)** | ✅ เสร็จ | เพิ่ม 5 Chart.js v4 functions + CHARTS object |
 | **AI LINE Agent (3 บทบาท)** | ✅ Backend ready | สร้าง `AILinePrompts.gs` + อัปเดต `LineBot.gs` (รอ Group IDs จริง) |
 | **Dependency Checklist** | ✅ เสร็จ | เพิ่มใน BLUEPRINT Section 2.5 |
 | **GitHub Push** | ✅ เสร็จ | 5 commits (`b8ccd2f`, `8695600`, `38a5ed5`, `0f68e2f`, `c7cca60`) |
 
-### ❌ Pending Work (ยังไม่เสร็จ)
+### Current Work Register (2026-04-29)
 
 | งาน | สถานะ | อุปสรรค |
 |------|-------|----------|
-| **Login Problem (เข้าระบบไม่ได้)** | ❌ **ยังแก้ไม่สำเร็จ** | Splash Screen ค้างอยู่ แม้จะแก้ไข URL แล้ว สาเหตุน่าจะเป็น Service Worker Cache หรือ JavaScript Error ที่ยังไม่พบ |
+| **Login / Splash / Menu Recovery** | OK **resolved in current baseline** | `api_client.js`, auth guard, service worker activation, menu restore, and API contract smoke are stable at GAS @506 / cache `20260429_1245`. |
 | **AI LINE Agent Testing** | ❌ **รอ Group IDs** | ต้องเปลี่ยน Placeholder Group IDs ใน `AILinePrompts.gs` (บรรทัด 169-173) เป็น LINE Group ID จริง |
-| **Dashboard PC Testing** | ❌ **รอ Login แก้ไข** | ต้องทดสอบกราฟ Chart.js v4 ทั้ง 5 ตัวหลังจากเข้าระบบได้ |
+| **Dashboard PC Runtime Baseline** | OK **validated** | PC dashboard uses central version/GAS/API config and no longer clears session storage during boot. Continue visual/UX QA after each feature batch. |
 | **Google Drive Sync** | ❌ **Failed** | `SharedContext.gs` timeout (ต้อง retry) |
-| **Service Worker Debug** | ❌ **ยังไม่หาสาเหตุแท้จริง** | ต้องตรวจสอบ Console Error จากผู้ใช้ |
+| **Service Worker Stability** | OK **stabilized** | SW activation no longer forces navigation/reload; updates are gated by user-accepted refresh via `pwa_install.js`. |
 
 ### 🗄️ Backup Status (28 เมษายน 2569 — 15:05)
 
 | สถานที่ | สถานะ | รายละเอียด |
 |---------|-------|------------|
-| **GitHub Repository** | ✅ **ปัจจุบัน** | `main` branch — ล่าสุด commit `b8ccd2f` (5 commits วันนี้) |
-| **Google Drive (Code)** | ❌ **ล้มเหลว** | Sync failed (SharedContext.gs timeout) — ต้อง retry |
+| **GitHub Repository** | OK current | `main` branch latest verified baseline commit `4512c5f` before this BLUEPRINT update. |
+| **Google Drive (Code)** | Needs retry | `SharedContext.gs` sync timeout remains a follow-up item; GitHub is the current code source of truth. |
 | **Google Drive (Backups)** | ✅ **มี** | `backups/` folder — 6 ไฟล์ `.tar.gz` (2026-04-28) |
 | **Local Backups** | ✅ **ครบ** | `/mnt/c/Users/Server/comphone-superapp/backups/*.tar.gz` |
-| **Session Memory** | ✅ **อัปเดต** | `memory/session.md` + `memory/session_latest.md` |
+| **Session Memory** | Superseded by BLUEPRINT | Current runtime/API/key baseline is now recorded in this BLUEPRINT update. |
 
-### 🔧 Next Steps (Priority Order)
+### Next Steps (Priority Order - Current Baseline)
 
-1. **🔴 HIGH: แก้ไข Login ไม่ได้** — ตรวจสอบ Console Error + ล้าง Service Worker Cache + ทดสอบบน Incognito
-2. **🟠 MEDIUM: ทดสอบ AI LINE Agent** — รอผู้ใช้ส่ง LINE Group IDs จริงมาแทนที่ Placeholder
-3. **🟡 LOW: Retry Google Drive Sync** — หลังจากแก้ไข Login ได้แล้ว
-4. **🟢 COMPLETE: Dashboard Testing** — ทดสอบกราฟ Chart.js v4 หลัง Login แก้ไข
+1. **HIGH: CI smoke automation** - run `pwa_static_guard.js`, required smoke, optional smoke, and workflow smoke from a repeatable CI/manual release checklist.
+2. **HIGH: Staging write-flow validation** - validate create/update/payment/offline queue writes in a safe staging dataset before production write automation.
+3. **MEDIUM: Google Drive Sync retry and timeout tuning** - retry `SharedContext.gs` sync and document timeout handling.
+4. **MEDIUM: AI LINE Agent testing** - confirm real LINE group routing IDs and run controlled message tests.
+5. **LOW: UX polish for high-use screens** - continue modernizing Dashboard PC, mobile admin health, POS, billing, and customer portal without changing the stable API baseline.
 
 ---
 
+
+
+### Current Phase 30 Stability Update (2026-04-29)
+
+| Workstream | Status | Current Baseline |
+|---|---|---|
+| **PWA Mobile Runtime** | OK Stable | Login, auth restore, menu visibility, service worker activation, and API client loading are aligned. |
+| **PC Dashboard Runtime** | OK Stable | Reads central config/version, keeps session storage intact, and shares the API contract baseline. |
+| **API Contract** | OK Stable | Required, optional, and read-only workflow smoke checks pass against GAS @506. |
+| **Offline / Queue UX** | OK Improved | Queue flush, health view, and observability states are visible from Admin > Health. |
+| **Remaining Professional Work** | NEXT | Add CI automation, deeper write-flow tests in staging, and UX polish for high-use screens. |
