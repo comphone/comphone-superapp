@@ -46,6 +46,20 @@ async function renderAttendanceSection(data) {
       <div class="card-title">บันทึกเวลาเข้างาน</div>
       <div id="att-table-wrap">กำลังโหลด...</div>
     </div>
+
+    <div class="card-box" style="margin-top:20px">
+      <div class="card-title">📊 รายงานสรุปรายเดือน/รายปี (Phase 32)</div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+        <select id="att-summary-type" style="padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px" onchange="_loadMonthlySummary()">
+          <option value="month">รายเดือน</option>
+          <option value="year">รายปี</option>
+        </select>
+        <input type="number" id="att-summary-year" placeholder="ปี (เช่น 2026)" style="padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;width:130px" />
+        <button onclick="_loadMonthlySummary()" style="background:#3b82f6;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer">📊 สรุป</button>
+        <button onclick="_exportAttendancePDF()" style="background:#ef4444;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer">📄 Export PDF</button>
+      </div>
+      <div id="att-summary-content" style="text-align:center;padding:20px;color:#6b7280">กดปุ่ม "สรุป" เพื่อดูรายงาน</div>
+    </div>
   `;
 
   // set default dates
@@ -295,5 +309,128 @@ async function _showTechHistory(techName) {
   } catch(e) {
     const el = document.getElementById('att-history-content');
     if (el) el.innerHTML = '<div style="color:#ef4444">เกิดข้อผิดพลาด</div>';
+  }
+}
+
+async function _loadMonthlySummary() {
+  const type = document.getElementById('att-summary-type').value;
+  const year = document.getElementById('att-summary-year').value.trim();
+  const el = document.getElementById('att-summary-content');
+  el.innerHTML = '<div style="text-align:center;padding:20px;color:#6b7280">กำลังโหลดรายงาน...</div>';
+
+  var params = { group_by: type };
+  if (year) params.year = year;
+
+  try {
+    const res = await callGas('getAttendanceMonthlySummary', params);
+    if (!res || !res.success || !res.summary || res.summary.length === 0) {
+      el.innerHTML = '<div style="text-align:center;padding:30px;color:#6b7280">ไม่พบข้อมูลสรุป</div>';
+      return;
+    }
+
+    var html = `<div style="margin-bottom:12px;font-size:13px;color:#6b7280">รวมชั่วโมงทั้งหมด: <b>${res.total_hours || 0}</b> ชม. | จัดกลุ่ม: <b>${res.group_by === 'year' ? 'รายปี' : 'รายเดือน'}</b> | ช่าง: <b>${res.tech || 'ทั้งหมด'}</b></div>`;
+
+    res.summary.forEach(function(s) {
+      html += `
+        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:12px">
+          <div style="font-size:15px;font-weight:600;margin-bottom:10px;color:#1f2937">📅 ช่วงเวลา: ${s.period}</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
+            <div style="background:#fff;border-radius:8px;padding:10px;text-align:center">
+              <div style="font-size:18px;font-weight:700;color:#3b82f6">${(s.total_hours||0).toFixed(1)}</div>
+              <div style="font-size:11px;color:#6b7280">ชั่วโมงรวม</div>
+            </div>
+            <div style="background:#fff;border-radius:8px;padding:10px;text-align:center">
+              <div style="font-size:18px;font-weight:700;color:#059669">${s.present_days||0}</div>
+              <div style="font-size:11px;color:#6b7280">วันทำงาน</div>
+            </div>
+            <div style="background:#fff;border-radius:8px;padding:10px;text-align:center">
+              <div style="font-size:18px;font-weight:700;color:#d97706">${s.late_days||0}</div>
+              <div style="font-size:11px;color:#6b7280">มาสาย</div>
+            </div>
+            <div style="background:#fff;border-radius:8px;padding:10px;text-align:center">
+              <div style="font-size:18px;font-weight:700;color:#8b5cf6">${s.total_jobs||0}</div>
+              <div style="font-size:11px;color:#6b7280">งานเสร็จ</div>
+            </div>
+          </div>
+          <div style="font-size:13px;font-weight:500;margin-bottom:8px;color:#374151">รายชื่อช่าง:</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">
+      `;
+
+      (s.techs || []).forEach(function(t) {
+        html += `
+          <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px">
+            <div style="font-weight:500;font-size:13px;color:#1f2937">${t.name||'-'}</div>
+            <div style="font-size:11px;color:#6b7280;margin-top:4px">${t.days||0} วัน, ${t.hours.toFixed(1)} ชม., ${t.jobs||0} งาน</div>
+          </div>
+        `;
+      });
+
+      html += '</div></div>';
+    });
+
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:#ef4444">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>';
+  }
+}
+
+async function _exportAttendancePDF() {
+  const { jsPDF } = window.jspdf;
+  if (!jsPDF) {
+    alert('กรุณารอให้ jsPDF โหลดเสร็จก่อน');
+    return;
+  }
+
+  const type = document.getElementById('att-summary-type').value;
+  const year = document.getElementById('att-summary-year').value.trim();
+
+  var params = { group_by: type };
+  if (year) params.year = year;
+
+  try {
+    const res = await callGas('getAttendanceMonthlySummary', params);
+    if (!res || !res.success || !res.summary || res.summary.length === 0) {
+      alert('ไม่มีข้อมูลสำหรับ Export PDF');
+      return;
+    }
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 20;
+
+    // Title
+    doc.setFontSize(16);
+    doc.text('COMPHONE SUPER APP - Attendance Report', pageWidth / 2, y, { align: 'center' });
+    y += 10;
+
+    doc.setFontSize(10);
+    doc.text(`Group: ${res.group_by === 'year' ? 'Yearly' : 'Monthly'} | Total Hours: ${res.total_hours || 0} hrs`, pageWidth / 2, y, { align: 'center' });
+    y += 10;
+
+    // Summary data
+    res.summary.forEach(function(s) {
+      if (y > 260) { doc.addPage(); y = 20; }
+
+      doc.setFontSize(12);
+      doc.text(`Period: ${s.period}`, 14, y);
+      y += 8;
+
+      doc.setFontSize(9);
+      doc.text(`Total Hours: ${(s.total_hours||0).toFixed(1)} | Present Days: ${s.present_days||0} | Late: ${s.late_days||0} | Jobs: ${s.total_jobs||0}`, 14, y);
+      y += 8;
+
+      // Tech details
+      (s.techs || []).forEach(function(t) {
+        if (y > 270) { doc.addPage(); y = 20; }
+        doc.text(`  - ${t.name}: ${t.days} days, ${t.hours.toFixed(1)} hrs, ${t.jobs} jobs`, 18, y);
+        y += 6;
+      });
+
+      y += 6;
+    });
+
+    doc.save(`attendance_report_${new Date().toISOString().split('T')[0]}.pdf`);
+  } catch(e) {
+    alert('เกิดข้อผิดพลาดในการสร้าง PDF: ' + e.message);
   }
 }

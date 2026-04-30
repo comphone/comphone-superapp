@@ -107,6 +107,7 @@ var MODULE_ROUTER = {
   'getAttendanceReport': function(p) { return getAttendanceReport(p); },
   'getTechHistory': function(p) { return getTechHistory(p.tech || p.tech_name || '', p); },
   'getAllTechsSummary': function(p) { return getAllTechsSummary(); },
+  'getAttendanceMonthlySummary': function(p) { return getAttendanceMonthlySummary(p); },
 
   // CRM Sprint 3
   'getCustomerHistoryFull': function(p) { return getCustomerHistoryFull(p); },
