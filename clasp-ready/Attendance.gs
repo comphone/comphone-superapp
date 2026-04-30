@@ -248,3 +248,87 @@ function safeCellValue_(row, idx) {
   if (raw instanceof Date) return Utilities.formatDate(raw, 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss');
   return String(raw || '');
 }
+
+// ============================================================
+// 📊 รายงานสรุปรายเดือน/รายปี (Phase 32)
+// ============================================================
+function getAttendanceMonthlySummary(params) {
+  try {
+    params = params || {};
+    var ss = getComphoneSheet();
+    var sh = findSheetByName(ss, ATTENDANCE_SHEET);
+    if (!sh || sh.getLastRow() < 2) return { success: true, summary: [], total_hours: 0 };
+
+    var rows = sh.getDataRange().getValues();
+    var techFilter = String(params.tech || '').trim().toLowerCase();
+    var groupBy = (params.group_by || 'month'); // 'month' หรือ 'year'
+    var yearFilter = params.year ? String(params.year) : '';
+
+    var summaryMap = {};
+
+    for (var i = 1; i < rows.length; i++) {
+      var row = rows[i];
+      var rowDate = String(row[0] || '');
+      var rowTech = String(row[1] || '');
+      var hours = Number(row[4] || 0);
+      var status = String(row[6] || 'PRESENT');
+
+      if (techFilter && rowTech.toLowerCase() !== techFilter) continue;
+      if (!rowDate) continue;
+
+      var year = rowDate.substring(0, 4);
+      if (yearFilter && year !== yearFilter) continue;
+
+      var key;
+      if (groupBy === 'year') {
+        key = year;
+      } else {
+        key = rowDate.substring(0, 7); // yyyy-MM
+      }
+
+      if (!summaryMap[key]) {
+        summaryMap[key] = {
+          period: key,
+          techs: {},
+          total_hours: 0,
+          present_days: 0,
+          late_days: 0,
+          total_jobs: 0
+        };
+      }
+
+      if (!summaryMap[key].techs[rowTech]) {
+        summaryMap[key].techs[rowTech] = { name: rowTech, hours: 0, days: 0, jobs: 0 };
+      }
+
+      summaryMap[key].techs[rowTech].hours += hours;
+      summaryMap[key].techs[rowTech].days++;
+      summaryMap[key].techs[rowTech].jobs += Number(row[5] || 0);
+
+      summaryMap[key].total_hours += hours;
+      summaryMap[key].present_days++;
+      if (status === 'LATE') summaryMap[key].late_days++;
+      summaryMap[key].total_jobs += Number(row[5] || 0);
+    }
+
+    var summary = Object.keys(summaryMap).map(function(k) {
+      var s = summaryMap[k];
+      s.techs = Object.keys(s.techs).map(function(tk) { return s.techs[tk]; });
+      return s;
+    });
+
+    summary.sort(function(a, b) { return a.period > b.period ? -1 : 1; });
+
+    var totalHours = summary.reduce(function(sum, s) { return sum + s.total_hours; }, 0);
+
+    return {
+      success: true,
+      summary: summary,
+      total_hours: Math.round(totalHours * 100) / 100,
+      group_by: groupBy,
+      tech: techFilter || 'ทั้งหมด'
+    };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
