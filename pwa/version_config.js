@@ -2,9 +2,9 @@
 // COMPHONE SUPER APP - Centralized Version Config
 // Single Source of Truth for all version numbers
 // ============================================================
-const APP_VERSION = '5.9.0-phase2d';
-const CACHE_VERSION = 'comphone-v5.9.0-phase31a-20260429_1345';
-const BUILD_TIMESTAMP = '20260429_1345';
+const APP_VERSION = '5.10.0-phase32';
+const CACHE_VERSION = 'comphone-v5.10.0-phase32-20260501_0617';
+const BUILD_TIMESTAMP = '20260501_0617';
 const GAS_VERSION = '506';
 
 // Export for use in other modules

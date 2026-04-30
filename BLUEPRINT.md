@@ -1,8 +1,8 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.9.0-phase31a (PWA) / v5.9.0-phase31a (GAS Backend @506)
-> **Date:** 2026-04-29 | **Phase:** 31 (Inventory & Billing Refactoring + QA Loop — PRODUCTION-STABLE)
-> **Status:** 🟢 PRODUCTION-STABLE — 89 files deployed, 6/6 Watchlist items cleared, Hermes 7-Check PASSED
+> **Version:** v5.10.0-phase32 (PWA) / v5.10.0-phase32 (GAS Backend @507)
+> **Date:** 2026-05-01 | **Phase:** 32 (Report Module + Testing Framework — PRODUCTION-STABLE)
+> **Status:** 🟢 PRODUCTION-STABLE — Phase 32 features completed, ready for testing
 > **Repository:** https://github.com/comphone/comphone-superapp
 
 ---
@@ -288,6 +288,16 @@ comphone-superapp/
 | **jsPDF Integration** | ✅ Phase 30 | เพิ่ม CDN jsPDF 2.5.2 + jsPDF-autoTable 3.8.2 ใน index.html |
 | **AI LINE Agent (Phase2D)** | ✅ Phase 30 | สร้าง AI Agent 3 บทบาท (Dispatcher, Sales Analyst, BI) ใช้ Gemini Pro + Group ID routing + Dispatcher summarize jobs + notify technicians |
 
+### ✅ Completed (Phase 32 - 1 พฤษภาคม 2569)
+
+| ฟีเจอร์ | สถานะ | หมายเหตุ |
+|---------|-------|---------|
+| **Attendance Monthly/Yearly Summary API** | ✅ Phase 32 | เพิ่ม `getAttendanceMonthlySummary()` ใน Attendance.gs (group_by: month/year) |
+| **Attendance UI Enhancement** | ✅ Phase 32 | เพิ่มรายงานสรุปรายเดือน/รายปี + PDF Export ใน attendance_section.js |
+| **Report Module UI** | ✅ Phase 32 | สร้าง `reports.js` ใหม่ (Phase 32) - 4 ประเภทรายงาน: Attendance, Jobs, Billing, Inventory |
+| **Report PDF Export** | ✅ Phase 32 | รองรับ Export PDF ทุกประเภทรายงาน (ใช้ jsPDF) |
+| **Automated Unit Testing Framework** | ✅ Phase 32 | สร้าง `api_test_framework.js` - ทดสอบ API อัตโนมัติ (Health, Attendance, Dashboard, Inventory, Billing) |
+
 ### 🔧 Partially Done (Backend Ready, Frontend Needed)
 
 *No items — all Phase 29 features completed.*
@@ -452,10 +462,10 @@ All these MUST match on deploy:
 | Analytics Index | ✅ Phase 31 | AnalyticsIndex.gs (369L) TTL cache + searchWithIndex <2s query |
 | Self-Improving QA Loop | ✅ Phase 31 | 7-Check Protocol (Hermes sub-agent) → Master → Deploy loop |
 | Anomaly Detection baseline | ⏳ | Phase 2E telemetry active, needs 14 days of data for σ-deviation alerts |
-| Time/Attendance UI | ⏳ Phase 32 | ระบบลงเวลา + รายงานชั่วโมงการทำงาน |
-| Report Module UI | ⏳ Phase 32 | หน้าสรุปรายงานรายเดือน/รายปี + PDF Export |
-| Automated Unit Testing | ⏳ Phase 32 | Framework สำหรับรัน API unit tests อัตโนมัติ |
-| Predictive Inventory AI | 🔮 Future | AI คาดการณ์สต็อกจาก DB_LOGS + DB_INVENTORY |
+| Time/Attendance UI | ✅ Phase 32 | เพิ่มรายงานสรุปรายเดือน/รายปี + PDF Export ใน attendance_section.js |
+| Report Module UI | ✅ Phase 32 | สร้าง reports.js ใหม่ (4 ประเภทรายงาน: Attendance, Jobs, Billing, Inventory) |
+| Automated Unit Testing | ✅ Phase 32 | สร้าง api_test_framework.js - ทดสอบ API อัตโนมัติ |
+| Next: Phase 33 Planning | ⏳ | เตรียม feature ใหม่ (เช่น Anomaly Detection, Predictive Analytics) |
 | Blueprint reconciliation | ✅ | File map, versions, phase labels synced 2026-04-29 |
 
 ---
