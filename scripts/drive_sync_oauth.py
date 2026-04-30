@@ -10,9 +10,10 @@ import mimetypes
 from pathlib import Path
 
 # Config
-FOLDER_ID = "1Wfa2cPdrIcLAeKMbXvmikCZBKDtRPuI7"
-TOKEN_FILE = "/home/ubuntu/.comphone/drive_token.json"
-CLIENT_FILE = "/home/ubuntu/.comphone/drive_oauth_client.json"
+FOLDER_ID = "1cExEgiIwmhBxZvLQpv10Wvq71ZTp4PfN"
+TOKEN_FILE = os.path.expanduser("~/.comphone/token.json")
+CLIENT_FILE = os.path.expanduser("~/.comphone/drive_config.json")
+ZIP_PATH = os.path.expanduser("~/comphone-superapp/scripts/comphone-sync.zip")
 
 def get_access_token():
     """Get valid access token, refresh if needed"""
