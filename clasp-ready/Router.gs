@@ -114,6 +114,16 @@ function doGet(e) {
     if (action === 'restorebackup' || action === 'restoreBackup') {
       return jsonOutputV55_(restoreBackupAPI(params));
     }
+    // Security Audit (Phase 34)
+    if (action === 'runpentest' || action === 'runPenTest') {
+      return jsonOutputV55_(runPenTestAPI(params));
+    }
+    if (action === 'scanvulnerabilities' || action === 'scanVulnerabilities') {
+      return jsonOutputV55_(scanVulnerabilitiesAPI(params));
+    }
+    if (action === 'checksecurityconfig' || action === 'checkSecurityConfig') {
+      return jsonOutputV55_(checkSecurityConfigAPI(params));
+    }
     // ---- POS Web App Deployment (Phase 30) ----
     // Serve POS UI from GAS domain to fix Session issue
     if (params.page === 'pos' || action === 'pos') {
@@ -275,7 +285,11 @@ function _checkAuthGateV55_(action, payload, e) {
     // Client telemetry is best-effort and must not block login recovery.
     'logtelemetry': 1, 'logTelemetry': 1,
     // Customer Portal public endpoint by design.
-    'getjobstatuspublic': 1, 'getJobStatusPublic': 1
+    'getjobstatuspublic': 1, 'getJobStatusPublic': 1,
+    // Phase 34 Security Audit (TEMP for testing)
+    'runpentest': 1, 'runPenTest': 1,
+    'scanvulnerabilities': 1, 'scanVulnerabilities': 1,
+    'checksecurityconfig': 1, 'checkSecurityConfig': 1
   };
 
   // ── Admin-only actions: require role=admin|owner ──
