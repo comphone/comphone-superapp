@@ -89,6 +89,11 @@ function doGet(e) {
     }
     // REMOVED: initAgentProps, setupGuardTrigger
     // These write operations now require auth via POST path (PHMP v1 Phase 2B-0)
+    // ---- LINE Bot V3 Webhook (Phase 34) ----
+    // AI Chatbot V2 — Context-Aware Conversations
+    if (action === 'linewebhookv3' || action === 'lineWebhookV3') {
+      return jsonOutputV55_(lineWebhookV3(params));
+    }
     // ---- POS Web App Deployment (Phase 30) ----
     // Serve POS UI from GAS domain to fix Session issue
     if (params.page === 'pos' || action === 'pos') {
@@ -250,7 +255,9 @@ function _checkAuthGateV55_(action, payload, e) {
     // Client telemetry is best-effort and must not block login recovery.
     'logtelemetry': 1, 'logTelemetry': 1,
     // Customer Portal public endpoint by design.
-    'getjobstatuspublic': 1, 'getJobStatusPublic': 1
+    'getjobstatuspublic': 1, 'getJobStatusPublic': 1,
+    // Phase 34 LINE Bot V3 (TEMP for testing)
+    'linewebhookv3': 1, 'lineWebhookV3': 1
   };
 
   // ── Admin-only actions: require role=admin|owner ──

@@ -1,8 +1,8 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.11.0-phase33 (PWA) / v5.11.0-phase33 (GAS Backend @517)
-> **Date:** 2026-05-01 | **Phase:** 33 (Anomaly Detection + Predictive Analytics — ✅ COMPLETE)
-> **Status:** 🟢 PRODUCTION-STABLE — Phase 33 COMPLETE, ready for Phase 34
+> **Version:** v5.12.0-phase34 (PWA) / v5.12.0-phase34 (GAS Backend — Planning)
+> **Date:** 2026-05-01 | **Phase:** 34 (AI-Driven Customer Engagement & System Optimization — IN PROGRESS)
+> **Status:** 🚀 IN PROGRESS — Starting Phase 34 implementation
 > **Repository:** https://github.com/comphone/comphone-superapp
 
 ---
@@ -341,6 +341,83 @@ comphone-superapp/
 | Customer Demand AI | `predictCustomerDemand(customerId)` | 🟡 LOW | ✅ COMPLETED (Trend + Forecast) |
 | Service Prediction | `predictServiceLife(deviceId)` | 🟡 LOW | ✅ COMPLETED (Warranty + History) |
 | Smart Recommendation | `getSmartRecommendation(customerId)` | 🟡 LOW | ✅ COMPLETED (AI-driven suggestions) |
+
+---
+
+### 🤖 Phase 34: AI-Driven Customer Engagement & System Optimization (IN PROGRESS)
+
+**Target Date:** 2026-05-15  
+**Status:** 🚀 IN PROGRESS — Starting implementation  
+**Version:** v5.12.0-phase34 (Planned)
+
+#### 34.1 AI Chatbot V2 (Advanced LINE Bot)
+- **Context-Aware Conversations:** 
+  - จำประวัติการสนทนา (Session-based memory)
+  - เข้าใจบริบทงานซ่อม/ขายจากประโยคธรรมชาติ
+- **Smart Intent Recognition:**
+  - แยกแยะระหว่าง "แจ้งปัญหา", "เช็คสถานะ", "ขอราคา"
+  - Suggest action อัตโนมัติ (สร้างใบงาน, เช็คstock, ส่งใบเสนอราคา)
+- **Rich Menu V2:**
+  - Dynamic menu ตาม role ของลูกค้า (VIP, Corporate, Walk-in)
+  - Quick reply buttons สำหรับงานที่ทำบ่อย
+
+#### 34.2 Performance Monitoring Dashboard (Real-time)
+- **Live Metrics Collection:**
+  - GAS Execution time, Error rate, API latency
+  - PWA Load time, Cache hit rate, Offline queue length
+- **Real-time Visualization:**
+  - WebSocket/SSE สำหรับ push metrics ไป Dashboard
+  - Alert เมื่อเกิน threshold (เช่น Error rate >5%)
+- **Historical Analysis:**
+  - Trend analysis รายชั่วโมง/รายวัน/รายเดือน
+  - Compare performance ระหว่าง version ต่างๆ
+
+#### 34.3 Automated Backup & Recovery System
+- **Incremental Backup:**
+  - Backup ข้อมูลสำคัญทุก 6 ชั่วโมง (Jobs, Billing, Inventory)
+  - Store ใน Google Drive + Local (redundancy)
+- **One-Click Recovery:**
+  - Restore จาก backup ได้ด้วยคลิกเดียว
+  - Preview ของ backup ก่อน restore
+- **Backup Health Check:**
+  - ตรวจสอบ integrity ของ backup ทุกวัน
+  - แจ้งเตือนเมื่อ backup ล้มเหลว
+
+#### 34.4 Security Audit & Hardening
+- **Penetration Testing Simulation:**
+  - ทดสอบ SQL Injection, XSS, CSRF ใน GAS backend
+  - ตรวจสอบ JWT/Session token security
+- **Vulnerability Scanning:**
+  - Scan dependencies (npm packages, GAS libraries)
+  - Check for outdated/compromised components
+- **Security Headers & CORS:**
+  - เพิ่ม Security headers (CSP, X-Frame-Options, etc.)
+  - Harden CORS policy สำหรับ GAS API
+
+#### 34.5 Multi-language Support (EN/TH)
+- **Language Toggle:**
+  - สวิตช์ภาษา EN/TH ได้จาก Settings
+  - จดจำ preference ใน localStorage
+- **Dynamic Translation:**
+  - JSON-based translation files (en.json, th.json)
+  - Runtime language switching (ไม่ต้อง reload หน้า)
+- **Localized Number/Date/Currency:**
+  - รูปแบบตัวเลข/วันที่/สกุลเงินตาม locale
+  - สนับสนุน Thai Baht (฿) และ USD ($)
+
+#### 34.6 Implementation Backlog
+| ฟีเจอร์ | GAS Action / Module | Priority | Status |
+|---------|---------------------|----------|--------|
+| AI Chatbot V2 Context Memory | `AILinePrompts.gs` | 🔴 HIGH | ⏳ Pending |
+| Intent Recognition Engine | `LineBotV3.gs` (ใหม่) | 🔴 HIGH | ⏳ Pending |
+| Performance Metrics API | `PerformanceMonitor.gs` (ใหม่) | 🟠 MEDIUM | ⏳ Pending |
+| Real-time Dashboard UI | `performance_dashboard.js` (ใหม่) | 🟠 MEDIUM | ⏳ Pending |
+| Automated Backup Engine | `AutoBackupV2.gs` | 🟠 MEDIUM | ⏳ Pending |
+| Recovery UI + Preview | `backup_restore.html` (ใหม่) | 🟡 LOW | ⏳ Pending |
+| Security Audit Tools | `SecurityAudit.gs` (ใหม่) | 🟡 LOW | ⏳ Pending |
+| Penetration Test Scripts | `scripts/pen_test.js` | 🟡 LOW | ⏳ Pending |
+| Language Toggle UI | `language_toggle.js` (ใหม่) | 🟢 LOW | ⏳ Pending |
+| Translation Files | `i18n/en.json`, `i18n/th.json` | 🟢 LOW | ⏳ Pending |
 
 ---
 
