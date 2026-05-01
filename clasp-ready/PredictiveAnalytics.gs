@@ -354,16 +354,169 @@ function predictCustomerDemand(data) {
   try {
     data = data || {};
     var customerId = data.customer_id || '';
+    var forecastMonths = parseInt(data.forecast_months) || 3;
     
     if (!customerId) {
       return { success: false, error: 'customer_id is required' };
     }
     
-    // TODO: Implement customer demand prediction
+    var ss = getComphoneSheet();
+    if (!ss) return { success: false, error: 'Spreadsheet not found' };
+    
+    // Read Customers sheet to get customer name
+    var custSh = ss.getSheetByName('DB_CUSTOMERS');
+    if (!custSh) return { success: false, error: 'DB_CUSTOMERS sheet not found' };
+    
+    var custLastRow = custSh.getLastRow();
+    if (custLastRow < 2) {
+      return { success: true, demand_forecast: [], message: 'No customer data' };
+    }
+    
+    var custHeaders = custSh.getRange(1, 1, 1, custSh.getLastColumn()).getValues()[0];
+    var custIdIdx = custHeaders.indexOf('Customer_ID');
+    var custNameIdx = custHeaders.indexOf('Customer_Name');
+    
+    if (custIdIdx < 0 || custNameIdx < 0) {
+      return { success: false, error: 'Required columns not found (Customer_ID, Customer_Name)' };
+    }
+    
+    var custRows = custSh.getRange(2, 1, custLastRow - 1, custHeaders.length).getValues();
+    var customerName = '';
+    
+    // Find customer by ID
+    for (var ci = 0; ci < custRows.length; ci++) {
+      if (String(custRows[ci][custIdIdx]).trim() === customerId) {
+        customerName = String(custRows[ci][custNameIdx] || '').trim();
+        break;
+      }
+    }
+    
+    if (!customerName) {
+      return { success: false, error: 'Customer not found: ' + customerId };
+    }
+    
+    // Read Job history for this customer
+    var jobsSh = ss.getSheetByName('DB_JOBS');
+    if (!jobsSh) {
+      return { success: false, error: 'DB_JOBS sheet not found' };
+    }
+    
+    var jobLastRow = jobsSh.getLastRow();
+    if (jobLastRow < 2) {
+      return { success: true, demand_forecast: [], message: 'No job history' };
+    }
+    
+    var jobHeaders = jobsSh.getRange(1, 1, 1, jobsSh.getLastColumn()).getValues()[0];
+    var jobCustomerIdx = jobHeaders.indexOf('Customer_Name') >= 0 ? jobHeaders.indexOf('Customer_Name') : jobHeaders.indexOf('CustomerName');
+    var jobDateIdx = jobHeaders.indexOf('Created_At') >= 0 ? jobHeaders.indexOf('Created_At') : jobHeaders.indexOf('Opened_At');
+    var jobStatusIdx = jobHeaders.indexOf('Status_Label');
+    var jobDescIdx = jobHeaders.indexOf('Description') >= 0 ? jobHeaders.indexOf('Description') : jobHeaders.indexOf('Note');
+    
+    if (jobCustomerIdx < 0 || jobDateIdx < 0) {
+      return { success: false, error: 'Required job columns not found' };
+    }
+    
+    var jobRows = jobsSh.getRange(2, 1, jobLastRow - 1, jobHeaders.length).getValues();
+    
+    // Aggregate jobs by month
+    var monthlyData = {}; // { 'YYYY-MM': { count, services: [] } }
+    var totalJobs = 0;
+    var now = new Date();
+    var monthsHistory = 12; // Look at last 12 months
+    
+    jobRows.forEach(function(row) {
+      var cname = String(row[jobCustomerIdx] || '').trim();
+      if (cname !== customerName) return;
+      
+      var jobDate = new Date(row[jobDateIdx]);
+      if (isNaN(jobDate.getTime())) return;
+      
+      // Only count jobs within last N months
+      var monthsAgo = (now.getFullYear() - jobDate.getFullYear()) * 12 + (now.getMonth() - jobDate.getMonth());
+      if (monthsAgo > monthsHistory) return;
+      
+      var monthKey = jobDate.getFullYear() + '-' + String(jobDate.getMonth() + 1).padStart(2, '0');
+      
+      if (!monthlyData[monthKey]) {
+        monthlyData[monthKey] = { count: 0, services: [] };
+      }
+      
+      monthlyData[monthKey].count++;
+      totalJobs++;
+      
+      // Extract services from description
+      var desc = String(row[jobDescIdx] || '').toLowerCase();
+      var services = desc.split(/[,;]/).map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; });
+      monthlyData[monthKey].services = monthlyData[monthKey].services.concat(services);
+    });
+    
+    if (totalJobs === 0) {
+      return {
+        success: true,
+        demand_forecast: [],
+        message: 'No job history for customer: ' + customerName,
+        metadata: { customer_id: customerId, customer_name: customerName }
+      };
+    }
+    
+    // Calculate average jobs per month
+    var avgJobsPerMonth = totalJobs / Math.min(monthsHistory, Object.keys(monthlyData).length);
+    
+    // Simple forecast: use moving average
+    var forecast = [];
+    var trend = 'stable';
+    
+    // Determine trend (increasing/decreasing/stable)
+    var monthKeys = Object.keys(monthlyData).sort();
+    if (monthKeys.length >= 3) {
+      var recent = monthlyData[monthKeys[monthKeys.length - 1]].count + monthlyData[monthKeys[monthKeys.length - 2]].count;
+      var older = monthlyData[monthKeys[0]].count + monthlyData[monthKeys[1]].count;
+      if (recent > older * 1.2) trend = 'increasing';
+      else if (older > recent * 1.2) trend = 'decreasing';
+    }
+    
+    // Generate forecast for next N months
+    for (var m = 1; m <= forecastMonths; m++) {
+      var forecastDate = new Date(now.getFullYear(), now.getMonth() + m, 1);
+      var monthKey = forecastDate.getFullYear() + '-' + String(forecastDate.getMonth() + 1).padStart(2, '0');
+      
+      var predictedJobs = Math.round(avgJobsPerMonth * 100) / 100;
+      if (trend === 'increasing') predictedJobs *= 1.1;
+      else if (trend === 'decreasing') predictedJobs *= 0.9;
+      
+      forecast.push({
+        month: monthKey,
+        predicted_jobs: Math.max(0, Math.round(predictedJobs)),
+        confidence: totalJobs >= 10 ? 'HIGH' : (totalJobs >= 5 ? 'MEDIUM' : 'LOW'),
+        trend: trend
+      });
+    }
+    
+    // Suggest actions based on forecast
+    var suggestions = [];
+    var nextMonthForecast = forecast[0] ? forecast[0].predicted_jobs : 0;
+    
+    if (nextMonthForecast > 3) {
+      suggestions.push('Prepare for high demand - ensure sufficient inventory');
+      suggestions.push('Consider preventive maintenance offers');
+    } else if (nextMonthForecast === 0) {
+      suggestions.push('Low activity predicted - reach out with promotions');
+      suggestions.push('Check if customer has unresolved issues');
+    }
+    
     return {
       success: true,
-      demand_forecast: [],
-      message: 'Customer demand prediction - Phase 33 implementation pending'
+      customer_id: customerId,
+      customer_name: customerName,
+      demand_forecast: forecast,
+      metadata: {
+        total_jobs_history: totalJobs,
+        avg_jobs_per_month: Math.round(avgJobsPerMonth * 100) / 100,
+        trend: trend,
+        months_history: Object.keys(monthlyData).length,
+        confidence: totalJobs >= 10 ? 'HIGH' : (totalJobs >= 5 ? 'MEDIUM' : 'LOW')
+      },
+      suggestions: suggestions
     };
     
   } catch (e) {
