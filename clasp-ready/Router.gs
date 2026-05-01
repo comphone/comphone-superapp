@@ -252,7 +252,10 @@ function _checkAuthGateV55_(action, payload, e) {
     // Customer Portal public endpoint by design.
     'getjobstatuspublic': 1, 'getJobStatusPublic': 1,
     // Phase 33 Anomaly Baseline (TEMP for testing)
-    'getanomalybaseline': 1, 'getAnomalyBaseline': 1
+    'getanomalybaseline': 1, 'getAnomalyBaseline': 1,
+    // Phase 33 Predictive Analytics (TEMP for testing)
+    'predictservicelife': 1, 'predictServiceLife': 1,
+    'getsmartrecommendation': 1, 'getSmartRecommendation': 1
   };
 
   // ── Admin-only actions: require role=admin|owner ──

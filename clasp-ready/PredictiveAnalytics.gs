@@ -647,3 +647,150 @@ function getAnomalyBaseline(data) {
     return { success: false, error: e.toString() };
   }
 }
+
+/**
+ * ทำนายอายุการใช้งานที่เหลือของอุปกรณ์ (Phase 33)
+ * ใช้ข้อมูลจาก Inventory + Telemetry มาวิเคราะห์
+ */
+function predictServiceLife(assetType, installDate) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Inventory');
+    if (!sheet) return { success: false, error: 'Inventory sheet not found' };
+    
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+    
+    // หาคอลัมน์ที่เกี่ยวข้อง
+    var typeIdx = headers.indexOf('Type');
+    var dateIdx = headers.indexOf('InstallDate');
+    var statusIdx = headers.indexOf('Status');
+    
+    if (typeIdx < 0 || dateIdx < 0) {
+      return { success: false, error: 'Required columns not found' };
+    }
+    
+    // กรองอุปกรณ์ตามประเภท
+    var assets = data.slice(1).filter(function(row) {
+      return row[typeIdx] === assetType;
+    });
+    
+    var now = new Date();
+    var install = new Date(installDate);
+    var ageDays = Math.floor((now - install) / (1000 * 60 * 60 * 24));
+    
+    // คำนวณค่าเฉลี่ยอายุการใช้งานจากข้อมูลในอดีต
+    var lifeSpans = [];
+    assets.forEach(function(row) {
+      if (row[dateIdx]) {
+        var d = new Date(row[dateIdx]);
+        if (!isNaN(d.getTime())) {
+          var age = Math.floor((now - d) / (1000 * 60 * 60 * 24));
+          lifeSpans.push(age);
+        }
+      }
+    });
+    
+    var avgLife = 0;
+    if (lifeSpans.length > 0) {
+      avgLife = lifeSpans.reduce(function(a, b) { return a + b; }, 0) / lifeSpans.length;
+    }
+    
+    // ทำนายอายุที่เหลือ
+    var remainingDays = Math.max(0, avgLife - ageDays);
+    var remainingPercent = avgLife > 0 ? Math.round((remainingDays / avgLife) * 100) : 0;
+    
+    return {
+      success: true,
+      asset_type: assetType,
+      current_age_days: ageDays,
+      average_lifespan_days: Math.round(avgLife),
+      remaining_days: remainingDays,
+      remaining_percent: remainingPercent,
+      maintenance_recommendation: remainingPercent < 20 ? 'ทดแทนเดี๋ยวนี้' : 
+                            remainingPercent < 50 ? 'วางแผนบำรุงรักษา' : 'ใช้งานได้ตามปกติ',
+      metadata: {
+        analyzed_assets: assets.length,
+        generated_at: new Date().toISOString(),
+        version: 'v5.11.0-phase33'
+      }
+    };
+    
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * ให้คำแนะนำอัจฉริยะตามบริบท (Phase 33)
+ * วิเคราะห์จากหลายโมดูลเพื่อแนะนำการดำเนินการ
+ */
+function getSmartRecommendation(module, context) {
+  try {
+    var recommendations = [];
+    var priority = 'low';
+    
+    // ตรวจสอบจาก Telemetry
+    var telResult = getAnomalyBaseline('error_rate', 7);
+    if (telResult.success && telResult.baseline) {
+      var currentRate = telResult.baseline.recent_values.slice(-1)[0] || 0;
+      if (currentRate > telResult.baseline.thresholds.high) {
+        recommendations.push({
+          module: 'Telemetry',
+          issue: 'อัตราความผิดพลาดสูงกว่าเกณฑ์ปกติ',
+          action: 'ตรวจสอบบันทึกข้อผิดพลาดและแก้ไขทันที',
+          priority: 'high'
+        });
+        priority = 'high';
+      }
+    }
+    
+    // ตรวจสอบจาก Inventory
+    if (module === 'inventory' || module === 'all') {
+      var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Inventory');
+      if (sheet) {
+        var data = sheet.getDataRange().getValues();
+        var headers = data[0];
+        var qtyIdx = headers.indexOf('Quantity') >= 0 ? headers.indexOf('Quantity') : 3;
+        var lowStock = data.slice(1).filter(function(row) {
+          return row[qtyIdx] < 10;
+        });
+        
+        if (lowStock.length > 0) {
+          recommendations.push({
+            module: 'Inventory',
+            issue: 'สินค้าใกล้หมดสต็อก',
+            action: 'สั่งซื้อสินค้าเพิ่ม ' + lowStock.length + ' รายการ',
+            priority: 'medium',
+            items: lowStock.length
+          });
+        }
+      }
+    }
+    
+    // ตรวจสอบจาก Billing
+    if (module === 'billing' || module === 'all') {
+      recommendations.push({
+        module: 'Billing',
+        issue: 'ตรวจสอบสถานะการเรียกเก็บเงิน',
+        action: 'อัปเดตข้อมูลการชำระเงินล่าสุด',
+        priority: 'low'
+      });
+    }
+    
+    return {
+      success: true,
+      module: module,
+      context: context || {},
+      recommendations: recommendations,
+      priority_summary: priority,
+      total_recommendations: recommendations.length,
+      metadata: {
+        generated_at: new Date().toISOString(),
+        version: 'v5.11.0-phase33'
+      }
+    };
+    
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
