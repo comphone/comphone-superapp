@@ -1,24 +1,31 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
 > **Version:** v5.12.0-phase34 (PWA) / v5.12.0-phase34 (GAS Backend — Production)
-> **Date:** 2026-05-01 | **Phase:** 34 (AI-Driven Customer Engagement & System Optimization — ✅ COMPLETE)
-> **Status:** ✅ COMPLETE — Phase 34 finished (7/7 features)
+> **Date:** 2026-05-01 | **Phase:** 34 (Frontend — ✅ COMPLETE)
+> **Status:** ✅ COMPLETE — Phase 34 Frontend finished (7/7 features)
 > **Repository:** https://github.com/comphone/comphone-superapp
 
 ---
 
-## 0. Current Runtime Snapshot (2026-04-29)
+## 0. Current Runtime Snapshot (2026-05-01)
 
 | Item | Current Value | Source of Truth |
 |---|---|---|
 | App Version | `v5.12.0-phase34` | `pwa/version_config.js` |
-| Cache Version | `comphone-v5.12.0-phase34-20260501_1209` | `pwa/version_config.js`, `pwa/sw.js` |
-| Build Timestamp | `20260501_1209` | `pwa/version_config.js` |
+| Cache Version | `comphone-v5.12.0-phase34-20260501_1800` | `pwa/version_config.js`, `pwa/sw.js` |
+| Build Timestamp | `20260501_1800` | `pwa/version_config.js` |
 | GAS Backend Deploy | `@524` (v5.12.0-phase34, 94 files) | `pwa/gas_config.js`, `clasp-ready/.clasp.json` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycby0jRMOyrdnxlnk5nJXZcQrqMDZgV6dyfjC97dQWj-A8NL2_fWBSIWvrEDoSKkRA2MPKg/exec` | `pwa/gas_config.js` |
-| API Contract Version | `2026-04-29.phase30-api-stability` | `pwa/api_contract.js` |
-| Last Production Commit | `1a8a1f3` | GitHub `main` |
+| API Contract Version | `2026-05-01.phase34-frontend-complete` | `pwa/api_contract.js` |
+| Last Production Commit | `f760659` | GitHub `main` |
 | Validation Status | Static Guard OK, Required API Smoke OK, Optional API Smoke OK, Read-only Workflow Smoke OK | `scripts/` + `test_reports/*_latest.json` |
+
+### Phase 34 Frontend Completion (2026-05-01)
+- ✅ **T39: Language Toggle UI** — Added `language_manager.js`, toggle button in PWA Profile & PC Dashboard sidebar-footer
+- ✅ **T40: Translation Files** — Added `data-i18n` attributes to `index.html` (50+ strings) and `dashboard_pc.html` (30+ strings)
+- ✅ **T41: Performance Dashboard UI** — Created `section_performance.js` with KPI cards, historical charts (Chart.js), system info panel
+- ✅ **T42: Backup & Recovery UI** — Created `section_backup.js` with health status, backup list, restore modal, one-click backup
+- ✅ **T43: Penetration Test Scripts** — Created `pentest_frontend.js` with 7 test categories (XSS, Input Validation, Auth, API, CSRF, Storage, Dependencies)
 
 ### Current Stability Baseline
 - Mobile PWA loads `api_client.js`, `api_contract.js`, `auth_guard.js`, and versioned assets correctly.
@@ -30,6 +37,10 @@
 - Required + optional API smoke passes. `getBilling` is intentionally SKIP when no real `job_id` exists.
 - Read-only workflow smoke passes for Job, Billing, Inventory/POS, CRM/After-sales, and Observability.
 - Admin > Health includes Menu Health, observability summary, skipped-action reasons, and JSON export.
+- **NEW:** Multi-language support (EN/TH) with toggle UI in PWA and PC Dashboard.
+- **NEW:** Performance Dashboard with real-time metrics, historical charts, and system info.
+- **NEW:** Backup & Recovery UI with health checks, backup history, and one-click restore.
+- **NEW:** Frontend penetration test suite (18+ test cases across 7 security categories).
 
 ### Secret Handling Rule
 - Do not store live secret/token/key values in this repository or in BLUEPRINT.md.
