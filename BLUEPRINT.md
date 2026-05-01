@@ -296,7 +296,53 @@ comphone-superapp/
 | **Attendance UI Enhancement** | ✅ Phase 32 | เพิ่มรายงานสรุปรายเดือน/รายปี + PDF Export ใน attendance_section.js |
 | **Report Module UI** | ✅ Phase 32 | สร้าง `reports.js` ใหม่ (Phase 32) - 4 ประเภทรายงาน: Attendance, Jobs, Billing, Inventory |
 | **Report PDF Export** | ✅ Phase 32 | รองรับ Export PDF ทุกประเภทรายงาน (ใช้ jsPDF) |
-| **Automated Unit Testing Framework** | ✅ Phase 32 | สร้าง `api_test_framework.js` - ทดสอบ API อัตโนมัติ (Health, Attendance, Dashboard, Inventory, Billing) |
+| **Automated Unit Testing Framework** | ✅ Phase 32 | สร้าง `api_test_framework.js` - ทดสอบ API อัตโนมัติ |
+
+### 🔮 Phase 33: Anomaly Detection & Predictive Analytics (PLANNING)
+
+**Target Date:** 2026-05-15  
+**Status:** 📋 PLANNING — Anomaly Detection baseline running (Phase 2E telemetry 14 วัน)
+
+#### 33.1 Anomaly Detection (Telemetry → Alerts)
+- **Baseline Period:** รอครบ 14 วันจาก Phase 2E (เริ่มเก็บข้อมูลแล้ว)
+- **Detectors:**
+  - σ-Deviation Alerts (DB_JOBS, DB_INVENTORY)
+  - API Response Time Anomaly (latency >2σ)
+  - Off-hours API Calls (06:00-22:00 threshold)
+  - Inventory Stock-out Prediction (reorder point triggers)
+- **Action:** เมื่อ anomaly ตรวจพบ → LINE Notify + Executive Dashboard
+
+#### 33.2 Predictive Analytics Module
+- **Sales Forecasting:**
+  - วิเคราะห์ยอดขายย้อนหลัง 90 วัน
+  - พยากรณ์ยอดขาย 30 วันล่วงหน้า (Linear Regression / Moving Average)
+  - Trending Alert cho ร้าน IT (อุปกรณ์ขาดตลาด)
+- **Inventory Optimization:**
+  - สร้าง Recommended PO (Purchase Order) จาก historical velocity
+  - สร้าง Stock Aging Report (FIFO/LIFO analysis)
+- **Customer Demand Prediction:**
+  - พยากรณ์ความต้องการลูกค้า (อ้างอิงจาก Jobs history)
+  - Suggest Upsell/Cross-sell opportunities
+
+#### 33.3 Advanced AI Features
+- **Service Prediction (AI):**
+  - พยากรณ์อุปกรณ์ที่จะเสีย (จาก warranty + repair history)
+  - Suggest Preventive Maintenance Schedule
+- **Smart Product/Service Recommendation:**
+  - วิเคราะห์ลูกค้าและแนะนำสินค้า/บริการที่เหมาะสม (AI-driven)
+  - Integration กับ LINE Bot (push recommendation ไปยังลูกค้า)
+
+#### 33.4 Implementation Backlog
+| ฟีเจอร์ | GAS Action | Priority | Status |
+|---------|-----------|----------|--------|
+| Anomaly Detection Baseline | `getAnomalyBaseline()` | 🔴 HIGH | ⏳ In Progress (14-day telemetry) |
+| Predictive Sales API | `getSalesForecast(days)` | 🟠 MEDIUM | ⏳ Pending |
+| Inventory Optimization | `getInventoryRecommendation()` | 🟠 MEDIUM | ⏳ Pending |
+| Customer Demand AI | `predictCustomerDemand(customerId)` | 🟡 LOW | ⏳ Pending |
+| Service Prediction | `predictServiceLife(deviceId)` | 🟡 LOW | ⏳ Pending |
+| Smart Recommendation | `getSmartRecommendation(customerId)` | 🟡 LOW | ⏳ Pending |
+
+---
 
 ### 🔧 Partially Done (Backend Ready, Frontend Needed)
 
