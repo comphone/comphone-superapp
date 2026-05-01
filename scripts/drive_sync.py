@@ -198,8 +198,23 @@ def clean_old_files(service, folder_id, prefix, max_count, dry_run=False):
     return deleted
 
 def get_folder_structure(service, config, dry_run=False):
-    """สร้าง/หา folder structure ทั้งหมด"""
-    root_id    = get_or_create_folder(service, config['root_folder_name'], dry_run=dry_run)
+    """สร้าง/หา folder structure ทั้งหมด — ใช้ root_folder_id ถ้ามี มิฉะนั้นใช้ชื่อ"""
+    # ใช้ Folder ID โดยตรงถ้ากำหนดใน config
+    root_id = config.get('root_folder_id')
+    
+    if not root_id:
+        # Fallback: ใช้ชื่อโฟลเดอร์ (วิธีเดิม)
+        root_id = get_or_create_folder(service, config['root_folder_name'], dry_run=dry_run)
+    elif not dry_run:
+        # ตรวจสอบว่า root_id มีอยู่จริงใน Drive
+        try:
+            service.files().get(fileId=root_id, fields='id,name').execute()
+            log_ok(f"ใช้ Root Folder ID: {root_id[:20]}...")
+        except Exception as e:
+            log_err(f"Root Folder ID ไม่ถูกต้อง: {e}")
+            root_id = get_or_create_folder(service, config['root_folder_name'], dry_run=dry_run)
+    
+    # สร้าง sub-folders ภายใต้ root_id
     code_id    = get_or_create_folder(service, config['code_folder_name'], root_id, dry_run=dry_run)
     session_id = get_or_create_folder(service, config['session_folder_name'], root_id, dry_run=dry_run)
     backups_id = get_or_create_folder(service, 'Backups', root_id, dry_run=dry_run)
