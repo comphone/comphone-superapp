@@ -1,8 +1,8 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
 > **Version:** v5.10.0-phase32 (PWA) / v5.10.0-phase32 (GAS Backend @507)
-> **Date:** 2026-05-01 | **Phase:** 32 (Report Module + Testing Framework — PRODUCTION-STABLE)
-> **Status:** 🟢 PRODUCTION-STABLE — Phase 32 features completed, ready for testing
+> **Date:** 2026-05-01 | **Phase:** 33 (Anomaly Detection + Predictive Analytics — PLANNING)
+> **Status:** 🟢 PRODUCTION-STABLE — Phase 32 COMPLETE, moving to Phase 33
 > **Repository:** https://github.com/comphone/comphone-superapp
 
 ---
@@ -461,11 +461,12 @@ All these MUST match on deploy:
 | DriveSync retry | ✅ Phase 31 | SharedContext.gs v1.1.0 เพิ่ม syncWithRetry_() exponential backoff 3 retries |
 | Analytics Index | ✅ Phase 31 | AnalyticsIndex.gs (369L) TTL cache + searchWithIndex <2s query |
 | Self-Improving QA Loop | ✅ Phase 31 | 7-Check Protocol (Hermes sub-agent) → Master → Deploy loop |
-| Anomaly Detection baseline | ⏳ | Phase 2E telemetry active, needs 14 days of data for σ-deviation alerts |
+| Anomaly Detection baseline | ⏳ Phase 33 | รอ telemetry 14 วันจาก Phase 2E (เริ่มเก็บข้อมูลแล้ว) |
 | Time/Attendance UI | ✅ Phase 32 | เพิ่มรายงานสรุปรายเดือน/รายปี + PDF Export ใน attendance_section.js |
 | Report Module UI | ✅ Phase 32 | สร้าง reports.js ใหม่ (4 ประเภทรายงาน: Attendance, Jobs, Billing, Inventory) |
 | Automated Unit Testing | ✅ Phase 32 | สร้าง api_test_framework.js - ทดสอบ API อัตโนมัติ |
-| Next: Phase 33 Planning | ⏳ | เตรียม feature ใหม่ (เช่น Anomaly Detection, Predictive Analytics) |
+| **Phase 33: Predictive Analytics** | ⏳ | วิเคราะห์แนวโน้มยอดขาย/สต็อก, พยากรณ์ความต้องการลูกค้า |
+| **Phase 33: Advanced AI Features** | ⏳ | พัฒนา AI ทำนายการบริการ, แนะนำสินค้า/บริการอัจฉริยะ |
 | Blueprint reconciliation | ✅ | File map, versions, phase labels synced 2026-04-29 |
 
 ---
