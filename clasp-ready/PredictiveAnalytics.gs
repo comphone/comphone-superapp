@@ -188,21 +188,153 @@ function getInventoryRecommendation(data) {
     
     // Read Inventory data
     var invSh = ss.getSheetByName('DB_INVENTORY');
-    var jobsSh = ss.getSheetByName('DB_JOBS');
+    if (!invSh) return { success: false, error: 'DB_INVENTORY sheet not found' };
     
-    if (!invSh || !jobsSh) {
-      return { success: false, error: 'Required sheets not found' };
+    var invLastRow = invSh.getLastRow();
+    if (invLastRow < 2) {
+      return { success: true, recommendations: [], message: 'No inventory data' };
     }
     
-    // TODO: Implement inventory velocity calculation
-    // For now, return stub
+    var invHeaders = invSh.getRange(1, 1, 1, invSh.getLastColumn()).getValues()[0];
+    var itemCodeIdx = invHeaders.indexOf('Item_Code');
+    var itemNameIdx = invHeaders.indexOf('Item_Name');
+    var qtyIdx = invHeaders.indexOf('Qty');
+    var minQtyIdx = invHeaders.indexOf('Min_Qty');
+    var costIdx = invHeaders.indexOf('Cost_Price');
+    var categoryIdx = invHeaders.indexOf('Category');
+    
+    if (itemCodeIdx < 0 || qtyIdx < 0) {
+      return { success: false, error: 'Required columns not found (Item_Code, Qty)' };
+    }
+    
+    var invRows = invSh.getRange(2, 1, invLastRow - 1, invHeaders.length).getValues();
+    
+    // Read Job history for velocity calculation
+    var jobsSh = ss.getSheetByName('DB_JOBS');
+    var velocityMap = {}; // { item_code: { total_used, days_active, velocity } }
+    
+    if (jobsSh) {
+      var jobLastRow = jobsSh.getLastRow();
+      if (jobLastRow >= 2) {
+        var jobHeaders = jobsSh.getRange(1, 1, 1, jobsSh.getLastColumn()).getValues()[0];
+        var jobDescIdx = jobHeaders.indexOf('Description') >= 0 ? jobHeaders.indexOf('Description') : jobHeaders.indexOf('Note');
+        var jobDateIdx = jobHeaders.indexOf('Created_At') >= 0 ? jobHeaders.indexOf('Created_At') : jobHeaders.indexOf('Opened_At');
+        var jobStatusIdx = jobHeaders.indexOf('Status_Label');
+        
+        if (jobDescIdx >= 0 && jobDateIdx >= 0) {
+          var cutoffDate = new Date();
+          cutoffDate.setDate(cutoffDate.getDate() - daysHistory);
+          
+          var jobRows = jobsSh.getRange(2, 1, jobLastRow - 1, jobHeaders.length).getValues();
+          var now = new Date();
+          
+          jobRows.forEach(function(row) {
+            var jobDate = new Date(row[jobDateIdx]);
+            if (isNaN(jobDate.getTime()) || jobDate < cutoffDate) return;
+            
+            var desc = String(row[jobDescIdx] || '');
+            // Look for inventory items mentioned in job description
+            // Format: "Used: [item_code] x[qty]" or similar
+            var regex = /(\w+)\s*x\s*(\d+)/gi;
+            var match;
+            while ((match = regex.exec(desc)) !== null) {
+              var code = match[1];
+              var qty = parseInt(match[2]) || 0;
+              if (!velocityMap[code]) {
+                velocityMap[code] = { total_used: 0, days_active: 0, last_date: null };
+              }
+              velocityMap[code].total_used += qty;
+              velocityMap[code].days_active++;
+              if (!velocityMap[code].last_date || jobDate > velocityMap[code].last_date) {
+                velocityMap[code].last_date = jobDate;
+              }
+            }
+          });
+        }
+      }
+    }
+    
+    // Build recommendations
+    var recommendations = [];
+    
+    invRows.forEach(function(row) {
+      var code = String(row[itemCodeIdx] || '').trim();
+      var name = String(row[itemNameIdx] || code).trim();
+      var qty = parseFloat(row[qtyIdx]) || 0;
+      var minQty = parseFloat(row[minQtyIdx]) || 5;
+      var cost = parseFloat(row[costIdx]) || 0;
+      var category = categoryIdx >= 0 ? String(row[categoryIdx] || '').trim() : '';
+      
+      // Calculate velocity
+      var vel = velocityMap[code];
+      var dailyVelocity = 0;
+      var velocityConfidence = 'LOW';
+      
+      if (vel && vel.days_active > 0) {
+        dailyVelocity = vel.total_used / daysHistory; // Average per day over history period
+        velocityConfidence = vel.days_active >= 14 ? 'HIGH' : (vel.days_active >= 7 ? 'MEDIUM' : 'LOW');
+      }
+      
+      // Calculate recommended PO
+      var leadTimeDays = 7; // Assume 7 days lead time
+      var safetyStock = minQty * 0.5;
+      var reorderPoint = minQty + (dailyVelocity * leadTimeDays) + safetyStock;
+      
+      var recommendedPO = 0;
+      var stockStatus = 'ADEQUATE';
+      
+      if (qty <= 0) {
+        stockStatus = 'OUT_OF_STOCK';
+        recommendedPO = reorderPoint * 2; // Emergency order
+      } else if (qty < minQty) {
+        stockStatus = 'REORDER';
+        recommendedPO = reorderPoint - qty + (dailyVelocity * leadTimeDays);
+      } else if (qty < reorderPoint) {
+        stockStatus = 'LOW';
+        recommendedPO = reorderPoint - qty;
+      } else if (qty > reorderPoint * 3) {
+        stockStatus = 'OVERSTOCK';
+        recommendedPO = 0; // No need to order
+      }
+      
+      if (recommendedPO > 0) {
+        recommendedPO = Math.ceil(recommendedPO / 10) * 10; // Round up to nearest 10
+      }
+      
+      recommendations.push({
+        item_code: code,
+        item_name: name,
+        category: category,
+        current_qty: qty,
+        min_qty: minQty,
+        reorder_point: Math.round(reorderPoint * 100) / 100,
+        daily_velocity: Math.round(dailyVelocity * 100) / 100,
+        velocity_confidence: velocityConfidence,
+        stock_status: stockStatus,
+        recommended_po: Math.max(0, Math.round(recommendedPO)),
+        estimated_cost: Math.round(recommendedPO * cost * 100) / 100,
+        lead_time_days: leadTimeDays
+      });
+    });
+    
+    // Sort by urgency (OUT_OF_STOCK first, then REORDER, etc.)
+    var statusOrder = { 'OUT_OF_STOCK': 0, 'REORDER': 1, 'LOW': 2, 'ADEQUATE': 3, 'OVERSTOCK': 4 };
+    recommendations.sort(function(a, b) {
+      return (statusOrder[a.stock_status] || 5) - (statusOrder[b.stock_status] || 5);
+    });
+    
+    // Return top N
+    recommendations = recommendations.slice(0, topN);
+    
     return {
       success: true,
-      recommendations: [],
-      message: 'Inventory recommendation engine - Phase 33 implementation pending',
+      recommendations: recommendations,
       metadata: {
         days_history: daysHistory,
-        top_n: topN
+        top_n: topN,
+        total_items: invRows.length,
+        items_recommending_po: recommendations.filter(function(r) { return r.recommended_po > 0 }).length,
+        total_estimated_cost: recommendations.reduce(function(sum, r) { return sum + r.estimated_cost; }, 0)
       }
     };
     
