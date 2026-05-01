@@ -32,82 +32,82 @@
 
 <!-- ===== SPLASH SCREEN ===== -->
 <div id="splash-screen">
-<div class="splash-content">
-<div class="splash-logo">
-<div class="logo-ring"></div>
-<div class="logo-icon"><i class="bi bi-phone-fill"></i></div>
-</div>
-<h1 class="splash-title">Comphone</h1>
-<p class="splash-sub">SuperApp AI</p>
-<div class="splash-loader">
-<div class="loader-bar"></div>
-</div>
-</div>
+  <div class="splash-content">
+    <div class="splash-logo">
+      <div class="logo-ring"></div>
+      <div class="logo-icon"><i class="bi bi-phone-fill"></i></div>
+    </div>
+    <h1 class="splash-title">Comphone</h1>
+    <p class="splash-sub" data-i18n="SuperApp AI">SuperApp AI</p>
+    <div class="splash-loader">
+      <div class="loader-bar"></div>
+    </div>
+  </div>
 </div>
 
 <!-- ===== SETUP SCREEN (First time only) ===== -->
 <div id="setup-screen" class="screen hidden">
-<div class="setup-bg">
-<div class="setup-card">
-<div class="setup-logo">
-<i class="bi bi-phone-fill"></i>
-</div>
-<h2>ยินดีต้อนรับ</h2>
-<p class="setup-desc">กรอกข้อมูลครั้งเดียว<br>ระบบจะจดจำให้อัตโนมัติ</p>
+  <div class="setup-bg">
+    <div class="setup-card">
+      <div class="setup-logo">
+        <i class="bi bi-phone-fill"></i>
+      </div>
+      <h2 data-i18n="Welcome">ยินดีต้อนรับ</h2>
+      <p class="setup-desc" data-i18n="Enter once">กรอกข้อมูลครั้งเดียว<br>ระบบจะจดจำให้อัตโนมัติ</p>
 
-<div class="setup-form">
-<div class="form-group-custom">
-<label>ชื่อ-นามสกุล</label>
-<div class="input-wrap">
-<i class="bi bi-person-fill"></i>
-<input type="text" id="setup-name" placeholder="เช่น สมชาย ทำดี" autocomplete="name">
-</div>
-</div>
+      <div class="setup-form">
+        <div class="form-group-custom">
+          <label data-i18n="Full Name">ชื่อ-นามสกุล</label>
+          <div class="input-wrap">
+            <i class="bi bi-person-fill"></i>
+            <input type="text" id="setup-name" data-i18n-placeholder="e.g. Somchai Doodee" placeholder="เช่น สมชาย ทำดี" autocomplete="name">
+          </div>
+        </div>
 
-<div class="form-group-custom">
-<label>เบอร์โทรศัพท์</label>
-<div class="input-wrap">
-<i class="bi bi-telephone-fill"></i>
-<input type="tel" id="setup-phone" placeholder="081-234-5678" autocomplete="tel">
-</div>
-</div>
+        <div class="form-group-custom">
+          <label data-i18n="Phone">เบอร์โทรศัพท์</label>
+          <div class="input-wrap">
+            <i class="bi bi-telephone-fill"></i>
+            <input type="tel" id="setup-phone" data-i18n-placeholder="081-234-5678" placeholder="081-234-5678" autocomplete="tel">
+          </div>
+        </div>
 
-<div class="form-group-custom">
-<label>บทบาทของคุณ</label>
-<div class="role-picker">
-<div class="role-option" data-role="tech" onclick="selectRole(this)">
-<div class="role-icon" style="background:#dbeafe;color:#1e40af;"><i class="bi bi-tools"></i></div>
-<span>ช่าง</span>
-</div>
-<div class="role-option" data-role="admin" onclick="selectRole(this)">
-<div class="role-icon" style="background:#ede9fe;color:#5b21b6;"><i class="bi bi-headset"></i></div>
-<span>แอดมิน</span>
-</div>
-<div class="role-option" data-role="acct" onclick="selectRole(this)">
-<div class="role-icon" style="background:#cffafe;color:#164e63;"><i class="bi bi-calculator"></i></div>
-<span>บัญชี</span>
-</div>
-<div class="role-option" data-role="exec" onclick="selectRole(this)">
-<div class="role-icon" style="background:#fef9c3;color:#713f12;"><i class="bi bi-bar-chart-line"></i></div>
-<span>ผู้บริหาร</span>
-</div>
-</div>
-</div>
+        <div class="form-group-custom">
+          <label data-i18n="Your Role">บทบาทของคุณ</label>
+          <div class="role-picker">
+            <div class="role-option" data-role="tech" onclick="selectRole(this)">
+              <div class="role-icon" style="background:#dbeafe;color:#1e40af;"><i class="bi bi-tools"></i></div>
+              <span data-i18n="Technician">ช่าง</span>
+            </div>
+            <div class="role-option" data-role="admin" onclick="selectRole(this)">
+              <div class="role-icon" style="background:#ede9fe;color:#5b21b6;"><i class="bi bi-headset"></i></div>
+              <span data-i18n="Admin">แอดมิน</span>
+            </div>
+            <div class="role-option" data-role="acct" onclick="selectRole(this)">
+              <div class="role-icon" style="background:#cffafe;color:#164e63;"><i class="bi bi-calculator"></i></div>
+              <span data-i18n="Accountant">บัญชี</span>
+            </div>
+            <div class="role-option" data-role="exec" onclick="selectRole(this)">
+              <div class="role-icon" style="background:#fef9c3;color:#713f12;"><i class="bi bi-bar-chart-line"></i></div>
+              <span data-i18n="Executive">ผู้บริหาร</span>
+            </div>
+          </div>
+        </div>
 
-<div class="form-group-custom">
-<label>Script URL (Google Apps Script)</label>
-<div class="input-wrap">
-<i class="bi bi-link-45deg"></i>
-<input type="url" id="setup-url" placeholder="https://script.google.com/macros/s/..." autocomplete="url">
-</div>
-<small style="color:#9ca3af;font-size:11px;margin-top:4px;display:block;">วาง URL จาก Google Apps Script ที่ Deploy แล้ว</small>
-</div>
+    <div class="form-group-custom">
+      <label data-i18n="Script URL">Script URL (Google Apps Script)</label>
+      <div class="input-wrap">
+        <i class="bi bi-link-45deg"></i>
+        <input type="url" id="setup-url" data-i18n-placeholder="https://script.google.com/macros/s/..." placeholder="https://script.google.com/macros/s/..." autocomplete="url">
+      </div>
+      <small style="color:#9ca3af;font-size:11px;margin-top:4px;display:block;" data-i18n="Paste deployed URL">วาง URL จาก Google Apps Script ที่ Deploy แล้ว</small>
+    </div>
 
-<button class="btn-setup" onclick="completeSetup()">
-<i class="bi bi-arrow-right-circle-fill"></i>
-เริ่มใช้งาน
-</button>
-</div>
+    <button class="btn-setup" onclick="completeSetup()">
+      <i class="bi bi-arrow-right-circle-fill"></i>
+      <span data-i18n="Start Using">เริ่มใช้งาน</span>
+    </button>
+  </div>
 </div>
 </div>
 </div>
@@ -117,27 +117,27 @@
 
 <!-- TOP BAR -->
 <div id="top-bar" class="top-bar">
-<div class="top-bar-left">
-<div id="user-avatar" class="user-avatar" onclick="showProfile()"></div>
-<div>
-<div id="greeting-text" class="greeting-text"></div>
-<div id="user-name-display" class="user-name"></div>
-</div>
-</div>
-<div class="top-bar-right">
-<button class="icon-btn" onclick="showSearch()"><i class="bi bi-search"></i></button>
-<div class="notif-wrap" onclick="showNotifications()">
-<button class="icon-btn"><i class="bi bi-bell-fill"></i></button>
-<span class="notif-badge" id="notif-count">3</span>
-</div>
-</div>
+  <div class="top-bar-left">
+    <div id="user-avatar" class="user-avatar" onclick="showProfile()"></div>
+    <div>
+      <div id="greeting-text" class="greeting-text"></div>
+      <div id="user-name-display" class="user-name"></div>
+    </div>
+  </div>
+  <div class="top-bar-right">
+    <button class="icon-btn" data-i18n-title="Search" onclick="showSearch()"><i class="bi bi-search"></i></button>
+    <div class="notif-wrap" onclick="showNotifications()">
+      <button class="icon-btn"><i class="bi bi-bell-fill"></i></button>
+      <span class="notif-badge" id="notif-count">3</span>
+    </div>
+  </div>
 </div>
 
 <!-- OFFLINE BAR -->
 <div id="offline-bar" class="hidden" style="background:#f59e0b;color:#fff;font-size:11px;font-weight:700;text-align:center;padding:4px 12px;display:flex;align-items:center;justify-content:center;gap:6px;">
-<i class="bi bi-wifi-off"></i>
-<span>ออฟไลน์ — ข้อมูลจะ Sync เมื่อเชื่อมต่อ</span>
-<span class="offline-queue-count" style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1px 6px;"></span>
+  <i class="bi bi-wifi-off"></i>
+  <span data-i18n="Offline - Data will sync when connected">ออฟไลน์ — ข้อมูลจะ Sync เมื่อเชื่อมต่อ</span>
+  <span class="offline-queue-count" style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1px 6px;"></span>
 </div>
 
 <!-- PAGES CONTAINER -->
@@ -213,226 +213,235 @@
 
 <!-- CRM PAGE -->
 <div id="page-crm" class="page hidden">
-<div class="page-header">
-<h5>ลูกค้า / CRM</h5>
-<div class="search-bar-inline">
-<i class="bi bi-search"></i>
-<input type="text" id="crm-search" placeholder="ค้นหาชื่อ, เบอร์, ประวัติ..." oninput="filterCustomers(this.value)">
-<button onclick="startVoiceSearch()" class="voice-mini"><i class="bi bi-mic-fill"></i></button>
-</div>
-</div>
-<div class="filter-tabs">
-<button class="filter-tab active" onclick="filterCRMType('all', this)">ทั้งหมด</button>
-<button class="filter-tab" onclick="filterCRMType('vip', this)">VIP</button>
-<button class="filter-tab" onclick="filterCRMType('due', this)">ติดตาม</button>
-<button class="filter-tab" onclick="filterCRMType('new', this)">ใหม่</button>
-</div>
-<div id="crm-list"></div>
-<div id="crm-after-sales-section" style="margin-top:8px"></div>
+  <div class="page-header">
+    <h5 data-i18n="Customers">ลูกค้า / CRM</h5>
+    <div class="search-bar-inline">
+      <i class="bi bi-search"></i>
+      <input type="text" id="crm-search" data-i18n-placeholder="Search" placeholder="ค้นหาชื่อ, เบอร์, ประวัติ..." oninput="filterCustomers(this.value)">
+      <button onclick="startVoiceSearch()" class="voice-mini"><i class="bi bi-mic-fill"></i></button>
+    </div>
+  </div>
+  <div class="filter-tabs">
+    <button class="filter-tab active" data-i18n="All" onclick="filterCRMType('all', this)">ทั้งหมด</button>
+    <button class="filter-tab" data-i18n="VIP" onclick="filterCRMType('vip', this)">VIP</button>
+    <button class="filter-tab" data-i18n="Follow-up" onclick="filterCRMType('due', this)">ติดตาม</button>
+    <button class="filter-tab" data-i18n="New" onclick="filterCRMType('new', this)">ใหม่</button>
+  </div>
+  <div id="crm-list"></div>
+  <div id="crm-after-sales-section" style="margin-top:8px"></div>
 </div>
 
 <!-- DASHBOARD PAGE -->
 <div id="page-dashboard" class="page hidden">
-<div class="page-header" style="padding-bottom:0">
-<h5><i class="bi bi-bar-chart-line-fill" style="color:#d97706"></i> Executive Dashboard</h5>
-</div>
-<div id="dashboard-content"></div>
+  <div class="page-header" style="padding-bottom:0">
+    <h5 data-i18n="Dashboard"><i class="bi bi-bar-chart-line-fill" style="color:#d97706"></i> Executive Dashboard</h5>
+  </div>
+  <div id="dashboard-content"></div>
 </div>
 
 <!-- PURCHASE ORDER PAGE -->
 <div id="page-po" class="page hidden">
-<div class="page-header">
-<h5>ใบสั่งซื้อ (PO)</h5>
-<div class="search-bar-inline">
-<i class="bi bi-search"></i>
-<input type="text" id="po-search" placeholder="ค้นหา PO ID, ผู้จำหน่าย..." oninput="filterPOSearch(this.value)">
-</div>
-</div>
-<div class="filter-tabs">
-<button class="filter-tab active" onclick="filterPOStatus('all', this)">ทั้งหมด</button>
-<button class="filter-tab" onclick="filterPOStatus('pending', this)">รอรับสินค้า</button>
-<button class="filter-tab" onclick="filterPOStatus('received', this)">รับแล้ว</button>
-</div>
-<div id="po-list"></div>
+  <div class="page-header">
+    <h5 data-i18n="Purchase Orders">ใบสั่งซื้อ (PO)</h5>
+    <div class="search-bar-inline">
+      <i class="bi bi-search"></i>
+      <input type="text" id="po-search" data-i18n-placeholder="Search PO" placeholder="ค้นหา PO ID, ผู้จำหน่าย..." oninput="filterPOSearch(this.value)">
+    </div>
+  </div>
+  <div class="filter-tabs">
+    <button class="filter-tab active" data-i18n="All" onclick="filterPOStatus('all', this)">ทั้งหมด</button>
+    <button class="filter-tab" data-i18n="Pending" onclick="filterPOStatus('pending', this)">รอรับสินค้า</button>
+    <button class="filter-tab" data-i18n="Received" onclick="filterPOStatus('received', this)">รับแล้ว</button>
+  </div>
+  <div id="po-list"></div>
 </div>
 
 <!-- ATTENDANCE PAGE -->
 <div id="page-attendance" class="page hidden">
-<div class="page-header"><h5>เวลาทำงาน</h5></div>
-<div id="attendance-content"></div>
+  <div class="page-header"><h5 data-i18n="Attendance">เวลาทำงาน</h5></div>
+  <div id="attendance-content"></div>
 </div>
 
 <!-- PROFILE PAGE -->
 <div id="page-profile" class="page hidden">
-<div class="profile-header">
-<div id="profile-avatar-large" class="profile-avatar-large"></div>
-<div id="profile-name-large" class="profile-name-large"></div>
-<div id="profile-role-badge" class="profile-role-badge"></div>
+  <div class="profile-header">
+    <div id="profile-avatar-large" class="profile-avatar-large"></div>
+    <div id="profile-name-large" class="profile-name-large"></div>
+    <div id="profile-role-badge" class="profile-role-badge"></div>
+  </div>
+  <div class="profile-section">
+    <div class="profile-item" onclick="editProfile()">
+      <i class="bi bi-pencil-fill"></i>
+      <span data-i18n="Edit Profile">แก้ไขข้อมูลส่วนตัว</span>
+      <i class="bi bi-chevron-right ms-auto"></i>
+    </div>
+    <div class="profile-item" onclick="changeRole()">
+      <i class="bi bi-person-badge-fill"></i>
+      <span data-i18n="Change Role">เปลี่ยนบทบาท</span>
+      <i class="bi bi-chevron-right ms-auto"></i>
+    </div>
+    <div class="profile-item" onclick="showSettings()">
+      <i class="bi bi-gear-fill"></i>
+      <span data-i18n="Settings">ตั้งค่า Script URL</span>
+      <i class="bi bi-chevron-right ms-auto"></i>
+    </div>
+    <div class="profile-item" onclick="toggleNotifications()">
+      <i class="bi bi-bell-fill"></i>
+      <span data-i18n="Notifications">การแจ้งเตือน</span>
+      <div class="toggle-switch ms-auto" id="notif-toggle"></div>
+    </div>
+    <div class="profile-item" onclick="clearCache()">
+      <i class="bi bi-arrow-clockwise"></i>
+      <span data-i18n="Clear Cache">ล้างข้อมูลแคช</span>
+      <i class="bi bi-chevron-right ms-auto"></i>
+    </div>
+    <div class="profile-item danger" onclick="resetApp()">
+      <i class="bi bi-trash-fill"></i>
+      <span data-i18n="Reset App">รีเซ็ตแอป</span>
+      <i class="bi bi-chevron-right ms-auto"></i>
+    </div>
+  </div>
 </div>
-<div class="profile-section">
-<div class="profile-item" onclick="editProfile()">
-<i class="bi bi-pencil-fill"></i>
-<span>แก้ไขข้อมูลส่วนตัว</span>
-<i class="bi bi-chevron-right ms-auto"></i>
-</div>
-<div class="profile-item" onclick="changeRole()">
-<i class="bi bi-person-badge-fill"></i>
-<span>เปลี่ยนบทบาท</span>
-<i class="bi bi-chevron-right ms-auto"></i>
-</div>
-<div class="profile-item" onclick="showSettings()">
-<i class="bi bi-gear-fill"></i>
-<span>ตั้งค่า Script URL</span>
-<i class="bi bi-chevron-right ms-auto"></i>
-</div>
-<div class="profile-item" onclick="toggleNotifications()">
-<i class="bi bi-bell-fill"></i>
-<span>การแจ้งเตือน</span>
-<div class="toggle-switch ms-auto" id="notif-toggle"></div>
-</div>
-<div class="profile-item" onclick="clearCache()">
-<i class="bi bi-arrow-clockwise"></i>
-<span>ล้างข้อมูลแคช</span>
-<i class="bi bi-chevron-right ms-auto"></i>
-</div>
-<div class="profile-item danger" onclick="resetApp()">
 <i class="bi bi-trash-fill"></i>
 <span>รีเซ็ตแอป</span>
 <i class="bi bi-chevron-right ms-auto"></i>
 </div>
 </div>
-<div class="app-version">Comphone SuperApp AI v5.9.0-phase2d<br><span>PWA — ทำงานได้แม้ไม่มีอินเทอร์เน็ต</span></div>
+<div class="app-version">
+  <span data-i18n="Comphone SuperApp AI">Comphone SuperApp AI</span> <span data-i18n="Version">v5.9.0-phase2d</span><br>
+  <span data-i18n="PWA — Works offline">ทำงานได้แม้ไม่มีอินเทอร์เน็ต</span>
+</div>
 </div>
 
 <!-- REPORTS PAGE -->
 <div id="page-reports" class="page hidden">
-<div class="page-header">
-<h5><i class="bi bi-graph-up-arrow" style="color:#10b981"></i> รายงาน & วิเคราะห์</h5>
-</div>
-<div id="reports-content"></div>
+  <div class="page-header">
+    <h5 data-i18n="Reports"><i class="bi bi-graph-up-arrow" style="color:#10b981"></i> รายงาน & วิเคราะห์</h5>
+  </div>
+  <div id="reports-content"></div>
 </div>
 
 <!-- ADMIN PAGE -->
 <div id="page-admin" class="page hidden">
-<div class="page-header">
-<h5><i class="bi bi-shield-fill-check" style="color:#7c3aed"></i> Admin Panel</h5>
-</div>
-<div id="admin-content"></div>
+  <div class="page-header">
+    <h5 data-i18n="Admin"><i class="bi bi-shield-fill-check" style="color:#7c3aed"></i> Admin Panel</h5>
+  </div>
+  <div id="admin-content"></div>
 </div>
 
 <!-- INVENTORY PAGE -->
 <div id="page-inventory" class="page hidden">
-<!-- Content will be rendered by inventory.js -->
-<div style="text-align:center;padding:3rem;color:#9ca3af">
-<i class="bi bi-boxes" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
-กำลังโหลดคลังสินค้า...
-</div>
+  <!-- Content will be rendered by inventory.js -->
+  <div style="text-align:center;padding:3rem;color:#9ca3af">
+    <i class="bi bi-boxes" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
+    <span data-i18n="Loading Inventory">กำลังโหลดคลังสินค้า...</span>
+  </div>
 </div>
 
 <!-- CUSTOMER PORTAL PAGE -->
 <div id="page-customer-portal" class="page hidden">
-<!-- Content will be rendered by customer_portal.js -->
-<div style="text-align:center;padding:3rem;color:#9ca3af">
-<i class="bi bi-search" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
-ตรวจสอบสถานะงาน...
-</div>
+  <!-- Content will be rendered by customer_portal.js -->
+  <div style="text-align:center;padding:3rem;color:#9ca3af">
+    <i class="bi bi-search" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
+    <span data-i18n="Checking status">ตรวจสอบสถานะงาน...</span>
+  </div>
 </div>
 
 <!-- Notifications Page -->
 <div id="page-notifications" class="page hidden">
-<!-- Content will be rendered by notification_center.js -->
-<div style="text-align:center;padding:3rem;color:#9ca3af">
-<i class="bi bi-bell" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
-กำลังโหลดการแจ้งเตือน...
-</div>
+  <!-- Content will be rendered by notification_center.js -->
+  <div style="text-align:center;padding:3rem;color:#9ca3af">
+    <i class="bi bi-bell" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
+    <span data-i18n="Loading notifications">กำลังโหลดการแจ้งเตือน...</span>
+  </div>
 </div>
 
 <!-- Analytics Page -->
 <div id="page-analytics" class="page hidden">
-<!-- Content will be rendered by analytics_section.js -->
-<div id="section-content"></div>
+  <!-- Content will be rendered by analytics_section.js -->
+  <div id="section-content"></div>
 </div>
 
 </div><!-- end pages-container -->
 
 <!-- FAB -->
-<button id="fab-btn" class="fab-main" onclick="fabAction()">
-<i class="bi bi-plus-lg"></i>
+<button id="fab-btn" class="fab-main" data-i18n-title="Add New" onclick="fabAction()">
+  <i class="bi bi-plus-lg"></i>
 </button>
 
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav-bar">
-<button class="nav-btn active" id="nav-home" onclick="goPage('home', this)">
-<i class="bi bi-house-fill"></i>
-<span>หน้าหลัก</span>
-</button>
-<button class="nav-btn" id="nav-jobs" onclick="goPage('jobs', this)">
-<div class="nav-icon-wrap">
-<i class="bi bi-clipboard2-check-fill"></i>
-<span class="nav-badge-dot" id="jobs-badge">3</span>
-</div>
-<span>งาน</span>
-</button>
-<!-- Camera — center FAB-style button -->
-<button class="nav-btn nav-camera-btn" onclick="openCamera('job')">
-<div class="nav-camera-circle">
-<i class="bi bi-camera-fill"></i>
-</div>
-<span>กล้อง</span>
-</button>
-<!-- More — opens bottom sheet with remaining items -->
-<button class="nav-btn" id="nav-more" onclick="showMoreMenu()">
-<i class="bi bi-grid-3x3-gap-fill"></i>
-<span>เพิ่มเติม</span>
-</button>
-<button class="nav-btn" id="nav-profile" onclick="goPage('profile', this)">
-<i class="bi bi-person-fill"></i>
-<span>โปรไฟล์</span>
-</button>
+  <button class="nav-btn active" id="nav-home" onclick="goPage('home', this)">
+    <i class="bi bi-house-fill"></i>
+    <span data-i18n="Home">หน้าหลัก</span>
+  </button>
+  <button class="nav-btn" id="nav-jobs" onclick="goPage('jobs', this)">
+    <div class="nav-icon-wrap">
+      <i class="bi bi-clipboard2-check-fill"></i>
+      <span class="nav-badge-dot" id="jobs-badge">3</span>
+    </div>
+    <span data-i18n="Jobs">งาน</span>
+  </button>
+  <!-- Camera — center FAB-style button -->
+  <button class="nav-btn nav-camera-btn" onclick="openCamera('job')">
+    <div class="nav-camera-circle">
+      <i class="bi bi-camera-fill"></i>
+    </div>
+    <span data-i18n="Camera">กล้อง</span>
+  </button>
+  <!-- More — opens bottom sheet with remaining items -->
+  <button class="nav-btn" id="nav-more" onclick="showMoreMenu()">
+    <i class="bi bi-grid-3x3-gap-fill"></i>
+    <span data-i18n="More">เพิ่มเติม</span>
+  </button>
+  <button class="nav-btn" id="nav-profile" onclick="goPage('profile', this)">
+    <i class="bi bi-person-fill"></i>
+    <span data-i18n="Profile">โปรไฟล์</span>
+  </button>
 </nav>
 
 </div><!-- end main-app -->
 
 <!-- ===== MORE MENU BOTTOM SHEET ===== -->
 <div id="more-menu-overlay" class="cp-sheet-overlay" style="display:none" onclick="closeMoreMenu()">
-<div class="cp-sheet more-menu-sheet" onclick="event.stopPropagation()">
-<div class="cp-sheet-handle"></div>
-<div class="more-menu-title">เพิ่มเติม</div>
-<div class="more-menu-grid">
-<button class="more-menu-item" id="more-crm-btn" onclick="navigateFromMore('crm')">
-<div class="more-menu-icon"><i class="bi bi-people-fill"></i></div>
-<span>ลูกค้า</span>
-</button>
-<button class="more-menu-item" id="more-dashboard-btn" onclick="navigateFromMore('dashboard')">
-<div class="more-menu-icon"><i class="bi bi-bar-chart-line-fill"></i></div>
-<span>Dashboard</span>
-</button>
-<button class="more-menu-item" id="more-po-btn" onclick="navigateFromMore('po')">
-<div class="more-menu-icon"><i class="bi bi-cart-fill"></i></div>
-<span>สั่งซื้อ</span>
-</button>
-<button class="more-menu-item" id="more-inventory-btn" onclick="navigateFromMore('inventory')">
-<div class="more-menu-icon"><i class="bi bi-boxes"></i></div>
-<span>สต็อก</span>
-</button>
-<button class="more-menu-item" id="more-attendance-btn" onclick="navigateFromMore('attendance')">
-<div class="more-menu-icon"><i class="bi bi-clock-fill"></i></div>
-<span>เวลา</span>
-</button>
-<button class="more-menu-item" onclick="navigateFromMore('reports')">
-<div class="more-menu-icon"><i class="bi bi-graph-up-arrow"></i></div>
-<span>รายงาน</span>
-</button>
-<button class="more-menu-item" id="more-analytics-btn" onclick="navigateFromMore('analytics')">
-<div class="more-menu-icon"><i class="bi bi-pie-chart-fill"></i></div>
-<span>Analytics</span>
-</button>
-<button class="more-menu-item" id="more-admin-btn" style="display:none" onclick="navigateFromMore('admin')">
-<div class="more-menu-icon"><i class="bi bi-shield-fill-check"></i></div>
-<span>Admin</span>
-</button>
-</div>
-</div>
+  <div class="cp-sheet more-menu-sheet" onclick="event.stopPropagation()">
+    <div class="cp-sheet-handle"></div>
+    <div class="more-menu-title" data-i18n="More">เพิ่มเติม</div>
+    <div class="more-menu-grid">
+      <button class="more-menu-item" id="more-crm-btn" onclick="navigateFromMore('crm')">
+        <div class="more-menu-icon"><i class="bi bi-people-fill"></i></div>
+        <span data-i18n="Customers">ลูกค้า</span>
+      </button>
+      <button class="more-menu-item" id="more-dashboard-btn" onclick="navigateFromMore('dashboard')">
+        <div class="more-menu-icon"><i class="bi bi-bar-chart-line-fill"></i></div>
+        <span data-i18n="Dashboard">Dashboard</span>
+      </button>
+      <button class="more-menu-item" id="more-po-btn" onclick="navigateFromMore('po')">
+        <div class="more-menu-icon"><i class="bi bi-cart-fill"></i></div>
+        <span data-i18n="Purchase Orders">สั่งซื้อ</span>
+      </button>
+      <button class="more-menu-item" id="more-inventory-btn" onclick="navigateFromMore('inventory')">
+        <div class="more-menu-icon"><i class="bi bi-boxes"></i></div>
+        <span data-i18n="Inventory">สต็อก</span>
+      </button>
+      <button class="more-menu-item" id="more-attendance-btn" onclick="navigateFromMore('attendance')">
+        <div class="more-menu-icon"><i class="bi bi-clock-fill"></i></div>
+        <span data-i18n="Attendance">เวลา</span>
+      </button>
+      <button class="more-menu-item" onclick="navigateFromMore('reports')">
+        <div class="more-menu-icon"><i class="bi bi-graph-up-arrow"></i></div>
+        <span data-i18n="Reports">รายงาน</span>
+      </button>
+      <button class="more-menu-item" id="more-analytics-btn" onclick="navigateFromMore('analytics')">
+        <div class="more-menu-icon"><i class="bi bi-pie-chart-fill"></i></div>
+        <span>Analytics</span>
+      </button>
+      <button class="more-menu-item" id="more-admin-btn" style="display:none" onclick="navigateFromMore('admin')">
+        <div class="more-menu-icon"><i class="bi bi-shield-fill-check"></i></div>
+        <span data-i18n="Admin">Admin</span>
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- ===== MODALS ===== -->
@@ -447,64 +456,64 @@
 
 <!-- Search Modal -->
 <div id="modal-search" class="modal-overlay hidden" onclick="closeModal('modal-search')">
-<div class="modal-search-box" onclick="event.stopPropagation()">
-<div class="search-modal-bar">
-<i class="bi bi-search"></i>
-<input type="text" id="global-search-input" placeholder="ค้นหา Job ID, ชื่อลูกค้า, เบอร์..." autofocus oninput="globalSearch(this.value)">
-<button onclick="startVoiceSearch()" class="voice-mini"><i class="bi bi-mic-fill"></i></button>
-<button onclick="closeModal('modal-search')" style="background:none;border:none;color:#6b7280;font-size:14px;padding:4px 8px;">ยกเลิก</button>
-</div>
-<div id="search-results"></div>
-</div>
+  <div class="modal-search-box" onclick="event.stopPropagation()">
+    <div class="search-modal-bar">
+      <i class="bi bi-search"></i>
+      <input type="text" id="global-search-input" data-i18n-placeholder="Search" placeholder="ค้นหา Job ID, ชื่อลูกค้า, เบอร์..." autofocus oninput="globalSearch(this.value)">
+      <button onclick="startVoiceSearch()" class="voice-mini"><i class="bi bi-mic-fill"></i></button>
+      <button onclick="closeModal('modal-search')" style="background:none;border:none;color:#6b7280;font-size:14px;padding:4px 8px;" data-i18n="Cancel">ยกเลิก</button>
+    </div>
+    <div id="search-results"></div>
+  </div>
 </div>
 
 <!-- Customer Detail Modal -->
 <div id="modal-customer" class="modal-overlay hidden" onclick="closeModal('modal-customer')">
-<div class="modal-sheet" onclick="event.stopPropagation()">
-<div class="modal-handle"></div>
-<div id="modal-customer-content"></div>
-</div>
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div id="modal-customer-content"></div>
+  </div>
 </div>
 
 <!-- Add Customer Modal -->
 <div id="modal-add-customer" class="modal-overlay hidden" onclick="closeModal('modal-add-customer')">
-<div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px">
-<div class="modal-handle"></div>
-<div class="modal-title">เพิ่มลูกค้าใหม่</div>
-<div style="padding:0 16px">
-<div class="form-group-custom"><label>ชื่อ-นามสกุล *</label><div class="input-wrap"><i class="bi bi-person-fill"></i><input type="text" id="new-cust-name" placeholder="เช่น สมชาย ทำดี"></div></div>
-<div class="form-group-custom"><label>เบอร์โทร *</label><div class="input-wrap"><i class="bi bi-telephone-fill"></i><input type="tel" id="new-cust-phone" placeholder="081-234-5678"></div></div>
-<div class="form-group-custom"><label>ที่อยู่</label><div class="input-wrap"><i class="bi bi-geo-alt-fill"></i><input type="text" id="new-cust-address" placeholder="ที่อยู่หรือสถานที่ทำงาน"></div></div>
-<div class="form-group-custom"><label>ประเภทลูกค้า</label><select id="new-cust-type" class="form-select" style="border-radius:12px;border:1.5px solid #e5e7eb;padding:10px 14px"><option value="regular">ทั่วไป</option><option value="vip">VIP</option><option value="corporate">องค์กร</option></select></div>
-<div class="form-group-custom"><label>หมายเหตุ</label><div class="input-wrap"><i class="bi bi-chat-left-text"></i><input type="text" id="new-cust-notes" placeholder="หมายเหตุเพิ่มเติม"></div></div>
-<button class="btn-setup" onclick="saveNewCustomer()" style="margin-top:8px">
-<i class="bi bi-person-plus-fill"></i> บันทึกลูกค้า
-</button>
-</div>
-</div>
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px">
+    <div class="modal-handle"></div>
+    <div class="modal-title" data-i18n="Add New Customer">เพิ่มลูกค้าใหม่</div>
+    <div style="padding:0 16px">
+      <div class="form-group-custom"><label data-i18n="Customer Name">ชื่อ-นามสกุล *</label><div class="input-wrap"><i class="bi bi-person-fill"></i><input type="text" id="new-cust-name" data-i18n-placeholder="e.g. Somchai Doodee" placeholder="เช่น สมชาย ทำดี"></div></div>
+      <div class="form-group-custom"><label data-i18n="Phone">เบอร์โทร *</label><div class="input-wrap"><i class="bi bi-telephone-fill"></i><input type="tel" id="new-cust-phone" data-i18n-placeholder="081-234-5678" placeholder="081-234-5678"></div></div>
+      <div class="form-group-custom"><label data-i18n="Address">ที่อยู่</label><div class="input-wrap"><i class="bi bi-geo-alt-fill"></i><input type="text" id="new-cust-address" data-i18n-placeholder="Address or workplace" placeholder="ที่อยู่หรือสถานที่ทำงาน"></div></div>
+      <div class="form-group-custom"><label data-i18n="Customer Type">ประเภทลูกค้า</label><select id="new-cust-type" class="form-select" style="border-radius:12px;border:1.5px solid #e5e7eb;padding:10px 14px"><option value="regular" data-i18n="Regular">ทั่วไป</option><option value="vip" data-i18n="VIP">VIP</option><option value="corporate" data-i18n="Corporate">องค์กร</option></select></div>
+      <div class="form-group-custom"><label data-i18n="Notes">หมายเหตุ</label><div class="input-wrap"><i class="bi bi-chat-left-text"></i><input type="text" id="new-cust-notes" data-i18n-placeholder="Additional notes" placeholder="หมายเหตุเพิ่มเติม"></div></div>
+      <button class="btn-setup" onclick="saveNewCustomer()" style="margin-top:8px">
+        <i class="bi bi-person-plus-fill"></i> <span data-i18n="Save Customer">บันทึกลูกค้า</span>
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- After-Sales Follow-up Modal -->
 <div id="modal-aftersales" class="modal-overlay hidden" onclick="closeModal('modal-aftersales')">
-<div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px">
-<div class="modal-handle"></div>
-<div class="modal-title">ติดตาม After-Sales</div>
-<div id="modal-aftersales-content" style="padding:0 16px"></div>
-</div>
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px">
+    <div class="modal-handle"></div>
+    <div class="modal-title" data-i18n="After-Sales Follow-up">ติดตาม After-Sales</div>
+    <div id="modal-aftersales-content" style="padding:0 16px"></div>
+  </div>
 </div>
 
 <!-- Attendance Clock-in Modal -->
 <div id="modal-clockin" class="modal-overlay hidden" onclick="closeModal('modal-clockin')">
-<div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px">
-<div class="modal-handle"></div>
-<div class="modal-title" id="clockin-modal-title">เช็คอิน</div>
-<div style="padding:0 16px">
-<div class="form-group-custom"><label>หมายเหตุ (ไม่บังคับ)</label><div class="input-wrap"><i class="bi bi-chat-left-text"></i><input type="text" id="clockin-note" placeholder="เช่น มาสายแล้ว, ออกนอกสถานที่"></div></div>
-<button class="btn-setup" id="clockin-confirm-btn" onclick="confirmClockAction()" style="margin-top:8px">
-<i class="bi bi-clock-fill"></i> ยืนยัน
-</button>
-</div>
-</div>
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="clockin-modal-title" data-i18n="Check-in">เช็คอิน</div>
+    <div style="padding:0 16px">
+      <div class="form-group-custom"><label data-i18n="Notes (Optional)">หมายเหตุ (ไม่บังคับ)</label><div class="input-wrap"><i class="bi bi-chat-left-text"></i><input type="text" id="clockin-note" data-i18n-placeholder="e.g. Arrived, Out of office" placeholder="เช่น มาสายแล้ว, ออกนอกสถานที่"></div></div>
+      <button class="btn-setup" id="clockin-confirm-btn" onclick="confirmClockAction()" style="margin-top:8px">
+        <i class="bi bi-clock-fill"></i> <span data-i18n="Confirm">ยืนยัน</span>
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- ===== SCRIPTS (Load at end for performance) ===== -->
@@ -531,6 +540,30 @@
 <script src="error_boundary.js?v=5.10.0-phase32v=5.9.0-phase2d&t=20260429_1345t=20260501_0617"></script>
 <script src="pwa_install.js?v=5.10.0-phase32v=5.9.0-phase2d&t=20260429_1345t=20260501_0617"></script>
 <script src="push_notifications.js?v=5.10.0-phase32v=5.9.0-phase2d&t=20260429_1345t=20260501_0617"></script>
+<script src="language_manager.js?v=5.12.0-phase34&t=20260501_1400"></script>
+<script>
+// Update profile language label when language changes
+window.addEventListener('languageChanged', function(e) {
+  const label = document.getElementById('profile-lang-label');
+  if (label) {
+    label.textContent = e.detail.newLang === 'th' ? 'ไทย' : 'EN';
+  }
+});
+
+// Initialize language on page load
+document.addEventListener('DOMContentLoaded', function() {
+  // Small delay to ensure LanguageManager is loaded
+  setTimeout(() => {
+    if (window.LanguageManager && window.LanguageManager.getCurrentLanguage) {
+      const lang = window.LanguageManager.getCurrentLanguage();
+      const label = document.getElementById('profile-lang-label');
+      if (label) {
+        label.textContent = lang === 'th' ? 'ไทย' : 'EN';
+      }
+    }
+  }, 500);
+});
+</script>
 
 </body>
 </html>
