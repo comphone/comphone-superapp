@@ -285,11 +285,7 @@ function _checkAuthGateV55_(action, payload, e) {
     // Client telemetry is best-effort and must not block login recovery.
     'logtelemetry': 1, 'logTelemetry': 1,
     // Customer Portal public endpoint by design.
-    'getjobstatuspublic': 1, 'getJobStatusPublic': 1,
-    // Phase 34 Security Audit (TEMP for testing)
-    'runpentest': 1, 'runPenTest': 1,
-    'scanvulnerabilities': 1, 'scanVulnerabilities': 1,
-    'checksecurityconfig': 1, 'checkSecurityConfig': 1
+    'getjobstatuspublic': 1, 'getJobStatusPublic': 1
   };
 
   // ── Admin-only actions: require role=admin|owner ──
