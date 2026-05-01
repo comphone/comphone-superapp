@@ -336,9 +336,9 @@ comphone-superapp/
 | ฟีเจอร์ | GAS Action | Priority | Status |
 |---------|-----------|----------|--------|
 | Anomaly Detection Baseline | `getAnomalyBaseline()` | 🔴 HIGH | ⏳ In Progress (14-day telemetry) |
-| Predictive Sales API | `getSalesForecast(days)` | 🟠 MEDIUM | ⏳ Pending |
-| Inventory Optimization | `getInventoryRecommendation()` | 🟠 MEDIUM | ⏳ Pending |
-| Customer Demand AI | `predictCustomerDemand(customerId)` | 🟡 LOW | ⏳ Pending |
+| Predictive Sales API | `getSalesForecast(days)` | 🔴 HIGH | ✅ COMPLETED (Linear/Moving Avg) |
+| Inventory Optimization | `getInventoryRecommendation()` | 🟠 MEDIUM | ⏳ Pending (stub ready) |
+| Customer Demand AI | `predictCustomerDemand(customerId)` | 🟡 LOW | ⏳ Pending (stub ready) |
 | Service Prediction | `predictServiceLife(deviceId)` | 🟡 LOW | ⏳ Pending |
 | Smart Recommendation | `getSmartRecommendation(customerId)` | 🟡 LOW | ⏳ Pending |
 
