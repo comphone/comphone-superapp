@@ -593,3 +593,79 @@ function navigateFromMore(page) {
   const moreBtn = document.getElementById('nav-more');
   goPage(page, moreBtn);
 }
+
+// ===== ACCOUNTING INTEGRATION (Phase 35) =====
+function showAccountingSettings() {
+  const section = document.getElementById('accounting-settings-section');
+  if (section) {
+    section.classList.toggle('hidden');
+  }
+}
+
+function testMobileAccountingConnection() {
+  const software = document.getElementById('mobile-accounting-software').value;
+  const apiKey = document.getElementById('mobile-accounting-api-key').value;
+  const statusEl = document.getElementById('mobile-accounting-status');
+  
+  // Show loading
+  if (statusEl) {
+    statusEl.style.background = '#fef3c7';
+    statusEl.style.color = '#92400e';
+    statusEl.innerHTML = '⏳ กำลังตรวจสอบ...';
+  }
+  
+  // Call API
+  if (typeof callGas === 'function') {
+    callGas('checkAccountingConnection', {})
+      .then(r => {
+        if (statusEl) {
+          if (r && r.success) {
+            statusEl.style.background = '#f0fdf4';
+            statusEl.style.color = '#059669';
+            statusEl.innerHTML = `✅ เชื่อมต่อสำเร็จกับ ${software} (จำลอง)`;
+          } else {
+            statusEl.style.background = '#fee2e2';
+            statusEl.style.color = '#ef4444';
+            statusEl.innerHTML = `❌ เชื่อมต่อล้มเหลว: ${r?.error || 'Unknown error'}`;
+          }
+        }
+      })
+      .catch(e => {
+        if (statusEl) {
+          statusEl.style.background = '#fee2e2';
+          statusEl.style.color = '#ef4444';
+          statusEl.innerHTML = `❌ เกิดข้อผิดพลาด: ${e.message}`;
+        }
+      });
+  } else {
+    // Fallback: simulate
+    setTimeout(() => {
+      if (statusEl) {
+        statusEl.style.background = '#f0fdf4';
+        statusEl.style.color = '#059669';
+        statusEl.innerHTML = `✅ เชื่อมต่อสำเร็จกับ ${software} (จำลอง)`;
+      }
+    }, 1000);
+  }
+}
+
+function exportMobileBillToAccounting() {
+  const billId = prompt('ใส่ Bill ID ที่ต้องการส่งไปบัญชี:');
+  if (!billId) return;
+  
+  if (typeof callGas === 'function') {
+    callGas('exportBillToAccounting', { billId })
+      .then(r => {
+        if (r && r.success) {
+          alert(`✅ ส่งบิล ${billId} ไปยังซอฟต์แวร์บัญชีสำเร็จ\nReference: ${r.data?.accountingRef || '-'}`);
+        } else {
+          alert(`❌ ส่งบิลล้มเหลว: ${r?.error || 'Unknown error'}`);
+        }
+      })
+      .catch(e => {
+        alert(`❌ เกิดข้อผิดพลาด: ${e.message}`);
+      });
+  } else {
+    alert(`✅ (จำลอง) ส่งบิล ${billId} ไปยังซอฟต์แวร์บัญชีสำเร็จ`);
+  }
+}
