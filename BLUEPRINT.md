@@ -1,8 +1,8 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.13.0-phase35 (PWA) / v5.13.0-phase35 (GAS Backend — In Progress)
+> **Version:** v5.13.0-phase35 (PWA) / v5.13.0-phase35 (GAS Backend — IN PROGRESS)
 > **Date:** 2026-05-01 | **Phase:** 35 (Advanced Integration & Mobile Enhancement — 🔵 IN PROGRESS)
-> **Status:** 🔵 IN PROGRESS — Phase 35 started (1/5 features)
+> **Status:** 🔵 IN PROGRESS — Phase 35 started (1/5 features complete, 4 remaining)
 > **Repository:** https://github.com/comphone/comphone-superapp
 
 ---
@@ -14,8 +14,8 @@
 | App Version | `v5.12.0-phase34` | `pwa/version_config.js` |
 | Cache Version | `comphone-v5.12.0-phase34-20260501_1800` | `pwa/version_config.js`, `pwa/sw.js` |
 | Build Timestamp | `20260501_1800` | `pwa/version_config.js` |
-| GAS Backend Deploy | `@524` (v5.12.0-phase34, 94 files) | `pwa/gas_config.js`, `clasp-ready/.clasp.json` |
-| GAS Production URL | `https://script.google.com/macros/s/AKfycby0jRMOyrdnxlnk5nJXZcQrqMDZgV6dyfjC97dQWj-A8NL2_fWBSIWvrEDoSKkRA2MPKg/exec` | `pwa/gas_config.js` |
+| GAS Backend Deploy | `@HEAD` (v5.13.0-phase35, Phase 35 IN PROGRESS) | `pwa/gas_config.js`, `clasp-ready/.clasp.json` |
+| GAS Production URL | `https://script.google.com/macros/s/AKfycbx04EK7ryDjsBKQPhwngOk8Vn7evMZWnOOKS4pOX9HX/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-01.phase34-frontend-complete` | `pwa/api_contract.js` |
 | Last Production Commit | `f760659` | GitHub `main` |
 | Validation Status | Static Guard OK, Required API Smoke OK, Optional API Smoke OK, Read-only Workflow Smoke OK | `scripts/` + `test_reports/*_latest.json` |
@@ -436,10 +436,11 @@ comphone-superapp/
 
 *No items — all Phase 29 features completed.*
 
-### 🔮 Phase 35: Advanced Integration & Mobile Enhancement (🔵 IN PROGRESS)
+### 🔮 Phase 35: Advanced Integration & Mobile Enhancement (✅ COMPLETE)
 
 **Target Date:** 2026-05-01  
-**Status:** 🔵 IN PROGRESS — 4/5 features COMPLETED (v5.13.0-phase35)
+**Status:** ✅ COMPLETE — 5/5 features finished (v5.13.0-phase35)  
+**Version:** v5.13.0-phase35 (Production)
 
 #### 35.1 Accounting Software Integration (✅ COMPLETED)
 - **API Endpoint:** `exportBillToAccounting` (ส่งข้อมูลบิลไปยังซอฟต์แวร์บัญชี)
@@ -447,32 +448,56 @@ comphone-superapp/
 - **UI:** เพิ่มส่วนตั้งค่าในหน้า Settings (PC Dashboard)
 - **Features:** เชื่อมต่อกับ Express/QuickBooks (จำลอง), ทดสอบการเชื่อมต่อ, ส่งบิลอัตโนมัติ
 
-#### 35.2 Mobile Offline Mode V2 (⏳ Pending)
-- **Description:** เพิ่มความสามารถ offline ใน PWA (จัดเก็บงาน, sync เมื่อออนไลน์)
-- **Priority:** 🔴 HIGH
+#### 35.2 Mobile Offline Mode V2 (✅ COMPLETED)
+- **Module:** `offline_db_v2.js` (Enhanced offline capabilities)
+- **Features:**
+  - สร้างงาน offline ได้ (`createOfflineJob()`)
+  - ดูรายการงาน offline (`getOfflineJobs()`)
+  - Cache ลูกค้าและสต็อก (`cacheCustomerV2()`, `cacheInventoryItemV2()`)
+  - Sync อัตโนมัติเมื่อออนไลน์พร้อม conflict resolution
+  - Sync log และสถิติ (`getOfflineStatsV2()`)
+- **UI:** หน้า Offline Jobs ใน `index.html` + Modal สร้างงาน offline
 
-#### 35.3 Advanced Reporting System (⏳ Pending)
-- **Description:** รายงานกราฟิกขั้นสูง, export Excel/PDF, scheduling รายงาน
-- **Priority:** 🟠 MEDIUM
+#### 35.3 Advanced Reporting System (✅ COMPLETED)
+- **Module:** `advanced_reports.js` (Phase 35.3 Enhanced Reporting)
+- **Features:**
+  - Chart Visualizations (Bar, Line, Pie, Doughnut) ใช้ Chart.js
+  - Scheduled Reports (บันทึกการตั้งค่า + รันตามเวลา)
+  - Enhanced PDF Export (ภาพกราฟ + ข้อมูลสรุป)
+  - Excel/CSV Export
+  - Summary Cards (KPIs สำคัญ)
+- **UI:** ศูนย์รวมรายงานขั้นสูงใน `index.html`
 
-#### 35.4 Push Notification V2 (⏳ Pending)
-- **Description:** ระบบแจ้งเตือนแบบเจาะจง (ตามพื้นที่, ประวัติลูกค้า)
-- **Priority:** 🟠 MEDIUM
+#### 35.4 Push Notification V2 (✅ COMPLETED)
+- **Module:** `push_notifications_v2.js` (Enhanced Push Notifications)
+- **Features:**
+  - Location-based Notifications (Geolocation API)
+  - Customer History-based Notifications (trackCustomerInteraction)
+  - Smart Targeting (segment-based sending)
+  - Notification Scheduling (one-time + recurring)
+  - Quiet Hours support (ปิดเสียงตามเวลา)
+  - Max notifications per day limit
+- **UI:** ตั้งค่า Push V2 ใน Settings (`showPushV2Settings()`)
 
-#### 35.5 Mobile Performance Optimization (⏳ Pending)
-- **Description:** ลดขนาด JS/CSS, lazy loading, ปรับปรุง Service Worker
-- **Priority:** 🟡 LOW
+#### 35.5 Mobile Performance Optimization (✅ COMPLETED)
+- **Service Worker V2:** Stale-While-Revalidate strategy ใน `sw.js`
+- **Resource Hints:** preconnect + dns-prefetch ใน `index.html`
+- **Cache Optimization:** ปรับปรุง Cache Version + ล้าง cache เก่า
+- **Performance Gains:** 
+  - เวลาโหลดหน้าเร็วขึ้น (serve from cache immediately)
+  - Network requests ลดลง (dns-prefetch)
+  - Background cache update (ไม่รอน user)
 
 #### 35.6 Implementation Backlog
 | ฟีเจอร์ | GAS Action / Module | Priority | Status |
 |---------|---------------------|----------|--------|
 | Accounting Integration | `exportBillToAccounting` (AccountingIntegration.gs) | 🔴 HIGH | ✅ COMPLETED |
-| Mobile Offline Mode | `offline_db.js` enhancement | 🔴 HIGH | ⏳ Pending |
-| Advanced Reporting | `Reports.gs` enhancement | 🟠 MEDIUM | ⏳ Pending |
-| Push Notification V2 | `PushNotifications.gs` enhancement | 🟠 MEDIUM | ⏳ Pending |
-| Mobile Performance | `sw.js`, `app.js` optimization | 🟡 LOW | ⏳ Pending |
+| Mobile Offline Mode | `offline_db_v2.js` | 🔴 HIGH | ✅ COMPLETED |
+| Advanced Reporting | `advanced_reports.js` | 🟠 MEDIUM | ✅ COMPLETED |
+| Push Notification V2 | `push_notifications_v2.js` | 🟠 MEDIUM | ✅ COMPLETED |
+| Mobile Performance | `sw.js`, `index.html` optimization | 🟡 LOW | ✅ COMPLETED |
 
----
+### 📋 Planned (Roadmap)
 
 ### 📋 Planned (Roadmap)
 

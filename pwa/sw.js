@@ -3,7 +3,7 @@
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ============================================================
-const CACHE_V = 'comphone-v5.13.0-phase35-20260501_1930';
+const CACHE_V = 'comphone-v5.13.0-phase35-20260501_2300';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
 importScripts(BASE + '/pwa_asset_manifest.js');
@@ -109,19 +109,31 @@ self.addEventListener('message', e => {
 // STRATEGY IMPLEMENTATIONS
 // ============================================================
 async function _cacheFirst_(request) {
-  const cached = await caches.match(request);
-  if (cached) return cached;
-  try {
-    const res = await fetch(request);
+  // Stale-While-Revalidate: return cached, then update cache in background
+  const cache = await caches.open(CACHE_V);
+  const cached = await cache.match(request);
+  
+  const fetchPromise = fetch(request).then(res => {
     if (res.ok) {
-      const cache = await caches.open(CACHE_V);
       cache.put(request, res.clone());
     }
     return res;
+  }).catch(() => cached); // Network failed, fall back to cache
+
+  // Return cached version immediately if available
+  if (cached) {
+    // Update cache in background (don't await)
+    fetchPromise.catch(() => {});
+    return cached;
+  }
+
+  // No cache, wait for network
+  try {
+    return await fetchPromise;
   } catch (_) {
     // Document fallback
     if (request.destination === 'document') {
-      const fb = await caches.match(BASE + '/index.html');
+      const fb = await cache.match(BASE + '/index.html');
       if (fb) return fb;
     }
     return new Response('Offline', { status: 503 });

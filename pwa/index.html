@@ -10,6 +10,10 @@
 <meta name="apple-mobile-web-app-title" content="Comphone">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="description" content="Comphone SuperApp AI — ระบบบริหารงานบริการ IT และโซลูชันเทคโนโลยี">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://script.google.com">
+<link rel="dns-prefetch" href="https://script.google.com">
 <link rel="manifest" href="/comphone-superapp/pwa/manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -524,6 +528,69 @@
   </div>
 </div>
 
+<!-- OFFLINE JOBS PAGE (Phase 35.2) -->
+<div id="page-offline-jobs" class="page hidden">
+  <div class="page-header">
+    <h5>📴 งาน Offline</h5>
+    <button class="btn btn-sm btn-outline-primary" onclick="syncOfflineQueueV2()">
+      <i class="bi bi-arrow-clockwise"></i> Sync ทันที
+    </button>
+  </div>
+  <div id="offline-stats-bar" class="stats-row" style="padding:8px 12px;margin-bottom:12px;"></div>
+  <div class="filter-tabs">
+    <button class="filter-tab active" onclick="filterOfflineJobs('all', this)">ทั้งหมด</button>
+    <button class="filter-tab" onclick="filterOfflineJobs('pending', this)">รอ Sync</button>
+    <button class="filter-tab" onclick="filterOfflineJobs('synced', this)">Sync แล้ว</button>
+  </div>
+  <div id="offline-jobs-list"></div>
+  <div style="text-align:center;padding:16px;">
+    <button class="btn-setup" style="font-size:13px;padding:8px 20px;" onclick="showCreateOfflineJob()">
+      <i class="bi bi-plus-circle"></i> สร้างงาน Offline
+    </button>
+  </div>
+</div>
+
+<!-- Create Offline Job Modal -->
+<div id="modal-create-offline-job" class="modal-overlay hidden" onclick="closeModal('modal-create-offline-job')">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px;">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📴 สร้างงาน Offline</div>
+    <div style="padding:0 16px;">
+      <div class="form-group-custom">
+        <label>ชื่อลูกค้า</label>
+        <div class="input-wrap">
+          <i class="bi bi-person-fill"></i>
+          <input type="text" id="offline-cust-name" placeholder="ชื่อ-นามสกุล">
+        </div>
+      </div>
+      <div class="form-group-custom">
+        <label>เบอร์โทร</label>
+        <div class="input-wrap">
+          <i class="bi bi-telephone-fill"></i>
+          <input type="tel" id="offline-cust-phone" placeholder="081-234-5678">
+        </div>
+      </div>
+      <div class="form-group-custom">
+        <label>อุปกรณ์</label>
+        <div class="input-wrap">
+          <i class="bi bi-phone-fill"></i>
+          <input type="text" id="offline-device" placeholder="เช่น iPhone 13, HP Laptop">
+        </div>
+      </div>
+      <div class="form-group-custom">
+        <label>อาการ</label>
+        <div class="input-wrap">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <input type="text" id="offline-symptom" placeholder="เช่น เปิดไม่ติด, หน้าจอแตก">
+        </div>
+      </div>
+      <button class="btn-setup" onclick="saveOfflineJob()">
+        <i class="bi bi-check-circle"></i> บันทึกงาน Offline
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- After-Sales Follow-up Modal -->
 <div id="modal-aftersales" class="modal-overlay hidden" onclick="closeModal('modal-aftersales')">
   <div class="modal-sheet" onclick="event.stopPropagation()" style="padding:0 0 24px">
@@ -553,6 +620,7 @@
 <script src="auth_guard.js?v=5.13.0-phase35&t=20260501_1930"></script>
 <script src="app.js?v=5.13.0-phase35&t=20260501_1930"></script>
 <script src="offline_db.js?v=5.13.0-phase35&t=20260501_1930"></script>
+<script src="offline_db_v2.js?v=5.13.0-phase35&t=20260501_2200"></script>
 <script src="app_home.js?v=5.13.0-phase35&t=20260501_1930"></script>
 <script src="app_jobs.js?v=5.13.0-phase35&t=20260501_1930"></script>
 <script src="app_actions.js?v=5.13.0-phase35&t=20260501_1930"></script>
@@ -561,6 +629,7 @@
 <script src="purchase_order.js?v=5.13.0-phase35&t=20260501_1930"></script>
 <script src="inventory.js?v=5.13.0-phase35&t=20260501_1930"></script>
 <script src="reports.js?v=5.13.0-phase35&t=20260501_1930"></script>
+<script src="advanced_reports.js?v=5.13.0-phase35&t=20260501_2230"></script>
 <script src="api_test_framework.js?v=5.13.0-phase35&t=20260501_1930"></script>
 <script src="customer_portal.js?v=5.13.0-phase35&t=20260501_1930"></script>
 <script src="analytics_section.js?v=5.13.0-phase35&t=20260501_1930"></script>
@@ -571,6 +640,7 @@
 <script src="error_boundary.js?v=5.13.0-phase35&t=20260501_1930"></script>
 <script src="pwa_install.js?v=5.13.0-phase35&t=20260501_1930"></script>
 <script src="push_notifications.js?v=5.13.0-phase35&t=20260501_1930"></script>
+<script src="push_notifications_v2.js?v=5.13.0-phase35&t=20260501_2245"></script>
 <script src="language_manager.js?v=5.13.0-phase35&t=20260501_1930"></script>
 <script>
 // Update profile language label when language changes

@@ -670,7 +670,118 @@ function exportMobileBillToAccounting() {
   }
 }
 
-// ===== SYNC QUEUE UI (Phase 35 B2) =====
+// ===== OFFLINE JOBS UI (Phase 35.2) =====
+function showOfflineJobs() {
+  goPage('offline-jobs');
+  loadOfflineJobs();
+}
+
+async function loadOfflineJobs(filter = 'all') {
+  try {
+    const jobs = await getOfflineJobs();
+    const stats = await getOfflineStatsV2();
+    
+    // Update stats bar
+    const statsBar = document.getElementById('offline-stats-bar');
+    if (statsBar) {
+      statsBar.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+          <div style="background:#f0fdf4;padding:8px;border-radius:8px;text-align:center;">
+            <div style="font-size:18px;font-weight:700;color:#059669;">${stats.jobs?.total || 0}</div>
+            <div style="font-size:10px;color:#6b7280;">ทั้งหมด</div>
+          </div>
+          <div style="background:#fef3c7;padding:8px;border-radius:8px;text-align:center;">
+            <div style="font-size:18px;font-weight:700;color:#92400e;">${stats.jobs?.pending || 0}</div>
+            <div style="font-size:10px;color:#6b7280;">รอ Sync</div>
+          </div>
+          <div style="background:#dbeafe;padding:8px;border-radius:8px;text-align:center;">
+            <div style="font-size:18px;font-weight:700;color:#1e40af;">${stats.jobs?.synced || 0}</div>
+            <div style="font-size:10px;color:#6b7280;">Sync แล้ว</div>
+          </div>
+          <div style="background:#ede9fe;padding:8px;border-radius:8px;text-align:center;">
+            <div style="font-size:18px;font-weight:700;color:#5b21b6;">${stats.queue?.pending || 0}</div>
+            <div style="font-size:10px;color:#6b7280;">คิว Sync</div>
+          </div>
+        </div>
+      `;
+    }
+    
+    // Filter jobs
+    let filtered = jobs;
+    if (filter === 'pending') {
+      filtered = jobs.filter(j => j.status === 'OFFLINE_PENDING');
+    } else if (filter === 'synced') {
+      filtered = jobs.filter(j => j.status === 'SYNCED');
+    }
+    
+    // Render jobs
+    const listEl = document.getElementById('offline-jobs-list');
+    if (!listEl) return;
+    
+    if (filtered.length === 0) {
+      listEl.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af;"><i class="bi bi-inbox" style="font-size:48px;display:block;margin-bottom:8px;"></i>ไม่มีงาน offline</div>';
+      return;
+    }
+    
+    listEl.innerHTML = filtered.map(job => `
+      <div style="background:#fff;border-radius:12px;padding:12px;margin-bottom:8px;border:1px solid #e5e7eb;">
+        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">
+          <div style="font-weight:600;font-size:14px;">${job.customer_name || 'ไม่ระบุ'}</div>
+          <span style="font-size:10px;padding:2px 8px;border-radius:10px;${job.status === 'SYNCED' ? 'background:#d1fae5;color:#065f46;' : 'background:#fef3c7;color:#92400e;'}">${job.status === 'SYNCED' ? '✅ Sync แล้ว' : '⏳ รอ Sync'}</span>
+        </div>
+        <div style="font-size:12px;color:#6b7280;margin-bottom:4px;"><i class="bi bi-phone-fill"></i> ${job.device || '-'}</div>
+        <div style="font-size:12px;color:#374151;margin-bottom:8px;"><i class="bi bi-exclamation-circle"></i> ${job.symptom || job.title || '-'}</div>
+        <div style="font-size:10px;color:#9ca3af;"><i class="bi bi-clock"></i> ${new Date(job.createdAt || job.time).toLocaleString('th-TH')}</div>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('[OfflineJobs] Load error:', err);
+  }
+}
+
+function filterOfflineJobs(filter, btn) {
+  // Update active tab
+  const tabs = btn.parentElement.querySelectorAll('.filter-tab');
+  tabs.forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  
+  loadOfflineJobs(filter);
+}
+
+function showCreateOfflineJob() {
+  document.getElementById('modal-create-offline-job').classList.remove('hidden');
+}
+
+async function saveOfflineJob() {
+  const name = document.getElementById('offline-cust-name')?.value?.trim();
+  const phone = document.getElementById('offline-cust-phone')?.value?.trim();
+  const device = document.getElementById('offline-device')?.value?.trim();
+  const symptom = document.getElementById('offline-symptom')?.value?.trim();
+  
+  if (!name) {
+    showToast('⚠️ กรุณากรอกชื่อลูกค้า', 'warning');
+    return;
+  }
+  
+  const result = await createOfflineJob({
+    customer_name: name,
+    customer_phone: phone,
+    device: device,
+    symptom: symptom
+  });
+  
+  if (result && result.success) {
+    closeModal('modal-create-offline-job');
+    // Clear form
+    ['offline-cust-name', 'offline-cust-phone', 'offline-device', 'offline-symptom'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    loadOfflineJobs();
+  }
+}
+
+// ===== END OF FILE =====
 function showSyncQueue() {
   getQueueStats().then(stats => {
     const modal = document.createElement('div');
