@@ -669,3 +669,36 @@ function exportMobileBillToAccounting() {
     alert(`✅ (จำลอง) ส่งบิล ${billId} ไปยังซอฟต์แวร์บัญชีสำเร็จ`);
   }
 }
+
+// ===== SYNC QUEUE UI (Phase 35 B2) =====
+function showSyncQueue() {
+  getQueueStats().then(stats => {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.onclick = () => modal.remove();
+    modal.innerHTML = `
+      <div class="modal-sheet" onclick="event.stopPropagation()" style="padding:16px;">
+        <div class="modal-handle"></div>
+        <div class="modal-title">📋 คิว offline (${stats.total} รายการ)</div>
+        <div style="padding:8px 0;">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
+            <div style="background:#f0fdf4;padding:8px;border-radius:8px;text-align:center;">
+              <div style="font-size:18px;font-weight:700;color:#059669;">${stats.pending}</div>
+              <div style="font-size:10px;color:#6b7280;">รอ Sync</div>
+            </div>
+            <div style="background:#dbeafe;padding:8px;border-radius:8px;text-align:center;">
+              <div style="font-size:18px;font-weight:700;color:#1e40af;">${stats.done}</div>
+              <div style="font-size:10px;color:#6b7280;">เสร็จแล้ว</div>
+            </div>
+            <div style="background:#fee2e2;padding:8px;border-radius:8px;text-align:center;">
+              <div style="font-size:18px;font-weight:700;color:#ef4444;">${stats.failed}</div>
+              <div style="font-size:10px;color:#6b7280;">ล้มเหลว</div>
+            </div>
+          </div>
+          <button onclick="syncOfflineQueueLegacy(); this.disabled=true; this.textContent='กำลัง Sync...';" style="width:100%;padding:8px;background:#1e40af;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;">🔄 Sync ทันที</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  });
+}
