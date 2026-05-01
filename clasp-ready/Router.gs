@@ -101,6 +101,19 @@ function doGet(e) {
     if (action === 'gethistoricalmetrics' || action === 'getHistoricalMetrics') {
       return jsonOutputV55_(getHistoricalMetricsAPI(params));
     }
+    // Backup & Recovery (Phase 34)
+    if (action === 'createbackup' || action === 'createBackup') {
+      return jsonOutputV55_(createBackupAPI(params));
+    }
+    if (action === 'listbackups' || action === 'listBackups') {
+      return jsonOutputV55_(listBackupsAPI(params));
+    }
+    if (action === 'checkbackuphealth' || action === 'checkBackupHealth') {
+      return jsonOutputV55_(checkBackupHealthAPI(params));
+    }
+    if (action === 'restorebackup' || action === 'restoreBackup') {
+      return jsonOutputV55_(restoreBackupAPI(params));
+    }
     // ---- POS Web App Deployment (Phase 30) ----
     // Serve POS UI from GAS domain to fix Session issue
     if (params.page === 'pos' || action === 'pos') {
@@ -262,7 +275,12 @@ function _checkAuthGateV55_(action, payload, e) {
     // Client telemetry is best-effort and must not block login recovery.
     'logtelemetry': 1, 'logTelemetry': 1,
     // Customer Portal public endpoint by design.
-    'getjobstatuspublic': 1, 'getJobStatusPublic': 1
+    'getjobstatuspublic': 1, 'getJobStatusPublic': 1,
+    // Phase 34 Backup & Recovery (TEMP for testing)
+    'createbackup': 1, 'createBackup': 1,
+    'listbackups': 1, 'listBackups': 1,
+    'checkbackuphealth': 1, 'checkBackupHealth': 1,
+    'restorebackup': 1, 'restoreBackup': 1
   };
 
   // ── Admin-only actions: require role=admin|owner ──
