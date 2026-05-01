@@ -298,10 +298,10 @@ comphone-superapp/
 | **Report PDF Export** | ✅ Phase 32 | รองรับ Export PDF ทุกประเภทรายงาน (ใช้ jsPDF) |
 | **Automated Unit Testing Framework** | ✅ Phase 32 | สร้าง `api_test_framework.js` - ทดสอบ API อัตโนมัติ |
 
-### 🔮 Phase 33: Anomaly Detection & Predictive Analytics (PLANNING)
+### 🔮 Phase 33: Anomaly Detection & Predictive Analytics (IN PROGRESS)
 
 **Target Date:** 2026-05-15  
-**Status:** 📋 PLANNING — Anomaly Detection baseline running (Phase 2E telemetry 14 วัน)
+**Status:** 🚀 IN PROGRESS — 3/6 features COMPLETED, Anomaly baseline running (Phase 2E telemetry 14 วัน)
 
 #### 33.1 Anomaly Detection (Telemetry → Alerts)
 - **Baseline Period:** รอครบ 14 วันจาก Phase 2E (เริ่มเก็บข้อมูลแล้ว)
@@ -337,8 +337,8 @@ comphone-superapp/
 |---------|-----------|----------|--------|
 | Anomaly Detection Baseline | `getAnomalyBaseline()` | 🔴 HIGH | ⏳ In Progress (14-day telemetry) |
 | Predictive Sales API | `getSalesForecast(days)` | 🔴 HIGH | ✅ COMPLETED (Linear/Moving Avg) |
-| Inventory Optimization | `getInventoryRecommendation()` | 🟠 MEDIUM | ⏳ Pending (stub ready) |
-| Customer Demand AI | `predictCustomerDemand(customerId)` | 🟡 LOW | ⏳ Pending (stub ready) |
+| Inventory Optimization | `getInventoryRecommendation()` | 🟠 MEDIUM | ✅ COMPLETED (Velocity + PO calc) |
+| Customer Demand AI | `predictCustomerDemand(customerId)` | 🟡 LOW | ✅ COMPLETED (Trend + Forecast) |
 | Service Prediction | `predictServiceLife(deviceId)` | 🟡 LOW | ⏳ Pending |
 | Smart Recommendation | `getSmartRecommendation(customerId)` | 🟡 LOW | ⏳ Pending |
 
