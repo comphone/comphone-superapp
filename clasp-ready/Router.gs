@@ -255,9 +255,7 @@ function _checkAuthGateV55_(action, payload, e) {
     // Client telemetry is best-effort and must not block login recovery.
     'logtelemetry': 1, 'logTelemetry': 1,
     // Customer Portal public endpoint by design.
-    'getjobstatuspublic': 1, 'getJobStatusPublic': 1,
-    // Phase 34 LINE Bot V3 (TEMP for testing)
-    'linewebhookv3': 1, 'lineWebhookV3': 1
+    'getjobstatuspublic': 1, 'getJobStatusPublic': 1
   };
 
   // ── Admin-only actions: require role=admin|owner ──
