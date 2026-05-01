@@ -98,6 +98,13 @@ function doGet(e) {
     if (action === 'getperformancemetrics' || action === 'getPerformanceMetrics') {
       return jsonOutputV55_(getPerformanceMetricsAPI(params));
     }
+    // Accounting Integration (Phase 35)
+    if (action === 'exportbilltoaccounting' || action === 'exportBillToAccounting') {
+      return jsonOutputV55_(exportBillToAccounting(params.billId || ''));
+    }
+    if (action === 'checkaccountingconnection' || action === 'checkAccountingConnection') {
+      return jsonOutputV55_(checkAccountingConnection());
+    }
     if (action === 'gethistoricalmetrics' || action === 'getHistoricalMetrics') {
       return jsonOutputV55_(getHistoricalMetricsAPI(params));
     }

@@ -154,6 +154,34 @@ async function renderSettingsSection() {
           <i class="bi bi-github"></i> GitHub
         </button>
       </div>
+    </div>
+    <!-- Accounting Integration (Phase 35) -->
+    <div class="card-box" style="margin-bottom:16px;border-left:4px solid #1e40af">
+      <div class="card-title"><i class="bi bi-calculator" style="color:#1e40af"></i> การเชื่อมต่อบัญชี (Phase 35)</div>
+      <div style="padding:8px 0">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div>
+            <label style="font-size:12px;color:#6b7280">ซอฟต์แวร์บัญชี</label>
+            <select id="accounting-software" style="width:100%;padding:8px;border-radius:6px;border:1px solid #d1d5db">
+              <option value="express">Express</option>
+              <option value="quickbooks">QuickBooks</option>
+              <option value="other">อื่นๆ</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:12px;color:#6b7280">การเชื่อมต่อ</label>
+            <div id="accounting-status" style="padding:8px;background:#f0fdf4;color:#059669;border-radius:6px;font-size:13px">✅ เชื่อมต่อแล้ว (จำลอง)</div>
+          </div>
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:12px;color:#6b7280">API Key / Token</label>
+          <input type="password" id="accounting-api-key" placeholder="ใส่ API Key หรือ Token" style="width:100%;padding:8px;border-radius:6px;border:1px solid #d1d5db">
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="testAccountingConnection()" style="flex:1;padding:8px;background:#1e40af;color:#fff;border:none;border-radius:6px;cursor:pointer">🔍 ทดสอบการเชื่อมต่อ</button>
+          <button onclick="exportBillToAccountingUI()" style="flex:1;padding:8px;background:#059669;color:#fff;border:none;border-radius:6px;cursor:pointer">📤 ส่งบิลไปบัญชี</button>
+        </div>
+      </div>
     </div>`;
 
   document.getElementById('main-content').innerHTML = html;
@@ -207,6 +235,49 @@ function setActiveNav(section) {
   const lockClass = lockOk ? 'ok' : 'err';
   badge.innerHTML = `${window.__APP_VERSION || 'v?'} | AI:<span class="${aiClass}">${aiOk?'OK':'FAIL'}</span> | LOCK:<span class="${lockClass}">${lockOk?'OK':'FAIL'}</span>`;
 })();
+
+function testAccountingConnection() {
+  const software = document.getElementById('accounting-software').value;
+  const apiKey = document.getElementById('accounting-api-key').value;
+  
+  // เรียก API ตรวจสอบการเชื่อมต่อ
+  callGas('checkAccountingConnection', {})
+    .then(r => {
+      const statusEl = document.getElementById('accounting-status');
+      if (r.success) {
+        statusEl.style.background = '#f0fdf4';
+        statusEl.style.color = '#059669';
+        statusEl.innerHTML = `✅ เชื่อมต่อสำเร็จกับ ${software} (จำลอง)`;
+      } else {
+        statusEl.style.background = '#fee2e2';
+        statusEl.style.color = '#ef4444';
+        statusEl.innerHTML = `❌ เชื่อมต่อล้มเหลว: ${r.error || 'Unknown error'}`;
+      }
+    })
+    .catch(e => {
+      const statusEl = document.getElementById('accounting-status');
+      statusEl.style.background = '#fee2e2';
+      statusEl.style.color = '#ef4444';
+      statusEl.innerHTML = `❌ เกิดข้อผิดพลาด: ${e.message}`;
+    });
+}
+
+function exportBillToAccountingUI() {
+  const billId = prompt('ใส่ Bill ID ที่ต้องการส่งไปบัญชี:');
+  if (!billId) return;
+  
+  callGas('exportBillToAccounting', { billId })
+    .then(r => {
+      if (r.success) {
+        alert(`✅ ส่งบิล ${billId} ไปยังซอฟต์แวร์บัญชีสำเร็จ\nReference: ${r.data?.accountingRef || '-'}`);
+      } else {
+        alert(`❌ ส่งบิลล้มเหลว: ${r.error || 'Unknown error'}`);
+      }
+    })
+    .catch(e => {
+      alert(`❌ เกิดข้อผิดพลาด: ${e.message}`);
+    });
+}
 window.addEventListener('load', function() {
   setTimeout(function() {
     const badge = document.getElementById('version_badge');

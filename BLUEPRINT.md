@@ -1,8 +1,8 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.12.0-phase34 (PWA) / v5.12.0-phase34 (GAS Backend — Production)
-> **Date:** 2026-05-01 | **Phase:** 34 (Frontend — ✅ COMPLETE)
-> **Status:** ✅ COMPLETE — Phase 34 Frontend finished (7/7 features)
+> **Version:** v5.13.0-phase35 (PWA) / v5.13.0-phase35 (GAS Backend — In Progress)
+> **Date:** 2026-05-01 | **Phase:** 35 (Advanced Integration & Mobile Enhancement — 🔵 IN PROGRESS)
+> **Status:** 🔵 IN PROGRESS — Phase 35 started (1/5 features)
 > **Repository:** https://github.com/comphone/comphone-superapp
 
 ---
@@ -435,6 +435,44 @@ comphone-superapp/
 ### 🔧 Partially Done (Backend Ready, Frontend Needed)
 
 *No items — all Phase 29 features completed.*
+
+### 🔮 Phase 35: Advanced Integration & Mobile Enhancement (🔵 IN PROGRESS)
+
+**Target Date:** 2026-05-01  
+**Status:** 🔵 IN PROGRESS — 4/5 features COMPLETED (v5.13.0-phase35)
+
+#### 35.1 Accounting Software Integration (✅ COMPLETED)
+- **API Endpoint:** `exportBillToAccounting` (ส่งข้อมูลบิลไปยังซอฟต์แวร์บัญชี)
+- **Module:** `AccountingIntegration.gs` (สร้างแล้ว)
+- **UI:** เพิ่มส่วนตั้งค่าในหน้า Settings (PC Dashboard)
+- **Features:** เชื่อมต่อกับ Express/QuickBooks (จำลอง), ทดสอบการเชื่อมต่อ, ส่งบิลอัตโนมัติ
+
+#### 35.2 Mobile Offline Mode V2 (⏳ Pending)
+- **Description:** เพิ่มความสามารถ offline ใน PWA (จัดเก็บงาน, sync เมื่อออนไลน์)
+- **Priority:** 🔴 HIGH
+
+#### 35.3 Advanced Reporting System (⏳ Pending)
+- **Description:** รายงานกราฟิกขั้นสูง, export Excel/PDF, scheduling รายงาน
+- **Priority:** 🟠 MEDIUM
+
+#### 35.4 Push Notification V2 (⏳ Pending)
+- **Description:** ระบบแจ้งเตือนแบบเจาะจง (ตามพื้นที่, ประวัติลูกค้า)
+- **Priority:** 🟠 MEDIUM
+
+#### 35.5 Mobile Performance Optimization (⏳ Pending)
+- **Description:** ลดขนาด JS/CSS, lazy loading, ปรับปรุง Service Worker
+- **Priority:** 🟡 LOW
+
+#### 35.6 Implementation Backlog
+| ฟีเจอร์ | GAS Action / Module | Priority | Status |
+|---------|---------------------|----------|--------|
+| Accounting Integration | `exportBillToAccounting` (AccountingIntegration.gs) | 🔴 HIGH | ✅ COMPLETED |
+| Mobile Offline Mode | `offline_db.js` enhancement | 🔴 HIGH | ⏳ Pending |
+| Advanced Reporting | `Reports.gs` enhancement | 🟠 MEDIUM | ⏳ Pending |
+| Push Notification V2 | `PushNotifications.gs` enhancement | 🟠 MEDIUM | ⏳ Pending |
+| Mobile Performance | `sw.js`, `app.js` optimization | 🟡 LOW | ⏳ Pending |
+
+---
 
 ### 📋 Planned (Roadmap)
 
