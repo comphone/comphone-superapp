@@ -537,14 +537,110 @@ function getAnomalyBaseline(data) {
     var metric = data.metric || 'billing';
     var days = parseInt(data.days) || 14;
     
-    // TODO: Implement anomaly baseline calculation
-    // This will be called after 14 days of Phase 2E telemetry
+    var ss = getComphoneSheet();
+    if (!ss) return { success: false, error: 'Spreadsheet not found' };
+    
+    // Read telemetry data from DB_TELEMETRY (assumes Phase 2E is logging)
+    var telemSh = ss.getSheetByName('DB_TELEMETRY');
+    if (!telemSh) {
+      return {
+        success: true,
+        baseline: null,
+        message: 'DB_TELEMETRY sheet not found — waiting for Phase 2E telemetry',
+        telemetry_required: days,
+        telemetry_collected: 0
+      };
+    }
+    
+    var lastRow = telemSh.getLastRow();
+    if (lastRow < 2) {
+      return {
+        success: true,
+        baseline: null,
+        message: 'No telemetry data yet — need ' + days + ' days of data',
+        telemetry_required: days,
+        telemetry_collected: 0
+      };
+    }
+    
+    var headers = telemSh.getRange(1, 1, 1, telemSh.getLastColumn()).getValues()[0];
+    var actionIdx = headers.indexOf('action');
+    var timestampIdx = headers.indexOf('timestamp');
+    var valueIdx = headers.indexOf('value'); // numeric value for the metric
+    var statusIdx = headers.indexOf('status');
+    
+    if (actionIdx < 0 || timestampIdx < 0) {
+      return { success: false, error: 'Required telemetry columns not found (action, timestamp)' };
+    }
+    
+    var rows = telemSh.getRange(2, 1, lastRow - 1, headers.length).getValues();
+    var now = new Date();
+    var cutoff = new Date(now.getTime() - (days * 24 * 60 * 60 * 1000));
+    
+    // Filter relevant data
+    var values = [];
+    var metricActions = {
+      'billing': ['createBilling', 'getBilling'],
+      'jobs': ['openJob', 'updateJobStatus'],
+      'inventory': ['addInventory', 'updateInventory']
+    };
+    
+    var relevantActions = metricActions[metric] || [metric];
+    
+    rows.forEach(function(row) {
+      var action = String(row[actionIdx] || '').trim();
+      var ts = new Date(row[timestampIdx]);
+      if (isNaN(ts.getTime())) return;
+      if (ts < cutoff) return;
+      if (relevantActions.indexOf(action) < 0) return;
+      
+      // Get numeric value if available
+      var val = valueIdx >= 0 ? parseFloat(row[valueIdx]) : 1; // default to count=1
+      if (!isNaN(val)) values.push(val);
+    });
+    
+    if (values.length < 2) {
+      return {
+        success: true,
+        baseline: null,
+        message: 'Insufficient data for baseline (need ≥2 data points)',
+        telemetry_required: days,
+        telemetry_collected: values.length,
+        metric: metric
+      };
+    }
+    
+    // Calculate mean
+    var sum = values.reduce(function(a, b) { return a + b; }, 0);
+    var mean = sum / values.length;
+    
+    // Calculate standard deviation
+    var squaredDiffs = values.map(function(v) { return Math.pow(v - mean, 2); });
+    var variance = squaredDiffs.reduce(function(a, b) { return a + b; }, 0) / values.length;
+    var stdDev = Math.sqrt(variance);
+    
+    // Thresholds (mean ± 2σ for anomaly detection)
+    var lowerThreshold = mean - (2 * stdDev);
+    var upperThreshold = mean + (2 * stdDev);
+    
     return {
       success: true,
-      baseline: null,
-      message: 'Anomaly baseline - waiting for ' + (14 - days) + ' more days of telemetry data',
-      telemetry_required: 14,
-      telemetry_collected: days
+      baseline: {
+        metric: metric,
+        period_days: days,
+        data_points: values.length,
+        mean: Math.round(mean * 100) / 100,
+        std_dev: Math.round(stdDev * 100) / 100,
+        thresholds: {
+          low: Math.round(lowerThreshold * 100) / 100,
+          high: Math.round(upperThreshold * 100) / 100
+        },
+        recent_values: values.slice(-7) // last 7 values for reference
+      },
+      metadata: {
+        generated_at: new Date().toISOString(),
+        version: 'v5.11.0-phase33'
+      }
     };
     
   } catch (e) {
