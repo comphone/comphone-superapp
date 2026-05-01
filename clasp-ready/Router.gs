@@ -298,12 +298,7 @@ function _checkAuthGateV55_(action, payload, e) {
     // Client telemetry is best-effort and must not block login recovery.
     'logtelemetry': 1, 'logTelemetry': 1,
     // Customer Portal public endpoint by design.
-    'getjobstatuspublic': 1, 'getJobStatusPublic': 1,
-    // Phase 34 Language Manager (TEMP for testing)
-    'getuselanguage': 1, 'getUserLanguage': 1,
-    'setuselanguage': 1, 'setUserLanguage': 1,
-    'gettranslations': 1, 'getTranslations': 1,
-    'detectlanguage': 1, 'detectLanguage': 1
+    'getjobstatuspublic': 1, 'getJobStatusPublic': 1
   };
 
   // ── Admin-only actions: require role=admin|owner ──
