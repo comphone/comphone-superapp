@@ -124,8 +124,21 @@ function doGet(e) {
     if (action === 'checksecurityconfig' || action === 'checkSecurityConfig') {
       return jsonOutputV55_(checkSecurityConfigAPI(params));
     }
-    // ---- POS Web App Deployment (Phase 30) ----
-    // Serve POS UI from GAS domain to fix Session issue
+    // Language Manager (Phase 34)
+    if (action === 'getuselanguage' || action === 'getUserLanguage') {
+      return jsonOutputV55_(getUserLanguageAPI(params));
+    }
+    if (action === 'setuselanguage' || action === 'setUserLanguage') {
+      return jsonOutputV55_(setUserLanguageAPI(params));
+    }
+    if (action === 'gettranslations' || action === 'getTranslations') {
+      return jsonOutputV55_(getTranslationsAPI(params));
+    }
+    if (action === 'detectlanguage' || action === 'detectLanguage') {
+      return jsonOutputV55_(detectLanguageAPI(params));
+    }
+
+    // ── Fallback ──
     if (params.page === 'pos' || action === 'pos') {
       return servePosUI();
     }
@@ -285,7 +298,12 @@ function _checkAuthGateV55_(action, payload, e) {
     // Client telemetry is best-effort and must not block login recovery.
     'logtelemetry': 1, 'logTelemetry': 1,
     // Customer Portal public endpoint by design.
-    'getjobstatuspublic': 1, 'getJobStatusPublic': 1
+    'getjobstatuspublic': 1, 'getJobStatusPublic': 1,
+    // Phase 34 Language Manager (TEMP for testing)
+    'getuselanguage': 1, 'getUserLanguage': 1,
+    'setuselanguage': 1, 'setUserLanguage': 1,
+    'gettranslations': 1, 'getTranslations': 1,
+    'detectlanguage': 1, 'detectLanguage': 1
   };
 
   // ── Admin-only actions: require role=admin|owner ──
