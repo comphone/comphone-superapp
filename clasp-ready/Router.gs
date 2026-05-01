@@ -94,6 +94,13 @@ function doGet(e) {
     if (action === 'linewebhookv3' || action === 'lineWebhookV3') {
       return jsonOutputV55_(lineWebhookV3(params));
     }
+    // Performance Metrics (Phase 34)
+    if (action === 'getperformancemetrics' || action === 'getPerformanceMetrics') {
+      return jsonOutputV55_(getPerformanceMetricsAPI(params));
+    }
+    if (action === 'gethistoricalmetrics' || action === 'getHistoricalMetrics') {
+      return jsonOutputV55_(getHistoricalMetricsAPI(params));
+    }
     // ---- POS Web App Deployment (Phase 30) ----
     // Serve POS UI from GAS domain to fix Session issue
     if (params.page === 'pos' || action === 'pos') {
@@ -255,7 +262,10 @@ function _checkAuthGateV55_(action, payload, e) {
     // Client telemetry is best-effort and must not block login recovery.
     'logtelemetry': 1, 'logTelemetry': 1,
     // Customer Portal public endpoint by design.
-    'getjobstatuspublic': 1, 'getJobStatusPublic': 1
+    'getjobstatuspublic': 1, 'getJobStatusPublic': 1,
+    // Phase 34 Performance Metrics (TEMP for testing)
+    'getperformancemetrics': 1, 'getPerformanceMetrics': 1,
+    'gethistoricalmetrics': 1, 'getHistoricalMetrics': 1
   };
 
   // ── Admin-only actions: require role=admin|owner ──
