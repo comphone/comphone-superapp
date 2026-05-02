@@ -516,6 +516,7 @@ function stopAllAutoRefresh() {
 if (typeof window !== 'undefined') {
   window._comphone_api_client_loaded = true; // flag บอก app.js ว่า api_client.js โหลดแล้ว
   window.callApi  = callApi; // api_client.js เป็น Single Source of Truth เสมอ
+  window.callGas  = callApi; // Alias for backward compatibility (reports.js, etc.)
   window.safeHide = safeHide;
   window.safeShow = safeShow;
   window.safeRender = safeRender;

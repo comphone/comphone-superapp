@@ -4,13 +4,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>COMPHONE Dashboard — PC</title>
-<script src="version_config.js?v=5.13.0-phase35&t=20260501_1930">
+<script src="version_config.js?v=5.13.0-phase35&t=20260501_1930"></script>
+<script>
 // Session contract: accept success/valid and handle offline
-if (res._errorKind === 'offline' || res.valid || res.success) {
-// Session valid or offline - preserve local session
-if (res.valid || res.success) {
-localStorage.setItem('comphone_auth_session', JSON.stringify(res));
-}
+if (typeof window.comphone_auth_session !== 'undefined') {
+  // Session valid or offline - preserve local session
+  var sessionData = localStorage.getItem('comphone_auth_session');
+  if (sessionData) {
+    try {
+      var res = JSON.parse(sessionData);
+      if (res._errorKind === 'offline' || res.valid || res.success) {
+        // Session valid or offline - preserve local session
+        if (res.valid || res.success) {
+          localStorage.setItem('comphone_auth_session', JSON.stringify(res));
+        }
+      }
+    } catch(e) {
+      console.warn('[Session] Error parsing session data:', e);
+    }
+  }
 }
 </script>
 <script src="gas_config.js?v=5.13.0-phase35&t=20260501_1930"></script>
@@ -462,8 +474,7 @@ type: 'write'
 posCheckout: {
 api: 'posCheckout',
 type: 'write'
-}
-<script>
+};
 // Update PC version badge from version_config.js at runtime
 function updatePcVersionBadge() {
   const badge = document.getElementById('version_badge');
@@ -478,5 +489,84 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', updatePcVersionBadge);
 } else {
   updatePcVersionBadge();
+}
+
+// ===== MISSING FUNCTIONS (P0 Fix 2026-05-02) =====
+function loadSection(sectionName) {
+  console.log('[Dashboard] Loading section:', sectionName);
+  
+  // Hide all sections
+  const sections = document.querySelectorAll('.dashboard-section, .section-content');
+  sections.forEach(sec => sec.style.display = 'none');
+  
+  // Show target section
+  const target = document.getElementById('section-' + sectionName) || 
+                 document.getElementById(sectionName + '-section');
+  if (target) {
+    target.style.display = 'block';
+  } else {
+    console.warn('[Dashboard] Section not found:', sectionName);
+  }
+  
+  // Update active nav
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(item => {
+    item.classList.remove('active');
+    if (item.getAttribute('onclick') && item.getAttribute('onclick').includes(sectionName)) {
+      item.classList.add('active');
+    }
+  });
+}
+
+function loadDashboard() {
+  console.log('[Dashboard] Loading main dashboard...');
+  loadSection('dashboard');
+  
+  // Load dashboard data if available
+  if (typeof window.callApi === 'function') {
+    window.callApi({ action: 'getDashboardBundle' })
+      .then(data => {
+        console.log('[Dashboard] Data loaded:', data);
+        if (typeof renderDashboard === 'function') {
+          renderDashboard(data);
+        }
+      })
+      .catch(err => console.error('[Dashboard] Error:', err));
+  }
+}
+
+function _doLogin(event) {
+  event.preventDefault();
+  console.log('[Dashboard] Attempting login...');
+  
+  const username = document.getElementById('login-username')?.value;
+  const password = document.getElementById('login-password')?.value;
+  
+  if (!username || !password) {
+    alert('กรุณากรอก username และ password');
+    return;
+  }
+  
+  if (typeof window.callApi === 'function') {
+    window.callApi({ 
+      action: 'loginUser', 
+      username: username, 
+      password: password 
+    })
+    .then(res => {
+      if (res.success || res.valid) {
+        localStorage.setItem('comphone_auth_session', JSON.stringify(res));
+        document.getElementById('login-form').style.display = 'none';
+        document.getElementById('dashboard-content').style.display = 'block';
+        loadDashboard();
+      } else {
+        alert('เข้าสู่ระบบไม่สำเร็จ: ' + (res.message || 'Unknown error'));
+      }
+    })
+    .catch(err => {
+      console.error('[Login] Error:', err);
+      alert('เกิดข้อผิดพลาดในการเข้าสู่ระบบ');
+    });
+  }
 }
 </script>
