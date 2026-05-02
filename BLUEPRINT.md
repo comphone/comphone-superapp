@@ -3,7 +3,7 @@
 > **Version:** v5.13.0-phase35 (PWA) / v5.13.0-phase35 (GAS Backend — ✅ HEALTHY)
 
 > **Date:** 2026-05-02 | **Phase:** 35 (Advanced Integration & Mobile Enhancement — ✅ COMPLETE)
-> **Status:** ⚠️ PARTIAL — Score 75/100 (PC Dashboard FIXED, auth hardened, versions synced)
+> **Status:** ⚠️ PARTIAL — Score 80/100 (PC Dashboard FIXED, auth hardened, P2 whitelist hardened, versions synced)
 > **Repository:** https://github.com/comphone/comphone-superapp
 
 ---
@@ -16,10 +16,10 @@
 | App Version | `v5.13.0-phase35` | `pwa/version_config.js` |
 | Cache Version | `comphone-v5.13.0-phase35-20260501_1930` | `pwa/version_config.js`, `pwa/sw.js` |
 | Build Timestamp | `20260501_1930` | `pwa/version_config.js` |
-| GAS Backend Deploy | ✅ HEALTHY (v5.13.0-phase35, commit 138f4ad, auth gate added) | `clasp-ready/Config.gs` |
+| GAS Backend Deploy | ✅ HEALTHY (v5.13.0-phase35, commit b9a9b66, auth gate + whitelist hardened) | `clasp-ready/Config.gs`, `clasp-ready/Router.gs` |
 | GAS Production URL | ✅ Active (`AKfycbwLlvoRUSEOU8PhK3AUc0Rcy3aP08coPtCgu_aukV-Q2MEaN_-q_yLW0J1Vbfk8Fx1Vtw`) | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-02.phase35-partial` | `pwa/api_contract.js` |
-| Last Production Commit | `138f4ad` | GitHub `main` |
+| Last Production Commit | `b9a9b66` | GitHub `main` |
 | Validation Status | Static Guard OK, Required API Smoke OK, Optional API Smoke OK, Read-only Workflow Smoke OK | `scripts/` + `test_reports/*_latest.json` |
 
 ### Phase 34 Frontend Completion (2026-05-01)
@@ -43,6 +43,18 @@
 - **NEW:** Performance Dashboard with real-time metrics, historical charts, and system info.
 - **NEW:** Backup & Recovery UI with health checks, backup history, and one-click restore.
 - **NEW:** Frontend penetration test suite (18+ test cases across 7 security categories).
+
+### P2 Hardening Achievements (2026-05-02)
+- ✅ **invokeFunctionByNameV55_() Whitelist:** Changed from blacklist (underscore prefix only) to explicit ALLOWED_FUNCTIONS whitelist
+  - Read-only operations: 22 functions (getDashboardBundle, getStockList, getJobList, etc.)
+  - Write operations: 16 functions (updateJobStatus, createJob, createBill, posCheckout, etc.)
+  - Security: Blocks any function not in whitelist with 403 error
+- ✅ **Auth Gate Hardened:** Added `_checkAuthGateV55_()` before all sensitive operations:
+  - `exportBillToAccounting` (accounting export)
+  - `createBackup` / `restoreBackup` (data protection)
+  - `runPenTest` / `scanVulnerabilities` (security tools)
+- ✅ **GAS Config Fixed:** Repaired syntax error in Config.gs (missing comma in VERSION line)
+- ✅ **Accounting Integration Fixed:** Removed non-existent `checkAuth_()` call in AccountingIntegration.gs (auth handled by Router.gs)
 
 ### Secret Handling Rule
 - Do not store live secret/token/key values in this repository or in BLUEPRINT.md.
