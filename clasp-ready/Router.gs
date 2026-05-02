@@ -100,6 +100,10 @@ function doGet(e) {
     }
     // Accounting Integration (Phase 35)
     if (action === 'exportbilltoaccounting' || action === 'exportBillToAccounting') {
+      // SECURITY: Check auth gate before sensitive operation
+      var _authResult = _checkAuthGateV55_(action, params, e);
+      if (_authResult != null) return jsonOutputV55_(_authResult);
+      
       return jsonOutputV55_(exportBillToAccounting(params.billId || ''));
     }
     if (action === 'checkaccountingconnection' || action === 'checkAccountingConnection') {
@@ -110,6 +114,10 @@ function doGet(e) {
     }
     // Backup & Recovery (Phase 34)
     if (action === 'createbackup' || action === 'createBackup') {
+      // SECURITY: Check auth gate before sensitive operation
+      var _authResult = _checkAuthGateV55_(action, params, e);
+      if (_authResult != null) return jsonOutputV55_(_authResult);
+      
       return jsonOutputV55_(createBackupAPI(params));
     }
     if (action === 'listbackups' || action === 'listBackups') {
@@ -119,10 +127,18 @@ function doGet(e) {
       return jsonOutputV55_(checkBackupHealthAPI(params));
     }
     if (action === 'restorebackup' || action === 'restoreBackup') {
+      // SECURITY: Check auth gate before sensitive operation
+      var _authResult = _checkAuthGateV55_(action, params, e);
+      if (_authResult != null) return jsonOutputV55_(_authResult);
+      
       return jsonOutputV55_(restoreBackupAPI(params));
     }
     // Security Audit (Phase 34)
     if (action === 'runpentest' || action === 'runPenTest') {
+      // SECURITY: Check auth gate before sensitive operation
+      var _authResult = _checkAuthGateV55_(action, params, e);
+      if (_authResult != null) return jsonOutputV55_(_authResult);
+      
       return jsonOutputV55_(runPenTestAPI(params));
     }
     if (action === 'scanvulnerabilities' || action === 'scanVulnerabilities') {

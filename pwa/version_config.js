@@ -6,7 +6,7 @@
 const APP_VERSION = '5.13.0-phase35';
 const CACHE_VERSION = 'comphone-v5.13.0-phase35-20260501_1930';
 const BUILD_TIMESTAMP = '20260501_1930';
-const GAS_VERSION = '524'; // จะอัปเดตหลัง deploy GAS Phase 35
+const GAS_VERSION = 'v5.13.0-phase35'; // Updated 2026-05-02 Phase 35
 
 // Export for use in other modules
 window.COMPHONE_VERSION = APP_VERSION;

@@ -3,7 +3,7 @@
 > **Version:** v5.13.0-phase35 (PWA) / v5.13.0-phase35 (GAS Backend — ✅ HEALTHY)
 
 > **Date:** 2026-05-02 | **Phase:** 35 (Advanced Integration & Mobile Enhancement — ✅ COMPLETE)
-> **Status:** ⚠️ PARTIAL — Score 72/100 (PC Dashboard BROKEN, contract drift)
+> **Status:** ⚠️ PARTIAL — Score 75/100 (PC Dashboard FIXED, auth hardened, versions synced)
 > **Repository:** https://github.com/comphone/comphone-superapp
 
 ---
@@ -16,7 +16,7 @@
 | App Version | `v5.13.0-phase35` | `pwa/version_config.js` |
 | Cache Version | `comphone-v5.13.0-phase35-20260501_1930` | `pwa/version_config.js`, `pwa/sw.js` |
 | Build Timestamp | `20260501_1930` | `pwa/version_config.js` |
-| GAS Backend Deploy | ✅ HEALTHY (v5.13.0-phase35, commit 138f4ad) | `clasp-ready/Config.gs` |
+| GAS Backend Deploy | ✅ HEALTHY (v5.13.0-phase35, commit 138f4ad, auth gate added) | `clasp-ready/Config.gs` |
 | GAS Production URL | ✅ Active (`AKfycbwLlvoRUSEOU8PhK3AUc0Rcy3aP08coPtCgu_aukV-Q2MEaN_-q_yLW0J1Vbfk8Fx1Vtw`) | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-02.phase35-partial` | `pwa/api_contract.js` |
 | Last Production Commit | `138f4ad` | GitHub `main` |

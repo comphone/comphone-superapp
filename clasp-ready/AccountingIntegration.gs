@@ -12,9 +12,8 @@
  */
 function exportBillToAccounting(billId) {
   try {
-    // 1. ตรวจสอบสิทธิ์ (ต้องมี Auth Token)
-    const auth = checkAuth_();
-    if (!auth.success) return auth;
+    // Auth check already done in Router.gs via _checkAuthGateV55_()
+    // Public actions are handled by the auth gate; this function assumes caller is authorized.
     
     // 2. ดึงข้อมูลบิลจาก DB_BILLING
     const billData = getBillById_(billId);
