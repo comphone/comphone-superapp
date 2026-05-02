@@ -1,501 +1,524 @@
-     1|<!DOCTYPE html>
-     2|<!-- Cache Buster: 2026-04-28 19:00 ICT -->
-     3|<html lang="th" class="cp-dark cp-mobile">
-     4|<head>
-     5|<meta charset="UTF-8">
-     6|<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-     7|<meta name="theme-color" content="#0d6efd">
-     8|<meta name="apple-mobile-web-app-capable" content="yes">
-     9|<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    10|<meta name="apple-mobile-web-app-title" content="Comphone">
-    11|<meta name="mobile-web-app-capable" content="yes">
-    12|<meta name="description" content="Comphone SuperApp AI — ระบบบริหารงานบริการ IT และโซลูชันเทคโนโลยี">
-    13|<link rel="preconnect" href="https://cdn.jsdelivr.net">
-    14|<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
-    15|<link rel="preconnect" href="https://script.google.com">
-    16|<link rel="dns-prefetch" href="https://script.google.com">
-    17|<link rel="manifest" href="/comphone-superapp/pwa/manifest.json">
-    18|<link rel="apple-touch-icon" href="icons/icon-192.png">
-    19|<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-    20|<title>Comphone SuperApp AI</title>
-    21|<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    22|<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    23|<link rel="stylesheet" href="dashboard_shared.css?v=5.13.0-phase35&t=20260501_1930_1930">
-    24|<link rel="stylesheet" href="mobile_shared.css?v=5.13.0-phase35&t=20260501_1930_1930">
-    25|<link rel="stylesheet" href="style.css?v=5.13.0-phase35&t=20260501_1930_1930">
-    26|<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-    27|<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-    28|<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
-    29|
-    30|<script src="version_config.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
-    31|<script src="gas_config.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
-    32|<script src="pwa_asset_manifest.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
-    33|<script src="api_contract.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
-    34|</head>
-    35|<body>
-    36|
-    37|<!-- ===== SPLASH SCREEN ===== -->
-    38|<div id="splash-screen">
-    39|  <div class="splash-content">
-    40|    <div class="splash-logo">
-    41|      <div class="logo-ring"></div>
-    42|      <div class="logo-icon"><i class="bi bi-phone-fill"></i></div>
-    43|    </div>
-    44|    <h1 class="splash-title">Comphone</h1>
-    45|    <p class="splash-sub" data-i18n="SuperApp AI">SuperApp AI</p>
-    46|    <div class="splash-loader">
-    47|      <div class="loader-bar"></div>
-    48|    </div>
-    49|  </div>
-    50|</div>
-    51|
-    52|<!-- ===== SETUP SCREEN (First time only) ===== -->
-    53|<div id="setup-screen" class="screen hidden">
-    54|  <div class="setup-bg">
-    55|    <div class="setup-card">
-    56|      <div class="setup-logo">
-    57|        <i class="bi bi-phone-fill"></i>
-    58|      </div>
-    59|      <h2 data-i18n="Welcome">ยินดีต้อนรับ</h2>
-    60|      <p class="setup-desc" data-i18n="Enter once">กรอกข้อมูลครั้งเดียว<br>ระบบจะจดจำให้อัตโนมัติ</p>
-    61|
-    62|      <div class="setup-form">
-    63|        <div class="form-group-custom">
-    64|          <label data-i18n="Full Name">ชื่อ-นามสกุล</label>
-    65|          <div class="input-wrap">
-    66|            <i class="bi bi-person-fill"></i>
-    67|            <input type="text" id="setup-name" data-i18n-placeholder="e.g. Somchai Doodee" placeholder="เช่น สมชาย ทำดี" autocomplete="name">
-    68|          </div>
-    69|        </div>
-    70|
-    71|        <div class="form-group-custom">
-    72|          <label data-i18n="Phone">เบอร์โทรศัพท์</label>
-    73|          <div class="input-wrap">
-    74|            <i class="bi bi-telephone-fill"></i>
-    75|            <input type="tel" id="setup-phone" data-i18n-placeholder="081-234-5678" placeholder="081-234-5678" autocomplete="tel">
-    76|          </div>
-    77|        </div>
-    78|
-    79|        <div class="form-group-custom">
-    80|          <label data-i18n="Your Role">บทบาทของคุณ</label>
-    81|          <div class="role-picker">
-    82|            <div class="role-option" data-role="tech" onclick="selectRole(this)">
-    83|              <div class="role-icon" style="background:#dbeafe;color:#1e40af;"><i class="bi bi-tools"></i></div>
-    84|              <span data-i18n="Technician">ช่าง</span>
-    85|            </div>
-    86|            <div class="role-option" data-role="admin" onclick="selectRole(this)">
-    87|              <div class="role-icon" style="background:#ede9fe;color:#5b21b6;"><i class="bi bi-headset"></i></div>
-    88|              <span data-i18n="Admin">แอดมิน</span>
-    89|            </div>
-    90|            <div class="role-option" data-role="acct" onclick="selectRole(this)">
-    91|              <div class="role-icon" style="background:#cffafe;color:#164e63;"><i class="bi bi-calculator"></i></div>
-    92|              <span data-i18n="Accountant">บัญชี</span>
-    93|            </div>
-    94|            <div class="role-option" data-role="exec" onclick="selectRole(this)">
-    95|              <div class="role-icon" style="background:#fef9c3;color:#713f12;"><i class="bi bi-bar-chart-line"></i></div>
-    96|              <span data-i18n="Executive">ผู้บริหาร</span>
-    97|            </div>
-    98|          </div>
-    99|        </div>
-   100|
-   101|    <div class="form-group-custom">
-   102|      <label data-i18n="Script URL">Script URL (Google Apps Script)</label>
-   103|      <div class="input-wrap">
-   104|        <i class="bi bi-link-45deg"></i>
-   105|        <input type="url" id="setup-url" data-i18n-placeholder="https://script.google.com/macros/s/..." placeholder="https://script.google.com/macros/s/..." autocomplete="url">
-   106|      </div>
-   107|      <small style="color:#9ca3af;font-size:11px;margin-top:4px;display:block;" data-i18n="Paste deployed URL">วาง URL จาก Google Apps Script ที่ Deploy แล้ว</small>
-   108|    </div>
-   109|
-   110|    <button class="btn-setup" onclick="completeSetup()">
-   111|      <i class="bi bi-arrow-right-circle-fill"></i>
-   112|      <span data-i18n="Start Using">เริ่มใช้งาน</span>
-   113|    </button>
-   114|  </div>
-   115|</div>
-   116|</div>
-   117|</div>
-   118|
-   119|<!-- ===== MAIN APP ===== -->
-   120|<div id="main-app" class="screen hidden">
-   121|
-   122|<!-- TOP BAR -->
-   123|<div id="top-bar" class="top-bar">
-   124|  <div class="top-bar-left">
-   125|    <div id="user-avatar" class="user-avatar" onclick="showProfile()"></div>
-   126|    <div>
-   127|      <div id="greeting-text" class="greeting-text"></div>
-   128|      <div id="user-name-display" class="user-name"></div>
-   129|    </div>
-   130|  </div>
-   131|  <div class="top-bar-right">
-   132|    <button class="icon-btn" data-i18n-title="Search" onclick="showSearch()"><i class="bi bi-search"></i></button>
-   133|    <div class="notif-wrap" onclick="showNotifications()">
-   134|      <button class="icon-btn"><i class="bi bi-bell-fill"></i></button>
-   135|      <span class="notif-badge" id="notif-count">3</span>
-   136|    </div>
-   137|  </div>
-   138|</div>
-   139|
-   140|<!-- OFFLINE BAR -->
-   141|<div id="offline-bar" class="hidden" style="background:#f59e0b;color:#fff;font-size:11px;font-weight:700;text-align:center;padding:4px 12px;display:flex;align-items:center;justify-content:space-between;gap:6px;">
-   142|  <div style="display:flex;align-items:center;gap:6px;">
-   143|    <i class="bi bi-wifi-off"></i>
-   144|    <span data-i18n="Offline - Data will sync when connected">ออฟไลน์ — ข้อมูลจะ Sync เมื่อเชื่อมต่อ</span>
-   145|  </div>
-   146|  <div style="display:flex;align-items:center;gap:8px;">
-   147|    <span class="offline-queue-count" style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1px 6px;"></span>
-   148|    <button onclick="showSyncQueue()" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.5);color:#fff;padding:2px 8px;border-radius:6px;font-size:10px;cursor:pointer;">ดูคิว</button>
-   149|  </div>
-   150|</div>
-   151|
-   152|<!-- PAGES CONTAINER -->
-   153|<div id="pages-container">
-   154|
-   155|<!-- HOME PAGE -->
-   156|<div id="page-home" class="page active">
-   157|
-   158|<!-- QUICK ACTIONS (role-based) -->
-   159|<div class="section-card" id="quick-actions-section">
-   160|<div class="section-label">ปุ่มด่วน</div>
-   161|<div id="quick-actions-grid" class="qa-grid-4"></div>
-   162|</div>
-   163|
-   164|<!-- STATS ROW -->
-   165|<div id="stats-row" class="stats-row"></div>
-   166|
-   167|<!-- MAIN CONTENT (role-based) -->
-   168|<div id="main-content-area"></div>
-   169|
-   170|</div>
-   171|
-   172|<!-- JOBS PAGE -->
-   173|<div id="page-jobs" class="page hidden">
-   174|<div class="page-header">
-   175|<h5>งานทั้งหมด</h5>
-   176|<div class="search-bar-inline">
-   177|<i class="bi bi-search"></i>
-   178|<input type="text" id="jobs-search" placeholder="ค้นหา Job ID, ชื่อลูกค้า..." oninput="filterJobs(this.value)">
-   179|<button onclick="startVoiceSearch()" class="voice-mini"><i class="bi bi-mic-fill"></i></button>
-   180|</div>
-   181|</div>
-   182|<div class="filter-tabs">
-   183|<button class="filter-tab active" onclick="filterByStatus('all', this)">ทั้งหมด</button>
-   184|<button class="filter-tab" onclick="filterByStatus('urgent', this)">ด่วน</button>
-   185|<button class="filter-tab" onclick="filterByStatus('inprog', this)">กำลังดำเนินการ</button>
-   186|<button class="filter-tab" onclick="filterByStatus('waiting', this)">รอชิ้นส่วน</button>
-   187|<button class="filter-tab" onclick="filterByStatus('done', this)">เสร็จแล้ว</button>
-   188|</div>
-   189|<div id="jobs-list"></div>
-   190|</div>
-   191|
-   192|<!-- CAMERA / PHOTO PAGE -->
-   193|<div id="page-camera" class="page hidden">
-   194|<div class="page-header"><h5>ถ่ายรูป / สแกน</h5></div>
-   195|<div class="camera-section">
-   196|<div class="camera-options">
-   197|<div class="cam-option" onclick="openCamera('job')">
-   198|<i class="bi bi-camera-fill"></i>
-   199|<span>รูปหน้างาน</span>
-   200|</div>
-   201|<div class="cam-option" onclick="openCamera('slip')">
-   202|<i class="bi bi-receipt"></i>
-   203|<span>สแกนสลิป</span>
-   204|</div>
-   205|<div class="cam-option" onclick="openCamera('bill')">
-   206|<i class="bi bi-file-earmark-image"></i>
-   207|<span>สแกนบิล</span>
-   208|</div>
-   209|<div class="cam-option" onclick="openCamera('qr')">
-   210|<i class="bi bi-qr-code-scan"></i>
-   211|<span>สแกน QR</span>
-   212|</div>
-   213|</div>
-   214|<input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
-   215|<div id="photo-preview-area"></div>
-   216|<div id="recent-photos" class="recent-photos">
-   217|<div class="section-label">รูปล่าสุด</div>
-   218|<div id="photo-grid" class="photo-thumb-grid"></div>
-   219|</div>
-   220|</div>
-   221|</div>
-   222|
-   223|<!-- CRM PAGE -->
-   224|<div id="page-crm" class="page hidden">
-   225|  <div class="page-header">
-   226|    <h5 data-i18n="Customers">ลูกค้า / CRM</h5>
-   227|    <div class="search-bar-inline">
-   228|      <i class="bi bi-search"></i>
-   229|      <input type="text" id="crm-search" data-i18n-placeholder="Search" placeholder="ค้นหาชื่อ, เบอร์, ประวัติ..." oninput="filterCustomers(this.value)">
-   230|      <button onclick="startVoiceSearch()" class="voice-mini"><i class="bi bi-mic-fill"></i></button>
-   231|    </div>
-   232|  </div>
-   233|  <div class="filter-tabs">
-   234|    <button class="filter-tab active" data-i18n="All" onclick="filterCRMType('all', this)">ทั้งหมด</button>
-   235|    <button class="filter-tab" data-i18n="VIP" onclick="filterCRMType('vip', this)">VIP</button>
-   236|    <button class="filter-tab" data-i18n="Follow-up" onclick="filterCRMType('due', this)">ติดตาม</button>
-   237|    <button class="filter-tab" data-i18n="New" onclick="filterCRMType('new', this)">ใหม่</button>
-   238|  </div>
-   239|  <div id="crm-list"></div>
-   240|  <div id="crm-after-sales-section" style="margin-top:8px"></div>
-   241|</div>
-   242|
-   243|<!-- DASHBOARD PAGE -->
-   244|<div id="page-dashboard" class="page hidden">
-   245|  <div class="page-header" style="padding-bottom:0">
-   246|    <h5 data-i18n="Dashboard"><i class="bi bi-bar-chart-line-fill" style="color:#d97706"></i> Executive Dashboard</h5>
-   247|  </div>
-   248|  <div id="dashboard-content"></div>
-   249|</div>
-   250|
-   251|<!-- PURCHASE ORDER PAGE -->
-   252|<div id="page-po" class="page hidden">
-   253|  <div class="page-header">
-   254|    <h5 data-i18n="Purchase Orders">ใบสั่งซื้อ (PO)</h5>
-   255|    <div class="search-bar-inline">
-   256|      <i class="bi bi-search"></i>
-   257|      <input type="text" id="po-search" data-i18n-placeholder="Search PO" placeholder="ค้นหา PO ID, ผู้จำหน่าย..." oninput="filterPOSearch(this.value)">
-   258|    </div>
-   259|  </div>
-   260|  <div class="filter-tabs">
-   261|    <button class="filter-tab active" data-i18n="All" onclick="filterPOStatus('all', this)">ทั้งหมด</button>
-   262|    <button class="filter-tab" data-i18n="Pending" onclick="filterPOStatus('pending', this)">รอรับสินค้า</button>
-   263|    <button class="filter-tab" data-i18n="Received" onclick="filterPOStatus('received', this)">รับแล้ว</button>
-   264|  </div>
-   265|  <div id="po-list"></div>
-   266|</div>
-   267|
-   268|<!-- ATTENDANCE PAGE -->
-   269|<div id="page-attendance" class="page hidden">
-   270|  <div class="page-header"><h5 data-i18n="Attendance">เวลาทำงาน</h5></div>
-   271|  <div id="attendance-content"></div>
-   272|</div>
-   273|
-   274|<!-- PROFILE PAGE -->
-   275|<div id="page-profile" class="page hidden">
-   276|  <div class="profile-header">
-   277|    <div id="profile-avatar-large" class="profile-avatar-large"></div>
-   278|    <div id="profile-name-large" class="profile-name-large"></div>
-   279|    <div id="profile-role-badge" class="profile-role-badge"></div>
-   280|  </div>
-   281|  <div class="profile-section">
-   282|    <div class="profile-item" onclick="editProfile()">
-   283|      <i class="bi bi-pencil-fill"></i>
-   284|      <span data-i18n="Edit Profile">แก้ไขข้อมูลส่วนตัว</span>
-   285|      <i class="bi bi-chevron-right ms-auto"></i>
-   286|    </div>
-   287|    <div class="profile-item" onclick="changeRole()">
-   288|      <i class="bi bi-person-badge-fill"></i>
-   289|      <span data-i18n="Change Role">เปลี่ยนบทบาท</span>
-   290|      <i class="bi bi-chevron-right ms-auto"></i>
-   291|    </div>
-   292|      <div class="profile-item" onclick="showSettings()">
-   293|        <i class="bi bi-gear-fill"></i>
-   294|        <span data-i18n="Settings">ตั้งค่า Script URL</span>
-   295|        <i class="bi bi-chevron-right ms-auto"></i>
-   296|      </div>
-   297|      <!-- Accounting Integration (Phase 35) -->
-   298|      <div class="profile-item" onclick="showAccountingSettings()">
-   299|        <i class="bi bi-calculator-fill" style="color:#1e40af"></i>
-   300|        <span data-i18n="Accounting Integration">การเชื่อมต่อบัญชี</span>
-   301|        <i class="bi bi-chevron-right ms-auto"></i>
-   302|      </div>
-   303|      <div id="accounting-settings-section" class="profile-section hidden" style="padding:0 16px 16px;background:#f8fafc;border-radius:12px;margin-top:8px">
-   304|        <div style="font-size:13px;font-weight:600;color:#1e40af;margin-bottom:8px"><i class="bi bi-calculator"></i> การเชื่อมต่อบัญชี (Phase 35)</div>
-   305|        <div style="margin-bottom:8px">
-   306|          <label style="font-size:11px;color:#6b7280">ซอฟต์แวร์บัญชี</label>
-   307|          <select id="mobile-accounting-software" style="width:100%;padding:6px;border-radius:6px;border:1px solid #d1d5db;font-size:12px">
-   308|            <option value="express">Express</option>
-   309|            <option value="quickbooks">QuickBooks</option>
-   310|            <option value="other">อื่นๆ</option>
-   311|          </select>
-   312|        </div>
-   313|        <div style="margin-bottom:8px">
-   314|          <label style="font-size:11px;color:#6b7280">API Key / Token</label>
-   315|          <input type="password" id="mobile-accounting-api-key" placeholder="ใส่ API Key หรือ Token" style="width:100%;padding:6px;border-radius:6px;border:1px solid #d1d5db;font-size:12px">
-   316|        </div>
-   317|        <div id="mobile-accounting-status" style="font-size:12px;padding:6px;background:#f0fdf4;color:#059669;border-radius:6px;margin-bottom:8px">✅ เชื่อมต่อแล้ว (จำลอง)</div>
-   318|        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-   319|          <button onclick="testMobileAccountingConnection()" style="padding:6px;background:#1e40af;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">🔍 ทดสอบ</button>
-   320|          <button onclick="exportMobileBillToAccounting()" style="padding:6px;background:#059669;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">📤 ส่งบิล</button>
-   321|        </div>
-   322|      </div>
-   323|      <div class="profile-item" onclick="toggleNotifications()">
-   324|      <i class="bi bi-bell-fill"></i>
-   325|      <span data-i18n="Notifications">การแจ้งเตือน</span>
-   326|      <div class="toggle-switch ms-auto" id="notif-toggle"></div>
-   327|    </div>
-   328|    <div class="profile-item" onclick="clearCache()">
-   329|      <i class="bi bi-arrow-clockwise"></i>
-   330|      <span data-i18n="Clear Cache">ล้างข้อมูลแคช</span>
-   331|      <i class="bi bi-chevron-right ms-auto"></i>
-   332|    </div>
-   333|    <div class="profile-item danger" onclick="resetApp()">
-   334|      <i class="bi bi-trash-fill"></i>
-   335|      <span data-i18n="Reset App">รีเซ็ตแอป</span>
-   336|      <i class="bi bi-chevron-right ms-auto"></i>
-   337|    </div>
-   338|  </div>
-   339|</div>
-   340|<i class="bi bi-trash-fill"></i>
-   341|<span>รีเซ็ตแอป</span>
-   342|<i class="bi bi-chevron-right ms-auto"></i>
-   343|</div>
-   344|</div>
-   345|<div class="app-version">
-   346|  <span data-i18n="Comphone SuperApp AI">Comphone SuperApp AI</span> <span data-i18n="Version">v5.9.0-phase2d</span><br>
-   347|  <span data-i18n="PWA — Works offline">ทำงานได้แม้ไม่มีอินเทอร์เน็ต</span>
-   348|</div>
-   349|</div>
-   350|
-   351|<!-- REPORTS PAGE -->
-   352|<div id="page-reports" class="page hidden">
-   353|  <div class="page-header">
-   354|    <h5 data-i18n="Reports"><i class="bi bi-graph-up-arrow" style="color:#10b981"></i> รายงาน & วิเคราะห์</h5>
-   355|  </div>
-   356|  <div id="reports-content"></div>
-   357|</div>
-   358|
-   359|<!-- ADMIN PAGE -->
-   360|<div id="page-admin" class="page hidden">
-   361|  <div class="page-header">
-   362|    <h5 data-i18n="Admin"><i class="bi bi-shield-fill-check" style="color:#7c3aed"></i> Admin Panel</h5>
-   363|  </div>
-   364|  <div id="admin-content"></div>
-   365|</div>
-   366|
-   367|<!-- INVENTORY PAGE -->
-   368|<div id="page-inventory" class="page hidden">
-   369|  <!-- Content will be rendered by inventory.js -->
-   370|  <div style="text-align:center;padding:3rem;color:#9ca3af">
-   371|    <i class="bi bi-boxes" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
-   372|    <span data-i18n="Loading Inventory">กำลังโหลดคลังสินค้า...</span>
-   373|  </div>
-   374|</div>
-   375|
-   376|<!-- CUSTOMER PORTAL PAGE -->
-   377|<div id="page-customer-portal" class="page hidden">
-   378|  <!-- Content will be rendered by customer_portal.js -->
-   379|  <div style="text-align:center;padding:3rem;color:#9ca3af">
-   380|    <i class="bi bi-search" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
-   381|    <span data-i18n="Checking status">ตรวจสอบสถานะงาน...</span>
-   382|  </div>
-   383|</div>
-   384|
-   385|<!-- Notifications Page -->
-   386|<div id="page-notifications" class="page hidden">
-   387|  <!-- Content will be rendered by notification_center.js -->
-   388|  <div style="text-align:center;padding:3rem;color:#9ca3af">
-   389|    <i class="bi bi-bell" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
-   390|    <span data-i18n="Loading notifications">กำลังโหลดการแจ้งเตือน...</span>
-   391|  </div>
-   392|</div>
-   393|
-   394|<!-- Analytics Page -->
-   395|<div id="page-analytics" class="page hidden">
-   396|  <!-- Content will be rendered by analytics_section.js -->
-   397|  <div id="section-content"></div>
-   398|</div>
-   399|
-   400|</div><!-- end pages-container -->
-   401|
-   402|<!-- FAB -->
-   403|<button id="fab-btn" class="fab-main" data-i18n-title="Add New" onclick="fabAction()">
-   404|  <i class="bi bi-plus-lg"></i>
-   405|</button>
-   406|
-   407|<!-- BOTTOM NAV -->
-   408|<nav class="bottom-nav-bar">
-   409|  <button class="nav-btn active" id="nav-home" onclick="goPage('home', this)">
-   410|    <i class="bi bi-house-fill"></i>
-   411|    <span data-i18n="Home">หน้าหลัก</span>
-   412|  </button>
-   413|  <button class="nav-btn" id="nav-jobs" onclick="goPage('jobs', this)">
-   414|    <div class="nav-icon-wrap">
-   415|      <i class="bi bi-clipboard2-check-fill"></i>
-   416|      <span class="nav-badge-dot" id="jobs-badge">3</span>
-   417|    </div>
-   418|    <span data-i18n="Jobs">งาน</span>
-   419|  </button>
-   420|  <!-- Camera — center FAB-style button -->
-   421|  <button class="nav-btn nav-camera-btn" onclick="openCamera('job')">
-   422|    <div class="nav-camera-circle">
-   423|      <i class="bi bi-camera-fill"></i>
-   424|    </div>
-   425|    <span data-i18n="Camera">กล้อง</span>
-   426|  </button>
-   427|  <!-- More — opens bottom sheet with remaining items -->
-   428|  <button class="nav-btn" id="nav-more" onclick="showMoreMenu()">
-   429|    <i class="bi bi-grid-3x3-gap-fill"></i>
-   430|    <span data-i18n="More">เพิ่มเติม</span>
-   431|  </button>
-   432|  <button class="nav-btn" id="nav-profile" onclick="goPage('profile', this)">
-   433|    <i class="bi bi-person-fill"></i>
-   434|    <span data-i18n="Profile">โปรไฟล์</span>
-   435|  </button>
-   436|</nav>
-   437|
-   438|</div><!-- end main-app -->
-   439|
-   440|<!-- ===== MORE MENU BOTTOM SHEET ===== -->
-   441|<div id="more-menu-overlay" class="cp-sheet-overlay" style="display:none" onclick="closeMoreMenu()">
-   442|  <div class="cp-sheet more-menu-sheet" onclick="event.stopPropagation()">
-   443|    <div class="cp-sheet-handle"></div>
-   444|    <div class="more-menu-title" data-i18n="More">เพิ่มเติม</div>
-   445|    <div class="more-menu-grid">
-   446|      <button class="more-menu-item" id="more-crm-btn" onclick="navigateFromMore('crm')">
-   447|        <div class="more-menu-icon"><i class="bi bi-people-fill"></i></div>
-   448|        <span data-i18n="Customers">ลูกค้า</span>
-   449|      </button>
-   450|      <button class="more-menu-item" id="more-dashboard-btn" onclick="navigateFromMore('dashboard')">
-   451|        <div class="more-menu-icon"><i class="bi bi-bar-chart-line-fill"></i></div>
-   452|        <span data-i18n="Dashboard">Dashboard</span>
-   453|      </button>
-   454|      <button class="more-menu-item" id="more-po-btn" onclick="navigateFromMore('po')">
-   455|        <div class="more-menu-icon"><i class="bi bi-cart-fill"></i></div>
-   456|        <span data-i18n="Purchase Orders">สั่งซื้อ</span>
-   457|      </button>
-   458|      <button class="more-menu-item" id="more-inventory-btn" onclick="navigateFromMore('inventory')">
-   459|        <div class="more-menu-icon"><i class="bi bi-boxes"></i></div>
-   460|        <span data-i18n="Inventory">สต็อก</span>
-   461|      </button>
-   462|      <button class="more-menu-item" id="more-attendance-btn" onclick="navigateFromMore('attendance')">
-   463|        <div class="more-menu-icon"><i class="bi bi-clock-fill"></i></div>
-   464|        <span data-i18n="Attendance">เวลา</span>
-   465|      </button>
-   466|      <button class="more-menu-item" onclick="navigateFromMore('reports')">
-   467|        <div class="more-menu-icon"><i class="bi bi-graph-up-arrow"></i></div>
-   468|        <span data-i18n="Reports">รายงาน</span>
-   469|      </button>
-   470|      <button class="more-menu-item" id="more-analytics-btn" onclick="navigateFromMore('analytics')">
-   471|        <div class="more-menu-icon"><i class="bi bi-pie-chart-fill"></i></div>
-   472|        <span>Analytics</span>
-   473|      </button>
-   474|      <button class="more-menu-item" id="more-admin-btn" style="display:none" onclick="navigateFromMore('admin')">
-   475|        <div class="more-menu-icon"><i class="bi bi-shield-fill-check"></i></div>
-   476|        <span data-i18n="Admin">Admin</span>
-   477|      </button>
-   478|    </div>
-   479|  </div>
-   480|</div>
-   481|
-   482|<!-- ===== MODALS ===== -->
-   483|
-   484|<!-- Job Detail Modal -->
-   485|<div id="modal-job" class="modal-overlay hidden" onclick="closeModal('modal-job')">
-   486|<div class="modal-sheet" onclick="event.stopPropagation()">
-   487|<div class="modal-handle"></div>
-   488|<div id="modal-job-content"></div>
-   489|</div>
-   490|</div>
-   491|
-   492|<!-- Search Modal -->
-   493|<div id="modal-search" class="modal-overlay hidden" onclick="closeModal('modal-search')">
-   494|  <div class="modal-search-box" onclick="event.stopPropagation()">
-   495|    <div class="search-modal-bar">
-   496|      <i class="bi bi-search"></i>
-   497|      <input type="text" id="global-search-input" data-i18n-placeholder="Search" placeholder="ค้นหา Job ID, ชื่อลูกค้า, เบอร์..." autofocus oninput="globalSearch(this.value)">
-   498|      <button onclick="startVoiceSearch()" class="voice-mini"><i class="bi bi-mic-fill"></i></button>
-   499|      <button onclick="closeModal('modal-search')" style="background:none;border:none;color:#6b7280;font-size:14px;padding:4px 8px;" data-i18n="Cancel">ยกเลิก</button>
-   500|    </div>
+     1|     1|<!DOCTYPE html>
+     2|     2|<!-- Cache Buster: 2026-04-28 19:00 ICT -->
+     3|     3|<html lang="th" class="cp-dark cp-mobile">
+     4|     4|<head>
+     5|     5|<meta charset="UTF-8">
+     6|     6|<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+     7|     7|<meta name="theme-color" content="#0d6efd">
+     8|     8|<meta name="apple-mobile-web-app-capable" content="yes">
+     9|     9|<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    10|    10|<meta name="apple-mobile-web-app-title" content="Comphone">
+    11|    11|<meta name="mobile-web-app-capable" content="yes">
+    12|    12|<meta name="description" content="Comphone SuperApp AI — ระบบบริหารงานบริการ IT และโซลูชันเทคโนโลยี">
+    13|    13|<link rel="preconnect" href="https://cdn.jsdelivr.net">
+    14|    14|<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    15|    15|<link rel="preconnect" href="https://script.google.com">
+    16|    16|<link rel="dns-prefetch" href="https://script.google.com">
+    17|    17|<link rel="manifest" href="/comphone-superapp/pwa/manifest.json">
+    18|    18|<link rel="apple-touch-icon" href="icons/icon-192.png">
+    19|    19|<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    20|    20|<title>Comphone SuperApp AI</title>
+    21|    21|<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    22|    22|<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    23|    23|<link rel="stylesheet" href="dashboard_shared.css?v=5.13.0-phase35&t=20260501_1930_1930">
+    24|    24|<link rel="stylesheet" href="mobile_shared.css?v=5.13.0-phase35&t=20260501_1930_1930">
+    25|    25|<link rel="stylesheet" href="style.css?v=5.13.0-phase35&t=20260501_1930_1930">
+    26|    26|<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    27|    27|<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+    28|    28|<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+    29|    29|
+    30|    30|<script src="version_config.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+    31|    31|<script src="gas_config.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+    32|    32|<script src="pwa_asset_manifest.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+<script src="mobile_shared.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+<script src="api_client.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+<script src="auth_guard.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+<script src="app.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+<script src="offline_db.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+<script src="app_home.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+<script src="app_jobs.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+<script src="app_actions.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+<script src="dashboard.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+<script src="crm_attendance.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+<script src="purchase_order.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+<script src="inventory.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+<script src="reports.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+<script src="customer_portal.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+<script src="analytics_section.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+<script src="admin_panel.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+<script src="menu_health.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+<script src="notification_center.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+<script src="auth.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+<script src="error_boundary.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+<script src="pwa_install.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+<script src="push_notifications.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+
+    33|    33|<script src="api_contract.js?v=5.13.0-phase35&t=20260501_1930_1930"></script>
+    34|    34|</head>
+    35|    35|<body>
+    36|    36|
+    37|    37|<!-- ===== SPLASH SCREEN ===== -->
+    38|    38|<div id="splash-screen">
+    39|    39|  <div class="splash-content">
+    40|    40|    <div class="splash-logo">
+    41|    41|      <div class="logo-ring"></div>
+    42|    42|      <div class="logo-icon"><i class="bi bi-phone-fill"></i></div>
+    43|    43|    </div>
+    44|    44|    <h1 class="splash-title">Comphone</h1>
+    45|    45|    <p class="splash-sub" data-i18n="SuperApp AI">SuperApp AI</p>
+    46|    46|    <div class="splash-loader">
+    47|    47|      <div class="loader-bar"></div>
+    48|    48|    </div>
+    49|    49|  </div>
+    50|    50|</div>
+    51|    51|
+    52|    52|<!-- ===== SETUP SCREEN (First time only) ===== -->
+    53|    53|<div id="setup-screen" class="screen hidden">
+    54|    54|  <div class="setup-bg">
+    55|    55|    <div class="setup-card">
+    56|    56|      <div class="setup-logo">
+    57|    57|        <i class="bi bi-phone-fill"></i>
+    58|    58|      </div>
+    59|    59|      <h2 data-i18n="Welcome">ยินดีต้อนรับ</h2>
+    60|    60|      <p class="setup-desc" data-i18n="Enter once">กรอกข้อมูลครั้งเดียว<br>ระบบจะจดจำให้อัตโนมัติ</p>
+    61|    61|
+    62|    62|      <div class="setup-form">
+    63|    63|        <div class="form-group-custom">
+    64|    64|          <label data-i18n="Full Name">ชื่อ-นามสกุล</label>
+    65|    65|          <div class="input-wrap">
+    66|    66|            <i class="bi bi-person-fill"></i>
+    67|    67|            <input type="text" id="setup-name" data-i18n-placeholder="e.g. Somchai Doodee" placeholder="เช่น สมชาย ทำดี" autocomplete="name">
+    68|    68|          </div>
+    69|    69|        </div>
+    70|    70|
+    71|    71|        <div class="form-group-custom">
+    72|    72|          <label data-i18n="Phone">เบอร์โทรศัพท์</label>
+    73|    73|          <div class="input-wrap">
+    74|    74|            <i class="bi bi-telephone-fill"></i>
+    75|    75|            <input type="tel" id="setup-phone" data-i18n-placeholder="081-234-5678" placeholder="081-234-5678" autocomplete="tel">
+    76|    76|          </div>
+    77|    77|        </div>
+    78|    78|
+    79|    79|        <div class="form-group-custom">
+    80|    80|          <label data-i18n="Your Role">บทบาทของคุณ</label>
+    81|    81|          <div class="role-picker">
+    82|    82|            <div class="role-option" data-role="tech" onclick="selectRole(this)">
+    83|    83|              <div class="role-icon" style="background:#dbeafe;color:#1e40af;"><i class="bi bi-tools"></i></div>
+    84|    84|              <span data-i18n="Technician">ช่าง</span>
+    85|    85|            </div>
+    86|    86|            <div class="role-option" data-role="admin" onclick="selectRole(this)">
+    87|    87|              <div class="role-icon" style="background:#ede9fe;color:#5b21b6;"><i class="bi bi-headset"></i></div>
+    88|    88|              <span data-i18n="Admin">แอดมิน</span>
+    89|    89|            </div>
+    90|    90|            <div class="role-option" data-role="acct" onclick="selectRole(this)">
+    91|    91|              <div class="role-icon" style="background:#cffafe;color:#164e63;"><i class="bi bi-calculator"></i></div>
+    92|    92|              <span data-i18n="Accountant">บัญชี</span>
+    93|    93|            </div>
+    94|    94|            <div class="role-option" data-role="exec" onclick="selectRole(this)">
+    95|    95|              <div class="role-icon" style="background:#fef9c3;color:#713f12;"><i class="bi bi-bar-chart-line"></i></div>
+    96|    96|              <span data-i18n="Executive">ผู้บริหาร</span>
+    97|    97|            </div>
+    98|    98|          </div>
+    99|    99|        </div>
+   100|   100|
+   101|   101|    <div class="form-group-custom">
+   102|   102|      <label data-i18n="Script URL">Script URL (Google Apps Script)</label>
+   103|   103|      <div class="input-wrap">
+   104|   104|        <i class="bi bi-link-45deg"></i>
+   105|   105|        <input type="url" id="setup-url" data-i18n-placeholder="https://script.google.com/macros/s/..." placeholder="https://script.google.com/macros/s/..." autocomplete="url">
+   106|   106|      </div>
+   107|   107|      <small style="color:#9ca3af;font-size:11px;margin-top:4px;display:block;" data-i18n="Paste deployed URL">วาง URL จาก Google Apps Script ที่ Deploy แล้ว</small>
+   108|   108|    </div>
+   109|   109|
+   110|   110|    <button class="btn-setup" onclick="completeSetup()">
+   111|   111|      <i class="bi bi-arrow-right-circle-fill"></i>
+   112|   112|      <span data-i18n="Start Using">เริ่มใช้งาน</span>
+   113|   113|    </button>
+   114|   114|  </div>
+   115|   115|</div>
+   116|   116|</div>
+   117|   117|</div>
+   118|   118|
+   119|   119|<!-- ===== MAIN APP ===== -->
+   120|   120|<div id="main-app" class="screen hidden">
+   121|   121|
+   122|   122|<!-- TOP BAR -->
+   123|   123|<div id="top-bar" class="top-bar">
+   124|   124|  <div class="top-bar-left">
+   125|   125|    <div id="user-avatar" class="user-avatar" onclick="showProfile()"></div>
+   126|   126|    <div>
+   127|   127|      <div id="greeting-text" class="greeting-text"></div>
+   128|   128|      <div id="user-name-display" class="user-name"></div>
+   129|   129|    </div>
+   130|   130|  </div>
+   131|   131|  <div class="top-bar-right">
+   132|   132|    <button class="icon-btn" data-i18n-title="Search" onclick="showSearch()"><i class="bi bi-search"></i></button>
+   133|   133|    <div class="notif-wrap" onclick="showNotifications()">
+   134|   134|      <button class="icon-btn"><i class="bi bi-bell-fill"></i></button>
+   135|   135|      <span class="notif-badge" id="notif-count">3</span>
+   136|   136|    </div>
+   137|   137|  </div>
+   138|   138|</div>
+   139|   139|
+   140|   140|<!-- OFFLINE BAR -->
+   141|   141|<div id="offline-bar" class="hidden" style="background:#f59e0b;color:#fff;font-size:11px;font-weight:700;text-align:center;padding:4px 12px;display:flex;align-items:center;justify-content:space-between;gap:6px;">
+   142|   142|  <div style="display:flex;align-items:center;gap:6px;">
+   143|   143|    <i class="bi bi-wifi-off"></i>
+   144|   144|    <span data-i18n="Offline - Data will sync when connected">ออฟไลน์ — ข้อมูลจะ Sync เมื่อเชื่อมต่อ</span>
+   145|   145|  </div>
+   146|   146|  <div style="display:flex;align-items:center;gap:8px;">
+   147|   147|    <span class="offline-queue-count" style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1px 6px;"></span>
+   148|   148|    <button onclick="showSyncQueue()" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.5);color:#fff;padding:2px 8px;border-radius:6px;font-size:10px;cursor:pointer;">ดูคิว</button>
+   149|   149|  </div>
+   150|   150|</div>
+   151|   151|
+   152|   152|<!-- PAGES CONTAINER -->
+   153|   153|<div id="pages-container">
+   154|   154|
+   155|   155|<!-- HOME PAGE -->
+   156|   156|<div id="page-home" class="page active">
+   157|   157|
+   158|   158|<!-- QUICK ACTIONS (role-based) -->
+   159|   159|<div class="section-card" id="quick-actions-section">
+   160|   160|<div class="section-label">ปุ่มด่วน</div>
+   161|   161|<div id="quick-actions-grid" class="qa-grid-4"></div>
+   162|   162|</div>
+   163|   163|
+   164|   164|<!-- STATS ROW -->
+   165|   165|<div id="stats-row" class="stats-row"></div>
+   166|   166|
+   167|   167|<!-- MAIN CONTENT (role-based) -->
+   168|   168|<div id="main-content-area"></div>
+   169|   169|
+   170|   170|</div>
+   171|   171|
+   172|   172|<!-- JOBS PAGE -->
+   173|   173|<div id="page-jobs" class="page hidden">
+   174|   174|<div class="page-header">
+   175|   175|<h5>งานทั้งหมด</h5>
+   176|   176|<div class="search-bar-inline">
+   177|   177|<i class="bi bi-search"></i>
+   178|   178|<input type="text" id="jobs-search" placeholder="ค้นหา Job ID, ชื่อลูกค้า..." oninput="filterJobs(this.value)">
+   179|   179|<button onclick="startVoiceSearch()" class="voice-mini"><i class="bi bi-mic-fill"></i></button>
+   180|   180|</div>
+   181|   181|</div>
+   182|   182|<div class="filter-tabs">
+   183|   183|<button class="filter-tab active" onclick="filterByStatus('all', this)">ทั้งหมด</button>
+   184|   184|<button class="filter-tab" onclick="filterByStatus('urgent', this)">ด่วน</button>
+   185|   185|<button class="filter-tab" onclick="filterByStatus('inprog', this)">กำลังดำเนินการ</button>
+   186|   186|<button class="filter-tab" onclick="filterByStatus('waiting', this)">รอชิ้นส่วน</button>
+   187|   187|<button class="filter-tab" onclick="filterByStatus('done', this)">เสร็จแล้ว</button>
+   188|   188|</div>
+   189|   189|<div id="jobs-list"></div>
+   190|   190|</div>
+   191|   191|
+   192|   192|<!-- CAMERA / PHOTO PAGE -->
+   193|   193|<div id="page-camera" class="page hidden">
+   194|   194|<div class="page-header"><h5>ถ่ายรูป / สแกน</h5></div>
+   195|   195|<div class="camera-section">
+   196|   196|<div class="camera-options">
+   197|   197|<div class="cam-option" onclick="openCamera('job')">
+   198|   198|<i class="bi bi-camera-fill"></i>
+   199|   199|<span>รูปหน้างาน</span>
+   200|   200|</div>
+   201|   201|<div class="cam-option" onclick="openCamera('slip')">
+   202|   202|<i class="bi bi-receipt"></i>
+   203|   203|<span>สแกนสลิป</span>
+   204|   204|</div>
+   205|   205|<div class="cam-option" onclick="openCamera('bill')">
+   206|   206|<i class="bi bi-file-earmark-image"></i>
+   207|   207|<span>สแกนบิล</span>
+   208|   208|</div>
+   209|   209|<div class="cam-option" onclick="openCamera('qr')">
+   210|   210|<i class="bi bi-qr-code-scan"></i>
+   211|   211|<span>สแกน QR</span>
+   212|   212|</div>
+   213|   213|</div>
+   214|   214|<input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
+   215|   215|<div id="photo-preview-area"></div>
+   216|   216|<div id="recent-photos" class="recent-photos">
+   217|   217|<div class="section-label">รูปล่าสุด</div>
+   218|   218|<div id="photo-grid" class="photo-thumb-grid"></div>
+   219|   219|</div>
+   220|   220|</div>
+   221|   221|</div>
+   222|   222|
+   223|   223|<!-- CRM PAGE -->
+   224|   224|<div id="page-crm" class="page hidden">
+   225|   225|  <div class="page-header">
+   226|   226|    <h5 data-i18n="Customers">ลูกค้า / CRM</h5>
+   227|   227|    <div class="search-bar-inline">
+   228|   228|      <i class="bi bi-search"></i>
+   229|   229|      <input type="text" id="crm-search" data-i18n-placeholder="Search" placeholder="ค้นหาชื่อ, เบอร์, ประวัติ..." oninput="filterCustomers(this.value)">
+   230|   230|      <button onclick="startVoiceSearch()" class="voice-mini"><i class="bi bi-mic-fill"></i></button>
+   231|   231|    </div>
+   232|   232|  </div>
+   233|   233|  <div class="filter-tabs">
+   234|   234|    <button class="filter-tab active" data-i18n="All" onclick="filterCRMType('all', this)">ทั้งหมด</button>
+   235|   235|    <button class="filter-tab" data-i18n="VIP" onclick="filterCRMType('vip', this)">VIP</button>
+   236|   236|    <button class="filter-tab" data-i18n="Follow-up" onclick="filterCRMType('due', this)">ติดตาม</button>
+   237|   237|    <button class="filter-tab" data-i18n="New" onclick="filterCRMType('new', this)">ใหม่</button>
+   238|   238|  </div>
+   239|   239|  <div id="crm-list"></div>
+   240|   240|  <div id="crm-after-sales-section" style="margin-top:8px"></div>
+   241|   241|</div>
+   242|   242|
+   243|   243|<!-- DASHBOARD PAGE -->
+   244|   244|<div id="page-dashboard" class="page hidden">
+   245|   245|  <div class="page-header" style="padding-bottom:0">
+   246|   246|    <h5 data-i18n="Dashboard"><i class="bi bi-bar-chart-line-fill" style="color:#d97706"></i> Executive Dashboard</h5>
+   247|   247|  </div>
+   248|   248|  <div id="dashboard-content"></div>
+   249|   249|</div>
+   250|   250|
+   251|   251|<!-- PURCHASE ORDER PAGE -->
+   252|   252|<div id="page-po" class="page hidden">
+   253|   253|  <div class="page-header">
+   254|   254|    <h5 data-i18n="Purchase Orders">ใบสั่งซื้อ (PO)</h5>
+   255|   255|    <div class="search-bar-inline">
+   256|   256|      <i class="bi bi-search"></i>
+   257|   257|      <input type="text" id="po-search" data-i18n-placeholder="Search PO" placeholder="ค้นหา PO ID, ผู้จำหน่าย..." oninput="filterPOSearch(this.value)">
+   258|   258|    </div>
+   259|   259|  </div>
+   260|   260|  <div class="filter-tabs">
+   261|   261|    <button class="filter-tab active" data-i18n="All" onclick="filterPOStatus('all', this)">ทั้งหมด</button>
+   262|   262|    <button class="filter-tab" data-i18n="Pending" onclick="filterPOStatus('pending', this)">รอรับสินค้า</button>
+   263|   263|    <button class="filter-tab" data-i18n="Received" onclick="filterPOStatus('received', this)">รับแล้ว</button>
+   264|   264|  </div>
+   265|   265|  <div id="po-list"></div>
+   266|   266|</div>
+   267|   267|
+   268|   268|<!-- ATTENDANCE PAGE -->
+   269|   269|<div id="page-attendance" class="page hidden">
+   270|   270|  <div class="page-header"><h5 data-i18n="Attendance">เวลาทำงาน</h5></div>
+   271|   271|  <div id="attendance-content"></div>
+   272|   272|</div>
+   273|   273|
+   274|   274|<!-- PROFILE PAGE -->
+   275|   275|<div id="page-profile" class="page hidden">
+   276|   276|  <div class="profile-header">
+   277|   277|    <div id="profile-avatar-large" class="profile-avatar-large"></div>
+   278|   278|    <div id="profile-name-large" class="profile-name-large"></div>
+   279|   279|    <div id="profile-role-badge" class="profile-role-badge"></div>
+   280|   280|  </div>
+   281|   281|  <div class="profile-section">
+   282|   282|    <div class="profile-item" onclick="editProfile()">
+   283|   283|      <i class="bi bi-pencil-fill"></i>
+   284|   284|      <span data-i18n="Edit Profile">แก้ไขข้อมูลส่วนตัว</span>
+   285|   285|      <i class="bi bi-chevron-right ms-auto"></i>
+   286|   286|    </div>
+   287|   287|    <div class="profile-item" onclick="changeRole()">
+   288|   288|      <i class="bi bi-person-badge-fill"></i>
+   289|   289|      <span data-i18n="Change Role">เปลี่ยนบทบาท</span>
+   290|   290|      <i class="bi bi-chevron-right ms-auto"></i>
+   291|   291|    </div>
+   292|   292|      <div class="profile-item" onclick="showSettings()">
+   293|   293|        <i class="bi bi-gear-fill"></i>
+   294|   294|        <span data-i18n="Settings">ตั้งค่า Script URL</span>
+   295|   295|        <i class="bi bi-chevron-right ms-auto"></i>
+   296|   296|      </div>
+   297|   297|      <!-- Accounting Integration (Phase 35) -->
+   298|   298|      <div class="profile-item" onclick="showAccountingSettings()">
+   299|   299|        <i class="bi bi-calculator-fill" style="color:#1e40af"></i>
+   300|   300|        <span data-i18n="Accounting Integration">การเชื่อมต่อบัญชี</span>
+   301|   301|        <i class="bi bi-chevron-right ms-auto"></i>
+   302|   302|      </div>
+   303|   303|      <div id="accounting-settings-section" class="profile-section hidden" style="padding:0 16px 16px;background:#f8fafc;border-radius:12px;margin-top:8px">
+   304|   304|        <div style="font-size:13px;font-weight:600;color:#1e40af;margin-bottom:8px"><i class="bi bi-calculator"></i> การเชื่อมต่อบัญชี (Phase 35)</div>
+   305|   305|        <div style="margin-bottom:8px">
+   306|   306|          <label style="font-size:11px;color:#6b7280">ซอฟต์แวร์บัญชี</label>
+   307|   307|          <select id="mobile-accounting-software" style="width:100%;padding:6px;border-radius:6px;border:1px solid #d1d5db;font-size:12px">
+   308|   308|            <option value="express">Express</option>
+   309|   309|            <option value="quickbooks">QuickBooks</option>
+   310|   310|            <option value="other">อื่นๆ</option>
+   311|   311|          </select>
+   312|   312|        </div>
+   313|   313|        <div style="margin-bottom:8px">
+   314|   314|          <label style="font-size:11px;color:#6b7280">API Key / Token</label>
+   315|   315|          <input type="password" id="mobile-accounting-api-key" placeholder="ใส่ API Key หรือ Token" style="width:100%;padding:6px;border-radius:6px;border:1px solid #d1d5db;font-size:12px">
+   316|   316|        </div>
+   317|   317|        <div id="mobile-accounting-status" style="font-size:12px;padding:6px;background:#f0fdf4;color:#059669;border-radius:6px;margin-bottom:8px">✅ เชื่อมต่อแล้ว (จำลอง)</div>
+   318|   318|        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+   319|   319|          <button onclick="testMobileAccountingConnection()" style="padding:6px;background:#1e40af;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">🔍 ทดสอบ</button>
+   320|   320|          <button onclick="exportMobileBillToAccounting()" style="padding:6px;background:#059669;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">📤 ส่งบิล</button>
+   321|   321|        </div>
+   322|   322|      </div>
+   323|   323|      <div class="profile-item" onclick="toggleNotifications()">
+   324|   324|      <i class="bi bi-bell-fill"></i>
+   325|   325|      <span data-i18n="Notifications">การแจ้งเตือน</span>
+   326|   326|      <div class="toggle-switch ms-auto" id="notif-toggle"></div>
+   327|   327|    </div>
+   328|   328|    <div class="profile-item" onclick="clearCache()">
+   329|   329|      <i class="bi bi-arrow-clockwise"></i>
+   330|   330|      <span data-i18n="Clear Cache">ล้างข้อมูลแคช</span>
+   331|   331|      <i class="bi bi-chevron-right ms-auto"></i>
+   332|   332|    </div>
+   333|   333|    <div class="profile-item danger" onclick="resetApp()">
+   334|   334|      <i class="bi bi-trash-fill"></i>
+   335|   335|      <span data-i18n="Reset App">รีเซ็ตแอป</span>
+   336|   336|      <i class="bi bi-chevron-right ms-auto"></i>
+   337|   337|    </div>
+   338|   338|  </div>
+   339|   339|</div>
+   340|   340|<i class="bi bi-trash-fill"></i>
+   341|   341|<span>รีเซ็ตแอป</span>
+   342|   342|<i class="bi bi-chevron-right ms-auto"></i>
+   343|   343|</div>
+   344|   344|</div>
+   345|   345|<div class="app-version">
+   346|   346|  <span data-i18n="Comphone SuperApp AI">Comphone SuperApp AI</span> <span data-i18n="Version">v5.9.0-phase2d</span><br>
+   347|   347|  <span data-i18n="PWA — Works offline">ทำงานได้แม้ไม่มีอินเทอร์เน็ต</span>
+   348|   348|</div>
+   349|   349|</div>
+   350|   350|
+   351|   351|<!-- REPORTS PAGE -->
+   352|   352|<div id="page-reports" class="page hidden">
+   353|   353|  <div class="page-header">
+   354|   354|    <h5 data-i18n="Reports"><i class="bi bi-graph-up-arrow" style="color:#10b981"></i> รายงาน & วิเคราะห์</h5>
+   355|   355|  </div>
+   356|   356|  <div id="reports-content"></div>
+   357|   357|</div>
+   358|   358|
+   359|   359|<!-- ADMIN PAGE -->
+   360|   360|<div id="page-admin" class="page hidden">
+   361|   361|  <div class="page-header">
+   362|   362|    <h5 data-i18n="Admin"><i class="bi bi-shield-fill-check" style="color:#7c3aed"></i> Admin Panel</h5>
+   363|   363|  </div>
+   364|   364|  <div id="admin-content"></div>
+   365|   365|</div>
+   366|   366|
+   367|   367|<!-- INVENTORY PAGE -->
+   368|   368|<div id="page-inventory" class="page hidden">
+   369|   369|  <!-- Content will be rendered by inventory.js -->
+   370|   370|  <div style="text-align:center;padding:3rem;color:#9ca3af">
+   371|   371|    <i class="bi bi-boxes" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
+   372|   372|    <span data-i18n="Loading Inventory">กำลังโหลดคลังสินค้า...</span>
+   373|   373|  </div>
+   374|   374|</div>
+   375|   375|
+   376|   376|<!-- CUSTOMER PORTAL PAGE -->
+   377|   377|<div id="page-customer-portal" class="page hidden">
+   378|   378|  <!-- Content will be rendered by customer_portal.js -->
+   379|   379|  <div style="text-align:center;padding:3rem;color:#9ca3af">
+   380|   380|    <i class="bi bi-search" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
+   381|   381|    <span data-i18n="Checking status">ตรวจสอบสถานะงาน...</span>
+   382|   382|  </div>
+   383|   383|</div>
+   384|   384|
+   385|   385|<!-- Notifications Page -->
+   386|   386|<div id="page-notifications" class="page hidden">
+   387|   387|  <!-- Content will be rendered by notification_center.js -->
+   388|   388|  <div style="text-align:center;padding:3rem;color:#9ca3af">
+   389|   389|    <i class="bi bi-bell" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
+   390|   390|    <span data-i18n="Loading notifications">กำลังโหลดการแจ้งเตือน...</span>
+   391|   391|  </div>
+   392|   392|</div>
+   393|   393|
+   394|   394|<!-- Analytics Page -->
+   395|   395|<div id="page-analytics" class="page hidden">
+   396|   396|  <!-- Content will be rendered by analytics_section.js -->
+   397|   397|  <div id="section-content"></div>
+   398|   398|</div>
+   399|   399|
+   400|   400|</div><!-- end pages-container -->
+   401|   401|
+   402|   402|<!-- FAB -->
+   403|   403|<button id="fab-btn" class="fab-main" data-i18n-title="Add New" onclick="fabAction()">
+   404|   404|  <i class="bi bi-plus-lg"></i>
+   405|   405|</button>
+   406|   406|
+   407|   407|<!-- BOTTOM NAV -->
+   408|   408|<nav class="bottom-nav-bar">
+   409|   409|  <button class="nav-btn active" id="nav-home" onclick="goPage('home', this)">
+   410|   410|    <i class="bi bi-house-fill"></i>
+   411|   411|    <span data-i18n="Home">หน้าหลัก</span>
+   412|   412|  </button>
+   413|   413|  <button class="nav-btn" id="nav-jobs" onclick="goPage('jobs', this)">
+   414|   414|    <div class="nav-icon-wrap">
+   415|   415|      <i class="bi bi-clipboard2-check-fill"></i>
+   416|   416|      <span class="nav-badge-dot" id="jobs-badge">3</span>
+   417|   417|    </div>
+   418|   418|    <span data-i18n="Jobs">งาน</span>
+   419|   419|  </button>
+   420|   420|  <!-- Camera — center FAB-style button -->
+   421|   421|  <button class="nav-btn nav-camera-btn" onclick="openCamera('job')">
+   422|   422|    <div class="nav-camera-circle">
+   423|   423|      <i class="bi bi-camera-fill"></i>
+   424|   424|    </div>
+   425|   425|    <span data-i18n="Camera">กล้อง</span>
+   426|   426|  </button>
+   427|   427|  <!-- More — opens bottom sheet with remaining items -->
+   428|   428|  <button class="nav-btn" id="nav-more" onclick="showMoreMenu()">
+   429|   429|    <i class="bi bi-grid-3x3-gap-fill"></i>
+   430|   430|    <span data-i18n="More">เพิ่มเติม</span>
+   431|   431|  </button>
+   432|   432|  <button class="nav-btn" id="nav-profile" onclick="goPage('profile', this)">
+   433|   433|    <i class="bi bi-person-fill"></i>
+   434|   434|    <span data-i18n="Profile">โปรไฟล์</span>
+   435|   435|  </button>
+   436|   436|</nav>
+   437|   437|
+   438|   438|</div><!-- end main-app -->
+   439|   439|
+   440|   440|<!-- ===== MORE MENU BOTTOM SHEET ===== -->
+   441|   441|<div id="more-menu-overlay" class="cp-sheet-overlay" style="display:none" onclick="closeMoreMenu()">
+   442|   442|  <div class="cp-sheet more-menu-sheet" onclick="event.stopPropagation()">
+   443|   443|    <div class="cp-sheet-handle"></div>
+   444|   444|    <div class="more-menu-title" data-i18n="More">เพิ่มเติม</div>
+   445|   445|    <div class="more-menu-grid">
+   446|   446|      <button class="more-menu-item" id="more-crm-btn" onclick="navigateFromMore('crm')">
+   447|   447|        <div class="more-menu-icon"><i class="bi bi-people-fill"></i></div>
+   448|   448|        <span data-i18n="Customers">ลูกค้า</span>
+   449|   449|      </button>
+   450|   450|      <button class="more-menu-item" id="more-dashboard-btn" onclick="navigateFromMore('dashboard')">
+   451|   451|        <div class="more-menu-icon"><i class="bi bi-bar-chart-line-fill"></i></div>
+   452|   452|        <span data-i18n="Dashboard">Dashboard</span>
+   453|   453|      </button>
+   454|   454|      <button class="more-menu-item" id="more-po-btn" onclick="navigateFromMore('po')">
+   455|   455|        <div class="more-menu-icon"><i class="bi bi-cart-fill"></i></div>
+   456|   456|        <span data-i18n="Purchase Orders">สั่งซื้อ</span>
+   457|   457|      </button>
+   458|   458|      <button class="more-menu-item" id="more-inventory-btn" onclick="navigateFromMore('inventory')">
+   459|   459|        <div class="more-menu-icon"><i class="bi bi-boxes"></i></div>
+   460|   460|        <span data-i18n="Inventory">สต็อก</span>
+   461|   461|      </button>
+   462|   462|      <button class="more-menu-item" id="more-attendance-btn" onclick="navigateFromMore('attendance')">
+   463|   463|        <div class="more-menu-icon"><i class="bi bi-clock-fill"></i></div>
+   464|   464|        <span data-i18n="Attendance">เวลา</span>
+   465|   465|      </button>
+   466|   466|      <button class="more-menu-item" onclick="navigateFromMore('reports')">
+   467|   467|        <div class="more-menu-icon"><i class="bi bi-graph-up-arrow"></i></div>
+   468|   468|        <span data-i18n="Reports">รายงาน</span>
+   469|   469|      </button>
+   470|   470|      <button class="more-menu-item" id="more-analytics-btn" onclick="navigateFromMore('analytics')">
+   471|   471|        <div class="more-menu-icon"><i class="bi bi-pie-chart-fill"></i></div>
+   472|   472|        <span>Analytics</span>
+   473|   473|      </button>
+   474|   474|      <button class="more-menu-item" id="more-admin-btn" style="display:none" onclick="navigateFromMore('admin')">
+   475|   475|        <div class="more-menu-icon"><i class="bi bi-shield-fill-check"></i></div>
+   476|   476|        <span data-i18n="Admin">Admin</span>
+   477|   477|      </button>
+   478|   478|    </div>
+   479|   479|  </div>
+   480|   480|</div>
+   481|   481|
+   482|   482|<!-- ===== MODALS ===== -->
+   483|   483|
+   484|   484|<!-- Job Detail Modal -->
+   485|   485|<div id="modal-job" class="modal-overlay hidden" onclick="closeModal('modal-job')">
+   486|   486|<div class="modal-sheet" onclick="event.stopPropagation()">
+   487|   487|<div class="modal-handle"></div>
+   488|   488|<div id="modal-job-content"></div>
+   489|   489|</div>
+   490|   490|</div>
+   491|   491|
+   492|   492|<!-- Search Modal -->
+   493|   493|<div id="modal-search" class="modal-overlay hidden" onclick="closeModal('modal-search')">
+   494|   494|  <div class="modal-search-box" onclick="event.stopPropagation()">
+   495|   495|    <div class="search-modal-bar">
+   496|   496|      <i class="bi bi-search"></i>
+   497|   497|      <input type="text" id="global-search-input" data-i18n-placeholder="Search" placeholder="ค้นหา Job ID, ชื่อลูกค้า, เบอร์..." autofocus oninput="globalSearch(this.value)">
+   498|   498|      <button onclick="startVoiceSearch()" class="voice-mini"><i class="bi bi-mic-fill"></i></button>
+   499|   499|      <button onclick="closeModal('modal-search')" style="background:none;border:none;color:#6b7280;font-size:14px;padding:4px 8px;" data-i18n="Cancel">ยกเลิก</button>
+   500|   500|    </div>
    501|
