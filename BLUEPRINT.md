@@ -3,7 +3,7 @@
 > **Version:** v5.13.0-phase35 (PWA) / v5.13.0-phase35 (GAS Backend — ✅ PRODUCTION)
 
 > **Date:** 2026-05-02 | **Phase:** 35 (Advanced Integration & Mobile Enhancement — ✅ COMPLETE)
-> **Status:** 🔵 IN PROGRESS — Phase 35 (4/5 features complete)
+> **Status:** ✅ PRODUCTION-READY — Phase 35 (5/5 features complete)
 > **Repository:** https://github.com/comphone/comphone-superapp
 
 ---
@@ -16,10 +16,10 @@
 | App Version | `v5.13.0-phase35` | `pwa/version_config.js` |
 | Cache Version | `comphone-v5.13.0-phase35-20260501_1930` | `pwa/version_config.js`, `pwa/sw.js` |
 | Build Timestamp | `20260501_1930` | `pwa/version_config.js` |
-| GAS Backend Deploy | `FIXING` (syntax error fixed, need redeploy) | `clasp-ready/Config.gs` |
-| GAS Production URL | `BROKEN` (access restricted, need redeploy) | `pwa/gas_config.js` |
+| GAS Backend Deploy | ✅ HEALTHY (v5.13.0-phase35, commit af5dbc9) | `clasp-ready/Config.gs` |
+| GAS Production URL | ✅ Active (`AKfycbwLlvoRUSEOU8PhK3AUc0Rcy3aP08coPtCgu_aukV-Q2MEaN_-q_yLW0J1Vbfk8Fx1Vtw`) | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-02.phase35-partial` | `pwa/api_contract.js` |
-| Last Production Commit | `99d5317` | GitHub `main` |
+| Last Production Commit | `af5dbc9` | GitHub `main` |
 | Validation Status | Static Guard OK, Required API Smoke OK, Optional API Smoke OK, Read-only Workflow Smoke OK | `scripts/` + `test_reports/*_latest.json` |
 
 ### Phase 34 Frontend Completion (2026-05-01)
@@ -604,7 +604,7 @@ Latest local reports are generated under `test_reports/*_latest.json` and are in
 - **RULE:** Never exceed 50 — system will reject writes
 
 ### 9.2 Service Worker
-- **Version:** `CACHE_V = 'comphone-v5.9.0-phase31-20260429_1345'`
+| **Version:** `CACHE_V = 'comphone-v5.13.0-phase35-20260501_1930'`
 - **Timeout:** 15 seconds for API/network fallback
 - **Strategies:** Cache First (static) | Network First (API) | Network Only (webhook)
 - **Offline Queue:** IndexedDB `comphone_offline` v2 (action_queue, data_cache, queue)
@@ -616,12 +616,12 @@ All these MUST match on deploy:
 
 | Surface | File | Key |
 |---------|------|-----|
-| SW Cache | `sw.js` | `CACHE_V = 'comphone-v5.9.0-phase31-20260429_1345'` |
-| PWA Version | `version_config.js` | `APP_VERSION = '5.9.0-phase2d'` |
-| Build Timestamp | `version_config.js` | `BUILD_TIMESTAMP = '20260429_1345'` |
-| GAS Version | `version_config.js` | `GAS_VERSION = '506'` |
+| SW Cache | `sw.js` | `CACHE_V = 'comphone-v5.13.0-phase35-20260501_1930'` |
+| PWA Version | `version_config.js` | `APP_VERSION = 'v5.13.0-phase35'` |
+| Build Timestamp | `version_config.js` | `BUILD_TIMESTAMP = '20260501_1930'` |
+| GAS Version | `version_config.js` | `GAS_VERSION = 'v5.13.0-phase35'` |
 | GAS Config | `gas_config.js` | Production deploy URL @506 |
-| API Contract | `api_contract.js` | `2026-04-29.phase30-api-stability` |
+| API Contract | `api_contract.js` | `2026-05-02.phase35-partial` |
 
 ---
 
@@ -648,6 +648,8 @@ All these MUST match on deploy:
 | **Dashboard ช้า ~11s** | `getDashboardData()` อ่านซ้ำ 17 ครั้ง (DBJOBS 7x, DB_INVENTORY 3x) | Switch frontend เป็น `getDashboardBundle()` (single-pass + 90s cache) |
 | **Inventory UI placeholder** | `renderInventorySection()` แสดงแค่ lowStock count | สร้าง full CRUD UI: 4 KPI, search/filter, table, modals (add/edit/delete/transfer/PO) |
 | **deploy_all.sh clasp timeout** | clasp push timeout ไม่มี fallback | เพิ่ม Apps Script API fallback + 60s timeout |
+| **Mobile line-number UI bug** | Prefixes (121|, 122|) ใน PWA assets | Fixed in commit af5dbc9 (Codex patch) |
+| **Codex/Hermes audit** | Read-only audit of BLUEPRINT.md (2026-05-02) | Compliance 90%, gaps identified, roadmap updated |
 
 ### ⚠️ Current Watchlist
 
@@ -667,6 +669,9 @@ All these MUST match on deploy:
 | **Phase 33: Predictive Analytics** | ⏳ | วิเคราะห์แนวโน้มยอดขาย/สต็อก, พยากรณ์ความต้องการลูกค้า |
 | **Phase 33: Advanced AI Features** | ⏳ | พัฒนา AI ทำนายการบริการ, แนะนำสินค้า/บริการอัจฉริยะ |
 | Blueprint reconciliation | ✅ | File map, versions, phase labels synced 2026-04-29 |
+| Drive Sync timeout | ⚠️ | Timeout after 30+ files, requires clean rerun if GDrive is production source |
+| H1 Security Hardening | ⏳ | invokeFunctionByNameV55_() hardening |
+| Monitor GAS logs/performance | ⏳ | Phase 35 follow-up |
 
 ---
 
