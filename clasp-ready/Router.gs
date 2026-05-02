@@ -512,6 +512,11 @@ function invokeFunctionByNameV55_(functionName, args) {
     'checkAccountingConnection': 1, 'getVersion': 1, 'health': 1,
     'verifySession': 1, 'loginUser': 1, 'logSystemError': 1, 'logTelemetry': 1,
     'getJobStatusPublic': 1, 'barcodeLookup': 1, 'sendDashboardSummary': 1,
+    // Added from frontend actions (2026-05-02)
+    'getAfterSalesDue': 1, 'getAttendanceReport': 1, 'getCustomerHistory': 1,
+    'getJobDetail': 1, 'getRetailSales': 1, 'getTechHistory': 1,
+    'listCustomers': 1, 'listPurchaseOrders': 1,
+    'getCustomerReceipts': 1,
     
     // Write operations (require auth gate - already checked before reaching here)
     'updateJobStatus': 1, 'transitionJob': 1, 'completeJob': 1,
@@ -520,7 +525,9 @@ function invokeFunctionByNameV55_(functionName, args) {
     'createCustomer': 1, 'updateCustomer': 1, 'deleteCustomer': 1,
     'createBill': 1, 'updateBill': 1, 'deleteBill': 1, 'posCheckout': 1,
     'exportBillToAccounting': 1, 'createBackup': 1, 'restoreBackup': 1,
-    'runPenTest': 1, 'scanVulnerabilities': 1
+    'runPenTest': 1, 'scanVulnerabilities': 1,
+    // Added from frontend actions (2026-05-02)
+    'createPurchaseOrder': 1, 'logAfterSalesFollowUp': 1, 'receivePurchaseOrder': 1,
   };
   
   if (!ALLOWED_FUNCTIONS[functionName]) {
