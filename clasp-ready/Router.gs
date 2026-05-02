@@ -493,10 +493,45 @@ function normalizeActionV55_(action) {
 function invokeFunctionByNameV55_(functionName, args) {
   functionName = String(functionName || '').trim();
   if (!functionName) return { success: false, error: 'Function name is required' };
+  
   // ── SECURITY: Block private/underscore functions ──
   if (functionName.charAt(0) === '_') {
     return { success: false, error: 'Access denied: private function', action: functionName, code: 403 };
   }
+  
+  // ── PHASE 35 HARDENING: Whitelist only allowed functions ──
+  // Functions that are safe to call via dynamic invocation
+  var ALLOWED_FUNCTIONS = {
+    // Read-only operations (safe)
+    'getDashboardBundle': 1, 'getStockList': 1, 'getJobList': 1, 'getJob': 1,
+    'checkStock': 1, 'checkJobs': 1, 'getInventoryOverview': 1, 'getLowStockItems': 1,
+    'getBillingList': 1, 'getBillById': 1, 'getCustomerList': 1, 'getCustomerById': 1,
+    'getAttendanceList': 1, 'getPerformanceMetrics': 1, 'getHistoricalMetrics': 1,
+    'getDashboardData': 1, 'getPhotoGalleryData': 1, 'getJobQRData': 1,
+    'getJobStateConfig': 1, 'getCRMSchedule': 1, 'getBackupList': 1, 'checkBackupHealth': 1,
+    'checkAccountingConnection': 1, 'getVersion': 1, 'health': 1,
+    'verifySession': 1, 'loginUser': 1, 'logSystemError': 1, 'logTelemetry': 1,
+    'getJobStatusPublic': 1, 'barcodeLookup': 1, 'sendDashboardSummary': 1,
+    
+    // Write operations (require auth gate - already checked before reaching here)
+    'updateJobStatus': 1, 'transitionJob': 1, 'completeJob': 1,
+    'createJob': 1, 'updateJob': 1, 'deleteJob': 1,
+    'addInventoryItem': 1, 'updateInventoryItem': 1, 'deleteInventoryItem': 1,
+    'createCustomer': 1, 'updateCustomer': 1, 'deleteCustomer': 1,
+    'createBill': 1, 'updateBill': 1, 'deleteBill': 1, 'posCheckout': 1,
+    'exportBillToAccounting': 1, 'createBackup': 1, 'restoreBackup': 1,
+    'runPenTest': 1, 'scanVulnerabilities': 1
+  };
+  
+  if (!ALLOWED_FUNCTIONS[functionName]) {
+    return { 
+      success: false, 
+      error: 'Function not in whitelist: ' + functionName, 
+      action: functionName, 
+      code: 403 
+    };
+  }
+  
   var globalScope = typeof globalThis !== 'undefined' ? globalThis : this;
   var fn = globalScope[functionName];
   if (typeof fn !== 'function') {
