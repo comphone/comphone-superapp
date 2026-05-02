@@ -4,8 +4,8 @@
 // ============================================================
 
 var CONFIG = {
-  APP_NAME: 'COMPHONE SUPER APP v5.12.0-phase34',
-const VERSION = '5.13.0-phase35';
+  APP_NAME: 'COMPHONE SUPER APP v5.13.0-phase35',
+  VERSION: '5.13.0-phase35',
   TIMEZONE: 'Asia/Bangkok',
 
   // ── ชื่อ Sheet ทั้งหมดในระบบ ──

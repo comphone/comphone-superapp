@@ -352,7 +352,7 @@ async function submitEditUser_() {
 ══════════════════════════════════════════════════════════════ */
 
 function renderConfigPanel_(container) {
-  const currentUrl = APP.scriptUrl || localStorage.getItem('comphone_script_url') || '';
+  const currentUrl = APP.scriptUrl || localStorage.getItem('comphone_gas_url') || '';
   const lineToken  = localStorage.getItem('comphone_line_token') || '';
   const promptPay  = localStorage.getItem('comphone_promptpay') || '';
 
@@ -414,7 +414,7 @@ function renderConfigPanel_(container) {
     const url = document.getElementById('cfg-script-url').value.trim();
     if (!url.startsWith('https://')) { showToast('⚠️ URL ไม่ถูกต้อง'); return; }
     APP.scriptUrl = url;
-    localStorage.setItem('comphone_script_url', url);
+    localStorage.setItem('comphone_gas_url', url);
     showToast('✅ บันทึก Script URL แล้ว');
   });
 

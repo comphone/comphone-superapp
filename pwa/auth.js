@@ -307,7 +307,7 @@ function showQuickSetup() {
   const url = prompt('Script URL (Google Apps Script):', APP.scriptUrl || DEFAULT_SCRIPT_URL);
   if (url !== null && url.trim()) {
     APP.scriptUrl = url.trim();
-    localStorage.setItem('comphone_script_url', url.trim());
+    localStorage.setItem('comphone_gas_url', url.trim());
     showToast('บันทึก Script URL แล้ว');
   }
 }
@@ -380,7 +380,7 @@ async function initApp() {
   }
 
   // โหลด Script URL ที่บันทึกไว้
-  const savedUrl = localStorage.getItem('comphone_script_url');
+  const savedUrl = localStorage.getItem('comphone_gas_url');
   if (savedUrl) APP.scriptUrl = savedUrl;
 
   // ตรวจสอบ local session ก่อน

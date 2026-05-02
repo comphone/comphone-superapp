@@ -300,7 +300,7 @@ async function runSetupTriggers() {
 }
 
 function openScriptUrlSettings() {
-  const current = APP.scriptUrl || localStorage.getItem('comphone_script_url') || '';
+  const current = APP.scriptUrl || localStorage.getItem('comphone_gas_url') || '';
   createAdminModal_('modal-script-url', `
     <div class="modal-header-custom">
       <h6>ตั้งค่า Script URL</h6>
@@ -329,7 +329,7 @@ function saveScriptUrl() {
     return;
   }
   APP.scriptUrl = url;
-  localStorage.setItem('comphone_script_url', url);
+  localStorage.setItem('comphone_gas_url', url);
   showToast('✅ บันทึก Script URL แล้ว');
   closeAdminModal('modal-script-url');
 }

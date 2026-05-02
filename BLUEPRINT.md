@@ -1,8 +1,9 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
 > **Version:** v5.13.0-phase35 (PWA) / v5.13.0-phase35 (GAS Backend — IN PROGRESS)
-> **Date:** 2026-05-01 | **Phase:** 35 (Advanced Integration & Mobile Enhancement — 🔵 IN PROGRESS)
-> **Status:** 🔵 IN PROGRESS — Phase 35 started (1/5 features complete, 4 remaining)
+
+> **Date:** 2026-05-02 | **Phase:** 35 (Advanced Integration & Mobile Enhancement — 🔵 IN PROGRESS)
+> **Status:** 🔵 IN PROGRESS — Phase 35 (4/5 features complete)
 > **Repository:** https://github.com/comphone/comphone-superapp
 
 ---
@@ -11,13 +12,14 @@
 
 | Item | Current Value | Source of Truth |
 |---|---|---|
-| App Version | `v5.12.0-phase34` | `pwa/version_config.js` |
-| Cache Version | `comphone-v5.12.0-phase34-20260501_1800` | `pwa/version_config.js`, `pwa/sw.js` |
-| Build Timestamp | `20260501_1800` | `pwa/version_config.js` |
-| GAS Backend Deploy | `@HEAD` (v5.13.0-phase35, Phase 35 IN PROGRESS) | `pwa/gas_config.js`, `clasp-ready/.clasp.json` |
-| GAS Production URL | `https://script.google.com/macros/s/AKfycbx04EK7ryDjsBKQPhwngOk8Vn7evMZWnOOKS4pOX9HX/exec` | `pwa/gas_config.js` |
-| API Contract Version | `2026-05-01.phase34-frontend-complete` | `pwa/api_contract.js` |
-| Last Production Commit | `f760659` | GitHub `main` |
+
+| App Version | `v5.13.0-phase35` | `pwa/version_config.js` |
+| Cache Version | `comphone-v5.13.0-phase35-20260501_1930` | `pwa/version_config.js`, `pwa/sw.js` |
+| Build Timestamp | `20260501_1930` | `pwa/version_config.js` |
+| GAS Backend Deploy | `FIXING` (syntax error fixed, need redeploy) | `clasp-ready/Config.gs` |
+| GAS Production URL | `BROKEN` (access restricted, need redeploy) | `pwa/gas_config.js` |
+| API Contract Version | `2026-05-02.phase35-partial` | `pwa/api_contract.js` |
+| Last Production Commit | `99d5317` | GitHub `main` |
 | Validation Status | Static Guard OK, Required API Smoke OK, Optional API Smoke OK, Read-only Workflow Smoke OK | `scripts/` + `test_reports/*_latest.json` |
 
 ### Phase 34 Frontend Completion (2026-05-01)
