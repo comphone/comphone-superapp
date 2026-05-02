@@ -148,7 +148,7 @@ User (PWA) → GET GAS_URL?action=xxx
 
 | รายการ | URL | สถานะ |
 |--------|-----|-------|
-| **GAS Web App (Production)** | `https://script.google.com/macros/s/AKfycby0jRMOyrdnxlnk5nJXZcQrqMDZgV6dyfjC97dQWj-A8NL2_fWBSIWvrEDoSKkRA2MPKg/exec` | ✅ Active |
+| **GAS Web App (Production)** | `https://script.google.com/macros/s/AKfycbwh4qGcSavl9vEy3v6UCk6pLamDLUZj9ehFG90HG3fc4ADFWLpswObq8e0mBLe2OTJPRg/exec` | ✅ Active |
 | **LINE Webhook** | `https://comphone-line-webhook.narinoutagit.workers.dev/line/webhook` | ✅ Active |
 | **PWA Mobile App** | `https://comphone.github.io/comphone-superapp/pwa/` | ✅ Active |
 | **PC Dashboard** | `https://comphone.github.io/comphone-superapp/pwa/dashboard_pc.html` | ✅ Active |
