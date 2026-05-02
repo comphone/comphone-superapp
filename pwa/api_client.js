@@ -358,14 +358,12 @@ async function checkApiVersion() {
       var serverMajorMinor = serverVersion.split('.').slice(0, 2).join('.');
       if (clientMajorMinor !== serverMajorMinor) {
         console.warn('[COMPHONE] ⚠️ Version mismatch (major.minor): client=' + CLIENT_VERSION + ' server=' + serverVersion);
-        // major.minor ไม่ตรง → force reload หลัง 3 วินาที
-        if (typeof showToast === 'function') {
-          showToast('⚠️ Version ไม่ตรงกัน: Client ' + CLIENT_VERSION + ' / Server ' + serverVersion + ' — กำลังโหลดใหม่...', 'warning');
-        }
-        setTimeout(function() {
-          console.warn('[COMPHONE] Force reload due to major.minor version mismatch');
-          if (typeof window !== 'undefined') window.location.reload(true);
-        }, 3000);
+        // ชั่วคราว: ข้าม force reload เนื่องจาก GAS ยังไม่ได้ deploy ใหม่
+        console.warn('[COMPHONE] Version mismatch suppressed for testing');
+        // setTimeout(function() {
+        //   console.warn('[COMPHONE] Force reload due to major.minor version mismatch');
+        //   if (typeof window !== 'undefined') window.location.reload(true);
+        // }, 3000);
       } else {
         // ตรวจ patch version (5.5.x)
         var clientPatch = CLIENT_VERSION.split('.')[2] || '0';
