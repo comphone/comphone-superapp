@@ -1,12 +1,12 @@
 // ===========================================================
 // COMPHONE SUPER APP - Centralized Version Config
 // Single Source of Truth for all version numbers
-// Phase 35 Advanced Integration & Mobile Enhancement (2026-05-01)
+// Phase 36 System Hardening & UX Polish (2026-05-02)
 // ===========================================================
-const APP_VERSION = '5.13.0-phase35';
-const CACHE_VERSION = 'comphone-v5.13.0-phase35-20260501_1930';
-const BUILD_TIMESTAMP = '20260501_1930';
-const GAS_VERSION = 'v5.13.0-phase35'; // Updated 2026-05-02 Phase 35
+const APP_VERSION = 'v5.13.0-phase36';
+const CACHE_VERSION = 'comphone-v5.13.0-phase36-20260502_1430';
+const BUILD_TIMESTAMP = '20260502_1430';
+const GAS_VERSION = 'v5.13.0-phase36'; // Updated 2026-05-02 Phase 36
 
 // Export for use in other modules
 window.COMPHONE_VERSION = APP_VERSION;

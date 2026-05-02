@@ -1,572 +1,573 @@
-<!DOCTYPE html>
-<html lang="th" class="cp-light">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>COMPHONE Dashboard — PC</title>
-<script src="version_config.js?v=5.13.0-phase35&t=20260501_1930"></script>
-<script>
-// Session contract: accept success/valid and handle offline
-if (typeof window.comphone_auth_session !== 'undefined') {
-  // Session valid or offline - preserve local session
-  var sessionData = localStorage.getItem('comphone_auth_session');
-  if (sessionData) {
-    try {
-      var res = JSON.parse(sessionData);
-      if (res._errorKind === 'offline' || res.valid || res.success) {
-        // Session valid or offline - preserve local session
-        if (res.valid || res.success) {
-          localStorage.setItem('comphone_auth_session', JSON.stringify(res));
-        }
-      }
-    } catch(e) {
-      console.warn('[Session] Error parsing session data:', e);
-    }
-  }
-}
-</script>
-<script src="gas_config.js?v=5.13.0-phase35&t=20260501_1930"></script>
-<script src="api_contract.js?v=5.13.0-phase35&t=20260501_1930"></script>
-<script src="api_client.js?v=5.13.0-phase35&t=20260501_1930"></script>
-<script>
-// ── XSS Sanitizer (PHMP v1 — 2026-04-24) ──
-// Lightweight HTML sanitizer for API data rendered via innerHTML.
-// Strips script tags, event handlers, and dangerous protocols.
-window.sanitizeHTML = function(str) {
-if (typeof str !== 'string') return str;
-return str
-.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
-.replace(/on\w+\s*=\s*[^\s>]*/gi, '')
-.replace(/javascript\s*:/gi, '')
-.replace(/data\s*:\s*text\/html/gi, '');
-};
-// PHASE 25.3 — GLOBAL VERSION LOCK
-window.__APP_VERSION = window.__APP_VERSION || ('v' + (window.COMPHONE_VERSION || '5.9.0-phase2d'));
-// Cache invalidation on version mismatch
-if (localStorage.__APP_VERSION !== window.__APP_VERSION) {
-console.warn('[VERSION] Dashboard version mismatch - clearing runtime caches only...');
-if ('caches' in window) {
-caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-}
-localStorage.__APP_VERSION = window.__APP_VERSION;
-}
-// PHASE 26.6 FIX: Minimal APP stub for error_boundary.js
-window.APP = window.APP || { currentPage: 'dashboard_pc', user: null };
-</script>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-<link rel="stylesheet" href="dashboard_shared.css?v=5.13.0-phase35&t=20260501_1930">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-<style>
-:root {
---sidebar-w: 240px;
---header-h: 60px;
-/* Local tokens bridged to shared design system (dashboard_shared.css) */
---blue: var(--cp-blue);
---green: var(--cp-green);
---amber: var(--cp-orange);
---red: var(--cp-red);
---gray: var(--cp-text2);
---bg: var(--cp-bg);
---card: var(--cp-card-bg);
---border: var(--cp-border);
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Segoe UI','Sarabun',sans-serif; background: var(--bg); color: #111827; }
-/* PHASE 25.5 — VERSION BADGE */
-#version_badge {
-position: fixed;
-bottom: 12px;
-right: 12px;
-z-index: 9999;
-background: rgba(15, 23, 42, 0.9);
-color: #e2e8f0;
-padding: 6px 12px;
-border-radius: 6px;
-font-size: 11px;
-font-family: 'Segoe UI', monospace;
-letter-spacing: 0.3px;
-box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-backdrop-filter: blur(4px);
-border: 1px solid rgba(255,255,255,0.08);
-pointer-events: none;
-transition: opacity 0.3s;
-}
-#version_badge .ok { color: #34d399; }
-#version_badge .warn { color: #fbbf24; }
-#version_badge .err { color: #f87171; }
-/* ===== SIDEBAR ===== */
-.sidebar {
-position: fixed; left: 0; top: 0; bottom: 0;
-width: var(--sidebar-w);
-background:
-linear-gradient(180deg, rgba(37, 99, 235, 0.22) 0%, rgba(15, 23, 42, 0) 38%),
-linear-gradient(180deg, #0f172a 0%, #111827 100%);
-color: #fff; z-index: 100; display: flex; flex-direction: column;
-transition: width 0.2s;
-box-shadow: 18px 0 45px rgba(15, 23, 42, 0.18);
-}
-.sidebar-logo {
-padding: 18px 20px 14px;
-border-bottom: 1px solid rgba(255,255,255,0.08);
-display: flex; align-items: center; gap: 12px;
-}
-.sidebar-logo .logo-icon {
-width: 40px; height: 40px; border-radius: 10px;
-background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-display: flex; align-items: center; justify-content: center;
-font-size: 20px; flex-shrink: 0;
-}
-.sidebar-logo .logo-text { font-size: 15px; font-weight: 800; line-height: 1.2; }
-.sidebar-logo .logo-sub { font-size: 10px; opacity: 0.5; font-weight: 400; }
-.nav-section { padding: 12px 12px 4px; font-size: 10px; font-weight: 700; opacity: 0.4; text-transform: uppercase; letter-spacing: 1px; }
-.nav-item {
-display: flex; align-items: center; gap: 12px;
-padding: 10px 16px; margin: 2px 8px; border-radius: 10px;
-cursor: pointer; font-size: 14px; font-weight: 500;
-color: rgba(255,255,255,0.65); transition: all 0.15s;
-text-decoration: none;
-}
-.nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
-.nav-item.active {
-background: linear-gradient(135deg, #2563eb, #0ea5e9);
-color: #fff; font-weight: 700;
-box-shadow: 0 10px 26px rgba(37, 99, 235, 0.28);
-}
-.nav-item i { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
-.nav-badge { margin-left: auto; background: #ef4444; color: #fff; border-radius: 20px; padding: 1px 7px; font-size: 10px; font-weight: 700; }
-.sidebar-footer {
-margin-top: auto; padding: 16px;
-border-top: 1px solid rgba(255,255,255,0.08);
-}
-.user-chip {
-display: flex; align-items: center; gap: 10px;
-background: rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 12px;
-}
-.user-avatar-sm {
-width: 34px; height: 34px; border-radius: 50%;
-background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-display: flex; align-items: center; justify-content: center;
-font-weight: 800; font-size: 14px; color: #fff; flex-shrink: 0;
-}
-.user-name-sm { font-size: 13px; font-weight: 700; color: #fff; }
-.user-role-sm { font-size: 10px; opacity: 0.5; }
-/* ===== MAIN AREA ===== */
-.main-area {
-margin-left: var(--sidebar-w);
-min-height: 100vh;
-display: flex; flex-direction: column;
-}
-/* ===== TOPBAR ===== */
-.topbar {
-height: var(--header-h);
-background: rgba(255,255,255,0.88);
-border-bottom: 1px solid var(--border);
-display: flex; align-items: center; gap: 16px;
-padding: 0 24px; position: sticky; top: 0; z-index: 50;
-backdrop-filter: blur(14px);
-}
-.topbar-title { font-size: 18px; font-weight: 800; color: #111827; flex: 1; }
-.topbar-date { font-size: 12px; color: var(--gray); }
-.btn-refresh {
-background: #f1f5f9; border: 1px solid var(--border);
-border-radius: 8px; padding: 7px 14px; font-size: 13px;
-color: #374151; cursor: pointer; display: flex; align-items: center; gap: 6px;
-transition: background 0.15s;
-}
-.btn-refresh:hover { background: #e2e8f0; }
-.btn-pwa {
-background: #1e40af; color: #fff; border: none;
-border-radius: 8px; padding: 7px 14px; font-size: 13px;
-cursor: pointer; display: flex; align-items: center; gap: 6px;
-text-decoration: none; transition: background 0.15s;
-}
-.btn-pwa:hover { background: #1d4ed8; color: #fff; }
-/* ===== CONTENT ===== */
-.content { padding: 24px; flex: 1; }
-/* ===== KPI ROW ===== */
-.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
-.kpi-box {
-background: var(--card); border-radius: 14px; padding: 20px;
-border: 1px solid var(--border);
-display: flex; align-items: center; gap: 16px;
-box-shadow: 0 12px 34px rgba(15, 23, 42, 0.06);
-transition: transform 0.15s, box-shadow 0.15s;
-}
-.kpi-box:hover { transform: translateY(-1px); box-shadow: 0 18px 42px rgba(15, 23, 42, 0.10); }
-.kpi-icon-box {
-width: 52px; height: 52px; border-radius: 14px;
-display: flex; align-items: center; justify-content: center;
-font-size: 22px; flex-shrink: 0;
-}
-.kpi-num { font-size: 28px; font-weight: 900; line-height: 1; }
-.kpi-lbl { font-size: 12px; color: var(--gray); margin-top: 3px; font-weight: 600; }
-.kpi-sub { font-size: 11px; color: var(--gray); margin-top: 2px; }
-.kpi-alert-pulse { animation: kpi-pulse 1.5s ease-in-out infinite; border: 2px solid #fca5a5; }
-@keyframes kpi-pulse {
-0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.3); }
-50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
-}
-/* ===== GRID 2 COL ===== */
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-.grid-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-/* ===== CARD ===== */
-.card-box {
-background: var(--card); border-radius: 14px; padding: 20px;
-border: 1px solid var(--border);
-box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-}
-.card-title {
-font-size: 14px; font-weight: 800; color: #111827;
-margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
-}
-.card-title .badge-count {
-background: #f1f5f9; color: var(--gray);
-border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700;
-}
-/* ===== JOB TABLE ===== */
-.job-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.job-table th {
-text-align: left; padding: 8px 12px;
-font-size: 11px; font-weight: 700; color: var(--gray);
-border-bottom: 2px solid var(--border);
-background: #f8fafc;
-}
-.job-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-.job-table tr:last-child td { border-bottom: none; }
-.job-table tr:hover td { background: #f8fafc; }
-.job-table .job-id { font-weight: 700; color: var(--blue); font-size: 12px; }
-.job-table .customer { font-weight: 600; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.job-table .symptom { color: var(--gray); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-.status-badge {
-display: inline-block; padding: 3px 10px; border-radius: 20px;
-font-size: 11px; font-weight: 700; white-space: nowrap;
-}
-.days-badge {
-display: inline-block; padding: 2px 8px; border-radius: 6px;
-font-size: 11px; font-weight: 700;
-}
-/* ===== STATUS DIST ===== */
-.status-dist { display: flex; flex-direction: column; gap: 10px; }
-.status-row { display: flex; align-items: center; gap: 10px; }
-.status-label { font-size: 12px; font-weight: 600; width: 120px; flex-shrink: 0; }
-.status-bar-wrap { flex: 1; background: #f1f5f9; border-radius: 6px; height: 8px; overflow: hidden; }
-.status-bar { height: 100%; border-radius: 6px; transition: width 0.5s; }
-.status-count { font-size: 12px; font-weight: 700; width: 30px; text-align: right; flex-shrink: 0; }
-/* ===== ALERTS ===== */
-.alert-row {
-display: flex; align-items: flex-start; gap: 12px;
-padding: 10px 0; border-bottom: 1px solid var(--border);
-}
-.alert-row:last-child { border-bottom: none; }
-.alert-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
-.alert-msg { font-size: 13px; font-weight: 700; }
-.alert-sub { font-size: 11px; color: var(--gray); margin-top: 2px; }
-/* ===== CHART ===== */
-.chart-wrap { position: relative; height: 220px; }
-/* ===== LOADING ===== */
-.loading-state { text-align: center; padding: 60px 20px; color: var(--gray); }
-.spinner-pc {
-width: 40px; height: 40px; border: 3px solid #e2e8f0;
-border-top-color: #3b82f6; border-radius: 50%;
-animation: spin 0.8s linear infinite; margin: 0 auto 16px;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-/* ===== RESPONSIVE ===== */
-@media (max-width: 1200px) {
-.kpi-row { grid-template-columns: repeat(2, 1fr); }
-.grid-3 { grid-template-columns: 1fr 1fr; }
-}
-@media (max-width: 900px) {
-.sidebar { width: 64px; }
-.sidebar-logo .logo-text, .sidebar-logo .logo-sub,
-.nav-item span, .nav-section, .user-name-sm, .user-role-sm { display: none; }
-.nav-item { justify-content: center; padding: 12px; }
-.nav-item i { width: auto; }
-.main-area { margin-left: 64px; }
-.grid-2, .grid-3 { grid-template-columns: 1fr; }
-.kpi-row { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 600px) {
-.kpi-row { grid-template-columns: 1fr 1fr; }
-.content { padding: 12px; }
-}
-/* ===== LOGIN OVERLAY ===== */
-#login-overlay {
-position: fixed; inset: 0; z-index: 99999;
-background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
-display: flex; align-items: center; justify-content: center;
-font-family: 'Inter', sans-serif;
-}
-#login-overlay .login-card {
-background: #fff; border-radius: 20px; padding: 40px 36px;
-width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-text-align: center;
-}
-#login-overlay .login-logo { font-size: 40px; margin-bottom: 8px; }
-#login-overlay .login-title { font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
-#login-overlay .login-sub { font-size: 12px; color: #94a3b8; margin-bottom: 28px; }
-#login-overlay .login-field {
-width: 100%; padding: 12px 16px; border: 1.5px solid #e2e8f0; border-radius: 10px;
-font-size: 14px; margin-bottom: 12px; outline: none; transition: border 0.2s;
-box-sizing: border-box;
-}
-#login-overlay .login-field:focus { border-color: #3b82f6; }
-#login-overlay .login-btn {
-width: 100%; padding: 13px; background: #3b82f6; color: #fff; border: none;
-border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer;
-transition: background 0.2s; margin-top: 4px;
-}
-#login-overlay .login-btn:hover { background: #2563eb; }
-#login-overlay .login-btn:disabled { background: #94a3b8; cursor: wait; }
-#login-overlay .login-error {
-color: #ef4444; font-size: 13px; margin-top: 10px; min-height: 20px;
-}
-</style>
-</head>
-<body>
-<div id="approval-panel" style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: white; border: 1px solid #ccc; padding: 10px; max-width: 300px; max-height: 400px; overflow-y: auto;"></div>
-<!-- ===== LOGIN OVERLAY ===== -->
-<div id="login-overlay">
-<div class="login-card">
-<div class="login-logo">📱</div>
-<div class="login-title" data-i18n="COMPHONE Dashboard">COMPHONE Dashboard</div>
-<div class="login-sub" data-i18n="Please login to continue">กรุณาเข้าสู่ระบบเพื่อดำเนินการต่อ</div>
-<form id="login-form" onsubmit="_doLogin(event)">
-<input class="login-field" type="text" id="login-user" data-i18n-placeholder="Username" placeholder="Username" autocomplete="username" required>
-<input class="login-field" type="password" id="login-pass" data-i18n-placeholder="Password" placeholder="Password" autocomplete="current-password" required>
-<button class="login-btn" type="submit" id="login-btn">
-<span data-i18n="Login">เข้าสู่ระบบ</span>
-</button>
-</form>
-<div class="login-error" id="login-error"></div>
-</div>
-</div>
-<!-- ===== SIDEBAR ===== -->
-<aside class="sidebar" id="sidebar">
-<div class="sidebar-logo">
-<div class="logo-icon">📱</div>
-<div>
-<div class="logo-text">COMPHONE</div>
-<div class="logo-sub" id="pc-logo-version">SUPER APP</div>
-</div>
-</div>
-<div class="nav-section" data-i18n="Main">หลัก</div>
-<a class="nav-item active" href="#" onclick="loadSection('dashboard')">
-<i class="bi bi-bar-chart-line-fill"></i><span data-i18n="Dashboard">Dashboard</span>
-</a>
-<a class="nav-item" href="#" onclick="loadSection('jobs')">
-<i class="bi bi-tools"></i><span data-i18n="Jobs">งานบริการ</span>
-<span class="nav-badge" id="nav-jobs-badge" style="display:none">0</span>
-</a>
-<a class="nav-item" href="#" onclick="loadSection('po')">
-<i class="bi bi-cart-fill"></i><span data-i18n="Purchase Orders">สั่งซื้อ</span>
-</a>
-<a class="nav-item" href="#" onclick="loadSection('inventory')">
-<i class="bi bi-box-seam-fill"></i><span data-i18n="Inventory">สต็อก</span>
-</a>
-<a class="nav-item" href="#" onclick="loadSection('billing')">
-<i class="bi bi-receipt"></i><span data-i18n="Billing">ใบเสร็จ/วางบิล</span>
-</a>
-<a class="nav-item" href="#" onclick="loadSection('warranty')">
-<i class="bi bi-shield-check"></i><span data-i18n="Warranty">รับประกัน</span>
-</a>
-<div class="nav-section" data-i18n="Reports">รายงาน</div>
-<a class="nav-item" href="#" onclick="loadSection('revenue')">
-<i class="bi bi-currency-exchange"></i><span data-i18n="Revenue">รายรับ</span>
-</a>
-<a class="nav-item" href="#" onclick="loadSection('tax')">
-<i class="bi bi-receipt-cutoff"></i><span data-i18n="Tax (VAT/WHT)">ภาษี (VAT/WHT)</span>
-</a>
-<a class="nav-item" href="#" onclick="loadSection('reports')">
-<i class="bi bi-file-earmark-text-fill"></i><span data-i18n="Reports">รายงาน</span>
-</a>
-<a class="nav-item" href="#" onclick="loadSection('analytics')">
-<i class="bi bi-graph-up"></i><span>Analytics</span>
-</a>
-<a class="nav-item" href="#" onclick="loadSection('performance')">
-<i class="bi bi-speedometer2"></i><span data-i18n="Performance">Performance</span>
-</a>
-<a class="nav-item" href="#" onclick="loadSection('backup')">
-<i class="bi bi-cloud-arrow-up"></i><span data-i18n="Backup & Recovery">สำรองข้อมูล</span>
-</a>
-<a class="nav-item" href="#" onclick="loadSection('crm')">
-<i class="bi bi-people-fill"></i><span data-i18n="Customers">ลูกค้า</span>
-</a>
-<a class="nav-item" href="#" onclick="loadSection('attendance')">
-<i class="bi bi-clock-history"></i><span data-i18n="Attendance">ลงเวลาทำงาน</span>
-</a>
-<div class="nav-section" data-i18n="System">ระบบ</div>
-<a class="nav-item" href="index.html">
-<i class="bi bi-phone-fill"></i><span data-i18n="Open Mobile App">เปิด Mobile App</span>
-</a>
-<a class="nav-item" href="#" onclick="loadSection('settings')">
-<i class="bi bi-gear-fill"></i><span>ตั้งค่า</span>
-</a>
-<div class="sidebar-footer">
-<div class="user-chip">
-<div class="user-avatar-sm" id="pc-avatar">A</div>
-<div>
-<div class="user-name-sm" id="pc-name">Admin</div>
-<div class="user-role-sm" id="pc-role">Admin</div>
-</div>
-<div style="margin-left:auto;cursor:pointer;opacity:0.5;font-size:14px" onclick="_doLogout()" title="ออกจากระบบ">⏻</div>
-</div>
-<!-- Language Toggle -->
-<div class="user-chip" style="margin-top:8px;cursor:pointer" onclick="LanguageManager.switchLanguage(LanguageManager.getCurrentLanguage() === 'th' ? 'en' : 'th')">
-<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg, #10b981, #059669);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;flex-shrink:0;">
-<i class="bi bi-translate"></i>
-</div>
-<div style="flex:1">
-<div style="font-size:12px;font-weight:600;color:#fff;">ภาษา / Language</div>
-<div id="pc-lang-label" style="font-size:10px;opacity:0.5;">ไทย</div>
-</div>
-<i class="bi bi-chevron-right" style="opacity:0.5;"></i>
-</div>
-</div>
-</aside>
-<!-- ===== MAIN ===== -->
-<div class="main-area">
-<!-- TOPBAR -->
-<div class="topbar">
-<div class="topbar-title" id="topbar-title">
-<i class="bi bi-bar-chart-line-fill" style="color:#d97706;margin-right:8px"></i>Executive Dashboard
-</div>
-<div class="topbar-date" id="topbar-date">—</div>
-<button class="btn-refresh" onclick="loadDashboard()">
-<i class="bi bi-arrow-clockwise"></i> รีเฟรช
-</button>
-<a class="btn-pwa" href="index.html">
-<i class="bi bi-phone-fill"></i> Mobile App
-</a>
-</div>
-<!-- CONTENT -->
-<div class="content" id="main-content">
-<div class="loading-state">
-<div class="spinner-pc"></div>
-<p>กำลังโหลดข้อมูล...</p>
-</div>
-</div>
-</div>
-<script>
-'use strict';
-// ===== CONFIG =====
-// GAS_URL now delegates to api_client.js getGasUrl()
-const GAS_URL = getGasUrl();
-let CHARTS = {};
-let DASHBOARD_DATA = null;
-// ===== DATA SCHEMA & ACTION MAP (FOR AI_EXECUTOR) ====
-window.__DATA_SCHEMA = {
-stock: ['product_id', 'name', 'qty', 'min_level'],
-job: ['job_id', 'status', 'technician', 'sla_due'],
-order: ['order_id', 'customer', 'total', 'status']
-};
-window.__ACTION_MAP = {
-getStockList: {
-api: 'getStockList',
-type: 'read'
-},
-updateJobStatus: {
-api: 'updateJobStatus',
-type: 'write'
-},
-posCheckout: {
-api: 'posCheckout',
-type: 'write'
-};
-// Update PC version badge from version_config.js at runtime
-function updatePcVersionBadge() {
-  const badge = document.getElementById('version_badge');
-  if (badge) {
-    const version = window.COMPHONE_VERSION || window.__APP_VERSION || 'unknown';
-    badge.textContent = version;
-    badge.className = 'version-badge';
-  }
-}
-// Auto-call on load
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', updatePcVersionBadge);
-} else {
-  updatePcVersionBadge();
-}
-
-// ===== MISSING FUNCTIONS (P0 Fix 2026-05-02) =====
-function loadSection(sectionName) {
-  console.log('[Dashboard] Loading section:', sectionName);
-  
-  // Hide all sections
-  const sections = document.querySelectorAll('.dashboard-section, .section-content');
-  sections.forEach(sec => sec.style.display = 'none');
-  
-  // Show target section
-  const target = document.getElementById('section-' + sectionName) || 
-                 document.getElementById(sectionName + '-section');
-  if (target) {
-    target.style.display = 'block';
-  } else {
-    console.warn('[Dashboard] Section not found:', sectionName);
-  }
-  
-  // Update active nav
-  const navItems = document.querySelectorAll('.nav-item');
-  navItems.forEach(item => {
-    item.classList.remove('active');
-    if (item.getAttribute('onclick') && item.getAttribute('onclick').includes(sectionName)) {
-      item.classList.add('active');
-    }
-  });
-}
-
-function loadDashboard() {
-  console.log('[Dashboard] Loading main dashboard...');
-  loadSection('dashboard');
-  
-  // Load dashboard data if available
-  if (typeof window.callApi === 'function') {
-    window.callApi({ action: 'getDashboardBundle' })
-      .then(data => {
-        console.log('[Dashboard] Data loaded:', data);
-        if (typeof renderDashboard === 'function') {
-          renderDashboard(data);
-        }
-      })
-      .catch(err => console.error('[Dashboard] Error:', err));
-  }
-}
-
-function _doLogin(event) {
-  event.preventDefault();
-  console.log('[Dashboard] Attempting login...');
-  
-  const username = document.getElementById('login-username')?.value;
-  const password = document.getElementById('login-password')?.value;
-  
-  if (!username || !password) {
-    alert('กรุณากรอก username และ password');
-    return;
-  }
-  
-  if (typeof window.callApi === 'function') {
-    window.callApi({ 
-      action: 'loginUser', 
-      username: username, 
-      password: password 
-    })
-    .then(res => {
-      if (res.success || res.valid) {
-        localStorage.setItem('comphone_auth_session', JSON.stringify(res));
-        document.getElementById('login-form').style.display = 'none';
-        document.getElementById('dashboard-content').style.display = 'block';
-        loadDashboard();
-      } else {
-        alert('เข้าสู่ระบบไม่สำเร็จ: ' + (res.message || 'Unknown error'));
-      }
-    })
-    .catch(err => {
-      console.error('[Login] Error:', err);
-      alert('เกิดข้อผิดพลาดในการเข้าสู่ระบบ');
-    });
-  }
-}
-</script>
+     1|     1|<!DOCTYPE html>
+     2|     2|<html lang="th" class="cp-light">
+     3|     3|<head>
+     4|     4|<meta charset="UTF-8">
+     5|     5|<meta name="viewport" content="width=device-width, initial-scale=1.0">
+     6|     6|<title>COMPHONE Dashboard — PC</title>
+     7|     7|<script src="version_config.js?v=5.13.0-phase36&t=20260502_1430"></script>
+     8|     8|<script>
+     9|     9|// Session contract: accept success/valid and handle offline
+    10|    10|if (typeof window.comphone_auth_session !== 'undefined') {
+    11|    11|  // Session valid or offline - preserve local session
+    12|    12|  var sessionData = localStorage.getItem('comphone_auth_session');
+    13|    13|  if (sessionData) {
+    14|    14|    try {
+    15|    15|      var res = JSON.parse(sessionData);
+    16|    16|      if (res._errorKind === 'offline' || res.valid || res.success) {
+    17|    17|        // Session valid or offline - preserve local session
+    18|    18|        if (res.valid || res.success) {
+    19|    19|          localStorage.setItem('comphone_auth_session', JSON.stringify(res));
+    20|    20|        }
+    21|    21|      }
+    22|    22|    } catch(e) {
+    23|    23|      console.warn('[Session] Error parsing session data:', e);
+    24|    24|    }
+    25|    25|  }
+    26|    26|}
+    27|    27|</script>
+    28|    28|<script src="gas_config.js?v=5.13.0-phase36&t=20260502_1430"></script>
+    29|    29|<script src="api_contract.js?v=5.13.0-phase36&t=20260502_1430"></script>
+    30|    30|<script src="api_client.js?v=5.13.0-phase36&t=20260502_1430"></script>
+    31|    31|<script>
+    32|    32|// ── XSS Sanitizer (PHMP v1 — 2026-04-24) ──
+    33|    33|// Lightweight HTML sanitizer for API data rendered via innerHTML.
+    34|    34|// Strips script tags, event handlers, and dangerous protocols.
+    35|    35|window.sanitizeHTML = function(str) {
+    36|    36|if (typeof str !== 'string') return str;
+    37|    37|return str
+    38|    38|.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    39|    39|.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
+    40|    40|.replace(/on\w+\s*=\s*[^\s>]*/gi, '')
+    41|    41|.replace(/javascript\s*:/gi, '')
+    42|    42|.replace(/data\s*:\s*text\/html/gi, '');
+    43|    43|};
+    44|    44|// PHASE 25.3 — GLOBAL VERSION LOCK
+    45|    45|window.__APP_VERSION = window.__APP_VERSION || ('v' + (window.COMPHONE_VERSION || '5.9.0-phase2d'));
+    46|    46|// Cache invalidation on version mismatch
+    47|    47|if (localStorage.__APP_VERSION !== window.__APP_VERSION) {
+    48|    48|console.warn('[VERSION] Dashboard version mismatch - clearing runtime caches only...');
+    49|    49|if ('caches' in window) {
+    50|    50|caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+    51|    51|}
+    52|    52|localStorage.__APP_VERSION = window.__APP_VERSION;
+    53|    53|}
+    54|    54|// PHASE 26.6 FIX: Minimal APP stub for error_boundary.js
+    55|    55|window.APP = window.APP || { currentPage: 'dashboard_pc', user: null };
+    56|    56|</script>
+    57|    57|<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    58|    58|<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    59|    59|<link rel="stylesheet" href="dashboard_shared.css?v=5.13.0-phase36&t=20260502_1430">
+    60|    60|<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    61|    61|<style>
+    62|    62|:root {
+    63|    63|--sidebar-w: 240px;
+    64|    64|--header-h: 60px;
+    65|    65|/* Local tokens bridged to shared design system (dashboard_shared.css) */
+    66|    66|--blue: var(--cp-blue);
+    67|    67|--green: var(--cp-green);
+    68|    68|--amber: var(--cp-orange);
+    69|    69|--red: var(--cp-red);
+    70|    70|--gray: var(--cp-text2);
+    71|    71|--bg: var(--cp-bg);
+    72|    72|--card: var(--cp-card-bg);
+    73|    73|--border: var(--cp-border);
+    74|    74|}
+    75|    75|* { box-sizing: border-box; margin: 0; padding: 0; }
+    76|    76|body { font-family: 'Segoe UI','Sarabun',sans-serif; background: var(--bg); color: #111827; }
+    77|    77|/* PHASE 25.5 — VERSION BADGE */
+    78|    78|#version_badge {
+    79|    79|position: fixed;
+    80|    80|bottom: 12px;
+    81|    81|right: 12px;
+    82|    82|z-index: 9999;
+    83|    83|background: rgba(15, 23, 42, 0.9);
+    84|    84|color: #e2e8f0;
+    85|    85|padding: 6px 12px;
+    86|    86|border-radius: 6px;
+    87|    87|font-size: 11px;
+    88|    88|font-family: 'Segoe UI', monospace;
+    89|    89|letter-spacing: 0.3px;
+    90|    90|box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    91|    91|backdrop-filter: blur(4px);
+    92|    92|border: 1px solid rgba(255,255,255,0.08);
+    93|    93|pointer-events: none;
+    94|    94|transition: opacity 0.3s;
+    95|    95|}
+    96|    96|#version_badge .ok { color: #34d399; }
+    97|    97|#version_badge .warn { color: #fbbf24; }
+    98|    98|#version_badge .err { color: #f87171; }
+    99|    99|/* ===== SIDEBAR ===== */
+   100|   100|.sidebar {
+   101|   101|position: fixed; left: 0; top: 0; bottom: 0;
+   102|   102|width: var(--sidebar-w);
+   103|   103|background:
+   104|   104|linear-gradient(180deg, rgba(37, 99, 235, 0.22) 0%, rgba(15, 23, 42, 0) 38%),
+   105|   105|linear-gradient(180deg, #0f172a 0%, #111827 100%);
+   106|   106|color: #fff; z-index: 100; display: flex; flex-direction: column;
+   107|   107|transition: width 0.2s;
+   108|   108|box-shadow: 18px 0 45px rgba(15, 23, 42, 0.18);
+   109|   109|}
+   110|   110|.sidebar-logo {
+   111|   111|padding: 18px 20px 14px;
+   112|   112|border-bottom: 1px solid rgba(255,255,255,0.08);
+   113|   113|display: flex; align-items: center; gap: 12px;
+   114|   114|}
+   115|   115|.sidebar-logo .logo-icon {
+   116|   116|width: 40px; height: 40px; border-radius: 10px;
+   117|   117|background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+   118|   118|display: flex; align-items: center; justify-content: center;
+   119|   119|font-size: 20px; flex-shrink: 0;
+   120|   120|}
+   121|   121|.sidebar-logo .logo-text { font-size: 15px; font-weight: 800; line-height: 1.2; }
+   122|   122|.sidebar-logo .logo-sub { font-size: 10px; opacity: 0.5; font-weight: 400; }
+   123|   123|.nav-section { padding: 12px 12px 4px; font-size: 10px; font-weight: 700; opacity: 0.4; text-transform: uppercase; letter-spacing: 1px; }
+   124|   124|.nav-item {
+   125|   125|display: flex; align-items: center; gap: 12px;
+   126|   126|padding: 10px 16px; margin: 2px 8px; border-radius: 10px;
+   127|   127|cursor: pointer; font-size: 14px; font-weight: 500;
+   128|   128|color: rgba(255,255,255,0.65); transition: all 0.15s;
+   129|   129|text-decoration: none;
+   130|   130|}
+   131|   131|.nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+   132|   132|.nav-item.active {
+   133|   133|background: linear-gradient(135deg, #2563eb, #0ea5e9);
+   134|   134|color: #fff; font-weight: 700;
+   135|   135|box-shadow: 0 10px 26px rgba(37, 99, 235, 0.28);
+   136|   136|}
+   137|   137|.nav-item i { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+   138|   138|.nav-badge { margin-left: auto; background: #ef4444; color: #fff; border-radius: 20px; padding: 1px 7px; font-size: 10px; font-weight: 700; }
+   139|   139|.sidebar-footer {
+   140|   140|margin-top: auto; padding: 16px;
+   141|   141|border-top: 1px solid rgba(255,255,255,0.08);
+   142|   142|}
+   143|   143|.user-chip {
+   144|   144|display: flex; align-items: center; gap: 10px;
+   145|   145|background: rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 12px;
+   146|   146|}
+   147|   147|.user-avatar-sm {
+   148|   148|width: 34px; height: 34px; border-radius: 50%;
+   149|   149|background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+   150|   150|display: flex; align-items: center; justify-content: center;
+   151|   151|font-weight: 800; font-size: 14px; color: #fff; flex-shrink: 0;
+   152|   152|}
+   153|   153|.user-name-sm { font-size: 13px; font-weight: 700; color: #fff; }
+   154|   154|.user-role-sm { font-size: 10px; opacity: 0.5; }
+   155|   155|/* ===== MAIN AREA ===== */
+   156|   156|.main-area {
+   157|   157|margin-left: var(--sidebar-w);
+   158|   158|min-height: 100vh;
+   159|   159|display: flex; flex-direction: column;
+   160|   160|}
+   161|   161|/* ===== TOPBAR ===== */
+   162|   162|.topbar {
+   163|   163|height: var(--header-h);
+   164|   164|background: rgba(255,255,255,0.88);
+   165|   165|border-bottom: 1px solid var(--border);
+   166|   166|display: flex; align-items: center; gap: 16px;
+   167|   167|padding: 0 24px; position: sticky; top: 0; z-index: 50;
+   168|   168|backdrop-filter: blur(14px);
+   169|   169|}
+   170|   170|.topbar-title { font-size: 18px; font-weight: 800; color: #111827; flex: 1; }
+   171|   171|.topbar-date { font-size: 12px; color: var(--gray); }
+   172|   172|.btn-refresh {
+   173|   173|background: #f1f5f9; border: 1px solid var(--border);
+   174|   174|border-radius: 8px; padding: 7px 14px; font-size: 13px;
+   175|   175|color: #374151; cursor: pointer; display: flex; align-items: center; gap: 6px;
+   176|   176|transition: background 0.15s;
+   177|   177|}
+   178|   178|.btn-refresh:hover { background: #e2e8f0; }
+   179|   179|.btn-pwa {
+   180|   180|background: #1e40af; color: #fff; border: none;
+   181|   181|border-radius: 8px; padding: 7px 14px; font-size: 13px;
+   182|   182|cursor: pointer; display: flex; align-items: center; gap: 6px;
+   183|   183|text-decoration: none; transition: background 0.15s;
+   184|   184|}
+   185|   185|.btn-pwa:hover { background: #1d4ed8; color: #fff; }
+   186|   186|/* ===== CONTENT ===== */
+   187|   187|.content { padding: 24px; flex: 1; }
+   188|   188|/* ===== KPI ROW ===== */
+   189|   189|.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+   190|   190|.kpi-box {
+   191|   191|background: var(--card); border-radius: 14px; padding: 20px;
+   192|   192|border: 1px solid var(--border);
+   193|   193|display: flex; align-items: center; gap: 16px;
+   194|   194|box-shadow: 0 12px 34px rgba(15, 23, 42, 0.06);
+   195|   195|transition: transform 0.15s, box-shadow 0.15s;
+   196|   196|}
+   197|   197|.kpi-box:hover { transform: translateY(-1px); box-shadow: 0 18px 42px rgba(15, 23, 42, 0.10); }
+   198|   198|.kpi-icon-box {
+   199|   199|width: 52px; height: 52px; border-radius: 14px;
+   200|   200|display: flex; align-items: center; justify-content: center;
+   201|   201|font-size: 22px; flex-shrink: 0;
+   202|   202|}
+   203|   203|.kpi-num { font-size: 28px; font-weight: 900; line-height: 1; }
+   204|   204|.kpi-lbl { font-size: 12px; color: var(--gray); margin-top: 3px; font-weight: 600; }
+   205|   205|.kpi-sub { font-size: 11px; color: var(--gray); margin-top: 2px; }
+   206|   206|.kpi-alert-pulse { animation: kpi-pulse 1.5s ease-in-out infinite; border: 2px solid #fca5a5; }
+   207|   207|@keyframes kpi-pulse {
+   208|   208|0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.3); }
+   209|   209|50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+   210|   210|}
+   211|   211|/* ===== GRID 2 COL ===== */
+   212|   212|.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+   213|   213|.grid-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+   214|   214|/* ===== CARD ===== */
+   215|   215|.card-box {
+   216|   216|background: var(--card); border-radius: 14px; padding: 20px;
+   217|   217|border: 1px solid var(--border);
+   218|   218|box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+   219|   219|}
+   220|   220|.card-title {
+   221|   221|font-size: 14px; font-weight: 800; color: #111827;
+   222|   222|margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+   223|   223|}
+   224|   224|.card-title .badge-count {
+   225|   225|background: #f1f5f9; color: var(--gray);
+   226|   226|border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700;
+   227|   227|}
+   228|   228|/* ===== JOB TABLE ===== */
+   229|   229|.job-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+   230|   230|.job-table th {
+   231|   231|text-align: left; padding: 8px 12px;
+   232|   232|font-size: 11px; font-weight: 700; color: var(--gray);
+   233|   233|border-bottom: 2px solid var(--border);
+   234|   234|background: #f8fafc;
+   235|   235|}
+   236|   236|.job-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+   237|   237|.job-table tr:last-child td { border-bottom: none; }
+   238|   238|.job-table tr:hover td { background: #f8fafc; }
+   239|   239|.job-table .job-id { font-weight: 700; color: var(--blue); font-size: 12px; }
+   240|   240|.job-table .customer { font-weight: 600; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+   241|   241|.job-table .symptom { color: var(--gray); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+   242|   242|.status-badge {
+   243|   243|display: inline-block; padding: 3px 10px; border-radius: 20px;
+   244|   244|font-size: 11px; font-weight: 700; white-space: nowrap;
+   245|   245|}
+   246|   246|.days-badge {
+   247|   247|display: inline-block; padding: 2px 8px; border-radius: 6px;
+   248|   248|font-size: 11px; font-weight: 700;
+   249|   249|}
+   250|   250|/* ===== STATUS DIST ===== */
+   251|   251|.status-dist { display: flex; flex-direction: column; gap: 10px; }
+   252|   252|.status-row { display: flex; align-items: center; gap: 10px; }
+   253|   253|.status-label { font-size: 12px; font-weight: 600; width: 120px; flex-shrink: 0; }
+   254|   254|.status-bar-wrap { flex: 1; background: #f1f5f9; border-radius: 6px; height: 8px; overflow: hidden; }
+   255|   255|.status-bar { height: 100%; border-radius: 6px; transition: width 0.5s; }
+   256|   256|.status-count { font-size: 12px; font-weight: 700; width: 30px; text-align: right; flex-shrink: 0; }
+   257|   257|/* ===== ALERTS ===== */
+   258|   258|.alert-row {
+   259|   259|display: flex; align-items: flex-start; gap: 12px;
+   260|   260|padding: 10px 0; border-bottom: 1px solid var(--border);
+   261|   261|}
+   262|   262|.alert-row:last-child { border-bottom: none; }
+   263|   263|.alert-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+   264|   264|.alert-msg { font-size: 13px; font-weight: 700; }
+   265|   265|.alert-sub { font-size: 11px; color: var(--gray); margin-top: 2px; }
+   266|   266|/* ===== CHART ===== */
+   267|   267|.chart-wrap { position: relative; height: 220px; }
+   268|   268|/* ===== LOADING ===== */
+   269|   269|.loading-state { text-align: center; padding: 60px 20px; color: var(--gray); }
+   270|   270|.spinner-pc {
+   271|   271|width: 40px; height: 40px; border: 3px solid #e2e8f0;
+   272|   272|border-top-color: #3b82f6; border-radius: 50%;
+   273|   273|animation: spin 0.8s linear infinite; margin: 0 auto 16px;
+   274|   274|}
+   275|   275|@keyframes spin { to { transform: rotate(360deg); } }
+   276|   276|/* ===== RESPONSIVE ===== */
+   277|   277|@media (max-width: 1200px) {
+   278|   278|.kpi-row { grid-template-columns: repeat(2, 1fr); }
+   279|   279|.grid-3 { grid-template-columns: 1fr 1fr; }
+   280|   280|}
+   281|   281|@media (max-width: 900px) {
+   282|   282|.sidebar { width: 64px; }
+   283|   283|.sidebar-logo .logo-text, .sidebar-logo .logo-sub,
+   284|   284|.nav-item span, .nav-section, .user-name-sm, .user-role-sm { display: none; }
+   285|   285|.nav-item { justify-content: center; padding: 12px; }
+   286|   286|.nav-item i { width: auto; }
+   287|   287|.main-area { margin-left: 64px; }
+   288|   288|.grid-2, .grid-3 { grid-template-columns: 1fr; }
+   289|   289|.kpi-row { grid-template-columns: repeat(2, 1fr); }
+   290|   290|}
+   291|   291|@media (max-width: 600px) {
+   292|   292|.kpi-row { grid-template-columns: 1fr 1fr; }
+   293|   293|.content { padding: 12px; }
+   294|   294|}
+   295|   295|/* ===== LOGIN OVERLAY ===== */
+   296|   296|#login-overlay {
+   297|   297|position: fixed; inset: 0; z-index: 99999;
+   298|   298|background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+   299|   299|display: flex; align-items: center; justify-content: center;
+   300|   300|font-family: 'Inter', sans-serif;
+   301|   301|}
+   302|   302|#login-overlay .login-card {
+   303|   303|background: #fff; border-radius: 20px; padding: 40px 36px;
+   304|   304|width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+   305|   305|text-align: center;
+   306|   306|}
+   307|   307|#login-overlay .login-logo { font-size: 40px; margin-bottom: 8px; }
+   308|   308|#login-overlay .login-title { font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+   309|   309|#login-overlay .login-sub { font-size: 12px; color: #94a3b8; margin-bottom: 28px; }
+   310|   310|#login-overlay .login-field {
+   311|   311|width: 100%; padding: 12px 16px; border: 1.5px solid #e2e8f0; border-radius: 10px;
+   312|   312|font-size: 14px; margin-bottom: 12px; outline: none; transition: border 0.2s;
+   313|   313|box-sizing: border-box;
+   314|   314|}
+   315|   315|#login-overlay .login-field:focus { border-color: #3b82f6; }
+   316|   316|#login-overlay .login-btn {
+   317|   317|width: 100%; padding: 13px; background: #3b82f6; color: #fff; border: none;
+   318|   318|border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer;
+   319|   319|transition: background 0.2s; margin-top: 4px;
+   320|   320|}
+   321|   321|#login-overlay .login-btn:hover { background: #2563eb; }
+   322|   322|#login-overlay .login-btn:disabled { background: #94a3b8; cursor: wait; }
+   323|   323|#login-overlay .login-error {
+   324|   324|color: #ef4444; font-size: 13px; margin-top: 10px; min-height: 20px;
+   325|   325|}
+   326|   326|</style>
+   327|   327|</head>
+   328|   328|<body>
+   329|   329|<div id="approval-panel" style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: white; border: 1px solid #ccc; padding: 10px; max-width: 300px; max-height: 400px; overflow-y: auto;"></div>
+   330|   330|<!-- ===== LOGIN OVERLAY ===== -->
+   331|   331|<div id="login-overlay">
+   332|   332|<div class="login-card">
+   333|   333|<div class="login-logo">📱</div>
+   334|   334|<div class="login-title" data-i18n="COMPHONE Dashboard">COMPHONE Dashboard</div>
+   335|   335|<div class="login-sub" data-i18n="Please login to continue">กรุณาเข้าสู่ระบบเพื่อดำเนินการต่อ</div>
+   336|   336|<form id="login-form" onsubmit="_doLogin(event)">
+   337|   337|<input class="login-field" type="text" id="login-user" data-i18n-placeholder="Username" placeholder="Username" autocomplete="username" required>
+   338|   338|<input class="login-field" type="password" id="login-pass" data-i18n-placeholder="Password" placeholder="Password" autocomplete="current-password" required>
+   339|   339|<button class="login-btn" type="submit" id="login-btn">
+   340|   340|<span data-i18n="Login">เข้าสู่ระบบ</span>
+   341|   341|</button>
+   342|   342|</form>
+   343|   343|<div class="login-error" id="login-error"></div>
+   344|   344|</div>
+   345|   345|</div>
+   346|   346|<!-- ===== SIDEBAR ===== -->
+   347|   347|<aside class="sidebar" id="sidebar">
+   348|   348|<div class="sidebar-logo">
+   349|   349|<div class="logo-icon">📱</div>
+   350|   350|<div>
+   351|   351|<div class="logo-text">COMPHONE</div>
+   352|   352|<div class="logo-sub" id="pc-logo-version">SUPER APP</div>
+   353|   353|</div>
+   354|   354|</div>
+   355|   355|<div class="nav-section" data-i18n="Main">หลัก</div>
+   356|   356|<a class="nav-item active" href="#" onclick="loadSection('dashboard')">
+   357|   357|<i class="bi bi-bar-chart-line-fill"></i><span data-i18n="Dashboard">Dashboard</span>
+   358|   358|</a>
+   359|   359|<a class="nav-item" href="#" onclick="loadSection('jobs')">
+   360|   360|<i class="bi bi-tools"></i><span data-i18n="Jobs">งานบริการ</span>
+   361|   361|<span class="nav-badge" id="nav-jobs-badge" style="display:none">0</span>
+   362|   362|</a>
+   363|   363|<a class="nav-item" href="#" onclick="loadSection('po')">
+   364|   364|<i class="bi bi-cart-fill"></i><span data-i18n="Purchase Orders">สั่งซื้อ</span>
+   365|   365|</a>
+   366|   366|<a class="nav-item" href="#" onclick="loadSection('inventory')">
+   367|   367|<i class="bi bi-box-seam-fill"></i><span data-i18n="Inventory">สต็อก</span>
+   368|   368|</a>
+   369|   369|<a class="nav-item" href="#" onclick="loadSection('billing')">
+   370|   370|<i class="bi bi-receipt"></i><span data-i18n="Billing">ใบเสร็จ/วางบิล</span>
+   371|   371|</a>
+   372|   372|<a class="nav-item" href="#" onclick="loadSection('warranty')">
+   373|   373|<i class="bi bi-shield-check"></i><span data-i18n="Warranty">รับประกัน</span>
+   374|   374|</a>
+   375|   375|<div class="nav-section" data-i18n="Reports">รายงาน</div>
+   376|   376|<a class="nav-item" href="#" onclick="loadSection('revenue')">
+   377|   377|<i class="bi bi-currency-exchange"></i><span data-i18n="Revenue">รายรับ</span>
+   378|   378|</a>
+   379|   379|<a class="nav-item" href="#" onclick="loadSection('tax')">
+   380|   380|<i class="bi bi-receipt-cutoff"></i><span data-i18n="Tax (VAT/WHT)">ภาษี (VAT/WHT)</span>
+   381|   381|</a>
+   382|   382|<a class="nav-item" href="#" onclick="loadSection('reports')">
+   383|   383|<i class="bi bi-file-earmark-text-fill"></i><span data-i18n="Reports">รายงาน</span>
+   384|   384|</a>
+   385|   385|<a class="nav-item" href="#" onclick="loadSection('analytics')">
+   386|   386|<i class="bi bi-graph-up"></i><span>Analytics</span>
+   387|   387|</a>
+   388|   388|<a class="nav-item" href="#" onclick="loadSection('performance')">
+   389|   389|<i class="bi bi-speedometer2"></i><span data-i18n="Performance">Performance</span>
+   390|   390|</a>
+   391|   391|<a class="nav-item" href="#" onclick="loadSection('backup')">
+   392|   392|<i class="bi bi-cloud-arrow-up"></i><span data-i18n="Backup & Recovery">สำรองข้อมูล</span>
+   393|   393|</a>
+   394|   394|<a class="nav-item" href="#" onclick="loadSection('crm')">
+   395|   395|<i class="bi bi-people-fill"></i><span data-i18n="Customers">ลูกค้า</span>
+   396|   396|</a>
+   397|   397|<a class="nav-item" href="#" onclick="loadSection('attendance')">
+   398|   398|<i class="bi bi-clock-history"></i><span data-i18n="Attendance">ลงเวลาทำงาน</span>
+   399|   399|</a>
+   400|   400|<div class="nav-section" data-i18n="System">ระบบ</div>
+   401|   401|<a class="nav-item" href="index.html">
+   402|   402|<i class="bi bi-phone-fill"></i><span data-i18n="Open Mobile App">เปิด Mobile App</span>
+   403|   403|</a>
+   404|   404|<a class="nav-item" href="#" onclick="loadSection('settings')">
+   405|   405|<i class="bi bi-gear-fill"></i><span>ตั้งค่า</span>
+   406|   406|</a>
+   407|   407|<div class="sidebar-footer">
+   408|   408|<div class="user-chip">
+   409|   409|<div class="user-avatar-sm" id="pc-avatar">A</div>
+   410|   410|<div>
+   411|   411|<div class="user-name-sm" id="pc-name">Admin</div>
+   412|   412|<div class="user-role-sm" id="pc-role">Admin</div>
+   413|   413|</div>
+   414|   414|<div style="margin-left:auto;cursor:pointer;opacity:0.5;font-size:14px" onclick="_doLogout()" title="ออกจากระบบ">⏻</div>
+   415|   415|</div>
+   416|   416|<!-- Language Toggle -->
+   417|   417|<div class="user-chip" style="margin-top:8px;cursor:pointer" onclick="LanguageManager.switchLanguage(LanguageManager.getCurrentLanguage() === 'th' ? 'en' : 'th')">
+   418|   418|<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg, #10b981, #059669);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;flex-shrink:0;">
+   419|   419|<i class="bi bi-translate"></i>
+   420|   420|</div>
+   421|   421|<div style="flex:1">
+   422|   422|<div style="font-size:12px;font-weight:600;color:#fff;">ภาษา / Language</div>
+   423|   423|<div id="pc-lang-label" style="font-size:10px;opacity:0.5;">ไทย</div>
+   424|   424|</div>
+   425|   425|<i class="bi bi-chevron-right" style="opacity:0.5;"></i>
+   426|   426|</div>
+   427|   427|</div>
+   428|   428|</aside>
+   429|   429|<!-- ===== MAIN ===== -->
+   430|   430|<div class="main-area">
+   431|   431|<!-- TOPBAR -->
+   432|   432|<div class="topbar">
+   433|   433|<div class="topbar-title" id="topbar-title">
+   434|   434|<i class="bi bi-bar-chart-line-fill" style="color:#d97706;margin-right:8px"></i>Executive Dashboard
+   435|   435|</div>
+   436|   436|<div class="topbar-date" id="topbar-date">—</div>
+   437|   437|<button class="btn-refresh" onclick="loadDashboard()">
+   438|   438|<i class="bi bi-arrow-clockwise"></i> รีเฟรช
+   439|   439|</button>
+   440|   440|<a class="btn-pwa" href="index.html">
+   441|   441|<i class="bi bi-phone-fill"></i> Mobile App
+   442|   442|</a>
+   443|   443|</div>
+   444|   444|<!-- CONTENT -->
+   445|   445|<div class="content" id="main-content">
+   446|   446|<div class="loading-state">
+   447|   447|<div class="spinner-pc"></div>
+   448|   448|<p>กำลังโหลดข้อมูล...</p>
+   449|   449|</div>
+   450|   450|</div>
+   451|   451|</div>
+   452|   452|<script>
+   453|   453|'use strict';
+   454|   454|// ===== CONFIG =====
+   455|   455|// GAS_URL now delegates to api_client.js getGasUrl()
+   456|   456|const GAS_URL = getGasUrl();
+   457|   457|let CHARTS = {};
+   458|   458|let DASHBOARD_DATA = null;
+   459|   459|// ===== DATA SCHEMA & ACTION MAP (FOR AI_EXECUTOR) ====
+   460|   460|window.__DATA_SCHEMA = {
+   461|   461|stock: ['product_id', 'name', 'qty', 'min_level'],
+   462|   462|job: ['job_id', 'status', 'technician', 'sla_due'],
+   463|   463|order: ['order_id', 'customer', 'total', 'status']
+   464|   464|};
+   465|   465|window.__ACTION_MAP = {
+   466|   466|getStockList: {
+   467|   467|api: 'getStockList',
+   468|   468|type: 'read'
+   469|   469|},
+   470|   470|updateJobStatus: {
+   471|   471|api: 'updateJobStatus',
+   472|   472|type: 'write'
+   473|   473|},
+   474|   474|posCheckout: {
+   475|   475|api: 'posCheckout',
+   476|   476|type: 'write'
+   477|   477|};
+   478|   478|// Update PC version badge from version_config.js at runtime
+   479|   479|function updatePcVersionBadge() {
+   480|   480|  const badge = document.getElementById('version_badge');
+   481|   481|  if (badge) {
+   482|   482|    const version = window.COMPHONE_VERSION || window.__APP_VERSION || 'unknown';
+   483|   483|    badge.textContent = version;
+   484|   484|    badge.className = 'version-badge';
+   485|   485|  }
+   486|   486|}
+   487|   487|// Auto-call on load
+   488|   488|if (document.readyState === 'loading') {
+   489|   489|  document.addEventListener('DOMContentLoaded', updatePcVersionBadge);
+   490|   490|} else {
+   491|   491|  updatePcVersionBadge();
+   492|   492|}
+   493|   493|
+   494|   494|// ===== MISSING FUNCTIONS (P0 Fix 2026-05-02) =====
+   495|   495|function loadSection(sectionName) {
+   496|   496|  console.log('[Dashboard] Loading section:', sectionName);
+   497|   497|  
+   498|   498|  // Hide all sections
+   499|   499|  const sections = document.querySelectorAll('.dashboard-section, .section-content');
+   500|   500|  sections.forEach(sec => sec.style.display = 'none');
+   501|   501|  
+   502|   502|  // Show target section
+   503|   503|  const target = document.getElementById('section-' + sectionName) || 
+   504|   504|                 document.getElementById(sectionName + '-section');
+   505|   505|  if (target) {
+   506|   506|    target.style.display = 'block';
+   507|   507|  } else {
+   508|   508|    console.warn('[Dashboard] Section not found:', sectionName);
+   509|   509|  }
+   510|   510|  
+   511|   511|  // Update active nav
+   512|   512|  const navItems = document.querySelectorAll('.nav-item');
+   513|   513|  navItems.forEach(item => {
+   514|   514|    item.classList.remove('active');
+   515|   515|    if (item.getAttribute('onclick') && item.getAttribute('onclick').includes(sectionName)) {
+   516|   516|      item.classList.add('active');
+   517|   517|    }
+   518|   518|  });
+   519|   519|}
+   520|   520|
+   521|   521|function loadDashboard() {
+   522|   522|  console.log('[Dashboard] Loading main dashboard...');
+   523|   523|  loadSection('dashboard');
+   524|   524|  
+   525|   525|  // Load dashboard data if available
+   526|   526|  if (typeof window.callApi === 'function') {
+   527|   527|    window.callApi({ action: 'getDashboardBundle' })
+   528|   528|      .then(data => {
+   529|   529|        console.log('[Dashboard] Data loaded:', data);
+   530|   530|        if (typeof renderDashboard === 'function') {
+   531|   531|          renderDashboard(data);
+   532|   532|        }
+   533|   533|      })
+   534|   534|      .catch(err => console.error('[Dashboard] Error:', err));
+   535|   535|  }
+   536|   536|}
+   537|   537|
+   538|   538|function _doLogin(event) {
+   539|   539|  event.preventDefault();
+   540|   540|  console.log('[Dashboard] Attempting login...');
+   541|   541|  
+   542|   542|  const username = document.getElementById('login-username')?.value;
+   543|   543|  const password = document.getElementById('login-password')?.value;
+   544|   544|  
+   545|   545|  if (!username || !password) {
+   546|   546|    alert('กรุณากรอก username และ password');
+   547|   547|    return;
+   548|   548|  }
+   549|   549|  
+   550|   550|  if (typeof window.callApi === 'function') {
+   551|   551|    window.callApi({ 
+   552|   552|      action: 'loginUser', 
+   553|   553|      username: username, 
+   554|   554|      password: password 
+   555|   555|    })
+   556|   556|    .then(res => {
+   557|   557|      if (res.success || res.valid) {
+   558|   558|        localStorage.setItem('comphone_auth_session', JSON.stringify(res));
+   559|   559|        document.getElementById('login-form').style.display = 'none';
+   560|   560|        document.getElementById('dashboard-content').style.display = 'block';
+   561|   561|        loadDashboard();
+   562|   562|      } else {
+   563|   563|        alert('เข้าสู่ระบบไม่สำเร็จ: ' + (res.message || 'Unknown error'));
+   564|   564|      }
+   565|   565|    })
+   566|   566|    .catch(err => {
+   567|   567|      console.error('[Login] Error:', err);
+   568|   568|      alert('เกิดข้อผิดพลาดในการเข้าสู่ระบบ');
+   569|   569|    });
+   570|   570|  }
+   571|   571|}
+   572|   572|</script>
+   573|   573|
