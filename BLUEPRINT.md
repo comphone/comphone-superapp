@@ -1,9 +1,9 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.13.0-phase35 (PWA) / v5.13.0-phase35 (GAS Backend — ✅ PRODUCTION)
+> **Version:** v5.13.0-phase35 (PWA) / v5.13.0-phase35 (GAS Backend — ✅ HEALTHY)
 
 > **Date:** 2026-05-02 | **Phase:** 35 (Advanced Integration & Mobile Enhancement — ✅ COMPLETE)
-> **Status:** ✅ PRODUCTION-READY — Phase 35 (5/5 features complete)
+> **Status:** ⚠️ PARTIAL — Score 72/100 (PC Dashboard BROKEN, contract drift)
 > **Repository:** https://github.com/comphone/comphone-superapp
 
 ---
@@ -16,10 +16,10 @@
 | App Version | `v5.13.0-phase35` | `pwa/version_config.js` |
 | Cache Version | `comphone-v5.13.0-phase35-20260501_1930` | `pwa/version_config.js`, `pwa/sw.js` |
 | Build Timestamp | `20260501_1930` | `pwa/version_config.js` |
-| GAS Backend Deploy | ✅ HEALTHY (v5.13.0-phase35, commit af5dbc9) | `clasp-ready/Config.gs` |
+| GAS Backend Deploy | ✅ HEALTHY (v5.13.0-phase35, commit 138f4ad) | `clasp-ready/Config.gs` |
 | GAS Production URL | ✅ Active (`AKfycbwLlvoRUSEOU8PhK3AUc0Rcy3aP08coPtCgu_aukV-Q2MEaN_-q_yLW0J1Vbfk8Fx1Vtw`) | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-02.phase35-partial` | `pwa/api_contract.js` |
-| Last Production Commit | `af5dbc9` | GitHub `main` |
+| Last Production Commit | `138f4ad` | GitHub `main` |
 | Validation Status | Static Guard OK, Required API Smoke OK, Optional API Smoke OK, Read-only Workflow Smoke OK | `scripts/` + `test_reports/*_latest.json` |
 
 ### Phase 34 Frontend Completion (2026-05-01)
@@ -629,6 +629,48 @@ All these MUST match on deploy:
 
 ### ✅ Recently Fixed (2026-04-23)
 
+### 🔴 Audit Summary (2026-05-02 Workspace Check)
+
+**Overall Score: 72/100** ⚠️ NOT PRODUCTION-READY
+
+| Module | Score | Notes |
+|--------|-------|-------|
+| GAS backend health/config | 85% | Healthy, version correct |
+| Mobile shell/navigation | 75% | Line-number bug fixed |
+| Mobile Reports/advanced | 55% | Some sections incomplete |
+| PC dashboard | 25% | BROKEN - script errors, missing impl |
+| Frontend/backend contract | 75% | callGas/callApi mismatch |
+| Static guard/deploy guard | 80% | Passes but incomplete |
+| BLUEPRINT accuracy | 80% | Updated but version drift exists |
+| Drive sync | ⚠️ | Timeout after 30+ files |
+
+**What PASSED:**
+- ✅ GAS health: status healthy, version 5.13.0-phase35
+- ✅ node scripts/pwa_static_guard.js passes
+- ✅ JS หลักฝั่ง mobile parse ผ่าน
+- ✅ line-number bug NNN| เหลือ 0
+- ✅ git working tree clean (at time of audit)
+
+**P0 Critical (Must fix before production):**
+1. ซ่อม dashboard_pc.html ให้ parse/run ได้จริง
+2. เพิ่ม alias window.callGas = window.callApi หรือ migrate ทุกไฟล์เป็น callApi
+3. เอา write/sensitive GET direct handlers ออกจาก doGet() ให้ผ่าน auth gate
+4. แก้ Accounting integration: checkAuth_, payload mapping, error logging
+5. รัน browser smoke ทั้ง mobile และ PC
+
+**P1 High (Should fix):**
+1. Sync version_config.js, api_contract.js, index.html footer ให้ตรงกัน
+2. ทำ frontend action cross-check เฉพาะไฟล์ที่ loaded จริง
+3. เพิ่ม static guard ตรวจ dashboard_pc.html ว่ามี loadSection/_doLogin/loadDashboard
+4. Drive sync clean run ถ้า GDrive เป็น production source
+
+**P2 Medium (Future hardening):**
+1. Hardening invokeFunctionByNameV55_() เป็น whitelist จริง
+2. แยก read/write/admin action registry ให้ชัด
+3. ลด duplicate modules เช่น inventory.js vs section_inventory.js
+
+
+
 | ปัญหา | สาเหตุ | แก้ไข |
 |-------|--------|-------|
 | Mobile "เชื่อมต่อไม่ได้" | auth.js + api_client.js ใช้ POST → GAS 302 redirect ฆ่า body | เปลี่ยน POST → GET ทั้งหมด (auth.js, api_client.js, error_boundary.js) |
@@ -651,7 +693,19 @@ All these MUST match on deploy:
 | **Mobile line-number UI bug** | Prefixes (121|, 122|) ใน PWA assets | Fixed in commit af5dbc9 (Codex patch) |
 | **Codex/Hermes audit** | Read-only audit of BLUEPRINT.md (2026-05-02) | Compliance 90%, gaps identified, roadmap updated |
 
+
+| **PC Dashboard BROKEN** | dashboard_pc.html line 7: script tag misplaced, line 466: nested script in JS object | Score 25/100, SyntaxError: Unexpected token 'if' |
+| **callGas() undefined** | reports.js(119), attendance_section.js, billing_section.js เรียก callGas() แต่ api_client.js export แค่ callApi | ReferenceError: callGas is not defined |
+| **GAS doGet() auth bypass** | Router.gs line 102, 112, 121, 125: exportBillToAccounting, createBackup, restoreBackup, runPenTest ไม่ผ่าน _checkAuthGateV55_() | Sensitive actions เสี่ยงถูกเรียกโดยไม่ authen |
+
+
+| **Accounting integration incomplete** | AccountingIntegration.gs (line 16) เรียก checkAuth_() ที่ไม่พบใน clasp-ready | ต้องสร้าง checkAuth_() หรือแก้เป็น _checkAuthGateV55_() |
+| **exportBillToAccounting payload** | RouterSplit.gs ส่ง payload object แต่ function คาดว่าเป็น billId | ต้องตรวจสอบและแก้ mapping |
+| **invokeFunctionByNameV55_() open fallback** | Router.gs (line 477) ยังเรียก global function ได้หลัง auth | ต้อง hardening เป็น whitelist |
+| **Version mismatches** | version_config.js: GAS_VERSION='524', api_contract.js: old version, index.html footer: v5.9.0-phase2d | ต้อง sync ให้ตรงกับ v5.13.0-phase35 |
+
 ### ⚠️ Current Watchlist
+
 
 | รายการ | สถานะ | หมายเหตุ |
 |-------|-------|---------|
