@@ -1,0 +1,306 @@
+<script>
+(function (window, document, api) {
+  'use strict';
+
+  if (!api) return;
+
+  var APP = api.APP;
+
+  // ===== HELPERS =====
+  function resolveAlertCount(alertsPayload) {
+    if (!alertsPayload) return 0;
+    if (Array.isArray(alertsPayload)) return alertsPayload.length;
+    if (Array.isArray(alertsPayload.items)) return alertsPayload.items.length;
+    return Number(alertsPayload.total || 0) || 0;
+  }
+
+  function getInvoiceCount(report) {
+    report = report || {};
+    return Number(report.bill_count || report.count || report.total_bills || 0) || 0;
+  }
+
+  // ===== RENDER TOP SUMMARY =====
+  function renderTopSummary(summary, alertsPayload) {
+    summary = summary || {};
+    var revenue = summary.revenue || {};
+    var topTech = summary.topTechnician || {};
+
+    // Update last refresh
+    api.setText(APP.ui.lastRefreshText, 'อัปเดต: ' + (summary.date || 'พร้อมใช้งาน'));
+    var lastRefreshMobile = document.getElementById('lastRefreshTextMobile');
+    if (lastRefreshMobile) lastRefreshMobile.textContent = summary.date || '-';
+
+    // KPI Cards
+    api.setText(APP.ui.metricTotalJobs, api.formatNumber(summary.totalJobs || 0));
+    api.setText(APP.ui.metricLowStock, api.formatNumber(summary.lowStock || 0));
+    api.setText(APP.ui.metricOverdueJobs, api.formatNumber(summary.overdueJobs || 0));
+    api.setText(APP.ui.metricPmDue, api.formatNumber(summary.pmDueCount || 0));
+    api.setText(APP.ui.pendingPhotosText, api.formatNumber(summary.pendingPhotos || 0));
+    api.setText(APP.ui.topTechnicianText, topTech.name ? topTech.name + ' (' + api.formatNumber(topTech.jobs || topTech.count || 0) + ')' : '-');
+
+    // Compute inProgress and completed from status distribution
+    var dist = summary.status_distribution || [];
+    var inProgressCount = 0, completedCount = 0;
+    var inProgressLabels = ['มอบหมายแล้ว', 'รับงานแล้ว', 'เดินทาง', 'ถึงหน้างาน', 'เริ่มงาน', 'รอชิ้นส่วน', 'งานเสร็จ', 'ลูกค้าตรวจรับ', 'รอเก็บเงิน'];
+    var completedLabels = ['เก็บเงินแล้ว', 'ปิดงาน'];
+    dist.forEach(function(item) {
+      var label = String(item.label || item.status || '');
+      var count = Number(item.count || 0);
+      if (inProgressLabels.indexOf(label) > -1) inProgressCount += count;
+      if (completedLabels.indexOf(label) > -1) completedCount += count;
+    });
+    var metricInProgress = document.getElementById('metricInProgress');
+    var metricCompletedJobs = document.getElementById('metricCompletedJobs');
+    if (metricInProgress) metricInProgress.textContent = api.formatNumber(inProgressCount);
+    if (metricCompletedJobs) metricCompletedJobs.textContent = api.formatNumber(completedCount);
+
+    // Revenue
+    api.setText(APP.ui.revenueToday, api.formatCurrency(revenue.today || 0));
+    api.setText(APP.ui.revenueWeek, api.formatCurrency(revenue.week || 0));
+    api.setText(APP.ui.revenueMonth, api.formatCurrency(revenue.month || 0));
+    api.setText(APP.ui.revenueTodayMeta, api.formatNumber(getInvoiceCount(APP.dashboard && APP.dashboard.revenue_today)) + ' บิล');
+    api.setText(APP.ui.revenueWeekMeta, api.formatNumber(getInvoiceCount(APP.dashboard && APP.dashboard.revenue_week)) + ' บิล');
+    api.setText(APP.ui.revenueMonthMeta, api.formatNumber(getInvoiceCount(APP.dashboard && APP.dashboard.revenue_month)) + ' บิล');
+  }
+
+  // ===== RENDER STATUS FILTER =====
+  function renderStatusFilter() {
+    var select = APP.ui.statusFilterSelect;
+    if (!select) return;
+    var currentValue = APP.filters.status || 'ALL';
+    var html = '<option value="ALL">ทุกสถานะ</option>';
+    APP.statusConfig.forEach(function(item) {
+      html += '<option value="' + api.escapeHtml(String(item.label || '')) + '">' +
+        api.escapeHtml(String(item.label || '')) + '</option>';
+    });
+    select.innerHTML = html;
+    select.value = currentValue;
+  }
+
+  // ===== RENDER STATUS BOARD =====
+  function renderStatusBoard() {
+    var summary = APP.summary || {};
+    var board = APP.ui.statusBoard;
+    var loading = APP.ui.statusBoardLoading;
+    var errorBox = APP.ui.statusBoardError;
+    if (!board) return;
+
+    api.hide(errorBox);
+    api.hide(loading);
+
+    var lookup = api.toStatusCodeLookup(summary.status_distribution || []);
+    var items = APP.statusConfig || [];
+    if (!items.length) {
+      api.setText(errorBox, 'ไม่พบข้อมูลสถานะจาก JobStateMachine V5.5');
+      api.show(errorBox);
+      api.hide(board);
+      return;
+    }
+
+    var html = '';
+    items.forEach(function(state) {
+      var count = Number(lookup[String(state.code)] || lookup[state.label] || 0) || 0;
+      var hasJobs = count > 0;
+      html += '<div class="col-6 col-md-4 col-lg-3">';
+      html += '<article class="status-card' + (hasJobs ? '' : '') + '" data-status-code="' + api.escapeHtml(String(state.code)) + '" data-status-label="' + api.escapeHtml(String(state.label)) + '">';
+      html += '<div class="d-flex justify-content-between align-items-start">';
+      html += '<div class="status-name">' + api.escapeHtml(String(state.label || '-')) + '</div>';
+      html += '<div class="badge bg-secondary" style="font-size:0.65rem;">Step ' + api.escapeHtml(String(state.code)) + '</div>';
+      html += '</div>';
+      html += '<div class="status-count ' + (hasJobs ? 'text-primary' : 'text-muted') + '">' + api.formatNumber(count) + '</div>';
+      html += '</article>';
+      html += '</div>';
+    });
+
+    board.innerHTML = html;
+    api.show(board);
+    api.setText(APP.ui.statusTotalText, api.formatNumber(items.length) + ' สถานะ');
+  }
+
+  // ===== RENDER ALERTS =====
+  function normalizeAlertItems(payload) {
+    if (!payload) return [];
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload.items)) return payload.items;
+    return [];
+  }
+
+  function renderAlerts() {
+    var items = normalizeAlertItems((APP.dashboard && APP.dashboard.alerts) || (APP.summary && APP.summary.alerts) || []);
+    var wrap = APP.ui.alertsList;
+    if (!wrap) return;
+
+    api.setText(APP.ui.alertsCounterPill, api.formatNumber(items.length));
+    if (!items.length) {
+      wrap.innerHTML = '';
+      api.show(APP.ui.alertsEmpty);
+      return;
+    }
+
+    api.hide(APP.ui.alertsEmpty);
+    var html = '';
+    items.forEach(function(item) {
+      var tone = item.priority || item.level || 'info';
+      var iconMap = { high: 'fa-exclamation-circle text-danger', medium: 'fa-exclamation-triangle text-warning', info: 'fa-info-circle text-info' };
+      var icon = iconMap[tone] || iconMap.info;
+      html += '<div class="alert-item">';
+      html += '<div class="alert-icon"><i class="fas ' + icon + '"></i></div>';
+      html += '<div class="alert-body">';
+      html += '<div class="title">' + api.escapeHtml(String(item.title || item.name || 'Alert')) + '</div>';
+      html += '<div class="detail">' + api.escapeHtml(String(item.detail || item.message || item.description || '-')) + '</div>';
+      if (item.value !== undefined && item.value !== null && item.value !== '') {
+        html += '<div class="detail text-muted">ค่า: ' + api.escapeHtml(String(item.value)) + '</div>';
+      }
+      html += '</div>';
+      html += '</div>';
+    });
+    wrap.innerHTML = html;
+  }
+
+  // ===== RENDER RECENT JOBS =====
+  function normalizeJob(job) {
+    job = job || {};
+    return {
+      id: String(job.id || job.job_id || ''),
+      customer: String(job.customer || job.customer_name || job.name || '-'),
+      symptom: String(job.symptom || job.issue || job.description || '-'),
+      tech: String(job.tech || job.technician || '-'),
+      status: api.getStatusLabel(job.status || job.status_label || job.current_status || job.current_status_code || '-'),
+      created: String(job.created || job.created_at || job.date || '-'),
+      raw: job
+    };
+  }
+
+  function getStatusRowClass(statusLabel) {
+    var completedLabels = ['เก็บเงินแล้ว', 'ปิดงาน'];
+    var inProgressLabels = ['เดินทาง', 'ถึงหน้างาน', 'เริ่มงาน'];
+    var waitingLabels = ['รอชิ้นส่วน', 'รอเก็บเงิน'];
+    if (completedLabels.indexOf(statusLabel) > -1) return 'row-completed';
+    if (inProgressLabels.indexOf(statusLabel) > -1) return 'row-inprogress';
+    if (waitingLabels.indexOf(statusLabel) > -1) return 'row-overdue';
+    return '';
+  }
+
+  function getFilteredJobs() {
+    var query = String(APP.filters.query || '').trim().toLowerCase();
+    var status = String(APP.filters.status || 'ALL');
+    var limit = Number(APP.filters.limit || 20) || 20;
+    var list = (APP.jobs || []).map(normalizeJob).filter(function(job) {
+      if (status !== 'ALL' && job.status !== status) return false;
+      if (!query) return true;
+      var haystack = [job.id, job.customer, job.symptom, job.tech, job.status].join(' ').toLowerCase();
+      return haystack.indexOf(query) > -1;
+    });
+    return list.slice(0, limit);
+  }
+
+  function renderRecentJobs() {
+    var jobs = getFilteredJobs();
+    var tbody = APP.ui.recentJobsTableBody;
+    var tableWrap = document.getElementById('recentJobsTableWrap');
+    if (!tbody) return;
+
+    api.hide(APP.ui.recentJobsLoading);
+    api.hide(APP.ui.recentJobsError);
+    api.setText(APP.ui.recentJobsCounter, api.formatNumber(jobs.length) + ' รายการ');
+
+    if (!jobs.length) {
+      tbody.innerHTML = '';
+      if (tableWrap) tableWrap.classList.add('hidden');
+      api.show(APP.ui.recentJobsEmpty);
+      return;
+    }
+
+    api.hide(APP.ui.recentJobsEmpty);
+    if (tableWrap) tableWrap.classList.remove('hidden');
+
+    var html = '';
+    jobs.forEach(function(job) {
+      var rowClass = getStatusRowClass(job.status);
+      html += '<tr data-job-id="' + api.escapeHtml(job.id) + '" class="job-row ' + rowClass + '">';
+      html += '<td><strong class="text-primary">' + api.escapeHtml(job.id) + '</strong></td>';
+      html += '<td>' + api.escapeHtml(job.customer) + '</td>';
+      html += '<td class="d-none d-md-table-cell text-muted small">' + api.escapeHtml(job.symptom.substring(0, 40) + (job.symptom.length > 40 ? '...' : '')) + '</td>';
+      html += '<td class="d-none d-md-table-cell">' + api.escapeHtml(job.tech) + '</td>';
+      html += '<td><span class="badge-status badge bg-secondary">' + api.escapeHtml(job.status) + '</span></td>';
+      html += '</tr>';
+    });
+    tbody.innerHTML = html;
+  }
+
+  // ===== LOADING STATE =====
+  function setLoadingState(isLoading) {
+    var refreshBtn = APP.ui.refreshDashboardBtn;
+    if (refreshBtn) refreshBtn.disabled = !!isLoading;
+    var refreshBtnMobile = document.getElementById('refreshBtnMobile');
+    if (refreshBtnMobile) refreshBtnMobile.disabled = !!isLoading;
+
+    if (APP.ui.recentJobsLoading) {
+      if (isLoading) api.show(APP.ui.recentJobsLoading); else api.hide(APP.ui.recentJobsLoading);
+    }
+    if (APP.ui.statusBoardLoading) {
+      if (isLoading) api.show(APP.ui.statusBoardLoading); else api.hide(APP.ui.statusBoardLoading);
+    }
+  }
+
+  // ===== FETCH STATUS CONFIG =====
+  async function fetchStatusConfig() {
+    var result = await api.callServer('getJobStateConfig');
+    if (!result || result.success === false) {
+      throw new Error(result && result.error ? result.error : 'ไม่สามารถโหลด JobStateMachine ได้');
+    }
+    APP.statusConfig = result.states || [];
+    renderStatusFilter();
+  }
+
+  // ===== FETCH DASHBOARD DATA =====
+  async function fetchDashboardData() {
+    var result = await api.callServer('getDashboardData');
+    if (!result || result.success === false) {
+      throw new Error(result && result.error ? result.error : 'ไม่สามารถโหลดข้อมูล dashboard ได้');
+    }
+
+    APP.dashboard = result;
+    APP.summary = result.summary || {};
+    APP.jobs = result.jobs || APP.summary.recentJobs || [];
+    APP.inventory = result.inventory || [];
+
+    renderTopSummary(APP.summary, result.alerts);
+    renderStatusBoard();
+    renderAlerts();
+    renderRecentJobs();
+  }
+
+  // ===== INITIALIZE =====
+  async function initializeDashboard() {
+    api.ensureUiRefs();
+    setLoadingState(true);
+    try {
+      await fetchStatusConfig();
+      await fetchDashboardData();
+      api.toast('โหลดข้อมูล V5.5 สำเร็จ', 'success');
+    } catch (error) {
+      var message = error && error.message ? error.message : String(error);
+      if (APP.ui.statusBoardError) {
+        api.setText(APP.ui.statusBoardError, message);
+        api.show(APP.ui.statusBoardError);
+      }
+      if (APP.ui.recentJobsError) {
+        api.setText(APP.ui.recentJobsError, message);
+        api.show(APP.ui.recentJobsError);
+      }
+      api.toast('โหลดข้อมูลไม่สำเร็จ: ' + message, 'error');
+    } finally {
+      setLoadingState(false);
+    }
+  }
+
+  window.COMPHONE_V55_DASHBOARD = {
+    initializeDashboard: initializeDashboard,
+    renderRecentJobs: renderRecentJobs,
+    getFilteredJobs: getFilteredJobs,
+    fetchDashboardData: fetchDashboardData,
+    fetchStatusConfig: fetchStatusConfig
+  };
+})(window, document, window.comphoneV55);
+</script>

@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ใบเสร็จรับเงิน - COMPHONE</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Sarabun', 'Tahoma', 'Arial', sans-serif;
+    font-size: 13px;
+    color: #222;
+    background: #fff;
+    padding: 20px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  .receipt-header {
+    text-align: center;
+    border-bottom: 3px solid #1565C0;
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+  }
+  .company-name {
+    font-size: 22px;
+    font-weight: bold;
+    color: #1565C0;
+    letter-spacing: 1px;
+  }
+  .company-sub {
+    font-size: 13px;
+    color: #555;
+    margin-top: 3px;
+  }
+  .receipt-title {
+    font-size: 17px;
+    font-weight: bold;
+    color: #333;
+    margin-top: 8px;
+    background: #E3F2FD;
+    display: inline-block;
+    padding: 4px 20px;
+    border-radius: 4px;
+  }
+  .receipt-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    gap: 12px;
+  }
+  .meta-box {
+    flex: 1;
+    background: #F5F5F5;
+    border-radius: 6px;
+    padding: 10px 14px;
+  }
+  .meta-label {
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 2px;
+  }
+  .meta-value {
+    font-size: 14px;
+    font-weight: bold;
+    color: #222;
+  }
+  .section-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: #1565C0;
+    border-bottom: 1px solid #BBDEFB;
+    padding-bottom: 4px;
+    margin-bottom: 10px;
+    margin-top: 14px;
+  }
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 16px;
+    margin-bottom: 14px;
+  }
+  .info-row {
+    display: flex;
+    gap: 6px;
+  }
+  .info-label {
+    color: #888;
+    min-width: 90px;
+    font-size: 12px;
+  }
+  .info-value {
+    color: #222;
+    font-weight: 500;
+    font-size: 12px;
+  }
+  table.items {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+  }
+  table.items th {
+    background: #1565C0;
+    color: #fff;
+    padding: 8px 10px;
+    text-align: left;
+    font-size: 12px;
+  }
+  table.items th:last-child,
+  table.items td:last-child {
+    text-align: right;
+  }
+  table.items td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #EEE;
+    font-size: 12px;
+  }
+  table.items tr:nth-child(even) td {
+    background: #F9F9F9;
+  }
+  .total-section {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 6px;
+  }
+  .total-box {
+    min-width: 240px;
+  }
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 10px;
+    font-size: 13px;
+  }
+  .total-row.discount {
+    color: #E53935;
+  }
+  .total-row.grand-total {
+    background: #1565C0;
+    color: #fff;
+    font-weight: bold;
+    font-size: 16px;
+    border-radius: 4px;
+    margin-top: 4px;
+    padding: 8px 12px;
+  }
+  .payment-section {
+    display: flex;
+    gap: 20px;
+    margin-top: 16px;
+    align-items: flex-start;
+  }
+  .qr-box {
+    text-align: center;
+    min-width: 140px;
+  }
+  .qr-box img {
+    width: 130px;
+    height: 130px;
+    border: 2px solid #1565C0;
+    border-radius: 8px;
+  }
+  .qr-label {
+    font-size: 11px;
+    color: #555;
+    margin-top: 4px;
+  }
+  .payment-info {
+    flex: 1;
+    background: #F5F5F5;
+    border-radius: 8px;
+    padding: 12px 16px;
+  }
+  .paid-badge {
+    display: inline-block;
+    background: #2E7D32;
+    color: #fff;
+    font-weight: bold;
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+  .unpaid-badge {
+    display: inline-block;
+    background: #FB8C00;
+    color: #fff;
+    font-weight: bold;
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+  .footer {
+    text-align: center;
+    margin-top: 24px;
+    padding-top: 12px;
+    border-top: 1px solid #DDD;
+    color: #888;
+    font-size: 11px;
+  }
+  .signature-area {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 30px;
+    gap: 20px;
+  }
+  .signature-box {
+    flex: 1;
+    text-align: center;
+    border-top: 1px dashed #AAA;
+    padding-top: 6px;
+    font-size: 11px;
+    color: #666;
+  }
+  @media print {
+    body { padding: 10px; }
+    .no-print { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="receipt-header">
+  <div class="company-name">COMPHONE &amp; ELECTRONICS</div>
+  <div class="company-sub">ซ่อมและติดตั้งระบบ CCTV, GPS, Network | Tel: {{COMPANY_PHONE}}</div>
+  <div class="company-sub">{{COMPANY_ADDRESS}}</div>
+  <div class="receipt-title">ใบเสร็จรับเงิน / RECEIPT</div>
+</div>
+
+<!-- Meta Info -->
+<div class="receipt-meta">
+  <div class="meta-box">
+    <div class="meta-label">เลขที่ใบเสร็จ</div>
+    <div class="meta-value">{{RECEIPT_NO}}</div>
+  </div>
+  <div class="meta-box">
+    <div class="meta-label">เลขที่งาน</div>
+    <div class="meta-value">{{JOB_ID}}</div>
+  </div>
+  <div class="meta-box">
+    <div class="meta-label">วันที่ออกใบเสร็จ</div>
+    <div class="meta-value">{{INVOICE_DATE}}</div>
+  </div>
+  <div class="meta-box">
+    <div class="meta-label">วันที่ชำระ</div>
+    <div class="meta-value">{{PAID_DATE}}</div>
+  </div>
+</div>
+
+<!-- Customer Info -->
+<div class="section-title">ข้อมูลลูกค้า</div>
+<div class="info-grid">
+  <div class="info-row">
+    <span class="info-label">ชื่อลูกค้า:</span>
+    <span class="info-value">{{CUSTOMER_NAME}}</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">เบอร์โทร:</span>
+    <span class="info-value">{{PHONE}}</span>
+  </div>
+  <div class="info-row" style="grid-column: 1/-1;">
+    <span class="info-label">รายละเอียดงาน:</span>
+    <span class="info-value">{{PARTS_DESCRIPTION}}</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">Transaction Ref:</span>
+    <span class="info-value">{{TRANSACTION_REF}}</span>
+  </div>
+</div>
+
+<!-- Items Table -->
+<div class="section-title">รายการค่าใช้จ่าย</div>
+<table class="items">
+  <thead>
+    <tr>
+      <th>รายการ</th>
+      <th style="text-align:right;">จำนวนเงิน (บาท)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>ค่าอะไหล่ / Parts</td>
+      <td>{{PARTS_COST}}</td>
+    </tr>
+    <tr>
+      <td>ค่าแรง / Labor</td>
+      <td>{{LABOR_COST}}</td>
+    </tr>
+    {{DISCOUNT_ROW}}
+  </tbody>
+</table>
+
+<!-- Total -->
+<div class="total-section">
+  <div class="total-box">
+    <div class="total-row">
+      <span>ยอดรวมก่อนลด</span>
+      <span>{{SUBTOTAL}} บาท</span>
+    </div>
+    {{DISCOUNT_TOTAL_ROW}}
+    <div class="total-row grand-total">
+      <span>ยอดรวมสุทธิ</span>
+      <span>{{TOTAL_AMOUNT}} บาท</span>
+    </div>
+  </div>
+</div>
+
+<!-- Payment Section -->
+<div class="section-title">ข้อมูลการชำระเงิน</div>
+<div class="payment-section">
+  {{QR_CODE_SECTION}}
+  <div class="payment-info">
+    {{PAYMENT_BADGE}}
+    <div class="info-row" style="margin-bottom:6px;">
+      <span class="info-label">ยอดรวม:</span>
+      <span class="info-value" style="font-size:15px;font-weight:bold;color:#1565C0;">{{TOTAL_AMOUNT}} บาท</span>
+    </div>
+    <div class="info-row" style="margin-bottom:6px;">
+      <span class="info-label">ชำระแล้ว:</span>
+      <span class="info-value" style="color:#2E7D32;font-weight:bold;">{{AMOUNT_PAID}} บาท</span>
+    </div>
+    {{BALANCE_ROW}}
+    <div class="info-row" style="margin-top:8px;">
+      <span class="info-label">วิธีชำระ:</span>
+      <span class="info-value">{{PAYMENT_METHOD}}</span>
+    </div>
+  </div>
+</div>
+
+<!-- Signature -->
+<div class="signature-area">
+  <div class="signature-box">
+    <div>ผู้รับเงิน / Received by</div>
+    <div style="margin-top:4px;color:#333;">{{RECEIVED_BY}}</div>
+  </div>
+  <div class="signature-box">
+    ลายมือชื่อลูกค้า / Customer Signature
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  <div>ขอบคุณที่ใช้บริการ COMPHONE &amp; ELECTRONICS</div>
+  <div>เอกสารนี้ออกโดยระบบอัตโนมัติ | {{GENERATED_AT}}</div>
+</div>
+
+</body>
+</html>

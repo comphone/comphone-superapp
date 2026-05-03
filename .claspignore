@@ -1,0 +1,15 @@
+.*
+**/*.md
+**/*.json
+**/*.csv
+**/*.txt
+**/*.git*
+**/*.github*
+node_modules/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+ARCHIVED_Shop_vnext/
+clasp-ready/
+delivery/

@@ -1,0 +1,796 @@
+// ===========================================================
+// COMPHONE SUPER APP v5.10.0-phase32
+// PredictiveAnalytics.gs — Phase 33: Anomaly Detection & Predictive Analytics
+// ===========================================================
+
+/**
+ * Get Sales Forecast (Linear Regression / Moving Average)
+ * Phase 33.2 Predictive Analytics Module
+ * 
+ * @param {Object} data - { days_history: 90, days_forecast: 30, method: 'linear'|'moving_avg' }
+ * @returns {Object} { success, forecast: [{ date, predicted_sales, lower_bound, upper_bound }], history, metadata }
+ */
+function getSalesForecast(data) {
+  try {
+    data = data || {};
+    var daysHistory = parseInt(data.days_history) || 90;
+    var daysForecast = parseInt(data.days_forecast) || 30;
+    var method = data.method || 'linear'; // 'linear' or 'moving_avg'
+    
+    var ss = getComphoneSheet();
+    if (!ss) return { success: false, error: 'Spreadsheet not found' };
+    
+    var sh = ss.getSheetByName('DB_BILLING');
+    if (!sh) return { success: false, error: 'DB_BILLING sheet not found' };
+    
+    var lastRow = sh.getLastRow();
+    if (lastRow < 2) return { success: true, forecast: [], history: [], message: 'No billing data yet' };
+    
+    // Read billing data
+    var headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+    var invoiceDateIdx = headers.indexOf('Invoice_Date');
+    var totalAmountIdx = headers.indexOf('Total_Amount');
+    var createdAtIdx = headers.indexOf('Created_At');
+    
+    if (invoiceDateIdx < 0 || totalAmountIdx < 0) {
+      return { success: false, error: 'Required columns not found (Invoice_Date, Total_Amount)' };
+    }
+    
+    var rows = sh.getRange(2, 1, lastRow - 1, headers.length).getValues();
+    
+    // Filter data by date range (last N days)
+    var cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysHistory);
+    
+    var dailySales = {}; // { 'YYYY-MM-DD': total_sales }
+    
+    rows.forEach(function(row) {
+      var dateStr = null;
+      if (invoiceDateIdx >= 0 && row[invoiceDateIdx]) {
+        var d = new Date(row[invoiceDateIdx]);
+        if (!isNaN(d.getTime()) && d >= cutoffDate) {
+          dateStr = formatDate_(d);
+          var amount = parseFloat(row[totalAmountIdx]) || 0;
+          dailySales[dateStr] = (dailySales[dateStr] || 0) + amount;
+        }
+      }
+    });
+    
+    // Build history array (sorted by date)
+    var history = Object.keys(dailySales).sort().map(function(date) {
+      return { date: date, sales: dailySales[date] };
+    });
+    
+    if (history.length < 7) {
+      return { 
+        success: true, 
+        forecast: [], 
+        history: history,
+        message: 'Insufficient data for forecasting (need at least 7 days)' 
+      };
+    }
+    
+    // Generate forecast
+    var forecast = [];
+    var lastDate = new Date(history[history.length - 1].date);
+    
+    if (method === 'moving_avg') {
+      // Simple Moving Average (7-day)
+      var windowSize = 7;
+      var recentSales = history.slice(-windowSize).map(function(h) { return h.sales; });
+      var avgSales = recentSales.reduce(function(sum, val) { return sum + val; }, 0) / recentSales.length;
+      
+      for (var i = 1; i <= daysForecast; i++) {
+        var forecastDate = new Date(lastDate);
+        forecastDate.setDate(forecastDate.getDate() + i);
+        forecast.push({
+          date: formatDate_(forecastDate),
+          predicted_sales: Math.round(avgSales * 100) / 100,
+          lower_bound: Math.round(avgSales * 0.8 * 100) / 100,
+          upper_bound: Math.round(avgSales * 1.2 * 100) / 100,
+          method: 'moving_avg_7day'
+        });
+      }
+    } else {
+      // Linear Regression
+      var x = [];
+      var y = [];
+      history.forEach(function(h, idx) {
+        x.push(idx + 1);
+        y.push(h.sales);
+      });
+      
+      var regression = linearRegression_(x, y);
+      
+      for (var i = 1; i <= daysForecast; i++) {
+        var xPred = history.length + i;
+        var yPred = regression.slope * xPred + regression.intercept;
+        yPred = Math.max(0, yPred); // Sales can't be negative
+        
+        forecast.push({
+          date: formatDate_(new Date(lastDate.getTime() + i * 86400000)),
+          predicted_sales: Math.round(yPred * 100) / 100,
+          lower_bound: Math.round(yPred * 0.7 * 100) / 100,
+          upper_bound: Math.round(yPred * 1.3 * 100) / 100,
+          trend: regression.slope > 0 ? 'increasing' : (regression.slope < 0 ? 'decreasing' : 'stable'),
+          method: 'linear_regression'
+        });
+      }
+    }
+    
+    return {
+      success: true,
+      forecast: forecast,
+      history: history,
+      metadata: {
+        days_history: daysHistory,
+        days_forecast: daysForecast,
+        method: method,
+        data_points: history.length,
+        avg_daily_sales: Math.round((history.reduce(function(sum, h) { return sum + h.sales; }, 0) / history.length) * 100) / 100,
+        trend_slope: method === 'linear' ? regression.slope : null
+      }
+    };
+    
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * Linear Regression Helper
+ * @private
+ */
+function linearRegression_(x, y) {
+  var n = x.length;
+  var sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+  
+  for (var i = 0; i < n; i++) {
+    sumX += x[i];
+    sumY += y[i];
+    sumXY += x[i] * y[i];
+    sumX2 += x[i] * x[i];
+  }
+  
+  var slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+  var intercept = (sumY - slope * sumX) / n;
+  
+  return { slope: slope, intercept: intercept };
+}
+
+/**
+ * Format date to YYYY-MM-DD
+ * @private
+ */
+function formatDate_(date) {
+  var d = new Date(date);
+  var year = d.getFullYear();
+  var month = String(d.getMonth() + 1).padStart(2, '0');
+  var day = String(d.getDate()).padStart(2, '0');
+  return year + '-' + month + '-' + day;
+}
+
+/**
+ * Get Inventory Recommendations (based on historical velocity)
+ * Phase 33.2 Predictive Analytics Module
+ * 
+ * @param {Object} data - { days_history: 90, top_n: 10 }
+ * @returns {Object} { success, recommendations: [{ item_name, velocity, recommended_po, stock_status }] }
+ */
+function getInventoryRecommendation(data) {
+  try {
+    data = data || {};
+    var daysHistory = parseInt(data.days_history) || 90;
+    var topN = parseInt(data.top_n) || 10;
+    
+    var ss = getComphoneSheet();
+    if (!ss) return { success: false, error: 'Spreadsheet not found' };
+    
+    // Read Inventory data
+    var invSh = ss.getSheetByName('DB_INVENTORY');
+    if (!invSh) return { success: false, error: 'DB_INVENTORY sheet not found' };
+    
+    var invLastRow = invSh.getLastRow();
+    if (invLastRow < 2) {
+      return { success: true, recommendations: [], message: 'No inventory data' };
+    }
+    
+    var invHeaders = invSh.getRange(1, 1, 1, invSh.getLastColumn()).getValues()[0];
+    var itemCodeIdx = invHeaders.indexOf('Item_Code');
+    var itemNameIdx = invHeaders.indexOf('Item_Name');
+    var qtyIdx = invHeaders.indexOf('Qty');
+    var minQtyIdx = invHeaders.indexOf('Min_Qty');
+    var costIdx = invHeaders.indexOf('Cost_Price');
+    var categoryIdx = invHeaders.indexOf('Category');
+    
+    if (itemCodeIdx < 0 || qtyIdx < 0) {
+      return { success: false, error: 'Required columns not found (Item_Code, Qty)' };
+    }
+    
+    var invRows = invSh.getRange(2, 1, invLastRow - 1, invHeaders.length).getValues();
+    
+    // Read Job history for velocity calculation
+    var jobsSh = ss.getSheetByName('DB_JOBS');
+    var velocityMap = {}; // { item_code: { total_used, days_active, velocity } }
+    
+    if (jobsSh) {
+      var jobLastRow = jobsSh.getLastRow();
+      if (jobLastRow >= 2) {
+        var jobHeaders = jobsSh.getRange(1, 1, 1, jobsSh.getLastColumn()).getValues()[0];
+        var jobDescIdx = jobHeaders.indexOf('Description') >= 0 ? jobHeaders.indexOf('Description') : jobHeaders.indexOf('Note');
+        var jobDateIdx = jobHeaders.indexOf('Created_At') >= 0 ? jobHeaders.indexOf('Created_At') : jobHeaders.indexOf('Opened_At');
+        var jobStatusIdx = jobHeaders.indexOf('Status_Label');
+        
+        if (jobDescIdx >= 0 && jobDateIdx >= 0) {
+          var cutoffDate = new Date();
+          cutoffDate.setDate(cutoffDate.getDate() - daysHistory);
+          
+          var jobRows = jobsSh.getRange(2, 1, jobLastRow - 1, jobHeaders.length).getValues();
+          var now = new Date();
+          
+          jobRows.forEach(function(row) {
+            var jobDate = new Date(row[jobDateIdx]);
+            if (isNaN(jobDate.getTime()) || jobDate < cutoffDate) return;
+            
+            var desc = String(row[jobDescIdx] || '');
+            // Look for inventory items mentioned in job description
+            // Format: "Used: [item_code] x[qty]" or similar
+            var regex = /(\w+)\s*x\s*(\d+)/gi;
+            var match;
+            while ((match = regex.exec(desc)) !== null) {
+              var code = match[1];
+              var qty = parseInt(match[2]) || 0;
+              if (!velocityMap[code]) {
+                velocityMap[code] = { total_used: 0, days_active: 0, last_date: null };
+              }
+              velocityMap[code].total_used += qty;
+              velocityMap[code].days_active++;
+              if (!velocityMap[code].last_date || jobDate > velocityMap[code].last_date) {
+                velocityMap[code].last_date = jobDate;
+              }
+            }
+          });
+        }
+      }
+    }
+    
+    // Build recommendations
+    var recommendations = [];
+    
+    invRows.forEach(function(row) {
+      var code = String(row[itemCodeIdx] || '').trim();
+      var name = String(row[itemNameIdx] || code).trim();
+      var qty = parseFloat(row[qtyIdx]) || 0;
+      var minQty = parseFloat(row[minQtyIdx]) || 5;
+      var cost = parseFloat(row[costIdx]) || 0;
+      var category = categoryIdx >= 0 ? String(row[categoryIdx] || '').trim() : '';
+      
+      // Calculate velocity
+      var vel = velocityMap[code];
+      var dailyVelocity = 0;
+      var velocityConfidence = 'LOW';
+      
+      if (vel && vel.days_active > 0) {
+        dailyVelocity = vel.total_used / daysHistory; // Average per day over history period
+        velocityConfidence = vel.days_active >= 14 ? 'HIGH' : (vel.days_active >= 7 ? 'MEDIUM' : 'LOW');
+      }
+      
+      // Calculate recommended PO
+      var leadTimeDays = 7; // Assume 7 days lead time
+      var safetyStock = minQty * 0.5;
+      var reorderPoint = minQty + (dailyVelocity * leadTimeDays) + safetyStock;
+      
+      var recommendedPO = 0;
+      var stockStatus = 'ADEQUATE';
+      
+      if (qty <= 0) {
+        stockStatus = 'OUT_OF_STOCK';
+        recommendedPO = reorderPoint * 2; // Emergency order
+      } else if (qty < minQty) {
+        stockStatus = 'REORDER';
+        recommendedPO = reorderPoint - qty + (dailyVelocity * leadTimeDays);
+      } else if (qty < reorderPoint) {
+        stockStatus = 'LOW';
+        recommendedPO = reorderPoint - qty;
+      } else if (qty > reorderPoint * 3) {
+        stockStatus = 'OVERSTOCK';
+        recommendedPO = 0; // No need to order
+      }
+      
+      if (recommendedPO > 0) {
+        recommendedPO = Math.ceil(recommendedPO / 10) * 10; // Round up to nearest 10
+      }
+      
+      recommendations.push({
+        item_code: code,
+        item_name: name,
+        category: category,
+        current_qty: qty,
+        min_qty: minQty,
+        reorder_point: Math.round(reorderPoint * 100) / 100,
+        daily_velocity: Math.round(dailyVelocity * 100) / 100,
+        velocity_confidence: velocityConfidence,
+        stock_status: stockStatus,
+        recommended_po: Math.max(0, Math.round(recommendedPO)),
+        estimated_cost: Math.round(recommendedPO * cost * 100) / 100,
+        lead_time_days: leadTimeDays
+      });
+    });
+    
+    // Sort by urgency (OUT_OF_STOCK first, then REORDER, etc.)
+    var statusOrder = { 'OUT_OF_STOCK': 0, 'REORDER': 1, 'LOW': 2, 'ADEQUATE': 3, 'OVERSTOCK': 4 };
+    recommendations.sort(function(a, b) {
+      return (statusOrder[a.stock_status] || 5) - (statusOrder[b.stock_status] || 5);
+    });
+    
+    // Return top N
+    recommendations = recommendations.slice(0, topN);
+    
+    return {
+      success: true,
+      recommendations: recommendations,
+      metadata: {
+        days_history: daysHistory,
+        top_n: topN,
+        total_items: invRows.length,
+        items_recommending_po: recommendations.filter(function(r) { return r.recommended_po > 0 }).length,
+        total_estimated_cost: recommendations.reduce(function(sum, r) { return sum + r.estimated_cost; }, 0)
+      }
+    };
+    
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * Predict Customer Demand
+ * Phase 33.2 Predictive Analytics Module
+ * 
+ * @param {Object} data - { customer_id }
+ * @returns {Object} { success, demand_forecast: [{ month, predicted_jobs, predicted_services }] }
+ */
+function predictCustomerDemand(data) {
+  try {
+    data = data || {};
+    var customerId = data.customer_id || '';
+    var forecastMonths = parseInt(data.forecast_months) || 3;
+    
+    if (!customerId) {
+      return { success: false, error: 'customer_id is required' };
+    }
+    
+    var ss = getComphoneSheet();
+    if (!ss) return { success: false, error: 'Spreadsheet not found' };
+    
+    // Read Customers sheet to get customer name
+    var custSh = ss.getSheetByName('DB_CUSTOMERS');
+    if (!custSh) return { success: false, error: 'DB_CUSTOMERS sheet not found' };
+    
+    var custLastRow = custSh.getLastRow();
+    if (custLastRow < 2) {
+      return { success: true, demand_forecast: [], message: 'No customer data' };
+    }
+    
+    var custHeaders = custSh.getRange(1, 1, 1, custSh.getLastColumn()).getValues()[0];
+    var custIdIdx = custHeaders.indexOf('Customer_ID');
+    var custNameIdx = custHeaders.indexOf('Customer_Name');
+    
+    if (custIdIdx < 0 || custNameIdx < 0) {
+      return { success: false, error: 'Required columns not found (Customer_ID, Customer_Name)' };
+    }
+    
+    var custRows = custSh.getRange(2, 1, custLastRow - 1, custHeaders.length).getValues();
+    var customerName = '';
+    
+    // Find customer by ID
+    for (var ci = 0; ci < custRows.length; ci++) {
+      if (String(custRows[ci][custIdIdx]).trim() === customerId) {
+        customerName = String(custRows[ci][custNameIdx] || '').trim();
+        break;
+      }
+    }
+    
+    if (!customerName) {
+      return { success: false, error: 'Customer not found: ' + customerId };
+    }
+    
+    // Read Job history for this customer
+    var jobsSh = ss.getSheetByName('DB_JOBS');
+    if (!jobsSh) {
+      return { success: false, error: 'DB_JOBS sheet not found' };
+    }
+    
+    var jobLastRow = jobsSh.getLastRow();
+    if (jobLastRow < 2) {
+      return { success: true, demand_forecast: [], message: 'No job history' };
+    }
+    
+    var jobHeaders = jobsSh.getRange(1, 1, 1, jobsSh.getLastColumn()).getValues()[0];
+    var jobCustomerIdx = jobHeaders.indexOf('Customer_Name') >= 0 ? jobHeaders.indexOf('Customer_Name') : jobHeaders.indexOf('CustomerName');
+    var jobDateIdx = jobHeaders.indexOf('Created_At') >= 0 ? jobHeaders.indexOf('Created_At') : jobHeaders.indexOf('Opened_At');
+    var jobStatusIdx = jobHeaders.indexOf('Status_Label');
+    var jobDescIdx = jobHeaders.indexOf('Description') >= 0 ? jobHeaders.indexOf('Description') : jobHeaders.indexOf('Note');
+    
+    if (jobCustomerIdx < 0 || jobDateIdx < 0) {
+      return { success: false, error: 'Required job columns not found' };
+    }
+    
+    var jobRows = jobsSh.getRange(2, 1, jobLastRow - 1, jobHeaders.length).getValues();
+    
+    // Aggregate jobs by month
+    var monthlyData = {}; // { 'YYYY-MM': { count, services: [] } }
+    var totalJobs = 0;
+    var now = new Date();
+    var monthsHistory = 12; // Look at last 12 months
+    
+    jobRows.forEach(function(row) {
+      var cname = String(row[jobCustomerIdx] || '').trim();
+      if (cname !== customerName) return;
+      
+      var jobDate = new Date(row[jobDateIdx]);
+      if (isNaN(jobDate.getTime())) return;
+      
+      // Only count jobs within last N months
+      var monthsAgo = (now.getFullYear() - jobDate.getFullYear()) * 12 + (now.getMonth() - jobDate.getMonth());
+      if (monthsAgo > monthsHistory) return;
+      
+      var monthKey = jobDate.getFullYear() + '-' + String(jobDate.getMonth() + 1).padStart(2, '0');
+      
+      if (!monthlyData[monthKey]) {
+        monthlyData[monthKey] = { count: 0, services: [] };
+      }
+      
+      monthlyData[monthKey].count++;
+      totalJobs++;
+      
+      // Extract services from description
+      var desc = String(row[jobDescIdx] || '').toLowerCase();
+      var services = desc.split(/[,;]/).map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; });
+      monthlyData[monthKey].services = monthlyData[monthKey].services.concat(services);
+    });
+    
+    if (totalJobs === 0) {
+      return {
+        success: true,
+        demand_forecast: [],
+        message: 'No job history for customer: ' + customerName,
+        metadata: { customer_id: customerId, customer_name: customerName }
+      };
+    }
+    
+    // Calculate average jobs per month
+    var avgJobsPerMonth = totalJobs / Math.min(monthsHistory, Object.keys(monthlyData).length);
+    
+    // Simple forecast: use moving average
+    var forecast = [];
+    var trend = 'stable';
+    
+    // Determine trend (increasing/decreasing/stable)
+    var monthKeys = Object.keys(monthlyData).sort();
+    if (monthKeys.length >= 3) {
+      var recent = monthlyData[monthKeys[monthKeys.length - 1]].count + monthlyData[monthKeys[monthKeys.length - 2]].count;
+      var older = monthlyData[monthKeys[0]].count + monthlyData[monthKeys[1]].count;
+      if (recent > older * 1.2) trend = 'increasing';
+      else if (older > recent * 1.2) trend = 'decreasing';
+    }
+    
+    // Generate forecast for next N months
+    for (var m = 1; m <= forecastMonths; m++) {
+      var forecastDate = new Date(now.getFullYear(), now.getMonth() + m, 1);
+      var monthKey = forecastDate.getFullYear() + '-' + String(forecastDate.getMonth() + 1).padStart(2, '0');
+      
+      var predictedJobs = Math.round(avgJobsPerMonth * 100) / 100;
+      if (trend === 'increasing') predictedJobs *= 1.1;
+      else if (trend === 'decreasing') predictedJobs *= 0.9;
+      
+      forecast.push({
+        month: monthKey,
+        predicted_jobs: Math.max(0, Math.round(predictedJobs)),
+        confidence: totalJobs >= 10 ? 'HIGH' : (totalJobs >= 5 ? 'MEDIUM' : 'LOW'),
+        trend: trend
+      });
+    }
+    
+    // Suggest actions based on forecast
+    var suggestions = [];
+    var nextMonthForecast = forecast[0] ? forecast[0].predicted_jobs : 0;
+    
+    if (nextMonthForecast > 3) {
+      suggestions.push('Prepare for high demand - ensure sufficient inventory');
+      suggestions.push('Consider preventive maintenance offers');
+    } else if (nextMonthForecast === 0) {
+      suggestions.push('Low activity predicted - reach out with promotions');
+      suggestions.push('Check if customer has unresolved issues');
+    }
+    
+    return {
+      success: true,
+      customer_id: customerId,
+      customer_name: customerName,
+      demand_forecast: forecast,
+      metadata: {
+        total_jobs_history: totalJobs,
+        avg_jobs_per_month: Math.round(avgJobsPerMonth * 100) / 100,
+        trend: trend,
+        months_history: Object.keys(monthlyData).length,
+        confidence: totalJobs >= 10 ? 'HIGH' : (totalJobs >= 5 ? 'MEDIUM' : 'LOW')
+      },
+      suggestions: suggestions
+    };
+    
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * Anomaly Detection Baseline (Phase 33.1)
+ * Returns current baseline statistics for anomaly detection
+ * 
+ * @param {Object} data - { metric: 'billing'|'jobs'|'inventory', days: 14 }
+ * @returns {Object} { success, baseline: { mean, std_dev, thresholds } }
+ */
+function getAnomalyBaseline(data) {
+  try {
+    data = data || {};
+    var metric = data.metric || 'billing';
+    var days = parseInt(data.days) || 14;
+    
+    var ss = getComphoneSheet();
+    if (!ss) return { success: false, error: 'Spreadsheet not found' };
+    
+    // Read telemetry data from DB_TELEMETRY (assumes Phase 2E is logging)
+    var telemSh = ss.getSheetByName('DB_TELEMETRY');
+    if (!telemSh) {
+      return {
+        success: true,
+        baseline: null,
+        message: 'DB_TELEMETRY sheet not found — waiting for Phase 2E telemetry',
+        telemetry_required: days,
+        telemetry_collected: 0
+      };
+    }
+    
+    var lastRow = telemSh.getLastRow();
+    if (lastRow < 2) {
+      return {
+        success: true,
+        baseline: null,
+        message: 'No telemetry data yet — need ' + days + ' days of data',
+        telemetry_required: days,
+        telemetry_collected: 0
+      };
+    }
+    
+    var headers = telemSh.getRange(1, 1, 1, telemSh.getLastColumn()).getValues()[0];
+    var actionIdx = headers.indexOf('action');
+    var timestampIdx = headers.indexOf('timestamp');
+    var valueIdx = headers.indexOf('value'); // numeric value for the metric
+    var statusIdx = headers.indexOf('status');
+    
+    if (actionIdx < 0 || timestampIdx < 0) {
+      return { success: false, error: 'Required telemetry columns not found (action, timestamp)' };
+    }
+    
+    var rows = telemSh.getRange(2, 1, lastRow - 1, headers.length).getValues();
+    var now = new Date();
+    var cutoff = new Date(now.getTime() - (days * 24 * 60 * 60 * 1000));
+    
+    // Filter relevant data
+    var values = [];
+    var metricActions = {
+      'billing': ['createBilling', 'getBilling'],
+      'jobs': ['openJob', 'updateJobStatus'],
+      'inventory': ['addInventory', 'updateInventory']
+    };
+    
+    var relevantActions = metricActions[metric] || [metric];
+    
+    rows.forEach(function(row) {
+      var action = String(row[actionIdx] || '').trim();
+      var ts = new Date(row[timestampIdx]);
+      if (isNaN(ts.getTime())) return;
+      if (ts < cutoff) return;
+      if (relevantActions.indexOf(action) < 0) return;
+      
+      // Get numeric value if available
+      var val = valueIdx >= 0 ? parseFloat(row[valueIdx]) : 1; // default to count=1
+      if (!isNaN(val)) values.push(val);
+    });
+    
+    if (values.length < 2) {
+      return {
+        success: true,
+        baseline: null,
+        message: 'Insufficient data for baseline (need ≥2 data points)',
+        telemetry_required: days,
+        telemetry_collected: values.length,
+        metric: metric
+      };
+    }
+    
+    // Calculate mean
+    var sum = values.reduce(function(a, b) { return a + b; }, 0);
+    var mean = sum / values.length;
+    
+    // Calculate standard deviation
+    var squaredDiffs = values.map(function(v) { return Math.pow(v - mean, 2); });
+    var variance = squaredDiffs.reduce(function(a, b) { return a + b; }, 0) / values.length;
+    var stdDev = Math.sqrt(variance);
+    
+    // Thresholds (mean ± 2σ for anomaly detection)
+    var lowerThreshold = mean - (2 * stdDev);
+    var upperThreshold = mean + (2 * stdDev);
+    
+    return {
+      success: true,
+      baseline: {
+        metric: metric,
+        period_days: days,
+        data_points: values.length,
+        mean: Math.round(mean * 100) / 100,
+        std_dev: Math.round(stdDev * 100) / 100,
+        thresholds: {
+          low: Math.round(lowerThreshold * 100) / 100,
+          high: Math.round(upperThreshold * 100) / 100
+        },
+        recent_values: values.slice(-7) // last 7 values for reference
+      },
+      metadata: {
+        generated_at: new Date().toISOString(),
+        version: 'v5.11.0-phase33'
+      }
+    };
+    
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * ทำนายอายุการใช้งานที่เหลือของอุปกรณ์ (Phase 33)
+ * ใช้ข้อมูลจาก Inventory + Telemetry มาวิเคราะห์
+ */
+function predictServiceLife(assetType, installDate) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Inventory');
+    if (!sheet) return { success: false, error: 'Inventory sheet not found' };
+    
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+    
+    // หาคอลัมน์ที่เกี่ยวข้อง
+    var typeIdx = headers.indexOf('Type');
+    var dateIdx = headers.indexOf('InstallDate');
+    var statusIdx = headers.indexOf('Status');
+    
+    if (typeIdx < 0 || dateIdx < 0) {
+      return { success: false, error: 'Required columns not found' };
+    }
+    
+    // กรองอุปกรณ์ตามประเภท
+    var assets = data.slice(1).filter(function(row) {
+      return row[typeIdx] === assetType;
+    });
+    
+    var now = new Date();
+    var install = new Date(installDate);
+    var ageDays = Math.floor((now - install) / (1000 * 60 * 60 * 24));
+    
+    // คำนวณค่าเฉลี่ยอายุการใช้งานจากข้อมูลในอดีต
+    var lifeSpans = [];
+    assets.forEach(function(row) {
+      if (row[dateIdx]) {
+        var d = new Date(row[dateIdx]);
+        if (!isNaN(d.getTime())) {
+          var age = Math.floor((now - d) / (1000 * 60 * 60 * 24));
+          lifeSpans.push(age);
+        }
+      }
+    });
+    
+    var avgLife = 0;
+    if (lifeSpans.length > 0) {
+      avgLife = lifeSpans.reduce(function(a, b) { return a + b; }, 0) / lifeSpans.length;
+    }
+    
+    // ทำนายอายุที่เหลือ
+    var remainingDays = Math.max(0, avgLife - ageDays);
+    var remainingPercent = avgLife > 0 ? Math.round((remainingDays / avgLife) * 100) : 0;
+    
+    return {
+      success: true,
+      asset_type: assetType,
+      current_age_days: ageDays,
+      average_lifespan_days: Math.round(avgLife),
+      remaining_days: remainingDays,
+      remaining_percent: remainingPercent,
+      maintenance_recommendation: remainingPercent < 20 ? 'ทดแทนเดี๋ยวนี้' : 
+                            remainingPercent < 50 ? 'วางแผนบำรุงรักษา' : 'ใช้งานได้ตามปกติ',
+      metadata: {
+        analyzed_assets: assets.length,
+        generated_at: new Date().toISOString(),
+        version: 'v5.11.0-phase33'
+      }
+    };
+    
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * ให้คำแนะนำอัจฉริยะตามบริบท (Phase 33)
+ * วิเคราะห์จากหลายโมดูลเพื่อแนะนำการดำเนินการ
+ */
+function getSmartRecommendation(module, context) {
+  try {
+    var recommendations = [];
+    var priority = 'low';
+    
+    // ตรวจสอบจาก Telemetry
+    var telResult = getAnomalyBaseline('error_rate', 7);
+    if (telResult.success && telResult.baseline) {
+      var currentRate = telResult.baseline.recent_values.slice(-1)[0] || 0;
+      if (currentRate > telResult.baseline.thresholds.high) {
+        recommendations.push({
+          module: 'Telemetry',
+          issue: 'อัตราความผิดพลาดสูงกว่าเกณฑ์ปกติ',
+          action: 'ตรวจสอบบันทึกข้อผิดพลาดและแก้ไขทันที',
+          priority: 'high'
+        });
+        priority = 'high';
+      }
+    }
+    
+    // ตรวจสอบจาก Inventory
+    if (module === 'inventory' || module === 'all') {
+      var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Inventory');
+      if (sheet) {
+        var data = sheet.getDataRange().getValues();
+        var headers = data[0];
+        var qtyIdx = headers.indexOf('Quantity') >= 0 ? headers.indexOf('Quantity') : 3;
+        var lowStock = data.slice(1).filter(function(row) {
+          return row[qtyIdx] < 10;
+        });
+        
+        if (lowStock.length > 0) {
+          recommendations.push({
+            module: 'Inventory',
+            issue: 'สินค้าใกล้หมดสต็อก',
+            action: 'สั่งซื้อสินค้าเพิ่ม ' + lowStock.length + ' รายการ',
+            priority: 'medium',
+            items: lowStock.length
+          });
+        }
+      }
+    }
+    
+    // ตรวจสอบจาก Billing
+    if (module === 'billing' || module === 'all') {
+      recommendations.push({
+        module: 'Billing',
+        issue: 'ตรวจสอบสถานะการเรียกเก็บเงิน',
+        action: 'อัปเดตข้อมูลการชำระเงินล่าสุด',
+        priority: 'low'
+      });
+    }
+    
+    return {
+      success: true,
+      module: module,
+      context: context || {},
+      recommendations: recommendations,
+      priority_summary: priority,
+      total_recommendations: recommendations.length,
+      metadata: {
+        generated_at: new Date().toISOString(),
+        version: 'v5.11.0-phase33'
+      }
+    };
+    
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
