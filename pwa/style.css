@@ -207,7 +207,7 @@ html.cp-dark, html.cp-dark body, .cp-dark {
     color: var(--muted); border: none; background: none;
 }
 .nav-btn.active { color: var(--primary); }
-.qa-grid-4 {
+.qa-grid-4, .qa-grid-8 {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 10px; padding: 8px;
