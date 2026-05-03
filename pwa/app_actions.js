@@ -143,35 +143,89 @@ function callForHelp() {
 function openNewJob() {
   const modal = ensureActionModal('modal-new-job', 'เปิดงานใหม่');
   const content = document.getElementById('modal-new-job-content');
+  
+  // Wizard structure with steps
   content.innerHTML = `
-    <div class="form-group-custom">
-      <label>ชื่อลูกค้า <span style="color:#ef4444">*</span></label>
-      <div class="input-wrap"><i class="bi bi-person-fill"></i><input id="nj-customer" type="text" placeholder="ชื่อลูกค้า"></div>
-    </div>
-    <div class="form-group-custom">
-      <label>เบอร์โทร</label>
-      <div class="input-wrap"><i class="bi bi-telephone-fill"></i><input id="nj-phone" type="tel" placeholder="0812345678"></div>
-    </div>
-    <div class="form-group-custom">
-      <label>อุปกรณ์</label>
-      <div class="input-wrap"><i class="bi bi-phone-fill"></i><input id="nj-device" type="text" placeholder="เช่น iPhone, Notebook, Printer"></div>
-    </div>
-    <div class="form-group-custom">
-      <label>อาการ / ปัญหา <span style="color:#ef4444">*</span></label>
-      <div class="input-wrap"><i class="bi bi-tools"></i><input id="nj-symptom" type="text" placeholder="อธิบายอาการเสีย"></div>
-    </div>
-    <div class="form-group-custom">
-      <label>ราคาประเมิน</label>
-      <div class="input-wrap"><i class="bi bi-currency-exchange"></i><input id="nj-price" type="number" min="0" step="50" placeholder="0"></div>
-    </div>
-    <div class="form-group-custom">
-      <label>หมายเหตุ</label>
-      <div class="input-wrap"><i class="bi bi-chat-left-text"></i><input id="nj-note" type="text" placeholder="รายละเอียดเพิ่มเติม"></div>
-    </div>
-    <button class="btn-setup" id="nj-submit-btn" onclick="submitNewJob()" style="margin-top:8px">
-      <i class="bi bi-plus-circle-fill"></i> สร้างงานใหม่
-    </button>`;
+    <div class="job-wizard">
+      <!-- Step indicator -->
+      <div class="step-indicator">
+        <div class="step-item step-active" id="step-1-ind"><span>1</span><div>ลูกค้า</div></div>
+        <div class="step-line"></div>
+        <div class="step-item" id="step-2-ind"><span>2</span><div>รายละเอียด</div></div>
+      </div>
+      
+      <!-- Step 1: Customer Info -->
+      <div class="step-content step-1-content" id="step-1">
+        <div class="form-group-custom">
+          <label>ชื่อลูกค้า <span style="color:#ef4444">*</span></label>
+          <div class="input-wrap"><i class="bi bi-person-fill"></i><input id="nj-customer" type="text" placeholder="ชื่อลูกค้า"></div>
+        </div>
+        <div class="form-group-custom">
+          <label>เบอร์โทร <span style="color:#ef4444">*</span></label>
+          <div class="input-wrap"><i class="bi bi-telephone-fill"></i><input id="nj-phone" type="tel" placeholder="0812345678"></div>
+        </div>
+        <div class="form-button-group">
+          <button class="btn-cancel" onclick="closeModal('modal-new-job')"><i class="bi bi-x-circle"></i> ยกเลิก</button>
+          <button class="btn-setup" onclick="stepNext_NJ(1)" style="flex:1"><i class="bi bi-arrow-right-circle"></i> ถัดไป</button>
+        </div>
+      </div>
+      
+      <!-- Step 2: Device Details -->
+      <div class="step-content step-2-content hidden" id="step-2">
+        <div class="form-group-custom">
+          <label>อุปกรณ์</label>
+          <div class="input-wrap"><i class="bi bi-phone-fill"></i><input id="nj-device" type="text" placeholder="เช่น iPhone, Notebook, Printer"></div>
+        </div>
+        <div class="form-group-custom">
+          <label>อาการ / ปัญหา <span style="color:#ef4444">*</span></label>
+          <div class="input-wrap"><i class="bi bi-tools"></i><input id="nj-symptom" type="text" placeholder="อธิบายอาการเสีย"></div>
+        </div>
+        <div class="form-group-custom">
+          <label>ราคาประเมิน</label>
+          <div class="input-wrap"><i class="bi bi-currency-exchange"></i><input id="nj-price" type="number" min="0" step="50" placeholder="0"></div>
+        </div>
+        <div class="form-group-custom">
+          <label>หมายเหตุ</label>
+          <div class="input-wrap"><i class="bi bi-chat-left-text"></i><input id="nj-note" type="text" placeholder="รายละเอียดเพิ่มเติม"></div>
+        </div>
+        <div class="form-button-group">
+          <button class="btn-cancel" onclick="stepBack_NJ()"><i class="bi bi-arrow-left-circle"></i> ย้อนกลับ</button>
+          <button class="btn-setup" id="nj-submit-btn" onclick="submitNewJob()" style="flex:1"><i class="bi bi-plus-circle-fill"></i> สร้างงาน</button>
+        </div>
+      </div>
+    </div>`;
+  
   modal.classList.remove('hidden');
+  setTimeout(() => document.getElementById('nj-customer')?.focus(), 150);
+}
+
+function stepNext_NJ(step) {
+  const customer = document.getElementById('nj-customer')?.value.trim();
+  const phone = document.getElementById('nj-phone')?.value.trim();
+  
+  if (!customer) { showToast('กรุณากรอกชื่อลูกค้า'); return; }
+  if (!phone) { showToast('กรุณากรอกเบอร์โทร'); return; }
+  
+  // Hide step 1, show step 2
+  document.getElementById('step-1').classList.add('hidden');
+  document.getElementById('step-2').classList.remove('hidden');
+  
+  // Update indicator
+  document.getElementById('step-1-ind').classList.remove('step-active');
+  document.getElementById('step-2-ind').classList.add('step-active');
+  
+  setTimeout(() => document.getElementById('nj-device')?.focus(), 150);
+}
+
+function stepBack_NJ() {
+  // Show step 1, hide step 2
+  document.getElementById('step-1').classList.remove('hidden');
+  document.getElementById('step-2').classList.add('hidden');
+  
+  // Update indicator
+  document.getElementById('step-1-ind').classList.add('step-active');
+  document.getElementById('step-2-ind').classList.remove('step-active');
+  
   setTimeout(() => document.getElementById('nj-customer')?.focus(), 150);
 }
 
