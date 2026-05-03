@@ -68,11 +68,55 @@ function loginUser(username, password) {
         login_at: new Date().toISOString(),
         expires_at: new Date(new Date().getTime() + 8 * 60 * 60 * 1000).toISOString()
       });
-      safeSetProperty(sessionKey, sessionData);  // Guard: prevent exceeding 50 props
+
+      // 🧹 Cleanup expired sessions BEFORE writing new one (avoids race condition
+      // where post-write cleanup could delete sessions from concurrent requests)
+      try { cleanupExpiredSessions_(); } catch(e) {
+        Logger.log('⚠️ loginUser: cleanupExpiredSessions failed: ' + e);
+      }
+
+      // 🔐 Persist session — MUST succeed before returning token
+      var sessionPersisted = false;
+      var persistMethod = 'none';
+
+      // Attempt 1: safeSetProperty (respects prop count limits)
+      var setResult = safeSetProperty(sessionKey, sessionData);
+      if (setResult && setResult.success) {
+        sessionPersisted = true;
+        persistMethod = setResult.method;
+      } else {
+        Logger.log('⚠️ loginUser: safeSetProperty failed for ' + sessionKey + ': ' + JSON.stringify(setResult));
+
+        // Attempt 2: CacheService fallback (survives ~10min, enough for short sessions)
+        try {
+          CacheService.getScriptCache().put(sessionKey, sessionData, 21600); // 6 hours TTL
+          sessionPersisted = true;
+          persistMethod = 'cache';
+          Logger.log('✅ loginUser: CacheService fallback OK for ' + sessionKey);
+        } catch (cacheErr) {
+          Logger.log('⚠️ loginUser: CacheService fallback failed: ' + cacheErr);
+
+          // Attempt 3: Direct PropertiesService as last resort
+          try {
+            PropertiesService.getScriptProperties().setProperty(sessionKey, sessionData);
+            sessionPersisted = true;
+            persistMethod = 'property-direct';
+            Logger.log('✅ loginUser: Direct property write OK for ' + sessionKey);
+          } catch (directErr) {
+            Logger.log('🔴 loginUser: ALL persist attempts failed for ' + sessionKey + ': ' + directErr);
+          }
+        }
+      }
+
+      if (!sessionPersisted) {
+        try { if (typeof _logError_ === 'function') _logError_('HIGH', 'loginUser', new Error('Session not persisted: ' + sessionKey), {source: 'AUTH'}); } catch(_le) {}
+        return { success: false, error: 'ไม่สามารถบันทึก session ได้ กรุณาลองใหม่' };
+      }
+
+      Logger.log('✅ loginUser: session persisted via ' + persistMethod + ' for user=' + rowUser);
 
       try { logActivity('LOGIN', rowUser, 'เข้าสู่ระบบสำเร็จ role=' + role); } catch(e) {}
       try { resetFailedLogin_(rowUser); } catch(e) {}
-      try { cleanupExpiredSessions_(); } catch(e) {}  // 🧹 Cleanup ทุกครั้งที่ login
 
       var forceChangePw = false;
       var colForce = idx['force_change_pw'] !== undefined ? idx['force_change_pw'] : -1;
@@ -141,7 +185,9 @@ function cleanupExpiredSessions_() {
 function logoutUser(token) {
   try {
     if (!token) return { success: false, error: 'ไม่มี token' };
-    PropertiesService.getScriptProperties().deleteProperty('SESSION_' + token);
+    var sessionKey = 'SESSION_' + token;
+    PropertiesService.getScriptProperties().deleteProperty(sessionKey);
+    try { CacheService.getScriptCache().remove(sessionKey); } catch(e) {}
     return { success: true };
   } catch (e) {
         try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'logoutUser', e, {source: 'AUTH'}); } catch(_le) {}
@@ -155,13 +201,36 @@ function logoutUser(token) {
 function verifySession(token) {
   try {
     if (!token) return { valid: false, error: 'ไม่มี token' };
-    var raw = PropertiesService.getScriptProperties().getProperty('SESSION_' + token);
+    var sessionKey = 'SESSION_' + token;
+
+    // Attempt 1: PropertiesService (primary)
+    var raw = PropertiesService.getScriptProperties().getProperty(sessionKey);
+
+    // Attempt 2: CacheService fallback (if safeSetProperty failed during login)
+    if (!raw) {
+      try {
+        raw = CacheService.getScriptCache().get(sessionKey);
+        if (raw) {
+          Logger.log('✅ verifySession: found in CacheService fallback for ' + sessionKey);
+          // Try to promote back to PropertiesService for durability
+          try {
+            safeSetProperty(sessionKey, raw);
+          } catch (promoteErr) {
+            Logger.log('⚠️ verifySession: could not promote cache session to properties: ' + promoteErr);
+          }
+        }
+      } catch (cacheErr) {
+        Logger.log('⚠️ verifySession: CacheService lookup failed: ' + cacheErr);
+      }
+    }
+
     if (!raw) return { valid: false, error: 'Session ไม่พบหรือหมดอายุ' };
     var session = JSON.parse(raw);
     var now = new Date();
     var expires = new Date(session.expires_at);
     if (now > expires) {
-      PropertiesService.getScriptProperties().deleteProperty('SESSION_' + token);
+      PropertiesService.getScriptProperties().deleteProperty(sessionKey);
+      try { CacheService.getScriptCache().remove(sessionKey); } catch(e) {}
       return { valid: false, error: 'Session หมดอายุ กรุณาเข้าสู่ระบบใหม่' };
     }
     return {

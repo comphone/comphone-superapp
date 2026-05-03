@@ -40,6 +40,9 @@ function safeSetProperty(key, value, opts) {
     return { success: true, method: 'property', detail: 'updated existing key' };
   }
 
+  // 🔐 SESSION_ keys are critical — always ensure they succeed
+  var isSessionKey = key.indexOf('SESSION_') === 0;
+
   // ถ้า key ใหม่ → ตรวจ count
   if (count >= PROP_GUARD.MAX_PROPS) {
     // Cleanup ก่อน
@@ -49,21 +52,76 @@ function safeSetProperty(key, value, opts) {
     count = Object.keys(props.getProperties()).length;
 
     if (count >= PROP_GUARD.HARD_LIMIT) {
-      // ยังเกิน → ย้ายไป Spreadsheet
-      if (opts.overflowToSheet !== false) {
-        var overflowResult = overflowToSheet_(key, value);
+      // For SESSION_ keys: aggressive cleanup — delete oldest non-essential props
+      if (isSessionKey) {
+        Logger.log('⚠️ safeSetProperty: aggressive cleanup for SESSION_ key, props=' + count);
+        try {
+          var all = props.getProperties();
+          var allKeys = Object.keys(all);
+          // Delete LINE state keys first (low priority, auto-regenerate)
+          var lowPriorityPrefixes = ['LINE_LAST_', 'LINE_PUSH_', 'LINE_ALERT_'];
+          for (var k = 0; k < allKeys.length; k++) {
+            for (var p = 0; p < lowPriorityPrefixes.length; p++) {
+              if (allKeys[k].indexOf(lowPriorityPrefixes[p]) === 0) {
+                props.deleteProperty(allKeys[k]);
+                count--;
+                break;
+              }
+            }
+            if (count < PROP_GUARD.HARD_LIMIT) break;
+          }
+          // Re-check
+          count = Object.keys(props.getProperties()).length;
+        } catch (aggressiveErr) {
+          Logger.log('🔴 safeSetProperty: aggressive cleanup failed: ' + aggressiveErr);
+        }
+      }
+
+      // ตรวจอีกครั้งหลัง aggressive cleanup
+      if (count >= PROP_GUARD.HARD_LIMIT) {
+        // ยังเกิน → ย้ายไป Spreadsheet
+        if (opts.overflowToSheet !== false) {
+          var overflowResult = overflowToSheet_(key, value);
+
+          // For SESSION_ keys: also store in CacheService as backup
+          if (isSessionKey) {
+            try {
+              CacheService.getScriptCache().put(key, value, 21600);
+              Logger.log('✅ safeSetProperty: SESSION_ key cached as backup: ' + key);
+            } catch(ce) {}
+          }
+
+          return {
+            success: true,
+            method: 'sheet',
+            detail: 'overflow to sheet (props=' + count + ')',
+            sheetResult: overflowResult
+          };
+        }
+        // For SESSION_ keys: even if overflow disabled, try direct write as last resort
+        if (isSessionKey) {
+          try {
+            props.setProperty(key, value);
+            Logger.log('✅ safeSetProperty: SESSION_ key force-written: ' + key);
+            return { success: true, method: 'property', detail: 'SESSION_ key force-written (over limit)' };
+          } catch(directErr) {
+            Logger.log('🔴 safeSetProperty: SESSION_ force write failed: ' + directErr);
+          }
+          // CacheService as absolute last resort
+          try {
+            CacheService.getScriptCache().put(key, value, 21600);
+            Logger.log('✅ safeSetProperty: SESSION_ key stored in CacheService fallback: ' + key);
+            return { success: true, method: 'cache', detail: 'SESSION_ fallback to CacheService' };
+          } catch(cacheErr) {
+            Logger.log('🔴 safeSetProperty: SESSION_ CacheService fallback also failed: ' + cacheErr);
+          }
+        }
         return {
-          success: true,
-          method: 'sheet',
-          detail: 'overflow to sheet (props=' + count + ')',
-          sheetResult: overflowResult
+          success: false,
+          method: 'blocked',
+          detail: 'limit reached (' + count + '/' + PROP_GUARD.HARD_LIMIT + '), overflow disabled'
         };
       }
-      return {
-        success: false,
-        method: 'blocked',
-        detail: 'limit reached (' + count + '/' + PROP_GUARD.HARD_LIMIT + '), overflow disabled'
-      };
     }
   }
 
