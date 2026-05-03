@@ -95,7 +95,7 @@ async function unsubscribePushNotifications() {
 }
 
 // ===== Toggle Notifications =====
-async function toggleNotifications() {
+async function togglePushNotifications() {
   const isSubscribed = localStorage.getItem('push_subscribed') === 'true';
 
   if (isSubscribed) {

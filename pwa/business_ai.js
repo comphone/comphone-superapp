@@ -36,7 +36,7 @@ async function sendAIQuestion() {
   input.value = '';
 
   const history = document.getElementById('ai-chat-history');
-  history.innerHTML += `<div style="text-align:right;margin:6px 0"><span style="background:#dbeafe;color:#1e40af;padding:6px 12px;border-radius:12px 12px 0 12px;display:inline-block;font-size:13px">${escapeHtml(q)}</span></div>`;
+  history.innerHTML += `<div style="text-align:right;margin:6px 0"><span style="background:#dbeafe;color:#1e40af;padding:6px 12px;border-radius:12px 12px 0 12px;display:inline-block;font-size:13px">${bizEscapeHtml(q)}</span></div>`;
   history.scrollTop = history.scrollHeight;
 
   showLoadingInChat();
@@ -44,12 +44,12 @@ async function sendAIQuestion() {
     const res = await window.GAS_EXECUTE('askAI', { question: q, context: {} });
     removeLoadingInChat();
     if (res && res.success && res.data) {
-      history.innerHTML += `<div style="margin:6px 0"><span style="background:#f3f4f6;color:#374151;padding:6px 12px;border-radius:12px 12px 12px 0;display:inline-block;font-size:13px;white-space:pre-wrap">${escapeHtml(res.data.answer)}</span></div>`;
+      history.innerHTML += `<div style="margin:6px 0"><span style="background:#f3f4f6;color:#374151;padding:6px 12px;border-radius:12px 12px 12px 0;display:inline-block;font-size:13px;white-space:pre-wrap">${bizEscapeHtml(res.data.answer)}</span></div>`;
       if (res.data.confidence < 0.5) {
         history.innerHTML += `<div style="font-size:11px;color:#d97706;margin-top:4px">⚠️ ความมั่นใจต่ำ — กรุณาตรวจสอบกับช่าง</div>`;
       }
     } else {
-      history.innerHTML += `<div style="margin:6px 0"><span style="background:#fee2e2;color:#991b1b;padding:6px 12px;border-radius:12px 12px 12px 0;display:inline-block;font-size:13px">${escapeHtml(res && res.error ? res.error : 'ไม่สามารถตอบได้')}</span></div>`;
+      history.innerHTML += `<div style="margin:6px 0"><span style="background:#fee2e2;color:#991b1b;padding:6px 12px;border-radius:12px 12px 12px 0;display:inline-block;font-size:13px">${bizEscapeHtml(res && res.error ? res.error : 'ไม่สามารถตอบได้')}</span></div>`;
     }
   } catch (err) {
     removeLoadingInChat();
@@ -147,10 +147,10 @@ async function runSmartAssignV2() {
         `).join('')}
       `;
     } else {
-      container.innerHTML = `<div class="alert-card danger">⚠️ ${escapeHtml(res && res.error ? res.error : 'ไม่สามารถวิเคราะห์ได้')}</div>`;
+      container.innerHTML = `<div class="alert-card danger">⚠️ ${bizEscapeHtml(res && res.error ? res.error : 'ไม่สามารถวิเคราะห์ได้')}</div>`;
     }
   } catch (err) {
-    document.getElementById('sa-result').innerHTML = `<div class="alert-card danger">⚠️ ขัดข้องการ: ${escapeHtml(err.message || err)}</div>`;
+    document.getElementById('sa-result').innerHTML = `<div class="alert-card danger">⚠️ ขัดข้องการ: ${bizEscapeHtml(err.message || err)}</div>`;
   }
   btn.disabled = false;
   btn.innerHTML = '<i class="bi bi-magic"></i> วิเคราะห์ช่างที่เหมาะสม';
@@ -230,10 +230,10 @@ async function sendCSATNow() {
     if (res && res.success && res.data) {
       out.innerHTML = `<div style="background:#d1fae5;color:#065f46;padding:10px;border-radius:12px;font-size:13px">✅ ส่งแล้ว! Token: <code>${res.data.csat_token}</code></div>`;
     } else {
-      out.innerHTML = `<div class="alert-card danger">⚠️ ${escapeHtml(res && res.error ? res.error : 'ไม่สามารถส่งได้')}</div>`;
+      out.innerHTML = `<div class="alert-card danger">⚠️ ${bizEscapeHtml(res && res.error ? res.error : 'ไม่สามารถส่งได้')}</div>`;
     }
   } catch (err) {
-    document.getElementById('csat-send-result').innerHTML = `<div class="alert-card danger">⚠️ ${escapeHtml(err.message || err)}</div>`;
+    document.getElementById('csat-send-result').innerHTML = `<div class="alert-card danger">⚠️ ${bizEscapeHtml(err.message || err)}</div>`;
   }
   btn.disabled = false;
 }
@@ -329,20 +329,20 @@ async function generateTORNow() {
           <div style="font-size:12px;color:#374151;margin-top:6px">${res.data.fields.project} · ${res.data.fields.client} · ฿${Number(res.data.fields.budget||0).toLocaleString()}</div>
         </div>
         <div style="display:flex;gap:8px">
-          <button class="btn-setup" style="flex:1;background:#3b82f6" onclick="exportTORPdf('${res.data.tor_id}', \`${escapeHtml(res.data.html_preview)}\`)">
+          <button class="btn-setup" style="flex:1;background:#3b82f6" onclick="exportTORPdf('${res.data.tor_id}', \`${bizEscapeHtml(res.data.html_preview)}\`)">
             <i class="bi bi-file-earmark-pdf-fill"></i> ออก PDF
           </button>
-          <button class="btn-setup" style="flex:1;background:#6b7280" onclick="previewTOR(\`${escapeHtml(res.data.html_preview)}\`)">
+          <button class="btn-setup" style="flex:1;background:#6b7280" onclick="previewTOR(\`${bizEscapeHtml(res.data.html_preview)}\`)">
             <i class="bi bi-eye-fill"></i> ดูตัวอย่าง
           </button>
         </div>
       `;
       loadTORList();
     } else {
-      out.innerHTML = `<div class="alert-card danger">⚠️ ${escapeHtml(res && res.error ? res.error : 'ไม่สามารถออก TOR ได้')}</div>`;
+      out.innerHTML = `<div class="alert-card danger">⚠️ ${bizEscapeHtml(res && res.error ? res.error : 'ไม่สามารถออก TOR ได้')}</div>`;
     }
   } catch (err) {
-    document.getElementById('tor-result').innerHTML = `<div class="alert-card danger">⚠️ ${escapeHtml(err.message || err)}</div>`;
+    document.getElementById('tor-result').innerHTML = `<div class="alert-card danger">⚠️ ${bizEscapeHtml(err.message || err)}</div>`;
   }
   btn.disabled = false;
   btn.innerHTML = '<i class="bi bi-file-earmark-text-fill"></i> ออก TOR';
@@ -485,7 +485,7 @@ async function renderBusinessIntelligence() {
 // ============================================================
 // HELPERS
 // ============================================================
-function escapeHtml(text) {
+function bizEscapeHtml(text) {
   if (!text) return '';
   return String(text)
     .replace(/&/g, '&amp;')
@@ -502,7 +502,7 @@ function showModal(id, content) {
     modal.id = id;
     modal.className = 'modal-overlay hidden';
     modal.innerHTML = `<div class="modal-sheet" onclick="event.stopPropagation()" style="max-height:85vh;overflow-y:auto"><div class="modal-handle"></div><div id="${id}-content"></div></div>`;
-    modal.onclick = function() { closeModal(id); };
+    modal.onclick = function() { bizCloseModal(id); };
     document.body.appendChild(modal);
   }
   const inner = document.getElementById(id + '-content');
@@ -510,7 +510,7 @@ function showModal(id, content) {
   modal.classList.remove('hidden');
 }
 
-function closeModal(id) {
+function bizCloseModal(id) {
   const modal = document.getElementById(id);
   if (modal) modal.classList.add('hidden');
 }

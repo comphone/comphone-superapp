@@ -19,11 +19,11 @@ async function loadProducts() {
       products = res.items;
       renderProducts(products);
     } else {
-      showToast('ไม่สามารถโหลดรายการสินค้าได้', 'error');
+      posShowToast('ไม่สามารถโหลดรายการสินค้าได้', 'error');
     }
   } catch (error) {
     console.error('Error loading products:', error);
-    showToast('เกิดข้อผิดพลาดในการโหลดสินค้า', 'error');
+    posShowToast('เกิดข้อผิดพลาดในการโหลดสินค้า', 'error');
   }
 }
 
@@ -115,14 +115,14 @@ async function searchByBarcode(barcode) {
     const res = await callApi('barcodeLookup', { barcode: barcode });
     if (res && res.success && res.item) {
       renderProducts([res.item]);
-      showToast(`พบสินค้า: ${res.item.name || res.item.item_name}`, 'success');
+      posShowToast(`พบสินค้า: ${res.item.name || res.item.item_name}`, 'success');
     } else {
-      showToast(`ไม่พบสินค้าบาร์โค้ด: ${barcode}`, 'warning');
+      posShowToast(`ไม่พบสินค้าบาร์โค้ด: ${barcode}`, 'warning');
       renderProducts([]);
     }
   } catch (error) {
     console.error('Barcode search error:', error);
-    showToast('เกิดข้อผิดพลาดในการค้นหาบาร์โค้ด', 'error');
+    posShowToast('เกิดข้อผิดพลาดในการค้นหาบาร์โค้ด', 'error');
   }
 }
 
@@ -145,7 +145,7 @@ function addToCart(product) {
   }
   
   renderCart();
-  showToast(`เพิ่ม ${product.name || product.item_name} แล้ว`, 'success');
+  posShowToast(`เพิ่ม ${product.name || product.item_name} แล้ว`, 'success');
 }
 
 // Render shopping cart
@@ -216,7 +216,7 @@ function removeFromCart(index) {
     const name = cart[index].name;
     cart.splice(index, 1);
     renderCart();
-    showToast(`ลบ ${name} แล้ว`, 'info');
+    posShowToast(`ลบ ${name} แล้ว`, 'info');
   }
 }
 
@@ -234,7 +234,7 @@ function updateTotals(subtotal, vat, grandTotal) {
 // Process sale
 async function processSale() {
   if (cart.length === 0) {
-    showToast('กรุณาเพิ่มสินค้าอย่างน้อย 1 รายการ', 'warning');
+    posShowToast('กรุณาเพิ่มสินค้าอย่างน้อย 1 รายการ', 'warning');
     return;
   }
   
@@ -258,7 +258,7 @@ async function processSale() {
   }
   
   try {
-    showToast('กำลังบันทึกการขาย...', 'info');
+    posShowToast('กำลังบันทึกการขาย...', 'info');
     
     const payload = {
       items: items,
@@ -271,22 +271,22 @@ async function processSale() {
     const res = await callApi('createRetailSale', payload);
     
     if (res && res.success) {
-      showToast(`บันทึกการขายสำเร็จ! เลขที่: ${res.sale_id}`, 'success');
+      posShowToast(`บันทึกการขายสำเร็จ! เลขที่: ${res.sale_id}`, 'success');
       // Clear cart
       cart = [];
       renderCart();
       document.getElementById('customerName').value = '';
     } else {
-      showToast(res?.error || 'เกิดข้อผิดพลาด', 'error');
+      posShowToast(res?.error || 'เกิดข้อผิดพลาด', 'error');
     }
   } catch (error) {
     console.error('Error processing sale:', error);
-    showToast('เกิดข้อผิดพลาดในการบันทึกการขาย', 'error');
+    posShowToast('เกิดข้อผิดพลาดในการบันทึกการขาย', 'error');
   }
 }
 
 // Toast notification (reuse from main app)
-function showToast(message, type = 'info') {
+function posShowToast(message, type = 'info') {
   // Create toast container if not exists
   let container = document.getElementById('toastContainer');
   if (!container) {
