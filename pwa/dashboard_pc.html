@@ -463,7 +463,8 @@ color: #ef4444; font-size: 13px; margin-top: 10px; min-height: 20px;
 'use strict';
 // ===== CONFIG =====
 // GAS_URL now delegates to api_client.js getGasUrl()
-const GAS_URL = getGasUrl();
+// Use function instead of const to always get latest URL (avoids cache issues)
+function getGAS_URL() { return getGasUrl(); }
 let CHARTS = {};
 let DASHBOARD_DATA = null;
 // ===== DATA SCHEMA & ACTION MAP (FOR AI_EXECUTOR) ====
@@ -549,34 +550,42 @@ function _doLogin(event) {
   event.preventDefault();
   console.log('[Dashboard] Attempting login...');
   
-  const username = document.getElementById('login-username')?.value;
-  const password = document.getElementById('login-password')?.value;
+  const username = document.getElementById('login-user')?.value;
+  const password = document.getElementById('login-pass')?.value;
   
   if (!username || !password) {
     alert('กรุณากรอก username และ password');
     return;
   }
   
-  if (typeof window.callApi === 'function') {
-    window.callApi({ 
-      action: 'loginUser', 
-      username: username, 
-      password: password 
-    })
+  // Use getGasUrl() dynamically to avoid cached const URL
+  const gasUrl = typeof getGasUrl === 'function' ? getGasUrl() : (window.GAS_CONFIG && window.GAS_CONFIG.url) || '';
+  if (!gasUrl) {
+    alert('GAS URL ไม่ได้ตั้งค่า');
+    return;
+  }
+  
+  const qs = new URLSearchParams({ action: 'loginUser', username: username, password: password, _t: Date.now() }).toString();
+  const btn = document.querySelector('.login-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ...'; }
+  
+  fetch(gasUrl + '?' + qs, { redirect: 'follow' })
+    .then(res => res.json())
     .then(res => {
+      if (btn) { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
       if (res.success || res.valid) {
         localStorage.setItem('comphone_auth_session', JSON.stringify(res));
-        document.getElementById('login-form').style.display = 'none';
-        document.getElementById('dashboard-content').style.display = 'block';
+        const loginOverlay = document.getElementById('login-overlay');
+        if (loginOverlay) loginOverlay.style.display = 'none';
         loadDashboard();
       } else {
-        alert('เข้าสู่ระบบไม่สำเร็จ: ' + (res.message || 'Unknown error'));
+        alert('เข้าสู่ระบบไม่สำเร็จ: ' + (res.error || res.message || 'Unknown error'));
       }
     })
     .catch(err => {
+      if (btn) { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
       console.error('[Login] Error:', err);
-      alert('เกิดข้อผิดพลาดในการเข้าสู่ระบบ');
+      alert('เกิดข้อผิดพลาดในการเข้าสู่ระบบ: ' + err.message);
     });
-  }
 }
 </script>
