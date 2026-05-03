@@ -150,7 +150,7 @@ showToast('โ เนเธกเนเธชเธฒเธกเธฒ
 // ===== BUILD JOBS CHART DATA =====
 async function buildJobsChartData(period, chartType) {
 try {
-const res = await callGas('getDashboardBundle', {});
+const res = await callApi('getDashboardBundle', {});
 const stats = (res && res.stats) || {};
 // For demo, use current stats - in production would fetch historical data
 const labels = ['เนเธซเธกเน', 'เธฃเธญเธเนเธญเธก', 'เธเธณเธฅเธฑเธเธ—เธณ', 'เน€เธชเธฃเนเธเนเธฅเนเธง', 'เธขเธเน€เธฅเธดเธ'];
@@ -184,7 +184,7 @@ return { title: 'Error', data: { labels: [], datasets: [] }, summary: [] };
 // ===== BUILD REVENUE CHART DATA =====
 async function buildRevenueChartData(period, chartType) {
 try {
-const res = await callGas('getProfitReport', { period: 'monthly' });
+const res = await callApi('getProfitReport', { period: 'monthly' });
 const report = res || {};
 const labels = ['เธก.เธ.', 'เธ.เธ.', 'เธกเธต.เธ.', 'เน€เธก.เธข.', 'เธ.เธ.', 'เธกเธด.เธข.', 'เธ.เธ.', 'เธช.เธ.', 'เธ.เธข.', 'เธ•.เธ.', 'เธ.เธข.', 'เธ.เธ.'];
 const revenue = labels.map(() => Math.floor(Math.random() * 50000) + 10000); // Demo data
@@ -224,7 +224,7 @@ return { title: 'Error', data: { labels: [], datasets: [] }, summary: [] };
 // ===== BUILD INVENTORY CHART DATA =====
 async function buildInventoryChartData(period, chartType) {
 try {
-const res = await callGas('inventoryOverview', {});
+const res = await callApi('inventoryOverview', {});
 const items = (res && res.stock) || [];
 // Top 10 items by quantity
 const topItems = items

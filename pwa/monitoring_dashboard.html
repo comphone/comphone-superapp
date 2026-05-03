@@ -996,8 +996,8 @@ let sysLogsPollTimer = null;
 const SYS_LOGS_POLL_INTERVAL = 10000; // 10 seconds
 
 // Migrated: uses api_client.js callApi() with noAuth (system monitor doesn't need auth)
-// Backwards-compatible alias for existing callGas() references
-async function callGas(action, params) {
+// Backwards-compatible alias for existing callApi() references
+async function callApi(action, params) {
   return callApi(action, params, { noAuth: true });
 }
 
@@ -1013,7 +1013,7 @@ function setSysLogLevel(level) {
 // Fetch system logs from GAS
 async function fetchSystemLogs() {
   try {
-    const data = await callGas('getSystemLogs', { limit: 50 });
+    const data = await callApi('getSystemLogs', { limit: 50 });
     let logs = [];
     if (Array.isArray(data)) {
       logs = data;

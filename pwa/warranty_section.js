@@ -73,7 +73,7 @@ function renderWarrantySection(data) {
 // 2. _listWarranties() — Fetch and display all warranties
 // ============================================================
 function _listWarranties() {
-  callGas('listWarranties', {}).then(function(res) {
+  callApi('listWarranties', {}).then(function(res) {
     if (!res || !res.success) {
       document.getElementById('warranty-table-wrap').innerHTML =
         '<div style="text-align:center;padding:24px;color:#ef4444;">ไม่สามารถโหลดข้อมูลประกันได้</div>';
@@ -367,7 +367,7 @@ function _doCreateWarranty() {
     btn.textContent = '⏳ กำลังสร้าง...';
   }
 
-  callGas('createWarranty', params).then(function(res) {
+  callApi('createWarranty', params).then(function(res) {
     var modal = document.getElementById('warranty-create-modal');
     if (modal) modal.remove();
 
@@ -400,7 +400,7 @@ function _doUpdateWarrantyStatus(warrantyId, newStatus) {
     note: note || ''
   };
 
-  callGas('updateWarrantyStatus', params).then(function(res) {
+  callApi('updateWarrantyStatus', params).then(function(res) {
     var modal = document.getElementById('warranty-detail-modal');
     if (modal) modal.remove();
 
@@ -429,7 +429,7 @@ function _showWarrantyDue() {
       '<div id="warranty-due-wrap"><div style="text-align:center;padding:24px;color:#6b7280;">กำลังโหลด...</div></div>' +
     '</div>';
 
-  callGas('getWarrantyDue', {}).then(function(res) {
+  callApi('getWarrantyDue', {}).then(function(res) {
     if (!res || !res.success) {
       document.getElementById('warranty-due-wrap').innerHTML =
         '<div style="text-align:center;padding:24px;color:#ef4444;">ไม่สามารถโหลดข้อมูล</div>';

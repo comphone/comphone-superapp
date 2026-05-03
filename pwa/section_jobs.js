@@ -118,7 +118,7 @@ window._filterJobsByStatus = function(status) {
 // === JOB TIMELINE ===
 async function _showJobTimeline(jobId) {
   try {
-    const d = await callGas('getJobTimeline', {job_id: jobId});
+    const d = await callApi('getJobTimeline', {job_id: jobId});
     if(!d || !d.success) { alert(d?.error || 'ไม่พบข้อมูล'); return; }
     const events = d.timeline || d.events || [];
     const m = `<div id="job-modal-overlay" onclick="this.remove()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center">
@@ -180,7 +180,7 @@ async function _doJobTransition(jobId, newStatus) {
   const resEl = document.getElementById('trans-result');
   try {
     resEl.style.display='block'; resEl.innerHTML='<span style="color:#6b7280;font-size:12px">กำลังเปลี่ยน...</span>';
-    const r = await callGas('transitionJob', {job_id: jobId, status: newStatus, changed_by: 'PC Dashboard'});
+    const r = await callApi('transitionJob', {job_id: jobId, status: newStatus, changed_by: 'PC Dashboard'});
     if(r && r.success) {
       resEl.innerHTML = `<span style="color:#059669;font-size:12px">✅ เปลี่ยนเป็น "${newStatus}" สำเร็จ</span>`;
       setTimeout(()=>{ document.getElementById('job-modal-overlay').remove(); DASHBOARD_DATA = null; loadSection('jobs'); }, 1200);

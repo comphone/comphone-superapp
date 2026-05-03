@@ -75,7 +75,7 @@ async function renderAttendanceSection(data) {
 async function _loadKPIs() {
   const today = new Date().toISOString().split('T')[0];
   try {
-    const res = await callGas('getAttendanceReport', { date_from: today, date_to: today });
+    const res = await callApi('getAttendanceReport', { date_from: today, date_to: today });
     if (res && res.success) {
       const records = res.records || [];
       const present = records.filter(r => r.status === 'PRESENT' || r.status === 'LATE').length;
@@ -93,7 +93,7 @@ async function _loadKPIs() {
 async function _loadTechSummary() {
   const el = document.getElementById('att-tech-summary');
   try {
-    const res = await callGas('getAllTechsSummary', {});
+    const res = await callApi('getAllTechsSummary', {});
     if (!res || !res.success || !res.techs || res.techs.length === 0) {
       el.innerHTML = '<div style="color:#6b7280;font-size:13px">ไม่มีข้อมูลช่าง</div>';
       return;
@@ -122,7 +122,7 @@ async function _listAttendance() {
   if (tech) params.tech = tech;
 
   try {
-    const res = await callGas('getAttendanceReport', params);
+    const res = await callApi('getAttendanceReport', params);
     if (!res || !res.success || !res.records || res.records.length === 0) {
       wrap.innerHTML = '<div style="text-align:center;padding:30px;color:#6b7280">ไม่พบข้อมูล</div>';
       return;
@@ -222,7 +222,7 @@ async function _doClockIn() {
   msgEl.textContent = 'กำลังลงเวลา...';
 
   try {
-    const res = await callGas('clockIn', { tech_name, note });
+    const res = await callApi('clockIn', { tech_name, note });
     if (res && res.success) {
       msgEl.style.color = '#059669';
       msgEl.textContent = '✅ ลงเวลาเข้างานสำเร็จ!';
@@ -254,7 +254,7 @@ async function _doClockOut() {
   msgEl.textContent = 'กำลังลงเวลา...';
 
   try {
-    const res = await callGas('clockOut', { tech_name, note });
+    const res = await callApi('clockOut', { tech_name, note });
     if (res && res.success) {
       msgEl.style.color = '#059669';
       msgEl.textContent = '✅ ลงเวลาออกงานสำเร็จ!';
@@ -290,7 +290,7 @@ async function _showTechHistory(techName) {
   document.body.appendChild(modal);
 
   try {
-    const res = await callGas('getTechHistory', { tech_name: techName });
+    const res = await callApi('getTechHistory', { tech_name: techName });
     const el = document.getElementById('att-history-content');
     if (!res || !res.success || !res.history || res.history.length === 0) {
       el.innerHTML = '<div style="color:#6b7280">ไม่มีประวัติ</div>';
@@ -322,7 +322,7 @@ async function _loadMonthlySummary() {
   if (year) params.year = year;
 
   try {
-    const res = await callGas('getAttendanceMonthlySummary', params);
+    const res = await callApi('getAttendanceMonthlySummary', params);
     if (!res || !res.success || !res.summary || res.summary.length === 0) {
       el.innerHTML = '<div style="text-align:center;padding:30px;color:#6b7280">ไม่พบข้อมูลสรุป</div>';
       return;
@@ -388,7 +388,7 @@ async function _exportAttendancePDF() {
   if (year) params.year = year;
 
   try {
-    const res = await callGas('getAttendanceMonthlySummary', params);
+    const res = await callApi('getAttendanceMonthlySummary', params);
     if (!res || !res.success || !res.summary || res.summary.length === 0) {
       alert('ไม่มีข้อมูลสำหรับ Export PDF');
       return;

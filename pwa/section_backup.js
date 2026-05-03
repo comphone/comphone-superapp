@@ -87,11 +87,11 @@ function renderBackupSection() {
 async function loadBackupData() {
   try {
     // Load health status
-    const healthResult = await callGas('checkBackupHealth');
+    const healthResult = await callApi('checkBackupHealth');
     renderHealthStatus(healthResult);
     
     // Load backup list
-    const listResult = await callGas('listBackups');
+    const listResult = await callApi('listBackups');
     if (listResult && listResult.success) {
       renderBackupList(listResult.backups || []);
     }
@@ -224,7 +224,7 @@ async function createBackupNow() {
   if (!confirm('คุณแน่ใจหรือไม่ที่จะสำรองข้อมูลเดี๋ยวนี้?')) return;
   
   try {
-    const result = await callGas('createBackup');
+    const result = await callApi('createBackup');
     if (result && result.success) {
       alert('✅ ' + (result.message || 'สำรองข้อมูลสำเร็จ'));
       loadBackupData();
@@ -268,7 +268,7 @@ async function confirmRestore() {
   if (!confirm('คุณแน่ใจหรือไม่ที่จะกู้คืนข้อมูลจากสำรองนี้? การกระทำนี้ไม่สามารถย้อนกลับได้!')) return;
   
   try {
-    const result = await callGas('restoreBackup', { backupId: backupId });
+    const result = await callApi('restoreBackup', { backupId: backupId });
     if (result && result.success) {
       alert('✅ ' + (result.message || 'กู้คืนข้อมูลสำเร็จ'));
       closeRestoreModal();

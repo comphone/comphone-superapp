@@ -19,7 +19,7 @@ async function _showFollowUpSchedule() {
   document.body.insertAdjacentHTML('beforeend', m);
 
   try {
-    const r = await callGas('getCRMFollowUpSchedule', {});
+    const r = await callApi('getCRMFollowUpSchedule', {});
     const schedule = r?.schedule || {};
     const dates = Object.keys(schedule).sort();
     const el = document.getElementById('fu-schedule-content');
@@ -65,9 +65,9 @@ async function renderSettingsSection() {
 
   // Fetch all settings data in parallel
   const [guardResp, healthResp, usersResp] = await Promise.all([
-    callGas('guardstatus').catch(()=>null),
-    callGas('healthCheck').catch(()=>null),
-    callGas('listUsers').catch(()=>null)
+    callApi('guardstatus').catch(()=>null),
+    callApi('healthCheck').catch(()=>null),
+    callApi('listUsers').catch(()=>null)
   ]);
 
   const propUsed = guardResp?.total_properties || guardResp?.used || '?';
@@ -241,7 +241,7 @@ function testAccountingConnection() {
   const apiKey = document.getElementById('accounting-api-key').value;
   
   // เรียก API ตรวจสอบการเชื่อมต่อ
-  callGas('checkAccountingConnection', {})
+  callApi('checkAccountingConnection', {})
     .then(r => {
       const statusEl = document.getElementById('accounting-status');
       if (r.success) {
@@ -266,7 +266,7 @@ function exportBillToAccountingUI() {
   const billId = prompt('ใส่ Bill ID ที่ต้องการส่งไปบัญชี:');
   if (!billId) return;
   
-  callGas('exportBillToAccounting', { billId })
+  callApi('exportBillToAccounting', { billId })
     .then(r => {
       if (r.success) {
         alert(`✅ ส่งบิล ${billId} ไปยังซอฟต์แวร์บัญชีสำเร็จ\nReference: ${r.data?.accountingRef || '-'}`);

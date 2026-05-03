@@ -616,7 +616,7 @@ function testMobileAccountingConnection() {
   
   // Call API
   if (typeof callGas === 'function') {
-    callGas('checkAccountingConnection', {})
+    callApi('checkAccountingConnection', {})
       .then(r => {
         if (statusEl) {
           if (r && r.success) {
@@ -654,7 +654,7 @@ function exportMobileBillToAccounting() {
   if (!billId) return;
   
   if (typeof callGas === 'function') {
-    callGas('exportBillToAccounting', { billId })
+    callApi('exportBillToAccounting', { billId })
       .then(r => {
         if (r && r.success) {
           alert(`✅ ส่งบิล ${billId} ไปยังซอฟต์แวร์บัญชีสำเร็จ\nReference: ${r.data?.accountingRef || '-'}`);

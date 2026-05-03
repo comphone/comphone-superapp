@@ -7,7 +7,7 @@ async function renderPOSection(data) {
     </div>`;
 
   try {
-    const poData = await callGas('listPurchaseOrders', {limit: 50});
+    const poData = await callApi('listPurchaseOrders', {limit: 50});
     const poItems = poData.items || [];
     const pending = poItems.filter(p => p.status === 'PENDING');
     const received = poItems.filter(p => p.status === 'RECEIVED');
@@ -121,7 +121,7 @@ function _filterPO() {
 async function _receivePO(poId) {
   if(!confirm(`รับของ PO ${poId}? สินค้าจะถูกเพิ่มเข้าสต็อกอัตโนมัติ`)) return;
   try {
-    const r = await callGas('receivePurchaseOrder', {po_id: poId, received_by: 'PC Dashboard'});
+    const r = await callApi('receivePurchaseOrder', {po_id: poId, received_by: 'PC Dashboard'});
     if(r && r.success) {
       alert(`✅ รับของสำเร็จ: ${r.received_items} รายการ`);
       DASHBOARD_DATA = null;
@@ -133,7 +133,7 @@ async function _receivePO(poId) {
 async function _cancelPO(poId) {
   if(!confirm(`ยกเลิก PO ${poId}?`)) return;
   try {
-    const r = await callGas('cancelPurchaseOrder', {po_id: poId});
+    const r = await callApi('cancelPurchaseOrder', {po_id: poId});
     if(r && r.success) {
       alert('✅ ยกเลิกสำเร็จ');
       DASHBOARD_DATA = null;

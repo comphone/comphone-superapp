@@ -186,7 +186,7 @@ function renderPerformanceSection(data) {
  */
 async function loadPerformanceData() {
   try {
-    const result = await callGas('getPerformanceMetrics');
+    const result = await callApi('getPerformanceMetrics');
     if (result && result.success) {
       renderPerformanceSection(result.data);
     } else {
@@ -202,7 +202,7 @@ async function loadPerformanceData() {
  */
 async function loadHistoricalData(period) {
   try {
-    const result = await callGas('getHistoricalMetrics', { period: period });
+    const result = await callApi('getHistoricalMetrics', { period: period });
     if (result && result.success) {
       renderHistoricalCharts(result.data);
     }

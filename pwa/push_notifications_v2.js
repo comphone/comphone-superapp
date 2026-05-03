@@ -71,7 +71,7 @@ async function subscribePushNotificationsV2() {
     PUSH_V2.subscription = subscription;
 
     // Save to GAS with enhanced data
-    const res = await callGas('savePushSubscriptionV2', {
+    const res = await callApi('savePushSubscriptionV2', {
       endpoint: subscription.endpoint,
       keys: {
         p256dh: arrayBufferToBase64_(subscription.getKey('p256dh')),
@@ -122,7 +122,7 @@ function startLocationTracking() {
       const { latitude, longitude } = position.coords;
       
       // Send to GAS for location-based notification check
-      callGas('checkLocationBasedNotifications', {
+      callApi('checkLocationBasedNotifications', {
         lat: latitude,
         lng: longitude,
         radius: PUSH_V2.preferences.locationRadius
@@ -165,7 +165,7 @@ function stopLocationTracking() {
 // ===== CUSTOMER HISTORY-BASED NOTIFICATIONS =====
 async function trackCustomerInteraction(customerPhone, interactionType, data = {}) {
   try {
-    await callGas('trackCustomerInteraction', {
+    await callApi('trackCustomerInteraction', {
       customer_phone: customerPhone,
       interaction_type: interactionType, // 'call', 'visit', 'purchase', 'complaint'
       timestamp: Date.now(),
@@ -178,7 +178,7 @@ async function trackCustomerInteraction(customerPhone, interactionType, data = {
 
 async function getCustomerNotificationHistory(customerPhone) {
   try {
-    const res = await callGas('getCustomerNotificationHistory', {
+    const res = await callApi('getCustomerNotificationHistory', {
       customer_phone: customerPhone
     });
     return res && res.history ? res.history : [];
@@ -195,7 +195,7 @@ async function sendTargetedNotification(targeting) {
   // conditions: { last_visit_days, min_purchases, location_radius }
   
   try {
-    const res = await callGas('sendTargetedNotification', {
+    const res = await callApi('sendTargetedNotification', {
       targeting: targeting,
       notification: {
         title: targeting.notification.title,
@@ -254,7 +254,7 @@ async function processScheduledNotifications() {
 
     // Send notification
     try {
-      await callGas('sendScheduledNotification', {
+      await callApi('sendScheduledNotification', {
         schedule_id: schedule.id,
         title: schedule.title,
         body: schedule.body,
@@ -319,7 +319,7 @@ async function unsubscribePushNotificationsV2() {
     const subscription = await registration.pushManager.getSubscription();
 
     if (subscription) {
-      await callGas('removePushSubscriptionV2', { endpoint: subscription.endpoint });
+      await callApi('removePushSubscriptionV2', { endpoint: subscription.endpoint });
       await subscription.unsubscribe();
     }
 

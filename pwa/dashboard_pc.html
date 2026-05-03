@@ -42,7 +42,7 @@ return str
 .replace(/data\s*:\s*text\/html/gi, '');
 };
 // PHASE 25.3 — GLOBAL VERSION LOCK
-window.__APP_VERSION = window.__APP_VERSION || ('v' + (window.COMPHONE_VERSION || '5.9.0-phase2d'));
+window.__APP_VERSION = window.__APP_VERSION || ('v' + (window.COMPHONE_VERSION || '5.13.0-phase36'));
 // Cache invalidation on version mismatch
 if (localStorage.__APP_VERSION !== window.__APP_VERSION) {
 console.warn('[VERSION] Dashboard version mismatch - clearing runtime caches only...');

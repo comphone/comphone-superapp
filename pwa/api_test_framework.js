@@ -90,7 +90,7 @@ async function testHealthCheck() {
 TEST_FRAMEWORK.init();
 // Test 1: getVersion
 try {
-const res = await callGas('getVersion', {});
+const res = await callApi('getVersion', {});
 TEST_FRAMEWORK.assertSuccess(res, 'getVersion_success');
 if (res && res.version) {
 TEST_FRAMEWORK.assertHasFields(res, ['version'], 'getVersion_hasVersion');
@@ -100,7 +100,7 @@ TEST_FRAMEWORK.record('getVersion_success', false, e.message);
 }
 // Test 2: getSystemHealth
 try {
-const res = await callGas('getSystemHealth', {});
+const res = await callApi('getSystemHealth', {});
 TEST_FRAMEWORK.assertSuccess(res, 'getSystemHealth_success');
 if (res && res.health) {
 TEST_FRAMEWORK.assertHasFields(res, ['health', 'timestamp'], 'getSystemHealth_hasFields');
@@ -115,7 +115,7 @@ async function testAttendanceAPI() {
 TEST_FRAMEWORK.init();
 // Test 1: getAttendanceMonthlySummary - monthly
 try {
-const res = await callGas('getAttendanceMonthlySummary', { group_by: 'month' });
+const res = await callApi('getAttendanceMonthlySummary', { group_by: 'month' });
 TEST_FRAMEWORK.assertSuccess(res, 'getAttendanceMonthlySummary_month_success');
 if (res && res.summary) {
 TEST_FRAMEWORK.assertArray(res.summary, 'getAttendanceMonthlySummary_month_hasData');
@@ -125,7 +125,7 @@ TEST_FRAMEWORK.record('getAttendanceMonthlySummary_month_success', false, e.mess
 }
 // Test 2: getAttendanceMonthlySummary - yearly
 try {
-const res = await callGas('getAttendanceMonthlySummary', { group_by: 'year' });
+const res = await callApi('getAttendanceMonthlySummary', { group_by: 'year' });
 TEST_FRAMEWORK.assertSuccess(res, 'getAttendanceMonthlySummary_year_success');
 } catch(e) {
 TEST_FRAMEWORK.record('getAttendanceMonthlySummary_year_success', false, e.message);
@@ -133,14 +133,14 @@ TEST_FRAMEWORK.record('getAttendanceMonthlySummary_year_success', false, e.messa
 // Test 3: getAttendanceReport
 try {
 const today = new Date().toISOString().split('T')[0];
-const res = await callGas('getAttendanceReport', { date_from: today, date_to: today });
+const res = await callApi('getAttendanceReport', { date_from: today, date_to: today });
 TEST_FRAMEWORK.assertSuccess(res, 'getAttendanceReport_success');
 } catch(e) {
 TEST_FRAMEWORK.record('getAttendanceReport_success', false, e.message);
 }
 // Test 4: getAllTechsSummary
 try {
-const res = await callGas('getAllTechsSummary', {});
+const res = await callApi('getAllTechsSummary', {});
 TEST_FRAMEWORK.assertSuccess(res, 'getAllTechsSummary_success');
 if (res && res.techs) {
 TEST_FRAMEWORK.assertArray(res.techs, 'getAllTechsSummary_hasTechs');
@@ -155,7 +155,7 @@ async function testDashboardAPI() {
 TEST_FRAMEWORK.init();
 // Test 1: getDashboardBundle
 try {
-const res = await callGas('getDashboardBundle', {});
+const res = await callApi('getDashboardBundle', {});
 TEST_FRAMEWORK.assertSuccess(res, 'getDashboardBundle_success');
 if (res && res.stats) {
 TEST_FRAMEWORK.assertHasFields(res, ['stats'], 'getDashboardBundle_hasStats');
@@ -165,7 +165,7 @@ TEST_FRAMEWORK.record('getDashboardBundle_success', false, e.message);
 }
 // Test 2: getDashboardBundle
 try {
-const res = await callGas('getDashboardBundle', {});
+const res = await callApi('getDashboardBundle', {});
 TEST_FRAMEWORK.assertSuccess(res, 'getDashboardBundle_success');
 } catch(e) {
 TEST_FRAMEWORK.record('getDashboardBundle_success', false, e.message);
@@ -177,7 +177,7 @@ async function testInventoryAPI() {
 TEST_FRAMEWORK.init();
 // Test 1: inventoryOverview
 try {
-const res = await callGas('inventoryOverview', {});
+const res = await callApi('inventoryOverview', {});
 TEST_FRAMEWORK.assertSuccess(res, 'inventoryOverview_success');
 if (res && res.stock) {
 TEST_FRAMEWORK.assertArray(res.stock, 'inventoryOverview_hasData');
@@ -187,7 +187,7 @@ TEST_FRAMEWORK.record('inventoryOverview_success', false, e.message);
 }
 // Test 2: checkStock
 try {
-const res = await callGas('checkStock', {});
+const res = await callApi('checkStock', {});
 TEST_FRAMEWORK.assertSuccess(res, 'checkStock_success');
 } catch(e) {
 TEST_FRAMEWORK.record('checkStock_success', false, e.message);
@@ -200,7 +200,7 @@ TEST_FRAMEWORK.init();
 // Test 1: getReportData
 try {
 const today = new Date().toISOString().split('T')[0];
-const res = await callGas('getReportData', { date_from: today, date_to: today });
+const res = await callApi('getReportData', { date_from: today, date_to: today });
 if (res && (res.success === true || res.summary)) {
 TEST_FRAMEWORK.record('getReportData_success', true, 'API responded', res);
 } else {
@@ -248,7 +248,7 @@ return { summary, details: allResults };
 async function quickTest() {
 TEST_FRAMEWORK.init();
 try {
-const res = await callGas('getVersion', {});
+const res = await callApi('getVersion', {});
 TEST_FRAMEWORK.assertSuccess(res, 'quickTest_getVersion');
 } catch(e) {
 TEST_FRAMEWORK.record('quickTest_getVersion', false, e.message);

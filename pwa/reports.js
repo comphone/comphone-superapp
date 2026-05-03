@@ -116,7 +116,7 @@ el.innerHTML = '<div style="text-align:center;padding:20px;color:#6b7280">กำ
 var params = { group_by: type };
 if (year) params.year = year;
 try {
-const res = await callGas('getAttendanceMonthlySummary', params);
+const res = await callApi('getAttendanceMonthlySummary', params);
 if (!res || !res.success || !res.summary || res.summary.length === 0) {
 el.innerHTML = '<div style="text-align:center;padding:30px;color:#6b7280">ไม่พบข้อมูล</div>';
 return;
@@ -184,7 +184,7 @@ const to = document.getElementById('rpt-jobs-to').value;
 const el = document.getElementById('rpt-jobs-content');
 el.innerHTML = '<div style="text-align:center;padding:20px;color:#6b7280">กำลังโหลด...</div>';
 try {
-const res = await callGas('getDashboardBundle', {});
+const res = await callApi('getDashboardBundle', {});
 if (!res || !res.success) {
 el.innerHTML = '<div style="text-align:center;padding:30px;color:#6b7280">ไม่พบข้อมูล</div>';
 return;
@@ -233,7 +233,7 @@ const to = document.getElementById('rpt-bill-to').value;
 const el = document.getElementById('rpt-bill-content');
 el.innerHTML = '<div style="text-align:center;padding:20px;color:#6b7280">กำลังโหลด...</div>';
 try {
-const res = await callGas('getReportData', { date_from: from, date_to: to });
+const res = await callApi('getReportData', { date_from: from, date_to: to });
 if (!res || !res.success) {
 el.innerHTML = '<div style="text-align:center;padding:30px;color:#6b7280">ไม่พบข้อมูล</div>';
 return;
@@ -284,7 +284,7 @@ const type = document.getElementById('rpt-inv-type').value;
 const el = document.getElementById('rpt-inv-content');
 el.innerHTML = '<div style="text-align:center;padding:20px;color:#6b7280">กำลังโหลด...</div>';
 try {
-const res = await callGas('inventoryOverview', {});
+const res = await callApi('inventoryOverview', {});
 if (!res || !res.success || !res.stock) {
 el.innerHTML = '<div style="text-align:center;padding:30px;color:#6b7280">ไม่พบข้อมูล</div>';
 return;

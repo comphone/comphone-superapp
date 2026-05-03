@@ -546,8 +546,8 @@ function showToast(msg, type = 'info', duration = 3500) {
 }
 
 // Migrated: uses api_client.js cachedCallApi() for built-in caching + auth
-// Backwards-compatible alias for existing callGas() references
-async function callGas(action, payload = {}, force = false) {
+// Backwards-compatible alias for existing callApi() references
+async function callApi(action, payload = {}, force = false) {
   return cachedCallApi(action, payload, COMPHONE_CACHE_TTL, force);
 }
 

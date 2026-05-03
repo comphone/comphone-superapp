@@ -311,7 +311,7 @@ function showToast(message, type = 'info') {
 }
 
 // GAS API call helper - Use callApi() as per Rule 1 in api_client.js
-async function callGas(action, payload = {}) {
+async function callApi(action, payload = {}) {
   // callApi() handles authentication token automatically
   if (typeof callApi === 'function') {
     return callApi(action, payload);

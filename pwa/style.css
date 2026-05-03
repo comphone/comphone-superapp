@@ -60,6 +60,20 @@ html, body {
   --cp-border: var(--border);
   --cp-primary: var(--primary);
 
+  /* ═══ HYPER-GLASSMORPHISM — Deep Glass CSS Variables ═══ */
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --glass-blur: blur(16px);
+  --gradient-cyan: linear-gradient(135deg, #00d4ff, #0099cc);
+  --gradient-purple: linear-gradient(135deg, #a855f7, #7c3aed);
+  --gradient-border: linear-gradient(135deg, #00d4ff, #a855f7);
+  --spatial-depth-1: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --spatial-depth-2: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --spatial-depth-3: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
   /* Shadows */
   --shadow-sm:  0 1px 2px rgba(15, 23, 42, 0.05);
   --shadow:     0 4px 12px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
@@ -1059,3 +1073,206 @@ html, body {
 .text-primary { color: var(--primary) !important; }
 .text-success { color: var(--success) !important; }
 .text-danger { color: var(--danger) !important; }
+
+/* ═══════════════════════════════════════════════════════════════
+   HYPER-GLASSMORPHISM — Glass Card Component
+   ═══════════════════════════════════════════════════════════════ */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: var(--glass-shadow);
+  transition: var(--transition-smooth);
+}
+.glass-card:hover {
+  box-shadow: var(--spatial-depth-3);
+  transform: translateY(-2px);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HYPER-GLASSMORPHISM — Gradient Border Effect
+   ═══════════════════════════════════════════════════════════════ */
+.gradient-border {
+  position: relative;
+  border: none;
+}
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: var(--gradient-border);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HYPER-GLASSMORPHISM — Micro-interactions
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Button hover ripple */
+.btn-glass {
+  position: relative;
+  overflow: hidden;
+  transition: var(--transition-smooth);
+}
+.btn-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--gradient-border);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.btn-glass:hover::after {
+  opacity: 0.1;
+}
+
+/* Scale on interactive elements */
+.kpi-card, .action-btn, .nav-item {
+  transition: var(--transition-smooth);
+}
+.kpi-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--spatial-depth-3);
+}
+.action-btn:active {
+  transform: scale(0.95);
+}
+
+/* Fade-in animation */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-in {
+  animation: fadeSlideUp 0.5s ease-out forwards;
+}
+
+/* ═══ Apply glass-card to existing section-card & stat-card ═══ */
+.section-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  transition: var(--transition-smooth);
+}
+.section-card:hover {
+  box-shadow: var(--spatial-depth-3);
+}
+
+.stat-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  transition: var(--transition-smooth);
+}
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--spatial-depth-3);
+}
+
+/* ═══ Glass-enhanced mini chart & kudos cards ═══ */
+.mini-chart-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  transition: var(--transition-smooth);
+}
+.mini-chart-card:hover {
+  box-shadow: var(--spatial-depth-3);
+  transform: translateY(-2px);
+}
+
+/* ═══ Profile section glass ═══ */
+.profile-section {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  transition: var(--transition-smooth);
+}
+
+/* ═══ QA button glass enhancement ═══ */
+.qa-btn-item {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  transition: var(--transition-smooth);
+}
+.qa-btn-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--spatial-depth-3);
+  border-color: var(--primary-light);
+}
+
+/* ═══ More menu item glass ═══ */
+.more-menu-item {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  transition: var(--transition-smooth);
+}
+.more-menu-item:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary-light);
+  box-shadow: var(--spatial-depth-3);
+}
+
+/* ═══ Bottom nav glass ═══ */
+.bottom-nav-bar {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-top: 1px solid var(--glass-border);
+  box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.06);
+}
+
+/* ═══ Job card glass ═══ */
+.job-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  transition: var(--transition-smooth);
+}
+.job-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--spatial-depth-3);
+}
+
+/* ═══ Filter tab glass ═══ */
+.filter-tab {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  transition: var(--transition-smooth);
+}
+.filter-tab:hover {
+  border-color: var(--primary-light);
+  box-shadow: var(--spatial-depth-2);
+}
+
+/* ═══ Staggered animation for page load ═══ */
+.animate-in-delay-1 { animation-delay: 0.1s; opacity: 0; }
+.animate-in-delay-2 { animation-delay: 0.2s; opacity: 0; }
+.animate-in-delay-3 { animation-delay: 0.3s; opacity: 0; }
+.animate-in-delay-4 { animation-delay: 0.4s; opacity: 0; }

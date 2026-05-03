@@ -103,7 +103,7 @@ function renderBillingSection(data) {
 // ===========================================================
 async function _listBillings() {
   try {
-    const res = await callGas('listBillings', {});
+    const res = await callApi('listBillings', {});
     const tbody = document.getElementById('billing-tbody');
     if (!tbody) return; // section was replaced
     if (!res || !res.success) {
@@ -130,7 +130,7 @@ async function _showBillingDetail(jobId) {
   modal.innerHTML = '<div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;"><div style="background:#fff;border-radius:16px;padding:32px;max-width:600px;width:90%;max-height:85vh;overflow-y:auto;"><p style="text-align:center;color:#6b7280;">กำลังโหลด...</p></div></div>';
 
   try {
-    const res = await callGas('getBilling', { job_id: jobId });
+    const res = await callApi('getBilling', { job_id: jobId });
     if (!res || !res.success) {
       modal.innerHTML = '';
       alert('ไม่พบข้อมูลบิล');
@@ -300,7 +300,7 @@ async function _doCreateBilling() {
   btn.textContent = '⏳ กำลังสร้าง...';
 
   try {
-    const res = await callGas('createBilling', {
+    const res = await callApi('createBilling', {
       job_id: jobId,
       parts: { description: partsDesc, cost: partsCost },
       labor: { cost: laborCost, discount: discount, notes: notes }
@@ -332,7 +332,7 @@ async function _doMarkPaid(jobId) {
   const balanceDue = b ? Number(b.Balance_Due || 0) : 0;
 
   try {
-    const res = await callGas('markBillingPaid', {
+    const res = await callApi('markBillingPaid', {
       job_id: jobId,
       amount_paid: balanceDue,
       payment_method: 'cash'
@@ -356,7 +356,7 @@ async function _showPromptPayQR(jobId) {
   const modal = document.getElementById('billing-modal');
 
   try {
-    const res = await callGas('generatePromptPayQR', { job_id: jobId });
+    const res = await callApi('generatePromptPayQR', { job_id: jobId });
     if (!res || !res.success) {
       alert('ไม่สามารถสร้าง QR ได้');
       return;

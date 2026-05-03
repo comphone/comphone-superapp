@@ -19,7 +19,7 @@ async function renderInventorySection(data) {
 
   try {
     // Fetch real inventory data from backend
-    const invData = await callGas('inventoryOverview');
+    const invData = await callApi('inventoryOverview');
     _inventoryData = invData;
     _renderInventoryUI(invData);
   } catch(e) {
@@ -217,10 +217,10 @@ function _filterInventory() {
 // === ITEM DETAIL ===
 async function _showItemDetail(itemCode) {
   try {
-    const d = await callGas('getInventoryItemDetail', {item_code: itemCode});
+    const d = await callApi('getInventoryItemDetail', {item_code: itemCode});
     if(!d.success) { alert(d.error||'ไม่พบสินค้า'); return; }
     const i = d.item;
-    const hist = await callGas('getStockMovementHistory', {item_code: itemCode, limit: 20});
+    const hist = await callApi('getStockMovementHistory', {item_code: itemCode, limit: 20});
     const movements = hist.items || [];
 
     let modalHtml = `
@@ -324,7 +324,7 @@ async function _doTransfer(code) {
   if(from === to) { resEl.style.display='block'; resEl.innerHTML='<span style="color:#ef4444;font-size:12px">ต้นทางและปลายทางต้องไม่เหมือนกัน</span>'; return; }
   try {
     resEl.style.display='block'; resEl.innerHTML='<span style="color:#6b7280;font-size:12px">กำลังโอน...</span>';
-    const r = await callGas('transferStock', {from_location:from, to_location:to, item_code:code, qty:qty, job_id:jobId, changed_by:'PC Dashboard'});
+    const r = await callApi('transferStock', {from_location:from, to_location:to, item_code:code, qty:qty, job_id:jobId, changed_by:'PC Dashboard'});
     if(r.success) {
       resEl.innerHTML = `<span style="color:#059669;font-size:12px">✅ โอนสำเร็จ: ${r.item_name||code} ×${qty} → ${to}</span>`;
       setTimeout(()=>{ document.getElementById('inv-modal-overlay').remove(); loadSection('inventory'); }, 1200);
@@ -395,7 +395,7 @@ async function _doAddItem() {
   const resEl = document.getElementById('add-result');
   try {
     resEl.style.display='block'; resEl.innerHTML='<span style="color:#6b7280;font-size:12px">กำลังเพิ่ม...</span>';
-    const r = await callGas('addInventoryItem', {
+    const r = await callApi('addInventoryItem', {
       item_code: code, item_name: name,
       qty: parseInt(document.getElementById('add-qty').value)||0,
       cost: parseFloat(document.getElementById('add-cost').value)||0,
@@ -417,7 +417,7 @@ async function _doAddItem() {
 // === EDIT ITEM ===
 async function _showEditItemModal(code) {
   try {
-    const d = await callGas('getInventoryItemDetail', {item_code: code});
+    const d = await callApi('getInventoryItemDetail', {item_code: code});
     if(!d.success) { alert(d.error||'ไม่พบสินค้า'); return; }
     const i = d.item;
     const m = `<div id="inv-modal-overlay" onclick="this.remove()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center">
@@ -471,7 +471,7 @@ async function _doEditItem(code) {
   const resEl = document.getElementById('ed-result');
   try {
     resEl.style.display='block'; resEl.innerHTML='<span style="color:#6b7280;font-size:12px">กำลังบันทึก...</span>';
-    const r = await callGas('updateInventoryItem', {
+    const r = await callApi('updateInventoryItem', {
       item_code: code,
       item_name: document.getElementById('ed-name').value,
       qty: parseInt(document.getElementById('ed-qty').value),
@@ -493,7 +493,7 @@ async function _doEditItem(code) {
 async function _doDeleteItem(code) {
   if(!confirm(`ลบสินค้า ${code}? การดำเนินการนี้ไม่สามารถย้อนกลับได้`)) return;
   try {
-    const r = await callGas('deleteInventoryItem', {item_code: code, deleted_by: 'PC Dashboard'});
+    const r = await callApi('deleteInventoryItem', {item_code: code, deleted_by: 'PC Dashboard'});
     if(r.success) {
       document.getElementById('inv-modal-overlay').remove();
       loadSection('inventory');
@@ -550,7 +550,7 @@ async function _doCreatePO() {
   if(poItems.length === 0) { resEl.style.display='block'; resEl.innerHTML='<span style="color:#ef4444;font-size:12px">เลือกอย่างน้อย 1 รายการ</span>'; return; }
   try {
     resEl.style.display='block'; resEl.innerHTML='<span style="color:#6b7280;font-size:12px">กำลังสร้าง...</span>';
-    const r = await callGas('createPurchaseOrder', {items: poItems, supplier: supplier||'TBD', notes: 'Auto from low-stock alert'});
+    const r = await callApi('createPurchaseOrder', {items: poItems, supplier: supplier||'TBD', notes: 'Auto from low-stock alert'});
     if(r.success) {
       resEl.innerHTML = `<span style="color:#059669;font-size:12px">✅ สร้าง PO สำเร็จ: ${r.po_id} (${r.total_items} รายการ)</span>`;
       setTimeout(()=>{ document.getElementById('inv-modal-overlay').remove(); loadSection('po'); }, 1500);
@@ -591,7 +591,7 @@ async function _doBarcodeLookup() {
   const resEl = document.getElementById('scan-result');
   try {
     resEl.style.display='block'; resEl.innerHTML='<span style="color:#6b7280;font-size:12px">กำลังค้นหา...</span>';
-    const r = await callGas('barcodeLookup', {barcode: barcode});
+    const r = await callApi('barcodeLookup', {barcode: barcode});
     if(r && r.found) {
       const alert = r.alert ? '⚠️ สต็อกต่ำ' : '✅ ปกติ';
       resEl.innerHTML = `

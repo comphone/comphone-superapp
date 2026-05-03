@@ -12,12 +12,12 @@ async function renderCRMSection(data) {
     </div>`;
 
   try {
-    const custData = await callGas('listCustomers');
+    const custData = await callApi('listCustomers');
     const customers = custData.customers || [];
-    const statsData = await callGas('getCustomerListWithStats', {filter:'all'}).catch(()=>({customers:[]}));
+    const statsData = await callApi('getCustomerListWithStats', {filter:'all'}).catch(()=>({customers:[]}));
     const stats = statsData.customers || [];
     const overdue = stats.filter(c => c.overdue);
-    const metrics = await callGas('getCRMMetrics').catch(()=>({}));
+    const metrics = await callApi('getCRMMetrics').catch(()=>({}));
 
     // Merge stats into customers
     const statsMap = {};
@@ -180,7 +180,7 @@ function _filterCRM() {
 async function _showCustomerDetail(id, name) {
   try {
     const lookup = id ? {customer_id: id} : {customer_name: name};
-    const d = await callGas('getCustomerHistoryFull', lookup);
+    const d = await callApi('getCustomerHistoryFull', lookup);
     if(!d || !d.success) { alert(d?.error||'ไม่พบข้อมูล'); return; }
     const cust = d.customer || {};
     const events = d.events || [];
@@ -273,7 +273,7 @@ async function _doAddCustomer() {
   const resEl = document.getElementById('crm-add-result');
   try {
     resEl.style.display='block'; resEl.innerHTML='<span style="color:#6b7280;font-size:12px">กำลังเพิ่ม...</span>';
-    const r = await callGas('createCustomer', {
+    const r = await callApi('createCustomer', {
       customer_name: name,
       phone: document.getElementById('crm-add-phone').value,
       customer_type: document.getElementById('crm-add-type').value,
@@ -292,7 +292,7 @@ async function _doAddCustomer() {
 // === EDIT CUSTOMER ===
 async function _showEditCustomerModal(id) {
   try {
-    const d = await callGas('getCustomer', {customer_id: id});
+    const d = await callApi('getCustomer', {customer_id: id});
     if(!d || !d.success) { alert(d?.error||'ไม่พบลูกค้า'); return; }
     const c = d.customer;
     const m = `<div id="crm-modal-overlay" onclick="this.remove()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center">
@@ -341,7 +341,7 @@ async function _doEditCustomer(id) {
   const resEl = document.getElementById('crm-ed-result');
   try {
     resEl.style.display='block'; resEl.innerHTML='<span style="color:#6b7280;font-size:12px">กำลังบันทึก...</span>';
-    const r = await callGas('updateCustomer', {
+    const r = await callApi('updateCustomer', {
       customer_id: id,
       customer_name: document.getElementById('crm-ed-name').value,
       phone: document.getElementById('crm-ed-phone').value,
@@ -387,7 +387,7 @@ async function _doScheduleFollowUp(id, name) {
   const resEl = document.getElementById('fu-result');
   try {
     resEl.style.display='block'; resEl.innerHTML='<span style="color:#6b7280;font-size:12px">กำลังบันทึก...</span>';
-    const r = await callGas('getCRMFollowUpSchedule', {
+    const r = await callApi('getCRMFollowUpSchedule', {
       customer_id: id, customer_name: name,
       scheduled_date: document.getElementById('fu-date').value,
       note: document.getElementById('fu-note').value,
