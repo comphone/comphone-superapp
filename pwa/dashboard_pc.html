@@ -340,8 +340,13 @@ display: flex; align-items: center; justify-content: center;
 font-family: 'Inter', sans-serif;
 }
 #login-overlay .login-card {
-background: #fff; border-radius: 20px; padding: 40px 36px;
-width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+background: var(--cp-glass-bg, rgba(255, 255, 255, 0.65));
+backdrop-filter: var(--cp-glass-blur, blur(16px));
+-webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
+border: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
+border-radius: 20px; padding: 40px 36px;
+width: 100%; max-width: 380px;
+box-shadow: var(--cp-spatial-depth-3, 0 8px 32px rgba(0, 0, 0, 0.12));
 text-align: center;
 }
 #login-overlay .login-logo { font-size: 40px; margin-bottom: 8px; }
@@ -482,7 +487,7 @@ color: #ef4444; font-size: 13px; margin-top: 10px; min-height: 20px;
 </a>
 </div>
 <!-- CONTENT -->
-<div class="content" id="main-content">
+<div class="content cp-animate-in" id="main-content">
 <div class="loading-state">
 <div class="spinner-pc"></div>
 <p>กำลังโหลดข้อมูล...</p>

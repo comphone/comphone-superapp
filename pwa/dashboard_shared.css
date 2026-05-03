@@ -196,15 +196,18 @@
    ═══════════════════════════════════════════════════════ */
 
 .cp-card {
-  background: var(--cp-card-bg);
-  border: 1px solid var(--cp-card-border);
+  background: var(--cp-glass-bg);
+  backdrop-filter: var(--cp-glass-blur);
+  -webkit-backdrop-filter: var(--cp-glass-blur);
+  border: 1px solid var(--cp-glass-border);
   border-radius: var(--cp-radius-md);
   padding: var(--cp-space-md);
-  box-shadow: var(--cp-shadow-sm);
-  transition: transform var(--cp-transition), box-shadow var(--cp-transition);
+  box-shadow: var(--cp-glass-shadow);
+  transition: var(--cp-transition-smooth);
 }
 .cp-card:hover {
-  box-shadow: var(--cp-shadow);
+  box-shadow: var(--cp-spatial-depth-3);
+  transform: translateY(-2px);
 }
 .cp-card-title {
   font-size: 0.85rem;
@@ -236,17 +239,19 @@
 
 /* ── KPI Card (enhanced) ────────────────────────────── */
 .cp-kpi-card {
-  background: var(--cp-card-bg);
-  border: 1px solid var(--cp-card-border);
+  background: var(--cp-glass-bg);
+  backdrop-filter: var(--cp-glass-blur);
+  -webkit-backdrop-filter: var(--cp-glass-blur);
+  border: 1px solid var(--cp-glass-border);
   border-radius: var(--cp-radius-md);
   padding: var(--cp-space-md) var(--cp-space-lg);
   position: relative;
-  transition: transform var(--cp-transition), box-shadow var(--cp-transition);
+  transition: var(--cp-transition-smooth);
   overflow: hidden;
 }
 .cp-kpi-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--cp-shadow);
+  transform: translateY(-4px);
+  box-shadow: var(--cp-spatial-depth-3);
 }
 .cp-kpi-card .cp-kpi-icon {
   width: 40px;
@@ -286,18 +291,27 @@
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  border: 1px solid var(--cp-border);
+  border: 1px solid var(--cp-glass-border);
   border-radius: var(--cp-radius-sm);
-  background: var(--cp-bg3);
+  background: var(--cp-glass-bg);
+  backdrop-filter: var(--cp-glass-blur);
+  -webkit-backdrop-filter: var(--cp-glass-blur);
   color: var(--cp-text);
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background var(--cp-transition), border-color var(--cp-transition);
+  transition: var(--cp-transition-smooth);
   text-decoration: none;
+  position: relative;
+  overflow: hidden;
 }
 .cp-btn:hover {
   background: var(--cp-hover-bg);
+  transform: translateY(-1px);
+  box-shadow: var(--cp-spatial-depth-2);
+}
+.cp-btn:active {
+  transform: scale(0.95);
 }
 .cp-btn-primary {
   background: var(--cp-blue);
