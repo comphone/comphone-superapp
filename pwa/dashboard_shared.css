@@ -77,6 +77,20 @@
   --cp-hover-bg: #f1f5f9;
   --cp-shadow:   0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
   --cp-shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+
+  /* ═══ Hyper-Glassmorphism Tokens (Light) ═══ */
+  --cp-glass-bg: rgba(255, 255, 255, 0.65);
+  --cp-glass-border: rgba(255, 255, 255, 0.3);
+  --cp-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --cp-glass-blur: blur(16px);
+  --cp-gradient-cyan: linear-gradient(135deg, #00d4ff, #0099cc);
+  --cp-gradient-purple: linear-gradient(135deg, #a855f7, #7c3aed);
+  --cp-gradient-border: linear-gradient(135deg, #00d4ff, #a855f7);
+  --cp-spatial-depth-1: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --cp-spatial-depth-2: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --cp-spatial-depth-3: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --cp-transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --cp-transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -595,3 +609,90 @@
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ═══════════════════════════════════════════════════════
+   §14  HYPER-GLASSMORPHISM COMPONENTS
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Glass Card ─────────────────────────────────────── */
+.cp-glass-card {
+  background: var(--cp-glass-bg);
+  backdrop-filter: var(--cp-glass-blur);
+  -webkit-backdrop-filter: var(--cp-glass-blur);
+  border: 1px solid var(--cp-glass-border);
+  border-radius: var(--cp-radius-lg);
+  box-shadow: var(--cp-glass-shadow);
+  transition: var(--cp-transition-smooth);
+}
+.cp-glass-card:hover {
+  box-shadow: var(--cp-spatial-depth-3);
+  transform: translateY(-2px);
+}
+
+/* ── Gradient Border ────────────────────────────────── */
+.cp-gradient-border {
+  position: relative;
+  border: none;
+}
+.cp-gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: var(--cp-gradient-border);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ── Glass Button ───────────────────────────────────── */
+.cp-btn-glass {
+  position: relative;
+  overflow: hidden;
+  transition: var(--cp-transition-smooth);
+  background: var(--cp-glass-bg);
+  backdrop-filter: var(--cp-glass-blur);
+  -webkit-backdrop-filter: var(--cp-glass-blur);
+  border: 1px solid var(--cp-glass-border);
+  border-radius: var(--cp-radius-md);
+}
+.cp-btn-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--cp-gradient-border);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.cp-btn-glass:hover::after {
+  opacity: 0.1;
+}
+
+/* ── Glass-enhanced KPI Card ────────────────────────── */
+.cp-kpi-card.glass {
+  background: var(--cp-glass-bg);
+  backdrop-filter: var(--cp-glass-blur);
+  -webkit-backdrop-filter: var(--cp-glass-blur);
+  border: 1px solid var(--cp-glass-border);
+  box-shadow: var(--cp-glass-shadow);
+  transition: var(--cp-transition-smooth);
+}
+.cp-kpi-card.glass:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--cp-spatial-depth-3);
+}
+
+/* ── Fade-slide-up animation ────────────────────────── */
+@keyframes cp-fadeSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.cp-animate-in {
+  animation: cp-fadeSlideUp 0.5s ease-out forwards;
+}
+.cp-animate-in-d1 { animation-delay: 0.1s; opacity: 0; }
+.cp-animate-in-d2 { animation-delay: 0.2s; opacity: 0; }
+.cp-animate-in-d3 { animation-delay: 0.3s; opacity: 0; }
+.cp-animate-in-d4 { animation-delay: 0.4s; opacity: 0; }
