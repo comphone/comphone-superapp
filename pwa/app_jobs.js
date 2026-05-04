@@ -63,7 +63,7 @@ function filterJobs(val) {
 
 function filterByStatus(status, btn) {
   document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
+  if (btn) btn.classList.add('active');
   renderJobsPage(status);
 }
 
@@ -122,7 +122,8 @@ function showJobDetail(jobId) {
       </button>` : ''}
     </div>
   `;
-  document.getElementById('modal-job').classList.remove('hidden');
+  const modalJob = document.getElementById('modal-job');
+  if (modalJob) modalJob.classList.remove('hidden');
   // เพิ่ม event listener ปุ่มรับประกัน (ถ้ามี)
   const warrantyBtn = document.getElementById('btn-create-warranty-' + jobId);
   if (warrantyBtn && typeof createWarrantyModal === 'function') {
@@ -134,6 +135,7 @@ function showJobDetail(jobId) {
 }
 
 function closeModal(id) {
-  document.getElementById(id).classList.add('hidden');
+  const modal = document.getElementById(id);
+  if (modal) modal.classList.add('hidden');
 }
 
