@@ -180,7 +180,7 @@ function renderSettingsSection() {  // [PATCH] เปลี่ยนเป็น
       </div>
     </div>`;
 
-  document.getElementById('main-content').innerHTML = html;
+  return html;
 }
 
 function _clearAllCaches() {
