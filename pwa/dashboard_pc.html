@@ -731,7 +731,7 @@ function loadSection(sectionName) {
     'backup':     () => { if (typeof renderBackupSection === 'function') renderBackupSection(); else main.innerHTML = '<h3>Backup</h3><p>Coming soon...</p>' },
     'crm':        () => { if (typeof renderCRMSection === 'function') renderCRMSection(data); else main.innerHTML = '<h3>CRM</h3><p>Coming soon...</p>' },
     'attendance': () => { if (typeof renderAttendanceSection === 'function') { const c = document.getElementById('attendance-content') || document.getElementById('section-attendance'); if (c) c.innerHTML = renderAttendanceSection(data); } else main.innerHTML = '<h3>ลงเวลาทำงาน</h3><p>Coming soon...</p>' },
-    'settings':   () => { renderSettingsSection(); },
+    'settings':   () => { if (typeof renderSettingsSection === 'function') { const c = document.getElementById('settings-content') || document.getElementById('section-settings'); if (c) c.innerHTML = renderSettingsSection(); } else main.innerHTML = '<h3>Settings</h3><p>Coming soon...</p>'; },
   };
   const renderer = renderers[sectionName];
   if (renderer) {
