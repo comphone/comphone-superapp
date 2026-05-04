@@ -56,15 +56,8 @@ async function _showFollowUpSchedule() {
   }
 }
 
-async function renderSettingsSection() {
-  document.getElementById('main-content').innerHTML = `
-    <div class="loading-state">
-      <div class="spinner-pc"></div>
-      <p>กำลังโหลดการตั้งค่า...</p>
-    </div>`;
-
+function renderSettingsSection() {  // [PATCH] เปลี่ยนเป็น synchronous (ใช้ mock data แล้ว ไม่ต้อง async)
   // [PATCH] ใช้ mock data โดยตรง (เนื่องจากระบบอยู่ใน mock mode 100%)
-  // หากเชื่อมต่อ API จริงแล้ว ให้แทนที่ด้วย callApi ตามเดิม
   const guardResp = { total_properties: 45, max_properties: 50, status: 'healthy' };
   const healthResp = { status: 'healthy', elapsed_ms: 120, success: true };
   const usersResp = { users: [
