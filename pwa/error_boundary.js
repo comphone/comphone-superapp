@@ -44,7 +44,7 @@ window.onerror = function(message, source, lineno, colno, error) {
 
   // แสดง toast เฉพาะ error ที่ user เห็นได้
   if (!message.includes('ResizeObserver') && !message.includes('Script error')) {
-    _showErrorToast('⚠️ เกิดข้อผิดพลาด — ข้อมูลถูกบันทึกแล้ว');
+    _showErrorToast('⚠️ ' + (errInfo.message || 'เกิดข้อผิดพลาด'));
   }
 
   return false; // ไม่ suppress default behavior
