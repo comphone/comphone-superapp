@@ -19,6 +19,7 @@ function loadDashboardPage() {
   callApi({ action: 'getDashboardData' }).then(res => {
     if (res && (res.success || res.totalJobs !== undefined)) {
       DASHBOARD_DATA = res;
+      window.DASHBOARD_DATA = res;  // Sync to global for section renderers
       renderDashboard(res);
     } else {
       renderDashboardError(res || { error: 'Dashboard API returned an unsuccessful response' });

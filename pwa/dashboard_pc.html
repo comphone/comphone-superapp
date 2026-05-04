@@ -628,9 +628,13 @@ color: #ef4444; font-size: 13px; margin-top: 10px; min-height: 20px;
 <script src="dashboard_pc_core.js?v=5.13.0-phase36&t=20260504_1100"></script>
 <!-- Core functions moved to dashboard_pc_core.js -->
 <script>
-// Fallback: define core functions inline if external script fails
+// Fallback: define core functions + globals inline if external script fails
 if (typeof _doLogin === 'undefined') {
   console.warn('[Dashboard] Core functions not found in external script, defining inline...');
+  
+  // Global state
+  window.DASHBOARD_DATA = null;
+  window.CHARTS = {};
   function _doLogin(event) {
     event.preventDefault();
     console.log('[Dashboard] Attempting login...');
