@@ -1,5 +1,5 @@
 /**
- * section_warranty.js — COMPHONE SUPER APP v5.13.8
+ * section_warranty.js — COMPHONE SUPER APP v5.14.5-phase37
  * Warranty Section (รับประกัน)
  * Status: Active — Uses real API data (delegates to warranty_section.js if available)
  */
@@ -133,4 +133,4 @@ async function _viewWarrantyDetail(warrantyId) {
   }
 }
 
-console.log('[Warranty] section_warranty.js loaded (v5.13.8 — real API)');
+console.log('[Warranty] section_warranty.js loaded (v5.14.5-phase37 — real API)');

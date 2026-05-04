@@ -1,5 +1,5 @@
 /**
- * section_attendance.js — COMPHONE SUPER APP v5.13.8
+ * section_attendance.js — COMPHONE SUPER APP v5.14.5-phase37
  * Attendance Section (ลงเวลาทำงาน)
  * Status: Prototype (coming soon → active development)
  */
@@ -61,4 +61,4 @@ function renderAttendanceSection(data) {
   `;
 }
 
-console.log('[Attendance] section_attendance.js loaded (v5.13.8)');
+console.log('[Attendance] section_attendance.js loaded (v5.14.5-phase37)');

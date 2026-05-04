@@ -1,7 +1,7 @@
 /**
  * dashboard_pc_core.js — Core PC Dashboard functions
  * Extracted from dashboard_pc.html inline script #3
- * Version: v5.13.0-phase36
+ * Version: v5.14.5-phase37
  * Date: 2026-05-04
  *
  * Functions: getGAS_URL, updatePcVersionBadge, loadSection, loadDashboard, _doLogin

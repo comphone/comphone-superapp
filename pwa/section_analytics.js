@@ -1,5 +1,5 @@
 /**
- * section_analytics.js — COMPHONE SUPER APP v5.13.8
+ * section_analytics.js — COMPHONE SUPER APP v5.14.5-phase37
  * Analytics Section (Analytics)
  * Status: Active — Uses real API data
  */
@@ -165,4 +165,4 @@ async function renderAnalyticsSection(data) {
   }
 }
 
-console.log('[Analytics] section_analytics.js loaded (v5.13.8 — real API)');
+console.log('[Analytics] section_analytics.js loaded (v5.14.5-phase37 — real API)');
