@@ -1,5 +1,5 @@
 /**
- * section_billing.js — COMPHONE SUPER APP v5.13.4
+ * section_billing.js — COMPHONE SUPER APP v5.14.5-phase37
  * Billing Section (ใบเสร็จ/วางบิล)
  * Status: Prototype (coming soon → active development)
  */
@@ -59,4 +59,4 @@ function renderBillingSection(data) {
   `;
 }
 
-console.log('[Billing] section_billing.js loaded (v5.13.4)');
+console.log('[Billing] section_billing.js loaded (v5.14.5-phase37)');
