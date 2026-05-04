@@ -210,7 +210,3 @@ function _copyTaxPage() {
     setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy'; }, 1500);
   });
 }
-
-// Mobile PWA alias — called by app.js goPage("tax")
-function loadTaxPage() { renderTaxSection(); }
-

@@ -61,6 +61,8 @@ var MODULE_ROUTER = {
   'createCustomer': function(p) { return createCustomer(p); },
   'updateCustomer': function(p) { return updateCustomer(p); },
   'getCustomer':    function(p) { return getCustomer(p); },
+  'getCustomerHistory':  function(p) { return getCustomerHistory(p); },
+  'getCustomerReceipts': function(p) { return getCustomerReceipts(p); },
   'listCustomers':  function(p) { return listCustomers(p); },
 
   // Reports
@@ -372,6 +374,16 @@ var MODULE_ROUTER = {
   'getDynamicThreshold':   function(p) { return { success: true, type: p.type, threshold: getDynamicThreshold(p.type || 'QC') }; },
   'buildAdaptivePrompt':   function(p) { return { success: true, prompt: buildAdaptivePrompt(p.type || 'QC', p.input || {}) }; },
   'runBackup':             function(p) { return backupToDrive(); },
+  // ── Missing actions from Router.gs ──────────────────────────────
+  'checkAccountingConnection': function(p) { return checkAccountingConnection(p); },
+  'checkBackupHealth': function(p) { return checkBackupHealth(p); },
+  'createBackup': function(p) { return createBackup(p); },
+  'exportBillToAccounting': function(p) { return exportBillToAccounting(p); },
+  'getHistoricalMetrics': function(p) { return getHistoricalMetrics(p); },
+  'getPerformanceMetrics': function(p) { return getPerformanceMetrics(p); },
+  'guardstatus': function(p) { return getGuardStatus(p); },  // lowercase variant
+  'listBackups': function(p) { return listBackups(p); },
+  'restoreBackup': function(p) { return restoreBackup(p); },
 };
 
 /**

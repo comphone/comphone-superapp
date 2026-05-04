@@ -326,3 +326,7 @@ doc.setFontSize(9);
 doc.text(`Items: ${data.items.length} | Type: ${data.type}`, pw/2, y, { align: 'center' });
 doc.save(`inventory_report_${new Date().toISOString().split('T')[0]}.pdf`);
 }
+
+// Mobile PWA alias — called by app.js goPage("reports")
+function loadReportsPage() { renderReportModule(); }
+

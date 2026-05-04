@@ -61,6 +61,8 @@ var MODULE_ROUTER = {
   'createCustomer': function(p) { return createCustomer(p); },
   'updateCustomer': function(p) { return updateCustomer(p); },
   'getCustomer':    function(p) { return getCustomer(p); },
+  'getCustomerHistory':  function(p) { return getCustomerHistory(p); },
+  'getCustomerReceipts': function(p) { return getCustomerReceipts(p); },
   'listCustomers':  function(p) { return listCustomers(p); },
 
   // Reports

@@ -1,66 +1,168 @@
 /**
- * section_analytics.js — COMPHONE SUPER APP v5.13.7
+ * section_analytics.js — COMPHONE SUPER APP v5.13.8
  * Analytics Section (Analytics)
- * Status: Prototype (coming soon → active development)
+ * Status: Active — Uses real API data
  */
 
-function renderAnalyticsSection(data) {
+async function renderAnalyticsSection(data) {
   console.log('[Analytics] Rendering analytics section...', data);
-  const analytics = (data && data.analytics) || {
-    visitors: 1250,
-    pageviews: 3400,
-    bounceRate: '32%',
-    avgSession: '4m 12s'
-  };
+  const container = document.getElementById('analytics-content') || document.getElementById('section-analytics') || document.getElementById('main-content');
+  if (!container) return;
 
-  return `
+  // Show loading state first
+  container.innerHTML = `
     <div class="section-header">
       <h2><i class="bi bi-graph-up"></i> Analytics</h2>
-      <button class="btn btn-sm btn-primary" onclick="alert('Add analytics widget — coming soon')">
-        <i class="bi bi-plus"></i> เพิ่ม Widget
+      <button class="btn btn-sm btn-primary" onclick="renderAnalyticsSection()">
+        <i class="bi bi-arrow-clockwise"></i> รีเฟรช
       </button>
     </div>
-    <div class="row">
-      <div class="col-md-3">
-        <div class="card-box">
-          <h3>ผู้เยี่ยมชม</h3>
-          <h2>${analytics.visitors.toLocaleString()}</h2>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card-box">
-          <h3>การเข้าชมหน้า</h3>
-          <h2>${analytics.pageviews.toLocaleString()}</h2>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card-box">
-          <h3>อัตราการออก</h3>
-          <h2>${analytics.bounceRate}</h2>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card-box">
-          <h3>เวลาเฉลี่ยต่อเซสชัน</h3>
-          <h2>${analytics.avgSession}</h2>
-        </div>
-      </div>
-    </div>
-    <div class="row mt-4">
-      <div class="col-md-12">
-        <div class="card-box">
-          <h3><i class="bi bi-bar-chart"></i> กราฟวิเคราะห์</h3>
-          <p style="color:#9ca3af;text-align:center;padding:40px">
-            ⏳ กราฟ Analytics กำลังพัฒนา...<br>
-            <span style="font-size:0.9em">จะเชื่อมต่อกับ Google Analytics / Facebook Pixel ในอนาคต</span>
-          </p>
-        </div>
-      </div>
-    </div>
-    <p style="color:#9ca3af;margin-top:20px;text-align:center">
-      ⏳ ระบบ Analytics เต็มรูปแบบกำลังพัฒนา...
-    </p>
+    ${loadingState('กำลังโหลดข้อมูล Analytics...')}
   `;
+
+  try {
+    // Fetch real analytics data from backend
+    const res = await callApi('analyzeBusiness', { period: '7d' });
+    let analytics;
+
+    if (res && res.success && res.data) {
+      analytics = res.data;
+    } else {
+      // Fallback: try getDashboardData for basic metrics
+      const dashRes = await callApi('getDashboardData', {});
+      if (dashRes && dashRes.success && dashRes.summary) {
+        analytics = {
+          visitors: dashRes.summary.total_jobs || 0,
+          pageviews: dashRes.summary.completed_jobs || 0,
+          bounceRate: dashRes.summary.revenue ? '—' : '—',
+          avgSession: dashRes.summary.avg_repair_time || '—',
+          alerts: [],
+          recommendations: [],
+          predictions: {}
+        };
+      } else {
+        // No data available — show error state
+        container.innerHTML = `
+          <div class="section-header">
+            <h2><i class="bi bi-graph-up"></i> Analytics</h2>
+            <button class="btn btn-sm btn-primary" onclick="renderAnalyticsSection()">
+              <i class="bi bi-arrow-clockwise"></i> ลองใหม่
+            </button>
+          </div>
+          ${errorState(res?.error || 'ไม่สามารถโหลดข้อมูล Analytics ได้', 'renderAnalyticsSection()')}
+        `;
+        return;
+      }
+    }
+
+    // Extract KPIs from analytics data
+    const visitors = analytics.visitors || analytics.total_jobs || 0;
+    const pageviews = analytics.pageviews || analytics.completed_jobs || 0;
+    const bounceRate = analytics.bounceRate || (analytics.alerts ? analytics.alerts.length + ' แจ้งเตือน' : '—');
+    const avgSession = analytics.avgSession || analytics.avg_repair_time || '—';
+
+    // Build alerts HTML
+    const alerts = analytics.alerts || [];
+    let alertsHtml = '';
+    if (alerts.length > 0) {
+      alertsHtml = `
+        <div class="card-box" style="margin-top:16px">
+          <h3><i class="bi bi-exclamation-triangle" style="color:#d97706"></i> การแจ้งเตือน (${alerts.length})</h3>
+          ${alerts.map(a => `
+            <div style="padding:8px 12px;margin-bottom:6px;background:#fef3c7;border-radius:8px;border-left:4px solid ${a.severity === 'high' ? '#ef4444' : a.severity === 'medium' ? '#d97706' : '#6b7280'}">
+              <strong>${a.title || 'แจ้งเตือน'}</strong>
+              <p style="margin:4px 0 0;font-size:13px;color:#6b7280">${a.message || ''}</p>
+            </div>
+          `).join('')}
+        </div>`;
+    }
+
+    // Build recommendations HTML
+    const recommendations = analytics.recommendations || [];
+    let recsHtml = '';
+    if (recommendations.length > 0) {
+      recsHtml = `
+        <div class="card-box" style="margin-top:16px">
+          <h3><i class="bi bi-lightbulb" style="color:#059669"></i> คำแนะนำ (${recommendations.length})</h3>
+          ${recommendations.map(r => `
+            <div style="padding:8px 12px;margin-bottom:6px;background:#d1fae5;border-radius:8px">
+              <strong>${r.title || 'คำแนะนำ'}</strong>
+              <p style="margin:4px 0 0;font-size:13px;color:#6b7280">${r.message || ''}</p>
+              ${r.impact ? `<span style="font-size:12px;color:#059669">ผลกระทบ: ${r.impact}</span>` : ''}
+            </div>
+          `).join('')}
+        </div>`;
+    }
+
+    // Build predictions HTML
+    const predictions = analytics.predictions || {};
+    let predsHtml = '';
+    if (Object.keys(predictions).length > 0) {
+      predsHtml = `
+        <div class="card-box" style="margin-top:16px">
+          <h3><i class="bi bi-clipboard-data" style="color:#7c3aed"></i> พยากรณ์</h3>
+          <div class="row">
+            ${Object.entries(predictions).map(([key, value]) => `
+              <div class="col-md-3">
+                <div class="card-box" style="text-align:center">
+                  <p style="font-size:13px;color:#6b7280">${key}</p>
+                  <h2 style="color:#7c3aed">${value}</h2>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>`;
+    }
+
+    container.innerHTML = `
+      <div class="section-header">
+        <h2><i class="bi bi-graph-up"></i> Analytics</h2>
+        <button class="btn btn-sm btn-primary" onclick="renderAnalyticsSection()">
+          <i class="bi bi-arrow-clockwise"></i> รีเฟรช
+        </button>
+      </div>
+      <div class="row">
+        <div class="col-md-3">
+          <div class="card-box">
+            <h3>งานทั้งหมด</h3>
+            <h2>${Number(visitors).toLocaleString()}</h2>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card-box">
+            <h3>งานเสร็จ</h3>
+            <h2>${Number(pageviews).toLocaleString()}</h2>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card-box">
+            <h3>แจ้งเตือน</h3>
+            <h2>${bounceRate}</h2>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card-box">
+            <h3>เวลาซ่อมเฉลี่ย</h3>
+            <h2>${avgSession}</h2>
+          </div>
+        </div>
+      </div>
+      ${alertsHtml}
+      ${recsHtml}
+      ${predsHtml}
+    `;
+  } catch (e) {
+    console.error('[Analytics] Error loading data:', e);
+    container.innerHTML = `
+      <div class="section-header">
+        <h2><i class="bi bi-graph-up"></i> Analytics</h2>
+        <button class="btn btn-sm btn-primary" onclick="renderAnalyticsSection()">
+          <i class="bi bi-arrow-clockwise"></i> ลองใหม่
+        </button>
+      </div>
+      ${errorState('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'renderAnalyticsSection()')}
+    `;
+  }
 }
 
-console.log('[Analytics] section_analytics.js loaded (v5.13.7)');
+console.log('[Analytics] section_analytics.js loaded (v5.13.8 — real API)');

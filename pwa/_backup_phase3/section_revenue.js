@@ -1,37 +1,7 @@
 // section_revenue.js — Revenue section extracted from dashboard_pc.html
 // Functions: renderRevenueSection, _exportRevenueCSV
-// v5.13.8: Now fetches data via dedicated API call, falls back to dashboard data
-
-// Cache for revenue data so _exportRevenueCSV can access it
-let _revenueSectionData = null;
 
 async function renderRevenueSection(data) {
-  // If no data passed, fetch from API
-  if (!data || (!data.summary && !data.revenue_by_day)) {
-    // TODO: Backend route 'getRevenueReport' not yet implemented — using getDashboardData as fallback
-    try {
-      const res = await callApi('getDashboardData', {});
-      if (res && res.success) {
-        data = res;
-      } else {
-        const main = document.getElementById('main-content');
-        if (main) {
-          main.innerHTML = errorState(res?.error || 'ไม่สามารถโหลดข้อมูลรายรับได้', 'renderRevenueSection()');
-        }
-        return;
-      }
-    } catch (e) {
-      const main = document.getElementById('main-content');
-      if (main) {
-        main.innerHTML = errorState('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'renderRevenueSection()');
-      }
-      return;
-    }
-  }
-
-  // Store for CSV export
-  _revenueSectionData = data;
-
   const rev = (data.summary || {}).revenue || {};
   const today = Number(rev.today || 0);
   const week = Number(rev.week || 0);
@@ -171,7 +141,7 @@ async function renderRevenueSection(data) {
 }
 
 function _exportRevenueCSV() {
-  const data = _revenueSectionData || (typeof DASHBOARD_DATA !== 'undefined' ? DASHBOARD_DATA : null) || {};
+  const data = DASHBOARD_DATA || {};
   const dailyRev = data.revenue_by_day || [];
   if(!dailyRev.length) { alert('ไม่มีข้อมูลส่งออก'); return; }
   let csv = 'วันที่,รายรับ (฿)\n';
@@ -182,6 +152,3 @@ function _exportRevenueCSV() {
   a.href = url; a.download = `revenue_${new Date().toISOString().split('T')[0]}.csv`;
   a.click(); URL.revokeObjectURL(url);
 }
-
-// Mobile PWA alias — called by app.js goPage("revenue")
-function loadRevenuePage() { renderRevenueSection(); }

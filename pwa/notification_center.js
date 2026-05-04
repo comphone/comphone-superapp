@@ -496,3 +496,7 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ตรวจสอบ badge ทุก 5 นาที */
   setInterval(updateNotifBadge_, 5 * 60 * 1000);
 });
+
+// Mobile PWA alias — called by app.js goPage("notifications")
+function loadNotificationCenter() { showNotificationCenter(); }
+

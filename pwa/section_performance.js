@@ -292,3 +292,7 @@ if (typeof window.SECTION_REGISTRY === 'undefined') {
 window.SECTION_REGISTRY['performance'] = renderPerformanceSection;
 
 console.log('[Performance Section] Loaded');
+
+// Mobile PWA alias — called by app.js goPage("performance")
+function loadPerformancePage() { renderPerformanceSection(); }
+

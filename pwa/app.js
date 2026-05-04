@@ -353,15 +353,37 @@ function goPage(page, btn) {
   }
   if (page === 'reports') {
     if (typeof loadReportsPage === 'function') loadReportsPage();
+    else if (typeof renderReportModule === 'function') renderReportModule();
   }
   if (page === 'customer-portal') {
     if (typeof loadCustomerPortalPage === 'function') loadCustomerPortalPage();
   }
   if (page === 'notifications') {
     if (typeof loadNotificationCenter === 'function') loadNotificationCenter();
+    else if (typeof showNotificationCenter === 'function') showNotificationCenter();
   }
   if (page === 'analytics') {
     if (typeof openAnalyticsSection === 'function') openAnalyticsSection();
+  }
+  if (page === 'billing') {
+    if (typeof loadBillingPage === 'function') loadBillingPage();
+    else if (typeof renderBillingSection === 'function') renderBillingSection();
+  }
+  if (page === 'warranty') {
+    if (typeof loadWarrantyPage === 'function') loadWarrantyPage();
+    else if (typeof renderWarrantySection === 'function') renderWarrantySection();
+  }
+  if (page === 'revenue') {
+    if (typeof loadRevenuePage === 'function') loadRevenuePage();
+    else if (typeof renderRevenueSection === 'function') renderRevenueSection();
+  }
+  if (page === 'tax') {
+    if (typeof loadTaxPage === 'function') loadTaxPage();
+    else if (typeof renderTaxSection === 'function') renderTaxSection();
+  }
+  if (page === 'performance') {
+    if (typeof loadPerformancePage === 'function') loadPerformancePage();
+    else if (typeof renderPerformanceSection === 'function') renderPerformanceSection();
   }
   if (page === 'pos') {
     // POS page is standalone - open in new tab or redirect

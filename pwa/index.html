@@ -52,6 +52,10 @@
 <script src="error_boundary.js?v=5.13.0-phase36&t=20260504_1100"></script>
 <script src="pwa_install.js?v=5.13.0-phase36&t=20260504_1100"></script>
 <script src="push_notifications.js?v=5.13.0-phase36&t=20260504_1100"></script>
+<script src="section_warranty.js?v=5.13.0-phase36&t=20260504_1100"></script>
+<script src="section_revenue.js?v=5.13.0-phase36&t=20260504_1100"></script>
+<script src="section_tax.js?v=5.13.0-phase36&t=20260504_1100"></script>
+<script src="section_performance.js?v=5.13.0-phase36&t=20260504_1100"></script>
 <script src="api_contract.js?v=5.13.0-phase36&t=20260504_1100"></script>
 </head>
 <body>
@@ -383,6 +387,41 @@
 <!-- Content will be rendered by analytics_section.js -->
 <div id="section-content"></div>
 </div>
+<!-- BILLING PAGE -->
+<div id="page-billing" class="page hidden">
+<div class="page-header">
+<h5 data-i18n="Billing"><i class="bi bi-receipt" style="color:#059669"></i> ใบเสร็จ/วางบิล</h5>
+</div>
+<div id="billing-content"></div>
+</div>
+<!-- WARRANTY PAGE -->
+<div id="page-warranty" class="page hidden">
+<div class="page-header">
+<h5 data-i18n="Warranty"><i class="bi bi-shield-check" style="color:#2563eb"></i> รับประกัน</h5>
+</div>
+<div id="warranty-content"></div>
+</div>
+<!-- REVENUE PAGE -->
+<div id="page-revenue" class="page hidden">
+<div class="page-header">
+<h5 data-i18n="Revenue"><i class="bi bi-currency-dollar" style="color:#16a34a"></i> รายรับ</h5>
+</div>
+<div id="revenue-content"></div>
+</div>
+<!-- TAX PAGE -->
+<div id="page-tax" class="page hidden">
+<div class="page-header">
+<h5 data-i18n="Tax"><i class="bi bi-file-earmark-text" style="color:#b45309"></i> ภาษี</h5>
+</div>
+<div id="tax-content"></div>
+</div>
+<!-- PERFORMANCE PAGE -->
+<div id="page-performance" class="page hidden">
+<div class="page-header">
+<h5 data-i18n="Performance"><i class="bi bi-speedometer" style="color:#7c3aed"></i> Performance</h5>
+</div>
+<div id="performance-content"></div>
+</div>
 </div><!-- end pages-container -->
 <!-- FAB -->
 <button id="fab-btn" class="fab-main" data-i18n-title="Add New" onclick="fabAction()">
@@ -452,6 +491,26 @@
 <button class="more-menu-item" id="more-analytics-btn" onclick="navigateFromMore('analytics')">
 <div class="more-menu-icon"><i class="bi bi-pie-chart-fill"></i></div>
 <span>Analytics</span>
+</button>
+<button class="more-menu-item" onclick="navigateFromMore('billing')">
+<div class="more-menu-icon"><i class="bi bi-receipt"></i></div>
+<span data-i18n="Billing">ใบเสร็จ/วางบิล</span>
+</button>
+<button class="more-menu-item" onclick="navigateFromMore('warranty')">
+<div class="more-menu-icon"><i class="bi bi-shield-check"></i></div>
+<span data-i18n="Warranty">รับประกัน</span>
+</button>
+<button class="more-menu-item" onclick="navigateFromMore('revenue')">
+<div class="more-menu-icon"><i class="bi bi-currency-dollar"></i></div>
+<span data-i18n="Revenue">รายรับ</span>
+</button>
+<button class="more-menu-item" onclick="navigateFromMore('tax')">
+<div class="more-menu-icon"><i class="bi bi-file-earmark-text"></i></div>
+<span data-i18n="Tax">ภาษี</span>
+</button>
+<button class="more-menu-item" onclick="navigateFromMore('performance')">
+<div class="more-menu-icon"><i class="bi bi-speedometer"></i></div>
+<span>Performance</span>
 </button>
 <button class="more-menu-item" id="more-admin-btn" style="display:none" onclick="navigateFromMore('admin')">
 <div class="more-menu-icon"><i class="bi bi-shield-fill-check"></i></div>
