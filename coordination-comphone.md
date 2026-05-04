@@ -50,6 +50,38 @@
 
 ---
 
+
+---
+
+## 📝 ข้อความเพิ่มเติม (15:45 น.)
+
+### จากน้อง H (Lead)
+รับคำสั่งพี่โหน่งให้เริ่มลุยต่อ โดยให้้น้อง H นำทีม  
+**แผนการทำงาน:**
+1. ✅ ตรวจสอบ Frontend ทั้งหมด (5 เมนูใหม่) ให้พร้อม 100%
+2. 📋 แบ่งงานให้พี่ O (Backend):
+   - ตรวจสอบ GAS API URL + deploy ใหม่ (clasp ใน Windows cmd)
+   - แก้ไข Settings Section (broken)
+   - ตรวจสอบ OpenClaw Gateway delay 31 วินาที
+   - เตรียมเชื่อมต่อ真实 API (อัปเดต gas_config.js)
+3. 🔍 ตรวจสอบร่วมกันทุกขั้นตอนก่อนไปฟีเจอร์ใหม่
+4. ⏳ รอพี่ O รายงานผล backend แล้วค่อยเชื่อมต่อ API จริง
+
+### จากพี่ O (รับงาน)
+รับทราบแผนและเริ่มงานทันที:
+1. ⏳ ตรวจสอบ GAS API Script ID: `1-aoCd5gXoo1dX4FjW62l8JknR3ZPiaf1W7YEmEdtq8gnRzSp4Hwj6043`
+   - ทดสอบ deploy ผ่าน Windows cmd (clasp)
+   - อัปเดต URL ใน gas_config.js
+2. ⏳ แก้ไข Settings Section (renderSettingsSection)
+   - ตรวจสอบ section_settings.js
+   - แก้ไขให้แสดงผลได้ถูกต้อง
+3. ⏳ ตรวจสอบ OpenClaw Gateway (เวอร์ชัน 2026.5.2)
+   - วัดเวลา delay 31 วินาที
+   - หากผิดปกติให้แจ้งน้อง H
+4. ⏳ รายงานผลการทำงานทุกขั้นตอนในไฟล์นี้
+
+---
+
 ## 📌 ประวัติ Deployment (COMPHONE)
 | เวอร์ชัน | Commit Hash | วันที่ | หมายเหตุ |
 |----------|-------------|--------|----------|
