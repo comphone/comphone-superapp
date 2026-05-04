@@ -391,7 +391,7 @@ color: #ef4444; font-size: 13px; margin-top: 10px; min-height: 20px;
 <form id="login-form" onsubmit="_doLogin(event)">
 <input class="login-field" type="text" id="login-user" data-i18n-placeholder="Username" placeholder="Username" autocomplete="username" required>
 <input class="login-field" type="password" id="login-pass" data-i18n-placeholder="Password" placeholder="Password" autocomplete="current-password" required>
-<button class="login-btn" type="submit" id="login-btn">
+<button class="login-btn" type="button" id="login-btn" onclick="_doLogin()">
 <span data-i18n="Login">เข้าสู่ระบบ</span>
 </button>
 </form>
@@ -645,8 +645,7 @@ const MOCK_DASHBOARD = {
   performance: { avgTime: '2.5h', satisfaction: 4.8 }
 };
 
-async function _doLogin(event) {
-  event.preventDefault();
+async function _doLogin() {
   console.log('[Dashboard] Attempting login (MOCK MODE)...');
   const username = document.getElementById('login-user')?.value;
   const password = document.getElementById('login-pass')?.value;
