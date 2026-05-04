@@ -1,0 +1,261 @@
+/* ===== COMPHONE MODERN DARK THEME v6.0.0-glass ===== */
+/* Deep Dark + Blue-Purple Gradient + Swiper Support */
+
+:root {
+  /* New Dark Palette */
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-glass: rgba(30, 41, 59, 0.7);
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --accent-blue: #4f46e5;
+  --accent-purple: #7c3aed;
+  --accent-cyan: #06b6d4;
+  --danger: #ef4444;
+  --success: #10b981;
+  --warning: #f59e0b;
+  
+  /* Glass Effect */
+  --glass-bg: rgba(15, 23, 42, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: blur(20px);
+  
+  /* Swiper Custom */
+  --swiper-navigation-color: #7c3aed;
+  --swiper-pagination-color: #4f46e5;
+}
+
+/* ===== GLOBAL ===== */
+body {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* ===== TOP BAR ===== */
+.top-bar {
+  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%) !important;
+  backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+/* ===== PAGES CONTAINER (Swiper) ===== */
+#pages-container {
+  width: 100%;
+  height: calc(100vh - 60px - 70px); /* minus top bar and bottom nav */
+  overflow: hidden;
+}
+
+.swiper {
+  width: 100%;
+  height: 100%;
+}
+
+.swiper-slide {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 16px;
+  background: var(--bg-primary);
+}
+
+/* ===== JOB CARDS ===== */
+.job-card, .section-card, .page {
+  background: var(--bg-glass) !important;
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 12px !important;
+  color: var(--text-primary) !important;
+}
+
+.job-title, h5, .page-header h5 {
+  color: var(--text-primary) !important;
+}
+
+.job-details, .section-label {
+  color: var(--text-secondary) !important;
+}
+
+/* ===== BUTTONS ===== */
+.btn-primary, .btn-setup {
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)) !important;
+  border: none !important;
+  color: white !important;
+  border-radius: 8px !important;
+  font-weight: 600;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid var(--glass-border) !important;
+  color: var(--text-primary) !important;
+}
+
+.btn-success {
+  background: var(--success) !important;
+  border: none !important;
+  color: white !important;
+}
+
+/* ===== BOTTOM NAV ===== */
+.bottom-nav-bar {
+  background: var(--bg-secondary) !important;
+  border-top: 1px solid var(--glass-border) !important;
+  backdrop-filter: var(--glass-blur);
+}
+
+.nav-btn {
+  color: var(--text-secondary) !important;
+}
+
+.nav-btn.active {
+  color: var(--accent-purple) !important;
+}
+
+.nav-camera-circle {
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)) !important;
+}
+
+/* ===== BADGES ===== */
+.badge, .notif-badge, .nav-badge-dot {
+  background: var(--danger) !important;
+}
+
+/* ===== SEARCH BAR ===== */
+.search-bar-inline, .input-wrap {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 8px !important;
+}
+
+.search-bar-inline input, .input-wrap input {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+.search-bar-inline input::placeholder, .input-wrap input::placeholder {
+  color: var(--text-secondary) !important;
+}
+
+/* ===== FILTER TABS ===== */
+.filter-tab {
+  color: var(--text-secondary) !important;
+  border-bottom: 2px solid transparent !important;
+}
+
+.filter-tab.active {
+  color: var(--accent-purple) !important;
+  border-bottom-color: var(--accent-purple) !important;
+}
+
+/* ===== SETTINGS MODAL ===== */
+.cp-sheet, .modal-sheet {
+  background: var(--bg-secondary) !important;
+  border-top: 1px solid var(--glass-border) !important;
+  color: var(--text-primary) !important;
+}
+
+.more-menu-item {
+  color: var(--text-primary) !important;
+}
+
+.more-menu-icon {
+  background: var(--bg-glass) !important;
+  border: 1px solid var(--glass-border) !important;
+}
+
+/* ===== ERROR OVERLAY ===== */
+.error-overlay {
+  background: rgba(239, 68, 68, 0.9) !important;
+  color: white !important;
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ===== SLA WARNING ===== */
+.sla-warning {
+  color: var(--danger) !important;
+}
+
+/* ===== TOGGLE SWITCH ===== */
+.toggle-switch {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--glass-border) !important;
+}
+
+.toggle-switch::after {
+  background: var(--accent-purple) !important;
+}
+
+/* ===== PROFILE PAGE ===== */
+.profile-header {
+  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%) !important;
+}
+
+.profile-item {
+  border-bottom: 1px solid var(--glass-border) !important;
+  color: var(--text-primary) !important;
+}
+
+.profile-item:hover {
+  background: var(--bg-glass) !important;
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent-purple);
+  border-radius: 3px;
+}
+
+/* ===== ANIMATIONS ===== */
+.animate-in {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== SWIPER PAGINATION ===== */
+.swiper-pagination-bullet {
+  background: var(--text-secondary) !important;
+  opacity: 0.5;
+}
+
+.swiper-pagination-bullet-active {
+  background: var(--accent-purple) !important;
+  opacity: 1;
+}
+
+/* ===== OFFLINE BAR ===== */
+#offline-bar {
+  background: var(--bg-secondary) !important;
+  border-bottom: 1px solid var(--glass-border) !important;
+  color: var(--warning) !important;
+}
+
+/* ===== VERSION BADGE ===== */
+.app-version {
+  color: var(--text-secondary) !important;
+  font-size: 11px;
+  text-align: center;
+  padding: 8px;
+}
