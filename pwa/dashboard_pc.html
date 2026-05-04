@@ -625,8 +625,9 @@ color: #ef4444; font-size: 13px; margin-top: 10px; min-height: 20px;
 
 </div>
 </div>
-<script src="section_billing.js?v=5.13.4&t=20260504_1212"></script>
-<script src="dashboard_helpers.js?v=5.13.4&t=20260504_1212"></script>
+<script src="section_billing.js?v=5.13.5&t=20260504_1315"></script>
+<script src="section_warranty.js?v=5.13.5&t=20260504_1315"></script>
+<script src="dashboard_helpers.js?v=5.13.5&t=20260504_1315"></script>
 <script src="dashboard_pc_core.js?v=5.13.0-phase36&t=20260504_1111"></script>
 <!-- Core functions moved to dashboard_pc_core.js -->
 <script>
@@ -718,7 +719,7 @@ function loadSection(sectionName) {
     'po':         () => { if (typeof renderPOSection === 'function') renderPOSection(data); else main.innerHTML = '<h3>PO</h3><p>Coming soon...</p>'; },
     'inventory':  () => { if (typeof renderInventorySection === 'function') renderInventorySection(data); else main.innerHTML = '<h3>Inventory</h3><p>Coming soon...</p>'; },
     'billing':    () => { if (typeof renderBillingSection === 'function') { const c = document.getElementById('billing-content') || document.getElementById('section-billing'); if (c) c.innerHTML = renderBillingSection(data); } else main.innerHTML = '<h3>ใบเสร็จ/วางบิล</h3><p>Coming soon...</p>'; },
-    'warranty':   () => { main.innerHTML = '<div class="card-box"><h3><i class="bi bi-shield-check"></i> รับประกัน</h3><p style="color:#9ca3af">⏳ กำลังพัฒนา...</p></div>'; },
+    'warranty':   () => { if (typeof renderWarrantySection === 'function') { const c = document.getElementById('warranty-content') || document.getElementById('section-warranty'); if (c) c.innerHTML = renderWarrantySection(data); } else main.innerHTML = '<h3>รับประกัน</h3><p>Coming soon...</p>'; },
     'revenue':    () => { if (typeof renderRevenueSection === 'function') renderRevenueSection(data); else main.innerHTML = '<h3>Revenue</h3><p>Coming soon...</p>'; },
     'tax':        () => { main.innerHTML = '<div class="card-box"><h3><i class="bi bi-calculator"></i> ภาษี</h3><button onclick="_showTaxCalculator()" style="background:#059669;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer">เปิดเครื่องคิดเลขภาษี</button></div>'; },
     'reports':    () => { main.innerHTML = '<div class="card-box"><h3><i class="bi bi-file-earmark-text"></i> รายงาน</h3><p style="color:#9ca3af">⏳ กำลังพัฒนา...</p></div>'; },
