@@ -36,6 +36,14 @@
 - ⚠️ **Mobile App JS Error Detected:** `Uncaught TypeError: Cannot read properties of null (reading 'class...')` found in screenshot; needs debugging in `dashboard_mobile.html` or `app_jobs.js`.
 - ✅ **Mock Login Stable:** Admin/Comphone101 credentials working for PC Dashboard; mock data used for Settings, Billing, Warranty, Reports, Analytics, Attendance.
 
+### Phase 38 Achievements (2026-05-04)
+- ✅ **Mobile v6.0.0-glass — Futuristic Glass UI:** Created `mobile_glass.css` (14KB) with Dark Mode + Glassmorphism (blur 20px, glow effects, smooth transitions).
+- ✅ **Minimal Quick Actions:** Reduced all roles' quick actions to 3 buttons only (เปิดงาน, ลูกค้าใหม่, โทรลูกค้า) — removed 8+ unnecessary buttons.
+- ✅ **Simplified Bottom Nav:** Removed Camera button — now 4 buttons only (หน้าหลัก, งาน, เพิ่มเติม, โปรไฟล์).
+- ✅ **Cache Bust Update:** All JS/CSS files updated to `v6.0.0-glass&t=20260504_1930`.
+- ✅ **Pushed to GitHub:** Commit `8dc49d8` — "feat: mobile v6.0.0-glass — Futuristic Glass UI, minimal menu".
+- ⏳️ **GitHub Pages Building:** Awaiting deployment (~5-10 min) — `mobile_glass.css` returns 404 temporarily.
+
 ### Current Stability Baseline
 - Mobile PWA loads `api_client.js`, `api_contract.js`, `auth_guard.js`, and versioned assets correctly.
 - Mobile PWA loads `offline_db.js` and `notification_center.js`; read-only API failures are not queued as offline write actions.
