@@ -26,10 +26,9 @@ const ROLES = {
     icon: 'bi-tools',
     greeting: 'พร้อมรับงานวันนี้แล้วหรือยัง?',
     quickActions: [
-      { icon: 'bi-check2-circle', label: 'เสร็จแล้ว', color: '#d1fae5', textColor: '#065f46', action: 'markDone' },
-      { icon: 'bi-camera-fill', label: 'ถ่ายรูป', color: '#dbeafe', textColor: '#1e40af', action: 'openCameraQuick' },
-      { icon: 'bi-hourglass-split', label: 'รอชิ้นส่วน', color: '#fef3c7', textColor: '#92400e', action: 'markWaiting' },
-      { icon: 'bi-exclamation-triangle-fill', label: 'ขอความช่วย', color: '#fee2e2', textColor: '#991b1b', action: 'callForHelp' }
+      { icon: 'bi-plus-circle-fill', label: 'เปิดงาน', color: '#dbeafe', textColor: '#1e40af', action: 'openNewJob' },
+      { icon: 'bi-person-plus-fill', label: 'ลูกค้าใหม่', color: '#ffedd5', textColor: '#9a3412', action: 'addCustomer' },
+      { icon: 'bi-telephone-fill', label: 'โทรลูกค้า', color: '#d1fae5', textColor: '#065f46', action: 'callCustomer' }
     ]
   },
   admin: {
@@ -37,20 +36,11 @@ const ROLES = {
     theme: 'theme-admin',
     color: '#7c3aed',
     icon: 'bi-headset',
-    greeting: 'มีงานรอมอบหมายอยู่นะ!',
+    greeting: 'มีงานรอมอบหมายอยู่แนะ!',
     quickActions: [
       { icon: 'bi-plus-circle-fill', label: 'เปิดงาน', color: '#ede9fe', textColor: '#5b21b6', action: 'openNewJob' },
       { icon: 'bi-person-plus-fill', label: 'ลูกค้าใหม่', color: '#ffedd5', textColor: '#9a3412', action: 'addCustomer' },
-      { icon: 'bi-telephone-fill', label: 'โทรลูกค้า', color: '#dbeafe', textColor: '#1e40af', action: 'callCustomer' },
-      { icon: 'bi-chat-dots-fill', label: 'ส่ง LINE', color: '#d1fae5', textColor: '#065f46', action: 'sendLine' },
-      { icon: 'bi-bell-fill', label: 'จี้ช่าง', color: '#fee2e2', textColor: '#991b1b', action: 'nudgeTech' },
-      { icon: 'bi-clipboard2-data', label: 'รายงาน', color: '#cffafe', textColor: '#164e63', action: 'viewReport' },
-      { icon: 'bi-calendar-check', label: 'นัดหมาย', color: '#fef9c3', textColor: '#713f12', action: 'addAppointment' },
-      { icon: 'bi-cart-fill', label: 'สั่งซื้อ', color: '#d1fae5', textColor: '#065f46', action: 'openPO' },
-      { icon: 'bi-cash-stack', label: 'ขายสินค้า', color: '#fef3c7', textColor: '#92400e', action: 'openPOS' },
-      { icon: 'bi-robot', label: 'AI ช่วยซ่อม', color: '#ede9fe', textColor: '#5b21b6', action: 'openAICompanion' },
-      { icon: 'bi-magic', label: 'จ่ายงาน V2', color: '#dbeafe', textColor: '#1e40af', action: 'openSmartAssignV2' },
-      { icon: 'bi-three-dots', label: 'เพิ่มเติม', color: '#f3f4f6', textColor: '#374151', action: 'moreActions' }
+      { icon: 'bi-telephone-fill', label: 'โทรลูกค้า', color: '#dbeafe', textColor: '#1e40af', action: 'callCustomer' }
     ]
   },
   acct: {
@@ -60,10 +50,9 @@ const ROLES = {
     icon: 'bi-calculator',
     greeting: 'ตรวจสลิปและออกใบเสร็จได้เลย',
     quickActions: [
-      { icon: 'bi-camera-fill', label: 'สแกนสลิป', color: '#cffafe', textColor: '#164e63', action: 'scanSlip' },
+      { icon: 'bi-camera-fill', label: 'สแกนสลิป', color: '#ccfafe', textColor: '#164e63', action: 'scanSlip' },
       { icon: 'bi-file-earmark-pdf-fill', label: 'ออกใบเสร็จ', color: '#d1fae5', textColor: '#065f46', action: 'createReceipt' },
-      { icon: 'bi-qr-code', label: 'QR รับเงิน', color: '#dbeafe', textColor: '#1e40af', action: 'showQR' },
-      { icon: 'bi-receipt', label: 'สร้างบิล', color: '#ffedd5', textColor: '#9a3412', action: 'createBill' }
+      { icon: 'bi-qr-code', label: 'QR รับเงิน', color: '#dbeafe', textColor: '#1e40af', action: 'showQR' }
     ]
   },
   exec: {
@@ -75,11 +64,7 @@ const ROLES = {
     quickActions: [
       { icon: 'bi-bar-chart-fill', label: 'Dashboard', color: '#fef9c3', textColor: '#713f12', action: 'viewDashboard' },
       { icon: 'bi-megaphone-fill', label: 'จี้งานด่วน', color: '#fee2e2', textColor: '#991b1b', action: 'urgentAction' },
-      { icon: 'bi-telephone-fill', label: 'โทรลูกค้า', color: '#d1fae5', textColor: '#065f46', action: 'callVIP' },
-      { icon: 'bi-cart-fill', label: 'สั่งซื้อ', color: '#d1fae5', textColor: '#065f46', action: 'openPO' },
-      { icon: 'bi-file-earmark-bar-graph', label: 'รายงาน P&L', color: '#dbeafe', textColor: '#1e40af', action: 'viewPL' },
-      { icon: 'bi-star-fill', label: 'CSAT', color: '#fef3c7', textColor: '#92400e', action: 'openCSAT' },
-      { icon: 'bi-file-earmark-text-fill', label: 'TOR', color: '#ffedd5', textColor: '#9a3412', action: 'openTOR' }
+      { icon: 'bi-telephone-fill', label: 'โทรลูกค้า', color: '#d1fae5', textColor: '#065f46', action: 'callVIP' }
     ]
   }
 };
@@ -327,6 +312,47 @@ function renderProfile() {
 
 // ===== NAVIGATION =====
 function goPage(page, btn) {
+  // ===== PAGE REDIRECTS FOR MERGED/REMOVED PAGES =====
+  // Dashboard -> Home (Dashboard merged into Home)
+  if (page === 'dashboard') {
+    console.log('[Nav] Dashboard merged into Home, redirecting...');
+    page = 'home';
+  }
+  // Analytics -> Reports (Analytics merged into Reports)
+  if (page === 'analytics') {
+    console.log('[Nav] Analytics merged into Reports, redirecting...');
+    page = 'reports';
+  }
+  // Performance -> Reports (Performance merged into Reports)
+  if (page === 'performance') {
+    console.log('[Nav] Performance merged into Reports, redirecting...');
+    page = 'reports';
+  }
+  // Revenue -> Billing (Revenue merged into Billing)
+  if (page === 'revenue') {
+    console.log('[Nav] Revenue merged into Billing, redirecting...');
+    page = 'billing';
+  }
+  // Tax -> Billing (Tax merged into Billing)
+  if (page === 'tax') {
+    console.log('[Nav] Tax merged into Billing, redirecting...');
+    page = 'billing';
+  }
+  // Customer Portal -> show as overlay (not a nav page)
+  if (page === 'customer-portal') {
+    console.log('[Nav] Customer Portal is overlay-only');
+    if (typeof loadCustomerPortalPage === 'function') loadCustomerPortalPage();
+    return;
+  }
+  // Notifications -> show as overlay (not a nav page)
+  if (page === 'notifications') {
+    console.log('[Nav] Notifications is overlay-only');
+    if (typeof loadNotificationCenter === 'function') loadNotificationCenter();
+    else if (typeof showNotificationCenter === 'function') showNotificationCenter();
+    return;
+  }
+  // Profile now includes Settings (backup moved to Settings/Profile)
+  
   const pageEl = document.getElementById('page-' + page);
   if (!pageEl) { showToast('ไม่พบหน้า ' + page); return; }
 
