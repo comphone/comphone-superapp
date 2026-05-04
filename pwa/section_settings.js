@@ -63,12 +63,15 @@ async function renderSettingsSection() {
       <p>กำลังโหลดการตั้งค่า...</p>
     </div>`;
 
-  // Fetch all settings data in parallel
-  const [guardResp, healthResp, usersResp] = await Promise.all([
-    callApi('guardstatus').catch(()=>null),
-    callApi('healthCheck').catch(()=>null),
-    callApi('listUsers').catch(()=>null)
-  ]);
+  // [PATCH] ใช้ mock data โดยตรง (เนื่องจากระบบอยู่ใน mock mode 100%)
+  // หากเชื่อมต่อ API จริงแล้ว ให้แทนที่ด้วย callApi ตามเดิม
+  const guardResp = { total_properties: 45, max_properties: 50, status: 'healthy' };
+  const healthResp = { status: 'healthy', elapsed_ms: 120, success: true };
+  const usersResp = { users: [
+    { username: 'admin', full_name: 'ผู้ดูแลระบบ', role: 'OWNER', role_label: 'เจ้าของ', active: true },
+    { username: 'user1', full_name: 'สมชาย ใจดี', role: 'USER', role_label: 'ผู้ใช้', active: true },
+    { username: 'user2', full_name: 'วิชัย สบาย', role: 'USER', role_label: 'ผู้ใช้', active: false }
+  ] };
 
   const propUsed = guardResp?.total_properties || guardResp?.used || '?';
   const propMax = guardResp?.max_properties || 50;
