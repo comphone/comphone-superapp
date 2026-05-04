@@ -28,6 +28,16 @@ if (typeof window.comphone_auth_session !== 'undefined') {
 <script src="gas_config.js?v=5.13.0-phase36&t=20260504_1100"></script>
 <script src="api_contract.js?v=5.13.0-phase36&t=20260504_1100"></script>
 <script src="api_client.js?v=5.13.0-phase36&t=20260504_1100"></script>
+<script src="dashboard.js?v=5.13.0-phase36&t=20260504_1100"></script>
+<script src="section_jobs.js?v=5.13.0-phase36&t=20260504_1100"></script>
+<script src="section_po.js?v=5.13.0-phase36&t=20260504_1100"></script>
+<script src="section_inventory.js?v=5.13.0-phase36&t=20260504_1100"></script>
+<script src="section_revenue.js?v=5.13.0-phase36&t=20260504_1100"></script>
+<script src="section_tax.js?v=5.13.0-phase36&t=20260504_1100"></script>
+<script src="section_crm.js?v=5.13.0-phase36&t=20260504_1100"></script>
+<script src="section_backup.js?v=5.13.0-phase36&t=20260504_1100"></script>
+<script src="section_performance.js?v=5.13.0-phase36&t=20260504_1100"></script>
+<script src="section_settings.js?v=5.13.0-phase36&t=20260504_1100"></script>
 <script>
 // ── XSS Sanitizer (PHMP v1 — 2026-04-24) ──
 // Lightweight HTML sanitizer for API data rendered via innerHTML.
@@ -684,23 +694,37 @@ function loadSection(sectionName) {
       item.classList.add('active');
     }
   });
+
+  // ── Route: call appropriate render function ──
+  const data = window.DASHBOARD_DATA || {};
+  const main = document.getElementById('main-content');
+  const renderers = {
+    'dashboard': () => { loadDashboardPage(); },
+    'jobs':       () => { if (typeof renderJobsSection === 'function') { const c = document.getElementById('jobs-content'); if (c) c.innerHTML = renderJobsSection(data); } },
+    'po':         () => { if (typeof renderPOSection === 'function') renderPOSection(data); },
+    'inventory':  () => { if (typeof renderInventorySection === 'function') renderInventorySection(data); },
+    'billing':    () => { if (main) main.innerHTML = '<div class="card-box"><h3><i class="bi bi-receipt"></i> ใบเสร็จ/วางบิล</h3><p style="color:#9ca3af">⏳ กำลังพัฒนา...</p></div>'; },
+    'warranty':   () => { if (main) main.innerHTML = '<div class="card-box"><h3><i class="bi bi-shield-check"></i> รับประกัน</h3><p style="color:#9ca3af">⏳ กำลังพัฒนา...</p></div>'; },
+    'revenue':    () => { if (typeof renderRevenueSection === 'function') renderRevenueSection(data); },
+    'tax':        () => { if (main) main.innerHTML = '<div class="card-box"><h3><i class="bi bi-calculator"></i> ภาษี (VAT/WHT)</h3><p>คลิกปุ่มด้านล่างเพื่อเริ่มคำนวณ</p><button onclick="_showTaxCalculator()" style="background:#059669;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px"><i class="bi bi-calculator"></i> เปิดเครื่องคิดเลขภาษี</button></div>'; },
+    'reports':    () => { if (main) main.innerHTML = '<div class="card-box"><h3><i class="bi bi-file-earmark-text"></i> รายงาน</h3><p style="color:#9ca3af">⏳ กำลังพัฒนา...</p></div>'; },
+    'analytics':  () => { if (main) main.innerHTML = '<div class="card-box"><h3><i class="bi bi-graph-up"></i> Analytics</h3><p style="color:#9ca3af">⏳ กำลังพัฒนา...</p></div>'; },
+    'performance':() => { if (typeof renderPerformanceSection === 'function') renderPerformanceSection(data); },
+    'backup':     () => { if (typeof renderBackupSection === 'function') renderBackupSection(); },
+    'crm':        () => { if (typeof renderCRMSection === 'function') renderCRMSection(data); },
+    'attendance': () => { if (main) main.innerHTML = '<div class="card-box"><h3><i class="bi bi-clock-history"></i> ลงเวลาทำงาน</h3><p style="color:#9ca3af">⏳ กำลังพัฒนา...</p></div>'; },
+    'settings':   () => { if (typeof renderSettingsSection === 'function') renderSettingsSection(); },
+  };
+
+  const renderer = renderers[sectionName];
+  if (renderer) {
+    try { renderer(); } catch(e) { console.error('[Dashboard] Render error:', sectionName, e); }
+  }
 }
 
 function loadDashboard() {
   console.log('[Dashboard] Loading main dashboard...');
   loadSection('dashboard');
-  
-  // Load dashboard data if available
-  if (typeof window.callApi === 'function') {
-    window.callApi({ action: 'getDashboardBundle' })
-      .then(data => {
-        console.log('[Dashboard] Data loaded:', data);
-        if (typeof renderDashboard === 'function') {
-          renderDashboard(data);
-        }
-      })
-      .catch(err => console.error('[Dashboard] Error:', err));
-  }
 }
 
 function _doLogin(event) {
