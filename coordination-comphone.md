@@ -82,6 +82,18 @@
 
 ---
 
+
+### ผลการตรวจสอบเบื้องต้น (16:00 น.)
+✅ **GAS API:** ยังทำงานได้ปกติ (ทดสอบ loginUser สำเร็จ)
+   - URL: `AKfycby5TU-bz6Ms03f9C4oiuMU-whLjRRLjf_nWHQtuW3ORm3nFWiJl-NvjoyPl3tuQxRUflw`
+   - พบการ redirect แต่ยังคืนค่าถูกต้อง
+⚠️ **Settings Section:** ยัง broken (renderSettingsSection เรียก API แต่可能的 callApi ไม่พร้อมใน mock mode)
+   - ไฟล์: `section_settings.js` มีฟังก์ชันครบถ้วน
+   - ต้องตรวจสอบการเชื่อมต่อ API จริง
+⏳ **OpenClaw Gateway:** ไม่พบคำสั่ง openclaw ใน WSL (อาจติดตั้งใน Windows)
+   - เวอร์ชันล่าสุดที่พบ: `2026.5.2` (จากการตรวจสอบก่อนหน้า)
+   - ต้องตรวจสอบ delay 31 วินาทีใน Windows
+
 ## 📌 ประวัติ Deployment (COMPHONE)
 | เวอร์ชัน | Commit Hash | วันที่ | หมายเหตุ |
 |----------|-------------|--------|----------|
