@@ -625,9 +625,12 @@ color: #ef4444; font-size: 13px; margin-top: 10px; min-height: 20px;
 
 </div>
 </div>
-<script src="section_billing.js?v=5.13.5&t=20260504_1315"></script>
-<script src="section_warranty.js?v=5.13.5&t=20260504_1315"></script>
-<script src="dashboard_helpers.js?v=5.13.5&t=20260504_1315"></script>
+<script src="section_billing.js?v=5.13.6&t=20260504_1410"></script>
+<script src="section_warranty.js?v=5.13.6&t=20260504_1410"></script>
+<script src="section_reports.js?v=5.13.6&t=20260504_1410"></script>
+<script src="section_analytics.js?v=5.13.6&t=20260504_1410"></script>
+<script src="section_attendance.js?v=5.13.6&t=20260504_1410"></script>
+<script src="dashboard_helpers.js?v=5.13.6&t=20260504_1410"></script>
 <script src="dashboard_pc_core.js?v=5.13.0-phase36&t=20260504_1111"></script>
 <!-- Core functions moved to dashboard_pc_core.js -->
 <script>
@@ -721,13 +724,13 @@ function loadSection(sectionName) {
     'billing':    () => { if (typeof renderBillingSection === 'function') { const c = document.getElementById('billing-content') || document.getElementById('section-billing'); if (c) c.innerHTML = renderBillingSection(data); } else main.innerHTML = '<h3>ใบเสร็จ/วางบิล</h3><p>Coming soon...</p>'; },
     'warranty':   () => { if (typeof renderWarrantySection === 'function') { const c = document.getElementById('warranty-content') || document.getElementById('section-warranty'); if (c) c.innerHTML = renderWarrantySection(data); } else main.innerHTML = '<h3>รับประกัน</h3><p>Coming soon...</p>'; },
     'revenue':    () => { if (typeof renderRevenueSection === 'function') renderRevenueSection(data); else main.innerHTML = '<h3>Revenue</h3><p>Coming soon...</p>'; },
-    'tax':        () => { main.innerHTML = '<div class="card-box"><h3><i class="bi bi-calculator"></i> ภาษี</h3><button onclick="_showTaxCalculator()" style="background:#059669;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer">เปิดเครื่องคิดเลขภาษี</button></div>'; },
-    'reports':    () => { main.innerHTML = '<div class="card-box"><h3><i class="bi bi-file-earmark-text"></i> รายงาน</h3><p style="color:#9ca3af">⏳ กำลังพัฒนา...</p></div>'; },
-    'analytics':  () => { main.innerHTML = '<div class="card-box"><h3><i class="bi bi-graph-up"></i> Analytics</h3><p style="color:#9ca3af">⏳ กำลังพัฒนา...</p></div>'; },
-    'performance':() => { if (typeof renderPerformanceSection === 'function') renderPerformanceSection(data); else main.innerHTML = '<h3>Performance</h3><p>Coming soon...</p>'; },
-    'backup':     () => { if (typeof renderBackupSection === 'function') renderBackupSection(); else main.innerHTML = '<h3>Backup</h3><p>Coming soon...</p>'; },
-    'crm':        () => { if (typeof renderCRMSection === 'function') renderCRMSection(data); else main.innerHTML = '<h3>CRM</h3><p>Coming soon...</p>'; },
-    'attendance': () => { main.innerHTML = '<div class="card-box"><h3><i class="bi bi-clock-history"></i> ลงเวลาทำงาน</h3><p style="color:#9ca3af">⏳ กำลังพัฒนา...</p></div>'; },
+    'tax':        () => { main.innerHTML = '<div class="card-box"><h3><i class="bi bi-calculator"></i> ภาษี</h3><button onclick="_showTaxCalculator()" style="background:#059669;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer">เปิดเครื่องคิดเลขภาษี</button></div>' },
+    'reports':    () => { if (typeof renderReportsSection === 'function') { const c = document.getElementById('reports-content') || document.getElementById('section-reports'); if (c) c.innerHTML = renderReportsSection(data); } else main.innerHTML = '<h3>รายงาน</h3><p>Coming soon...</p>' },
+    'analytics':  () => { if (typeof renderAnalyticsSection === 'function') { const c = document.getElementById('analytics-content') || document.getElementById('section-analytics'); if (c) c.innerHTML = renderAnalyticsSection(data); } else main.innerHTML = '<h3>Analytics</h3><p>Coming soon...</p>' },
+    'performance':() => { if (typeof renderPerformanceSection === 'function') renderPerformanceSection(data); else main.innerHTML = '<h3>Performance</h3><p>Coming soon...</p>' },
+    'backup':     () => { if (typeof renderBackupSection === 'function') renderBackupSection(); else main.innerHTML = '<h3>Backup</h3><p>Coming soon...</p>' },
+    'crm':        () => { if (typeof renderCRMSection === 'function') renderCRMSection(data); else main.innerHTML = '<h3>CRM</h3><p>Coming soon...</p>' },
+    'attendance': () => { if (typeof renderAttendanceSection === 'function') { const c = document.getElementById('attendance-content') || document.getElementById('section-attendance'); if (c) c.innerHTML = renderAttendanceSection(data); } else main.innerHTML = '<h3>ลงเวลาทำงาน</h3><p>Coming soon...</p>' },
     'settings':   () => { if (typeof renderSettingsSection === 'function') renderSettingsSection(); else main.innerHTML = '<h3>Settings</h3><p>Coming soon...</p>'; },
   };
   const renderer = renderers[sectionName];
