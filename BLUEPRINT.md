@@ -1336,3 +1336,24 @@ async function callGas(action, params) {
 | **API Contract** | OK Stable | Required, optional, and read-only workflow smoke checks pass against GAS @506. |
 | **Offline / Queue UX** | OK Improved | Queue flush, health view, and observability states are visible from Admin > Health. |
 | **Remaining Professional Work** | NEXT | Add CI automation, deeper write-flow tests in staging, and UX polish for high-use screens. |
+
+---
+
+## 📂 ระบบไฟล์ Coordination (อัปเดต 2026-05-04)
+สำหรับการประสานงานระหว่างน้อง H (Frontend) และพี่ O (Backend) ตามกลุ่ม Telegram:
+
+### ไฟล์ที่ใช้:
+1. **coordination-saon.md** → สำหรับ **Saon App group** (เฉพาะ SaonCoffee POS)
+2. **coordination-comphone.md** → สำหรับ **Comphone101Bot group** และ **Comphone Supperapp AI group** (เฉพาะ COMPHONE SUPER APP)
+
+### กฎการใช้งาน:
+- ทุกครั้งที่เริ่ม session ในกลุ่ม ให้เปิดไฟล์ coordination ที่ถูกต้องตามกลุ่ม
+- เขียนข้อความตอบกลับในส่วนบทบาทของตนเอง (น้อง H / พี่ O)
+- Commit ไฟล์พร้อมกับการเปลี่ยนแปลงโค้ดทุกครั้ง
+- ห้ามคุยผสมกันระหว่าง 2 โปรเจ็ค (SaonCoffee vs COMPHONE)
+
+### สถานะปัจจุบัน (บันทึก ณ 2026-05-04 15:30):
+- ✅ สร้างไฟล์ coordination ครบทั้ง 2 ไฟล์แล้ว
+- ✅ ลบไฟล์ coordination.md เก่าเรียบร้อย
+- ✅ น้อง H (Frontend) เสร็จ 100% (5 เมนูใหม่ + deploy v5.14.1)
+- ⏳ พี่ O (Backend) กำลังดำเนินการ (GAS API, Settings, Gateway)
