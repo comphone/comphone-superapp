@@ -647,7 +647,7 @@ const MOCK_DASHBOARD = {
 
 async function _doLogin(event) {
   event.preventDefault();
-  console.log('[Dashboard] Attempting login...');
+  console.log('[Dashboard] Attempting login (MOCK MODE)...');
   const username = document.getElementById('login-user')?.value;
   const password = document.getElementById('login-pass')?.value;
   if (!username || !password) { alert('กรุณากรอก username และ password'); return; }
@@ -655,26 +655,10 @@ async function _doLogin(event) {
   const btn = document.querySelector('.login-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ...'; }
 
-  // Try GAS API first
-  const gasUrl = (typeof getGasUrl === 'function' ? getGasUrl() : '') || (window.GAS_CONFIG && window.GAS_CONFIG.url) || '';
-  let loginResult = null;
-
-  if (gasUrl) {
-    try {
-      const qs = new URLSearchParams({ action: 'loginUser', username, password, _t: Date.now() }).toString();
-      const resp = await fetch(gasUrl + '?' + qs, { redirect: 'follow', signal: AbortSignal.timeout(5000) });
-      loginResult = await resp.json();
-    } catch(e) {
-      console.warn('[Login] GAS API failed, using mock:', e.message);
-    }
-  }
-
-  // Use mock if GAS failed
-  if (!loginResult || (!loginResult.success && !loginResult.valid)) {
-    console.log('[Login] Using mock login');
-    loginResult = { ...MOCK_USER, username, timestamp: Date.now() };
-    window.DASHBOARD_DATA = MOCK_DASHBOARD;
-  }
+  // MOCK LOGIN ONLY (skip GAS API for now)
+  console.log('[Login] Using mock login');
+  const loginResult = { ...MOCK_USER, username, timestamp: Date.now() };
+  window.DASHBOARD_DATA = MOCK_DASHBOARD;
 
   if (btn) { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
 
