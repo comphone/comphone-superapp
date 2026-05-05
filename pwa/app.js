@@ -356,11 +356,34 @@ function goPage(page, btn) {
   const pageEl = document.getElementById('page-' + page);
   if (!pageEl) { showToast('ไม่พบหน้า ' + page); return; }
 
-  document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); p.classList.add('hidden'); });
+  // Page Exit Animation
+  const currentPage = document.querySelector('.page.active');
+  if (currentPage && currentPage !== pageEl) {
+    currentPage.classList.add('page-exit');
+    setTimeout(() => {
+      currentPage.classList.remove('active', 'page-exit');
+      currentPage.classList.add('hidden');
+    }, 300);
+  }
+
+  // Hide all pages
+  document.querySelectorAll('.page').forEach(p => { 
+    if (p !== pageEl && !p.classList.contains('page-exit')) {
+      p.classList.remove('active');
+      p.classList.add('hidden');
+    }
+  });
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
-  pageEl.classList.add('active');
-  pageEl.classList.remove('hidden');
+  // Page Enter Animation
+  setTimeout(() => {
+    pageEl.classList.remove('hidden');
+    pageEl.classList.add('active', 'page-enter');
+    setTimeout(() => {
+      pageEl.classList.remove('page-enter');
+    }, 400);
+  }, currentPage && currentPage !== pageEl ? 300 : 0);
+  
   if (btn) btn.classList.add('active');
   APP.currentPage = page;
 

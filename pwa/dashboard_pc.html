@@ -51,8 +51,11 @@ return str
 .replace(/javascript\s*:/gi, '')
 .replace(/data\s*:\s*text\/html/gi, '');
 };
-// PHASE 25.3 — GLOBAL VERSION LOCK
-window.__APP_VERSION = window.__APP_VERSION || 'v5.14.2-phase39';
+// PHASE 25.3 — GLOBAL VERSION LOCK (Read from version_config.js at runtime)
+window.__APP_VERSION = window.__APP_VERSION || 
+  (window.VERSION_CONFIG && window.VERSION_CONFIG.version) || 
+  (window.GAS_CONFIG && window.GAS_CONFIG.version) || 
+  'v5.14.2-phase39';
 // Cache invalidation on version mismatch
 if (localStorage.__APP_VERSION !== window.__APP_VERSION) {
 console.warn('[VERSION] Dashboard version mismatch - clearing runtime caches only...');

@@ -50,15 +50,135 @@ function renderJobsPage(filter = 'all') {
   list.innerHTML = jobs.length ? jobs.map(j => renderJobCard(j)).join('') : `<div style="text-align:center;padding:40px;color:#9ca3af"><i class="bi bi-clipboard2-x" style="font-size:40px;display:block;margin-bottom:8px"></i>ไม่พบงาน</div>`;
 }
 
+// ===== SMART SEARCH SYSTEM =====
+let searchTimeout = null;
+let searchHistory = JSON.parse(localStorage.getItem('comphone_search_history') || '[]');
+
 function filterJobs(val) {
-  const q = val.toLowerCase();
-  const filtered = APP.jobs.filter(j =>
-    j.id.toLowerCase().includes(q) ||
-    j.title.toLowerCase().includes(q) ||
-    j.customer.toLowerCase().includes(q) ||
-    j.phone.includes(q)
-  );
-  document.getElementById('jobs-list').innerHTML = filtered.map(j => renderJobCard(j)).join('');
+  const q = val.toLowerCase().trim();
+  
+  // Clear previous timeout
+  if (searchTimeout) clearTimeout(searchTimeout);
+  
+  // Show loading state
+  const list = document.getElementById('jobs-list');
+  if (q.length > 0) {
+    list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted)"><i class="bi bi-search" style="font-size:24px;display:block;margin-bottom:8px"></i>กำลังค้นหา...</div>`;
+  }
+  
+  // Debounce search for 300ms
+  searchTimeout = setTimeout(() => {
+    if (q.length === 0) {
+      renderJobsPage();
+      hideSearchResults();
+      return;
+    }
+    
+    // Save to search history
+    if (q.length > 2 && !searchHistory.includes(q)) {
+      searchHistory.unshift(q);
+      searchHistory = searchHistory.slice(0, 10); // Keep only last 10
+      localStorage.setItem('comphone_search_history', JSON.stringify(searchHistory));
+    }
+    
+    const filtered = APP.jobs.filter(j =>
+      j.id.toLowerCase().includes(q) ||
+      j.title.toLowerCase().includes(q) ||
+      j.customer.toLowerCase().includes(q) ||
+      j.phone.includes(q) ||
+      (j.tech && j.tech.toLowerCase().includes(q))
+    );
+    
+    if (filtered.length > 0) {
+      list.innerHTML = filtered.map(j => renderJobCard(j)).join('');
+      showSearchResults(filtered.length, APP.jobs.length);
+    } else {
+      list.innerHTML = `
+        <div style="text-align:center;padding:40px;color:var(--text-muted)">
+          <i class="bi bi-search" style="font-size:48px;display:block;margin-bottom:12px;opacity:0.5"></i>
+          <div style="font-size:16px;font-weight:600;margin-bottom:8px">ไม่พบผลลัพธ์สำหรับ "${val}"</div>
+          <div style="font-size:13px">ลองค้นหาด้วย Job ID, ชื่อลูกค้า, หรือเบอร์โทร</div>
+        </div>
+      `;
+    }
+  }, 300);
+}
+
+function showSearchResults(found, total) {
+  let resultsDiv = document.getElementById('search-results');
+  if (!resultsDiv) {
+    resultsDiv = document.createElement('div');
+    resultsDiv.id = 'search-results';
+    resultsDiv.style.cssText = 'text-align:center;padding:12px;color:var(--accent-blue);font-size:14px;font-weight:600';
+    document.getElementById('page-jobs').insertBefore(resultsDiv, document.getElementById('jobs-list'));
+  }
+  resultsDiv.textContent = `พบ ${found} รายการ จากทั้งหมด ${total} รายการ`;
+  resultsDiv.style.display = 'block';
+}
+
+function hideSearchResults() {
+  const resultsDiv = document.getElementById('search-results');
+  if (resultsDiv) resultsDiv.style.display = 'none';
+}
+
+// Search with suggestions
+function initSmartSearch(searchInputId) {
+  const input = document.getElementById(searchInputId);
+  if (!input) return;
+  
+  // Create suggestion dropdown
+  let dropdown = document.getElementById('search-suggestions');
+  if (!dropdown) {
+    dropdown = document.createElement('div');
+    dropdown.id = 'search-suggestions';
+    dropdown.className = 'search-results';
+    input.parentNode.appendChild(dropdown);
+  }
+  
+  input.addEventListener('focus', () => {
+    if (searchHistory.length > 0 && input.value === '') {
+      showSearchSuggestions(dropdown);
+    }
+  });
+  
+  input.addEventListener('input', () => {
+    const val = input.value.toLowerCase().trim();
+    if (val.length === 0) {
+      dropdown.classList.remove('active');
+      hideSearchResults();
+    }
+  });
+  
+  input.addEventListener('blur', () => {
+    setTimeout(() => dropdown.classList.remove('active'), 200);
+  });
+}
+
+function showSearchSuggestions(dropdown) {
+  if (searchHistory.length === 0) return;
+  
+  dropdown.innerHTML = `
+    <div style="padding:10px 18px;font-size:12px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--glass-border)">
+      <i class="bi bi-clock-history"></i> ค้นหาล่าสุด
+    </div>
+    ${searchHistory.slice(0, 5).map(term => `
+      <div class="search-result-item" onclick="selectSearchTerm('${term}')">
+        <i class="bi bi-search" style="margin-right:8px;color:var(--text-muted)"></i>
+        ${term}
+      </div>
+    `).join('')}
+  `;
+  dropdown.classList.add('active');
+}
+
+function selectSearchTerm(term) {
+  const searchInput = document.querySelector('#page-jobs .search-bar');
+  if (searchInput) {
+    searchInput.value = term;
+    filterJobs(term);
+  }
+  const dropdown = document.getElementById('search-suggestions');
+  if (dropdown) dropdown.classList.remove('active');
 }
 
 function filterByStatus(status, btn) {
