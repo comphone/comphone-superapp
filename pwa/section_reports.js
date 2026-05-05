@@ -1,5 +1,5 @@
 /**
- * section_reports.js — COMPHONE SUPER APP v5.14.5-phase37
+ * section_reports.js — COMPHONE SUPER APP v5.17.0-phase42
  * Reports Section (รายงาน)
  * Status: Prototype (coming soon → active development)
  */
@@ -41,4 +41,4 @@ function renderReportsSection(data) {
   `;
 }
 
-console.log('[Reports] section_reports.js loaded (v5.14.5-phase37)');
+console.log('[Reports] section_reports.js loaded (v5.17.0-phase42)');

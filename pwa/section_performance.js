@@ -1,7 +1,7 @@
 /**
  * Performance Dashboard Section — Phase 34 Frontend
  * Renders performance metrics and charts in PC Dashboard
- * Version: v5.16.0-phase41
+ * Version: v5.17.0-phase42
  * Date: 2026-05-01
  */
 

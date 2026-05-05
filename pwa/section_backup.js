@@ -1,7 +1,7 @@
 /**
  * Backup & Recovery Section — Phase 34 Frontend
  * Renders Backup & Recovery UI in PC Dashboard Admin Panel
- * Version: v5.12.0-phase34
+ * Version: v5.17.0-phase42
  * Date: 2026-05-01
  */
 

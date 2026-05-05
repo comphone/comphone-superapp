@@ -1,9 +1,9 @@
 // ===========================================================
-// COMPHONE SUPER APP v5.16.0-phase41 - Service Worker (Modern Gradient 2026)
+// COMPHONE SUPER APP v5.17.0-phase42 - Service Worker (Modern Gradient 2026)
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ===========================================================
-const CACHE_V = 'comphone-v5.16.0-phase41-20260505_1045';
+const CACHE_V = 'comphone-v5.17.0-phase42-20260505_1130';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
 
@@ -14,7 +14,7 @@ const ASSETS = (self.COMPHONE_PWA_ASSETS && self.COMPHONE_PWA_ASSETS.precache ||
 ).concat([
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css',
   'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css',
-  BASE + '/style_modern_gradient2026.css', // Add Modern Gradient theme
+  BASE + '/style_deep_black_ultra.css', // Add Deep Black Ultra theme
   BASE + '/style.css'
 ]);
 

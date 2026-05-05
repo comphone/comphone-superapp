@@ -1,7 +1,7 @@
 /**
  * Language Manager for COMPHONE SUPER APP PWA
  * Phase 34 Frontend: Multi-language Support (EN/TH)
- * Version: v5.12.0-phase34
+ * Version: v5.17.0-phase42
  * Date: 2026-05-01
  */
 

@@ -1,6 +1,6 @@
 // ============================================================
 // Photo Upload Section — B/A Photo Management
-// COMPHONE SUPER APP v5.9.0-phase2d
+// COMPHONE SUPER APP v5.17.0-phase42d
 // Phase 29: Photo Upload UI (Frontend)
 // ============================================================
 
