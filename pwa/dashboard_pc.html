@@ -84,8 +84,39 @@ window.APP = window.APP || { currentPage: 'dashboard_pc', user: null };
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI','Sarabun',sans-serif; background: var(--bg); color: #111827; }
+
+/* ===== LOGIN OVERLAY — FULL SCREEN ===== */
+#login-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: linear-gradient(135deg, #0f172a 0%, #000000 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height for mobile */
+}
+
+#login-overlay .login-card {
+  background: rgba(13, 17, 23, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 48px 40px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  animation: fadeInUp 0.4s ease-out;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* PHASE 25.5 — VERSION BADGE */
-#version_badge {
 position: fixed;
 bottom: 12px;
 right: 12px;
@@ -1039,11 +1070,18 @@ function _doLogin(event) {
   event.preventDefault();
   console.log('[Dashboard] Attempting login via callApi...');
   
-  const username = document.getElementById('login-user')?.value;
-  const password = document.getElementById('login-pass')?.value;
+  // Use correct IDs: login-username, login-password (matching HTML)
+  const username = document.getElementById('login-username')?.value?.trim();
+  const password = document.getElementById('login-password')?.value?.trim();
   
-  if (!username || !password) {
-    alert('กรุณากรอก username และ password');
+  const errorDiv = document.getElementById('login-error');
+  
+  if (!username) {
+    if (errorDiv) { errorDiv.textContent = 'กรุณากรอกชื่อผู้ใช้'; errorDiv.style.display = 'block'; }
+    return;
+  }
+  if (!password) {
+    if (errorDiv) { errorDiv.textContent = 'กรุณากรอกรหัสผ่าน'; errorDiv.style.display = 'block'; }
     return;
   }
   
@@ -1052,7 +1090,7 @@ function _doLogin(event) {
   
   // Use callApi like Mobile App
   if (typeof callApi !== 'function') {
-    alert('callApi function not found. Please check Script URL setup.');
+    if (errorDiv) { errorDiv.textContent = 'callApi function not found. Please check Script URL setup.'; errorDiv.style.display = 'block'; }
     if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> <span>เข้าสู่ระบบ</span>'; }
     return;
   }
@@ -1073,15 +1111,15 @@ function _doLogin(event) {
         
         loadDashboard();
       } else {
-        const errorMsg = (res && (res.error || res.message)) || 'Unknown error';
+        const errorMsg = (res && (res.error || res.message)) || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
         console.error('[Login] Failed:', errorMsg);
-        alert('เข้าสู่ระบบไม่สำเร็จ: ' + errorMsg);
+        if (errorDiv) { errorDiv.textContent = 'เข้าสู่ระบบไม่สำเร็จ: ' + errorMsg; errorDiv.style.display = 'block'; }
       }
     })
     .catch(err => {
       if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> <span>เข้าสู่ระบบ</span>'; }
       console.error('[Login] Error:', err);
-      alert('เกิดข้อผิดพลาดในการเข้าสู่ระบบ: ' + (err.message || err));
+      if (errorDiv) { errorDiv.textContent = 'เกิดข้อผิดพลาด: ' + (err.message || err); errorDiv.style.display = 'block'; }
     });
 }
 
