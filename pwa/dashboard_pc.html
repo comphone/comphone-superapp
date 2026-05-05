@@ -624,87 +624,57 @@ document.addEventListener('click', function(e) {
 </head>
 <body>
 <div id="approval-panel" style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: white; border: 1px solid #ccc; padding: 10px; max-width: 300px; max-height: 400px; overflow-y: auto;"></div>
-<!-- ===== LOGIN OVERLAY (Phone + Role) ===== -->
+<!-- ===== LOGIN OVERLAY (Username + Password - Mobile App Style) ===== -->
 <div id="login-overlay">
   <div class="login-card">
-    <div class="login-logo">📱</div>
-    <div class="login-title" data-i18n="COMPHONE Dashboard">COMPHONE Dashboard</div>
-    <div class="login-sub" data-i18n="Enter phone and select role">กรอกเบอร์โทรและเลือกบทบาท</div>
+    <div class="login-logo" style="width:80px;height:80px;border-radius:20px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 16px;color:#fff;">📱</div>
+    <div class="login-title" style="font-size:24px;font-weight:800;color:#f0f6fc;margin-bottom:4px;">Comphone SuperApp AI</div>
+    <div class="login-sub" style="font-size:13px;color:#8b949e;margin-bottom:28px;">ระบบบริหารงานบริการ IT และโซลูชันเทคโนโลยี</div>
     
-    <!-- Phone Input -->
+    <!-- Username Input -->
     <div class="form-group-custom" style="margin-bottom:16px;">
-      <label style="color:#94a3b8;font-size:12px;font-weight:600;display:block;margin-bottom:6px;">เบอร์โทรศัพท์</label>
+      <label style="color:#8b949e;font-size:12px;font-weight:600;display:block;margin-bottom:6px;">ชื่อผู้ใช้</label>
       <div style="position:relative;">
-        <i class="bi bi-telephone-fill" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#64748b;font-size:16px;"></i>
-        <input type="tel" id="login-phone" placeholder="081-234-5678" style="width:100%;padding:12px 14px 12px 42px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.15);border-radius:12px;color:#fff;font-size:15px;outline:none;box-sizing:border-box;" autocomplete="tel" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='rgba(255,255,255,0.15)'">
+        <i class="bi bi-person-fill" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#64748b;font-size:16px;"></i>
+        <input type="text" id="login-username" placeholder="username" style="width:100%;padding:12px 14px 12px 42px;background:#010409;border:1.5px solid #21262d;border-radius:12px;color:#f0f6fc;font-size:15px;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#21262d'">
       </div>
     </div>
 
-    <!-- Role Selection -->
-    <div style="margin-bottom:20px;">
-      <label style="color:#94a3b8;font-size:12px;font-weight:600;display:block;margin-bottom:10px;">เลือกบทบาทของคุณ</label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <!-- Technician -->
-        <div class="role-card" data-role="technician" onclick="selectLoginRole(this)" style="background:rgba(59,130,246,0.15);border:2px solid rgba(59,130,246,0.3);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:all 0.2s;">
-          <div style="font-size:28px;margin-bottom:8px;">🔧</div>
-          <div style="color:#3b82f6;font-weight:600;font-size:13px;">ช่าง</div>
-        </div>
-        <!-- Admin -->
-        <div class="role-card" data-role="admin" onclick="selectLoginRole(this)" style="background:rgba(139,92,246,0.15);border:2px solid rgba(139,92,246,0.3);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:all 0.2s;">
-          <div style="font-size:28px;margin-bottom:8px;">🎧</div>
-          <div style="color:#8b5cf6;font-weight:600;font-size:13px;">แอดมิน</div>
-        </div>
-        <!-- Accounting -->
-        <div class="role-card" data-role="accounting" onclick="selectLoginRole(this)" style="background:rgba(16,185,129,0.15);border:2px solid rgba(16,185,129,0.3);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:all 0.2s;">
-          <div style="font-size:28px;margin-bottom:8px;">🧮</div>
-          <div style="color:#10b981;font-weight:600;font-size:13px;">บัญชี</div>
-        </div>
-        <!-- Executive -->
-        <div class="role-card" data-role="executive" onclick="selectLoginRole(this)" style="background:rgba(245,158,11,0.15);border:2px solid rgba(245,158,11,0.3);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:all 0.2s;">
-          <div style="font-size:28px;margin-bottom:8px;">📊</div>
-          <div style="color:#f59e0b;font-weight:600;font-size:13px;">ผู้บริหาร</div>
-        </div>
+    <!-- Password Input -->
+    <div class="form-group-custom" style="margin-bottom:20px;">
+      <label style="color:#8b949e;font-size:12px;font-weight:600;display:block;margin-bottom:6px;">รหัสผ่าน</label>
+      <div style="position:relative;">
+        <i class="bi bi-lock-fill" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#64748b;font-size:16px;"></i>
+        <input type="password" id="login-password" placeholder="password" style="width:100%;padding:12px 14px 12px 42px;background:#010409;border:1.5px solid #21262d;border-radius:12px;color:#f0f6fc;font-size:15px;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#21262d'">
       </div>
     </div>
 
-    <button class="login-btn" type="button" id="login-btn" onclick="submitPhoneLogin()" style="width:100%;padding:14px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:0.5px;transition:opacity 0.2s;margin-top:4px;">
-      <span data-i18n="Login">เข้าสู่ระบบ</span>
+    <button class="login-btn" type="button" id="login-btn" onclick="submitLogin()" style="width:100%;padding:14px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:0.5px;transition:opacity 0.2s;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px;">
+      <i class="bi bi-box-arrow-in-right"></i>
+      <span>เข้าสู่ระบบ</span>
     </button>
     <div class="login-error" id="login-error" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:10px;color:#fca5a5;font-size:13px;text-align:center;"></div>
+    
+    <div style="margin-top:16px;text-align:center;">
+      <a href="#" onclick="showScriptUrlSetup(); return false;" style="color:#8b949e;font-size:12px;text-decoration:none;border-bottom:1px dashed #21262d;">ตั้งค่า Script URL</a>
+    </div>
+    <div style="margin-top:12px;text-align:center;color:#484f58;font-size:11px;">Comphone SuperApp AI v5.19.0 · PWA</div>
   </div>
 </div>
 
 <script>
-let selectedLoginRole = null;
-
-function selectLoginRole(el) {
-  document.querySelectorAll('.role-card').forEach(c => {
-    c.style.borderColor = c.dataset.role === el.dataset.role ? 
-      (c.dataset.role === 'technician' ? '#3b82f6' : 
-       c.dataset.role === 'admin' ? '#8b5cf6' :
-       c.dataset.role === 'accounting' ? '#10b981' : '#f59e0b') : 'transparent';
-    c.style.background = c.dataset.role === el.dataset.role ?
-      (c.dataset.role === 'technician' ? 'rgba(59,130,246,0.25)' : 
-       c.dataset.role === 'admin' ? 'rgba(139,92,246,0.25)' :
-       c.dataset.role === 'accounting' ? 'rgba(16,185,129,0.25)' : 'rgba(245,158,11,0.25)') : 
-      (c.dataset.role === 'technician' ? 'rgba(59,130,246,0.15)' : 
-       c.dataset.role === 'admin' ? 'rgba(139,92,246,0.15)' :
-       c.dataset.role === 'accounting' ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)');
-  });
-  selectedLoginRole = el.dataset.role;
-}
-
-async function submitPhoneLogin() {
-  const phone = document.getElementById('login-phone').value.trim();
+async function submitLogin() {
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value.trim();
   const errorDiv = document.getElementById('login-error');
   
-  if (!phone) { 
-    if (errorDiv) { errorDiv.textContent = 'กรุณากรอกเบอร์โทรศัพท์'; errorDiv.style.display = 'block'; }
-    return; 
+  if (!username) {
+    if (errorDiv) { errorDiv.textContent = 'กรุณากรอกชื่อผู้ใช้'; errorDiv.style.display = 'block'; }
+    return;
   }
-  if (!selectedLoginRole) { 
-    if (errorDiv) { errorDiv.textContent = 'กรุณาเลือกบทบาท'; errorDiv.style.display = 'block'; }
-    return; 
+  if (!password) {
+    if (errorDiv) { errorDiv.textContent = 'กรุณากรอกรหัสผ่าน'; errorDiv.style.display = 'block'; }
+    return;
   }
   
   const btn = document.getElementById('login-btn');
@@ -712,15 +682,15 @@ async function submitPhoneLogin() {
   if (errorDiv) errorDiv.style.display = 'none';
   
   try {
-    // Call API to validate phone + role
-    const res = await callApi('loginByPhone', { phone: phone, role: selectedLoginRole }, { noAuth: true });
+    // Call API to validate username + password
+    const res = await callApi('login', { username: username, password: password }, { noAuth: true });
     
     if (res && (res.success || res.valid)) {
       // Save session
       const session = {
-        phone: phone,
-        role: selectedLoginRole,
-        full_name: res.full_name || '',
+        username: username,
+        full_name: res.full_name || username,
+        role: res.role || 'admin',
         token: res.token || '',
         login_at: new Date().toISOString()
       };
@@ -736,7 +706,7 @@ async function submitPhoneLogin() {
       
     } else {
       if (errorDiv) {
-        errorDiv.textContent = 'เข้าสู่ระบบไม่สำเร็จ: ' + (res.error || res.message || 'Unknown error');
+        errorDiv.textContent = 'เข้าสู่ระบบไม่สำเร็จ: ' + (res.error || res.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
         errorDiv.style.display = 'block';
       }
     }
@@ -747,7 +717,17 @@ async function submitPhoneLogin() {
       errorDiv.style.display = 'block';
     }
   } finally {
-    if (btn) { btn.disabled = false; btn.innerHTML = '<span data-i18n="Login">เข้าสู่ระบบ</span>'; }
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> <span>เข้าสู่ระบบ</span>'; }
+  }
+}
+
+// Placeholder for Script URL setup
+function showScriptUrlSetup() {
+  const url = prompt('กรุณากรอก Script URL:', localStorage.getItem('comphone_script_url') || '');
+  if (url) {
+    localStorage.setItem('comphone_script_url', url);
+    if (typeof updateScriptUrl === 'function') updateScriptUrl(url);
+    showToast('อัปเดต Script URL แล้ว');
   }
 }
 </script>
