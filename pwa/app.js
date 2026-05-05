@@ -459,6 +459,8 @@ function changeRole() {
   app.className = 'screen ' + ROLES[next].theme;
   renderHome();
   renderProfile();
+  // Re-apply role-based UI after role change
+  if (typeof applyRoleUI === 'function') applyRoleUI();
   showToast(`เปลี่ยนเป็น: ${ROLES[next].label}`);
 }
 function showSettings() {
