@@ -59,13 +59,84 @@ body {
   background: var(--bg-primary);
 }
 
-/* ===== JOB CARDS ===== */
+/* ===== JOB CARDS — Improved for Touch ===== */
 .job-card, .section-card, .page {
   background: var(--bg-glass) !important;
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border) !important;
-  border-radius: 12px !important;
+  border-radius: 16px !important; /* ใหญ่ขึ้นจาก 12px */
   color: var(--text-primary) !important;
+  margin-bottom: 16px; /* เพิ่มระยะห่างระหว่างการ์ด */
+  padding: 20px !important; /* เพิ่ม padding ให้จับง่ายขึ้น */
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.job-card:active {
+  transform: scale(0.98); /* Effect ตอนกด */
+}
+
+.job-title, h5, .page-header h5 {
+  color: var(--text-primary) !important;
+  font-size: 18px !important; /* ใหญ่ขึ้นอ่านง่าย */
+  margin-bottom: 12px !important;
+}
+
+.job-details, .section-label {
+  color: var(--text-secondary) !important;
+  font-size: 15px !important; /* อ่านง่ายขึ้น */
+  margin-bottom: 16px !important;
+}
+
+/* ===== BUTTONS — Larger Touch Targets ===== */
+.btn-primary, .btn-setup, .btn-success, .btn-secondary {
+  padding: 14px 24px !important; /* ใหญ่ขึ้นมาก */
+  font-size: 16px !important; /* ตัวอักษรใหญ่ขึ้น */
+  border-radius: 12px !important; /* มนขึ้น */
+  font-weight: 600;
+  min-height: 48px; /* Minimum touch target 48px (Google recommendation) */
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.btn-primary:active, .btn-success:active {
+  transform: scale(0.95);
+}
+
+.job-buttons {
+  display: flex;
+  gap: 12px !important; /* ระยะห่างปุ่มมากขึ้น */
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+/* ===== QUICK ACTIONS (Home Page) ===== */
+.qa-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px !important; /* ระยะห่างมากขึ้น */
+}
+
+.qa-item {
+  padding: 20px 16px !important; /* ใหญ่ขึ้น */
+  border-radius: 16px !important;
+  min-height: 80px; /* สูงขึ้น */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.qa-item i {
+  font-size: 24px !important; /* ไอคอนใหญ่ขึ้น */
+}
+
+.qa-item span {
+  font-size: 14px !important;
+  font-weight: 600;
 }
 
 .job-title, h5, .page-header h5 {

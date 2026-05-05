@@ -367,7 +367,7 @@ function downloadCustomerReceipts(customerId) {
 function showJobDetail(jobId) {
   if (!jobId) return;
   closeModal('modal-crm-jobs');
-  const detailContainer = document.getElementById('job-detail-modal-content');
+  const detailContainer = document.getElementById('modal-job-content');
   if (!detailContainer) {
     showToast('❌ ไม่พบ container สำหรับรายละเอียดงาน');
     return;
