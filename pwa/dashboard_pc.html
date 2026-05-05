@@ -461,6 +461,144 @@ color: #ef4444; font-size: 13px; margin-top: 10px; min-height: 20px;
   font-size: 11px;
   color: #6b7280;
 }
+// ===== NAVIGATION & PAGE TRANSITION =====
+function loadSection(section) {
+  const mainArea = document.querySelector('.main-area');
+  if (!mainArea) {
+    console.warn('[loadSection] .main-area not found');
+    return;
+  }
+  
+  // Update active nav item
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.classList.remove('active');
+    const onclick = item.getAttribute('onclick') || '';
+    if (onclick.includes(`loadSection('${section}')`)) {
+      item.classList.add('active');
+    }
+  });
+  
+  // Fade-out transition
+  mainArea.classList.add('fade-out');
+  
+  setTimeout(() => {
+    console.log('[loadSection] Loading section:', section);
+    const content = document.querySelector('.content');
+    if (content) {
+      content.innerHTML = '<div class="loading-state"><div class="spinner-pc"></div><p>กำลังโหลด...</p></div>';
+    }
+    
+    // Map section to loader functions
+    const sectionLoaders = {
+      'dashboard': 'loadDashboard',
+      'jobs': 'loadJobs',
+      'po': 'loadPO',
+      'inventory': 'loadInventory',
+      'billing': 'loadBilling',
+      'warranty': 'loadWarranty',
+      'revenue': 'loadRevenue',
+      'tax': 'loadTax',
+      'reports': 'loadReports',
+      'analytics': 'loadAnalytics',
+      'performance': 'loadPerformance',
+      'backup': 'loadBackup',
+      'crm': 'loadCRM',
+      'attendance': 'loadAttendance',
+      'settings': 'loadSettings'
+    };
+    
+    const funcName = sectionLoaders[section];
+    if (funcName && typeof window[funcName] === 'function') {
+      window[funcName]();
+    } else {
+      console.warn('[loadSection] Loader not found:', funcName);
+      if (content) {
+        content.innerHTML = `
+          <div class="empty-state">
+            <i class="bi bi-exclamation-triangle" style="font-size:40px;color:#f59e0b;"></i>
+            <p>ไม่พบส่วน "${section}" หรือฟังก์ชันโหลดไม่ทำงาน</p>
+          </div>
+        `;
+      }
+    }
+    
+    // Fade-in transition
+    mainArea.classList.remove('fade-out');
+    mainArea.classList.add('fade-in');
+    setTimeout(() => mainArea.classList.remove('fade-in'), 400);
+  }, 400);
+}
+
+// ===== SMART SEARCH =====
+function handleSearchInput(query) {
+  const trimmed = query.trim();
+  const suggestions = document.getElementById('search-suggestions');
+  if (!suggestions) return;
+  
+  if (trimmed.length === 0) {
+    // Show search history
+    let history = [];
+    try {
+      history = JSON.parse(localStorage.getItem('comphone_search_history') || '[]');
+    } catch (e) {
+      history = [];
+    }
+    
+    if (history.length > 0) {
+      suggestions.innerHTML = history.map(item => `
+        <div class="search-suggestion-item" onclick="selectSearchHistory('${item.replace(/'/g, "\\'")}')">
+          <i class="bi bi-clock-history" style="color:#6b7280;font-size:14px;"></i>
+          <div class="search-suggestion-text">
+            <div class="search-suggestion-title">${item}</div>
+            <div class="search-suggestion-sub">ประวัติการค้นหา</div>
+          </div>
+        </div>
+      `).join('');
+      suggestions.style.display = 'block';
+    } else {
+      suggestions.style.display = 'none';
+    }
+  } else {
+    // Save to history
+    let history = [];
+    try {
+      history = JSON.parse(localStorage.getItem('comphone_search_history') || '[]');
+    } catch (e) {
+      history = [];
+    }
+    if (!history.includes(trimmed)) {
+      history.unshift(trimmed);
+      if (history.length > 10) history.pop();
+      try {
+        localStorage.setItem('comphone_search_history', JSON.stringify(history));
+      } catch (e) {
+        console.warn('[Search] Failed to save history:', e);
+      }
+    }
+    suggestions.style.display = 'none';
+  }
+}
+
+function selectSearchHistory(query) {
+  const searchInput = document.querySelector('.topbar-search input');
+  if (searchInput) {
+    searchInput.value = query;
+    if (typeof performSearch === 'function') {
+      performSearch(query);
+    } else {
+      console.log('[Search] Performing search for:', query);
+    }
+  }
+}
+
+// Close search suggestions when clicking outside
+document.addEventListener('click', function(e) {
+  const search = document.querySelector('.topbar-search');
+  const suggestions = document.getElementById('search-suggestions');
+  if (search && suggestions && !search.contains(e.target)) {
+    suggestions.style.display = 'none';
+  }
+});
 /* ===== PAGE TRANSITION ===== */
 .main-area {
   transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -471,6 +609,7 @@ color: #ef4444; font-size: 13px; margin-top: 10px; min-height: 20px;
 .main-area.fade-in {
   opacity: 1;
 }
+
 /* ===== BUTTON TOUCH TARGET ===== */
 .btn-refresh, .btn-pwa, .nav-item, button {
   min-height: 48px;
@@ -706,7 +845,7 @@ async function submitPhoneLogin() {
   <!-- Smart Search Bar -->
   <div class="topbar-search">
     <i class="bi bi-search search-icon"></i>
-    <input type="text" id="global-search" placeholder="ค้นหางาน, ลูกค้า, สต็อก..." onkeyup="handleSearchInput(event)" onfocus="showSearchSuggestions('')">
+    <input type="text" id="global-search" placeholder="ค้นหางาน, ลูกค้า, สต็อก..." oninput="handleSearchInput(this.value)" onfocus="showSearchSuggestions('')">
     <div id="search-suggestions"></div>
   </div>
   <button class="btn-refresh" onclick="loadDashboard()">
@@ -1072,3 +1211,60 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
+
+<!-- ===== MODAL CONTAINERS ===== -->
+<!-- Job Detail Modal -->
+<div id="modal-job" class="modal-overlay hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;">
+  <div style="background:#0d1117;border:1px solid #21262d;border-radius:20px;width:90%;max-width:600px;max-height:90vh;overflow-y:auto;color:#f0f6fc;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #21262d;">
+      <div style="font-size:16px;font-weight:700;">รายละเอียดงาน</div>
+      <div style="cursor:pointer;font-size:20px;opacity:0.5;" onclick="closeModal('modal-job')">×</div>
+    </div>
+    <div id="modal-job-content">
+      <!-- Content will be inserted by showJobDetailV2() -->
+    </div>
+  </div>
+</div>
+
+<!-- Assign Job Modal -->
+<div id="modal-assign" class="modal-overlay hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;">
+  <div style="background:#0d1117;border:1px solid #21262d;border-radius:20px;width:90%;max-width:500px;padding:24px;color:#f0f6fc;">
+    <div style="font-size:16px;font-weight:700;margin-bottom:16px;">มอบหมายช่าง</div>
+    <div id="modal-assign-content">
+      <!-- Content will be inserted by openAssignJob() -->
+    </div>
+  </div>
+</div>
+
+<!-- Quick Note Modal -->
+<div id="modal-note" class="modal-overlay hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;">
+  <div style="background:#0d1117;border:1px solid #21262d;border-radius:20px;width:90%;max-width:500px;padding:24px;color:#f0f6fc;">
+    <div style="font-size:16px;font-weight:700;margin-bottom:16px;">บันทึกรายการ</div>
+    <div id="modal-note-content">
+      <!-- Content will be inserted by openQuickNote() -->
+    </div>
+  </div>
+</div>
+
+<!-- Timeline Modal -->
+<div id="modal-timeline" class="modal-overlay hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;">
+  <div style="background:#0d1117;border:1px solid #21262d;border-radius:20px;width:90%;max-width:600px;max-height:90vh;overflow-y:auto;padding:24px;color:#f0f6fc;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div style="font-size:16px;font-weight:700;">ประวัติงาน</div>
+      <div style="cursor:pointer;font-size:20px;opacity:0.5;" onclick="closeModal('modal-timeline')">×</div>
+    </div>
+    <div id="modal-timeline-content">
+      <!-- Content will be inserted by showJobTimeline() -->
+    </div>
+  </div>
+</div>
+
+<script>
+function closeModal(id) {
+  const modal = document.getElementById(id);
+  if (modal) modal.classList.add('hidden');
+}
+</script>
+
+</body>
+</html>

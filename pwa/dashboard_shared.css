@@ -43,22 +43,22 @@
   --cp-transition: 0.2s ease;
 }
 
-/* ── Dark Theme ─────────────────────────────────────── */
+/* ── Dark Theme (Deep Black Ultra v9) ─────────────────────────────── */
 .cp-dark {
-  --cp-bg:       #0f172a;
-  --cp-bg2:      #1e293b;
-  --cp-bg3:      #334155;
-  --cp-surface:  #161b22;
-  --cp-border:   #334155;
-  --cp-text:     #f1f5f9;
-  --cp-text2:    #94a3b8;
-  --cp-text3:    #64748b;
-  --cp-card-bg:  #1e293b;
-  --cp-card-border: #334155;
-  --cp-input-bg: #0f172a;
-  --cp-hover-bg: #334155;
-  --cp-shadow:   0 4px 24px rgba(0,0,0,0.3);
-  --cp-shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
+  --cp-bg:       #000000;
+  --cp-bg2:      #0a0a0a;
+  --cp-bg3:      #111111;
+  --cp-surface:  #0d1117;
+  --cp-border:   #21262d;
+  --cp-text:     #f0f6fc;
+  --cp-text2:    #8b949e;
+  --cp-text3:    #484f58;
+  --cp-card-bg:  #0d1117;
+  --cp-card-border: #21262d;
+  --cp-input-bg: #010409;
+  --cp-hover-bg: #161b22;
+  --cp-shadow:   0 4px 24px rgba(0,0,0,0.8);
+  --cp-shadow-sm: 0 1px 3px rgba(0,0,0,0.6);
 }
 
 /* ── Light Theme ────────────────────────────────────── */
