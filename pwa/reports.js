@@ -329,4 +329,3 @@ doc.save(`inventory_report_${new Date().toISOString().split('T')[0]}.pdf`);
 
 // Mobile PWA alias — called by app.js goPage("reports")
 function loadReportsPage() { renderReportModule(); }
-

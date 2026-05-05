@@ -1,17 +1,20 @@
 // ===========================================================
-// COMPHONE SUPER APP v5.14.2-phase39 - Service Worker v5.14.2-phase39
+// COMPHONE SUPER APP v5.15.0-phase40 - Service Worker (Metro UI Update)
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ===========================================================
-const CACHE_V = 'comphone-v5.14.2-phase39-20260505_0900';
+const CACHE_V = 'comphone-v5.15.0-phase40-20260505_0930';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
+
 importScripts(BASE + '/pwa_asset_manifest.js');
+
 const ASSETS = (self.COMPHONE_PWA_ASSETS && self.COMPHONE_PWA_ASSETS.precache || []).map(asset =>
   asset === '/' ? BASE + '/' : BASE + '/' + asset
 ).concat([
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css',
-  'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css'
+  'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css',
+  BASE + '/style_metro.css' // Add Metro style to precache
 ]);
 
 // Network Only patterns (never cache)

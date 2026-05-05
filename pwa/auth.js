@@ -10,7 +10,7 @@
 // ============================================================
 
 // ===== AUTH STATE =====
-const AUTH = {
+const AUTH=***
   token: null,
   username: null,
   fullName: null,
@@ -23,11 +23,11 @@ const AUTH = {
 };
 
 // SESSION_KEY ใน localStorage
-const AUTH_SESSION_KEY = 'comphone_auth_session';
-const AUTH_USER_KEY = 'comphone_user';
+const AUTH_SESSION_KEY='compho...sion';
+const AUTH_USER_KEY='***';
 
 // Role mapping จาก GAS → PWA role
-const AUTH_ROLE_MAP = {
+const AUTH_ROLE_MAP=***
   'OWNER':      'admin',
   'owner':      'admin',
   'ADMIN':      'admin',

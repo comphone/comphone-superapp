@@ -507,4 +507,3 @@ function _exportBillingCSV() {
 
 // Mobile PWA alias — called by app.js goPage("billing")
 function loadBillingPage() { renderBillingSection(); }
-

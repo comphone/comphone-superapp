@@ -1,6 +1,6 @@
 // ============================================================
 // Analytics Section — Business Intelligence Dashboard
-// COMPHONE SUPER APP v5.9.0-phase2d
+// COMPHONE SUPER APP v5.15.0-phase40d
 // Phase 29: AI Business Intelligence (Frontend)
 // ============================================================
 

@@ -1,7 +1,7 @@
 /**
  * Performance Dashboard Section — Phase 34 Frontend
  * Renders performance metrics and charts in PC Dashboard
- * Version: v5.12.0-phase34
+ * Version: v5.15.0-phase40
  * Date: 2026-05-01
  */
 
@@ -295,4 +295,3 @@ console.log('[Performance Section] Loaded');
 
 // Mobile PWA alias — called by app.js goPage("performance")
 function loadPerformancePage() { renderPerformanceSection(); }
-

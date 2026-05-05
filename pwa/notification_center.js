@@ -499,4 +499,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Mobile PWA alias — called by app.js goPage("notifications")
 function loadNotificationCenter() { showNotificationCenter(); }
-
