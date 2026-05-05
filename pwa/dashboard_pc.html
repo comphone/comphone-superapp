@@ -1,181 +1,383 @@
-     1|     1|<!DOCTYPE html>
-     2|     2|<html lang="th" class="cp-light">
-     3|     3|<head>
-     4|     4|<meta charset="UTF-8">
-     5|     5|<meta name="viewport" content="width=device-width, initial-scale=1.0">
-     6|     6|<title>COMPHONE Dashboard — PC</title>
-     7|     7|<script src="version_config.js?v=5.18.0-phase43&t=20260505_1500"></script>
-     8|     8|<script>
-     9|     9|// Session contract: accept success/valid and handle offline
-    10|    10|if (typeof window.comphone_auth_session !== 'undefined') {
-    11|    11|  // Session valid or offline - preserve local session
-    12|    12|  var sessionData = localStorage.getItem('comphone_auth_session');
-    13|    13|  if (sessionData) {
-    14|    14|    try {
-    15|    15|      var res = JSON.parse(sessionData);
-    16|    16|      if (res._errorKind === 'offline' || res.valid || res.success) {
-    17|    17|        // Session valid or offline - preserve local session
-    18|    18|        if (res.valid || res.success) {
-    19|    19|          localStorage.setItem('comphone_auth_session', JSON.stringify(res));
-    20|    20|        }
-    21|    21|      }
-    22|    22|    } catch(e) {
-    23|    23|      console.warn('[Session] Error parsing session data:', e);
-    24|    24|    }
-    25|    25|  }
-    26|    26|}
-    27|    27|</script>
-    28|    28|<script src="gas_config.js?v=5.14.2-phase39&t=20260505_1045"></script>
-    29|    29|<script src="api_contract.js?v=5.14.2-phase39&t=20260505_1045"></script>
-    30|    30|<script src="api_client.js?v=5.14.2-phase39&t=20260505_1045"></script>
-    31|    31|<script src="dashboard.js?v=5.14.2-phase39&t=20260505_1045"></script>
-    32|    32|<script src="section_jobs.js?v=5.14.2-phase39&t=20260505_1045"></script>
-    33|    33|<script src="section_po.js?v=5.14.2-phase39&t=20260505_1045"></script>
-    34|    34|<script src="section_inventory.js?v=5.14.2-phase39&t=20260505_1045"></script>
-    35|    35|<script src="section_revenue.js?v=5.14.2-phase39&t=20260505_1045"></script>
-    36|    36|<script src="section_tax.js?v=5.14.2-phase39&t=20260505_1045"></script>
-    37|    37|<script src="section_crm.js?v=5.14.2-phase39&t=20260505_1045"></script>
-    38|    38|<script src="section_backup.js?v=5.14.2-phase39&t=20260505_1045"></script>
-    39|    39|<script src="section_performance.js?v=5.14.2-phase39&t=20260505_1045"></script>
-    40|    40|<script src="section_settings.js?v=5.14.2-phase39&t=20260505_1045"></script>
-    41|    41|<script>
-    42|    42|// ── XSS Sanitizer (PHMP v1 — 2026-04-24) ──
-    43|    43|// Lightweight HTML sanitizer for API data rendered via innerHTML.
-    44|    44|// Strips script tags, event handlers, and dangerous protocols.
-    45|    45|window.sanitizeHTML = function(str) {
-    46|    46|if (typeof str !== 'string') return str;
-    47|    47|return str
-    48|    48|.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    49|    49|.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
-    50|    50|.replace(/on\w+\s*=\s*[^\s>]*/gi, '')
-    51|    51|.replace(/javascript\s*:/gi, '')
-    52|    52|.replace(/data\s*:\s*text\/html/gi, '');
-    53|    53|};
-    54|    54|// PHASE 25.3 — GLOBAL VERSION LOCK (Read from version_config.js at runtime)
-    55|    55|window.__APP_VERSION = window.__APP_VERSION || 
-    56|    56|  (window.VERSION_CONFIG && window.VERSION_CONFIG.version) || 
-    57|    57|  (window.GAS_CONFIG && window.GAS_CONFIG.version) || 
-    58|    58|  'v5.17.0-phase42';
-    59|    59|// Cache invalidation on version mismatch
-    60|    60|if (localStorage.__APP_VERSION !== window.__APP_VERSION) {
-    61|    61|console.warn('[VERSION] Dashboard version mismatch - clearing runtime caches only...');
-    62|    62|if ('caches' in window) {
-    63|    63|caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-    64|    64|}
-    65|    65|localStorage.__APP_VERSION = window.__APP_VERSION;
-    66|    66|}
-    67|    67|// PHASE 26.6 FIX: Minimal APP stub for error_boundary.js
-    68|    68|window.APP = window.APP || { currentPage: 'dashboard_pc', user: null };
-    69|    69|</script>
-    70|    70|<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    71|    71|<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    72|    72|<link rel="stylesheet" href="dashboard_shared.css?v=5.14.2-phase39&t=20260505_1045">
-    73|    73|<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-    74|    74|<style>
-    75|    75|:root {
-    76|    76|--sidebar-w: 240px;
-    77|    77|--header-h: 60px;
-    78|    78|/* Local tokens bridged to shared design system (dashboard_shared.css) */
-    79|    79|--blue: var(--cp-blue);
-    80|    80|--green: var(--cp-green);
-    81|    81|--amber: var(--cp-orange);
-    82|    82|--red: var(--cp-red);
-    83|    83|--gray: var(--cp-text2);
-    84|    84|--bg: var(--cp-bg);
-    85|    85|--card: var(--cp-card-bg);
-    86|    86|--border: var(--cp-border);
-    87|    87|}
-    88|    88|* { box-sizing: border-box; margin: 0; padding: 0; }
-    89|    89|body { font-family: 'Segoe UI','Sarabun',sans-serif; background: var(--bg); color: #111827; }
-    90|    90|/* PHASE 25.5 — VERSION BADGE */
-    91|    91|#version_badge {
-    92|    92|position: fixed;
-    93|    93|bottom: 12px;
-    94|    94|right: 12px;
-    95|    95|z-index: 9999;
-    96|    96|background: rgba(15, 23, 42, 0.9);
-    97|    97|color: #e2e8f0;
-    98|    98|padding: 6px 12px;
-    99|    99|border-radius: 6px;
-   100|   100|font-size: 11px;
-   101|   101|font-family: 'Segoe UI', monospace;
-   102|   102|letter-spacing: 0.3px;
-   103|   103|box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-   104|   104|backdrop-filter: blur(4px);
-   105|   105|border: 1px solid rgba(255,255,255,0.08);
-   106|   106|pointer-events: none;
-   107|   107|transition: opacity 0.3s;
-   108|   108|}
-   109|   109|#version_badge .ok { color: #34d399; }
-   110|   110|#version_badge .warn { color: #fbbf24; }
-   111|   111|#version_badge .err { color: #f87171; }
-   112|   112|/* ===== SIDEBAR ===== */
-   113|   113|.sidebar {
-   114|   114|position: fixed; left: 0; top: 0; bottom: 0;
-   115|   115|width: var(--sidebar-w);
-   116|   116|background:
-   117|   117|  radial-gradient(circle at 20% 10%, rgba(59, 130, 246, 0.18) 0%, transparent 50%),
-   118|   118|  linear-gradient(180deg, #0b1220 0%, #0f172a 100%);
-   119|   119|color: #fff; z-index: 100; display: flex; flex-direction: column;
-   120|   120|transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-   121|   121|box-shadow: 4px 0 24px rgba(15, 23, 42, 0.12);
-   122|   122|border-right: 1px solid rgba(255, 255, 255, 0.06);
-   123|   123|}
-   124|   124|.sidebar-logo {
-   125|   125|padding: 18px 20px 14px;
-   126|   126|border-bottom: 1px solid rgba(255,255,255,0.08);
-   127|   127|display: flex; align-items: center; gap: 12px;
-   128|   128|}
-   129|   129|.sidebar-logo .logo-icon {
-   130|   130|width: 40px; height: 40px; border-radius: 10px;
-   131|   131|background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-   132|   132|display: flex; align-items: center; justify-content: center;
-   133|   133|font-size: 20px; flex-shrink: 0;
-   134|   134|}
-   135|   135|.sidebar-logo .logo-text { font-size: 15px; font-weight: 800; line-height: 1.2; }
-   136|   136|.sidebar-logo .logo-sub { font-size: 10px; opacity: 0.5; font-weight: 400; }
-   137|   137|.nav-section { padding: 12px 12px 4px; font-size: 10px; font-weight: 700; opacity: 0.4; text-transform: uppercase; letter-spacing: 1px; }
-   138|   138|.nav-item {
-   139|   139|display: flex; align-items: center; gap: 12px;
-   140|   140|padding: 10px 16px; margin: 2px 8px; border-radius: 10px;
-   141|   141|cursor: pointer; font-size: 14px; font-weight: 500;
-   142|   142|color: rgba(255,255,255,0.65);
-   143|   143|transition: var(--cp-transition-smooth, all 0.3s cubic-bezier(0.4, 0, 0.2, 1));
-   144|   144|text-decoration: none;
-   145|   145|}
-   146|   146|.nav-item:hover {
-   147|   147|background: rgba(255,255,255,0.08); color: #fff;
-   148|   148|transform: translateX(2px);
-   149|   149|}
-   150|   150|.nav-item.active {
-   151|   151|background: linear-gradient(135deg, #2563eb, #0ea5e9);
-   152|   152|color: #fff; font-weight: 700;
-   153|   153|box-shadow: 0 10px 26px rgba(37, 99, 235, 0.28);
-   154|   154|}
-   155|   155|.nav-item i { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
-   156|   156|.nav-badge { margin-left: auto; background: #ef4444; color: #fff; border-radius: 20px; padding: 1px 7px; font-size: 10px; font-weight: 700; }
-   157|   157|.sidebar-footer {
-   158|   158|margin-top: auto; padding: 16px;
-   159|   159|border-top: 1px solid rgba(255,255,255,0.08);
-   160|   160|}
-   161|   161|.user-chip {
-   162|   162|display: flex; align-items: center; gap: 10px;
-   163|   163|background: rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 12px;
-   164|   164|}
-   165|   165|.user-avatar-sm {
-   166|   166|width: 34px; height: 34px; border-radius: 50%;
-   167|   167|background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-   168|   168|display: flex; align-items: center; justify-content: center;
-   169|   169|font-weight: 800; font-size: 14px; color: #fff; flex-shrink: 0;
-   170|   170|}
-   171|   171|.user-name-sm { font-size: 13px; font-weight: 700; color: #fff; }
-   172|   172|.user-role-sm { font-size: 10px; opacity: 0.5; }
-   173|   173|/* ===== MAIN AREA ===== */
-   174|   174|.main-area {
-   175|   175|margin-left: var(--sidebar-w);
-   176|   176|min-height: 100vh;
-   177|   177|display: flex; flex-direction: column;
-   178|   178|}
+<!DOCTYPE html>
+<html lang="th" class="cp-light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COMPHONE Dashboard — PC</title>
+<script src="version_config.js?v=5.18.0-phase43&t=20260505_1500"></script>
+<script>
+// Session contract: accept success/valid and handle offline
+if (typeof window.comphone_auth_session !== 'undefined') {
+  // Session valid or offline - preserve local session
+  var sessionData = localStorage.getItem('comphone_auth_session');
+  if (sessionData) {
+    try {
+      var res = JSON.parse(sessionData);
+      if (res._errorKind === 'offline' || res.valid || res.success) {
+        // Session valid or offline - preserve local session
+        if (res.valid || res.success) {
+          localStorage.setItem('comphone_auth_session', JSON.stringify(res));
+        }
+      }
+    } catch(e) {
+      console.warn('[Session] Error parsing session data:', e);
+    }
+  }
+}
+</script>
+<script src="gas_config.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="api_contract.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="api_client.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="dashboard.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="section_jobs.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="section_po.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="section_inventory.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="section_revenue.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="section_tax.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="section_crm.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="section_backup.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="section_performance.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="section_settings.js?v=5.14.4&t=20260504_1600"></script>
+<script>
+// ── XSS Sanitizer (PHMP v1 — 2026-04-24) ──
+// Lightweight HTML sanitizer for API data rendered via innerHTML.
+// Strips script tags, event handlers, and dangerous protocols.
+window.sanitizeHTML = function(str) {
+if (typeof str !== 'string') return str;
+return str
+.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
+.replace(/on\w+\s*=\s*[^\s>]*/gi, '')
+.replace(/javascript\s*:/gi, '')
+.replace(/data\s*:\s*text\/html/gi, '');
+};
+// PHASE 25.3 — GLOBAL VERSION LOCK
+window.__APP_VERSION = window.__APP_VERSION || ('v' + (window.COMPHONE_VERSION || '5.13.0-phase36'));
+// Cache invalidation on version mismatch
+if (localStorage.__APP_VERSION !== window.__APP_VERSION) {
+console.warn('[VERSION] Dashboard version mismatch - clearing runtime caches only...');
+if ('caches' in window) {
+caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+}
+localStorage.__APP_VERSION = window.__APP_VERSION;
+}
+// PHASE 26.6 FIX: Minimal APP stub for error_boundary.js
+window.APP = window.APP || { currentPage: 'dashboard_pc', user: null };
+</script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="dashboard_shared.css?v=5.13.0-phase36&t=20260504_1111">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+:root {
+--sidebar-w: 240px;
+--header-h: 60px;
+/* Local tokens bridged to shared design system (dashboard_shared.css) */
+--blue: var(--cp-blue);
+--green: var(--cp-green);
+--amber: var(--cp-orange);
+--red: var(--cp-red);
+--gray: var(--cp-text2);
+--bg: var(--cp-bg);
+--card: var(--cp-card-bg);
+--border: var(--cp-border);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI','Sarabun',sans-serif; background: var(--bg); color: #111827; }
+/* PHASE 25.5 — VERSION BADGE */
+#version_badge {
+position: fixed;
+bottom: 12px;
+right: 12px;
+z-index: 9999;
+background: rgba(15, 23, 42, 0.9);
+color: #e2e8f0;
+padding: 6px 12px;
+border-radius: 6px;
+font-size: 11px;
+font-family: 'Segoe UI', monospace;
+letter-spacing: 0.3px;
+box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+backdrop-filter: blur(4px);
+border: 1px solid rgba(255,255,255,0.08);
+pointer-events: none;
+transition: opacity 0.3s;
+}
+#version_badge .ok { color: #34d399; }
+#version_badge .warn { color: #fbbf24; }
+#version_badge .err { color: #f87171; }
+/* ===== SIDEBAR ===== */
+.sidebar {
+position: fixed; left: 0; top: 0; bottom: 0;
+width: var(--sidebar-w);
+background:
+  radial-gradient(circle at 20% 10%, rgba(59, 130, 246, 0.18) 0%, transparent 50%),
+  linear-gradient(180deg, #0b1220 0%, #0f172a 100%);
+color: #fff; z-index: 100; display: flex; flex-direction: column;
+transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+box-shadow: 4px 0 24px rgba(15, 23, 42, 0.12);
+border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+.sidebar-logo {
+padding: 18px 20px 14px;
+border-bottom: 1px solid rgba(255,255,255,0.08);
+display: flex; align-items: center; gap: 12px;
+}
+.sidebar-logo .logo-icon {
+width: 40px; height: 40px; border-radius: 10px;
+background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+display: flex; align-items: center; justify-content: center;
+font-size: 20px; flex-shrink: 0;
+}
+.sidebar-logo .logo-text { font-size: 15px; font-weight: 800; line-height: 1.2; }
+.sidebar-logo .logo-sub { font-size: 10px; opacity: 0.5; font-weight: 400; }
+.nav-section { padding: 12px 12px 4px; font-size: 10px; font-weight: 700; opacity: 0.4; text-transform: uppercase; letter-spacing: 1px; }
+.nav-item {
+display: flex; align-items: center; gap: 12px;
+padding: 10px 16px; margin: 2px 8px; border-radius: 10px;
+cursor: pointer; font-size: 14px; font-weight: 500;
+color: rgba(255,255,255,0.65);
+transition: var(--cp-transition-smooth, all 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+text-decoration: none;
+}
+.nav-item:hover {
+background: rgba(255,255,255,0.08); color: #fff;
+transform: translateX(2px);
+}
+.nav-item.active {
+background: linear-gradient(135deg, #2563eb, #0ea5e9);
+color: #fff; font-weight: 700;
+box-shadow: 0 10px 26px rgba(37, 99, 235, 0.28);
+}
+.nav-item i { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+.nav-badge { margin-left: auto; background: #ef4444; color: #fff; border-radius: 20px; padding: 1px 7px; font-size: 10px; font-weight: 700; }
+.sidebar-footer {
+margin-top: auto; padding: 16px;
+border-top: 1px solid rgba(255,255,255,0.08);
+}
+.user-chip {
+display: flex; align-items: center; gap: 10px;
+background: rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 12px;
+}
+.user-avatar-sm {
+width: 34px; height: 34px; border-radius: 50%;
+background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+display: flex; align-items: center; justify-content: center;
+font-weight: 800; font-size: 14px; color: #fff; flex-shrink: 0;
+}
+.user-name-sm { font-size: 13px; font-weight: 700; color: #fff; }
+.user-role-sm { font-size: 10px; opacity: 0.5; }
+/* ===== MAIN AREA ===== */
+.main-area {
+margin-left: var(--sidebar-w);
+min-height: 100vh;
+display: flex; flex-direction: column;
+}
+/* ===== TOPBAR ===== */
+.topbar {
+height: var(--header-h);
+background: var(--cp-glass-bg, rgba(255, 255, 255, 0.85));
+border-bottom: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
+display: flex; align-items: center; gap: 16px;
+padding: 0 24px; position: sticky; top: 0; z-index: 50;
+backdrop-filter: var(--cp-glass-blur, blur(16px));
+-webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
+box-shadow: var(--cp-spatial-depth-1, 0 2px 8px rgba(0, 0, 0, 0.04));
+}
+.topbar-title { font-size: 18px; font-weight: 800; color: #111827; flex: 1; }
+.topbar-date { font-size: 12px; color: var(--gray); }
+.btn-refresh {
+background: var(--cp-glass-bg, rgba(255, 255, 255, 0.65));
+backdrop-filter: var(--cp-glass-blur, blur(16px));
+-webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
+border: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
+border-radius: 8px; padding: 7px 14px; font-size: 13px;
+color: #374151; cursor: pointer; display: flex; align-items: center; gap: 6px;
+transition: var(--cp-transition-smooth, all 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+position: relative; overflow: hidden;
+}
+.btn-refresh:hover {
+background: #e2e8f0;
+box-shadow: var(--cp-spatial-depth-2, 0 4px 16px rgba(0, 0, 0, 0.08));
+transform: translateY(-1px);
+}
+.btn-pwa {
+background: var(--cp-gradient-border, linear-gradient(135deg, #00d4ff, #a855f7));
+color: #fff; border: none;
+border-radius: 8px; padding: 7px 14px; font-size: 13px;
+cursor: pointer; display: flex; align-items: center; gap: 6px;
+text-decoration: none;
+transition: var(--cp-transition-smooth, all 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+position: relative; overflow: hidden;
+}
+.btn-pwa:hover {
+transform: translateY(-1px);
+box-shadow: var(--cp-spatial-depth-2, 0 4px 16px rgba(0, 0, 0, 0.08));
+filter: brightness(1.1);
+}
+/* ===== CONTENT ===== */
+.content { padding: 24px; flex: 1; }
+/* ===== KPI ROW ===== */
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+.kpi-box {
+background: var(--cp-glass-bg, rgba(255, 255, 255, 0.65));
+backdrop-filter: var(--cp-glass-blur, blur(16px));
+-webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
+border: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
+border-radius: 16px; padding: 20px;
+display: flex; align-items: center; gap: 16px;
+box-shadow: var(--cp-glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.08));
+transition: var(--cp-transition-smooth, all 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+position: relative; overflow: hidden;
+}
+.kpi-box::before {
+content: ''; position: absolute; top: 0; left: 0; right: 0;
+height: 3px; background: var(--cp-gradient-border, linear-gradient(135deg, #00d4ff, #a855f7));
+opacity: 0; transition: opacity 0.2s;
+}
+.kpi-box:hover { transform: translateY(-4px); box-shadow: var(--cp-spatial-depth-3, 0 8px 32px rgba(0, 0, 0, 0.12)); border-color: #bfdbfe; }
+.kpi-box:hover::before { opacity: 1; }
+.kpi-icon-box {
+width: 52px; height: 52px; border-radius: 14px;
+display: flex; align-items: center; justify-content: center;
+font-size: 22px; flex-shrink: 0;
+}
+.kpi-num { font-size: 28px; font-weight: 900; line-height: 1; }
+.kpi-lbl { font-size: 12px; color: var(--gray); margin-top: 3px; font-weight: 600; }
+.kpi-sub { font-size: 11px; color: var(--gray); margin-top: 2px; }
+.kpi-alert-pulse { animation: kpi-pulse 1.5s ease-in-out infinite; border: 2px solid #fca5a5; }
+@keyframes kpi-pulse {
+0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.3); }
+50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+}
+/* ===== GRID 2 COL ===== */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.grid-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+/* ===== CARD ===== */
+.card-box {
+background: var(--cp-glass-bg, rgba(255, 255, 255, 0.65));
+backdrop-filter: var(--cp-glass-blur, blur(16px));
+-webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
+border: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
+border-radius: 14px; padding: 20px;
+box-shadow: var(--cp-glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.08));
+transition: var(--cp-transition-smooth, all 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+}
+.card-box:hover {
+box-shadow: var(--cp-spatial-depth-3, 0 8px 32px rgba(0, 0, 0, 0.12));
+transform: translateY(-2px);
+}
+.card-title {
+font-size: 14px; font-weight: 800; color: #111827;
+margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+.card-title .badge-count {
+background: #f1f5f9; color: var(--gray);
+border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700;
+}
+/* ===== JOB TABLE ===== */
+.job-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.job-table th {
+text-align: left; padding: 8px 12px;
+font-size: 11px; font-weight: 700; color: var(--gray);
+border-bottom: 2px solid var(--border);
+background: #f8fafc;
+}
+.job-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.job-table tr:last-child td { border-bottom: none; }
+.job-table tr:hover td { background: #f8fafc; }
+.job-table .job-id { font-weight: 700; color: var(--blue); font-size: 12px; }
+.job-table .customer { font-weight: 600; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.job-table .symptom { color: var(--gray); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.status-badge {
+display: inline-block; padding: 3px 10px; border-radius: 20px;
+font-size: 11px; font-weight: 700; white-space: nowrap;
+}
+.days-badge {
+display: inline-block; padding: 2px 8px; border-radius: 6px;
+font-size: 11px; font-weight: 700;
+}
+/* ===== STATUS DIST ===== */
+.status-dist { display: flex; flex-direction: column; gap: 10px; }
+.status-row { display: flex; align-items: center; gap: 10px; }
+.status-label { font-size: 12px; font-weight: 600; width: 120px; flex-shrink: 0; }
+.status-bar-wrap { flex: 1; background: #f1f5f9; border-radius: 6px; height: 8px; overflow: hidden; }
+.status-bar { height: 100%; border-radius: 6px; transition: width 0.5s; }
+.status-count { font-size: 12px; font-weight: 700; width: 30px; text-align: right; flex-shrink: 0; }
+/* ===== ALERTS ===== */
+.alert-row {
+display: flex; align-items: flex-start; gap: 12px;
+padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.alert-row:last-child { border-bottom: none; }
+.alert-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.alert-msg { font-size: 13px; font-weight: 700; }
+.alert-sub { font-size: 11px; color: var(--gray); margin-top: 2px; }
+/* ===== CHART ===== */
+.chart-wrap { position: relative; height: 220px; }
+/* ===== LOADING ===== */
+.loading-state { text-align: center; padding: 60px 20px; color: var(--gray); }
+.spinner-pc {
+width: 40px; height: 40px; border: 3px solid #e2e8f0;
+border-top-color: #3b82f6; border-radius: 50%;
+animation: spin 0.8s linear infinite; margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1200px) {
+.kpi-row { grid-template-columns: repeat(2, 1fr); }
+.grid-3 { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 900px) {
+.sidebar { width: 64px; }
+.sidebar-logo .logo-text, .sidebar-logo .logo-sub,
+.nav-item span, .nav-section, .user-name-sm, .user-role-sm { display: none; }
+.nav-item { justify-content: center; padding: 12px; }
+.nav-item i { width: auto; }
+.main-area { margin-left: 64px; }
+.grid-2, .grid-3 { grid-template-columns: 1fr; }
+.kpi-row { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+.kpi-row { grid-template-columns: 1fr 1fr; }
+.content { padding: 12px; }
+}
+/* ===== LOGIN OVERLAY ===== */
+#login-overlay {
+position: fixed; inset: 0; z-index: 99999;
+background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+display: flex; align-items: center; justify-content: center;
+font-family: 'Inter', sans-serif;
+}
+#login-overlay .login-card {
+background: var(--cp-glass-bg, rgba(255, 255, 255, 0.65));
+backdrop-filter: var(--cp-glass-blur, blur(16px));
+-webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
+border: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
+border-radius: 20px; padding: 40px 36px;
+width: 100%; max-width: 380px;
+box-shadow: var(--cp-spatial-depth-3, 0 8px 32px rgba(0, 0, 0, 0.12));
+text-align: center;
+}
+#login-overlay .login-logo { font-size: 40px; margin-bottom: 8px; }
+#login-overlay .login-title { font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+#login-overlay .login-sub { font-size: 12px; color: #94a3b8; margin-bottom: 28px; }
+#login-overlay .login-field {
+width: 100%; padding: 12px 16px; border: 1.5px solid #e2e8f0; border-radius: 10px;
+font-size: 14px; margin-bottom: 12px; outline: none; transition: border 0.2s;
+box-sizing: border-box;
+}
+#login-overlay .login-field:focus { border-color: #3b82f6; }
+#login-overlay .login-btn {
+width: 100%; padding: 13px; background: #3b82f6; color: #fff; border: none;
+border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer;
+transition: background 0.2s; margin-top: 4px;
+}
+#login-overlay .login-btn:hover { background: #2563eb; }
+#login-overlay .login-btn:disabled { background: #94a3b8; cursor: wait; }
+#login-overlay .login-error {
+color: #ef4444; font-size: 13px; margin-top: 10px; min-height: 20px;
+}
 /* ===== SMART SEARCH BAR ===== */
 .topbar-search {
   position: relative;
@@ -191,7 +393,7 @@
   font-size: 13px;
   background: #f8fafc;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  min-height: 48px; /* Touch target */
+  min-height: 48px;
 }
 .topbar-search input:focus {
   outline: none;
@@ -230,7 +432,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 48px; /* Touch target */
+  min-height: 48px;
 }
 .search-suggestion-item:hover {
   background: #f8fafc;
@@ -279,318 +481,112 @@
   display: flex;
   align-items: center;
 }
-/* ===== END OF ADDITIONS ===== */
-/* ===== TOPBAR ===== */
-.topbar {
-   181|   181|height: var(--header-h);
-   182|   182|background: var(--cp-glass-bg, rgba(255, 255, 255, 0.85));
-   183|   183|border-bottom: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
-   184|   184|display: flex; align-items: center; gap: 16px;
-   185|   185|padding: 0 24px; position: sticky; top: 0; z-index: 50;
-   186|   186|backdrop-filter: var(--cp-glass-blur, blur(16px));
-   187|   187|-webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
-   188|   188|box-shadow: var(--cp-spatial-depth-1, 0 2px 8px rgba(0, 0, 0, 0.04));
-   189|   189|}
-   190|   190|.topbar-title { font-size: 18px; font-weight: 800; color: #111827; flex: 1; }
-   191|   191|.topbar-date { font-size: 12px; color: var(--gray); }
-   192|   192|.btn-refresh {
-   193|   193|background: var(--cp-glass-bg, rgba(255, 255, 255, 0.65));
-   194|   194|backdrop-filter: var(--cp-glass-blur, blur(16px));
-   195|   195|-webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
-   196|   196|border: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
-   197|   197|border-radius: 8px; padding: 7px 14px; font-size: 13px;
-   198|   198|color: #374151; cursor: pointer; display: flex; align-items: center; gap: 6px;
-   199|   199|transition: var(--cp-transition-smooth, all 0.3s cubic-bezier(0.4, 0, 0.2, 1));
-   200|   200|position: relative; overflow: hidden;
-   201|   201|}
-   202|   202|.btn-refresh:hover {
-   203|   203|background: #e2e8f0;
-   204|   204|box-shadow: var(--cp-spatial-depth-2, 0 4px 16px rgba(0, 0, 0, 0.08));
-   205|   205|transform: translateY(-1px);
-   206|   206|}
-   207|   207|.btn-pwa {
-   208|   208|background: var(--cp-gradient-border, linear-gradient(135deg, #00d4ff, #a855f7));
-   209|   209|color: #fff; border: none;
-   210|   210|border-radius: 8px; padding: 7px 14px; font-size: 13px;
-   211|   211|cursor: pointer; display: flex; align-items: center; gap: 6px;
-   212|   212|text-decoration: none;
-   213|   213|transition: var(--cp-transition-smooth, all 0.3s cubic-bezier(0.4, 0, 0.2, 1));
-   214|   214|position: relative; overflow: hidden;
-   215|   215|}
-   216|   216|.btn-pwa:hover {
-   217|   217|transform: translateY(-1px);
-   218|   218|box-shadow: var(--cp-spatial-depth-2, 0 4px 16px rgba(0, 0, 0, 0.08));
-   219|   219|filter: brightness(1.1);
-   220|   220|}
-   221|   221|/* ===== CONTENT ===== */
-   222|   222|.content { padding: 24px; flex: 1; }
-   223|   223|/* ===== KPI ROW ===== */
-   224|   224|.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
-   225|   225|.kpi-box {
-   226|   226|background: var(--cp-glass-bg, rgba(255, 255, 255, 0.65));
-   227|   227|backdrop-filter: var(--cp-glass-blur, blur(16px));
-   228|   228|-webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
-   229|   229|border: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
-   230|   230|border-radius: 16px; padding: 20px;
-   231|   231|display: flex; align-items: center; gap: 16px;
-   232|   232|box-shadow: var(--cp-glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.08));
-   233|   233|transition: var(--cp-transition-smooth, all 0.3s cubic-bezier(0.4, 0, 0.2, 1));
-   234|   234|position: relative; overflow: hidden;
-   235|   235|}
-   236|   236|.kpi-box::before {
-   237|   237|content: ''; position: absolute; top: 0; left: 0; right: 0;
-   238|   238|height: 3px; background: var(--cp-gradient-border, linear-gradient(135deg, #00d4ff, #a855f7));
-   239|   239|opacity: 0; transition: opacity 0.2s;
-   240|   240|}
-   241|   241|.kpi-box:hover { transform: translateY(-4px); box-shadow: var(--cp-spatial-depth-3, 0 8px 32px rgba(0, 0, 0, 0.12)); border-color: #bfdbfe; }
-   242|   242|.kpi-box:hover::before { opacity: 1; }
-   243|   243|.kpi-icon-box {
-   244|   244|width: 52px; height: 52px; border-radius: 14px;
-   245|   245|display: flex; align-items: center; justify-content: center;
-   246|   246|font-size: 22px; flex-shrink: 0;
-   247|   247|}
-   248|   248|.kpi-num { font-size: 28px; font-weight: 900; line-height: 1; }
-   249|   249|.kpi-lbl { font-size: 12px; color: var(--gray); margin-top: 3px; font-weight: 600; }
-   250|   250|.kpi-sub { font-size: 11px; color: var(--gray); margin-top: 2px; }
-   251|   251|.kpi-alert-pulse { animation: kpi-pulse 1.5s ease-in-out infinite; border: 2px solid #fca5a5; }
-   252|   252|@keyframes kpi-pulse {
-   253|   253|0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.3); }
-   254|   254|50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
-   255|   255|}
-   256|   256|/* ===== GRID 2 COL ===== */
-   257|   257|.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-   258|   258|.grid-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-   259|   259|/* ===== CARD ===== */
-   260|   260|.card-box {
-   261|   261|background: var(--cp-glass-bg, rgba(255, 255, 255, 0.65));
-   262|   262|backdrop-filter: var(--cp-glass-blur, blur(16px));
-   263|   263|-webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
-   264|   264|border: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
-   265|   265|border-radius: 14px; padding: 20px;
-   266|   266|box-shadow: var(--cp-glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.08));
-   267|   267|transition: var(--cp-transition-smooth, all 0.3s cubic-bezier(0.4, 0, 0.2, 1));
-   268|   268|}
-   269|   269|.card-box:hover {
-   270|   270|box-shadow: var(--cp-spatial-depth-3, 0 8px 32px rgba(0, 0, 0, 0.12));
-   271|   271|transform: translateY(-2px);
-   272|   272|}
-   273|   273|.card-title {
-   274|   274|font-size: 14px; font-weight: 800; color: #111827;
-   275|   275|margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
-   276|   276|}
-   277|   277|.card-title .badge-count {
-   278|   278|background: #f1f5f9; color: var(--gray);
-   279|   279|border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700;
-   280|   280|}
-   281|   281|/* ===== JOB TABLE ===== */
-   282|   282|.job-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-   283|   283|.job-table th {
-   284|   284|text-align: left; padding: 8px 12px;
-   285|   285|font-size: 11px; font-weight: 700; color: var(--gray);
-   286|   286|border-bottom: 2px solid var(--border);
-   287|   287|background: #f8fafc;
-   288|   288|}
-   289|   289|.job-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-   290|   290|.job-table tr:last-child td { border-bottom: none; }
-   291|   291|.job-table tr:hover td { background: #f8fafc; }
-   292|   292|.job-table .job-id { font-weight: 700; color: var(--blue); font-size: 12px; }
-   293|   293|.job-table .customer { font-weight: 600; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-   294|   294|.job-table .symptom { color: var(--gray); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-   295|   295|.status-badge {
-   296|   296|display: inline-block; padding: 3px 10px; border-radius: 20px;
-   297|   297|font-size: 11px; font-weight: 700; white-space: nowrap;
-   298|   298|}
-   299|   299|.days-badge {
-   300|   300|display: inline-block; padding: 2px 8px; border-radius: 6px;
-   301|   301|font-size: 11px; font-weight: 700;
-   302|   302|}
-   303|   303|/* ===== STATUS DIST ===== */
-   304|   304|.status-dist { display: flex; flex-direction: column; gap: 10px; }
-   305|   305|.status-row { display: flex; align-items: center; gap: 10px; }
-   306|   306|.status-label { font-size: 12px; font-weight: 600; width: 120px; flex-shrink: 0; }
-   307|   307|.status-bar-wrap { flex: 1; background: #f1f5f9; border-radius: 6px; height: 8px; overflow: hidden; }
-   308|   308|.status-bar { height: 100%; border-radius: 6px; transition: width 0.5s; }
-   309|   309|.status-count { font-size: 12px; font-weight: 700; width: 30px; text-align: right; flex-shrink: 0; }
-   310|   310|/* ===== ALERTS ===== */
-   311|   311|.alert-row {
-   312|   312|display: flex; align-items: flex-start; gap: 12px;
-   313|   313|padding: 10px 0; border-bottom: 1px solid var(--border);
-   314|   314|}
-   315|   315|.alert-row:last-child { border-bottom: none; }
-   316|   316|.alert-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
-   317|   317|.alert-msg { font-size: 13px; font-weight: 700; }
-   318|   318|.alert-sub { font-size: 11px; color: var(--gray); margin-top: 2px; }
-   319|   319|/* ===== CHART ===== */
-   320|   320|.chart-wrap { position: relative; height: 220px; }
-   321|   321|/* ===== LOADING ===== */
-   322|   322|.loading-state { text-align: center; padding: 60px 20px; color: var(--gray); }
-   323|   323|.spinner-pc {
-   324|   324|width: 40px; height: 40px; border: 3px solid #e2e8f0;
-   325|   325|border-top-color: #3b82f6; border-radius: 50%;
-   326|   326|animation: spin 0.8s linear infinite; margin: 0 auto 16px;
-   327|   327|}
-   328|   328|@keyframes spin { to { transform: rotate(360deg); } }
-   329|   329|/* ===== RESPONSIVE ===== */
-   330|   330|@media (max-width: 1200px) {
-   331|   331|.kpi-row { grid-template-columns: repeat(2, 1fr); }
-   332|   332|.grid-3 { grid-template-columns: 1fr 1fr; }
-   333|   333|}
-   334|   334|@media (max-width: 900px) {
-   335|   335|.sidebar { width: 64px; }
-   336|   336|.sidebar-logo .logo-text, .sidebar-logo .logo-sub,
-   337|   337|.nav-item span, .nav-section, .user-name-sm, .user-role-sm { display: none; }
-   338|   338|.nav-item { justify-content: center; padding: 12px; }
-   339|   339|.nav-item i { width: auto; }
-   340|   340|.main-area { margin-left: 64px; }
-   341|   341|.grid-2, .grid-3 { grid-template-columns: 1fr; }
-   342|   342|.kpi-row { grid-template-columns: repeat(2, 1fr); }
-   343|   343|}
-   344|   344|@media (max-width: 600px) {
-   345|   345|.kpi-row { grid-template-columns: 1fr 1fr; }
-   346|   346|.content { padding: 12px; }
-   347|   347|}
-   348|   348|/* ===== LOGIN OVERLAY ===== */
-   349|   349|#login-overlay {
-   350|   350|position: fixed; inset: 0; z-index: 99999;
-   351|   351|background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
-   352|   352|display: flex; align-items: center; justify-content: center;
-   353|   353|font-family: 'Inter', sans-serif;
-   354|   354|}
-   355|   355|#login-overlay .login-card {
-   356|   356|background: var(--cp-glass-bg, rgba(255, 255, 255, 0.65));
-   357|   357|backdrop-filter: var(--cp-glass-blur, blur(16px));
-   358|   358|-webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
-   359|   359|border: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
-   360|   360|border-radius: 20px; padding: 40px 36px;
-   361|   361|width: 100%; max-width: 380px;
-   362|   362|box-shadow: var(--cp-spatial-depth-3, 0 8px 32px rgba(0, 0, 0, 0.12));
-   363|   363|text-align: center;
-   364|   364|}
-   365|   365|#login-overlay .login-logo { font-size: 40px; margin-bottom: 8px; }
-   366|   366|#login-overlay .login-title { font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
-   367|   367|#login-overlay .login-sub { font-size: 12px; color: #94a3b8; margin-bottom: 28px; }
-   368|   368|#login-overlay .login-field {
-   369|   369|width: 100%; padding: 12px 16px; border: 1.5px solid #e2e8f0; border-radius: 10px;
-   370|   370|font-size: 14px; margin-bottom: 12px; outline: none; transition: border 0.2s;
-   371|   371|box-sizing: border-box;
-   372|   372|}
-   373|   373|#login-overlay .login-field:focus { border-color: #3b82f6; }
-   374|   374|#login-overlay .login-btn {
-   375|   375|width: 100%; padding: 13px; background: #3b82f6; color: #fff; border: none;
-   376|   376|border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer;
-   377|   377|transition: background 0.2s; margin-top: 4px;
-   378|   378|}
-   379|   379|#login-overlay .login-btn:hover { background: #2563eb; }
-   380|   380|#login-overlay .login-btn:disabled { background: #94a3b8; cursor: wait; }
-   381|   381|#login-overlay .login-error {
-   382|   382|color: #ef4444; font-size: 13px; margin-top: 10px; min-height: 20px;
-   383|   383|}
-   384|   384|</style>
-   385|   385|</head>
-   386|   386|<body>
-   387|   387|<div id="approval-panel" style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: white; border: 1px solid #ccc; padding: 10px; max-width: 300px; max-height: 400px; overflow-y: auto;"></div>
-   388|   388|<!-- ===== LOGIN OVERLAY ===== -->
-   389|   389|<div id="login-overlay">
-   390|   390|<div class="login-card">
-   391|   391|<div class="login-logo">📱</div>
-   392|   392|<div class="login-title" data-i18n="COMPHONE Dashboard">COMPHONE Dashboard</div>
-   393|   393|<div class="login-sub" data-i18n="Please login to continue">กรุณาเข้าสู่ระบบเพื่อดำเนินการต่อ</div>
-   394|   394|<form id="login-form" onsubmit="_doLogin(event)">
-   395|   395|<input class="login-field" type="text" id="login-user" data-i18n-placeholder="Username" placeholder="Username" autocomplete="username" required>
-   396|   396|<input class="login-field" type="password" id="login-pass" data-i18n-placeholder="Password" placeholder="Password" autocomplete="current-password" required>
-   397|   397|<button class="login-btn" type="button" id="login-btn" onclick="_doLogin()">
-   398|   398|<span data-i18n="Login">เข้าสู่ระบบ</span>
-   399|   399|</button>
-   400|   400|</form>
-   401|   401|<div class="login-error" id="login-error"></div>
-   402|   402|</div>
-   403|   403|</div>
-   404|   404|<!-- ===== SIDEBAR ===== -->
-   405|   405|<aside class="sidebar" id="sidebar">
-   406|   406|<div class="sidebar-logo">
-   407|   407|<div class="logo-icon">📱</div>
-   408|   408|<div>
-   409|   409|<div class="logo-text">COMPHONE</div>
-   410|   410|<div class="logo-sub" id="pc-logo-version">SUPER APP</div>
-   411|   411|</div>
-   412|   412|</div>
-   413|   413|<div class="nav-section" data-i18n="Main">หลัก</div>
-   414|   414|<a class="nav-item active" href="#" onclick="loadSection('dashboard')">
-   415|   415|<i class="bi bi-bar-chart-line-fill"></i><span data-i18n="Dashboard">Dashboard</span>
-   416|   416|</a>
-   417|   417|<a class="nav-item" href="#" onclick="loadSection('jobs')">
-   418|   418|<i class="bi bi-tools"></i><span data-i18n="Jobs">งานบริการ</span>
-   419|   419|<span class="nav-badge" id="nav-jobs-badge" style="display:none">0</span>
-   420|   420|</a>
-   421|   421|<a class="nav-item" href="#" onclick="loadSection('po')">
-   422|   422|<i class="bi bi-cart-fill"></i><span data-i18n="Purchase Orders">สั่งซื้อ</span>
-   423|   423|</a>
-   424|   424|<a class="nav-item" href="#" onclick="loadSection('inventory')">
-   425|   425|<i class="bi bi-box-seam-fill"></i><span data-i18n="Inventory">สต็อก</span>
-   426|   426|</a>
-   427|   427|<a class="nav-item" href="#" onclick="loadSection('billing')">
-   428|   428|<i class="bi bi-receipt"></i><span data-i18n="Billing">ใบเสร็จ/วางบิล</span>
-   429|   429|</a>
-   430|   430|<a class="nav-item" href="#" onclick="loadSection('warranty')">
-   431|   431|<i class="bi bi-shield-check"></i><span data-i18n="Warranty">รับประกัน</span>
-   432|   432|</a>
-   433|   433|<div class="nav-section" data-i18n="Reports">รายงาน</div>
-   434|   434|<a class="nav-item" href="#" onclick="loadSection('revenue')">
-   435|   435|<i class="bi bi-currency-exchange"></i><span data-i18n="Revenue">รายรับ</span>
-   436|   436|</a>
-   437|   437|<a class="nav-item" href="#" onclick="loadSection('tax')">
-   438|   438|<i class="bi bi-receipt-cutoff"></i><span data-i18n="Tax (VAT/WHT)">ภาษี (VAT/WHT)</span>
-   439|   439|</a>
-   440|   440|<a class="nav-item" href="#" onclick="loadSection('reports')">
-   441|   441|<i class="bi bi-file-earmark-text-fill"></i><span data-i18n="Reports">รายงาน</span>
-   442|   442|</a>
-   443|   443|<a class="nav-item" href="#" onclick="loadSection('analytics')">
-   444|   444|<i class="bi bi-graph-up"></i><span>Analytics</span>
-   445|   445|</a>
-   446|   446|<a class="nav-item" href="#" onclick="loadSection('performance')">
-   447|   447|<i class="bi bi-speedometer2"></i><span data-i18n="Performance">Performance</span>
-   448|   448|</a>
-   449|   449|<a class="nav-item" href="#" onclick="loadSection('backup')">
-   450|   450|<i class="bi bi-cloud-arrow-up"></i><span data-i18n="Backup & Recovery">สำรองข้อมูล</span>
-   451|   451|</a>
-   452|   452|<a class="nav-item" href="#" onclick="loadSection('crm')">
-   453|   453|<i class="bi bi-people-fill"></i><span data-i18n="Customers">ลูกค้า</span>
-   454|   454|</a>
-   455|   455|<a class="nav-item" href="#" onclick="loadSection('attendance')">
-   456|   456|<i class="bi bi-clock-history"></i><span data-i18n="Attendance">ลงเวลาทำงาน</span>
-   457|   457|</a>
-   458|   458|<div class="nav-section" data-i18n="System">ระบบ</div>
-   459|   459|<a class="nav-item" href="index.html">
-   460|   460|<i class="bi bi-phone-fill"></i><span data-i18n="Open Mobile App">เปิด Mobile App</span>
-   461|   461|</a>
-   462|   462|<a class="nav-item" href="#" onclick="loadSection('settings')">
-   463|   463|<i class="bi bi-gear-fill"></i><span>ตั้งค่า</span>
-   464|   464|</a>
-   465|   465|<div class="sidebar-footer">
-   466|   466|<div class="user-chip">
-   467|   467|<div class="user-avatar-sm" id="pc-avatar">A</div>
-   468|   468|<div>
-   469|   469|<div class="user-name-sm" id="pc-name">Admin</div>
-   470|   470|<div class="user-role-sm" id="pc-role">Admin</div>
-   471|   471|</div>
-   472|   472|<div style="margin-left:auto;cursor:pointer;opacity:0.5;font-size:14px" onclick="_doLogout()" title="ออกจากระบบ">⏻</div>
-   473|   473|</div>
-   474|   474|<!-- Language Toggle -->
-   475|   475|<div class="user-chip" style="margin-top:8px;cursor:pointer" onclick="LanguageManager.switchLanguage(LanguageManager.getCurrentLanguage() === 'th' ? 'en' : 'th')">
-   476|   476|<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg, #10b981, #059669);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;flex-shrink:0;">
-   477|   477|<i class="bi bi-translate"></i>
-   478|   478|</div>
-   479|   479|<div style="flex:1">
-   480|   480|<div style="font-size:12px;font-weight:600;color:#fff;">ภาษา / Language</div>
-   481|   481|<div id="pc-lang-label" style="font-size:10px;opacity:0.5;">ไทย</div>
-   482|   482|</div>
-   483|   483|<i class="bi bi-chevron-right" style="opacity:0.5;"></i>
-   484|   484|</div>
-   485|   485|</div>
-   486|   486|</aside>
-   487|   487|<!-- ===== MAIN ===== -->
-   488|   488|<div class="main-area">
-   489|   489|<!-- TOPBAR -->
+</style>
+</head>
+<body>
+<div id="approval-panel" style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: white; border: 1px solid #ccc; padding: 10px; max-width: 300px; max-height: 400px; overflow-y: auto;"></div>
+<!-- ===== LOGIN OVERLAY ===== -->
+<div id="login-overlay">
+<div class="login-card">
+<div class="login-logo">📱</div>
+<div class="login-title" data-i18n="COMPHONE Dashboard">COMPHONE Dashboard</div>
+<div class="login-sub" data-i18n="Please login to continue">กรุณาเข้าสู่ระบบเพื่อดำเนินการต่อ</div>
+<form id="login-form" onsubmit="_doLogin(event)">
+<input class="login-field" type="text" id="login-user" data-i18n-placeholder="Username" placeholder="Username" autocomplete="username" required>
+<input class="login-field" type="password" id="login-pass" data-i18n-placeholder="Password" placeholder="Password" autocomplete="current-password" required>
+<button class="login-btn" type="button" id="login-btn" onclick="_doLogin()">
+<span data-i18n="Login">เข้าสู่ระบบ</span>
+</button>
+</form>
+<div class="login-error" id="login-error"></div>
+</div>
+</div>
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-logo">
+<div class="logo-icon">📱</div>
+<div>
+<div class="logo-text">COMPHONE</div>
+<div class="logo-sub" id="pc-logo-version">SUPER APP</div>
+</div>
+</div>
+<div class="nav-section" data-i18n="Main">หลัก</div>
+<a class="nav-item active" href="#" onclick="loadSection('dashboard')">
+<i class="bi bi-bar-chart-line-fill"></i><span data-i18n="Dashboard">Dashboard</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('jobs')">
+<i class="bi bi-tools"></i><span data-i18n="Jobs">งานบริการ</span>
+<span class="nav-badge" id="nav-jobs-badge" style="display:none">0</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('po')">
+<i class="bi bi-cart-fill"></i><span data-i18n="Purchase Orders">สั่งซื้อ</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('inventory')">
+<i class="bi bi-box-seam-fill"></i><span data-i18n="Inventory">สต็อก</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('billing')">
+<i class="bi bi-receipt"></i><span data-i18n="Billing">ใบเสร็จ/วางบิล</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('warranty')">
+<i class="bi bi-shield-check"></i><span data-i18n="Warranty">รับประกัน</span>
+</a>
+<div class="nav-section" data-i18n="Reports">รายงาน</div>
+<a class="nav-item" href="#" onclick="loadSection('revenue')">
+<i class="bi bi-currency-exchange"></i><span data-i18n="Revenue">รายรับ</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('tax')">
+<i class="bi bi-receipt-cutoff"></i><span data-i18n="Tax (VAT/WHT)">ภาษี (VAT/WHT)</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('reports')">
+<i class="bi bi-file-earmark-text-fill"></i><span data-i18n="Reports">รายงาน</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('analytics')">
+<i class="bi bi-graph-up"></i><span>Analytics</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('performance')">
+<i class="bi bi-speedometer2"></i><span data-i18n="Performance">Performance</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('backup')">
+<i class="bi bi-cloud-arrow-up"></i><span data-i18n="Backup & Recovery">สำรองข้อมูล</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('crm')">
+<i class="bi bi-people-fill"></i><span data-i18n="Customers">ลูกค้า</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('attendance')">
+<i class="bi bi-clock-history"></i><span data-i18n="Attendance">ลงเวลาทำงาน</span>
+</a>
+<div class="nav-section" data-i18n="System">ระบบ</div>
+<a class="nav-item" href="index.html">
+<i class="bi bi-phone-fill"></i><span data-i18n="Open Mobile App">เปิด Mobile App</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('settings')">
+<i class="bi bi-gear-fill"></i><span>ตั้งค่า</span>
+</a>
+<div class="sidebar-footer">
+<div class="user-chip">
+<div class="user-avatar-sm" id="pc-avatar">A</div>
+<div>
+<div class="user-name-sm" id="pc-name">Admin</div>
+<div class="user-role-sm" id="pc-role">Admin</div>
+</div>
+<div style="margin-left:auto;cursor:pointer;opacity:0.5;font-size:14px" onclick="_doLogout()" title="ออกจากระบบ">⏻</div>
+</div>
+<!-- Language Toggle -->
+<div class="user-chip" style="margin-top:8px;cursor:pointer" onclick="LanguageManager.switchLanguage(LanguageManager.getCurrentLanguage() === 'th' ? 'en' : 'th')">
+<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg, #10b981, #059669);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;flex-shrink:0;">
+<i class="bi bi-translate"></i>
+</div>
+<div style="flex:1">
+<div style="font-size:12px;font-weight:600;color:#fff;">ภาษา / Language</div>
+<div id="pc-lang-label" style="font-size:10px;opacity:0.5;">ไทย</div>
+</div>
+<i class="bi bi-chevron-right" style="opacity:0.5;"></i>
+</div>
+</div>
+</aside>
+<!-- ===== MAIN ===== -->
+<div class="main-area">
+<!-- TOPBAR -->
 <div class="topbar">
   <div class="topbar-title" id="topbar-title">
     <i class="bi bi-bar-chart-line-fill" style="color:#d97706;margin-right:8px"></i>Executive Dashboard
@@ -609,4 +605,359 @@
     <i class="bi bi-phone-fill"></i> Mobile App
   </a>
 </div>
-   501|<script src="search.js?v=5.18.0-phase43"></script>
+<!-- CONTENT -->
+<div class="content cp-animate-in" id="main-content">
+<div class="loading-state">
+<div class="spinner-pc"></div>
+<p>กำลังโหลดข้อมูล...</p>
+</div>
+
+  <!-- ===== DASHBOARD SECTION ===== -->
+  <div id="section-dashboard" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-bar-chart-line-fill"></i> Dashboard</h2>
+    </div>
+    <div id="dashboard-content"></div>
+  </div>
+  
+  <!-- ===== JOBS SECTION ===== -->
+  <div id="section-jobs" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-tools"></i> งานบริการ</h2>
+    </div>
+    <div id="jobs-content"></div>
+  </div>
+  
+  <!-- ===== PURCHASE ORDERS SECTION ===== -->
+  <div id="section-po" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-cart-fill"></i> สั่งซื้อ</h2>
+    </div>
+    <div id="po-content"></div>
+  </div>
+  
+  <!-- ===== INVENTORY SECTION ===== -->
+  <div id="section-inventory" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-box-seam-fill"></i> สต็อก</h2>
+    </div>
+    <div id="inventory-content"></div>
+  </div>
+  
+  <!-- ===== BILLING SECTION ===== -->
+  <div id="section-billing" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-receipt"></i> ใบเสร็จ/วางบิล</h2>
+    </div>
+    <div id="billing-content"></div>
+  </div>
+  
+  <!-- ===== WARRANTY SECTION ===== -->
+  <div id="section-warranty" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-shield-check"></i> รับประกัน</h2>
+    </div>
+    <div id="warranty-content"></div>
+  </div>
+  
+  <!-- ===== REVENUE SECTION ===== -->
+  <div id="section-revenue" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-currency-exchange"></i> รายรับ</h2>
+    </div>
+    <div id="revenue-content"></div>
+  </div>
+  
+  <!-- ===== TAX SECTION ===== -->
+  <div id="section-tax" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-receipt-cutoff"></i> ภาษี (VAT/WHT)</h2>
+    </div>
+    <div id="tax-content"></div>
+  </div>
+  
+  <!-- ===== REPORTS SECTION ===== -->
+  <div id="section-reports" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-file-earmark-text-fill"></i> รายงาน</h2>
+    </div>
+    <div id="reports-content"></div>
+  </div>
+  
+  <!-- ===== ANALYTICS SECTION ===== -->
+  <div id="section-analytics" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-graph-up"></i> Analytics</h2>
+    </div>
+    <div id="analytics-content"></div>
+  </div>
+  
+  <!-- ===== PERFORMANCE SECTION ===== -->
+  <div id="section-performance" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-speedometer2"></i> Performance</h2>
+    </div>
+    <div id="performance-content"></div>
+  </div>
+  
+  <!-- ===== BACKUP SECTION ===== -->
+  <div id="section-backup" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-cloud-arrow-down-fill"></i> สำรองข้อมูล</h2>
+    </div>
+    <div id="backup-content"></div>
+  </div>
+  
+  <!-- ===== CUSTOMERS SECTION ===== -->
+  <div id="section-customers" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-people-fill"></i> ลูกค้า</h2>
+    </div>
+    <div id="customers-content"></div>
+  </div>
+  
+  <!-- ===== ATTENDANCE SECTION ===== -->
+  <div id="section-attendance" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-clock-fill"></i> ลงเวลาทำงาน</h2>
+    </div>
+    <div id="attendance-content"></div>
+  </div>
+  
+  <!-- ===== SETTINGS SECTION ===== -->
+  <div id="section-settings" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-gear-fill"></i> ตั้งค่า</h2>
+    </div>
+    <div id="settings-content"></div>
+  </div>
+
+</div>
+</div>
+<script src="section_billing.js?v=5.13.6&t=20260504_1410"></script>
+<script src="section_warranty.js?v=5.13.6&t=20260504_1410"></script>
+<script src="section_reports.js?v=5.13.6&t=20260504_1410"></script>
+<script src="section_analytics.js?v=5.14.1&t=20260504_1445"></script>
+<script src="section_attendance.js?v=5.13.6&t=20260504_1410"></script>
+<script src="dashboard_helpers.js?v=5.13.6&t=20260504_1410"></script>
+<script src="dashboard_pc_core.js?v=5.18.0-phase43&t=20260505_1500"></script>
+<script src="search.js?v=5.18.0-phase43&t=20260505_1500"></script>
+<!-- Core functions moved to dashboard_pc_core.js -->
+<script>
+// FORCE DEFINE: Core functions (ignore external script status)
+console.log('[Dashboard] Defining core functions inline (force)...');
+
+// Global state
+window.DASHBOARD_DATA = window.DASHBOARD_DATA || null;
+window.CHARTS = window.CHARTS || {};
+
+// Mock data for offline/error fallback
+const MOCK_USER = { success: true, valid: true, token: 'mock-token-12345', username: 'admin', role: 'admin', name: 'Admin User' };
+const MOCK_DASHBOARD = {
+  jobs: { total: 15, pending: 3, inProgress: 5, done: 7 },
+  revenue: { today: 45000, week: 280000, month: 1200000 },
+  tax: { vat: 31500, wht: 12000 },
+  performance: { avgTime: '2.5h', satisfaction: 4.8 }
+};
+
+async function _doLogin() {
+  console.log('[Dashboard] Attempting login (MOCK MODE)...');
+  const username = document.getElementById('login-user')?.value;
+  const password = document.getElementById('login-pass')?.value;
+  if (!username || !password) { alert('กรุณากรอก username และ password'); return; }
+
+  const btn = document.querySelector('.login-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ...'; }
+
+  // MOCK LOGIN ONLY (skip GAS API for now)
+  console.log('[Login] Using mock login');
+  const loginResult = { ...MOCK_USER, username, timestamp: Date.now() };
+  window.DASHBOARD_DATA = MOCK_DASHBOARD;
+
+  if (btn) { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
+
+  if (loginResult.success || loginResult.valid) {
+    localStorage.setItem('comphone_auth_session', JSON.stringify(loginResult));
+    const loginOverlay = document.getElementById('login-overlay');
+    if (loginOverlay) loginOverlay.style.display = 'none';
+    const mainContent = document.getElementById('main-content');
+    if (mainContent) {
+      mainContent.style.display = 'block';
+      // Trigger dashboard load
+      if (typeof loadDashboardPage === 'function') {
+        loadDashboardPage();
+      } else {
+        // Fallback: show simple dashboard
+        mainContent.innerHTML = `
+          <div class="dashboard-header"><h1><i class="bi bi-speedometer2"></i> Dashboard</h1></div>
+          <div class="row">
+            <div class="col-md-3"><div class="card-box"><h3>งานทั้งหมด</h3><h2>${(MOCK_DASHBOARD.jobs||{}).total||0}</h2></div></div>
+            <div class="col-md-3"><div class="card-box"><h3>รายรับวันนี้</h3><h2>฿${((MOCK_DASHBOARD.revenue||{}).today||0).toLocaleString()}</h2></div></div>
+            <div class="col-md-3"><div class="card-box"><h3>ภาษี VAT</h3><h2>฿${((MOCK_DASHBOARD.tax||{}).vat||0).toLocaleString()}</h2></div></div>
+            <div class="col-md-3"><div class="card-box"><h3>ความพึงพอใจ</h3><h2>${(MOCK_DASHBOARD.performance||{}).satisfaction||0} ⭐</h2></div></div>
+          </div>
+          <p style="color:#9ca3af;margin-top:20px">✅ เข้าสู่ระบบสำเร็จ (Mock Mode)</p>
+        `;
+      }
+    }
+  } else {
+    alert('เข้าสู่ระบบไม่สำเร็จ: ' + (loginResult.error || loginResult.message || 'Unknown error'));
+  }
+}
+
+function loadSection(sectionName) {
+  console.log('[Dashboard] Loading section:', sectionName);
+  const sections = document.querySelectorAll('.dashboard-section, .section-content');
+  sections.forEach(sec => sec.style.display = 'none');
+  const target = document.getElementById('section-' + sectionName) || document.getElementById(sectionName + '-section');
+  if (target) { target.style.display = 'block'; }
+  else { console.warn('[Dashboard] Section not found:', sectionName); }
+
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(item => {
+    item.classList.remove('active');
+    if (item.getAttribute('onclick') && item.getAttribute('onclick').includes(sectionName)) item.classList.add('active');
+  });
+
+  const data = window.DASHBOARD_DATA || MOCK_DASHBOARD;
+  const main = document.getElementById('main-content');
+  if (!main) return;
+
+  const renderers = {
+    'dashboard':  () => {
+      if (typeof loadDashboardPage === 'function') loadDashboardPage();
+      else main.innerHTML = '<h2>Dashboard</h2><p>Welcome! (loadDashboardPage not found)</p>';
+    },
+    'jobs':       () => { if (typeof renderJobsSection === 'function') { const c = document.getElementById('jobs-content'); if (c) c.innerHTML = renderJobsSection(data); } else main.innerHTML = '<h3>Jobs</h3><p>Coming soon...</p>'; },
+    'po':         () => { if (typeof renderPOSection === 'function') renderPOSection(data); else main.innerHTML = '<h3>PO</h3><p>Coming soon...</p>'; },
+    'inventory':  () => { if (typeof renderInventorySection === 'function') renderInventorySection(data); else main.innerHTML = '<h3>Inventory</h3><p>Coming soon...</p>'; },
+    'billing':    () => { if (typeof renderBillingSection === 'function') { const c = document.getElementById('billing-content') || document.getElementById('section-billing'); if (c) c.innerHTML = renderBillingSection(data); } else main.innerHTML = '<h3>ใบเสร็จ/วางบิล</h3><p>Coming soon...</p>'; },
+    'warranty':   () => { if (typeof renderWarrantySection === 'function') { const c = document.getElementById('warranty-content') || document.getElementById('section-warranty'); if (c) c.innerHTML = renderWarrantySection(data); } else main.innerHTML = '<h3>รับประกัน</h3><p>Coming soon...</p>'; },
+    'revenue':    () => { if (typeof renderRevenueSection === 'function') renderRevenueSection(data); else main.innerHTML = '<h3>Revenue</h3><p>Coming soon...</p>'; },
+    'tax':        () => { main.innerHTML = '<div class="card-box"><h3><i class="bi bi-calculator"></i> ภาษี</h3><button onclick="_showTaxCalculator()" style="background:#059669;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer">เปิดเครื่องคิดเลขภาษี</button></div>' },
+    'reports':    () => { if (typeof renderReportsSection === 'function') { const c = document.getElementById('reports-content') || document.getElementById('section-reports'); if (c) c.innerHTML = renderReportsSection(data); } else main.innerHTML = '<h3>รายงาน</h3><p>Coming soon...</p>' },
+    'analytics':  () => { if (typeof renderAnalyticsSection === 'function') { const c = document.getElementById('analytics-content') || document.getElementById('section-analytics'); if (c) c.innerHTML = renderAnalyticsSection(data); } else main.innerHTML = '<h3>Analytics</h3><p>Coming soon...</p>' },
+    'performance':() => { if (typeof renderPerformanceSection === 'function') renderPerformanceSection(data); else main.innerHTML = '<h3>Performance</h3><p>Coming soon...</p>' },
+    'backup':     () => { if (typeof renderBackupSection === 'function') renderBackupSection(); else main.innerHTML = '<h3>Backup</h3><p>Coming soon...</p>' },
+    'crm':        () => { if (typeof renderCRMSection === 'function') renderCRMSection(data); else main.innerHTML = '<h3>CRM</h3><p>Coming soon...</p>' },
+    'attendance': () => { if (typeof renderAttendanceSection === 'function') { const c = document.getElementById('attendance-content') || document.getElementById('section-attendance'); if (c) c.innerHTML = renderAttendanceSection(data); } else main.innerHTML = '<h3>ลงเวลาทำงาน</h3><p>Coming soon...</p>' },
+    'settings':   () => { if (typeof renderSettingsSection === 'function') { main.innerHTML = renderSettingsSection(); } else main.innerHTML = '<h3>Settings</h3><p>Coming soon...</p>'; },
+  };
+  const renderer = renderers[sectionName];
+  if (renderer) {
+    try { renderer(); } catch(e) { console.error('[Dashboard] Render error:', sectionName, e); main.innerHTML = '<p>Error loading section.</p>'; }
+  }
+}
+
+function loadDashboard() {
+  console.log('[Dashboard] Loading main dashboard...');
+  loadSection('dashboard');
+  
+  // Load dashboard data if available
+  if (typeof window.callApi === 'function') {
+    window.callApi({ action: 'getDashboardBundle' })
+      .then(data => {
+        console.log('[Dashboard] Data loaded:', data);
+        if (typeof renderDashboard === 'function') {
+          renderDashboard(data);
+        }
+      })
+      .catch(err => console.error('[Dashboard] Error:', err));
+  }
+}
+
+function _doLogin(event) {
+  event.preventDefault();
+  console.log('[Dashboard] Attempting login...');
+  
+  const username = document.getElementById('login-user')?.value;
+  const password = document.getElementById('login-pass')?.value;
+  
+  if (!username || !password) {
+    alert('กรุณากรอก username และ password');
+    return;
+  }
+  
+  // Use getGasUrl() dynamically to avoid cached const URL
+  const gasUrl = typeof getGasUrl === 'function' ? getGasUrl() : (window.GAS_CONFIG && window.GAS_CONFIG.url) || '';
+  if (!gasUrl) {
+    alert('GAS URL ไม่ได้ตั้งค่า');
+    return;
+  }
+  
+  const qs = new URLSearchParams({ action: 'loginUser', username: username, password: password, _t: Date.now() }).toString();
+  const btn = document.querySelector('.login-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ...'; }
+  
+  fetch(gasUrl + '?' + qs, { redirect: 'follow' })
+    .then(res => res.json())
+    .then(res => {
+      if (btn) { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
+      if (res.success || res.valid) {
+        // Add loginAt timestamp for session expiry check
+        res.loginAt = Date.now();
+        localStorage.setItem('comphone_auth_session', JSON.stringify(res));
+        const loginOverlay = document.getElementById('login-overlay');
+        if (loginOverlay) loginOverlay.style.display = 'none';
+        loadDashboard();
+      } else {
+        alert('เข้าสู่ระบบไม่สำเร็จ: ' + (res.error || res.message || 'Unknown error'));
+      }
+    })
+    .catch(err => {
+      if (btn) { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
+      console.error('[Login] Error:', err);
+      alert('เกิดข้อผิดพลาดในการเข้าสู่ระบบ: ' + err.message);
+    });
+}
+
+// ============================================================
+// Session Check on Page Load — fix K-004
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('[Dashboard] Checking saved session...');
+  try {
+    const sessionStr = localStorage.getItem('comphone_auth_session');
+    if (sessionStr) {
+      const session = JSON.parse(sessionStr);
+      const loginTime = session.loginAt || session.login_at || 0;
+      const loginAge = Date.now() - loginTime;
+      const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+      
+      if (loginAge < maxAge && session.token) {
+        // Session still valid — verify with server
+        const gasUrl = typeof getGasUrl === 'function' ? getGasUrl() : (window.GAS_CONFIG && window.GAS_CONFIG.url) || '';
+        if (gasUrl) {
+          const qs = new URLSearchParams({ action: 'verifySession', token: session.token, _t: Date.now() }).toString();
+          fetch(gasUrl + '?' + qs, { redirect: 'follow' })
+            .then(r => r.json())
+            .then(r => {
+              if (r.success || r.valid) {
+                console.log('[Dashboard] Session verified — skip login');
+                const loginOverlay = document.getElementById('login-overlay');
+                if (loginOverlay) loginOverlay.style.display = 'none';
+                loadDashboard();
+              } else {
+                console.warn('[Dashboard] Session invalid — show login');
+                localStorage.removeItem('comphone_auth_session');
+              }
+            })
+            .catch(err => {
+              // Server unreachable — use local session (offline mode)
+              console.warn('[Dashboard] Server unreachable — using local session:', err.message);
+              const loginOverlay = document.getElementById('login-overlay');
+              if (loginOverlay) loginOverlay.style.display = 'none';
+              loadDashboard();
+            });
+        }
+      } else {
+        // Session expired
+        console.log('[Dashboard] Session expired — show login');
+        localStorage.removeItem('comphone_auth_session');
+      }
+    }
+  } catch(e) {
+    console.error('[Dashboard] Session check error:', e);
+  }
+});
+</script>

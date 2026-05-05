@@ -1,0 +1,9 @@
+PHASE 43: Smart Search + Smooth Transitions + Touch Targets
+
+- Add Smart Search bar with history & filters (search.js)
+- Improve page transition with 400ms fade-out/fade-in
+- Ensure all buttons have min 48px touch target
+- Disable LINE notifications (sendLineMessage, cronMorningAlert)
+- Update version to v5.18.0-phase43
+- Add CSS for search bar, suggestions, transitions
+- Modify loadSection to support smooth transitions
