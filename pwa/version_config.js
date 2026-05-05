@@ -4,11 +4,17 @@
 // Phase 42 - Deep Black Ultra Theme
 // ===========================================================
 
+// Global variables for PWA static guard
+const BUILD_TIMESTAMP = '20260505_1500';
+const CACHE_VERSION = 'comphone-v5.18.0-phase43';
+
 const VERSION_CONFIG = {
   version: 'v5.18.0-phase43',
   buildDate: '2026-05-05',
   buildTimestamp: '20260505_1500',
+  BUILD_TIMESTAMP: '20260505_1500',
   cacheVersion: 'comphone-v5.18.0-phase43',
+  CACHE_VERSION: 'comphone-v5.18.0-phase43',
   theme: 'deep-black-ultra-v9',
   author: 'Comphone Team',
   features: [
