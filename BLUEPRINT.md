@@ -215,6 +215,23 @@ User (PWA) → GET GAS_URL?action=xxx
 
 ---
 
+## 2.5 🔍 SocratiCode — Code Intelligence Helper (Main Helper)
+
+SocratiCode is integrated as the **primary code intelligence assistant** for COMPHONE SuperApp development:
+
+- **Role:** Main helper for code search, dependency analysis, impact analysis, and context artifact management.
+- **Integrated via:** MCP (Model Context Protocol) in Hermes Agent.
+- **Capabilities:**
+  - Semantic + keyword search across entire codebase (250 files, 1,710 chunks)
+  - Code dependency graph (imports, dependents, circular detection)
+  - Impact analysis (blast radius) before refactoring
+  - Context artifacts search (API specs, database schemas, infra configs)
+  - Auto-update via file watcher (incremental indexing)
+- **Usage:** All code-related queries in development phase should prioritize SocratiCode tools (`mcp_socraticode_codebase_search`, etc.)
+- **Status:** ✅ Fully operational (Qdrant + Ollama managed containers)
+
+---
+
 ## 5. File Structure
 
 ```
