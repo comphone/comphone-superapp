@@ -211,6 +211,10 @@ function doPost(e) {
     } catch (rlErr) { /* rate limit ไม่ critical — fail open */ }
 
     var payload = parsePostPayloadV55_(e);
+    // ── ตรวจจับ Telegram Webhook (มี update_id + message/callback_query) ──
+    if (typeof isTelegramWebhookPayload_ === 'function' && isTelegramWebhookPayload_(payload)) {
+      return jsonOutputV55_(handleTelegramWebhook(e, payload));
+    }
     // ── ตรวจจับ LINE Webhook (มี destination + events array) ──
     if (payload.destination && Array.isArray(payload.events)) {
       // ตรวจสอบ HMAC-SHA256 signature ก่อนประมวลผล
@@ -319,6 +323,8 @@ function _checkAuthGateV55_(action, payload, e) {
     'seedAllData': 1, 'storeSessionContent': 1,
     'controlAction': 1, 'storeSnapshot': 1,
     'setupLearningTriggers': 1, 'setupLineBotV2': 1, 'testLineBotV2': 1,
+    'setupTelegramWebhook': 1, 'deleteTelegramWebhook': 1, 'getTelegramBotInfo': 1,
+    'testTelegramMessage': 1, 'sendTelegramMessage': 1,
     'sendPushToAll': 1, 'sendDailyDigest': 1, 'setupDailyDigestTrigger': 1,
     'cronMorningAlert': 1, 
     'sendDashboardSummary': 1, 'sendLineMessage': 1, 'sendLineAlert': 1,
