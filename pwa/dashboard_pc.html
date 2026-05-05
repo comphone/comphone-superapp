@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" class="cp-dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -404,7 +404,7 @@ display: flex; flex-direction: column;
 /* ===== TOPBAR ===== */
 .topbar {
 height: var(--header-h);
-background: var(--cp-glass-bg, rgba(255, 255, 255, 0.85));
+background: var(--cp-glass-bg, rgba(0, 0, 0, 0.9));
 border-bottom: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
 display: flex; align-items: center; gap: 16px;
 padding: 0 24px; position: sticky; top: 0; z-index: 50;
@@ -412,10 +412,10 @@ backdrop-filter: var(--cp-glass-blur, blur(16px));
 -webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
 box-shadow: var(--cp-spatial-depth-1, 0 2px 8px rgba(0, 0, 0, 0.04));
 }
-.topbar-title { font-size: 18px; font-weight: 800; color: #111827; flex: 1; }
+.topbar-title { font-size: 18px; font-weight: 800; color: var(--text, #ffffff); flex: 1; }
 .topbar-date { font-size: 12px; color: var(--gray); }
 .btn-refresh {
-background: var(--cp-glass-bg, rgba(255, 255, 255, 0.65));
+background: var(--card, #0a0a0a);
 backdrop-filter: var(--cp-glass-blur, blur(16px));
 -webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
 border: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
@@ -425,7 +425,7 @@ transition: var(--cp-transition-smooth, all 0.3s cubic-bezier(0.4, 0, 0.2, 1));
 position: relative; overflow: hidden;
 }
 .btn-refresh:hover {
-background: #e2e8f0;
+background: rgba(0, 255, 255, 0.1);
 box-shadow: var(--cp-spatial-depth-2, 0 4px 16px rgba(0, 0, 0, 0.08));
 transform: translateY(-1px);
 }
@@ -448,7 +448,7 @@ filter: brightness(1.1);
 /* ===== KPI ROW ===== */
 .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
 .kpi-box {
-background: var(--cp-glass-bg, rgba(255, 255, 255, 0.65));
+background: var(--card, #0a0a0a);
 backdrop-filter: var(--cp-glass-blur, blur(16px));
 -webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
 border: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
@@ -483,7 +483,7 @@ font-size: 22px; flex-shrink: 0;
 .grid-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
 /* ===== CARD ===== */
 .card-box {
-background: var(--cp-glass-bg, rgba(255, 255, 255, 0.65));
+background: var(--card, #0a0a0a);
 backdrop-filter: var(--cp-glass-blur, blur(16px));
 -webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
 border: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
@@ -496,7 +496,7 @@ box-shadow: var(--cp-spatial-depth-3, 0 8px 32px rgba(0, 0, 0, 0.12));
 transform: translateY(-2px);
 }
 .card-title {
-font-size: 14px; font-weight: 800; color: #111827;
+font-size: 14px; font-weight: 800; color: var(--text, #ffffff);
 margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
 }
 .card-title .badge-count {
@@ -509,11 +509,11 @@ border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700;
 text-align: left; padding: 8px 12px;
 font-size: 11px; font-weight: 700; color: var(--gray);
 border-bottom: 2px solid var(--border);
-background: #f8fafc;
+background: var(--card, #0a0a0a);
 }
 .job-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .job-table tr:last-child td { border-bottom: none; }
-.job-table tr:hover td { background: #f8fafc; }
+.job-table tr:hover td { background: rgba(0, 255, 255, 0.05); }
 .job-table .job-id { font-weight: 700; color: var(--blue); font-size: 12px; }
 .job-table .customer { font-weight: 600; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .job-table .symptom { color: var(--gray); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
@@ -544,9 +544,9 @@ padding: 10px 0; border-bottom: 1px solid var(--border);
 /* ===== CHART ===== */
 .chart-wrap { position: relative; height: 220px; }
 /* ===== LOADING ===== */
-.loading-state { text-align: center; padding: 60px 20px; color: var(--gray); }
+.loading-state { text-align: center; padding: 60px 20px; color: var(--text-secondary, #a0a0a0); }
 .spinner-pc {
-width: 40px; height: 40px; border: 3px solid #e2e8f0;
+width: 40px; height: 40px; border: 3px solid rgba(0, 255, 255, 0.2);
 border-top-color: #3b82f6; border-radius: 50%;
 animation: spin 0.8s linear infinite; margin: 0 auto 16px;
 }

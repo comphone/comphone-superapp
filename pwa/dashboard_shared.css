@@ -59,6 +59,20 @@
   --cp-hover-bg: #161b22;
   --cp-shadow:   0 4px 24px rgba(0,0,0,0.8);
   --cp-shadow-sm: 0 1px 3px rgba(0,0,0,0.6);
+
+  /* Hyper-Glassmorphism Tokens (Dark - Deep Black Ultra) */
+  --cp-glass-bg: rgba(0, 0, 0, 0.9);
+  --cp-glass-border: rgba(0, 255, 255, 0.1);
+  --cp-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+  --cp-glass-blur: blur(20px);
+  --cp-gradient-cyan: linear-gradient(135deg, #00ffff, #00aadd);
+  --cp-gradient-purple: linear-gradient(135deg, #bf00ff, #8000ff);
+  --cp-gradient-border: linear-gradient(135deg, #00ffff, #bf00ff);
+  --cp-spatial-depth-1: 0 2px 8px rgba(0, 255, 255, 0.05);
+  --cp-spatial-depth-2: 0 4px 16px rgba(0, 255, 255, 0.08);
+  --cp-spatial-depth-3: 0 8px 32px rgba(0, 255, 255, 0.12);
+  --cp-transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  --cp-transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 /* ── Light Theme ────────────────────────────────────── */
