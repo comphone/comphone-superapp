@@ -658,78 +658,62 @@ document.addEventListener('click', function(e) {
     <div style="margin-top:16px;text-align:center;">
       <a href="#" onclick="showScriptUrlSetup(); return false;" style="color:#8b949e;font-size:12px;text-decoration:none;border-bottom:1px dashed #21262d;">ตั้งค่า Script URL</a>
     </div>
+    <!-- Script URL Auto-fill Display -->
+    <div id="script-url-display" style="margin-top:12px;padding:8px 12px;background:#010409;border:1px solid #21262d;border-radius:8px;color:#484f58;font-size:11px;word-break:break-all;text-align:center;display:none;">
+      <i class="bi bi-link-45deg" style="color:#3b82f6;"></i> 
+      <span id="script-url-text">Loading...</span>
+    </div>
     <div style="margin-top:12px;text-align:center;color:#484f58;font-size:11px;">Comphone SuperApp AI v5.19.0 · PWA</div>
   </div>
 </div>
 
 <script>
-async function submitLogin() {
-  const username = document.getElementById('login-username').value.trim();
-  const password = document.getElementById('login-password').value.trim();
-  const errorDiv = document.getElementById('login-error');
+// Auto-fill Script URL from gas_config.js on login page
+function autoFillScriptUrl() {
+  const display = document.getElementById('script-url-display');
+  const text = document.getElementById('script-url-text');
+  if (!display || !text) return;
   
-  if (!username) {
-    if (errorDiv) { errorDiv.textContent = 'กรุณากรอกชื่อผู้ใช้'; errorDiv.style.display = 'block'; }
-    return;
+  let url = '';
+  
+  // Try gas_config.js first (priority)
+  if (window.GAS_CONFIG && window.GAS_CONFIG.url) {
+    url = window.GAS_CONFIG.url;
   }
-  if (!password) {
-    if (errorDiv) { errorDiv.textContent = 'กรุณากรอกรหัสผ่าน'; errorDiv.style.display = 'block'; }
-    return;
+  // Fallback to localStorage
+  if (!url) {
+    url = localStorage.getItem('comphone_script_url') || '';
   }
   
-  const btn = document.getElementById('login-btn');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> กำลังเข้าสู่ระบบ...'; }
-  if (errorDiv) errorDiv.style.display = 'none';
-  
-  try {
-    // Call API to validate username + password
-    const res = await callApi('login', { username: username, password: password }, { noAuth: true });
-    
-    if (res && (res.success || res.valid)) {
-      // Save session
-      const session = {
-        username: username,
-        full_name: res.full_name || username,
-        role: res.role || 'admin',
-        token: res.token || '',
-        login_at: new Date().toISOString()
-      };
-      localStorage.setItem('comphone_auth_session', JSON.stringify(session));
-      
-      // Hide login overlay
-      const loginOverlay = document.getElementById('login-overlay');
-      if (loginOverlay) loginOverlay.style.display = 'none';
-      
-      // Load dashboard
-      if (typeof loadDashboard === 'function') loadDashboard();
-      else if (typeof startMainApp === 'function') startMainApp();
-      
-    } else {
-      if (errorDiv) {
-        errorDiv.textContent = 'เข้าสู่ระบบไม่สำเร็จ: ' + (res.error || res.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
-        errorDiv.style.display = 'block';
-      }
-    }
-  } catch (err) {
-    console.error('[Login] Error:', err);
-    if (errorDiv) {
-      errorDiv.textContent = 'เกิดข้อผิดพลาด: ' + err.message;
-      errorDiv.style.display = 'block';
-    }
-  } finally {
-    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> <span>เข้าสู่ระบบ</span>'; }
+  if (url) {
+    text.textContent = url;
+    display.style.display = 'block';
+    // Save to localStorage for offline use
+    localStorage.setItem('comphone_script_url', url);
+  } else {
+    display.style.display = 'none';
   }
 }
 
-// Placeholder for Script URL setup
+// Update showScriptUrlSetup to also update display
 function showScriptUrlSetup() {
-  const url = prompt('กรุณากรอก Script URL:', localStorage.getItem('comphone_script_url') || '');
+  const currentUrl = localStorage.getItem('comphone_script_url') || '';
+  const url = prompt('กรุณากรอก Script URL:', currentUrl);
   if (url) {
     localStorage.setItem('comphone_script_url', url);
+    // Update display
+    const text = document.getElementById('script-url-text');
+    const display = document.getElementById('script-url-display');
+    if (text) text.textContent = url;
+    if (display) display.style.display = 'block';
+    // Also update gas_config if possible (runtime only)
     if (typeof updateScriptUrl === 'function') updateScriptUrl(url);
     showToast('อัปเดต Script URL แล้ว');
   }
 }
+
+// Auto-fill on page load
+document.addEventListener('DOMContentLoaded', autoFillScriptUrl);
 </script>
 <!-- ===== SIDEBAR ===== -->
 <aside class="sidebar" id="sidebar">
