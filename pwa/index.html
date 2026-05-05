@@ -1,737 +1,501 @@
-<!DOCTYPE html>
-<!-- Comphone SuperApp AI — Ultra Modern Mobile PWA v2026 -->
-<html lang="th" class="cp-light cp-mobile">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#3B82F6">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Comphone">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="description" content="Comphone SuperApp AI — ระบบบริหารงานบริการ IT และโซลูชันเทคโนโลยี">
-<link rel="preconnect" href="https://cdn.jsdelivr.net">
-<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
-<link rel="preconnect" href="https://script.google.com">
-<link rel="dns-prefetch" href="https://script.google.com">
-<link rel="manifest" href="/comphone-superapp/pwa/manifest.json">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-<title>Comphone SuperApp AI</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-<link rel="stylesheet" href="dashboard_shared.css?v=5.15.0-phase40&t=20260505_0930">
-<link rel="stylesheet" href="mobile_shared.css?v=5.15.0-phase40&t=20260505_0930">
-<link rel="stylesheet" href="style_metro.css?v=5.15.0-phase40&t=20260505_0930">
-<link rel="stylesheet" href="style.css?v=5.15.0-phase40&t=20260505_0930">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
-<script src="version_config.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="gas_config.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="pwa_asset_manifest.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="mobile_shared.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="api_client.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="auth_guard.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="app.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="offline_db.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="app_home.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="app_jobs.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="app_actions.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="dashboard.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="crm_attendance.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="purchase_order.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="section_inventory.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="billing_section.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="reports.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="customer_portal.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="analytics_section.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="admin_panel.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="menu_health.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="notification_center.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="auth.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="error_boundary.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="pwa_install.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="push_notifications.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="section_warranty.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="section_revenue.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="section_tax.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="section_performance.js?v=5.14.2-phase39&t=20260505_0700"></script>
-<script src="api_contract.js?v=5.14.2-phase39&t=20260505_0700"></script>
-</head>
-<body>
-<!-- ===== SPLASH SCREEN — Modern Animated ===== -->
-<div id="splash-screen">
-<div class="splash-content">
-<div class="splash-logo">
-<div class="logo-ring"></div>
-<div class="logo-ring-inner"></div>
-<div class="logo-icon"><i class="bi bi-phone-fill"></i></div>
-</div>
-<h1 class="splash-title">Comphone</h1>
-<p class="splash-sub" data-i18n="SuperApp AI">SuperApp AI</p>
-<div class="splash-loader">
-<div class="loader-bar"></div>
-</div>
-</div>
-</div>
-
-<!-- ===== SETUP SCREEN (First time only) ===== -->
-<div id="setup-screen" class="screen hidden">
-<div class="setup-bg">
-<div class="setup-card">
-<div class="setup-logo">
-<i class="bi bi-phone-fill"></i>
-</div>
-<h2 data-i18n="Welcome">ยินดีต้อนรับ</h2>
-<p class="setup-desc" data-i18n="Enter once">กรอกข้อมูลครั้งเดียว<br>ระบบจะจดจำให้อัตโนมัติ</p>
-<div class="setup-form">
-<div class="form-group-custom">
-<label data-i18n="Full Name">ชื่อ-นามสกุล</label>
-<div class="input-wrap">
-<i class="bi bi-person-fill"></i>
-<input type="text" id="setup-name" data-i18n-placeholder="e.g. Somchai Doodee" placeholder="เช่น สมชาย ทำดี" autocomplete="name">
-</div>
-</div>
-<div class="form-group-custom">
-<label data-i18n="Phone">เบอร์โทรศัพท์</label>
-<div class="input-wrap">
-<i class="bi bi-telephone-fill"></i>
-<input type="tel" id="setup-phone" data-i18n-placeholder="081-234-5678" placeholder="081-234-5678" autocomplete="tel">
-</div>
-</div>
-<div class="form-group-custom">
-<label data-i18n="Your Role">บทบาทของคุณ</label>
-<div class="role-picker">
-<div class="role-option" data-role="tech" onclick="selectRole(this)">
-<div class="role-icon" style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);color:#1e40af;"><i class="bi bi-tools"></i></div>
-<span data-i18n="Technician">ช่าง</span>
-</div>
-<div class="role-option" data-role="admin" onclick="selectRole(this)">
-<div class="role-icon" style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);color:#5b21b6;"><i class="bi bi-headset"></i></div>
-<span data-i18n="Admin">แอดมิน</span>
-</div>
-<div class="role-option" data-role="acct" onclick="selectRole(this)">
-<div class="role-icon" style="background:linear-gradient(135deg,#cffafe,#a5f3fc);color:#164e63;"><i class="bi bi-calculator"></i></div>
-<span data-i18n="Accountant">บัญชี</span>
-</div>
-<div class="role-option" data-role="exec" onclick="selectRole(this)">
-<div class="role-icon" style="background:linear-gradient(135deg,#fef9c3,#fef08a);color:#713f12;"><i class="bi bi-bar-chart-line"></i></div>
-<span data-i18n="Executive">ผู้บริหาร</span>
-</div>
-</div>
-</div>
-<div class="form-group-custom">
-<label data-i18n="Script URL">Script URL (Google Apps Script)</label>
-<div class="input-wrap">
-<i class="bi bi-link-45deg"></i>
-<input type="url" id="setup-url" data-i18n-placeholder="https://script.google.com/macros/s/..." placeholder="https://script.google.com/macros/s/..." autocomplete="url">
-</div>
-<small style="color:#9ca3af;font-size:11px;margin-top:4px;display:block;" data-i18n="Paste deployed URL">วาง URL จาก Google Apps Script ที่ Deploy แล้ว</small>
-</div>
-<button class="btn-setup" onclick="completeSetup()">
-<i class="bi bi-arrow-right-circle-fill"></i>
-<span data-i18n="Start Using">เริ่มใช้งาน</span>
-</button>
-</div>
-</div>
-</div>
-</div>
-
-<!-- ===== MAIN APP ===== -->
-<div id="main-app" class="screen hidden">
-<!-- TOP BAR — Glassmorphism -->
-<div id="top-bar" class="top-bar">
-<div class="top-bar-left">
-<div id="user-avatar" class="user-avatar" onclick="showProfile()"></div>
-<div>
-<div id="greeting-text" class="greeting-text"></div>
-<div id="user-name-display" class="user-name"></div>
-</div>
-</div>
-<div class="top-bar-right">
-<button class="icon-btn" data-i18n-title="Search" onclick="showSearch()"><i class="bi bi-search"></i></button>
-<div class="notif-wrap" onclick="showNotifications()">
-<button class="icon-btn"><i class="bi bi-bell-fill"></i></button>
-<span class="notif-badge" id="notif-count">3</span>
-</div>
-</div>
-</div>
-
-<!-- OFFLINE BAR -->
-<div id="offline-bar" class="hidden">
-<div style="display:flex;align-items:center;gap:6px;">
-<i class="bi bi-wifi-off"></i>
-<span data-i18n="Offline - Data will sync when connected">ออฟไลน์ — ข้อมูลจะ Sync เมื่อเชื่อมต่อ</span>
-</div>
-<div style="display:flex;align-items:center;gap:8px;">
-<span class="offline-queue-count"></span>
-<button onclick="showSyncQueue()">ดูคิว</button>
-</div>
-</div>
-
-<!-- PAGES CONTAINER -->
-<div id="pages-container">
-
-<!-- ═══ HOME PAGE ═══ -->
-<div id="page-home" class="page active">
-<!-- Quick Actions (role-based) -->
-<div class="section-card animate-in" id="quick-actions-section">
-<div class="section-label">ปุ่มด่วน</div>
-<div id="quick-actions-grid" class="qa-grid-4"></div>
-</div>
-<!-- Stats Row -->
-<div id="stats-row" class="stats-row"></div>
-<!-- Main Content (role-based) -->
-<div id="main-content-area"></div>
-</div>
-
-<!-- ═══ JOBS PAGE ═══ -->
-<div id="page-jobs" class="page hidden">
-<div class="page-header">
-<h5>งานทั้งหมด</h5>
-<div class="search-bar-inline">
-<i class="bi bi-search"></i>
-<input type="text" id="jobs-search" placeholder="ค้นหา Job ID, ชื่อลูกค้า..." oninput="filterJobs(this.value)">
-<button onclick="startVoiceSearch()" class="voice-mini"><i class="bi bi-mic-fill"></i></button>
-</div>
-</div>
-<div class="filter-tabs">
-<button class="filter-tab active" onclick="filterByStatus('all', this)">ทั้งหมด</button>
-<button class="filter-tab" onclick="filterByStatus('urgent', this)">ด่วน</button>
-<button class="filter-tab" onclick="filterByStatus('inprog', this)">กำลังดำเนินการ</button>
-<button class="filter-tab" onclick="filterByStatus('waiting', this)">รอชิ้นส่วน</button>
-<button class="filter-tab" onclick="filterByStatus('done', this)">เสร็จแล้ว</button>
-</div>
-<div id="jobs-list"></div>
-</div>
-
-<!-- ═══ CAMERA / PHOTO PAGE ═══ -->
-<div id="page-camera" class="page hidden">
-<div class="page-header"><h5>ถ่ายรูป / สแกน</h5></div>
-<div class="camera-section">
-<div class="camera-options">
-<div class="cam-option" onclick="openCamera('job')">
-<i class="bi bi-camera-fill"></i>
-<span>รูปหน้างาน</span>
-</div>
-<div class="cam-option" onclick="openCamera('slip')">
-<i class="bi bi-receipt"></i>
-<span>สแกนสลิป</span>
-</div>
-<div class="cam-option" onclick="openCamera('bill')">
-<i class="bi bi-file-earmark-image"></i>
-<span>สแกนบิล</span>
-</div>
-<div class="cam-option" onclick="openCamera('qr')">
-<i class="bi bi-qr-code-scan"></i>
-<span>สแกน QR</span>
-</div>
-</div>
-<input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
-<div id="photo-preview-area"></div>
-<div id="recent-photos" class="recent-photos">
-<div class="section-label">รูปล่าสุด</div>
-<div id="photo-grid" class="photo-thumb-grid"></div>
-</div>
-</div>
-</div>
-
-<!-- ═══ CRM PAGE ═══ -->
-<div id="page-crm" class="page hidden">
-<div class="page-header">
-<h5 data-i18n="Customers">ลูกค้า / CRM</h5>
-<div class="search-bar-inline">
-<i class="bi bi-search"></i>
-<input type="text" id="crm-search" data-i18n-placeholder="Search" placeholder="ค้นหาชื่อ, เบอร์, ประวัติ..." oninput="filterCustomers(this.value)">
-<button onclick="startVoiceSearch()" class="voice-mini"><i class="bi bi-mic-fill"></i></button>
-</div>
-</div>
-<div class="filter-tabs">
-<button class="filter-tab active" data-i18n="All" onclick="filterCRMType('all', this)">ทั้งหมด</button>
-<button class="filter-tab" data-i18n="VIP" onclick="filterCRMType('vip', this)">VIP</button>
-<button class="filter-tab" data-i18n="Follow-up" onclick="filterCRMType('due', this)">ติดตาม</button>
-<button class="filter-tab" data-i18n="New" onclick="filterCRMType('new', this)">ใหม่</button>
-</div>
-<div id="crm-list"></div>
-<div id="crm-after-sales-section" style="margin-top:8px"></div>
-</div>
-
-<!-- ═══ PURCHASE ORDER PAGE ═══ -->
-<div id="page-po" class="page hidden">
-<div class="page-header">
-<h5 data-i18n="Purchase Orders">ใบสั่งซื้อ (PO)</h5>
-<div class="search-bar-inline">
-<i class="bi bi-search"></i>
-<input type="text" id="po-search" data-i18n-placeholder="Search PO" placeholder="ค้นหา PO ID, ผู้จำหน่าย..." oninput="filterPOSearch(this.value)">
-</div>
-</div>
-<div class="filter-tabs">
-<button class="filter-tab active" data-i18n="All" onclick="filterPOStatus('all', this)">ทั้งหมด</button>
-<button class="filter-tab" data-i18n="Pending" onclick="filterPOStatus('pending', this)">รอรับสินค้า</button>
-<button class="filter-tab" data-i18n="Received" onclick="filterPOStatus('received', this)">รับแล้ว</button>
-</div>
-<div id="po-list"></div>
-</div>
-
-<!-- ═══ ATTENDANCE PAGE ═══ -->
-<div id="page-attendance" class="page hidden">
-<div class="page-header"><h5 data-i18n="Attendance">เวลาทำงาน</h5></div>
-<div id="attendance-content"></div>
-</div>
-
-<!-- ═══ PROFILE / SETTINGS PAGE ═══ -->
-<div id="page-profile" class="page hidden">
-<div class="profile-header">
-<div id="profile-avatar-large" class="profile-avatar-large"></div>
-<div id="profile-name-large" class="profile-name-large"></div>
-<div id="profile-role-badge" class="profile-role-badge"></div>
-</div>
-<div class="profile-section">
-<div class="profile-item" onclick="editProfile()">
-<i class="bi bi-pencil-fill"></i>
-<span data-i18n="Edit Profile">แก้ไขข้อมูลส่วนตัว</span>
-<i class="bi bi-chevron-right ms-auto"></i>
-</div>
-<div class="profile-item" onclick="changeRole()">
-<i class="bi bi-person-badge-fill"></i>
-<span data-i18n="Change Role">เปลี่ยนบทบาท</span>
-<i class="bi bi-chevron-right ms-auto"></i>
-</div>
-<div class="profile-item" onclick="showSettings()">
-<i class="bi bi-gear-fill"></i>
-<span data-i18n="Settings">ตั้งค่า Script URL</span>
-<i class="bi bi-chevron-right ms-auto"></i>
-</div>
-<div class="profile-item" onclick="showAccountingSettings()">
-<i class="bi bi-calculator-fill" style="color:#3B82F6"></i>
-<span data-i18n="Accounting Integration">การเชื่อมต่อบัญชี</span>
-<i class="bi bi-chevron-right ms-auto"></i>
-</div>
-<div id="accounting-settings-section" class="profile-section hidden" style="padding:0 16px 16px;background:#f8fafc;border-radius:12px;margin:8px 16px">
-<div style="font-size:13px;font-weight:600;color:#3B82F6;margin-bottom:8px"><i class="bi bi-calculator"></i> การเชื่อมต่อบัญชี</div>
-<div style="margin-bottom:8px">
-<label style="font-size:11px;color:#6b7280">ซอฟต์แวร์บัญชี</label>
-<select id="mobile-accounting-software" style="width:100%;padding:6px;border-radius:6px;border:1px solid #d1d5db;font-size:12px">
-<option value="express">Express</option>
-<option value="quickbooks">QuickBooks</option>
-<option value="other">อื่นๆ</option>
-</select>
-</div>
-<div style="margin-bottom:8px">
-<label style="font-size:11px;color:#6b7280">API Key / Token</label>
-<input type="password" id="mobile-accounting-api-key" placeholder="ใส่ API Key หรือ Token" style="width:100%;padding:6px;border-radius:6px;border:1px solid #d1d5db;font-size:12px">
-</div>
-<div id="mobile-accounting-status" style="font-size:12px;padding:6px;background:#f0fdf4;color:#059669;border-radius:6px;margin-bottom:8px">✅ เชื่อมต่อแล้ว (จำลอง)</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-<button onclick="testMobileAccountingConnection()" style="padding:6px;background:#3B82F6;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">🔍 ทดสอบ</button>
-<button onclick="exportMobileBillToAccounting()" style="padding:6px;background:#059669;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">📤 ส่งบิล</button>
-</div>
-</div>
-<div class="profile-item" onclick="toggleNotifications()">
-<i class="bi bi-bell-fill"></i>
-<span data-i18n="Notifications">การแจ้งเตือน</span>
-<div class="toggle-switch ms-auto" id="notif-toggle"></div>
-</div>
-<div class="profile-item" onclick="clearCache()">
-<i class="bi bi-arrow-clockwise"></i>
-<span data-i18n="Clear Cache">ล้างข้อมูลแคช</span>
-<i class="bi bi-chevron-right ms-auto"></i>
-</div>
-
-        <div class="profile-item" onclick="showButtonSettings()">
-          <i class="bi bi-eye-fill"></i>
-          <span>ตั้งค่าการแสดงปุ่ม</span>
-          <i class="bi bi-chevron-right ms-auto"></i>
-        </div>
-<div class="profile-item danger" onclick="resetApp()">
-<i class="bi bi-trash-fill"></i>
-<span data-i18n="Reset App">รีเซ็ตแอป</span>
-<i class="bi bi-chevron-right ms-auto"></i>
-</div>
-</div>
-<div class="app-version">
-<span data-i18n="Comphone SuperApp AI">Comphone SuperApp AI</span> <span data-i18n="Version">v5.14.2-phase39</span><br>
-<span data-i18n="PWA — Works offline">ทำงานได้แม้ไม่มีอินเทอร์เน็ต</span>
-</div>
-</div>
-
-<!-- ═══ REPORTS PAGE ═══ -->
-<div id="page-reports" class="page hidden">
-<div class="page-header">
-<h5 data-i18n="Reports"><i class="bi bi-graph-up-arrow" style="color:#10b981"></i> รายงาน & วิเคราะห์</h5>
-</div>
-<div id="reports-content"></div>
-</div>
-
-<!-- ═══ INVENTORY PAGE ═══ -->
-<div id="page-inventory" class="page hidden">
-<div style="text-align:center;padding:3rem;color:#9ca3af">
-<i class="bi bi-boxes" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
-<span data-i18n="Loading Inventory">กำลังโหลดคลังสินค้า...</span>
-</div>
-</div>
-
-<!-- ═══ BILLING PAGE ═══ -->
-<div id="page-billing" class="page hidden">
-<div class="page-header">
-<h5 data-i18n="Billing"><i class="bi bi-receipt" style="color:#059669"></i> ใบเสร็จ/วางบิล</h5>
-</div>
-<div id="billing-content"></div>
-</div>
-
-<!-- ═══ WARRANTY PAGE ═══ -->
-<div id="page-warranty" class="page hidden">
-<div class="page-header">
-<h5 data-i18n="Warranty"><i class="bi bi-shield-check" style="color:#2563eb"></i> รับประกัน</h5>
-</div>
-<div id="warranty-content"></div>
-</div>
-
-<!-- ═══ HIDDEN PAGES (kept for functionality but not in navigation) ═══ -->
-
-<!-- Dashboard Page (merged into Home) -->
-<div id="page-dashboard" class="page hidden">
-<div class="page-header" style="padding-bottom:0">
-<h5 data-i18n="Dashboard"><i class="bi bi-bar-chart-line-fill" style="color:#d97706"></i> Executive Dashboard</h5>
-</div>
-<div id="dashboard-content"></div>
-</div>
-
-<!-- Customer Portal Page -->
-<div id="page-customer-portal" class="page hidden">
-<div style="text-align:center;padding:3rem;color:#9ca3af">
-<i class="bi bi-search" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
-<span data-i18n="Checking status">ตรวจสอบสถานะงาน...</span>
-</div>
-</div>
-
-<!-- Notifications Page (overlay only) -->
-<div id="page-notifications" class="page hidden">
-<div style="text-align:center;padding:3rem;color:#9ca3af">
-<i class="bi bi-bell" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
-<span data-i18n="Loading notifications">กำลังโหลดการแจ้งเตือน...</span>
-</div>
-</div>
-
-<!-- Analytics Page (merged into Reports) -->
-<div id="page-analytics" class="page hidden">
-<div id="section-content"></div>
-</div>
-
-<!-- Revenue Page (merged into Billing) -->
-<div id="page-revenue" class="page hidden">
-<div class="page-header">
-<h5 data-i18n="Revenue"><i class="bi bi-currency-dollar" style="color:#16a34a"></i> รายรับ</h5>
-</div>
-<div id="revenue-content"></div>
-</div>
-
-<!-- Tax Page (merged into Billing) -->
-<div id="page-tax" class="page hidden">
-<div class="page-header">
-<h5 data-i18n="Tax"><i class="bi bi-file-earmark-text" style="color:#b45309"></i> ภาษี</h5>
-</div>
-<div id="tax-content"></div>
-</div>
-
-<!-- Performance Page (merged into Reports) -->
-<div id="page-performance" class="page hidden">
-<div class="page-header">
-<h5 data-i18n="Performance"><i class="bi bi-speedometer" style="color:#7c3aed"></i> Performance</h5>
-</div>
-<div id="performance-content"></div>
-</div>
-
-<!-- Admin Page (hidden from nav, accessible from Settings) -->
-<div id="page-admin" class="page hidden">
-<div class="page-header">
-<h5 data-i18n="Admin"><i class="bi bi-shield-fill-check" style="color:#7c3aed"></i> Admin Panel</h5>
-</div>
-<div id="admin-content"></div>
-</div>
-
-</div><!-- end pages-container -->
-
-<!-- FAB -->
-<button id="fab-btn" class="fab-main" data-i18n-title="Add New" onclick="fabAction()">
-<i class="bi bi-plus-lg"></i>
-</button>
-
-<!-- ═══ BOTTOM NAVIGATION — 4 Items + Camera FAB ═══ -->
-<nav class="bottom-nav-bar">
-<button class="nav-btn active" id="nav-home" onclick="goPage('home', this)">
-<i class="bi bi-house-fill"></i>
-<span data-i18n="Home">หน้าหลัก</span>
-</button>
-<button class="nav-btn" id="nav-jobs" onclick="goPage('jobs', this)">
-<div class="nav-icon-wrap">
-<i class="bi bi-clipboard2-check-fill"></i>
-<span class="nav-badge-dot" id="jobs-badge">3</span>
-</div>
-<span data-i18n="Jobs">งาน</span>
-</button>
-<!-- Camera — center FAB-style button -->
-<button class="nav-btn nav-camera-btn" onclick="openCamera('job')">
-<div class="nav-camera-circle">
-<i class="bi bi-camera-fill"></i>
-</div>
-<span data-i18n="Camera">กล้อง</span>
-</button>
-<!-- More — opens bottom sheet with remaining items -->
-<button class="nav-btn" id="nav-more" onclick="showMoreMenu()">
-<i class="bi bi-grid-3x3-gap-fill"></i>
-<span data-i18n="More">เพิ่มเติม</span>
-</button>
-</nav>
-</div><!-- end main-app -->
-
-<!-- ===== MORE MENU BOTTOM SHEET — Reduced to 8 Core Items ===== -->
-<div id="more-menu-overlay" class="cp-sheet-overlay" style="display:none" onclick="closeMoreMenu()">
-<div class="cp-sheet more-menu-sheet" onclick="event.stopPropagation()">
-<div class="cp-sheet-handle"></div>
-<div class="more-menu-title" data-i18n="More">เพิ่มเติม</div>
-<div class="more-menu-grid">
-<!-- Row 1 -->
-<button class="more-menu-item" onclick="navigateFromMore('crm')">
-<div class="more-menu-icon"><i class="bi bi-people-fill"></i></div>
-<span data-i18n="Customers">ลูกค้า</span>
-</button>
-<button class="more-menu-item" onclick="navigateFromMore('inventory')">
-<div class="more-menu-icon"><i class="bi bi-boxes"></i></div>
-<span data-i18n="Inventory">สต็อก</span>
-</button>
-<button class="more-menu-item" onclick="navigateFromMore('po')">
-<div class="more-menu-icon"><i class="bi bi-cart-fill"></i></div>
-<span data-i18n="Purchase Orders">สั่งซื้อ</span>
-</button>
-<button class="more-menu-item" onclick="navigateFromMore('billing')">
-<div class="more-menu-icon"><i class="bi bi-receipt"></i></div>
-<span data-i18n="Billing">ใบเสร็จ/วางบิล</span>
-</button>
-<!-- Row 2 -->
-<button class="more-menu-item" onclick="navigateFromMore('reports')">
-<div class="more-menu-icon"><i class="bi bi-graph-up-arrow"></i></div>
-<span data-i18n="Reports">รายงาน</span>
-</button>
-<button class="more-menu-item" onclick="navigateFromMore('attendance')">
-<div class="more-menu-icon"><i class="bi bi-clock-fill"></i></div>
-<span data-i18n="Attendance">เวลาทำงาน</span>
-</button>
-<button class="more-menu-item" onclick="navigateFromMore('warranty')">
-<div class="more-menu-icon"><i class="bi bi-shield-check"></i></div>
-<span data-i18n="Warranty">รับประกัน</span>
-</button>
-<button class="more-menu-item" onclick="navigateFromMore('profile')">
-<div class="more-menu-icon"><i class="bi bi-gear-fill"></i></div>
-<span data-i18n="Settings">ตั้งค่า</span>
-</button>
-</div>
-</div>
-</div>
-
-<!-- ===== MODALS ===== -->
-<!-- Job Detail Modal -->
-<div id="modal-job" class="modal-overlay hidden" onclick="closeModal('modal-job')">
-<div class="modal-sheet" onclick="event.stopPropagation()">
-<div class="modal-handle"></div>
-<div id="modal-job-content"></div>
-</div>
-</div>
-
-<!-- Search Modal -->
-<div id="modal-search" class="modal-overlay hidden" onclick="closeModal('modal-search')">
-<div class="modal-search-box" onclick="event.stopPropagation()">
-<div class="search-modal-bar">
-<i class="bi bi-search"></i>
-<input type="text" id="global-search-input" data-i18n-placeholder="Search" placeholder="ค้นหา Job ID, ชื่อลูกค้า, เบอร์..." autofocus oninput="globalSearch(this.value)">
-<button onclick="startVoiceSearch()" class="voice-mini"><i class="bi bi-mic-fill"></i></button>
-<button onclick="closeModal('modal-search')" data-i18n="Cancel">ยกเลิก</button>
-</div>
-<div id="search-results" class="search-results-list"></div>
-</div>
-</div>
-
-<!-- Notifications Overlay -->
-<div id="notifications-overlay" class="cp-sheet-overlay hidden" onclick="closeNotifications()">
-<div class="cp-sheet" onclick="event.stopPropagation()">
-<div class="cp-sheet-handle"></div>
-<div class="more-menu-title">การแจ้งเตือน</div>
-<div id="notifications-list"></div>
-</div>
-</div>
-
-<script>
-// ===== NAVIGATION HELPERS =====
-function showNotifications() {
-  const overlay = document.getElementById('notifications-overlay');
-  if (overlay) {
-    overlay.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-    if (typeof loadNotificationCenter === 'function') {
-      loadNotificationCenter();
-    }
-  }
-}
-
-function closeNotifications() {
-  const overlay = document.getElementById('notifications-overlay');
-  if (overlay) {
-    overlay.classList.add('hidden');
-    document.body.style.overflow = '';
-  }
-}
-
-// Close modals with Escape key
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    closeModal('modal-job');
-    closeModal('modal-search');
-    closeNotifications();
-    closeMoreMenu();
-  }
-});
-</script>
-
-
-<script>
-// ===== SETTINGS FOR BUTTON VISIBILITY (No Swiper) =====
-function showButtonSettings() {
-  const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
-  modal.style.display = 'flex';
-  modal.onclick = () => modal.remove();
-  
-  modal.innerHTML = `
-    <div class="modal-sheet" onclick="event.stopPropagation()">
-      <div class="cp-sheet-handle"></div>
-      <div class="more-menu-title">⚙️ ตั้งค่าการแสดงปุ่ม</div>
-      <div class="setting-list">
-        <div class="setting-item">
-          <label>📷 ปุ่มรูปหน้างาน</label>
-          <div class="toggle ${getButtonSetting('btnPhoto')}" onclick="toggleButtonSetting('btnPhoto', this)"></div>
-        </div>
-        <div class="setting-item">
-          <label>✅ ปุ่มเสร็จแล้ว</label>
-          <div class="toggle ${getButtonSetting('btnDone')}" onclick="toggleButtonSetting('btnDone', this)"></div>
-        </div>
-        <div class="setting-item">
-          <label>👨‍🔧 ปุ่มมอบหมายช่าง</label>
-          <div class="toggle ${getButtonSetting('btnAssign')}" onclick="toggleButtonSetting('btnAssign', this)"></div>
-        </div>
-        <div class="setting-item">
-          <label>📄 ปุ่มดูรายละเอียด</label>
-          <div class="toggle ${getButtonSetting('btnDetail')}" onclick="toggleButtonSetting('btnDetail', this)"></div>
-        </div>
-        <div class="setting-item">
-          <label>🗑️ ปุ่มลบงาน</label>
-          <div class="toggle ${getButtonSetting('btnDelete')}" onclick="toggleButtonSetting('btnDelete', this)"></div>
-        </div>
-        <div class="setting-item">
-          <label>🔍 ปุ่มค้นหา</label>
-          <div class="toggle ${getButtonSetting('btnSearch')}" onclick="toggleButtonSetting('btnSearch', this)"></div>
-        </div>
-      </div>
-      <button style="margin-top:16px;width:100%;padding:10px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:bold;" onclick="saveButtonSettings(); this.closest('.modal-overlay').remove();">
-        บันทึกการตั้งค่า
-      </button>
-    </div>
-  `;
-  
-  document.body.appendChild(modal);
-}
-
-function getButtonSetting(key) {
-  const settings = JSON.parse(localStorage.getItem('comphone_button_settings') || '{}');
-  return settings[key] !== false ? 'on' : '';
-}
-
-function toggleButtonSetting(key, element) {
-  element.classList.toggle('on');
-}
-
-function saveButtonSettings() {
-  const settings = {};
-  document.querySelectorAll('.setting-item').forEach(item => {
-    const label = item.querySelector('label').textContent;
-    const isOn = item.querySelector('.toggle').classList.contains('on');
-    
-    if (label.includes('รูปหน้างาน')) settings['btnPhoto'] = isOn;
-    if (label.includes('เสร็จแล้ว')) settings['btnDone'] = isOn;
-    if (label.includes('มอบหมายช่าง')) settings['btnAssign'] = isOn;
-    if (label.includes('ดูรายละเอียด')) settings['btnDetail'] = isOn;
-    if (label.includes('ลบงาน')) settings['btnDelete'] = isOn;
-    if (label.includes('ค้นหา')) settings['btnSearch'] = isOn;
-  });
-  
-  localStorage.setItem('comphone_button_settings', JSON.stringify(settings));
-  applyButtonSettings();
-  showToast('บันทึกการตั้งค่าแล้ว');
-}
-
-function applyButtonSettings() {
-  const settings = JSON.parse(localStorage.getItem('comphone_button_settings') || '{}');
-  
-  // Apply to job cards
-  document.querySelectorAll('.job-card').forEach(card => {
-    const buttons = card.querySelectorAll('.btn');
-    buttons.forEach(btn => {
-      const text = btn.textContent;
-      if (text.includes('รูปหน้างาน') && settings['btnPhoto'] === false) {
-        btn.style.display = 'none';
-      }
-      if (text.includes('เสร็จแล้ว') && settings['btnDone'] === false) {
-        btn.style.display = 'none';
-      }
-      if (text.includes('มอบหมายช่าง') && settings['btnAssign'] === false) {
-        btn.style.display = 'none';
-      }
-      if (text.includes('ดูรายละเอียด') && settings['btnDetail'] === false) {
-        btn.style.display = 'none';
-      }
-    });
-  });
-  
-  // Apply to more menu
-  if (settings['btnSearch'] === false) {
-    const searchBtn = document.querySelector('[onclick="showSearch()"]');
-    if (searchBtn) searchBtn.style.display = 'none';
-  }
-}
-
-// ===== TOAST NOTIFICATION =====
-function showToast(message) {
-  const toast = document.createElement('div');
-  toast.style.cssText = `
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(15, 23, 42, 0.9);
-    color: #e2e8f0;
-    padding: 12px 24px;
-    border-radius: 8px;
-    border: 1px solid rgba(124, 58, 237, 0.5);
-    backdrop-filter: blur(20px);
-    z-index: 10000;
-    font-size: 14px;
-    animation: fadeInUp 0.3s ease-out;
-  `;
-  toast.textContent = message;
-  document.body.appendChild(toast);
-  
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transition = 'opacity 0.3s';
-    setTimeout(() => toast.remove(), 300);
-  }, 2000);
-}
-
-// Apply settings on load
-document.addEventListener('DOMContentLoaded', function() {
-  setTimeout(applyButtonSettings, 1000);
-});
-</script>
-
-</body>
-</html>
+     1|     1|     1|<!DOCTYPE html>
+     2|     2|     2|<!-- Comphone SuperApp AI — Ultra Modern Mobile PWA v2026 -->
+     3|     3|     3|<html lang="th" class="cp-light cp-mobile">
+     4|     4|     4|<head>
+     5|     5|     5|<meta charset="UTF-8">
+     6|     6|     6|<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+     7|     7|     7|<meta name="theme-color" content="#3B82F6">
+     8|     8|     8|<meta name="apple-mobile-web-app-capable" content="yes">
+     9|     9|     9|<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    10|    10|    10|<meta name="apple-mobile-web-app-title" content="Comphone">
+    11|    11|    11|<meta name="mobile-web-app-capable" content="yes">
+    12|    12|    12|<meta name="description" content="Comphone SuperApp AI — ระบบบริหารงานบริการ IT และโซลูชันเทคโนโลยี">
+    13|    13|    13|<link rel="preconnect" href="https://cdn.jsdelivr.net">
+    14|    14|    14|<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    15|    15|    15|<link rel="preconnect" href="https://script.google.com">
+    16|    16|    16|<link rel="dns-prefetch" href="https://script.google.com">
+    17|    17|    17|<link rel="manifest" href="/comphone-superapp/pwa/manifest.json">
+    18|    18|    18|<link rel="apple-touch-icon" href="icons/icon-192.png">
+    19|    19|    19|<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    20|    20|    20|<title>Comphone SuperApp AI</title>
+    21|    21|    21|<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    22|    22|    22|<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    23|    23|    23|<link rel="stylesheet" href="dashboard_shared.css?v=5.15.0-phase40&t=20260505_1045">
+    24|    24|    24|<link rel="stylesheet" href="mobile_shared.css?v=5.15.0-phase40&t=20260505_1045">
+    25|    25|    25|<link rel="stylesheet" href="style_modern_gradient2026.css?v=5.15.0-phase40&t=20260505_1045">
+    26|    26|    26|<link rel="stylesheet" href="style.css?v=5.15.0-phase40&t=20260505_1045">
+    27|    27|    27|<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    28|    28|    28|<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+    29|    29|    29|<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+    30|    30|    30|<script src="version_config.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    31|    31|    31|<script src="gas_config.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    32|    32|    32|<script src="pwa_asset_manifest.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    33|    33|    33|<script src="mobile_shared.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    34|    34|    34|<script src="api_client.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    35|    35|    35|<script src="auth_guard.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    36|    36|    36|<script src="app.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    37|    37|    37|<script src="offline_db.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    38|    38|    38|<script src="app_home.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    39|    39|    39|<script src="app_jobs.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    40|    40|    40|<script src="app_actions.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    41|    41|    41|<script src="dashboard.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    42|    42|    42|<script src="crm_attendance.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    43|    43|    43|<script src="purchase_order.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    44|    44|    44|<script src="section_inventory.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    45|    45|    45|<script src="billing_section.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    46|    46|    46|<script src="reports.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    47|    47|    47|<script src="customer_portal.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    48|    48|    48|<script src="analytics_section.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    49|    49|    49|<script src="admin_panel.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    50|    50|    50|<script src="menu_health.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    51|    51|    51|<script src="notification_center.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    52|    52|    52|<script src="auth.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    53|    53|    53|<script src="error_boundary.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    54|    54|    54|<script src="pwa_install.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    55|    55|    55|<script src="push_notifications.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    56|    56|    56|<script src="section_warranty.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    57|    57|    57|<script src="section_revenue.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    58|    58|    58|<script src="section_tax.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    59|    59|    59|<script src="section_performance.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    60|    60|    60|<script src="api_contract.js?v=5.14.2-phase39&t=20260505_1045"></script>
+    61|    61|    61|</head>
+    62|    62|    62|<body>
+    63|    63|    63|<!-- ===== SPLASH SCREEN — Modern Animated ===== -->
+    64|    64|    64|<div id="splash-screen">
+    65|    65|    65|<div class="splash-content">
+    66|    66|    66|<div class="splash-logo">
+    67|    67|    67|<div class="logo-ring"></div>
+    68|    68|    68|<div class="logo-ring-inner"></div>
+    69|    69|    69|<div class="logo-icon"><i class="bi bi-phone-fill"></i></div>
+    70|    70|    70|</div>
+    71|    71|    71|<h1 class="splash-title">Comphone</h1>
+    72|    72|    72|<p class="splash-sub" data-i18n="SuperApp AI">SuperApp AI</p>
+    73|    73|    73|<div class="splash-loader">
+    74|    74|    74|<div class="loader-bar"></div>
+    75|    75|    75|</div>
+    76|    76|    76|</div>
+    77|    77|    77|</div>
+    78|    78|    78|
+    79|    79|    79|<!-- ===== SETUP SCREEN (First time only) ===== -->
+    80|    80|    80|<div id="setup-screen" class="screen hidden">
+    81|    81|    81|<div class="setup-bg">
+    82|    82|    82|<div class="setup-card">
+    83|    83|    83|<div class="setup-logo">
+    84|    84|    84|<i class="bi bi-phone-fill"></i>
+    85|    85|    85|</div>
+    86|    86|    86|<h2 data-i18n="Welcome">ยินดีต้อนรับ</h2>
+    87|    87|    87|<p class="setup-desc" data-i18n="Enter once">กรอกข้อมูลครั้งเดียว<br>ระบบจะจดจำให้อัตโนมัติ</p>
+    88|    88|    88|<div class="setup-form">
+    89|    89|    89|<div class="form-group-custom">
+    90|    90|    90|<label data-i18n="Full Name">ชื่อ-นามสกุล</label>
+    91|    91|    91|<div class="input-wrap">
+    92|    92|    92|<i class="bi bi-person-fill"></i>
+    93|    93|    93|<input type="text" id="setup-name" data-i18n-placeholder="e.g. Somchai Doodee" placeholder="เช่น สมชาย ทำดี" autocomplete="name">
+    94|    94|    94|</div>
+    95|    95|    95|</div>
+    96|    96|    96|<div class="form-group-custom">
+    97|    97|    97|<label data-i18n="Phone">เบอร์โทรศัพท์</label>
+    98|    98|    98|<div class="input-wrap">
+    99|    99|    99|<i class="bi bi-telephone-fill"></i>
+   100|   100|   100|<input type="tel" id="setup-phone" data-i18n-placeholder="081-234-5678" placeholder="081-234-5678" autocomplete="tel">
+   101|   101|   101|</div>
+   102|   102|   102|</div>
+   103|   103|   103|<div class="form-group-custom">
+   104|   104|   104|<label data-i18n="Your Role">บทบาทของคุณ</label>
+   105|   105|   105|<div class="role-picker">
+   106|   106|   106|<div class="role-option" data-role="tech" onclick="selectRole(this)">
+   107|   107|   107|<div class="role-icon" style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);color:#1e40af;"><i class="bi bi-tools"></i></div>
+   108|   108|   108|<span data-i18n="Technician">ช่าง</span>
+   109|   109|   109|</div>
+   110|   110|   110|<div class="role-option" data-role="admin" onclick="selectRole(this)">
+   111|   111|   111|<div class="role-icon" style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);color:#5b21b6;"><i class="bi bi-headset"></i></div>
+   112|   112|   112|<span data-i18n="Admin">แอดมิน</span>
+   113|   113|   113|</div>
+   114|   114|   114|<div class="role-option" data-role="acct" onclick="selectRole(this)">
+   115|   115|   115|<div class="role-icon" style="background:linear-gradient(135deg,#cffafe,#a5f3fc);color:#164e63;"><i class="bi bi-calculator"></i></div>
+   116|   116|   116|<span data-i18n="Accountant">บัญชี</span>
+   117|   117|   117|</div>
+   118|   118|   118|<div class="role-option" data-role="exec" onclick="selectRole(this)">
+   119|   119|   119|<div class="role-icon" style="background:linear-gradient(135deg,#fef9c3,#fef08a);color:#713f12;"><i class="bi bi-bar-chart-line"></i></div>
+   120|   120|   120|<span data-i18n="Executive">ผู้บริหาร</span>
+   121|   121|   121|</div>
+   122|   122|   122|</div>
+   123|   123|   123|</div>
+   124|   124|   124|<div class="form-group-custom">
+   125|   125|   125|<label data-i18n="Script URL">Script URL (Google Apps Script)</label>
+   126|   126|   126|<div class="input-wrap">
+   127|   127|   127|<i class="bi bi-link-45deg"></i>
+   128|   128|   128|<input type="url" id="setup-url" data-i18n-placeholder="https://script.google.com/macros/s/..." placeholder="https://script.google.com/macros/s/..." autocomplete="url">
+   129|   129|   129|</div>
+   130|   130|   130|<small style="color:#9ca3af;font-size:11px;margin-top:4px;display:block;" data-i18n="Paste deployed URL">วาง URL จาก Google Apps Script ที่ Deploy แล้ว</small>
+   131|   131|   131|</div>
+   132|   132|   132|<button class="btn-setup" onclick="completeSetup()">
+   133|   133|   133|<i class="bi bi-arrow-right-circle-fill"></i>
+   134|   134|   134|<span data-i18n="Start Using">เริ่มใช้งาน</span>
+   135|   135|   135|</button>
+   136|   136|   136|</div>
+   137|   137|   137|</div>
+   138|   138|   138|</div>
+   139|   139|   139|</div>
+   140|   140|   140|
+   141|   141|   141|<!-- ===== MAIN APP ===== -->
+   142|   142|   142|<div id="main-app" class="screen hidden">
+   143|   143|   143|<!-- TOP BAR — Glassmorphism -->
+   144|   144|   144|<div id="top-bar" class="top-bar">
+   145|   145|   145|<div class="top-bar-left">
+   146|   146|   146|<div id="user-avatar" class="user-avatar" onclick="showProfile()"></div>
+   147|   147|   147|<div>
+   148|   148|   148|<div id="greeting-text" class="greeting-text"></div>
+   149|   149|   149|<div id="user-name-display" class="user-name"></div>
+   150|   150|   150|</div>
+   151|   151|   151|</div>
+   152|   152|   152|<div class="top-bar-right">
+   153|   153|   153|<button class="icon-btn" data-i18n-title="Search" onclick="showSearch()"><i class="bi bi-search"></i></button>
+   154|   154|   154|<div class="notif-wrap" onclick="showNotifications()">
+   155|   155|   155|<button class="icon-btn"><i class="bi bi-bell-fill"></i></button>
+   156|   156|   156|<span class="notif-badge" id="notif-count">3</span>
+   157|   157|   157|</div>
+   158|   158|   158|</div>
+   159|   159|   159|</div>
+   160|   160|   160|
+   161|   161|   161|<!-- OFFLINE BAR -->
+   162|   162|   162|<div id="offline-bar" class="hidden">
+   163|   163|   163|<div style="display:flex;align-items:center;gap:6px;">
+   164|   164|   164|<i class="bi bi-wifi-off"></i>
+   165|   165|   165|<span data-i18n="Offline - Data will sync when connected">ออฟไลน์ — ข้อมูลจะ Sync เมื่อเชื่อมต่อ</span>
+   166|   166|   166|</div>
+   167|   167|   167|<div style="display:flex;align-items:center;gap:8px;">
+   168|   168|   168|<span class="offline-queue-count"></span>
+   169|   169|   169|<button onclick="showSyncQueue()">ดูคิว</button>
+   170|   170|   170|</div>
+   171|   171|   171|</div>
+   172|   172|   172|
+   173|   173|   173|<!-- PAGES CONTAINER -->
+   174|   174|   174|<div id="pages-container">
+   175|   175|   175|
+   176|   176|   176|<!-- ═══ HOME PAGE ═══ -->
+   177|   177|   177|<div id="page-home" class="page active">
+   178|   178|   178|<!-- Quick Actions (role-based) -->
+   179|   179|   179|<div class="section-card animate-in" id="quick-actions-section">
+   180|   180|   180|<div class="section-label">ปุ่มด่วน</div>
+   181|   181|   181|<div id="quick-actions-grid" class="qa-grid-4"></div>
+   182|   182|   182|</div>
+   183|   183|   183|<!-- Stats Row -->
+   184|   184|   184|<div id="stats-row" class="stats-row"></div>
+   185|   185|   185|<!-- Main Content (role-based) -->
+   186|   186|   186|<div id="main-content-area"></div>
+   187|   187|   187|</div>
+   188|   188|   188|
+   189|   189|   189|<!-- ═══ JOBS PAGE ═══ -->
+   190|   190|   190|<div id="page-jobs" class="page hidden">
+   191|   191|   191|<div class="page-header">
+   192|   192|   192|<h5>งานทั้งหมด</h5>
+   193|   193|   193|<div class="search-bar-inline">
+   194|   194|   194|<i class="bi bi-search"></i>
+   195|   195|   195|<input type="text" id="jobs-search" placeholder="ค้นหา Job ID, ชื่อลูกค้า..." oninput="filterJobs(this.value)">
+   196|   196|   196|<button onclick="startVoiceSearch()" class="voice-mini"><i class="bi bi-mic-fill"></i></button>
+   197|   197|   197|</div>
+   198|   198|   198|</div>
+   199|   199|   199|<div class="filter-tabs">
+   200|   200|   200|<button class="filter-tab active" onclick="filterByStatus('all', this)">ทั้งหมด</button>
+   201|   201|   201|<button class="filter-tab" onclick="filterByStatus('urgent', this)">ด่วน</button>
+   202|   202|   202|<button class="filter-tab" onclick="filterByStatus('inprog', this)">กำลังดำเนินการ</button>
+   203|   203|   203|<button class="filter-tab" onclick="filterByStatus('waiting', this)">รอชิ้นส่วน</button>
+   204|   204|   204|<button class="filter-tab" onclick="filterByStatus('done', this)">เสร็จแล้ว</button>
+   205|   205|   205|</div>
+   206|   206|   206|<div id="jobs-list"></div>
+   207|   207|   207|</div>
+   208|   208|   208|
+   209|   209|   209|<!-- ═══ CAMERA / PHOTO PAGE ═══ -->
+   210|   210|   210|<div id="page-camera" class="page hidden">
+   211|   211|   211|<div class="page-header"><h5>ถ่ายรูป / สแกน</h5></div>
+   212|   212|   212|<div class="camera-section">
+   213|   213|   213|<div class="camera-options">
+   214|   214|   214|<div class="cam-option" onclick="openCamera('job')">
+   215|   215|   215|<i class="bi bi-camera-fill"></i>
+   216|   216|   216|<span>รูปหน้างาน</span>
+   217|   217|   217|</div>
+   218|   218|   218|<div class="cam-option" onclick="openCamera('slip')">
+   219|   219|   219|<i class="bi bi-receipt"></i>
+   220|   220|   220|<span>สแกนสลิป</span>
+   221|   221|   221|</div>
+   222|   222|   222|<div class="cam-option" onclick="openCamera('bill')">
+   223|   223|   223|<i class="bi bi-file-earmark-image"></i>
+   224|   224|   224|<span>สแกนบิล</span>
+   225|   225|   225|</div>
+   226|   226|   226|<div class="cam-option" onclick="openCamera('qr')">
+   227|   227|   227|<i class="bi bi-qr-code-scan"></i>
+   228|   228|   228|<span>สแกน QR</span>
+   229|   229|   229|</div>
+   230|   230|   230|</div>
+   231|   231|   231|<input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
+   232|   232|   232|<div id="photo-preview-area"></div>
+   233|   233|   233|<div id="recent-photos" class="recent-photos">
+   234|   234|   234|<div class="section-label">รูปล่าสุด</div>
+   235|   235|   235|<div id="photo-grid" class="photo-thumb-grid"></div>
+   236|   236|   236|</div>
+   237|   237|   237|</div>
+   238|   238|   238|</div>
+   239|   239|   239|
+   240|   240|   240|<!-- ═══ CRM PAGE ═══ -->
+   241|   241|   241|<div id="page-crm" class="page hidden">
+   242|   242|   242|<div class="page-header">
+   243|   243|   243|<h5 data-i18n="Customers">ลูกค้า / CRM</h5>
+   244|   244|   244|<div class="search-bar-inline">
+   245|   245|   245|<i class="bi bi-search"></i>
+   246|   246|   246|<input type="text" id="crm-search" data-i18n-placeholder="Search" placeholder="ค้นหาชื่อ, เบอร์, ประวัติ..." oninput="filterCustomers(this.value)">
+   247|   247|   247|<button onclick="startVoiceSearch()" class="voice-mini"><i class="bi bi-mic-fill"></i></button>
+   248|   248|   248|</div>
+   249|   249|   249|</div>
+   250|   250|   250|<div class="filter-tabs">
+   251|   251|   251|<button class="filter-tab active" data-i18n="All" onclick="filterCRMType('all', this)">ทั้งหมด</button>
+   252|   252|   252|<button class="filter-tab" data-i18n="VIP" onclick="filterCRMType('vip', this)">VIP</button>
+   253|   253|   253|<button class="filter-tab" data-i18n="Follow-up" onclick="filterCRMType('due', this)">ติดตาม</button>
+   254|   254|   254|<button class="filter-tab" data-i18n="New" onclick="filterCRMType('new', this)">ใหม่</button>
+   255|   255|   255|</div>
+   256|   256|   256|<div id="crm-list"></div>
+   257|   257|   257|<div id="crm-after-sales-section" style="margin-top:8px"></div>
+   258|   258|   258|</div>
+   259|   259|   259|
+   260|   260|   260|<!-- ═══ PURCHASE ORDER PAGE ═══ -->
+   261|   261|   261|<div id="page-po" class="page hidden">
+   262|   262|   262|<div class="page-header">
+   263|   263|   263|<h5 data-i18n="Purchase Orders">ใบสั่งซื้อ (PO)</h5>
+   264|   264|   264|<div class="search-bar-inline">
+   265|   265|   265|<i class="bi bi-search"></i>
+   266|   266|   266|<input type="text" id="po-search" data-i18n-placeholder="Search PO" placeholder="ค้นหา PO ID, ผู้จำหน่าย..." oninput="filterPOSearch(this.value)">
+   267|   267|   267|</div>
+   268|   268|   268|</div>
+   269|   269|   269|<div class="filter-tabs">
+   270|   270|   270|<button class="filter-tab active" data-i18n="All" onclick="filterPOStatus('all', this)">ทั้งหมด</button>
+   271|   271|   271|<button class="filter-tab" data-i18n="Pending" onclick="filterPOStatus('pending', this)">รอรับสินค้า</button>
+   272|   272|   272|<button class="filter-tab" data-i18n="Received" onclick="filterPOStatus('received', this)">รับแล้ว</button>
+   273|   273|   273|</div>
+   274|   274|   274|<div id="po-list"></div>
+   275|   275|   275|</div>
+   276|   276|   276|
+   277|   277|   277|<!-- ═══ ATTENDANCE PAGE ═══ -->
+   278|   278|   278|<div id="page-attendance" class="page hidden">
+   279|   279|   279|<div class="page-header"><h5 data-i18n="Attendance">เวลาทำงาน</h5></div>
+   280|   280|   280|<div id="attendance-content"></div>
+   281|   281|   281|</div>
+   282|   282|   282|
+   283|   283|   283|<!-- ═══ PROFILE / SETTINGS PAGE ═══ -->
+   284|   284|   284|<div id="page-profile" class="page hidden">
+   285|   285|   285|<div class="profile-header">
+   286|   286|   286|<div id="profile-avatar-large" class="profile-avatar-large"></div>
+   287|   287|   287|<div id="profile-name-large" class="profile-name-large"></div>
+   288|   288|   288|<div id="profile-role-badge" class="profile-role-badge"></div>
+   289|   289|   289|</div>
+   290|   290|   290|<div class="profile-section">
+   291|   291|   291|<div class="profile-item" onclick="editProfile()">
+   292|   292|   292|<i class="bi bi-pencil-fill"></i>
+   293|   293|   293|<span data-i18n="Edit Profile">แก้ไขข้อมูลส่วนตัว</span>
+   294|   294|   294|<i class="bi bi-chevron-right ms-auto"></i>
+   295|   295|   295|</div>
+   296|   296|   296|<div class="profile-item" onclick="changeRole()">
+   297|   297|   297|<i class="bi bi-person-badge-fill"></i>
+   298|   298|   298|<span data-i18n="Change Role">เปลี่ยนบทบาท</span>
+   299|   299|   299|<i class="bi bi-chevron-right ms-auto"></i>
+   300|   300|   300|</div>
+   301|   301|   301|<div class="profile-item" onclick="showSettings()">
+   302|   302|   302|<i class="bi bi-gear-fill"></i>
+   303|   303|   303|<span data-i18n="Settings">ตั้งค่า Script URL</span>
+   304|   304|   304|<i class="bi bi-chevron-right ms-auto"></i>
+   305|   305|   305|</div>
+   306|   306|   306|<div class="profile-item" onclick="showAccountingSettings()">
+   307|   307|   307|<i class="bi bi-calculator-fill" style="color:#3B82F6"></i>
+   308|   308|   308|<span data-i18n="Accounting Integration">การเชื่อมต่อบัญชี</span>
+   309|   309|   309|<i class="bi bi-chevron-right ms-auto"></i>
+   310|   310|   310|</div>
+   311|   311|   311|<div id="accounting-settings-section" class="profile-section hidden" style="padding:0 16px 16px;background:#f8fafc;border-radius:12px;margin:8px 16px">
+   312|   312|   312|<div style="font-size:13px;font-weight:600;color:#3B82F6;margin-bottom:8px"><i class="bi bi-calculator"></i> การเชื่อมต่อบัญชี</div>
+   313|   313|   313|<div style="margin-bottom:8px">
+   314|   314|   314|<label style="font-size:11px;color:#6b7280">ซอฟต์แวร์บัญชี</label>
+   315|   315|   315|<select id="mobile-accounting-software" style="width:100%;padding:6px;border-radius:6px;border:1px solid #d1d5db;font-size:12px">
+   316|   316|   316|<option value="express">Express</option>
+   317|   317|   317|<option value="quickbooks">QuickBooks</option>
+   318|   318|   318|<option value="other">อื่นๆ</option>
+   319|   319|   319|</select>
+   320|   320|   320|</div>
+   321|   321|   321|<div style="margin-bottom:8px">
+   322|   322|   322|<label style="font-size:11px;color:#6b7280">API Key / Token</label>
+   323|   323|   323|<input type="password" id="mobile-accounting-api-key" placeholder="ใส่ API Key หรือ Token" style="width:100%;padding:6px;border-radius:6px;border:1px solid #d1d5db;font-size:12px">
+   324|   324|   324|</div>
+   325|   325|   325|<div id="mobile-accounting-status" style="font-size:12px;padding:6px;background:#f0fdf4;color:#059669;border-radius:6px;margin-bottom:8px">✅ เชื่อมต่อแล้ว (จำลอง)</div>
+   326|   326|   326|<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+   327|   327|   327|<button onclick="testMobileAccountingConnection()" style="padding:6px;background:#3B82F6;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">🔍 ทดสอบ</button>
+   328|   328|   328|<button onclick="exportMobileBillToAccounting()" style="padding:6px;background:#059669;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">📤 ส่งบิล</button>
+   329|   329|   329|</div>
+   330|   330|   330|</div>
+   331|   331|   331|<div class="profile-item" onclick="toggleNotifications()">
+   332|   332|   332|<i class="bi bi-bell-fill"></i>
+   333|   333|   333|<span data-i18n="Notifications">การแจ้งเตือน</span>
+   334|   334|   334|<div class="toggle-switch ms-auto" id="notif-toggle"></div>
+   335|   335|   335|</div>
+   336|   336|   336|<div class="profile-item" onclick="clearCache()">
+   337|   337|   337|<i class="bi bi-arrow-clockwise"></i>
+   338|   338|   338|<span data-i18n="Clear Cache">ล้างข้อมูลแคช</span>
+   339|   339|   339|<i class="bi bi-chevron-right ms-auto"></i>
+   340|   340|   340|</div>
+   341|   341|   341|
+   342|   342|   342|        <div class="profile-item" onclick="showButtonSettings()">
+   343|   343|   343|          <i class="bi bi-eye-fill"></i>
+   344|   344|   344|          <span>ตั้งค่าการแสดงปุ่ม</span>
+   345|   345|   345|          <i class="bi bi-chevron-right ms-auto"></i>
+   346|   346|   346|        </div>
+   347|   347|   347|<div class="profile-item danger" onclick="resetApp()">
+   348|   348|   348|<i class="bi bi-trash-fill"></i>
+   349|   349|   349|<span data-i18n="Reset App">รีเซ็ตแอป</span>
+   350|   350|   350|<i class="bi bi-chevron-right ms-auto"></i>
+   351|   351|   351|</div>
+   352|   352|   352|</div>
+   353|   353|   353|<div class="app-version">
+   354|   354|   354|<span data-i18n="Comphone SuperApp AI">Comphone SuperApp AI</span> <span data-i18n="Version">v5.16.0-phase41</span><br>
+   355|   355|   355|<span data-i18n="PWA — Works offline">ทำงานได้แม้ไม่มีอินเทอร์เน็ต</span>
+   356|   356|   356|</div>
+   357|   357|   357|</div>
+   358|   358|   358|
+   359|   359|   359|<!-- ═══ REPORTS PAGE ═══ -->
+   360|   360|   360|<div id="page-reports" class="page hidden">
+   361|   361|   361|<div class="page-header">
+   362|   362|   362|<h5 data-i18n="Reports"><i class="bi bi-graph-up-arrow" style="color:#10b981"></i> รายงาน & วิเคราะห์</h5>
+   363|   363|   363|</div>
+   364|   364|   364|<div id="reports-content"></div>
+   365|   365|   365|</div>
+   366|   366|   366|
+   367|   367|   367|<!-- ═══ INVENTORY PAGE ═══ -->
+   368|   368|   368|<div id="page-inventory" class="page hidden">
+   369|   369|   369|<div style="text-align:center;padding:3rem;color:#9ca3af">
+   370|   370|   370|<i class="bi bi-boxes" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
+   371|   371|   371|<span data-i18n="Loading Inventory">กำลังโหลดคลังสินค้า...</span>
+   372|   372|   372|</div>
+   373|   373|   373|</div>
+   374|   374|   374|
+   375|   375|   375|<!-- ═══ BILLING PAGE ═══ -->
+   376|   376|   376|<div id="page-billing" class="page hidden">
+   377|   377|   377|<div class="page-header">
+   378|   378|   378|<h5 data-i18n="Billing"><i class="bi bi-receipt" style="color:#059669"></i> ใบเสร็จ/วางบิล</h5>
+   379|   379|   379|</div>
+   380|   380|   380|<div id="billing-content"></div>
+   381|   381|   381|</div>
+   382|   382|   382|
+   383|   383|   383|<!-- ═══ WARRANTY PAGE ═══ -->
+   384|   384|   384|<div id="page-warranty" class="page hidden">
+   385|   385|   385|<div class="page-header">
+   386|   386|   386|<h5 data-i18n="Warranty"><i class="bi bi-shield-check" style="color:#2563eb"></i> รับประกัน</h5>
+   387|   387|   387|</div>
+   388|   388|   388|<div id="warranty-content"></div>
+   389|   389|   389|</div>
+   390|   390|   390|
+   391|   391|   391|<!-- ═══ HIDDEN PAGES (kept for functionality but not in navigation) ═══ -->
+   392|   392|   392|
+   393|   393|   393|<!-- Dashboard Page (merged into Home) -->
+   394|   394|   394|<div id="page-dashboard" class="page hidden">
+   395|   395|   395|<div class="page-header" style="padding-bottom:0">
+   396|   396|   396|<h5 data-i18n="Dashboard"><i class="bi bi-bar-chart-line-fill" style="color:#d97706"></i> Executive Dashboard</h5>
+   397|   397|   397|</div>
+   398|   398|   398|<div id="dashboard-content"></div>
+   399|   399|   399|</div>
+   400|   400|   400|
+   401|   401|   401|<!-- Customer Portal Page -->
+   402|   402|   402|<div id="page-customer-portal" class="page hidden">
+   403|   403|   403|<div style="text-align:center;padding:3rem;color:#9ca3af">
+   404|   404|   404|<i class="bi bi-search" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
+   405|   405|   405|<span data-i18n="Checking status">ตรวจสอบสถานะงาน...</span>
+   406|   406|   406|</div>
+   407|   407|   407|</div>
+   408|   408|   408|
+   409|   409|   409|<!-- Notifications Page (overlay only) -->
+   410|   410|   410|<div id="page-notifications" class="page hidden">
+   411|   411|   411|<div style="text-align:center;padding:3rem;color:#9ca3af">
+   412|   412|   412|<i class="bi bi-bell" style="font-size:2.5rem;display:block;margin-bottom:8px"></i>
+   413|   413|   413|<span data-i18n="Loading notifications">กำลังโหลดการแจ้งเตือน...</span>
+   414|   414|   414|</div>
+   415|   415|   415|</div>
+   416|   416|   416|
+   417|   417|   417|<!-- Analytics Page (merged into Reports) -->
+   418|   418|   418|<div id="page-analytics" class="page hidden">
+   419|   419|   419|<div id="section-content"></div>
+   420|   420|   420|</div>
+   421|   421|   421|
+   422|   422|   422|<!-- Revenue Page (merged into Billing) -->
+   423|   423|   423|<div id="page-revenue" class="page hidden">
+   424|   424|   424|<div class="page-header">
+   425|   425|   425|<h5 data-i18n="Revenue"><i class="bi bi-currency-dollar" style="color:#16a34a"></i> รายรับ</h5>
+   426|   426|   426|</div>
+   427|   427|   427|<div id="revenue-content"></div>
+   428|   428|   428|</div>
+   429|   429|   429|
+   430|   430|   430|<!-- Tax Page (merged into Billing) -->
+   431|   431|   431|<div id="page-tax" class="page hidden">
+   432|   432|   432|<div class="page-header">
+   433|   433|   433|<h5 data-i18n="Tax"><i class="bi bi-file-earmark-text" style="color:#b45309"></i> ภาษี</h5>
+   434|   434|   434|</div>
+   435|   435|   435|<div id="tax-content"></div>
+   436|   436|   436|</div>
+   437|   437|   437|
+   438|   438|   438|<!-- Performance Page (merged into Reports) -->
+   439|   439|   439|<div id="page-performance" class="page hidden">
+   440|   440|   440|<div class="page-header">
+   441|   441|   441|<h5 data-i18n="Performance"><i class="bi bi-speedometer" style="color:#7c3aed"></i> Performance</h5>
+   442|   442|   442|</div>
+   443|   443|   443|<div id="performance-content"></div>
+   444|   444|   444|</div>
+   445|   445|   445|
+   446|   446|   446|<!-- Admin Page (hidden from nav, accessible from Settings) -->
+   447|   447|   447|<div id="page-admin" class="page hidden">
+   448|   448|   448|<div class="page-header">
+   449|   449|   449|<h5 data-i18n="Admin"><i class="bi bi-shield-fill-check" style="color:#7c3aed"></i> Admin Panel</h5>
+   450|   450|   450|</div>
+   451|   451|   451|<div id="admin-content"></div>
+   452|   452|   452|</div>
+   453|   453|   453|
+   454|   454|   454|</div><!-- end pages-container -->
+   455|   455|   455|
+   456|   456|   456|<!-- FAB -->
+   457|   457|   457|<button id="fab-btn" class="fab-main" data-i18n-title="Add New" onclick="fabAction()">
+   458|   458|   458|<i class="bi bi-plus-lg"></i>
+   459|   459|   459|</button>
+   460|   460|   460|
+   461|   461|   461|<!-- ═══ BOTTOM NAVIGATION — 4 Items + Camera FAB ═══ -->
+   462|   462|   462|<nav class="bottom-nav-bar">
+   463|   463|   463|<button class="nav-btn active" id="nav-home" onclick="goPage('home', this)">
+   464|   464|   464|<i class="bi bi-house-fill"></i>
+   465|   465|   465|<span data-i18n="Home">หน้าหลัก</span>
+   466|   466|   466|</button>
+   467|   467|   467|<button class="nav-btn" id="nav-jobs" onclick="goPage('jobs', this)">
+   468|   468|   468|<div class="nav-icon-wrap">
+   469|   469|   469|<i class="bi bi-clipboard2-check-fill"></i>
+   470|   470|   470|<span class="nav-badge-dot" id="jobs-badge">3</span>
+   471|   471|   471|</div>
+   472|   472|   472|<span data-i18n="Jobs">งาน</span>
+   473|   473|   473|</button>
+   474|   474|   474|<!-- Camera — center FAB-style button -->
+   475|   475|   475|<button class="nav-btn nav-camera-btn" onclick="openCamera('job')">
+   476|   476|   476|<div class="nav-camera-circle">
+   477|   477|   477|<i class="bi bi-camera-fill"></i>
+   478|   478|   478|</div>
+   479|   479|   479|<span data-i18n="Camera">กล้อง</span>
+   480|   480|   480|</button>
+   481|   481|   481|<!-- More — opens bottom sheet with remaining items -->
+   482|   482|   482|<button class="nav-btn" id="nav-more" onclick="showMoreMenu()">
+   483|   483|   483|<i class="bi bi-grid-3x3-gap-fill"></i>
+   484|   484|   484|<span data-i18n="More">เพิ่มเติม</span>
+   485|   485|   485|</button>
+   486|   486|   486|</nav>
+   487|   487|   487|</div><!-- end main-app -->
+   488|   488|   488|
+   489|   489|   489|<!-- ===== MORE MENU BOTTOM SHEET — Reduced to 8 Core Items ===== -->
+   490|   490|   490|<div id="more-menu-overlay" class="cp-sheet-overlay" style="display:none" onclick="closeMoreMenu()">
+   491|   491|   491|<div class="cp-sheet more-menu-sheet" onclick="event.stopPropagation()">
+   492|   492|   492|<div class="cp-sheet-handle"></div>
+   493|   493|   493|<div class="more-menu-title" data-i18n="More">เพิ่มเติม</div>
+   494|   494|   494|<div class="more-menu-grid">
+   495|   495|   495|<!-- Row 1 -->
+   496|   496|   496|<button class="more-menu-item" onclick="navigateFromMore('crm')">
+   497|   497|   497|<div class="more-menu-icon"><i class="bi bi-people-fill"></i></div>
+   498|   498|   498|<span data-i18n="Customers">ลูกค้า</span>
+   499|   499|   499|</button>
+   500|   500|   500|<button class="more-menu-item" onclick="navigateFromMore('inventory')">
+   501|

@@ -1,6 +1,6 @@
 // section_revenue.js — Revenue section extracted from dashboard_pc.html
 // Functions: renderRevenueSection, _exportRevenueCSV
-// v5.15.0-phase40: Now fetches data via dedicated API call, falls back to dashboard data
+// v5.16.0-phase41: Now fetches data via dedicated API call, falls back to dashboard data
 
 // Cache for revenue data so _exportRevenueCSV can access it
 let _revenueSectionData = null;
