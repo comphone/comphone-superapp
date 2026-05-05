@@ -50,53 +50,70 @@ if (document.readyState === 'loading') {
 function loadSection(sectionName) {
   console.log('[Dashboard] Loading section:', sectionName);
   
+  // Fade out main area
+  const mainArea = document.querySelector('.main-area');
+  if (mainArea) {
+    mainArea.classList.add('fade-out');
+    mainArea.classList.remove('fade-in');
+  }
+  
   // Hide all sections
   const sections = document.querySelectorAll('.dashboard-section, .section-content');
   sections.forEach(sec => sec.style.display = 'none');
   
-  // Show target section
-  const target = document.getElementById('section-' + sectionName) || 
-                 document.getElementById(sectionName + '-section');
-  if (target) {
-    target.style.display = 'block';
-  } else {
-    console.warn('[Dashboard] Section not found:', sectionName);
-  }
-  
-  // Update active nav
-  const navItems = document.querySelectorAll('.nav-item');
-  navItems.forEach(item => {
-    item.classList.remove('active');
-    if (item.getAttribute('onclick') && item.getAttribute('onclick').includes(sectionName)) {
-      item.classList.add('active');
+  // Show target section after fade out
+  setTimeout(() => {
+    const target = document.getElementById('section-' + sectionName) ||
+                   document.getElementById(sectionName + '-section');
+    if (target) {
+      target.style.display = 'block';
+    } else {
+      console.warn('[Dashboard] Section not found:', sectionName);
     }
-  });
-
-  // ── Route: call appropriate render function ──
-  const data = window.DASHBOARD_DATA || {};
-  const main = document.getElementById('main-content');
-  const renderers = {
-    'dashboard':   () => { loadDashboardPage(); },
-    'jobs':        () => { if (typeof renderJobsSection === 'function') { const c = document.getElementById('jobs-content'); if (c) c.innerHTML = renderJobsSection(data); } },
-    'po':          () => { if (typeof renderPOSection === 'function') renderPOSection(data); },
-    'inventory':   () => { if (typeof renderInventorySection === 'function') renderInventorySection(data); },
-    'billing':     () => { if (typeof renderBillingSection === 'function') { const c = document.getElementById('billing-content') || document.getElementById('section-billing'); if (c) c.innerHTML = renderBillingSection(data); } },
-    'warranty':    () => { if (typeof renderWarrantySection === 'function') { const c = document.getElementById('warranty-content') || document.getElementById('section-warranty'); if (c) c.innerHTML = renderWarrantySection(data); } },
-    'revenue':     () => { if (typeof renderRevenueSection === 'function') renderRevenueSection(data); },
-    'tax':         () => { if (main) main.innerHTML = '<div class="card-box"><h3><i class="bi bi-calculator"></i> ภาษี (VAT/WHT)</h3><p>คลิกปุ่มด้านล่างเพื่อเริ่มคำนวณ</p><button onclick="_showTaxCalculator()" style="background:#059669;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px"><i class="bi bi-calculator"></i> เปิดเครื่องคิดเลขภาษี</button></div>'; },
-    'reports':     () => { if (typeof renderReportsSection === 'function') { const c = document.getElementById('reports-content') || document.getElementById('section-reports'); if (c) c.innerHTML = renderReportsSection(data); } },
-    'analytics':   () => { if (typeof renderAnalyticsSection === 'function') { const c = document.getElementById('analytics-content') || document.getElementById('section-analytics'); if (c) renderAnalyticsSection(data); } },
-    'performance': () => { if (typeof renderPerformanceSection === 'function') renderPerformanceSection(data); },
-    'backup':      () => { if (typeof renderBackupSection === 'function') renderBackupSection(); },
-    'crm':         () => { if (typeof renderCRMSection === 'function') renderCRMSection(data); },
-    'attendance':  () => { if (typeof renderAttendanceSection === 'function') { const c = document.getElementById('attendance-content') || document.getElementById('section-attendance'); if (c) renderAttendanceSection(data); } },
-    'settings':    () => { if (typeof renderSettingsSection === 'function') renderSettingsSection(); },
-  };
-
-  const renderer = renderers[sectionName];
-  if (renderer) {
-    try { renderer(); } catch(e) { console.error('[Dashboard] Render error:', sectionName, e); }
-  }
+    
+    // Update active nav
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+      item.classList.remove('active');
+      if (item.getAttribute('onclick') && item.getAttribute('onclick').includes(sectionName)) {
+        item.classList.add('active');
+      }
+    });
+    
+    // ── Route: call appropriate render function ──
+    const data = window.DASHBOARD_DATA || {};
+    const main = document.getElementById('main-content');
+    const renderers = {
+      'dashboard':   () => { loadDashboardPage(); },
+      'jobs':        () => { if (typeof renderJobsSection === 'function') { const c = document.getElementById('jobs-content'); if (c) c.innerHTML = renderJobsSection(data); } },
+      'po':          () => { if (typeof renderPOSection === 'function') renderPOSection(data); },
+      'inventory':   () => { if (typeof renderInventorySection === 'function') renderInventorySection(data); },
+      'billing':     () => { if (typeof renderBillingSection === 'function') { const c = document.getElementById('billing-content') || document.getElementById('section-billing'); if (c) c.innerHTML = renderBillingSection(data); } },
+      'warranty':    () => { if (typeof renderWarrantySection === 'function') { const c = document.getElementById('warranty-content') || document.getElementById('section-warranty'); if (c) c.innerHTML = renderWarrantySection(data); } },
+      'revenue':     () => { if (typeof renderRevenueSection === 'function') renderRevenueSection(data); },
+      'tax':         () => { if (main) main.innerHTML = '<div class="card-box"><h3><i class="bi bi-calculator"></i> ภาษี (VAT/WHT)</h3><p>คลิกปุ่มด้านล่างเพื่อเริ่มคำนวณ</p><button onclick="_showTaxCalculator()" style="background:#059669;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px"><i class="bi bi-calculator"></i> เปิดเครื่องคิดเลขภาษี</button></div>'; },
+      'reports':     () => { if (typeof renderReportsSection === 'function') { const c = document.getElementById('reports-content') || document.getElementById('section-reports'); if (c) c.innerHTML = renderReportsSection(data); } },
+      'analytics':   () => { if (typeof renderAnalyticsSection === 'function') { const c = document.getElementById('analytics-content') || document.getElementById('section-analytics'); if (c) renderAnalyticsSection(data); } },
+      'performance': () => { if (typeof renderPerformanceSection === 'function') renderPerformanceSection(data); },
+      'backup':      () => { if (typeof renderBackupSection === 'function') renderBackupSection(); },
+      'crm':         () => { if (typeof renderCRMSection === 'function') renderCRMSection(data); },
+      'attendance':  () => { if (typeof renderAttendanceSection === 'function') { const c = document.getElementById('attendance-content') || document.getElementById('section-attendance'); if (c) renderAttendanceSection(data); } },
+      'settings':    () => { if (typeof renderSettingsSection === 'function') renderSettingsSection(); },
+    };
+    
+    const renderer = renderers[sectionName];
+    if (renderer) {
+      try { renderer(); } catch(e) { console.error('[Dashboard] Render error:', sectionName, e); }
+    }
+    
+    // Fade in main area
+    if (mainArea) {
+      setTimeout(() => {
+        mainArea.classList.remove('fade-out');
+        mainArea.classList.add('fade-in');
+      }, 50);
+    }
+  }, 400); // Wait for fade-out transition (400ms)
 }
 
 function loadDashboard() {

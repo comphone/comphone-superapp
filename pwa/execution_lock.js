@@ -121,7 +121,7 @@
     forcePasswordChange: true,
     lockAccount: true,
     unlockAccount: true,
-    sendLineMessage: true,
+    sendLineMessage: false,  // ⛔ DISABLED by request 2026-05-05
     nudgeTech: true,
     addAppointment: true,
     updateJobSchedule: true,
@@ -151,7 +151,7 @@
     syncCodeToDrive: true,
     storeSessionContent: true,
     pruneAuditLog: true,
-    cronMorningAlert: true,
+    cronMorningAlert: false,  // ⛔ DISABLED by request 2026-05-05
     // === Security / Audit (internal) ===
     logApprovalAudit: true,
     batchLogApprovalAudit: true,

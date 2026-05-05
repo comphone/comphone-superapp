@@ -5,8 +5,10 @@
 // ===========================================================
 
 const VERSION_CONFIG = {
-  version: 'v5.17.0-phase42',
+  version: 'v5.18.0-phase43',
   buildDate: '2026-05-05',
+  buildTimestamp: '20260505_1500',
+  cacheVersion: 'comphone-v5.18.0-phase43',
   theme: 'deep-black-ultra-v9',
   author: 'Comphone Team',
   features: [
@@ -15,7 +17,10 @@ const VERSION_CONFIG = {
     'Smoother Page Transitions (400ms cubic-bezier)',
     'Enhanced Search with History & Filters',
     'All Menu Buttons Restored',
-    'Glassmorphism with Neon Glow Effects'
+    'Glassmorphism with Neon Glow Effects',
+    'Smart Search Bar (Jobs, Customers, Inventory)',
+    'Touch Target 48px+ for all buttons',
+    'Fade-in/Fade-out Page Transition'
   ]
 };
 

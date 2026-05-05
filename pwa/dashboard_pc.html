@@ -4,7 +4,7 @@
      4|     4|<meta charset="UTF-8">
      5|     5|<meta name="viewport" content="width=device-width, initial-scale=1.0">
      6|     6|<title>COMPHONE Dashboard — PC</title>
-     7|     7|<script src="version_config.js?v=5.14.2-phase39&t=20260505_1045"></script>
+     7|     7|<script src="version_config.js?v=5.18.0-phase43&t=20260505_1500"></script>
      8|     8|<script>
      9|     9|// Session contract: accept success/valid and handle offline
     10|    10|if (typeof window.comphone_auth_session !== 'undefined') {
@@ -176,8 +176,112 @@
    176|   176|min-height: 100vh;
    177|   177|display: flex; flex-direction: column;
    178|   178|}
-   179|   179|/* ===== TOPBAR ===== */
-   180|   180|.topbar {
+/* ===== SMART SEARCH BAR ===== */
+.topbar-search {
+  position: relative;
+  flex: 1;
+  max-width: 400px;
+  margin: 0 16px;
+}
+.topbar-search input {
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  font-size: 13px;
+  background: #f8fafc;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 48px; /* Touch target */
+}
+.topbar-search input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+.topbar-search i.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 14px;
+}
+#search-suggestions {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-top: 4px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  z-index: 1000;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.search-suggestion-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 13px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px; /* Touch target */
+}
+.search-suggestion-item:hover {
+  background: #f8fafc;
+}
+.search-suggestion-item:last-child {
+  border-bottom: none;
+}
+.search-suggestion-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.search-suggestion-text {
+  flex: 1;
+}
+.search-suggestion-title {
+  font-weight: 600;
+  color: #111827;
+}
+.search-suggestion-sub {
+  font-size: 11px;
+  color: #6b7280;
+}
+/* ===== PAGE TRANSITION ===== */
+.main-area {
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.main-area.fade-out {
+  opacity: 0;
+}
+.main-area.fade-in {
+  opacity: 1;
+}
+/* ===== BUTTON TOUCH TARGET ===== */
+.btn-refresh, .btn-pwa, .nav-item, button {
+  min-height: 48px;
+  min-width: 48px;
+}
+.nav-item {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+}
+/* ===== END OF ADDITIONS ===== */
+/* ===== TOPBAR ===== */
+.topbar {
    181|   181|height: var(--header-h);
    182|   182|background: var(--cp-glass-bg, rgba(255, 255, 255, 0.85));
    183|   183|border-bottom: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
@@ -487,15 +591,22 @@
    487|   487|<!-- ===== MAIN ===== -->
    488|   488|<div class="main-area">
    489|   489|<!-- TOPBAR -->
-   490|   490|<div class="topbar">
-   491|   491|<div class="topbar-title" id="topbar-title">
-   492|   492|<i class="bi bi-bar-chart-line-fill" style="color:#d97706;margin-right:8px"></i>Executive Dashboard
-   493|   493|</div>
-   494|   494|<div class="topbar-date" id="topbar-date">—</div>
-   495|   495|<button class="btn-refresh" onclick="loadDashboard()">
-   496|   496|<i class="bi bi-arrow-clockwise"></i> รีเฟรช
-   497|   497|</button>
-   498|   498|<a class="btn-pwa" href="index.html">
-   499|   499|<i class="bi bi-phone-fill"></i> Mobile App
-   500|   500|</a>
-   501|
+<div class="topbar">
+  <div class="topbar-title" id="topbar-title">
+    <i class="bi bi-bar-chart-line-fill" style="color:#d97706;margin-right:8px"></i>Executive Dashboard
+  </div>
+  <div class="topbar-date" id="topbar-date">—</div>
+  <!-- Smart Search Bar -->
+  <div class="topbar-search">
+    <i class="bi bi-search search-icon"></i>
+    <input type="text" id="global-search" placeholder="ค้นหางาน, ลูกค้า, สต็อก..." onkeyup="handleSearchInput(event)" onfocus="showSearchSuggestions('')">
+    <div id="search-suggestions"></div>
+  </div>
+  <button class="btn-refresh" onclick="loadDashboard()">
+    <i class="bi bi-arrow-clockwise"></i> รีเฟรช
+  </button>
+  <a class="btn-pwa" href="index.html">
+    <i class="bi bi-phone-fill"></i> Mobile App
+  </a>
+</div>
+   501|<script src="search.js?v=5.18.0-phase43"></script>
