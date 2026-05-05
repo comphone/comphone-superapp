@@ -317,7 +317,7 @@ function _checkAuthGateV55_(action, payload, e) {
   // ── Public actions: no auth required ──
   var PUBLIC_ACTIONS = {
     // Auth entry points
-    'help': 1, 'loginuser': 1, 'loginUser': 1, 'verifysession': 1, 'verifySession': 1,
+    'help': 1, 'login': 1, 'loginuser': 1, 'loginUser': 1, 'verifySession': 1, 'verifySession': 1,
     // Public diagnostics
     'health': 1, 'getversion': 1, 'getVersion': 1, 'version': 1,
     // Error logging: frontend may not have a token while reporting boot failures.
@@ -466,6 +466,7 @@ function dispatchActionV55_(action, payload, args, e) {
 function normalizeActionV55_(action) {
   action = String(action || '').trim();
   var map = {
+    'login': 'loginUser', // Map 'login' to 'loginUser' function
     'เปิดงาน': 'openJob',
     'create_job': 'createJob',
     'openjob': 'openJob',
@@ -549,6 +550,12 @@ function invokeFunctionByNameV55_(functionName, args) {
   var fn = globalScope[functionName];
   if (typeof fn !== 'function') {
     return { success: false, error: 'Function not found: ' + functionName, action: functionName };
+  }
+  // SPECIAL CASE: loginUser expects 2 separate args (username, password)
+  // But args is [payload] where payload = { username, password }
+  if (functionName === 'loginUser' && args.length === 1 && typeof args[0] === 'object') {
+    var p = args[0];
+    return fn.call(globalScope, p.username, p.password);
   }
   return fn.apply(globalScope, Array.isArray(args) ? args : []);
 }
