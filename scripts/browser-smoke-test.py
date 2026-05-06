@@ -17,6 +17,11 @@ import os
 import time
 import json
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 PORT = 8765
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PWA_DIR = os.path.join(BASE_DIR, "pwa")
@@ -45,6 +50,39 @@ def fetch_url(url):
         return f"HTTP_ERROR:{e.code}"
     except Exception as e:
         return f"FETCH_ERROR:{e}"
+
+def linked_local_scripts(html):
+    scripts = []
+    marker = '<script src="'
+    start = 0
+    while True:
+        idx = html.find(marker, start)
+        if idx < 0:
+            break
+        src_start = idx + len(marker)
+        src_end = html.find('"', src_start)
+        if src_end < 0:
+            break
+        src = html[src_start:src_end].split('?')[0]
+        if not src.startswith('http') and not src.startswith('//'):
+            scripts.append(src.lstrip('/').replace('comphone-superapp/pwa/', ''))
+        start = src_end + 1
+    return scripts
+
+def html_or_script_contains(html, needle):
+    if needle in html:
+        return True
+    for script in linked_local_scripts(html):
+        script_path = os.path.join(PWA_DIR, script)
+        if not os.path.isfile(script_path):
+            continue
+        try:
+            with open(script_path, encoding='utf-8') as fh:
+                if needle in fh.read():
+                    return True
+        except OSError:
+            pass
+    return False
 
 def check_dashboard(html):
     errors = []
@@ -84,9 +122,9 @@ def check_dashboard(html):
         checks.append("✅ No APPROVAL_REQUIRED error in HTML response")
 
     # R4: Must have fetch — either inline or via api_client.js
-    if "api_client.js" in html and "callApi" in html:
+    if "api_client.js" in html and html_or_script_contains(html, "callApi"):
         checks.append("✅ callGas() delegates to api_client.js callApi()")
-    elif "fetch(" in html:
+    elif html_or_script_contains(html, "fetch("):
         checks.append("✅ Direct fetch present in callGas")
     else:
         errors.append("RECURRENCE: fetch() missing — neither inline nor api_client.js")
@@ -100,20 +138,20 @@ def check_dashboard(html):
         errors.append("FUNCTIONAL: version_badge missing")
 
     # F2: getDashboardData action referenced
-    if 'getDashboardData' in html:
+    if html_or_script_contains(html, 'getDashboardData'):
         checks.append("✅ getDashboardData referenced")
     else:
         errors.append("FUNCTIONAL: getDashboardData not referenced")
 
     # F3: GAS_URL defined
-    if 'GAS_URL' in html or 'comphone_gas_url' in html:
+    if 'gas_config.js' in html or 'GAS_URL' in html or 'COMPHONE_GAS_URL' in html:
         checks.append("✅ GAS URL config present")
     else:
         errors.append("FUNCTIONAL: GAS URL config missing")
 
     # F4: Script load order includes critical files
-    critical_scripts = ['error_boundary.js', 'execution_lock.js', 'policy_engine.js',
-                        'ai_executor_runtime.js', 'approval_guard.js']
+    critical_scripts = ['gas_config.js', 'api_contract.js', 'api_client.js',
+                        'dashboard_pc_core.js', 'error_boundary.js']
     for script in critical_scripts:
         if script in html:
             checks.append(f"✅ {script} in load order")

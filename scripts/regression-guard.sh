@@ -68,8 +68,17 @@ echo "🔒 [SUITE B] Security Invariant Tests..."
 if ! grep -q '_checkAuthGateV55_' clasp-ready/Router.gs; then
   fail "Auth gate _checkAuthGateV55_ missing from Router.gs"
 fi
-if ! grep -q 'runBackup' clasp-ready/Router.gs; then
-  fail "Auth gate action list missing 'runBackup'"
+if ! grep -q 'ADMIN_ACTIONS' clasp-ready/Router.gs; then
+  fail "Admin action list missing from auth gate"
+fi
+if ! grep -q "'createUser'" clasp-ready/Router.gs; then
+  fail "Admin auth gate action list missing 'createUser'"
+fi
+if grep -A25 'var PUBLIC_ACTIONS' clasp-ready/Router.gs | grep -q "'listCustomers'"; then
+  fail "Public whitelist exposes listCustomers"
+fi
+if grep -A25 'var PUBLIC_ACTIONS' clasp-ready/Router.gs | grep -q "'getSecurityStatus'"; then
+  fail "Public whitelist exposes getSecurityStatus"
 fi
 
 # B2: Private function guard exists
@@ -114,11 +123,15 @@ echo "🔄 [SUITE C] Cache / Version Checks..."
 # C1: Version consistency
 CONFIG_V=$(grep -oP "VERSION:\s*.\K[0-9.]+" clasp-ready/Config.gs | head -1 || echo "X")
 SW_V=$(grep -oP "comphone-v\K[0-9.]+" pwa/sw.js | head -1 || echo "X")
-PC_V=$(grep -oP "__APP_VERSION\s*=\s*.v\K[0-9.]+" pwa/dashboard_pc.html | head -1 || echo "X")
+PC_V=$(grep -oP "[?&]v=\K[0-9.]+" pwa/dashboard_pc.html | head -1 || echo "X")
+MOBILE_V=$(grep -oP "[?&]v=\K[0-9.]+" pwa/index.html | head -1 || echo "X")
 
 # Frontend versions must match each other
 if [ "$SW_V" != "$PC_V" ]; then
   fail "Frontend version mismatch: sw.js=$SW_V vs dashboard=$PC_V"
+fi
+if [ "$SW_V" != "$MOBILE_V" ]; then
+  fail "Frontend version mismatch: sw.js=$SW_V vs mobile=$MOBILE_V"
 fi
 # Backend version documented separately (may differ from frontend)
 echo "   Backend=$CONFIG_V | Frontend=$SW_V"
@@ -134,8 +147,11 @@ if ! grep -q 'version_badge' pwa/dashboard_pc.html; then
 fi
 
 # C4: Dashboard cache-bust params on policy scripts
-if ! grep -q 'policy_engine.js?v=' pwa/dashboard_pc.html; then
-  warn "Policy scripts in dashboard_pc.html missing cache-bust params"
+if ! grep -q 'api_client.js?v=' pwa/dashboard_pc.html; then
+  fail "dashboard_pc.html missing cache-busted api_client.js"
+fi
+if ! grep -q 'dashboard_pc_core.js?v=' pwa/dashboard_pc.html; then
+  fail "dashboard_pc.html missing cache-busted dashboard_pc_core.js"
 fi
 
 # ============================================================
@@ -173,6 +189,16 @@ if command -v python3 &>/dev/null && [ -f "scripts/browser-smoke-test.py" ]; the
   fi
 else
   warn "Python3 or browser-smoke-test.py unavailable — skipping browser tests"
+fi
+
+if command -v node &>/dev/null && [ -f "scripts/build_code_index.js" ]; then
+  if node scripts/build_code_index.js; then
+    echo "   โ… Code intelligence index passed"
+  else
+    fail "Code intelligence index FAILED"
+  fi
+else
+  warn "Node or build_code_index.js unavailable — skipping code index"
 fi
 
 # E2: Post-incident recurrence patterns (check ALL surfaces)

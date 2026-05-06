@@ -13,6 +13,9 @@ on:
       - 'pwa/**'
       - 'scripts/pwa_static_guard.js'
       - 'scripts/pwa_api_smoke.js'
+      - 'scripts/build_code_index.js'
+      - 'scripts/regression-guard.sh'
+      - 'scripts/browser-smoke-test.py'
       - '.github/workflows/auto-deploy.yml'
       - 'memory/session.md'
   workflow_dispatch:    # รันด้วยตนเองได้จาก GitHub UI
@@ -54,7 +57,7 @@ jobs:
               FAILED=1
             fi
           done
-          for f in scripts/pwa_static_guard.js scripts/pwa_api_smoke.js; do
+          for f in scripts/pwa_static_guard.js scripts/pwa_api_smoke.js scripts/build_code_index.js; do
             if node --check "$f"; then
               echo "✅ $f"
             else
@@ -68,6 +71,11 @@ jobs:
         run: |
           echo "Running PWA static guard..."
           node scripts/pwa_static_guard.js
+
+      - name: Code Intelligence Index
+        run: |
+          echo "Running code intelligence / route drift guard..."
+          node scripts/build_code_index.js
 
       - name: PWA API Smoke
         run: |

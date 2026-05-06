@@ -45,6 +45,7 @@
 | `node --check pwa/auth.js` | PASS | Auth runtime parses after corrupted constants were restored. |
 | `node scripts/pwa_static_guard.js` | PASS | Confirms cache/version alignment, API client loading, protected auth invariants, no production mock login. |
 | `node scripts/build_code_index.js` | PASS | PWA JS=79, GAS=88, API actions=40, menu routes=19, risks none. |
+| `bash scripts/regression-guard.sh` | PASS | CI guard updated to current PC dashboard architecture and now includes code index validation. |
 | Login + `verifySession` | PASS | Fresh `admin` login returns a token that verifies immediately on GAS `@544`. Token value is not stored in repo/docs. |
 | `node scripts/pwa_api_smoke.js` | PASS protected | `health`, `getVersion`, `getDashboardData`, `listCustomers`, `inventoryOverview`, `listPurchaseOrders`, `getReportData`, and `getSecurityStatus` OK with fresh session token. |
 | Local Mobile UI Audit | PASS | Login/session home, Jobs, CRM, Inventory, PO, Billing, Reports, Attendance, Warranty, Profile, `openJob` modal, and `addCustomer` modal open without offline/runtime errors. |
