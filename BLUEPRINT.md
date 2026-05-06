@@ -18,7 +18,7 @@
 | GAS Backend Deploy | `539` / production URL in `pwa/gas_config.js` | `clasp-ready/Config.gs`, `clasp-ready/Router.gs` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbyVK5KLJcHFNfm7oNce5e_WOrFdS2_UuiRQW27ipIUK2DeYGtVjSwWCmr-jIWLnkLcSgw/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-02.phase36-partial` | `pwa/api_contract.js` |
-| Last Production Commit | `d425488` | GitHub `main` |
+| Last Production Commit | GitHub `main` HEAD | Use `git log -1 --oneline` for the exact commit |
 | Validation Status | Static Guard OK; public API smoke OK; protected smoke requires `COMPHONE_AUTH_TOKEN` | `scripts/pwa_static_guard.js`, `scripts/pwa_api_smoke.js` |
 
 ### Phase 45 Current Review (2026-05-06)
@@ -36,7 +36,7 @@
 | `node --check pwa/auth.js` | PASS | Auth runtime parses after corrupted constants were restored. |
 | `node scripts/pwa_static_guard.js` | PASS | Confirms cache/version alignment, API client loading, protected auth invariants, no production mock login. |
 | `node scripts/pwa_api_smoke.js` | PASS public only | `health` and `getVersion` OK. Protected checks skipped when no `COMPHONE_AUTH_TOKEN` is set in the process. |
-| GitHub push | PASS | Commit `d425488` reached `origin/main` via HTTPS after SSH key push failed. |
+| GitHub push | PASS | Latest review baseline reached `origin/main` via HTTPS after SSH key push failed. |
 
 ### 0-100 Health Review
 | Area | Score | Status | Reason |
