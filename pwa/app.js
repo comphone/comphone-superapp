@@ -518,6 +518,9 @@ window.saveSetup = function() {
   else if (typeof applyRoleUI === 'function') applyRoleUI(role);
 };
 
+// alias for button onclick="completeSetup()"
+window.completeSetup = window.saveSetup;
+
 // ===== VOICE SEARCH =====
 function startVoiceSearch() {
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
