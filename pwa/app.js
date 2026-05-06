@@ -1,569 +1,914 @@
-     1|/* ===== COMPHONE SUPERAPP — app.js ===== */
-     2|'use strict';
-     3|
-     4|// ===== STATE =====
-     5|// URL source: gas_config.js / version_config.js. Do not hardcode deployment URLs here.
-     6|const DEFAULT_SCRIPT_URL = window.COMPHONE_GAS_URL || (window.GAS_CONFIG && window.GAS_CONFIG.url) || '';
-     7|
-     8|const APP = {
-     9|  user: null,
-    10|  role: null,
-    11|  scriptUrl: DEFAULT_SCRIPT_URL,
-    12|  currentPage: 'home',
-    13|  deferredInstall: null,
-    14|  notifEnabled: false,
-    15|  offlineQueue: [],
-    16|  jobs: [],
-    17|  photos: []
-    18|};
-    19|
-    20|// ===== ROLE CONFIG =====
-    21|const ROLES = {
-    22|  tech: {
-    23|    label: 'ช่าง',
-    24|    theme: 'theme-tech',
-    25|    color: '#0d6efd',
-    26|    icon: 'bi-tools',
-    27|    greeting: 'พร้อมรับงานวันนี้แล้วหรือยัง?',
-    28|    quickActions: [
-    29|      { icon: 'bi-plus-circle-fill', label: 'เปิดงาน', color: '#dbeafe', textColor: '#1e40af', action: 'openNewJob' },
-    30|      { icon: 'bi-person-plus-fill', label: 'ลูกค้าใหม่', color: '#ffedd5', textColor: '#9a3412', action: 'addCustomer' },
-    31|      { icon: 'bi-telephone-fill', label: 'โทรลูกค้า', color: '#d1fae5', textColor: '#065f46', action: 'callCustomer' }
-    32|    ]
-    33|  },
-    34|  admin: {
-    35|    label: 'แอดมิน',
-    36|    theme: 'theme-admin',
-    37|    color: '#7c3aed',
-    38|    icon: 'bi-headset',
-    39|    greeting: 'มีงานรอมอบหมายอยู่แนะ!',
-    40|    quickActions: [
-    41|      { icon: 'bi-plus-circle-fill', label: 'เปิดงาน', color: '#ede9fe', textColor: '#5b21b6', action: 'openNewJob' },
-    42|      { icon: 'bi-person-plus-fill', label: 'ลูกค้าใหม่', color: '#ffedd5', textColor: '#9a3412', action: 'addCustomer' },
-    43|      { icon: 'bi-telephone-fill', label: 'โทรลูกค้า', color: '#dbeafe', textColor: '#1e40af', action: 'callCustomer' }
-    44|    ]
-    45|  },
-    46|  acct: {
-    47|    label: 'บัญชี',
-    48|    theme: 'theme-acct',
-    49|    color: '#0891b2',
-    50|    icon: 'bi-calculator',
-    51|    greeting: 'ตรวจสลิปและออกใบเสร็จได้เลย',
-    52|    quickActions: [
-    53|      { icon: 'bi-camera-fill', label: 'สแกนสลิป', color: '#ccfafe', textColor: '#164e63', action: 'scanSlip' },
-    54|      { icon: 'bi-file-earmark-pdf-fill', label: 'ออกใบเสร็จ', color: '#d1fae5', textColor: '#065f46', action: 'createReceipt' },
-    55|      { icon: 'bi-qr-code', label: 'QR รับเงิน', color: '#dbeafe', textColor: '#1e40af', action: 'showQR' }
-    56|    ]
-    57|  },
-    58|  exec: {
-    59|    label: 'ผู้บริหาร',
-    60|    theme: 'theme-exec',
-    61|    color: '#d97706',
-    62|    icon: 'bi-bar-chart-line',
-    63|    greeting: 'Daily Pulse พร้อมแล้ว',
-    64|    quickActions: [
-    65|      { icon: 'bi-bar-chart-fill', label: 'Dashboard', color: '#fef9c3', textColor: '#713f12', action: 'viewDashboard' },
-    66|      { icon: 'bi-megaphone-fill', label: 'จี้งานด่วน', color: '#fee2e2', textColor: '#991b1b', action: 'urgentAction' },
-    67|      { icon: 'bi-telephone-fill', label: 'โทรลูกค้า', color: '#d1fae5', textColor: '#065f46', action: 'callVIP' }
-    68|    ]
-    69|  }
-    70|};
-    71|
-    72|// ===== LIVE DATA HELPERS =====
-    73|// แปลง job จาก GAS API ให้เป็นรูปแบบที่ PWA ใช้
-    74|function normalizeJob(j) {
-    75|  if (!j) return null;
-    76|  const statusRaw = (j.status || j.status_label || '').toLowerCase();
-    77|  let status = 'new';
-    78|  if (/เสร็จ|completed|done/.test(statusRaw)) status = 'done';
-    79|  else if (/กำลัง|เริ่มงาน|in.prog/.test(statusRaw)) status = 'inprog';
-    80|  else if (/รอชิ้น|waiting/.test(statusRaw)) status = 'waiting';
-    81|  else if (/ด่วน|urgent/.test(statusRaw)) status = 'urgent';
-    82|  else if (/ยกเลิก|cancel/.test(statusRaw)) status = 'cancel';
-    83|
-    84|  // คำนวณ SLA จากวันที่สร้าง
-    85|  let sla = 999;
-    86|  try {
-    87|    const created = j.created || j.created_at || '';
-    88|    const parts = created.split(' ')[0].split('/');
-    89|    if (parts.length === 2) {
-    90|      const d = new Date(new Date().getFullYear(), parseInt(parts[1])-1, parseInt(parts[0]));
-    91|      const diffHrs = (Date.now() - d.getTime()) / 3600000;
-    92|      const slaHrs = 72; // default 72 hrs
-    93|      sla = Math.round((slaHrs - diffHrs) * 60); // minutes remaining
-    94|    }
-    95|  } catch(e) {}
-    96|
-    97|  return {
-    98|    id: j.id || j.job_id || '-',
-    99|    title: j.symptom || j.device || j.title || 'ไม่ระบุอาการ',
-   100|    customer: j.customer || j.customer_name || '-',
-   101|    phone: j.phone || j.customer_phone || '-',
-   102|    status: status,
-   103|    statusLabel: j.status || j.status_label || '-',
-   104|    sla: sla,
-   105|    location: j.location || 'ร้าน',
-   106|    price: j.price || j.estimated_price || 0,
-   107|    tech: j.tech || j.technician || null,
-   108|    note: j.note || j.notes || j.remark || '',
-   109|    folder: j.folder || j.folder_url || '',
-   110|    created: j.created || j.created_at || '',
-   111|    raw: j
-   112|  };
-   113|}
-   114|
-   115|// ===== INIT =====
-   116|
-   117|window.addEventListener('load', () => {
-   118|  // PWA Install prompt
-   119|  window.addEventListener('beforeinstallprompt', e => {
-   120|    e.preventDefault();
-   121|    APP.deferredInstall = e;
-   122|    setTimeout(() => {
-   123|      const banner = document.getElementById('install-banner');
-   124|      if (banner) banner.classList.remove('hidden');
-   125|    }, 3000);
-   126|  });
-   127|
-   128|  // Offline detection
-   129|  // online/offline listeners delegated to offline_db.js (avoids duplicate registration)
-   130|  // offline_db.js handles: showOfflineBar + syncOfflineQueue
-   131|
-   132|  // Start splash via the final auth-aware boot function.
-   133|  setTimeout(() => {
-   134|    if (typeof window.initApp === 'function') {
-   135|      window.initApp();
-   136|    } else {
-   137|      initApp();
-   138|    }
-   139|  }, 1800);
-   140|});
-   141|
-   142|function initApp() {
-   143|  const splash = document.getElementById('splash-screen');
-   144|  splash.style.opacity = '0';
-   145|  splash.style.transition = 'opacity 0.4s';
-   146|  setTimeout(() => splash.classList.add('hidden'), 400);
-   147|
-   148|  // Load saved user
-   149|  const saved = localStorage.getItem('comphone_user');
-   150|  if (saved) {
-   151|    try {
-   152|      const data = JSON.parse(saved);
-   153|      APP.user = data;
-   154|      APP.role = data.role;
-   155|      APP.scriptUrl = data.scriptUrl;
-   156|      startMainApp();
-   157|    } catch {
-   158|      showSetup();
-   159|    }
-   160|  } else {
-   161|    showSetup();
-   162|  }
-   163|}
-   164|
-   165|// ===== SETUP =====
-   166|function showSetup() {
-   167|  document.getElementById('setup-screen').classList.remove('hidden');
-   168|  const urlInput = document.getElementById('setup-url');
-   169|  if (urlInput && !urlInput.value) urlInput.value = DEFAULT_SCRIPT_URL;
-   170|}
-   171|
-   172|let selectedRole = null;
-   173|function selectRole(el) {
-   174|  document.querySelectorAll('.role-option').forEach(r => r.classList.remove('selected'));
-   175|  el.classList.add('selected');
-   176|  selectedRole = el.dataset.role;
-   177|}
-   178|
-   179|function completeSetup() {
-   180|  const name = document.getElementById('setup-name').value.trim();
-   181|  const phone = document.getElementById('setup-phone').value.trim();
-   182|  const url = document.getElementById('setup-url').value.trim();
-   183|
-   184|  if (!name) { showToast('กรุณากรอกชื่อ'); return; }
-   185|  if (!selectedRole) { showToast('กรุณาเลือกบทบาท'); return; }
-   186|
-   187|  const userData = { name, phone, role: selectedRole, scriptUrl: url, setupAt: Date.now() };
-   188|  localStorage.setItem('comphone_user', JSON.stringify(userData));
-   189|
-   190|  APP.user = userData;
-   191|  APP.role = selectedRole;
-   192|  APP.scriptUrl = url;
-   193|
-   194|  document.getElementById('setup-screen').classList.add('hidden');
-   195|  startMainApp();
-   196|}
-   197|
-   198|// ===== MAIN APP =====
-   199|function startMainApp() {
-   200|  const app = document.getElementById('main-app');
-   201|  app.classList.remove('hidden');
-   202|
-   203|  // Apply theme
-   204|  const roleConf = ROLES[APP.role] || ROLES.tech;
-   205|  app.className = 'screen ' + roleConf.theme;
-   206|
-   207|  // Set user info
-   208|  const initial = APP.user.name.charAt(0).toUpperCase();
-   209|  document.getElementById('user-avatar').textContent = initial;
-   210|  document.getElementById('user-avatar').style.background = 'rgba(255,255,255,0.25)';
-   211|  document.getElementById('user-avatar').style.color = '#fff';
-   212|
-   213|  const hour = new Date().getHours();
-   214|  const greet = hour < 12 ? 'อรุณสวัสดิ์' : hour < 17 ? 'สวัสดีตอนบ่าย' : 'สวัสดีตอนเย็น';
-   215|  document.getElementById('greeting-text').textContent = greet + ' 👋';
-   216|  document.getElementById('user-name-display').textContent = APP.user.name;
-   217|
-   218|  // แสดง/ซ่อน admin ตาม role (now in More menu)
-   219|  const moreAdmin = document.getElementById('more-admin-btn');
-   220|  if (moreAdmin) {
-   221|    moreAdmin.style.display = (APP.role === 'owner' || APP.role === 'admin') ? '' : 'none';
-   222|  }
-   223|
-   224|  // Apply role-based UI guard (auth_guard.js)
-   225|  if (typeof applyRoleUI === 'function') applyRoleUI();
-   226|
-   227|  // Force Password Change check
-   228|  if (APP.user && APP.user.force_change_pw === true) {
-   229|    setTimeout(() => showForcePasswordChangeModal(), 500);
-   230|  }
-   231|
-   232|  // Render home ด้วย loading state ก่อน
-   233|  renderHome();
-   234|  renderProfile();
-   235|
-   236|  // B1: Deep Link handler
-   237|  handleDeepLink();
-   238|
-   239|  // โหลดข้อมูลจริงจาก GAS API
-   240|  loadLiveData();
-   241|}
-   242|
-   243|async function loadLiveData() {
-   244|  try {
-   245|    const data = await callApi('getDashboardData');
-   246|    if (!data || !data.success) {
-   247|      APP.dashboardError = data || { error: 'Dashboard API returned an unsuccessful response' };
-   248|      renderHome();
-   249|      if (APP.currentPage === 'dashboard' && typeof loadDashboardPage === 'function') loadDashboardPage();
-   250|      return;
-   251|    }
-   252|
-   253|    // เก็บ jobs จาก API
-   254|    const rawJobs = data.jobs || data.summary && data.summary.recentJobs || [];
-   255|    APP.jobs = rawJobs.map(normalizeJob).filter(Boolean);
-   256|    APP.dashboardData = data;
-   257|
-   258|    // อัปเดต UI
-   259|    renderHome();
-   260|    renderJobsBadge();
-   261|
-   262|    // ถ้าอยู่หน้า jobs ให้ re-render
-   263|    if (APP.currentPage === 'jobs') renderJobsPage();
-   264|  } catch(e) {
-   265|    // Keep the shell usable; page modules show their own retry states.
-   266|    console.warn('[App] loadLiveData failed:', e && e.message ? e.message : e);
-   267|  }
-   268|}
-   269|
-   270|function handleDeepLink() {
-   271|  try {
-   272|    const params = new URLSearchParams(window.location.search);
-   273|    const page = params.get('page');
-   274|    if (!page || page === 'home') return;
-   275|
-   276|    const navBtn = document.getElementById('nav-' + page);
-   277|    // รอให้ DOM เรนเอร์ก่อน
-   278|    setTimeout(() => {
-   279|      goPage(page, navBtn);
-   280|
-   281|      // ถ้ามี id ให้เปิด modal อัตโนมัติ
-   282|      const id = params.get('id');
-   283|      if (id) {
-   284|        setTimeout(() => {
-   285|          if (page === 'jobs') showJobDetail(id);
-   286|          else if (page === 'po') showPODetail(id);
-   287|        }, 800);
-   288|      }
-   289|    }, 300);
-   290|  } catch(e) {}
-   291|}
-   292|
-   293|// Home Render → app_home.js
-   294|// Jobs Page → app_jobs.js
-   295|// ===== PROFILE PAGE =====
-   296|function renderProfile() {
-   297|  const roleConf = ROLES[APP.role] || ROLES.tech;
-   298|  const initial = APP.user.name.charAt(0).toUpperCase();
-   299|
-   300|  const avatarLg = document.getElementById('profile-avatar-large');
-   301|  if (avatarLg) {
-   302|    avatarLg.textContent = initial;
-   303|    avatarLg.style.background = 'rgba(255,255,255,0.25)';
-   304|    avatarLg.style.color = '#fff';
-   305|  }
-   306|  const nameLg = document.getElementById('profile-name-large');
-   307|  if (nameLg) nameLg.textContent = APP.user.name;
-   308|
-   309|  const roleBadge = document.getElementById('profile-role-badge');
-   310|  if (roleBadge) roleBadge.textContent = roleConf.label;
-   311|}
-   312|
-   313|// ===== NAVIGATION =====
-   314|function goPage(page, btn) {
-   315|  // ===== PAGE REDIRECTS FOR MERGED/REMOVED PAGES =====
-   316|  // Dashboard -> Home (Dashboard merged into Home)
-   317|  if (page === 'dashboard') {
-   318|    console.log('[Nav] Dashboard merged into Home, redirecting...');
-   319|    page = 'home';
-   320|  }
-   321|  // Analytics -> Reports (Analytics merged into Reports)
-   322|  if (page === 'analytics') {
-   323|    console.log('[Nav] Analytics merged into Reports, redirecting...');
-   324|    page = 'reports';
-   325|  }
-   326|  // Performance -> Reports (Performance merged into Reports)
-   327|  if (page === 'performance') {
-   328|    console.log('[Nav] Performance merged into Reports, redirecting...');
-   329|    page = 'reports';
-   330|  }
-   331|  // Revenue -> Billing (Revenue merged into Billing)
-   332|  if (page === 'revenue') {
-   333|    console.log('[Nav] Revenue merged into Billing, redirecting...');
-   334|    page = 'billing';
-   335|  }
-   336|  // Tax -> Billing (Tax merged into Billing)
-   337|  if (page === 'tax') {
-   338|    console.log('[Nav] Tax merged into Billing, redirecting...');
-   339|    page = 'billing';
-   340|  }
-   341|  // Customer Portal -> show as overlay (not a nav page)
-   342|  if (page === 'customer-portal') {
-   343|    console.log('[Nav] Customer Portal is overlay-only');
-   344|    if (typeof loadCustomerPortalPage === 'function') loadCustomerPortalPage();
-   345|    return;
-   346|  }
-   347|  // Notifications -> show as overlay (not a nav page)
-   348|  if (page === 'notifications') {
-   349|    console.log('[Nav] Notifications is overlay-only');
-   350|    if (typeof loadNotificationCenter === 'function') loadNotificationCenter();
-   351|    else if (typeof showNotificationCenter === 'function') showNotificationCenter();
-   352|    return;
-   353|  }
-   354|  // Profile now includes Settings (backup moved to Settings/Profile)
-   355|  
-   356|  const pageEl = document.getElementById('page-' + page);
-   357|  if (!pageEl) { showToast('ไม่พบหน้า ' + page); return; }
-   358|
-   359|  // Page Exit Animation
-   360|  const currentPage = document.querySelector('.page.active');
-   361|  if (currentPage && currentPage !== pageEl) {
-   362|    currentPage.classList.add('page-exit');
-   363|    setTimeout(() => {
-   364|      currentPage.classList.remove('active', 'page-exit');
-   365|      currentPage.classList.add('hidden');
-   366|    }, 300);
-   367|  }
-   368|
-   369|  // Hide all pages
-   370|  document.querySelectorAll('.page').forEach(p => { 
-   371|    if (p !== pageEl && !p.classList.contains('page-exit')) {
-   372|      p.classList.remove('active');
-   373|      p.classList.add('hidden');
-   374|    }
-   375|  });
-   376|  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-   377|
-   378|  // Page Enter Animation
-   379|  setTimeout(() => {
-   380|    pageEl.classList.remove('hidden');
-   381|    pageEl.classList.add('active', 'page-enter');
-   382|    setTimeout(() => {
-   383|      pageEl.classList.remove('page-enter');
-   384|    }, 400);
-   385|  }, currentPage && currentPage !== pageEl ? 300 : 0);
-   386|  
-   387|  if (btn) btn.classList.add('active');
-   388|  APP.currentPage = page;
-   389|
-   390|  if (page === 'jobs') renderJobsPage();
-   391|  if (page === 'profile') renderProfile();
-   392|  if (page === 'crm') loadCRMPage();
-   393|  if (page === 'attendance') loadAttendancePage();
-   394|  if (page === 'po') loadPurchaseOrderPage();
-   395|  if (page === 'dashboard') loadDashboardPage();
-   396|  if (page === 'inventory') {
-   397|    if (typeof loadInventoryPage === 'function') loadInventoryPage();
-   398|    else if (typeof openInventoryPage === 'function') openInventoryPage();
-   399|  }
-   400|  if (page === 'admin') {
-   401|    if (typeof loadAdminPanel === 'function') loadAdminPanel();
-   402|  }
-   403|  if (page === 'reports') {
-   404|    if (typeof loadReportsPage === 'function') loadReportsPage();
-   405|    else if (typeof renderReportModule === 'function') renderReportModule();
-   406|  }
-   407|  if (page === 'customer-portal') {
-   408|    if (typeof loadCustomerPortalPage === 'function') loadCustomerPortalPage();
-   409|  }
-   410|  if (page === 'notifications') {
-   411|    if (typeof loadNotificationCenter === 'function') loadNotificationCenter();
-   412|    else if (typeof showNotificationCenter === 'function') showNotificationCenter();
-   413|  }
-   414|  if (page === 'analytics') {
-   415|    if (typeof openAnalyticsSection === 'function') openAnalyticsSection();
-   416|  }
-   417|  if (page === 'billing') {
-   418|    if (typeof loadBillingPage === 'function') loadBillingPage();
-   419|    else if (typeof renderBillingSection === 'function') renderBillingSection();
-   420|  }
-   421|  if (page === 'warranty') {
-   422|    if (typeof loadWarrantyPage === 'function') loadWarrantyPage();
-   423|    else if (typeof renderWarrantySection === 'function') renderWarrantySection();
-   424|  }
-   425|  if (page === 'revenue') {
-   426|    if (typeof loadRevenuePage === 'function') loadRevenuePage();
-   427|    else if (typeof renderRevenueSection === 'function') renderRevenueSection();
-   428|  }
-   429|  if (page === 'tax') {
-   430|    if (typeof loadTaxPage === 'function') loadTaxPage();
-   431|    else if (typeof renderTaxSection === 'function') renderTaxSection();
-   432|  }
-   433|  if (page === 'performance') {
-   434|    if (typeof loadPerformancePage === 'function') loadPerformancePage();
-   435|    else if (typeof renderPerformanceSection === 'function') renderPerformanceSection();
-   436|  }
-   437|  if (page === 'pos') {
-   438|    // POS page is standalone - open in new tab or redirect
-   439|    const posUrl = '/comphone-superapp/pwa/pos.html';
-   440|    if (confirm('เปิดหน้าขายหน้าร้าน (POS)?\nกด OK เพื่อเปิดในแท็บใหม่')) {
-   441|      window.open(posUrl, '_blank');
-   442|    }
-   443|  }
-   444|}
-   445|
-   446|// Actions + Search + Notifications → app_actions.js
-   447|
-   448|// ===== PROFILE ACTIONS =====
-   449|function showProfile() { goPage('profile', document.getElementById('nav-profile')); }
-   450|function editProfile() { showToast('กำลังเปิดฟอร์มแก้ไข...'); }
-   451|function changeRole() {
-   452|  const roles = Object.keys(ROLES);
-   453|  const idx = roles.indexOf(APP.role);
-   454|  const next = roles[(idx + 1) % roles.length];
-   455|  APP.role = next;
-   456|  APP.user.role = next;
-   457|  localStorage.setItem('comphone_user', JSON.stringify(APP.user));
-   458|  const app = document.getElementById('main-app');
-   459|  app.className = 'screen ' + ROLES[next].theme;
-   460|  renderHome();
-   461|  renderProfile();
-   462|  // Re-apply role-based UI after role change
-   463|  if (typeof applyRoleUI === 'function') applyRoleUI();
-   464|  showToast(`เปลี่ยนเป็น: ${ROLES[next].label}`);
-   465|}
-   466|function showSettings() {
-   467|  const url = prompt('Script URL:', APP.scriptUrl || '');
-   468|  if (url !== null) {
-   469|    APP.scriptUrl = url;
-   470|    APP.user.scriptUrl = url;
-   471|    localStorage.setItem('comphone_user', JSON.stringify(APP.user));
-   472|    showToast('บันทึก Script URL แล้ว');
-   473|  }
-   474|}
-   475|function toggleNotifications() {
-   476|  const toggle = document.getElementById('notif-toggle');
-   477|  APP.notifEnabled = !APP.notifEnabled;
-   478|  toggle.classList.toggle('on', APP.notifEnabled);
-   479|  if (APP.notifEnabled && 'Notification' in window) {
-   480|    Notification.requestPermission().then(p => showToast(p === 'granted' ? 'เปิดการแจ้งเตือนแล้ว 🔔' : 'ไม่ได้รับอนุญาต'));
-   481|  } else {
-   482|    showToast('ปิดการแจ้งเตือนแล้ว');
-   483|  }
-   484|}
-   485|function clearCache() {
-   486|  if (confirm('ล้างข้อมูลแคช?')) {
-   487|    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => showToast('ล้างแคชแล้ว'));
-   488|  }
-   489|}
-   490|function resetApp() {
-   491|  if (confirm('รีเซ็ตแอปและลบข้อมูลทั้งหมด?')) {
-   492|    localStorage.clear();
-   493|    location.reload();
-   494|  }
-   495|}
-   496|
-   497|// ===== VOICE SEARCH =====
-   498|function startVoiceSearch() {
-   499|  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-   500|    showToast('เบราว์เซอร์ไม่รองรับ Voice Search');
-   501|
+/* ===== COMPHONE SUPERAPP — app.js ===== */
+'use strict';
 
-// ===== SAVE SETUP (Login) =====
+// ===== STATE =====
+// URL source: gas_config.js / version_config.js. Do not hardcode deployment URLs here.
+const DEFAULT_SCRIPT_URL = window.COMPHONE_GAS_URL || (window.GAS_CONFIG && window.GAS_CONFIG.url) || '';
+
+const APP = {
+  user: null,
+  role: null,
+  scriptUrl: DEFAULT_SCRIPT_URL,
+  currentPage: 'home',
+  deferredInstall: null,
+  notifEnabled: false,
+  offlineQueue: [],
+  jobs: [],
+  photos: []
+};
+
+// ===== ROLE CONFIG =====
+const ROLES = {
+  tech: {
+    label: 'ช่าง',
+    theme: 'theme-tech',
+    color: '#0d6efd',
+    icon: 'bi-tools',
+    greeting: 'พร้อมรับงานวันนี้แล้วหรือยัง?',
+    quickActions: [
+      { icon: 'bi-plus-circle-fill', label: 'เปิดงาน', color: '#dbeafe', textColor: '#1e40af', action: 'openNewJob' },
+      { icon: 'bi-person-plus-fill', label: 'ลูกค้าใหม่', color: '#ffedd5', textColor: '#9a3412', action: 'addCustomer' },
+      { icon: 'bi-telephone-fill', label: 'โทรลูกค้า', color: '#d1fae5', textColor: '#065f46', action: 'callCustomer' }
+    ]
+  },
+  admin: {
+    label: 'แอดมิน',
+    theme: 'theme-admin',
+    color: '#7c3aed',
+    icon: 'bi-headset',
+    greeting: 'มีงานรอมอบหมายอยู่แนะ!',
+    quickActions: [
+      { icon: 'bi-plus-circle-fill', label: 'เปิดงาน', color: '#ede9fe', textColor: '#5b21b6', action: 'openNewJob' },
+      { icon: 'bi-person-plus-fill', label: 'ลูกค้าใหม่', color: '#ffedd5', textColor: '#9a3412', action: 'addCustomer' },
+      { icon: 'bi-telephone-fill', label: 'โทรลูกค้า', color: '#dbeafe', textColor: '#1e40af', action: 'callCustomer' }
+    ]
+  },
+  acct: {
+    label: 'บัญชี',
+    theme: 'theme-acct',
+    color: '#0891b2',
+    icon: 'bi-calculator',
+    greeting: 'ตรวจสลิปและออกใบเสร็จได้เลย',
+    quickActions: [
+      { icon: 'bi-camera-fill', label: 'สแกนสลิป', color: '#ccfafe', textColor: '#164e63', action: 'scanSlip' },
+      { icon: 'bi-file-earmark-pdf-fill', label: 'ออกใบเสร็จ', color: '#d1fae5', textColor: '#065f46', action: 'createReceipt' },
+      { icon: 'bi-qr-code', label: 'QR รับเงิน', color: '#dbeafe', textColor: '#1e40af', action: 'showQR' }
+    ]
+  },
+  exec: {
+    label: 'ผู้บริหาร',
+    theme: 'theme-exec',
+    color: '#d97706',
+    icon: 'bi-bar-chart-line',
+    greeting: 'Daily Pulse พร้อมแล้ว',
+    quickActions: [
+      { icon: 'bi-bar-chart-fill', label: 'Dashboard', color: '#fef9c3', textColor: '#713f12', action: 'viewDashboard' },
+      { icon: 'bi-megaphone-fill', label: 'จี้งานด่วน', color: '#fee2e2', textColor: '#991b1b', action: 'urgentAction' },
+      { icon: 'bi-telephone-fill', label: 'โทรลูกค้า', color: '#d1fae5', textColor: '#065f46', action: 'callVIP' }
+    ]
+  }
+};
+
+// ===== LIVE DATA HELPERS =====
+// แปลง job จาก GAS API ให้เป็นรูปแบบที่ PWA ใช้
+function normalizeJob(j) {
+  if (!j) return null;
+  const statusRaw = (j.status || j.status_label || '').toLowerCase();
+  let status = 'new';
+  if (/เสร็จ|completed|done/.test(statusRaw)) status = 'done';
+  else if (/กำลัง|เริ่มงาน|in.prog/.test(statusRaw)) status = 'inprog';
+  else if (/รอชิ้น|waiting/.test(statusRaw)) status = 'waiting';
+  else if (/ด่วน|urgent/.test(statusRaw)) status = 'urgent';
+  else if (/ยกเลิก|cancel/.test(statusRaw)) status = 'cancel';
+
+  // คำนวณ SLA จากวันที่สร้าง
+  let sla = 999;
+  try {
+    const created = j.created || j.created_at || '';
+    const parts = created.split(' ')[0].split('/');
+    if (parts.length === 2) {
+      const d = new Date(new Date().getFullYear(), parseInt(parts[1])-1, parseInt(parts[0]));
+      const diffHrs = (Date.now() - d.getTime()) / 3600000;
+      const slaHrs = 72; // default 72 hrs
+      sla = Math.round((slaHrs - diffHrs) * 60); // minutes remaining
+    }
+  } catch(e) {}
+
+  return {
+    id: j.id || j.job_id || '-',
+    title: j.symptom || j.device || j.title || 'ไม่ระบุอาการ',
+    customer: j.customer || j.customer_name || '-',
+    phone: j.phone || j.customer_phone || '-',
+    status: status,
+    statusLabel: j.status || j.status_label || '-',
+    sla: sla,
+    location: j.location || 'ร้าน',
+    price: j.price || j.estimated_price || 0,
+    tech: j.tech || j.technician || null,
+    note: j.note || j.notes || j.remark || '',
+    folder: j.folder || j.folder_url || '',
+    created: j.created || j.created_at || '',
+    raw: j
+  };
+}
+
+// ===== INIT =====
+
+window.addEventListener('load', () => {
+  // PWA Install prompt
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    APP.deferredInstall = e;
+    setTimeout(() => {
+      const banner = document.getElementById('install-banner');
+      if (banner) banner.classList.remove('hidden');
+    }, 3000);
+  });
+
+  // Offline detection
+  // online/offline listeners delegated to offline_db.js (avoids duplicate registration)
+  // offline_db.js handles: showOfflineBar + syncOfflineQueue
+
+  // Start splash via the final auth-aware boot function.
+  setTimeout(() => {
+    if (typeof window.initApp === 'function') {
+      window.initApp();
+    } else {
+      initApp();
+    }
+  }, 1800);
+});
+
+function initApp() {
+  const splash = document.getElementById('splash-screen');
+  splash.style.opacity = '0';
+  splash.style.transition = 'opacity 0.4s';
+  setTimeout(() => splash.classList.add('hidden'), 400);
+
+  // Load saved user
+  const saved = localStorage.getItem('comphone_user');
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      APP.user = data;
+      APP.role = data.role;
+      APP.scriptUrl = data.scriptUrl;
+      startMainApp();
+    } catch {
+      showSetup();
+    }
+  } else {
+    showSetup();
+  }
+}
+
+// ===== SETUP =====
+function showSetup() {
+  document.getElementById('setup-screen').classList.remove('hidden');
+  const urlInput = document.getElementById('setup-url');
+  if (urlInput && !urlInput.value) urlInput.value = DEFAULT_SCRIPT_URL;
+}
+
+let selectedRole = null;
+function selectRole(el) {
+  document.querySelectorAll('.role-option').forEach(r => r.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedRole = el.dataset.role;
+}
+
+function completeSetup() {
+  const name = document.getElementById('setup-name').value.trim();
+  const phone = document.getElementById('setup-phone').value.trim();
+  const url = document.getElementById('setup-url').value.trim();
+
+  if (!name) { showToast('กรุณากรอกชื่อ'); return; }
+  if (!selectedRole) { showToast('กรุณาเลือกบทบาท'); return; }
+
+  const userData = { name, phone, role: selectedRole, scriptUrl: url, setupAt: Date.now() };
+  localStorage.setItem('comphone_user', JSON.stringify(userData));
+
+  APP.user = userData;
+  APP.role = selectedRole;
+  APP.scriptUrl = url;
+
+  document.getElementById('setup-screen').classList.add('hidden');
+  startMainApp();
+}
+
+// ===== MAIN APP =====
+function startMainApp() {
+  const app = document.getElementById('main-app');
+  app.classList.remove('hidden');
+
+  // Apply theme
+  const roleConf = ROLES[APP.role] || ROLES.tech;
+  app.className = 'screen ' + roleConf.theme;
+
+  // Set user info
+  const initial = APP.user.name.charAt(0).toUpperCase();
+  document.getElementById('user-avatar').textContent = initial;
+  document.getElementById('user-avatar').style.background = 'rgba(255,255,255,0.25)';
+  document.getElementById('user-avatar').style.color = '#fff';
+
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? 'อรุณสวัสดิ์' : hour < 17 ? 'สวัสดีตอนบ่าย' : 'สวัสดีตอนเย็น';
+  document.getElementById('greeting-text').textContent = greet + ' 👋';
+  document.getElementById('user-name-display').textContent = APP.user.name;
+
+  // แสดง/ซ่อน admin ตาม role (now in More menu)
+  const moreAdmin = document.getElementById('more-admin-btn');
+  if (moreAdmin) {
+    moreAdmin.style.display = (APP.role === 'owner' || APP.role === 'admin') ? '' : 'none';
+  }
+
+  // Apply role-based UI guard (auth_guard.js)
+  if (typeof applyRoleUI === 'function') applyRoleUI();
+
+  // Force Password Change check
+  if (APP.user && APP.user.force_change_pw === true) {
+    setTimeout(() => showForcePasswordChangeModal(), 500);
+  }
+
+  // Render home ด้วย loading state ก่อน
+  renderHome();
+  renderProfile();
+
+  // B1: Deep Link handler
+  handleDeepLink();
+
+  // โหลดข้อมูลจริงจาก GAS API
+  loadLiveData();
+}
+
+async function loadLiveData() {
+  try {
+    const data = await callApi('getDashboardData');
+    if (!data || !data.success) {
+      APP.dashboardError = data || { error: 'Dashboard API returned an unsuccessful response' };
+      renderHome();
+      if (APP.currentPage === 'dashboard' && typeof loadDashboardPage === 'function') loadDashboardPage();
+      return;
+    }
+
+    // เก็บ jobs จาก API
+    const rawJobs = data.jobs || data.summary && data.summary.recentJobs || [];
+    APP.jobs = rawJobs.map(normalizeJob).filter(Boolean);
+    APP.dashboardData = data;
+
+    // อัปเดต UI
+    renderHome();
+    renderJobsBadge();
+
+    // ถ้าอยู่หน้า jobs ให้ re-render
+    if (APP.currentPage === 'jobs') renderJobsPage();
+  } catch(e) {
+    // Keep the shell usable; page modules show their own retry states.
+    console.warn('[App] loadLiveData failed:', e && e.message ? e.message : e);
+  }
+}
+
+function handleDeepLink() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const page = params.get('page');
+    if (!page || page === 'home') return;
+
+    const navBtn = document.getElementById('nav-' + page);
+    // รอให้ DOM เรนเอร์ก่อน
+    setTimeout(() => {
+      goPage(page, navBtn);
+
+      // ถ้ามี id ให้เปิด modal อัตโนมัติ
+      const id = params.get('id');
+      if (id) {
+        setTimeout(() => {
+          if (page === 'jobs') showJobDetail(id);
+          else if (page === 'po') showPODetail(id);
+        }, 800);
+      }
+    }, 300);
+  } catch(e) {}
+}
+
+// Home Render → app_home.js
+// Jobs Page → app_jobs.js
+// ===== PROFILE PAGE =====
+function renderProfile() {
+  const roleConf = ROLES[APP.role] || ROLES.tech;
+  const initial = APP.user.name.charAt(0).toUpperCase();
+
+  const avatarLg = document.getElementById('profile-avatar-large');
+  if (avatarLg) {
+    avatarLg.textContent = initial;
+    avatarLg.style.background = 'rgba(255,255,255,0.25)';
+    avatarLg.style.color = '#fff';
+  }
+  const nameLg = document.getElementById('profile-name-large');
+  if (nameLg) nameLg.textContent = APP.user.name;
+
+  const roleBadge = document.getElementById('profile-role-badge');
+  if (roleBadge) roleBadge.textContent = roleConf.label;
+}
+
+// ===== NAVIGATION =====
+function goPage(page, btn) {
+  // ===== PAGE REDIRECTS FOR MERGED/REMOVED PAGES =====
+  // Dashboard -> Home (Dashboard merged into Home)
+  if (page === 'dashboard') {
+    console.log('[Nav] Dashboard merged into Home, redirecting...');
+    page = 'home';
+  }
+  // Analytics -> Reports (Analytics merged into Reports)
+  if (page === 'analytics') {
+    console.log('[Nav] Analytics merged into Reports, redirecting...');
+    page = 'reports';
+  }
+  // Performance -> Reports (Performance merged into Reports)
+  if (page === 'performance') {
+    console.log('[Nav] Performance merged into Reports, redirecting...');
+    page = 'reports';
+  }
+  // Revenue -> Billing (Revenue merged into Billing)
+  if (page === 'revenue') {
+    console.log('[Nav] Revenue merged into Billing, redirecting...');
+    page = 'billing';
+  }
+  // Tax -> Billing (Tax merged into Billing)
+  if (page === 'tax') {
+    console.log('[Nav] Tax merged into Billing, redirecting...');
+    page = 'billing';
+  }
+  // Customer Portal -> show as overlay (not a nav page)
+  if (page === 'customer-portal') {
+    console.log('[Nav] Customer Portal is overlay-only');
+    if (typeof loadCustomerPortalPage === 'function') loadCustomerPortalPage();
+    return;
+  }
+  // Notifications -> show as overlay (not a nav page)
+  if (page === 'notifications') {
+    console.log('[Nav] Notifications is overlay-only');
+    if (typeof loadNotificationCenter === 'function') loadNotificationCenter();
+    else if (typeof showNotificationCenter === 'function') showNotificationCenter();
+    return;
+  }
+  // Profile now includes Settings (backup moved to Settings/Profile)
+  
+  const pageEl = document.getElementById('page-' + page);
+  if (!pageEl) { showToast('ไม่พบหน้า ' + page); return; }
+
+  // Page Exit Animation
+  const currentPage = document.querySelector('.page.active');
+  if (currentPage && currentPage !== pageEl) {
+    currentPage.classList.add('page-exit');
+    setTimeout(() => {
+      currentPage.classList.remove('active', 'page-exit');
+      currentPage.classList.add('hidden');
+    }, 300);
+  }
+
+  // Hide all pages
+  document.querySelectorAll('.page').forEach(p => { 
+    if (p !== pageEl && !p.classList.contains('page-exit')) {
+      p.classList.remove('active');
+      p.classList.add('hidden');
+    }
+  });
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+  // Page Enter Animation
+  setTimeout(() => {
+    pageEl.classList.remove('hidden');
+    pageEl.classList.add('active', 'page-enter');
+    setTimeout(() => {
+      pageEl.classList.remove('page-enter');
+    }, 400);
+  }, currentPage && currentPage !== pageEl ? 300 : 0);
+  
+  if (btn) btn.classList.add('active');
+  APP.currentPage = page;
+
+  if (page === 'jobs') renderJobsPage();
+  if (page === 'profile') renderProfile();
+  if (page === 'crm') loadCRMPage();
+  if (page === 'attendance') loadAttendancePage();
+  if (page === 'po') loadPurchaseOrderPage();
+  if (page === 'dashboard') loadDashboardPage();
+  if (page === 'inventory') {
+    if (typeof loadInventoryPage === 'function') loadInventoryPage();
+    else if (typeof openInventoryPage === 'function') openInventoryPage();
+  }
+  if (page === 'admin') {
+    if (typeof loadAdminPanel === 'function') loadAdminPanel();
+  }
+  if (page === 'reports') {
+    if (typeof loadReportsPage === 'function') loadReportsPage();
+    else if (typeof renderReportModule === 'function') renderReportModule();
+  }
+  if (page === 'customer-portal') {
+    if (typeof loadCustomerPortalPage === 'function') loadCustomerPortalPage();
+  }
+  if (page === 'notifications') {
+    if (typeof loadNotificationCenter === 'function') loadNotificationCenter();
+    else if (typeof showNotificationCenter === 'function') showNotificationCenter();
+  }
+  if (page === 'analytics') {
+    if (typeof openAnalyticsSection === 'function') openAnalyticsSection();
+  }
+  if (page === 'billing') {
+    if (typeof loadBillingPage === 'function') loadBillingPage();
+    else if (typeof renderBillingSection === 'function') renderBillingSection();
+  }
+  if (page === 'warranty') {
+    if (typeof loadWarrantyPage === 'function') loadWarrantyPage();
+    else if (typeof renderWarrantySection === 'function') renderWarrantySection();
+  }
+  if (page === 'revenue') {
+    if (typeof loadRevenuePage === 'function') loadRevenuePage();
+    else if (typeof renderRevenueSection === 'function') renderRevenueSection();
+  }
+  if (page === 'tax') {
+    if (typeof loadTaxPage === 'function') loadTaxPage();
+    else if (typeof renderTaxSection === 'function') renderTaxSection();
+  }
+  if (page === 'performance') {
+    if (typeof loadPerformancePage === 'function') loadPerformancePage();
+    else if (typeof renderPerformanceSection === 'function') renderPerformanceSection();
+  }
+  if (page === 'pos') {
+    // POS page is standalone - open in new tab or redirect
+    const posUrl = '/comphone-superapp/pwa/pos.html';
+    if (confirm('เปิดหน้าขายหน้าร้าน (POS)?\nกด OK เพื่อเปิดในแท็บใหม่')) {
+      window.open(posUrl, '_blank');
+    }
+  }
+}
+
+// Actions + Search + Notifications → app_actions.js
+
+// ===== PROFILE ACTIONS =====
+function showProfile() { goPage('profile', document.getElementById('nav-profile')); }
+function editProfile() { showToast('กำลังเปิดฟอร์มแก้ไข...'); }
+function changeRole() {
+  const roles = Object.keys(ROLES);
+  const idx = roles.indexOf(APP.role);
+  const next = roles[(idx + 1) % roles.length];
+  APP.role = next;
+  APP.user.role = next;
+  localStorage.setItem('comphone_user', JSON.stringify(APP.user));
+  const app = document.getElementById('main-app');
+  app.className = 'screen ' + ROLES[next].theme;
+  renderHome();
+  renderProfile();
+  // Re-apply role-based UI after role change
+  if (typeof applyRoleUI === 'function') applyRoleUI();
+  showToast(`เปลี่ยนเป็น: ${ROLES[next].label}`);
+}
+function showSettings() {
+  const url = prompt('Script URL:', APP.scriptUrl || '');
+  if (url !== null) {
+    APP.scriptUrl = url;
+    APP.user.scriptUrl = url;
+    localStorage.setItem('comphone_user', JSON.stringify(APP.user));
+    showToast('บันทึก Script URL แล้ว');
+  }
+}
+function toggleNotifications() {
+  const toggle = document.getElementById('notif-toggle');
+  APP.notifEnabled = !APP.notifEnabled;
+  toggle.classList.toggle('on', APP.notifEnabled);
+  if (APP.notifEnabled && 'Notification' in window) {
+    Notification.requestPermission().then(p => showToast(p === 'granted' ? 'เปิดการแจ้งเตือนแล้ว 🔔' : 'ไม่ได้รับอนุญาต'));
+  } else {
+    showToast('ปิดการแจ้งเตือนแล้ว');
+  }
+}
+function clearCache() {
+  if (confirm('ล้างข้อมูลแคช?')) {
+    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => showToast('ล้างแคชแล้ว'));
+  }
+}
+function resetApp() {
+  if (confirm('รีเซ็ตแอปและลบข้อมูลทั้งหมด?')) {
+    localStorage.clear();
+    location.reload();
+  }
+}
+
+// ===== SETUP & LOGIN =====
 window.saveSetup = function() {
   const name = document.getElementById('setup-name')?.value?.trim();
   const phone = document.getElementById('setup-phone')?.value?.trim();
+  const role = document.querySelector('input[name="role"]:checked')?.value;
   const scriptUrl = document.getElementById('setup-script-url')?.value?.trim();
-  
-  // Get selected role
-  let selectedRole = '';
-  const roleIds = ['setup-role-tech', 'setup-role-admin', 'setup-role-acct', 'setup-role-exec'];
-  for (const id of roleIds) {
-    const btn = document.getElementById(id);
-    if (btn && (btn.classList.contains('selected') || btn.style.border || btn.getAttribute('data-selected') === 'true')) {
-      selectedRole = id.replace('setup-role-', '');
-      break;
-    }
+
+  if (!name || !phone || !role) {
+    showToast('⚠️ กรุณากรอกข้อมูลให้ครบถ้วน');
+    return;
   }
-  
-  // Validate
-  if (!name) { alert('กรุณากรอกชื่อ-นามสกุล'); return; }
-  if (!phone || phone.length < 9) { alert('กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง'); return; }
-  if (!selectedRole) { alert('กรุณาเลือกบทบาทของคุณ'); return; }
-  if (!scriptUrl || !scriptUrl.includes('script.google.com')) { alert('กรุณาวาง SCRIPT URL จาก Google Apps Script'); return; }
-  
-  // Save to localStorage
-  const userData = {
-    name: name,
-    phone: phone,
-    role: selectedRole,
-    setupDone: true,
-    setupDate: new Date().toISOString()
-  };
-  
+
+  const userData = { name, phone, role, scriptUrl: scriptUrl || '' };
   localStorage.setItem('comphone_user', JSON.stringify(userData));
-  localStorage.setItem('comphone_script_url', scriptUrl);
-  localStorage.setItem('comphone_role', selectedRole);
-  
-  // Update APP state
-  if (window.APP) {
-    window.APP.user = userData;
-    window.APP.role = selectedRole;
-    window.APP.scriptUrl = scriptUrl;
+  localStorage.setItem('comphone_logged_in', 'true');
+
+  if (scriptUrl) {
+    localStorage.setItem('comphone_script_url', scriptUrl);
+    if (window.GAS_CONFIG) window.GAS_CONFIG.url = scriptUrl;
   }
-  
-  // Update global config
-  if (window.GAS_CONFIG) window.GAS_CONFIG.url = scriptUrl;
-  window.COMPHONE_GAS_URL = scriptUrl;
-  
-  console.log('[Setup] User saved:', name, '| Role:', selectedRole);
-  
-  // Hide setup screen, show app
-  const setupScreen = document.getElementById('setup-screen');
-  const appContainer = document.getElementById('app-container') || document.getElementById('pages-container');
-  
-  if (setupScreen) {
-    setupScreen.classList.add('hidden');
-    setupScreen.style.display = 'none';
+
+  showToast('✅ ยินดีต้อนรับ ' + name);
+  if (typeof changeRole === 'function') changeRole(role);
+  else if (typeof applyRoleUI === 'function') applyRoleUI(role);
+};
+
+// ===== VOICE SEARCH =====
+function startVoiceSearch() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('เบราว์เซอร์ไม่รองรับ Voice Search');
+    return;
   }
-  
-  // Show main app - navigate to home/dashboard
-  if (typeof goPage === 'function') {
-    goPage('home', document.getElementById('nav-home'));
-  } else if (typeof loadDashboardPage === 'function') {
-    loadDashboardPage();
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const rec = new SR();
+  rec.lang = 'th-TH';
+  rec.onresult = e => {
+    const text = e.results[0][0].transcript;
+    const input = document.getElementById('global-search-input') || document.getElementById('jobs-search');
+    if (input) { input.value = text; globalSearch(text); }
+    showToast('🎤 ค้นหา: ' + text);
+  };
+  rec.onerror = () => showToast('ไม่ได้ยินเสียง ลองใหม่อีกครั้ง');
+  rec.start();
+  showToast('🎤 กำลังฟัง...');
+}
+
+// ===== API CALL =====
+// callAPI(action, params) — ใช้ใน job_workflow.js และทั่วไป
+// Mobile PWA delegates to api_client.js so every module uses one auth/session path.
+const READ_ACTIONS = {
+  getDashboardData: true, getJobStateConfig: true, getJobTimeline: true,
+  getJobQRData: true, getPhotoGalleryData: true, inventoryOverview: true,
+  getInventoryItemDetail: true, getStockMovementHistory: true, checkStock: true,
+  barcodeLookup: true, listPurchaseOrders: true, getCustomer: true,
+  listCustomers: true, getCustomerHistoryFull: true, getCustomerListWithStats: true,
+  getCRMFollowUpSchedule: true, getCRMMetrics: true, getAfterSalesDue: true,
+  getAfterSalesSummary: true, getAttendanceReport: true, getTechHistory: true,
+  getAllTechsSummary: true, getBilling: true, listBillings: true, getReportData: true,
+  getAuditLog: true, getAuditSummary: true, getSecurityStatus: true, getComphoneConfig: true,
+  getSchemaInfo: true, systemStatus: true, health: true, help: true,
+  verifySession: true, listUsers: true, geminiReorderSuggestion: true,
+  getWarrantyByJobId: true, listWarranties: true, getTaxReport: true,
+  getTaxReminder: true, getJobStatusPublic: true, getDriveSyncStatus: true
+};
+
+function isReadAction(action) {
+  return !!READ_ACTIONS[action];
+}
+
+async function callAPI(action, params = {}) {
+  if (!navigator.onLine) {
+    if (!isReadAction(action)) saveOfflineAction({ action, params, time: Date.now() });
+    return null;
+  }
+  try {
+    if (typeof window.callApi !== 'function') {
+      throw new Error('callApi is not available');
+    }
+    const data = await window.callApi(action, params);
+    if (data && data._headers) delete data._headers;
+    return data;
+  } catch (e) {
+    if (e.message && e.message.includes('APPROVAL_REQUIRED')) {
+      showToast('กรุณาขออนุมัติการดำเนินการ', 'warning');
+    }
+    if (!isReadAction(action)) saveOfflineAction({ action, params, time: Date.now() });
+    return null;
+  }
+}
+// callApi(payload) — REMOVED: api_client.js is the Single Source of Truth for window.callApi
+// See api_client.js line 427 — do NOT re-add window.callApi override here
+
+// ===== OFFLINE QUEUE =====
+// saveOfflineAction — delegated to offline_db.js (single source of truth)
+// If offline_db.js hasn't loaded yet, fallback to localStorage
+if (typeof window.saveOfflineAction !== 'function') {
+  window.saveOfflineAction = function(action) {
+    const queue = JSON.parse(localStorage.getItem('comphone_offline_queue') || '[]');
+    queue.push(action);
+    localStorage.setItem('comphone_offline_queue', JSON.stringify(queue.slice(-50)));
+  };
+}
+
+async function syncOfflineQueue() {
+  // FIXED: Actually replay queued actions instead of deleting them
+  // Priority: IndexedDB (offline_db.js) > localStorage fallback
+  try {
+    if (typeof syncOfflineQueueLegacy === 'function') {
+      await syncOfflineQueueLegacy(); // Uses IndexedDB action_queue
+      return;
+    }
+  } catch(e) { console.warn('[Sync] IndexedDB sync failed, trying localStorage:', e); }
+
+  // Fallback: localStorage queue replay
+  const queue = JSON.parse(localStorage.getItem('comphone_offline_queue') || '[]');
+  if (!queue.length) return;
+  showToast(`🔄 กำลัง Sync ${queue.length} รายการ...`);
+  let synced = 0;
+  for (const item of queue) {
+    try {
+      if (item.action && navigator.onLine) {
+        await callApi(item.action, item.params || {});
+        synced++;
+      }
+    } catch(e) { console.warn('[Sync] Failed:', item.action, e); }
+  }
+  localStorage.removeItem('comphone_offline_queue');
+  showToast(`✅ Synced ${synced}/${queue.length} รายการ`);
+}
+
+// ===== OFFLINE BAR =====
+function showOfflineBar(show, message) {
+  const bar = document.getElementById('offline-bar');
+  if (!bar) return;
+  if (show) {
+    bar.classList.remove('hidden');
+    bar.style.display = 'flex';
+    if (message) {
+      const msgEl = bar.querySelector('span:not(.offline-queue-count)');
+      if (msgEl) msgEl.textContent = message;
+    }
   } else {
-    window.location.reload();
+    bar.classList.add('hidden');
+    bar.style.display = 'none';
+    // ไม่ต้อง showToast ที่นี่ (จัดการใน network listener แทน)
   }
+}
+
+// ===== PWA INSTALL =====
+function installPWA() {
+  if (APP.deferredInstall) {
+    APP.deferredInstall.prompt();
+    APP.deferredInstall.userChoice.then(r => {
+      if (r.outcome === 'accepted') showToast('✅ ติดตั้ง Comphone App แล้ว!');
+      APP.deferredInstall = null;
+      dismissInstall();
+    });
+  }
+}
+function dismissInstall() {
+  document.getElementById('install-banner').classList.add('hidden');
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  const existing = document.getElementById('toast');
+  if (existing) existing.remove();
+  const t = document.createElement('div');
+  t.id = 'toast';
+  t.className = 'toast-msg';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// ===== HELPERS =====
+function formatDate() {
+  const d = new Date();
+  const days = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์'];
+  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return `วัน${days[d.getDay()]}ที่ ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`;
+}
+
+// ===== MORE MENU (Bottom Sheet) =====
+function showMoreMenu() {
+  document.getElementById('more-menu-overlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeMoreMenu() {
+  document.getElementById('more-menu-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+function navigateFromMore(page) {
+  closeMoreMenu();
+  // Highlight the More button since these pages live under it
+  const moreBtn = document.getElementById('nav-more');
+  goPage(page, moreBtn);
+}
+
+// ===== ACCOUNTING INTEGRATION (Phase 35) =====
+function showAccountingSettings() {
+  const section = document.getElementById('accounting-settings-section');
+  if (section) {
+    section.classList.toggle('hidden');
+  }
+}
+
+function testMobileAccountingConnection() {
+  const software = document.getElementById('mobile-accounting-software').value;
+  const apiKey = document.getElementById('mobile-accounting-api-key').value;
+  const statusEl = document.getElementById('mobile-accounting-status');
+  
+  // Show loading
+  if (statusEl) {
+    statusEl.style.background = '#fef3c7';
+    statusEl.style.color = '#92400e';
+    statusEl.innerHTML = '⏳ กำลังตรวจสอบ...';
+  }
+  
+  // Call API
+  if (typeof callGas === 'function') {
+    callApi('checkAccountingConnection', {})
+      .then(r => {
+        if (statusEl) {
+          if (r && r.success) {
+            statusEl.style.background = '#f0fdf4';
+            statusEl.style.color = '#059669';
+            statusEl.innerHTML = `✅ เชื่อมต่อสำเร็จกับ ${software} (จำลอง)`;
+          } else {
+            statusEl.style.background = '#fee2e2';
+            statusEl.style.color = '#ef4444';
+            statusEl.innerHTML = `❌ เชื่อมต่อล้มเหลว: ${r?.error || 'Unknown error'}`;
+          }
+        }
+      })
+      .catch(e => {
+        if (statusEl) {
+          statusEl.style.background = '#fee2e2';
+          statusEl.style.color = '#ef4444';
+          statusEl.innerHTML = `❌ เกิดข้อผิดพลาด: ${e.message}`;
+        }
+      });
+  } else {
+    // Fallback: simulate
+    setTimeout(() => {
+      if (statusEl) {
+        statusEl.style.background = '#f0fdf4';
+        statusEl.style.color = '#059669';
+        statusEl.innerHTML = `✅ เชื่อมต่อสำเร็จกับ ${software} (จำลอง)`;
+      }
+    }, 1000);
+  }
+}
+
+function exportMobileBillToAccounting() {
+  const billId = prompt('ใส่ Bill ID ที่ต้องการส่งไปบัญชี:');
+  if (!billId) return;
+  
+  if (typeof callGas === 'function') {
+    callApi('exportBillToAccounting', { billId })
+      .then(r => {
+        if (r && r.success) {
+          alert(`✅ ส่งบิล ${billId} ไปยังซอฟต์แวร์บัญชีสำเร็จ\nReference: ${r.data?.accountingRef || '-'}`);
+        } else {
+          alert(`❌ ส่งบิลล้มเหลว: ${r?.error || 'Unknown error'}`);
+        }
+      })
+      .catch(e => {
+        alert(`❌ เกิดข้อผิดพลาด: ${e.message}`);
+      });
+  } else {
+    alert(`✅ (จำลอง) ส่งบิล ${billId} ไปยังซอฟต์แวร์บัญชีสำเร็จ`);
+  }
+}
+
+// ===== OFFLINE JOBS UI (Phase 35.2) =====
+function showOfflineJobs() {
+  goPage('offline-jobs');
+  loadOfflineJobs();
+}
+
+async function loadOfflineJobs(filter = 'all') {
+  try {
+    const jobs = await getOfflineJobs();
+    const stats = await getOfflineStatsV2();
+    
+    // Update stats bar
+    const statsBar = document.getElementById('offline-stats-bar');
+    if (statsBar) {
+      statsBar.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+          <div style="background:#f0fdf4;padding:8px;border-radius:8px;text-align:center;">
+            <div style="font-size:18px;font-weight:700;color:#059669;">${stats.jobs?.total || 0}</div>
+            <div style="font-size:10px;color:#6b7280;">ทั้งหมด</div>
+          </div>
+          <div style="background:#fef3c7;padding:8px;border-radius:8px;text-align:center;">
+            <div style="font-size:18px;font-weight:700;color:#92400e;">${stats.jobs?.pending || 0}</div>
+            <div style="font-size:10px;color:#6b7280;">รอ Sync</div>
+          </div>
+          <div style="background:#dbeafe;padding:8px;border-radius:8px;text-align:center;">
+            <div style="font-size:18px;font-weight:700;color:#1e40af;">${stats.jobs?.synced || 0}</div>
+            <div style="font-size:10px;color:#6b7280;">Sync แล้ว</div>
+          </div>
+          <div style="background:#ede9fe;padding:8px;border-radius:8px;text-align:center;">
+            <div style="font-size:18px;font-weight:700;color:#5b21b6;">${stats.queue?.pending || 0}</div>
+            <div style="font-size:10px;color:#6b7280;">คิว Sync</div>
+          </div>
+        </div>
+      `;
+    }
+    
+    // Filter jobs
+    let filtered = jobs;
+    if (filter === 'pending') {
+      filtered = jobs.filter(j => j.status === 'OFFLINE_PENDING');
+    } else if (filter === 'synced') {
+      filtered = jobs.filter(j => j.status === 'SYNCED');
+    }
+    
+    // Render jobs
+    const listEl = document.getElementById('offline-jobs-list');
+    if (!listEl) return;
+    
+    if (filtered.length === 0) {
+      listEl.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af;"><i class="bi bi-inbox" style="font-size:48px;display:block;margin-bottom:8px;"></i>ไม่มีงาน offline</div>';
+      return;
+    }
+    
+    listEl.innerHTML = filtered.map(job => `
+      <div style="background:#fff;border-radius:12px;padding:12px;margin-bottom:8px;border:1px solid #e5e7eb;">
+        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">
+          <div style="font-weight:600;font-size:14px;">${job.customer_name || 'ไม่ระบุ'}</div>
+          <span style="font-size:10px;padding:2px 8px;border-radius:10px;${job.status === 'SYNCED' ? 'background:#d1fae5;color:#065f46;' : 'background:#fef3c7;color:#92400e;'}">${job.status === 'SYNCED' ? '✅ Sync แล้ว' : '⏳ รอ Sync'}</span>
+        </div>
+        <div style="font-size:12px;color:#6b7280;margin-bottom:4px;"><i class="bi bi-phone-fill"></i> ${job.device || '-'}</div>
+        <div style="font-size:12px;color:#374151;margin-bottom:8px;"><i class="bi bi-exclamation-circle"></i> ${job.symptom || job.title || '-'}</div>
+        <div style="font-size:10px;color:#9ca3af;"><i class="bi bi-clock"></i> ${new Date(job.createdAt || job.time).toLocaleString('th-TH')}</div>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('[OfflineJobs] Load error:', err);
+  }
+}
+
+function filterOfflineJobs(filter, btn) {
+  // Update active tab
+  const tabs = btn.parentElement.querySelectorAll('.filter-tab');
+  tabs.forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  
+  loadOfflineJobs(filter);
+}
+
+function showCreateOfflineJob() {
+  document.getElementById('modal-create-offline-job').classList.remove('hidden');
+}
+
+async function saveOfflineJob() {
+  const name = document.getElementById('offline-cust-name')?.value?.trim();
+  const phone = document.getElementById('offline-cust-phone')?.value?.trim();
+  const device = document.getElementById('offline-device')?.value?.trim();
+  const symptom = document.getElementById('offline-symptom')?.value?.trim();
+  
+  if (!name) {
+    showToast('⚠️ กรุณากรอกชื่อลูกค้า', 'warning');
+    return;
+  }
+  
+  const result = await createOfflineJob({
+    customer_name: name,
+    customer_phone: phone,
+    device: device,
+    symptom: symptom
+  });
+  
+  if (result && result.success) {
+    closeModal('modal-create-offline-job');
+    // Clear form
+    ['offline-cust-name', 'offline-cust-phone', 'offline-device', 'offline-symptom'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    loadOfflineJobs();
+  }
+}
+
+// ===== END OF FILE =====
+function showSyncQueue() {
+  getQueueStats().then(stats => {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.onclick = () => modal.remove();
+    modal.innerHTML = `
+      <div class="modal-sheet" onclick="event.stopPropagation()" style="padding:16px;">
+        <div class="modal-handle"></div>
+        <div class="modal-title">📋 คิว offline (${stats.total} รายการ)</div>
+        <div style="padding:8px 0;">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
+            <div style="background:#f0fdf4;padding:8px;border-radius:8px;text-align:center;">
+              <div style="font-size:18px;font-weight:700;color:#059669;">${stats.pending}</div>
+              <div style="font-size:10px;color:#6b7280;">รอ Sync</div>
+            </div>
+            <div style="background:#dbeafe;padding:8px;border-radius:8px;text-align:center;">
+              <div style="font-size:18px;font-weight:700;color:#1e40af;">${stats.done}</div>
+              <div style="font-size:10px;color:#6b7280;">เสร็จแล้ว</div>
+            </div>
+            <div style="background:#fee2e2;padding:8px;border-radius:8px;text-align:center;">
+              <div style="font-size:18px;font-weight:700;color:#ef4444;">${stats.failed}</div>
+              <div style="font-size:10px;color:#6b7280;">ล้มเหลว</div>
+            </div>
+          </div>
+          <button onclick="syncOfflineQueueLegacy(); this.disabled=true; this.textContent='กำลัง Sync...';" style="width:100%;padding:8px;background:#1e40af;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;">🔄 Sync ทันที</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  });
 }
