@@ -113,6 +113,9 @@ for (const asset of manifestScripts) {
 for (const asset of [...manifestStyles, ...manifestScripts]) {
   if (!manifestPrecache.includes(asset)) fail(`pwa_asset_manifest.js precache is missing loaded asset: ${asset}`);
 }
+if (!manifestStyles.includes('mobile_glass.css') || !manifestPrecache.includes('mobile_glass.css')) {
+  fail('pwa_asset_manifest.js must load and precache mobile_glass.css.');
+}
 for (const asset of manifestPrecache) {
   if (asset === '/') continue;
   const file = path.join(PWA, asset);
@@ -192,6 +195,9 @@ const authJs = readUtf8(path.join(PWA, 'auth.js'));
 if (!authJs.includes('session.loginAt || session.login_at') || !authJs.includes('result.success || result.valid') || !authJs.includes("result._errorKind === 'offline'")) {
   fail('auth.js must accept loginAt/login_at, success/valid verifySession contracts, and keep local sessions during temporary offline/timeout checks.');
 }
+if (authJs.includes('const AUTH=***') || authJs.includes("AUTH_USER_KEY='***'") || authJs.includes('v5.5')) {
+  fail('auth.js contains corrupted/redacted auth constants or stale login version text.');
+}
 const adminPanelJs = readUtf8(path.join(PWA, 'admin_panel.js'));
 if (!adminPanelJs.includes("data-tab=\"health\"") || !adminPanelJs.includes('renderMenuHealthPanel')) {
   fail('admin_panel.js must expose the Menu Health tab.');
@@ -219,6 +225,13 @@ if (dashboardPcHtml.includes('localStorage.clear()')) {
 }
 if (!dashboardPcHtml.includes("res._errorKind === 'offline'") || !dashboardPcHtml.includes('res.valid || res.success')) {
   fail('dashboard_pc.html must accept success/valid session contracts and preserve local sessions on temporary offline/timeout checks.');
+}
+if (dashboardPcHtml.includes('MOCK LOGIN ONLY') || dashboardPcHtml.includes('Attempting login (MOCK MODE)')) {
+  fail('dashboard_pc.html must not create mock login sessions in production.');
+}
+const pcLoginFunctions = dashboardPcHtml.match(/function _doLogin\b/g) || [];
+if (pcLoginFunctions.length !== 1) {
+  fail('dashboard_pc.html must have exactly one real _doLogin function.');
 }
 if (dashboardPcHtml.includes('serviceWorker.getRegistrations()') || dashboardPcHtml.includes('location.reload(true)')) {
   fail('dashboard_pc.html must not unregister service workers or force reload during boot.');

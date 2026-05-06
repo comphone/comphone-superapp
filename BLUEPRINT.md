@@ -1,6 +1,6 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.18.2-dashboard (PWA) / GAS Backend v5.18.x @539
+> **Version:** v5.18.3-login (PWA) / GAS Backend v5.18.x @539
 
 > **Date:** 2026-05-06 | **Phase:** 44 (Dashboard Modernization + Config Resync)
 
@@ -13,9 +13,9 @@
 | Item | Current Value | Source of Truth |
 |---|---|---|
 
-| App Version | `v5.18.2-dashboard` | `pwa/version_config.js` |
-| Cache Version | `comphone-v5.18.2-dashboard-20260506_1430` | `pwa/version_config.js`, `pwa/sw.js` |
-| Build Timestamp | `20260506_1430` | `pwa/version_config.js` |
+| App Version | `v5.18.3-login` | `pwa/version_config.js` |
+| Cache Version | `comphone-v5.18.3-login-20260506_1530` | `pwa/version_config.js`, `pwa/sw.js` |
+| Build Timestamp | `20260506_1530` | `pwa/version_config.js` |
 | GAS Backend Deploy | `539` / production URL in `pwa/gas_config.js` | `clasp-ready/Config.gs`, `clasp-ready/Router.gs` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbyVK5KLJcHFNfm7oNce5e_WOrFdS2_UuiRQW27ipIUK2DeYGtVjSwWCmr-jIWLnkLcSgw/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-02.phase36-complete` | `pwa/api_contract.js` |

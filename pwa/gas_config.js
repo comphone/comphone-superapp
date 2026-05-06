@@ -4,7 +4,7 @@
 const GAS_CONFIG = {
   url: 'https://script.google.com/macros/s/AKfycbyVK5KLJcHFNfm7oNce5e_WOrFdS2_UuiRQW27ipIUK2DeYGtVjSwWCmr-jIWLnkLcSgw/exec',
   deployDate: '2026-05-06_1430',
-  version: 'v5.18.2-dashboard'
+  version: 'v5.18.3-login'
 };
 
 // Expose globally for all frontend modules

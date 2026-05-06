@@ -1,6 +1,6 @@
 // ============================================================
-// COMPHONE SUPER APP V5.5 — auth.js
-// Sprint 3: Login PIN + Role-based Access Control
+// COMPHONE SUPER APP v5.18.3-login - auth.js
+// Auth session + Role-based Access Control
 //   3.1 checkAuthState() — ตรวจสอบ session ที่บันทึกไว้
 //   3.2 showLoginScreen() — แสดงหน้า Login PIN
 //   3.3 submitLogin() — ส่ง username/password ไป GAS
@@ -131,19 +131,19 @@ function showLoginScreen() {
           <i class="bi bi-phone-fill" style="font-size:38px;color:#fff"></i>
         </div>
         <h1 style="color:#f8fafc;font-size:28px;font-weight:900;margin:0;letter-spacing:0">Comphone SuperApp AI</h1>
-        <p style="color:#cbd5e1;font-size:14px;margin:8px 0 0">???????????????????? ?????? ????? ?????????</p>
+        <p style="color:#cbd5e1;font-size:14px;margin:8px 0 0">ศูนย์ควบคุมงานบริการ ลูกค้า สต็อก และรายงาน</p>
       </div>
 
       <div style="background:rgba(15,23,42,.68);border:1px solid rgba(255,255,255,.16);border-radius:28px;padding:26px;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 28px 90px rgba(2,6,23,.48),inset 0 1px 0 rgba(255,255,255,.16)">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px">
           <div>
-            <div style="color:#f8fafc;font-size:18px;font-weight:800">???????????</div>
+            <div style="color:#f8fafc;font-size:18px;font-weight:800">เข้าสู่ระบบ</div>
             <div style="color:#94a3b8;font-size:12px;margin-top:2px">Secure session via Google Apps Script</div>
           </div>
           <span style="display:inline-flex;align-items:center;gap:6px;color:#bae6fd;background:rgba(14,165,233,.13);border:1px solid rgba(125,211,252,.24);border-radius:999px;padding:7px 10px;font-size:11px;font-weight:700"><i class="bi bi-shield-lock-fill"></i> LIVE</span>
         </div>
         <div style="margin-bottom:16px">
-          <label style="color:#cbd5e1;font-size:12px;font-weight:700;display:block;margin-bottom:7px">??????????</label>
+          <label style="color:#cbd5e1;font-size:12px;font-weight:700;display:block;margin-bottom:7px">ชื่อผู้ใช้</label>
           <div style="position:relative">
             <i class="bi bi-person-fill" style="position:absolute;left:15px;top:50%;transform:translateY(-50%);color:#60a5fa;font-size:16px"></i>
             <input type="text" id="login-username" placeholder="username"
@@ -156,7 +156,7 @@ function showLoginScreen() {
         </div>
 
         <div style="margin-bottom:20px">
-          <label style="color:#cbd5e1;font-size:12px;font-weight:700;display:block;margin-bottom:7px">????????</label>
+          <label style="color:#cbd5e1;font-size:12px;font-weight:700;display:block;margin-bottom:7px">รหัสผ่าน</label>
           <div style="position:relative">
             <i class="bi bi-lock-fill" style="position:absolute;left:15px;top:50%;transform:translateY(-50%);color:#60a5fa;font-size:16px"></i>
             <input type="password" id="login-password" placeholder="password"
@@ -172,7 +172,7 @@ function showLoginScreen() {
           style="width:100%;min-height:54px;padding:14px;background:linear-gradient(135deg,#06b6d4,#3b82f6 48%,#7c3aed);color:#fff;border:none;border-radius:18px;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:0;transition:transform .18s ease,box-shadow .18s ease;box-shadow:0 18px 46px rgba(37,99,235,.34)"
           onmouseenter="this.style.transform='translateY(-1px)';this.style.boxShadow='0 22px 56px rgba(37,99,235,.45)'"
           onmouseleave="this.style.transform='none';this.style.boxShadow='0 18px 46px rgba(37,99,235,.34)'">
-          <i class="bi bi-box-arrow-in-right"></i> ???????????
+          <i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ
         </button>
 
         <div id="login-error" style="display:none;margin-top:12px;padding:11px 14px;background:rgba(239,68,68,.15);border:1px solid rgba(248,113,113,.3);border-radius:14px;color:#fecaca;font-size:13px;text-align:center"></div>
@@ -181,12 +181,12 @@ function showLoginScreen() {
       <div style="text-align:center;margin-top:16px">
         <button onclick="showQuickSetup()"
           style="background:none;border:none;color:#93c5fd;font-size:12px;cursor:pointer;text-decoration:underline;text-underline-offset:3px">
-          ??????? Script URL
+          ตั้งค่า Script URL
         </button>
       </div>
 
       <div style="text-align:center;margin-top:24px;color:#64748b;font-size:11px">
-        Comphone SuperApp AI ${version}${build ? ' ? ' + build : ''} ? PWA
+        Comphone SuperApp AI ${version}${build ? ' · ' + build : ''} · PWA
       </div>
     </div>
   `;

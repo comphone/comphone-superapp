@@ -5,10 +5,10 @@
 // ===========================================================
 
 const VERSION_CONFIG = {
-  version: 'v5.18.2-dashboard',
+  version: 'v5.18.3-login',
   buildDate: '2026-05-06',
-  buildTimestamp: '20260506_1430',
-  cacheVersion: 'comphone-v5.18.2-dashboard-20260506_1430',
+  buildTimestamp: '20260506_1530',
+  cacheVersion: 'comphone-v5.18.3-login-20260506_1530',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -26,9 +26,9 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 
 // Backward-compatible exports for legacy modules and guards
-const APP_VERSION = 'v5.18.2-dashboard';
-const BUILD_TIMESTAMP = '20260506_1430';
-const CACHE_VERSION = 'comphone-v5.18.2-dashboard-20260506_1430';
+const APP_VERSION = 'v5.18.3-login';
+const BUILD_TIMESTAMP = '20260506_1530';
+const CACHE_VERSION = 'comphone-v5.18.3-login-20260506_1530';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;

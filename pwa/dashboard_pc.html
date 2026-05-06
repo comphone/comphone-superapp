@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>COMPHONE Dashboard — PC</title>
-<script src="version_config.js?v=5.18.2-dashboard&t=20260506_1430"></script>
+<script src="version_config.js?v=5.18.3-login&t=20260506_1530"></script>
 <script>
 // Session contract: accept success/valid and handle offline
 if (typeof window.comphone_auth_session !== 'undefined') {
@@ -25,19 +25,19 @@ if (typeof window.comphone_auth_session !== 'undefined') {
   }
 }
 </script>
-<script src="gas_config.js?v=5.18.2-dashboard&t=20260506_1430"></script>
-<script src="api_contract.js?v=5.18.2-dashboard&t=20260506_1430"></script>
-<script src="api_client.js?v=5.18.2-dashboard&t=20260506_1430"></script>
-<script src="dashboard.js?v=5.18.2-dashboard&t=20260506_1430"></script>
-<script src="section_jobs.js?v=5.18.2-dashboard&t=20260506_1430"></script>
-<script src="section_po.js?v=5.18.2-dashboard&t=20260506_1430"></script>
-<script src="section_inventory.js?v=5.18.2-dashboard&t=20260506_1430"></script>
-<script src="section_revenue.js?v=5.18.2-dashboard&t=20260506_1430"></script>
-<script src="section_tax.js?v=5.18.2-dashboard&t=20260506_1430"></script>
-<script src="section_crm.js?v=5.18.2-dashboard&t=20260506_1430"></script>
-<script src="section_backup.js?v=5.18.2-dashboard&t=20260506_1430"></script>
-<script src="section_performance.js?v=5.18.2-dashboard&t=20260506_1430"></script>
-<script src="section_settings.js?v=5.18.2-dashboard&t=20260506_1430"></script>
+<script src="gas_config.js?v=5.18.3-login&t=20260506_1530"></script>
+<script src="api_contract.js?v=5.18.3-login&t=20260506_1530"></script>
+<script src="api_client.js?v=5.18.3-login&t=20260506_1530"></script>
+<script src="dashboard.js?v=5.18.3-login&t=20260506_1530"></script>
+<script src="section_jobs.js?v=5.18.3-login&t=20260506_1530"></script>
+<script src="section_po.js?v=5.18.3-login&t=20260506_1530"></script>
+<script src="section_inventory.js?v=5.18.3-login&t=20260506_1530"></script>
+<script src="section_revenue.js?v=5.18.3-login&t=20260506_1530"></script>
+<script src="section_tax.js?v=5.18.3-login&t=20260506_1530"></script>
+<script src="section_crm.js?v=5.18.3-login&t=20260506_1530"></script>
+<script src="section_backup.js?v=5.18.3-login&t=20260506_1530"></script>
+<script src="section_performance.js?v=5.18.3-login&t=20260506_1530"></script>
+<script src="section_settings.js?v=5.18.3-login&t=20260506_1530"></script>
 <script>
 // ── XSS Sanitizer (PHMP v1 — 2026-04-24) ──
 // Lightweight HTML sanitizer for API data rendered via innerHTML.
@@ -66,7 +66,7 @@ window.APP = window.APP || { currentPage: 'dashboard_pc', user: null };
 </script>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-<link rel="stylesheet" href="dashboard_shared.css?v=5.18.2-dashboard&t=20260506_1430">
+<link rel="stylesheet" href="dashboard_shared.css?v=5.18.3-login&t=20260506_1530">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <style>
 :root {
@@ -345,38 +345,53 @@ animation: spin 0.8s linear infinite; margin: 0 auto 16px;
 /* ===== LOGIN OVERLAY ===== */
 #login-overlay {
 position: fixed; inset: 0; z-index: 99999;
-background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+background:
+radial-gradient(circle at 14% 12%, rgba(34, 211, 238, .22), transparent 30%),
+radial-gradient(circle at 88% 18%, rgba(124, 58, 237, .26), transparent 34%),
+linear-gradient(145deg, #07111f 0%, #0f172a 52%, #111827 100%);
 display: flex; align-items: center; justify-content: center;
 font-family: 'Inter', sans-serif;
+padding: 24px;
 }
 #login-overlay .login-card {
-background: var(--cp-glass-bg, rgba(255, 255, 255, 0.65));
-backdrop-filter: var(--cp-glass-blur, blur(16px));
--webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
-border: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
-border-radius: 20px; padding: 40px 36px;
-width: 100%; max-width: 380px;
-box-shadow: var(--cp-spatial-depth-3, 0 8px 32px rgba(0, 0, 0, 0.12));
+background: rgba(15, 23, 42, .72);
+backdrop-filter: blur(24px);
+-webkit-backdrop-filter: blur(24px);
+border: 1px solid rgba(255, 255, 255, .16);
+border-radius: 28px; padding: 34px 32px;
+width: 100%; max-width: 420px;
+box-shadow: 0 30px 95px rgba(2, 6, 23, .5), inset 0 1px 0 rgba(255, 255, 255, .16);
 text-align: center;
 }
-#login-overlay .login-logo { font-size: 40px; margin-bottom: 8px; }
-#login-overlay .login-title { font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
-#login-overlay .login-sub { font-size: 12px; color: #94a3b8; margin-bottom: 28px; }
+#login-overlay .login-logo {
+width: 76px; height: 76px; margin: 0 auto 16px;
+border-radius: 24px;
+background: linear-gradient(135deg, #22d3ee, #3b82f6 52%, #8b5cf6);
+display: flex; align-items: center; justify-content: center;
+color: #fff; font-size: 34px;
+box-shadow: 0 20px 58px rgba(59, 130, 246, .42), inset 0 1px 0 rgba(255, 255, 255, .36);
+}
+#login-overlay .login-title { font-size: 24px; font-weight: 900; color: #f8fafc; margin-bottom: 6px; letter-spacing: 0; }
+#login-overlay .login-sub { font-size: 13px; color: #cbd5e1; margin-bottom: 26px; line-height: 1.5; }
 #login-overlay .login-field {
-width: 100%; padding: 12px 16px; border: 1.5px solid #e2e8f0; border-radius: 10px;
-font-size: 14px; margin-bottom: 12px; outline: none; transition: border 0.2s;
+width: 100%; min-height: 52px; padding: 13px 16px; border: 1px solid rgba(255,255,255,.15); border-radius: 16px;
+font-size: 14px; margin-bottom: 12px; outline: none; transition: border 0.2s, box-shadow .2s;
 box-sizing: border-box;
+background: rgba(255,255,255,.08);
+color: #fff;
 }
-#login-overlay .login-field:focus { border-color: #3b82f6; }
+#login-overlay .login-field::placeholder { color: #94a3b8; }
+#login-overlay .login-field:focus { border-color: #38bdf8; box-shadow: 0 0 0 4px rgba(56,189,248,.14); }
 #login-overlay .login-btn {
-width: 100%; padding: 13px; background: #3b82f6; color: #fff; border: none;
-border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer;
-transition: background 0.2s; margin-top: 4px;
+width: 100%; min-height: 54px; padding: 14px; background: linear-gradient(135deg,#06b6d4,#3b82f6 48%,#7c3aed); color: #fff; border: none;
+border-radius: 18px; font-size: 15px; font-weight: 800; cursor: pointer;
+transition: transform .18s ease, box-shadow .18s ease; margin-top: 4px;
+box-shadow: 0 18px 46px rgba(37,99,235,.34);
 }
-#login-overlay .login-btn:hover { background: #2563eb; }
+#login-overlay .login-btn:hover { transform: translateY(-1px); box-shadow: 0 22px 56px rgba(37,99,235,.45); }
 #login-overlay .login-btn:disabled { background: #94a3b8; cursor: wait; }
 #login-overlay .login-error {
-color: #ef4444; font-size: 13px; margin-top: 10px; min-height: 20px;
+color: #fecaca; font-size: 13px; margin-top: 10px; min-height: 20px;
 }
 /* ===== SMART SEARCH BAR ===== */
 .topbar-search {
@@ -489,13 +504,13 @@ color: #ef4444; font-size: 13px; margin-top: 10px; min-height: 20px;
 <!-- ===== LOGIN OVERLAY ===== -->
 <div id="login-overlay">
 <div class="login-card">
-<div class="login-logo">📱</div>
+<div class="login-logo"><i class="bi bi-phone-fill"></i></div>
 <div class="login-title" data-i18n="COMPHONE Dashboard">COMPHONE Dashboard</div>
-<div class="login-sub" data-i18n="Please login to continue">กรุณาเข้าสู่ระบบเพื่อดำเนินการต่อ</div>
+<div class="login-sub" data-i18n="Please login to continue">ศูนย์ควบคุมระบบหลังบ้าน งานบริการ ลูกค้า สต็อก และรายงาน</div>
 <form id="login-form" onsubmit="_doLogin(event)">
 <input class="login-field" type="text" id="login-user" data-i18n-placeholder="Username" placeholder="Username" autocomplete="username" required>
 <input class="login-field" type="password" id="login-pass" data-i18n-placeholder="Password" placeholder="Password" autocomplete="current-password" required>
-<button class="login-btn" type="button" id="login-btn" onclick="_doLogin()">
+<button class="login-btn" type="submit" id="login-btn">
 <span data-i18n="Login">เข้าสู่ระบบ</span>
 </button>
 </form>
@@ -735,14 +750,14 @@ color: #ef4444; font-size: 13px; margin-top: 10px; min-height: 20px;
 
 </div>
 </div>
-<script src="section_billing.js?v=5.18.2-dashboard&t=20260506_1430"></script>
-<script src="section_warranty.js?v=5.18.2-dashboard&t=20260506_1430"></script>
-<script src="section_reports.js?v=5.18.2-dashboard&t=20260506_1430"></script>
-<script src="section_analytics.js?v=5.18.2-dashboard&t=20260506_1430"></script>
-<script src="section_attendance.js?v=5.18.2-dashboard&t=20260506_1430"></script>
-<script src="dashboard_helpers.js?v=5.18.2-dashboard&t=20260506_1430"></script>
-<script src="dashboard_pc_core.js?v=5.18.2-dashboard&t=20260506_1430"></script>
-<script src="search.js?v=5.18.2-dashboard&t=20260506_1430"></script>
+<script src="section_billing.js?v=5.18.3-login&t=20260506_1530"></script>
+<script src="section_warranty.js?v=5.18.3-login&t=20260506_1530"></script>
+<script src="section_reports.js?v=5.18.3-login&t=20260506_1530"></script>
+<script src="section_analytics.js?v=5.18.3-login&t=20260506_1530"></script>
+<script src="section_attendance.js?v=5.18.3-login&t=20260506_1530"></script>
+<script src="dashboard_helpers.js?v=5.18.3-login&t=20260506_1530"></script>
+<script src="dashboard_pc_core.js?v=5.18.3-login&t=20260506_1530"></script>
+<script src="search.js?v=5.18.3-login&t=20260506_1530"></script>
 <!-- Core functions moved to dashboard_pc_core.js -->
 <script>
 // FORCE DEFINE: Core functions (ignore external script status)
@@ -752,59 +767,16 @@ console.log('[Dashboard] Defining core functions inline (force)...');
 window.DASHBOARD_DATA = window.DASHBOARD_DATA || null;
 window.CHARTS = window.CHARTS || {};
 
-// Mock data for offline/error fallback
-const MOCK_USER = { success: true, valid: true, token: 'mock-token-12345', username: 'admin', role: 'admin', name: 'Admin User' };
-const MOCK_DASHBOARD = {
+// Read-only dashboard fallback for render errors; never use it as an auth session.
+const FALLBACK_DASHBOARD = {
   jobs: { total: 15, pending: 3, inProgress: 5, done: 7 },
   revenue: { today: 45000, week: 280000, month: 1200000 },
   tax: { vat: 31500, wht: 12000 },
   performance: { avgTime: '2.5h', satisfaction: 4.8 }
 };
 
-async function _doLogin() {
-  console.log('[Dashboard] Attempting login (MOCK MODE)...');
-  const username = document.getElementById('login-user')?.value;
-  const password = document.getElementById('login-pass')?.value;
-  if (!username || !password) { alert('กรุณากรอก username และ password'); return; }
-
-  const btn = document.querySelector('.login-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ...'; }
-
-  // MOCK LOGIN ONLY (skip GAS API for now)
-  console.log('[Login] Using mock login');
-  const loginResult = { ...MOCK_USER, username, timestamp: Date.now() };
-  window.DASHBOARD_DATA = MOCK_DASHBOARD;
-
-  if (btn) { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
-
-  if (loginResult.success || loginResult.valid) {
-    localStorage.setItem('comphone_auth_session', JSON.stringify(loginResult));
-    const loginOverlay = document.getElementById('login-overlay');
-    if (loginOverlay) loginOverlay.style.display = 'none';
-    const mainContent = document.getElementById('main-content');
-    if (mainContent) {
-      mainContent.style.display = 'block';
-      // Trigger dashboard load
-      if (typeof loadDashboardPage === 'function') {
-        loadDashboardPage();
-      } else {
-        // Fallback: show simple dashboard
-        mainContent.innerHTML = `
-          <div class="dashboard-header"><h1><i class="bi bi-speedometer2"></i> Dashboard</h1></div>
-          <div class="row">
-            <div class="col-md-3"><div class="card-box"><h3>งานทั้งหมด</h3><h2>${(MOCK_DASHBOARD.jobs||{}).total||0}</h2></div></div>
-            <div class="col-md-3"><div class="card-box"><h3>รายรับวันนี้</h3><h2>฿${((MOCK_DASHBOARD.revenue||{}).today||0).toLocaleString()}</h2></div></div>
-            <div class="col-md-3"><div class="card-box"><h3>ภาษี VAT</h3><h2>฿${((MOCK_DASHBOARD.tax||{}).vat||0).toLocaleString()}</h2></div></div>
-            <div class="col-md-3"><div class="card-box"><h3>ความพึงพอใจ</h3><h2>${(MOCK_DASHBOARD.performance||{}).satisfaction||0} ⭐</h2></div></div>
-          </div>
-          <p style="color:#9ca3af;margin-top:20px">✅ เข้าสู่ระบบสำเร็จ (Mock Mode)</p>
-        `;
-      }
-    }
-  } else {
-    alert('เข้าสู่ระบบไม่สำเร็จ: ' + (loginResult.error || loginResult.message || 'Unknown error'));
-  }
-}
+// Login is handled by the real GAS-backed _doLogin(event) below.
+// Keep the inline section render fallback, but never create a mock auth session.
 
 function loadSection(sectionName) {
   console.log('[Dashboard] Loading section:', sectionName);
@@ -820,7 +792,7 @@ function loadSection(sectionName) {
     if (item.getAttribute('onclick') && item.getAttribute('onclick').includes(sectionName)) item.classList.add('active');
   });
 
-  const data = window.DASHBOARD_DATA || MOCK_DASHBOARD;
+  const data = window.DASHBOARD_DATA || FALLBACK_DASHBOARD;
   const main = document.getElementById('main-content');
   if (!main) return;
 
@@ -868,7 +840,7 @@ function loadDashboard() {
 }
 
 function _doLogin(event) {
-  event.preventDefault();
+  if (event && event.preventDefault) event.preventDefault();
   console.log('[Dashboard] Attempting login...');
   
   const username = document.getElementById('login-user')?.value;
