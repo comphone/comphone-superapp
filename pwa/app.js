@@ -509,6 +509,10 @@ window.saveSetup = function() {
   localStorage.setItem('comphone_user', JSON.stringify(userData));
   localStorage.setItem('comphone_logged_in', 'true');
 
+  // Initialize APP state to prevent null reference in changeRole()
+  APP.user = userData;
+  APP.role = role;
+
   if (scriptUrl) {
     localStorage.setItem('comphone_script_url', scriptUrl);
     if (window.GAS_CONFIG) window.GAS_CONFIG.url = scriptUrl;
