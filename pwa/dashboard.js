@@ -16,16 +16,35 @@ function loadDashboardPage() {
       <p style="font-size:14px">กำลังโหลด Dashboard...</p>
     </div>`;
 
-  callApi({ action: 'getDashboardData' }).then(res => {
+  // Try new DashboardBundle API first (faster - single call with all data)
+  callApi({ action: 'getDashboardBundle' }).then(res => {
     if (res && (res.success || res.totalJobs !== undefined)) {
       DASHBOARD_DATA = res;
-      window.DASHBOARD_DATA = res;  // Sync to global for section renderers
+      window.DASHBOARD_DATA = res;
       renderDashboard(res);
     } else {
-      renderDashboardError(res || { error: 'Dashboard API returned an unsuccessful response' });
+      // Fallback to legacy getDashboardData
+      return callApi({ action: 'getDashboardData' });
+    }
+  }).then(res => {
+    if (res && (res.success || res.totalJobs !== undefined)) {
+      DASHBOARD_DATA = res;
+      window.DASHBOARD_DATA = res;
+      renderDashboard(res);
     }
   }).catch(err => {
-    renderDashboardError(err);
+    // Final fallback - try getDashboardData
+    callApi({ action: 'getDashboardData' }).then(res => {
+      if (res && (res.success || res.totalJobs !== undefined)) {
+        DASHBOARD_DATA = res;
+        window.DASHBOARD_DATA = res;
+        renderDashboard(res);
+      } else {
+        renderDashboardError(res || err);
+      }
+    }).catch(err2 => {
+      renderDashboardError(err2 || err);
+    });
   });
 }
 
@@ -84,22 +103,22 @@ function renderDashboard(data) {
 
     <!-- KPI CARDS -->
     <div id="kpi-cards-grid" style="padding:8px 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="kpi-card" style="background:linear-gradient(135deg,#1e40af,#3b82f6)">
+      <div class="kpi-card-glass">
         <div class="kpi-icon"><i class="bi bi-clipboard2-check-fill"></i></div>
         <div class="kpi-value">${totalJobs}</div>
         <div class="kpi-label">งานทั้งหมด</div>
       </div>
-      <div class="kpi-card" style="background:linear-gradient(135deg,#10b981,#059669)">
+      <div class="kpi-card-glass">
         <div class="kpi-icon"><i class="bi bi-currency-exchange"></i></div>
         <div class="kpi-value">฿${Number(revenue.today || 0).toLocaleString()}</div>
         <div class="kpi-label">รายรับวันนี้</div>
       </div>
-      <div class="kpi-card ${overdueJobs > 0 ? 'kpi-alert' : ''}" style="background:${overdueJobs > 0 ? 'linear-gradient(135deg,#dc2626,#ef4444)' : 'linear-gradient(135deg,#6b7280,#9ca3af)'}">
+      <div class="kpi-card-glass ${overdueJobs > 0 ? 'kpi-alert' : ''}">
         <div class="kpi-icon"><i class="bi bi-clock-history"></i></div>
         <div class="kpi-value">${overdueJobs}</div>
         <div class="kpi-label">งานเกิน SLA</div>
       </div>
-      <div class="kpi-card ${lowStock > 0 ? 'kpi-alert' : ''}" style="background:${lowStock > 0 ? 'linear-gradient(135deg,#d97706,#f59e0b)' : 'linear-gradient(135deg,#6b7280,#9ca3af)'}">
+      <div class="kpi-card-glass ${lowStock > 0 ? 'kpi-alert' : ''}">
         <div class="kpi-icon"><i class="bi bi-box-seam-fill"></i></div>
         <div class="kpi-value">${lowStock}</div>
         <div class="kpi-label">สต็อกต่ำ</div>

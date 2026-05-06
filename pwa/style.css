@@ -1558,3 +1558,47 @@ html, body {
 #offline-bar button:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+
+/* Glassmorphism 2.0 KPI Card */
+.kpi-card-glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--glass-shadow);
+}
+.kpi-card-glass::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--primary-light));
+}
+.kpi-card-glass:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--glass-shadow-strong);
+}
+.kpi-card-glass .kpi-icon {
+  font-size: 1.8rem;
+  margin-bottom: 8px;
+  opacity: 0.9;
+}
+.kpi-card-glass .kpi-value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 4px;
+  color: var(--text);
+}
+.kpi-card-glass .kpi-label {
+  font-size: 0.78rem;
+  color: var(--text-2);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}

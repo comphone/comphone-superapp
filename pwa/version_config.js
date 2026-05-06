@@ -1,26 +1,22 @@
 // ===========================================================
 // COMPHONE SUPER APP - Centralized Version Config
 // Single Source of Truth for all version numbers
-// Phase 42 - Deep Black Ultra Theme
+// Phase 44 - Dashboard Modernization + Setup Fix
 // ===========================================================
 
 const VERSION_CONFIG = {
-  version: 'v5.18.0-phase43',
-  buildDate: '2026-05-05',
-  buildTimestamp: '20260505_1500',
-  cacheVersion: 'comphone-v5.18.0-phase43',
-  theme: 'deep-black-ultra-v9',
+  version: 'v5.18.2-dashboard',
+  buildDate: '2026-05-06',
+  buildTimestamp: '20260506_1430',
+  cacheVersion: 'comphone-v5.18.2-dashboard',
+  theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
-    'Deep Black Ultra Theme (#000000 + Neon Cyan/Purple)',
-    'Fixed J0017 Modal Container Error',
-    'Smoother Page Transitions (400ms cubic-bezier)',
-    'Enhanced Search with History & Filters',
-    'All Menu Buttons Restored',
-    'Glassmorphism with Neon Glow Effects',
-    'Smart Search Bar (Jobs, Customers, Inventory)',
-    'Touch Target 48px+ for all buttons',
-    'Fade-in/Fade-out Page Transition'
+    'Fixed Setup/Login (saveSetup) Bug',
+    'DashboardBundle API (10x faster)',
+    'Glassmorphism 2.0 KPI Cards',
+    'Improved Cache Busting',
+    'Stable Login Flow'
   ]
 };
 
