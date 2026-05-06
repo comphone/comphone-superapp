@@ -501,7 +501,7 @@
    501|
 
 // ===== SAVE SETUP (Login) =====
-function saveSetup() {
+window.saveSetup = function() {
   const name = document.getElementById('setup-name')?.value?.trim();
   const phone = document.getElementById('setup-phone')?.value?.trim();
   const scriptUrl = document.getElementById('setup-script-url')?.value?.trim();
