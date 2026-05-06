@@ -23,7 +23,7 @@
 const PERMISSION_MAP = {
   // Pages
   'page:admin':       ['owner'],
-  'page:reports':     ['owner', 'accountant'],
+  'page:reports':     ['owner', 'accountant', 'sales', 'technician'],
   'page:dashboard':   ['owner', 'accountant', 'sales'],
   'page:jobs':        ['owner', 'accountant', 'sales', 'technician'],
   'page:crm':         ['owner', 'sales'],
@@ -58,7 +58,59 @@ const AUTH_ROLE_ALIASES = {
   'technician': 'technician',
   'tech':       'technician',
   'exec':       'owner',      // exec = owner level
+  'ผู้ดูแลระบบ': 'owner',
+  'เจ้าของ':    'owner',
+  'บัญชี':      'accountant',
+  'ช่าง':       'technician',
 };
+
+function getCurrentAuthUser() {
+  if (typeof APP !== 'undefined' && APP.user) return APP.user;
+
+  if (typeof AUTH !== 'undefined' && (AUTH.username || AUTH.token)) {
+    return {
+      username: AUTH.username,
+      name: AUTH.fullName || AUTH.username,
+      role: AUTH_ROLE_ALIASES[String(AUTH.role || '').toLowerCase()] || AUTH.role,
+      gasRole: AUTH.role,
+      roleLabel: AUTH.roleLabel,
+      authToken: AUTH.token,
+    };
+  }
+
+  try {
+    const session = JSON.parse(localStorage.getItem('comphone_auth_session') || '{}');
+    if (session && (session.username || session.token)) {
+      return {
+        username: session.username,
+        name: session.fullName || session.full_name || session.username,
+        role: session.role,
+        gasRole: session.role,
+        roleLabel: session.roleLabel || session.role_label,
+        authToken: session.token,
+      };
+    }
+  } catch (e) {}
+
+  try {
+    const saved = JSON.parse(localStorage.getItem('comphone_user') || '{}');
+    if (saved && (saved.username || saved.name || saved.role)) return saved;
+  } catch (e) {}
+
+  return null;
+}
+
+function normalizeAuthRole(user) {
+  if (!user) return '';
+  const candidates = [user.role, user.authRole, user.gasRole, user.roleLabel, user.role_label]
+    .filter(Boolean)
+    .map(role => String(role).trim().toLowerCase());
+
+  for (const rawRole of candidates) {
+    if (AUTH_ROLE_ALIASES[rawRole]) return AUTH_ROLE_ALIASES[rawRole];
+  }
+  return candidates[0] || '';
+}
 
 // ============================================================
 // CORE: canAccess()
@@ -71,12 +123,10 @@ const AUTH_ROLE_ALIASES = {
 function canAccess(permission) {
   if (!permission) return true;
 
-  const user = typeof APP !== 'undefined' ? APP.user : null;
+  const user = getCurrentAuthUser();
   if (!user) return false;
 
-  // ดึง role ของ user
-  const rawRole = String(user.role || user.authRole || '').toLowerCase();
-  const role    = AUTH_ROLE_ALIASES[rawRole] || rawRole;
+  const role = normalizeAuthRole(user);
 
   // ถ้าไม่มีใน PERMISSION_MAP = ทุกคนเข้าได้
   const allowed = PERMISSION_MAP[permission];
@@ -99,7 +149,7 @@ function guardPage(page) {
   if (canAccess(permission)) return true;
 
   // ไม่มีสิทธิ์
-  const user = typeof APP !== 'undefined' ? APP.user : null;
+  const user = getCurrentAuthUser();
   const role = user ? (user.role || 'unknown') : 'unknown';
 
   showToast(`⛔ ไม่มีสิทธิ์เข้าหน้านี้ (role: ${role})`);
@@ -124,7 +174,7 @@ function guardAction(action) {
   const permission = 'action:' + action;
   if (canAccess(permission)) return true;
 
-  const user = typeof APP !== 'undefined' ? APP.user : null;
+  const user = getCurrentAuthUser();
   const role = user ? (user.role || 'unknown') : 'unknown';
 
   showToast(`⛔ ไม่มีสิทธิ์ทำรายการนี้ (role: ${role})`);
@@ -140,7 +190,7 @@ function guardAction(action) {
  * @return {boolean}
  */
 function requireAuth() {
-  const user = typeof APP !== 'undefined' ? APP.user : null;
+  const user = getCurrentAuthUser();
   if (user && (user.authToken || user.username)) return true;
 
   // ยังไม่ login
@@ -163,11 +213,10 @@ function requireAuth() {
  * เรียกหลัง login สำเร็จ
  */
 function applyRoleUI() {
-  const user = typeof APP !== 'undefined' ? APP.user : null;
+  const user = getCurrentAuthUser();
   if (!user) return;
 
-  const rawRole = String(user.role || '').toLowerCase();
-  const role    = AUTH_ROLE_ALIASES[rawRole] || rawRole;
+  const role = normalizeAuthRole(user);
 
   // Elements ที่ต้องการ role เฉพาะ
   document.querySelectorAll('[data-role-require]').forEach(el => {
@@ -253,7 +302,7 @@ function getRoleLabel(role) {
 
     window.goPage = function(page, navEl) {
       // Pages ที่ต้อง guard
-      const guardedPages = ['admin', 'reports'];
+      const guardedPages = ['admin'];
       if (guardedPages.includes(page)) {
         if (!guardPage(page)) return; // ไม่มีสิทธิ์ — หยุด
       }
