@@ -496,7 +496,8 @@ function resetApp() {
 window.saveSetup = function() {
   const name = document.getElementById('setup-name')?.value?.trim();
   const phone = document.getElementById('setup-phone')?.value?.trim();
-  const role = document.querySelector('input[name="role"]:checked')?.value;
+  const selectedRoleEl = document.querySelector('.role-option.selected');
+  const role = selectedRoleEl?.dataset?.role;
   const scriptUrl = document.getElementById('setup-script-url')?.value?.trim();
 
   if (!name || !phone || !role) {
