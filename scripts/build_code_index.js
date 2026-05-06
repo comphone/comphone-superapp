@@ -6,7 +6,46 @@ const PWA = path.join(ROOT, 'pwa');
 const GAS = path.join(ROOT, 'clasp-ready');
 const REPORT = process.env.COMPHONE_CODE_INDEX_REPORT ||
   path.join(ROOT, 'test_reports', 'code_index_latest.json');
+const SUMMARY_REPORT = process.env.COMPHONE_CODE_INDEX_SUMMARY ||
+  path.join(ROOT, 'test_reports', 'code_index_summary_latest.md');
 const SPECIAL_ROUTES = new Set(['login', 'offline-jobs', 'customer-portal', 'notifications', 'pos']);
+const ARCHIVAL_SCRIPT_PATTERNS = [
+  /^_backup_/,
+  /_test\.js$/,
+  /^api_test_framework\.js$/,
+  /^customer_sw\.js$/,
+  /^sw\.js$/,
+  /^.*\.bak$/,
+];
+const DYNAMIC_SCRIPT_ALLOWLIST = new Set([
+  'admin.js',
+  'advanced_reports.js',
+  'after_sales_enhanced.js',
+  'attendance_section.js',
+  'attendance_ui.js',
+  'billing_customer.js',
+  'billing_slip_verify.js',
+  'branch_health_ui.js',
+  'business_ai.js',
+  'crm_ui.js',
+  'customer_portal_section.js',
+  'evidence_harness.js',
+  'inventory_ui.js',
+  'job_workflow.js',
+  'language_manager.js',
+  'offline_db_v2.js',
+  'pentest_frontend.js',
+  'photo_upload_section.js',
+  'pos.js',
+  'push_notifications_v2.js',
+  'quick_actions.js',
+  'smart_quotation.js',
+  'stock.js',
+  'tax_ui.js',
+  'telemetry_collector.js',
+  'warranty_section.js',
+  'warranty_ui.js',
+]);
 
 function read(file) {
   return fs.readFileSync(file, 'utf8');
@@ -54,6 +93,11 @@ function parseHtmlAssets(htmlFile) {
 
 function scanPwaFile(file) {
   const text = read(file);
+  const imports = uniq([
+    ...extractAll(text, /importScripts\s*\(\s*['"]([^'"]+)['"]/g),
+    ...extractAll(text, /\bimport\s+[^'"]*['"]([^'"]+)['"]/g),
+    ...extractAll(text, /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g),
+  ]).map(src => src.split('?')[0].replace(/^\.\//, ''));
   return {
     file: rel(file),
     functions: uniq([
@@ -69,6 +113,7 @@ function scanPwaFile(file) {
       ...extractAll(text, /\bgoPage\s*\(\s*['"]([^'"]+)['"]/g),
       ...extractAll(text, /\bnavigateFromMore\s*\(\s*['"]([^'"]+)['"]/g),
     ]),
+    imports,
     quickActions: uniq(extractAll(text, /\baction:\s*['"]([^'"]+)['"]/g)),
     onclickFunctions: uniq(extractAll(text, /onclick="([A-Za-z_$][\w$]*)\s*\(/g)),
   };
@@ -99,6 +144,144 @@ function makeLookup(rows, field) {
     }
   }
   return map;
+}
+
+function loadedEntrypoints(pwaHtml) {
+  const out = new Map();
+  for (const html of pwaHtml) {
+    for (const script of html.scripts) {
+      if (!out.has(script)) out.set(script, []);
+      out.get(script).push(html.file);
+    }
+  }
+  return out;
+}
+
+function scriptName(file) {
+  return file.replace(/^pwa\//, '');
+}
+
+function classifyOrphanScript(name) {
+  if (ARCHIVAL_SCRIPT_PATTERNS.some(pattern => pattern.test(name))) return 'archival-or-test';
+  if (DYNAMIC_SCRIPT_ALLOWLIST.has(name)) return 'dynamic-or-optional';
+  if (/^section_/.test(name) || /_section\.js$/.test(name) || /_ui\.js$/.test(name)) return 'legacy-section-module';
+  return 'review';
+}
+
+function buildWorkflowIndex(apiContract, actionIndex) {
+  const actionMap = new Map(actionIndex.map(item => [item.action, item]));
+  return (apiContract.workflows || []).map(workflow => {
+    const readActions = workflow.readOnly || [];
+    const writeActions = workflow.writeActions || [];
+    const allActions = [...readActions, ...writeActions];
+    const frontendFiles = uniq(allActions.flatMap(item => (actionMap.get(item.action) || {}).frontendFiles || []));
+    const gasHandlers = uniq(allActions.flatMap(item => (actionMap.get(item.action) || {}).gasHandlers || []));
+    const missingHandlers = allActions
+      .filter(item => item.required && ((actionMap.get(item.action) || {}).gasHandlers || []).length === 0)
+      .map(item => item.action);
+    const detectedFrontendGaps = allActions
+      .filter(item => item.required && ((actionMap.get(item.action) || {}).frontendFiles || []).length === 0)
+      .map(item => item.action);
+
+    return {
+      id: workflow.id,
+      label: workflow.label,
+      description: workflow.description,
+      readActions: readActions.map(item => item.action),
+      writeActions: writeActions.map(item => item.action),
+      frontendFiles,
+      gasHandlers,
+      missingHandlers,
+      detectedFrontendGaps,
+      safeToSmokeReadOnly: missingHandlers.length === 0,
+      writeSmokeRequired: writeActions.length > 0,
+    };
+  });
+}
+
+function buildDependencyGraph(pwaHtml, pwaRows, actionIndex, routeIndex, workflowIndex) {
+  const entrypointMap = loadedEntrypoints(pwaHtml);
+  const apiByFile = new Map();
+  for (const action of actionIndex) {
+    for (const file of action.frontendFiles) {
+      if (!apiByFile.has(file)) apiByFile.set(file, []);
+      apiByFile.get(file).push(action.action);
+    }
+  }
+  const routesByFile = new Map();
+  for (const route of routeIndex) {
+    for (const file of route.frontendFiles) {
+      if (!routesByFile.has(file)) routesByFile.set(file, []);
+      routesByFile.get(file).push(route.route);
+    }
+  }
+  const workflowsByFile = new Map();
+  for (const workflow of workflowIndex) {
+    for (const file of workflow.frontendFiles) {
+      if (!workflowsByFile.has(file)) workflowsByFile.set(file, []);
+      workflowsByFile.get(file).push(workflow.id);
+    }
+  }
+
+  return pwaRows.map(row => {
+    const name = scriptName(row.file);
+    return {
+      file: row.file,
+      loadedBy: uniq(entrypointMap.get(name) || []),
+      imports: row.imports,
+      routes: uniq(routesByFile.get(row.file) || []),
+      apiActions: uniq(apiByFile.get(row.file) || []),
+      workflows: uniq(workflowsByFile.get(row.file) || []),
+      functions: row.functions.length,
+      role: (entrypointMap.get(name) || []).length ? 'entrypoint-loaded' : classifyOrphanScript(name),
+    };
+  });
+}
+
+function writeSummary(report) {
+  const topRoutes = report.routes
+    .filter(route => route.frontendFiles.length)
+    .map(route => `- ${route.route}: ${route.frontendFiles.join(', ')}`)
+    .join('\n') || '- none';
+  const workflows = report.workflows
+    .map(workflow => `- ${workflow.id}: read=${workflow.readActions.length}, write=${workflow.writeActions.length}, frontend=${workflow.frontendFiles.length}, handlers=${workflow.gasHandlers.length}`)
+    .join('\n') || '- none';
+  const reviewOrphans = report.orphan_pwa_scripts
+    .filter(item => item.category === 'review')
+    .map(item => `- ${item.file}`)
+    .slice(0, 30)
+    .join('\n') || '- none';
+  const risks = report.risks
+    .map(risk => `- [${risk.priority}] ${risk.type}: ${risk.action || risk.route || risk.file} - ${risk.detail}`)
+    .join('\n') || '- none';
+  const text = [
+    '# COMPHONE Code Intelligence Summary',
+    '',
+    `Generated: ${report.generated_at}`,
+    `Version: ${report.version}`,
+    '',
+    '## Summary',
+    `- PWA JS files: ${report.summary.pwa_js_files}`,
+    `- GAS files: ${report.summary.gas_gs_files}`,
+    `- API contract actions: ${report.summary.api_contract_actions}`,
+    `- Menu routes: ${report.summary.menu_routes}`,
+    `- Workflows: ${report.summary.workflows}`,
+    `- Risk summary: ${JSON.stringify(report.summary.risks_by_priority)}`,
+    '',
+    '## Route Map',
+    topRoutes,
+    '',
+    '## Workflow Map',
+    workflows,
+    '',
+    '## Review Orphans',
+    reviewOrphans,
+    '',
+    '## Risks',
+    risks,
+    '',
+  ].join('\n');
+  fs.writeFileSync(SUMMARY_REPORT, text, 'utf8');
 }
 
 function main() {
@@ -164,34 +347,47 @@ function main() {
     }
   }
 
+  const workflowIndex = buildWorkflowIndex(apiContract, actionIndex);
+  const dependencyGraph = buildDependencyGraph(pwaHtml, pwaRows, actionIndex, routeIndex, workflowIndex);
+
   const orphanPwaScripts = pwaRows
-    .map(row => row.file.replace(/^pwa\//, ''))
+    .map(row => scriptName(row.file))
     .filter(name => !pwaHtml.some(html => html.scripts.includes(name)))
-    .filter(name => !name.endsWith('.bak') && !name.includes('asset_manifest'));
+    .filter(name => !name.endsWith('.bak') && !name.includes('asset_manifest'))
+    .map(name => ({
+      file: `pwa/${name}`,
+      category: classifyOrphanScript(name),
+    }));
 
   const report = {
     generated_at: new Date().toISOString(),
-    version: '2026-05-06.code-index-v1',
+    version: '2026-05-06.code-index-v2',
     summary: {
       pwa_js_files: pwaRows.length,
       gas_gs_files: gasRows.length,
       html_entrypoints: pwaHtml.length,
       api_contract_actions: contractActions.length,
       menu_routes: menuRoutes.length,
+      workflows: workflowIndex.length,
       risks_by_priority: countBy(risks, 'priority'),
       orphan_pwa_scripts: orphanPwaScripts.length,
+      review_orphan_pwa_scripts: orphanPwaScripts.filter(item => item.category === 'review').length,
     },
     html: pwaHtml,
     routes: routeIndex,
     actions: actionIndex,
+    workflows: workflowIndex,
+    dependency_graph: dependencyGraph,
     risks,
     orphan_pwa_scripts: orphanPwaScripts,
   };
 
   fs.mkdirSync(path.dirname(REPORT), { recursive: true });
   fs.writeFileSync(REPORT, JSON.stringify(report, null, 2) + '\n', 'utf8');
+  writeSummary(report);
 
   console.log('[Code Index] report: ' + rel(REPORT));
+  console.log('[Code Index] summary: ' + rel(SUMMARY_REPORT));
   console.log(`[Code Index] PWA JS=${report.summary.pwa_js_files} GAS=${report.summary.gas_gs_files} actions=${report.summary.api_contract_actions} routes=${report.summary.menu_routes}`);
   const riskSummary = Object.entries(report.summary.risks_by_priority).map(([k, v]) => `${k}:${v}`).join(' ') || 'none';
   console.log('[Code Index] risks: ' + riskSummary);

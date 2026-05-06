@@ -35,7 +35,7 @@
 - Mobile `openJob()` is restored as an alias to the actual `openNewJob()` quick action, so the "เปิดงาน" workflow opens its modal again.
 - Mobile profile version badge now reads from `version_config.js` instead of the old hardcoded `v5.14.0-phase37` label.
 - Mobile dashboard quick action now routes `stock` to the actual `inventory` page, removing a hidden dead route.
-- `scripts/build_code_index.js` now builds a local SocratiCode-lite map of PWA assets, routes, functions, API calls, GAS functions, router actions, public actions, and route risks. Its latest generated report is `test_reports/code_index_latest.json` and must stay uncommitted.
+- `scripts/build_code_index.js` now builds a local SocratiCode-lite map of PWA assets, routes, functions, API calls, GAS functions, router actions, public actions, dependency impact, workflow coverage, orphan/deprecated script candidates, and route risks. Generated reports are `test_reports/code_index_latest.json` and `test_reports/code_index_summary_latest.md`; both must stay uncommitted.
 - Service worker cache was bumped to `comphone-v5.18.10-code-index-20260506_2245` to force browsers off stale assets.
 - BLUEPRINT is the source of truth. Old Hermes/SocratiCode notes below are historical unless explicitly marked current here.
 
@@ -44,7 +44,7 @@
 |---|---|---|
 | `node --check pwa/auth.js` | PASS | Auth runtime parses after corrupted constants were restored. |
 | `node scripts/pwa_static_guard.js` | PASS | Confirms cache/version alignment, API client loading, protected auth invariants, no production mock login. |
-| `node scripts/build_code_index.js` | PASS | PWA JS=79, GAS=88, API actions=40, menu routes=19, risks none. |
+| `node scripts/build_code_index.js` | PASS | PWA JS=79, GAS=88, API actions=40, menu routes=19, workflows=5, risks none; emits JSON + Markdown intelligence reports. |
 | `bash scripts/regression-guard.sh` | PASS | CI guard updated to current PC dashboard architecture and now includes code index validation. |
 | Login + `verifySession` | PASS | Fresh `admin` login returns a token that verifies immediately on GAS `@544`. Token value is not stored in repo/docs. |
 | `node scripts/pwa_api_smoke.js` | PASS protected | `health`, `getVersion`, `getDashboardData`, `listCustomers`, `inventoryOverview`, `listPurchaseOrders`, `getReportData`, and `getSecurityStatus` OK with fresh session token. |
@@ -71,6 +71,7 @@
 | Done | PC dashboard duplicate runtime logic | Resolved in `v5.18.7-authguard`. | Keep static guard enforcing one `_doLogin` and no inline core functions in `dashboard_pc.html`. |
 | Done | Mobile menu/runtime recovery | Billing/Reports used PC-only `setActiveNav`, Inventory had no mobile loader, Profile showed stale version, and `openJob()` alias was missing. | Fixed in `v5.18.9-ui-menu`; local mobile UI audit passes. |
 | Done | Route/API intelligence guard | Legacy `stock` quick action pointed to a missing mobile page and future drift had no fast detector. | Fixed in `v5.18.10-code-index`; run `node scripts/build_code_index.js` before release. |
+| Done | Code Intelligence Layer v2 | Future agents needed a compact impact map instead of rereading the full repo. | Added dependency graph, workflow map, orphan classification, and Markdown summary output to `scripts/build_code_index.js`. |
 | P1 | Destructive write-flow validation | Open-job/customer modals open, but submitting writes should not be tested directly on production data. | Run staging write smoke for create job, create customer, billing/payment, inventory add/transfer, and offline queue replay. |
 | P1 | Auxiliary pages have old fallback versions | `executive_dashboard.html`, `monitoring_dashboard.html`, `system_graph.html`, some scripts still mention old versions. | Either align them to `version_config.js` or mark/archive them if unused. |
 | P2 | BLUEPRINT historical sections are noisy | Old Hermes/SocratiCode claims and v5.9/v5.5 notes can mislead future agents. | Move old phases into an archive section and keep only current rules at the top. |

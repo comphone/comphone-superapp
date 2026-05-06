@@ -18,6 +18,7 @@ docs/SYSTEM_KEYS_BACKUP*.md
 backups/
 .git-rewrite/
 test_reports/*_latest.json
+test_reports/*_latest.md
 __pycache__/
 *.pyc
 
