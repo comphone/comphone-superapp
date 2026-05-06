@@ -486,8 +486,8 @@
 <div class="cp-sheet more-menu-sheet" onclick="event.stopPropagation()">
 <div class="cp-sheet-handle"></div>
 <div class="more-menu-title" data-i18n="More">เพิ่มเติม</div>
+<div class="more-menu-group-label">งานประจำวัน</div>
 <div class="more-menu-grid">
-<!-- Row 1 -->
 <button class="more-menu-item" onclick="navigateFromMore('crm')">
 <div class="more-menu-icon"><i class="bi bi-people-fill"></i></div>
 <span data-i18n="Customers">ลูกค้า</span>
@@ -502,20 +502,54 @@
 </button>
 <button class="more-menu-item" onclick="navigateFromMore('billing')">
 <div class="more-menu-icon"><i class="bi bi-receipt"></i></div>
-<span data-i18n="Billing">ใบเสร็จ/วางบิล</span>
-</button>
-<!-- Row 2 -->
-<button class="more-menu-item" onclick="navigateFromMore('reports')">
-<div class="more-menu-icon"><i class="bi bi-graph-up-arrow"></i></div>
-<span data-i18n="Reports">รายงาน</span>
+<span data-i18n="Billing">วางบิล</span>
 </button>
 <button class="more-menu-item" onclick="navigateFromMore('attendance')">
 <div class="more-menu-icon"><i class="bi bi-clock-fill"></i></div>
-<span data-i18n="Attendance">เวลาทำงาน</span>
+<span data-i18n="Attendance">ลงเวลา</span>
 </button>
 <button class="more-menu-item" onclick="navigateFromMore('warranty')">
 <div class="more-menu-icon"><i class="bi bi-shield-check"></i></div>
 <span data-i18n="Warranty">รับประกัน</span>
+</button>
+<button class="more-menu-item" onclick="navigateFromMore('customer-portal')">
+<div class="more-menu-icon"><i class="bi bi-person-badge"></i></div>
+<span>Portal</span>
+</button>
+<button class="more-menu-item" onclick="navigateFromMore('notifications')">
+<div class="more-menu-icon"><i class="bi bi-bell-fill"></i></div>
+<span>แจ้งเตือน</span>
+</button>
+</div>
+<div class="more-menu-group-label">บริหารและวิเคราะห์</div>
+<div class="more-menu-grid">
+<button class="more-menu-item" onclick="navigateFromMore('dashboard')">
+<div class="more-menu-icon"><i class="bi bi-speedometer2"></i></div>
+<span data-i18n="Dashboard">Dashboard</span>
+</button>
+<button class="more-menu-item" onclick="navigateFromMore('reports')">
+<div class="more-menu-icon"><i class="bi bi-graph-up-arrow"></i></div>
+<span data-i18n="Reports">รายงาน</span>
+</button>
+<button class="more-menu-item" onclick="navigateFromMore('analytics')">
+<div class="more-menu-icon"><i class="bi bi-activity"></i></div>
+<span>Analytics</span>
+</button>
+<button class="more-menu-item" onclick="navigateFromMore('performance')">
+<div class="more-menu-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+<span>Performance</span>
+</button>
+<button class="more-menu-item" onclick="navigateFromMore('revenue')">
+<div class="more-menu-icon"><i class="bi bi-currency-exchange"></i></div>
+<span data-i18n="Revenue">รายรับ</span>
+</button>
+<button class="more-menu-item" onclick="navigateFromMore('tax')">
+<div class="more-menu-icon"><i class="bi bi-file-earmark-text"></i></div>
+<span data-i18n="Tax">ภาษี</span>
+</button>
+<button class="more-menu-item" id="more-admin-btn" onclick="navigateFromMore('admin')" style="display:none">
+<div class="more-menu-icon"><i class="bi bi-shield-lock-fill"></i></div>
+<span>Admin</span>
 </button>
 <button class="more-menu-item" onclick="navigateFromMore('profile')">
 <div class="more-menu-icon"><i class="bi bi-gear-fill"></i></div>

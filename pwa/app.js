@@ -317,38 +317,13 @@ function renderProfile() {
 function setActiveNav(page) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const direct = document.getElementById('nav-' + page);
-  const nestedPages = ['crm', 'inventory', 'po', 'billing', 'reports', 'attendance', 'warranty', 'profile', 'admin', 'revenue', 'tax', 'performance'];
+  const nestedPages = ['dashboard', 'crm', 'inventory', 'po', 'billing', 'reports', 'attendance', 'warranty', 'profile', 'admin', 'analytics', 'revenue', 'tax', 'performance'];
   const btn = direct || (nestedPages.includes(page) ? document.getElementById('nav-more') : null);
   if (btn) btn.classList.add('active');
 }
 
 function goPage(page, btn) {
   // ===== PAGE REDIRECTS FOR MERGED/REMOVED PAGES =====
-  // Dashboard -> Home (Dashboard merged into Home)
-  if (page === 'dashboard') {
-    console.log('[Nav] Dashboard merged into Home, redirecting...');
-    page = 'home';
-  }
-  // Analytics -> Reports (Analytics merged into Reports)
-  if (page === 'analytics') {
-    console.log('[Nav] Analytics merged into Reports, redirecting...');
-    page = 'reports';
-  }
-  // Performance -> Reports (Performance merged into Reports)
-  if (page === 'performance') {
-    console.log('[Nav] Performance merged into Reports, redirecting...');
-    page = 'reports';
-  }
-  // Revenue -> Billing (Revenue merged into Billing)
-  if (page === 'revenue') {
-    console.log('[Nav] Revenue merged into Billing, redirecting...');
-    page = 'billing';
-  }
-  // Tax -> Billing (Tax merged into Billing)
-  if (page === 'tax') {
-    console.log('[Nav] Tax merged into Billing, redirecting...');
-    page = 'billing';
-  }
   // Customer Portal -> show as overlay (not a nav page)
   if (page === 'customer-portal') {
     console.log('[Nav] Customer Portal is overlay-only');
