@@ -5,10 +5,10 @@
 // ===========================================================
 
 const VERSION_CONFIG = {
-  version: 'v5.18.4-review',
+  version: 'v5.18.7-authguard',
   buildDate: '2026-05-06',
-  buildTimestamp: '20260506_1615',
-  cacheVersion: 'comphone-v5.18.4-review-20260506_1615',
+  buildTimestamp: '20260506_1725',
+  cacheVersion: 'comphone-v5.18.7-authguard-20260506_1725',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -26,9 +26,9 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 
 // Backward-compatible exports for legacy modules and guards
-const APP_VERSION = 'v5.18.4-review';
-const BUILD_TIMESTAMP = '20260506_1615';
-const CACHE_VERSION = 'comphone-v5.18.4-review-20260506_1615';
+const APP_VERSION = 'v5.18.7-authguard';
+const BUILD_TIMESTAMP = '20260506_1725';
+const CACHE_VERSION = 'comphone-v5.18.7-authguard-20260506_1725';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;

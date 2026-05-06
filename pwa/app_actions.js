@@ -265,6 +265,34 @@ function openNewJob_delayed() { const fn = setInterval(() => { if(typeof openNew
 function addCustomer() {
   if (typeof openAddCustomerModal === 'function') { openAddCustomerModal(); return; }
   const modal = document.getElementById('modal-add-customer') || ensureActionModal('modal-add-customer', 'เพิ่มลูกค้าใหม่');
+  const content = document.getElementById('modal-add-customer-content');
+  if (content && !document.getElementById('new-cust-name')) {
+    content.innerHTML = `
+      <div class="form-group-custom">
+        <label>ชื่อลูกค้า <span style="color:#ef4444">*</span></label>
+        <div class="input-wrap"><i class="bi bi-person-fill"></i><input id="new-cust-name" type="text" placeholder="ชื่อลูกค้า"></div>
+      </div>
+      <div class="form-group-custom">
+        <label>เบอร์โทร <span style="color:#ef4444">*</span></label>
+        <div class="input-wrap"><i class="bi bi-telephone-fill"></i><input id="new-cust-phone" type="tel" placeholder="0812345678"></div>
+      </div>
+      <div class="form-group-custom">
+        <label>ประเภทลูกค้า</label>
+        <div class="input-wrap"><i class="bi bi-tags-fill"></i><select id="new-cust-type" style="flex:1;border:none;background:transparent;outline:none;color:var(--text-primary,#111827)"><option value="regular">ทั่วไป</option><option value="vip">VIP</option><option value="government">ราชการ</option><option value="business">ธุรกิจ</option></select></div>
+      </div>
+      <div class="form-group-custom">
+        <label>ที่อยู่</label>
+        <div class="input-wrap"><i class="bi bi-geo-alt-fill"></i><input id="new-cust-address" type="text" placeholder="ที่อยู่ / หน่วยงาน"></div>
+      </div>
+      <div class="form-group-custom">
+        <label>หมายเหตุ</label>
+        <div class="input-wrap"><i class="bi bi-chat-left-text"></i><input id="new-cust-notes" type="text" placeholder="รายละเอียดเพิ่มเติม"></div>
+      </div>
+      <div class="form-button-group">
+        <button class="btn-cancel" onclick="closeModal('modal-add-customer')"><i class="bi bi-x-circle"></i> ยกเลิก</button>
+        <button class="btn-setup" onclick="saveNewCustomer()" style="flex:1"><i class="bi bi-person-plus-fill"></i> บันทึกลูกค้า</button>
+      </div>`;
+  }
   modal.classList.remove('hidden');
   setTimeout(() => document.getElementById('new-cust-name')?.focus(), 150);
 }

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>COMPHONE Dashboard — PC</title>
-<script src="version_config.js?v=5.18.4-review&t=20260506_1615"></script>
+<script src="version_config.js?v=5.18.7-authguard&t=20260506_1725"></script>
 <script>
 // Session contract: accept success/valid and handle offline
 if (typeof window.comphone_auth_session !== 'undefined') {
@@ -25,19 +25,19 @@ if (typeof window.comphone_auth_session !== 'undefined') {
   }
 }
 </script>
-<script src="gas_config.js?v=5.18.4-review&t=20260506_1615"></script>
-<script src="api_contract.js?v=5.18.4-review&t=20260506_1615"></script>
-<script src="api_client.js?v=5.18.4-review&t=20260506_1615"></script>
-<script src="dashboard.js?v=5.18.4-review&t=20260506_1615"></script>
-<script src="section_jobs.js?v=5.18.4-review&t=20260506_1615"></script>
-<script src="section_po.js?v=5.18.4-review&t=20260506_1615"></script>
-<script src="section_inventory.js?v=5.18.4-review&t=20260506_1615"></script>
-<script src="section_revenue.js?v=5.18.4-review&t=20260506_1615"></script>
-<script src="section_tax.js?v=5.18.4-review&t=20260506_1615"></script>
-<script src="section_crm.js?v=5.18.4-review&t=20260506_1615"></script>
-<script src="section_backup.js?v=5.18.4-review&t=20260506_1615"></script>
-<script src="section_performance.js?v=5.18.4-review&t=20260506_1615"></script>
-<script src="section_settings.js?v=5.18.4-review&t=20260506_1615"></script>
+<script src="gas_config.js?v=5.18.7-authguard&t=20260506_1725"></script>
+<script src="api_contract.js?v=5.18.7-authguard&t=20260506_1725"></script>
+<script src="api_client.js?v=5.18.7-authguard&t=20260506_1725"></script>
+<script src="dashboard.js?v=5.18.7-authguard&t=20260506_1725"></script>
+<script src="section_jobs.js?v=5.18.7-authguard&t=20260506_1725"></script>
+<script src="section_po.js?v=5.18.7-authguard&t=20260506_1725"></script>
+<script src="section_inventory.js?v=5.18.7-authguard&t=20260506_1725"></script>
+<script src="section_revenue.js?v=5.18.7-authguard&t=20260506_1725"></script>
+<script src="section_tax.js?v=5.18.7-authguard&t=20260506_1725"></script>
+<script src="section_crm.js?v=5.18.7-authguard&t=20260506_1725"></script>
+<script src="section_backup.js?v=5.18.7-authguard&t=20260506_1725"></script>
+<script src="section_performance.js?v=5.18.7-authguard&t=20260506_1725"></script>
+<script src="section_settings.js?v=5.18.7-authguard&t=20260506_1725"></script>
 <script>
 // ── XSS Sanitizer (PHMP v1 — 2026-04-24) ──
 // Lightweight HTML sanitizer for API data rendered via innerHTML.
@@ -66,7 +66,7 @@ window.APP = window.APP || { currentPage: 'dashboard_pc', user: null };
 </script>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-<link rel="stylesheet" href="dashboard_shared.css?v=5.18.4-review&t=20260506_1615">
+<link rel="stylesheet" href="dashboard_shared.css?v=5.18.7-authguard&t=20260506_1725">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <style>
 :root {
@@ -750,187 +750,12 @@ color: #fecaca; font-size: 13px; margin-top: 10px; min-height: 20px;
 
 </div>
 </div>
-<script src="section_billing.js?v=5.18.4-review&t=20260506_1615"></script>
-<script src="section_warranty.js?v=5.18.4-review&t=20260506_1615"></script>
-<script src="section_reports.js?v=5.18.4-review&t=20260506_1615"></script>
-<script src="section_analytics.js?v=5.18.4-review&t=20260506_1615"></script>
-<script src="section_attendance.js?v=5.18.4-review&t=20260506_1615"></script>
-<script src="dashboard_helpers.js?v=5.18.4-review&t=20260506_1615"></script>
-<script src="dashboard_pc_core.js?v=5.18.4-review&t=20260506_1615"></script>
-<script src="search.js?v=5.18.4-review&t=20260506_1615"></script>
-<!-- Core functions moved to dashboard_pc_core.js -->
-<script>
-// FORCE DEFINE: Core functions (ignore external script status)
-console.log('[Dashboard] Defining core functions inline (force)...');
-
-// Global state
-window.DASHBOARD_DATA = window.DASHBOARD_DATA || null;
-window.CHARTS = window.CHARTS || {};
-
-// Read-only dashboard fallback for render errors; never use it as an auth session.
-const FALLBACK_DASHBOARD = {
-  jobs: { total: 15, pending: 3, inProgress: 5, done: 7 },
-  revenue: { today: 45000, week: 280000, month: 1200000 },
-  tax: { vat: 31500, wht: 12000 },
-  performance: { avgTime: '2.5h', satisfaction: 4.8 }
-};
-
-// Login is handled by the real GAS-backed _doLogin(event) below.
-// Keep the inline section render fallback, but never create a mock auth session.
-
-function loadSection(sectionName) {
-  console.log('[Dashboard] Loading section:', sectionName);
-  const sections = document.querySelectorAll('.dashboard-section, .section-content');
-  sections.forEach(sec => sec.style.display = 'none');
-  const target = document.getElementById('section-' + sectionName) || document.getElementById(sectionName + '-section');
-  if (target) { target.style.display = 'block'; }
-  else { console.warn('[Dashboard] Section not found:', sectionName); }
-
-  const navItems = document.querySelectorAll('.nav-item');
-  navItems.forEach(item => {
-    item.classList.remove('active');
-    if (item.getAttribute('onclick') && item.getAttribute('onclick').includes(sectionName)) item.classList.add('active');
-  });
-
-  const data = window.DASHBOARD_DATA || FALLBACK_DASHBOARD;
-  const main = document.getElementById('main-content');
-  if (!main) return;
-
-  const renderers = {
-    'dashboard':  () => {
-      if (typeof loadDashboardPage === 'function') loadDashboardPage();
-      else main.innerHTML = '<h2>Dashboard</h2><p>Welcome! (loadDashboardPage not found)</p>';
-    },
-    'jobs':       () => { if (typeof renderJobsSection === 'function') { const c = document.getElementById('jobs-content'); if (c) c.innerHTML = renderJobsSection(data); } else main.innerHTML = '<h3>Jobs</h3><p>Coming soon...</p>'; },
-    'po':         () => { if (typeof renderPOSection === 'function') renderPOSection(data); else main.innerHTML = '<h3>PO</h3><p>Coming soon...</p>'; },
-    'inventory':  () => { if (typeof renderInventorySection === 'function') renderInventorySection(data); else main.innerHTML = '<h3>Inventory</h3><p>Coming soon...</p>'; },
-    'billing':    () => { if (typeof renderBillingSection === 'function') { const c = document.getElementById('billing-content') || document.getElementById('section-billing'); if (c) c.innerHTML = renderBillingSection(data); } else main.innerHTML = '<h3>ใบเสร็จ/วางบิล</h3><p>Coming soon...</p>'; },
-    'warranty':   () => { if (typeof renderWarrantySection === 'function') { const c = document.getElementById('warranty-content') || document.getElementById('section-warranty'); if (c) c.innerHTML = renderWarrantySection(data); } else main.innerHTML = '<h3>รับประกัน</h3><p>Coming soon...</p>'; },
-    'revenue':    () => { if (typeof renderRevenueSection === 'function') renderRevenueSection(data); else main.innerHTML = '<h3>Revenue</h3><p>Coming soon...</p>'; },
-    'tax':        () => { main.innerHTML = '<div class="card-box"><h3><i class="bi bi-calculator"></i> ภาษี</h3><button onclick="_showTaxCalculator()" style="background:#059669;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer">เปิดเครื่องคิดเลขภาษี</button></div>' },
-    'reports':    () => { if (typeof renderReportsSection === 'function') { const c = document.getElementById('reports-content') || document.getElementById('section-reports'); if (c) c.innerHTML = renderReportsSection(data); } else main.innerHTML = '<h3>รายงาน</h3><p>Coming soon...</p>' },
-    'analytics':  () => { if (typeof renderAnalyticsSection === 'function') { const c = document.getElementById('analytics-content') || document.getElementById('section-analytics'); if (c) c.innerHTML = renderAnalyticsSection(data); } else main.innerHTML = '<h3>Analytics</h3><p>Coming soon...</p>' },
-    'performance':() => { if (typeof renderPerformanceSection === 'function') renderPerformanceSection(data); else main.innerHTML = '<h3>Performance</h3><p>Coming soon...</p>' },
-    'backup':     () => { if (typeof renderBackupSection === 'function') renderBackupSection(); else main.innerHTML = '<h3>Backup</h3><p>Coming soon...</p>' },
-    'crm':        () => { if (typeof renderCRMSection === 'function') renderCRMSection(data); else main.innerHTML = '<h3>CRM</h3><p>Coming soon...</p>' },
-    'attendance': () => { if (typeof renderAttendanceSection === 'function') { const c = document.getElementById('attendance-content') || document.getElementById('section-attendance'); if (c) c.innerHTML = renderAttendanceSection(data); } else main.innerHTML = '<h3>ลงเวลาทำงาน</h3><p>Coming soon...</p>' },
-    'settings':   () => { if (typeof renderSettingsSection === 'function') { main.innerHTML = renderSettingsSection(); } else main.innerHTML = '<h3>Settings</h3><p>Coming soon...</p>'; },
-  };
-  const renderer = renderers[sectionName];
-  if (renderer) {
-    try { renderer(); } catch(e) { console.error('[Dashboard] Render error:', sectionName, e); main.innerHTML = '<p>Error loading section.</p>'; }
-  }
-}
-
-function loadDashboard() {
-  console.log('[Dashboard] Loading main dashboard...');
-  loadSection('dashboard');
-  
-  // Load dashboard data if available
-  if (typeof window.callApi === 'function') {
-    window.callApi({ action: 'getDashboardBundle' })
-      .then(data => {
-        console.log('[Dashboard] Data loaded:', data);
-        if (typeof renderDashboard === 'function') {
-          renderDashboard(data);
-        }
-      })
-      .catch(err => console.error('[Dashboard] Error:', err));
-  }
-}
-
-function _doLogin(event) {
-  if (event && event.preventDefault) event.preventDefault();
-  console.log('[Dashboard] Attempting login...');
-  
-  const username = document.getElementById('login-user')?.value;
-  const password = document.getElementById('login-pass')?.value;
-  
-  if (!username || !password) {
-    alert('กรุณากรอก username และ password');
-    return;
-  }
-  
-  // Use getGasUrl() dynamically to avoid cached const URL
-  const gasUrl = typeof getGasUrl === 'function' ? getGasUrl() : (window.GAS_CONFIG && window.GAS_CONFIG.url) || '';
-  if (!gasUrl) {
-    alert('GAS URL ไม่ได้ตั้งค่า');
-    return;
-  }
-  
-  const qs = new URLSearchParams({ action: 'loginUser', username: username, password: password, _t: Date.now() }).toString();
-  const btn = document.querySelector('.login-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ...'; }
-  
-  fetch(gasUrl + '?' + qs, { redirect: 'follow' })
-    .then(res => res.json())
-    .then(res => {
-      if (btn) { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
-      if (res.success || res.valid) {
-        // Add loginAt timestamp for session expiry check
-        res.loginAt = Date.now();
-        localStorage.setItem('comphone_auth_session', JSON.stringify(res));
-        const loginOverlay = document.getElementById('login-overlay');
-        if (loginOverlay) loginOverlay.style.display = 'none';
-        loadDashboard();
-      } else {
-        alert('เข้าสู่ระบบไม่สำเร็จ: ' + (res.error || res.message || 'Unknown error'));
-      }
-    })
-    .catch(err => {
-      if (btn) { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
-      console.error('[Login] Error:', err);
-      alert('เกิดข้อผิดพลาดในการเข้าสู่ระบบ: ' + err.message);
-    });
-}
-
-// ============================================================
-// Session Check on Page Load — fix K-004
-// ============================================================
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('[Dashboard] Checking saved session...');
-  try {
-    const sessionStr = localStorage.getItem('comphone_auth_session');
-    if (sessionStr) {
-      const session = JSON.parse(sessionStr);
-      const loginTime = session.loginAt || session.login_at || 0;
-      const loginAge = Date.now() - loginTime;
-      const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-      
-      if (loginAge < maxAge && session.token) {
-        // Session still valid — verify with server
-        const gasUrl = typeof getGasUrl === 'function' ? getGasUrl() : (window.GAS_CONFIG && window.GAS_CONFIG.url) || '';
-        if (gasUrl) {
-          const qs = new URLSearchParams({ action: 'verifySession', token: session.token, _t: Date.now() }).toString();
-          fetch(gasUrl + '?' + qs, { redirect: 'follow' })
-            .then(r => r.json())
-            .then(r => {
-              if (r.success || r.valid) {
-                console.log('[Dashboard] Session verified — skip login');
-                const loginOverlay = document.getElementById('login-overlay');
-                if (loginOverlay) loginOverlay.style.display = 'none';
-                loadDashboard();
-              } else {
-                console.warn('[Dashboard] Session invalid — show login');
-                localStorage.removeItem('comphone_auth_session');
-              }
-            })
-            .catch(err => {
-              // Server unreachable — use local session (offline mode)
-              console.warn('[Dashboard] Server unreachable — using local session:', err.message);
-              const loginOverlay = document.getElementById('login-overlay');
-              if (loginOverlay) loginOverlay.style.display = 'none';
-              loadDashboard();
-            });
-        }
-      } else {
-        // Session expired
-        console.log('[Dashboard] Session expired — show login');
-        localStorage.removeItem('comphone_auth_session');
-      }
-    }
-  } catch(e) {
-    console.error('[Dashboard] Session check error:', e);
-  }
-});
-</script>
+<script src="section_billing.js?v=5.18.7-authguard&t=20260506_1725"></script>
+<script src="section_warranty.js?v=5.18.7-authguard&t=20260506_1725"></script>
+<script src="section_reports.js?v=5.18.7-authguard&t=20260506_1725"></script>
+<script src="section_analytics.js?v=5.18.7-authguard&t=20260506_1725"></script>
+<script src="section_attendance.js?v=5.18.7-authguard&t=20260506_1725"></script>
+<script src="dashboard_helpers.js?v=5.18.7-authguard&t=20260506_1725"></script>
+<script src="dashboard_pc_core.js?v=5.18.7-authguard&t=20260506_1725"></script>
+<script src="search.js?v=5.18.7-authguard&t=20260506_1725"></script>
+<!-- PC dashboard runtime lives in dashboard_pc_core.js. -->

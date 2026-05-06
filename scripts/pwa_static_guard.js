@@ -44,10 +44,12 @@ const swJs = readUtf8(SW);
 const assetManifestJs = readUtf8(ASSET_MANIFEST);
 
 const buildMatch = versionJs.match(/BUILD_TIMESTAMP\s*=\s*'([^']+)'/);
+const appVersionMatch = versionJs.match(/APP_VERSION\s*=\s*'([^']+)'/);
 const cacheMatch = versionJs.match(/CACHE_VERSION\s*=\s*'([^']+)'/);
 const swCacheMatch = swJs.match(/CACHE_V\s*=\s*'([^']+)'/);
 
 if (!buildMatch) fail('version_config.js is missing BUILD_TIMESTAMP.');
+if (!appVersionMatch) fail('version_config.js is missing APP_VERSION.');
 if (!cacheMatch) fail('version_config.js is missing CACHE_VERSION.');
 if (!swCacheMatch) fail('sw.js is missing CACHE_V.');
 if (cacheMatch && swCacheMatch && cacheMatch[1] !== swCacheMatch[1]) {
@@ -56,6 +58,7 @@ if (cacheMatch && swCacheMatch && cacheMatch[1] !== swCacheMatch[1]) {
 
 if (buildMatch) {
   const expectedToken = `t=${buildMatch[1]}`;
+  const expectedVersionToken = appVersionMatch ? `v=${appVersionMatch[1].replace(/^v/, '')}` : '';
 
   function checkCacheBustTokens(html, pageName) {
     const localRefs = [...html.matchAll(/<(?:script|link)\b[^>]+(?:src|href)="([^"]+)"/g)]
@@ -65,6 +68,9 @@ if (buildMatch) {
     for (const src of localRefs) {
       if (src.includes('?') && !src.includes(expectedToken)) {
         fail(`Cache bust token mismatch in ${pageName}: ${src}`);
+      }
+      if (expectedVersionToken && src.includes('?') && !src.includes(expectedVersionToken)) {
+        fail(`Cache bust version mismatch in ${pageName}: ${src}`);
       }
     }
   }
@@ -150,8 +156,9 @@ for (const fn of ['openNewJob', 'submitNewJob', 'addCustomer', 'saveNewCustomer'
     fail(`app_actions.js must provide mobile quick action function: ${fn}().`);
   }
 }
-if (!appActionsJs.includes("callAPI('openJob'") || !appActionsJs.includes("callAPI('createCustomer'")) {
-  fail('app_actions.js mobile quick actions must create jobs and customers through the unified callAPI path.');
+if (!appActionsJs.includes("callAPI('openJob'") || !appActionsJs.includes("callAPI('createCustomer'") ||
+    !appActionsJs.includes('modal-add-customer-content') || !appActionsJs.includes('new-cust-name')) {
+  fail('app_actions.js mobile quick actions must create jobs/customers through unified callAPI and include a local add-customer fallback form.');
 }
 if (appActionsJs.includes("showToast('กำลังเปิดฟอร์มงานใหม่") || appActionsJs.includes("showToast('กำลังเปิดฟอร์มลูกค้าใหม่")) {
   fail('app_actions.js must not leave openNewJob/addCustomer as toast-only stubs.');
@@ -198,6 +205,10 @@ if (!authJs.includes('session.loginAt || session.login_at') || !authJs.includes(
 if (authJs.includes('const AUTH=***') || authJs.includes("AUTH_USER_KEY='***'") || authJs.includes('v5.5')) {
   fail('auth.js contains corrupted/redacted auth constants or stale login version text.');
 }
+const authGuardJs = readUtf8(path.join(PWA, 'auth_guard.js'));
+if (authGuardJs.includes('***') || !authGuardJs.includes('const AUTH_ROLE_ALIASES = {')) {
+  fail('auth_guard.js must not contain redacted role aliases.');
+}
 const adminPanelJs = readUtf8(path.join(PWA, 'admin_panel.js'));
 if (!adminPanelJs.includes("data-tab=\"health\"") || !adminPanelJs.includes('renderMenuHealthPanel')) {
   fail('admin_panel.js must expose the Menu Health tab.');
@@ -223,22 +234,27 @@ if (dashboardPcHtml.includes('20260428_1130') || dashboardPcHtml.includes('v=282
 if (dashboardPcHtml.includes('localStorage.clear()')) {
   fail('dashboard_pc.html must not clear all localStorage during version changes.');
 }
-if (!dashboardPcHtml.includes("res._errorKind === 'offline'") || !dashboardPcHtml.includes('res.valid || res.success')) {
-  fail('dashboard_pc.html must accept success/valid session contracts and preserve local sessions on temporary offline/timeout checks.');
+const dashboardPcCoreJs = fs.existsSync(path.join(PWA, 'dashboard_pc_core.js'))
+  ? readUtf8(path.join(PWA, 'dashboard_pc_core.js'))
+  : '';
+const pcRuntimeSource = dashboardPcHtml + '\n' + dashboardPcCoreJs;
+if (!pcRuntimeSource.includes("res._errorKind === 'offline'") ||
+    (!pcRuntimeSource.includes('res.valid || res.success') && !pcRuntimeSource.includes('res.success || res.valid'))) {
+  fail('PC dashboard runtime must accept success/valid session contracts and preserve local sessions on temporary offline/timeout checks.');
 }
-if (dashboardPcHtml.includes('MOCK LOGIN ONLY') || dashboardPcHtml.includes('Attempting login (MOCK MODE)')) {
-  fail('dashboard_pc.html must not create mock login sessions in production.');
+if (pcRuntimeSource.includes('MOCK LOGIN ONLY') || pcRuntimeSource.includes('Attempting login (MOCK MODE)') || pcRuntimeSource.includes('mock-token')) {
+  fail('PC dashboard runtime must not create mock login sessions in production.');
 }
-const pcLoginFunctions = dashboardPcHtml.match(/function _doLogin\b/g) || [];
+const pcLoginFunctions = pcRuntimeSource.match(/function _doLogin\b/g) || [];
 if (pcLoginFunctions.length !== 1) {
-  fail('dashboard_pc.html must have exactly one real _doLogin function.');
+  fail('PC dashboard runtime must have exactly one real _doLogin function.');
+}
+if (!dashboardPcHtml.includes('dashboard_pc_core.js?') || dashboardPcHtml.includes('function _doLogin(') || dashboardPcHtml.includes('function loadSection(')) {
+  fail('dashboard_pc.html must load dashboard_pc_core.js and must not duplicate core runtime functions inline.');
 }
 if (dashboardPcHtml.includes('serviceWorker.getRegistrations()') || dashboardPcHtml.includes('location.reload(true)')) {
   fail('dashboard_pc.html must not unregister service workers or force reload during boot.');
 }
-const dashboardPcCoreJs = fs.existsSync(path.join(PWA, 'dashboard_pc_core.js'))
-  ? readUtf8(path.join(PWA, 'dashboard_pc_core.js'))
-  : '';
 if ((!dashboardPcHtml.includes('updatePcVersionBadge') && !dashboardPcCoreJs.includes('updatePcVersionBadge')) ||
     !dashboardPcHtml.includes('id="version_badge"') ||
     dashboardPcHtml.includes('<div id="version_badge">v5.9.0-phase2d')) {

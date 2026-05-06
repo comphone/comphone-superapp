@@ -1,9 +1,9 @@
 // ===========================================================
-// COMPHONE SUPER APP v5.18.4-review - Service Worker
+// COMPHONE SUPER APP v5.18.7-authguard - Service Worker
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ===========================================================
-const CACHE_V = 'comphone-v5.18.4-review-20260506_1615';
+const CACHE_V = 'comphone-v5.18.7-authguard-20260506_1725';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
 
