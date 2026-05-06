@@ -60,27 +60,19 @@ html, body {
   --cp-border: var(--border);
   --cp-primary: var(--primary);
 
-  /* ═══ HYPER-GLASSMORPHISM 2.0 — Enhanced Glass Variables ═══ */
-  --glass-bg: rgba(255, 255, 255, 0.55);
-  --glass-bg-strong: rgba(255, 255, 255, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.4);
-  --glass-border-glow: rgba(0, 212, 255, 0.6);
+  /* ═══ HYPER-GLASSMORPHISM — Deep Glass CSS Variables ═══ */
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.3);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  --glass-blur: blur(20px);
-  --glass-blur-strong: blur(24px);
+  --glass-blur: blur(16px);
   --gradient-cyan: linear-gradient(135deg, #00d4ff, #0099cc);
   --gradient-purple: linear-gradient(135deg, #a855f7, #7c3aed);
   --gradient-border: linear-gradient(135deg, #00d4ff, #a855f7);
-  --gradient-glow: linear-gradient(135deg, rgba(0,212,255,0.3), rgba(168,85,247,0.3));
   --spatial-depth-1: 0 2px 8px rgba(0, 0, 0, 0.04);
   --spatial-depth-2: 0 4px 16px rgba(0, 0, 0, 0.08);
   --spatial-depth-3: 0 8px 32px rgba(0, 0, 0, 0.12);
   --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  /* Glassmorphism 2.0 Enhancements */
-  --glass-reflex: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%);
-  --glass-glow-cyan: 0 0 20px rgba(0, 212, 255, 0.4);
-  --glass-glow-purple: 0 0 20px rgba(168, 85, 247, 0.4);
 
   /* Shadows */
   --shadow-sm:  0 1px 2px rgba(15, 23, 42, 0.05);
@@ -167,43 +159,9 @@ html, body {
 }
 .setup-bg { min-height: 100%; padding: 60px 20px 40px; }
 .setup-card {
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
-  border-radius: 24px;
+  background: white; border-radius: 24px;
   padding: 28px 22px; max-width: 480px; margin: 0 auto;
-  box-shadow: var(--glass-shadow), var(--glass-glow-cyan);
-  position: relative;
-  overflow: hidden;
-}
-.setup-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--glass-reflex);
-  pointer-events: none;
-  border-radius: inherit;
-}
-/* Login card (if separate) */
-.login-card {
-  background: var(--glass-bg-strong);
-  backdrop-filter: var(--glass-blur-strong);
-  -webkit-backdrop-filter: var(--glass-blur-strong);
-  border: 1px solid var(--glass-border-glow);
-  border-radius: 24px;
-  padding: 32px 24px; max-width: 500px; margin: 0 auto;
-  box-shadow: var(--glass-shadow), var(--glass-glow-purple);
-  position: relative;
-  overflow: hidden;
-}
-.login-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--glass-reflex);
-  pointer-events: none;
-  border-radius: inherit;
+  box-shadow: var(--shadow-lg);
 }
 .setup-logo {
   width: 64px; height: 64px; border-radius: 18px;
@@ -1597,82 +1555,6 @@ html, body {
   transition: background 0.2s ease;
 }
 
-@media (min-width: 1024px) {
-  /* PC Layout Adjustments */
-  #main-app {
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-  
-  /* Stats Row - 4 columns on PC */
-  .stats-row {
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: 16px;
-    padding: 8px 24px 12px;
-  }
-  
-  /* Quick Actions - larger buttons */
-  .qa-grid-4 {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    margin: 0 24px 24px;
-  }
-  
-  .qa-btn-item {
-    min-height: 110px;
-    padding: 16px 12px;
-    font-size: 14px;
-  }
-  
-  /* Setup Card - wider on PC */
-  .setup-card, .login-card {
-    max-width: 600px !important;
-    padding: 40px 36px !important;
-  }
-  
-  .setup-bg {
-    padding: 80px 40px 60px !important;
-  }
-  
-  /* Section Cards - more spacing */
-  .section-card {
-    margin: 18px 24px 12px !important;
-    padding: 20px !important;
-  }
-  
-  /* Job Cards - two columns maybe? */
-  #jobs-list {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    padding: 0 24px;
-  }
-  
-  /* Top Bar - more padding */
-  .top-bar {
-    padding: 16px 24px !important;
-  }
-  
-  /* Bottom Nav - horizontal layout */
-  .bottom-nav {
-    padding: 12px 24px !important;
-  }
-  
-  /* Page content max-width */
-  .page {
-    max-width: 1200px;
-    margin: 0 auto;
-  }
+#offline-bar button:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
-
-@media (min-width: 1440px) {
-  /* Large Desktop */
-  #main-app {
-    max-width: 1400px;
-  }
-  
-  .stats-row {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-

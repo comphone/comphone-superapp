@@ -49,7 +49,7 @@ const PERMISSION_MAP = {
 };
 
 // Role aliases (GAS role → PWA role key)
-const AUTH_ROLE_ALIASES = {
+const AUTH_ROLE_ALIASES=***
   'owner':      'owner',
   'admin':      'owner',      // admin = owner
   'accountant': 'accountant',

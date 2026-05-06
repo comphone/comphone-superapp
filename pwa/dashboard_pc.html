@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="th" class="cp-dark">
+<html lang="th" class="cp-light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -25,19 +25,19 @@ if (typeof window.comphone_auth_session !== 'undefined') {
   }
 }
 </script>
-<script src="gas_config.js?v=5.18.0-phase43&t=20260505_1800"></script>
-<script src="api_contract.js?v=5.18.0-phase43&t=20260505_1800"></script>
-<script src="api_client.js?v=5.18.0-phase43&t=20260505_1800"></script>
-<script src="dashboard.js?v=5.18.0-phase43&t=20260505_1800"></script>
-<script src="section_jobs.js?v=5.18.0-phase43&t=20260505_1800"></script>
-<script src="section_po.js?v=5.18.0-phase43&t=20260505_1800"></script>
-<script src="section_inventory.js?v=5.18.0-phase43&t=20260505_1800"></script>
-<script src="section_revenue.js?v=5.18.0-phase43&t=20260505_1800"></script>
-<script src="section_tax.js?v=5.18.0-phase43&t=20260505_1800"></script>
-<script src="section_crm.js?v=5.18.0-phase43&t=20260505_1800"></script>
-<script src="section_backup.js?v=5.18.0-phase43&t=20260505_1800"></script>
-<script src="section_performance.js?v=5.18.0-phase43&t=20260505_1800"></script>
-<script src="section_settings.js?v=5.18.0-phase43&t=20260505_1800"></script>
+<script src="gas_config.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="api_contract.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="api_client.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="dashboard.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="section_jobs.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="section_po.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="section_inventory.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="section_revenue.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="section_tax.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="section_crm.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="section_backup.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="section_performance.js?v=5.13.0-phase36&t=20260504_1111"></script>
+<script src="section_settings.js?v=5.14.4&t=20260504_1600"></script>
 <script>
 // ── XSS Sanitizer (PHMP v1 — 2026-04-24) ──
 // Lightweight HTML sanitizer for API data rendered via innerHTML.
@@ -52,7 +52,7 @@ return str
 .replace(/data\s*:\s*text\/html/gi, '');
 };
 // PHASE 25.3 — GLOBAL VERSION LOCK
-window.__APP_VERSION = window.__APP_VERSION || ('v' + (window.COMPHONE_VERSION || '5.18.0-phase43'));
+window.__APP_VERSION = window.__APP_VERSION || ('v' + (window.COMPHONE_VERSION || '5.13.0-phase36'));
 // Cache invalidation on version mismatch
 if (localStorage.__APP_VERSION !== window.__APP_VERSION) {
 console.warn('[VERSION] Dashboard version mismatch - clearing runtime caches only...');
@@ -69,146 +69,23 @@ window.APP = window.APP || { currentPage: 'dashboard_pc', user: null };
 <link rel="stylesheet" href="dashboard_shared.css?v=5.13.0-phase36&t=20260504_1111">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <style>
-/* Hide elements with .hidden class */
-.hidden {
-  display: none !important;
-}
-
 :root {
-  --sidebar-w: 240px;
-  --header-h: 60px;
-  /* Deep Black Ultra Theme (2026-05-05) */
-  --bg: #000000;
-  --card: #0a0a0a;
-  --border: rgba(255, 255, 255, 0.08);
-  --text: #ffffff;
-  --text-secondary: #a0a0a0;
-  --neon-cyan: #00ffff;
-  --neon-purple: #bf00ff;
-  --accent-gradient: linear-gradient(135deg, #00ffff 0%, #bf00ff 100%);
-  /* Functional colors */
-  --blue: #00ffff;
-  --green: #00ff88;
-  --amber: #ffaa00;
-  --red: #ff3366;
-  --gray: #a0a0a0;
+--sidebar-w: 240px;
+--header-h: 60px;
+/* Local tokens bridged to shared design system (dashboard_shared.css) */
+--blue: var(--cp-blue);
+--green: var(--cp-green);
+--amber: var(--cp-orange);
+--red: var(--cp-red);
+--gray: var(--cp-text2);
+--bg: var(--cp-bg);
+--card: var(--cp-card-bg);
+--border: var(--cp-border);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { 
-  font-family: 'Segoe UI','Sarabun',sans-serif; 
-  background: var(--bg); 
-  color: var(--text);
-  transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* ===== LOGIN OVERLAY — FULL SCREEN ===== */
-#login-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: #000000;
-  background-image: 
-    radial-gradient(circle at 20% 30%, rgba(0, 255, 255, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 80% 70%, rgba(191, 0, 255, 0.08) 0%, transparent 50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  min-height: 100dvh;
-  animation: fadeIn 0.4s ease-out;
-}
-
-#login-overlay .login-card {
-  background: rgba(10, 10, 10, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 255, 255, 0.2);
-  border-radius: 24px;
-  padding: 48px 40px;
-  width: 100%;
-  max-width: 420px;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.8),
-    0 0 60px rgba(0, 255, 255, 0.1),
-    inset 0 1px 0 rgba(0, 255, 255, 0.1);
-  animation: fadeInUp 0.4s ease-out;
-}
-
-#login-overlay .login-card h2 {
-  color: #ffffff;
-  font-size: 28px;
-  font-weight: 700;
-  margin-bottom: 8px;
-  background: linear-gradient(135deg, #00ffff 0%, #bf00ff 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-#login-overlay .login-card .form-label {
-  color: #a0a0a0;
-  font-size: 14px;
-  margin-bottom: 8px;
-}
-
-#login-overlay .login-card .form-control {
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(0, 255, 255, 0.2);
-  border-radius: 12px;
-  color: #ffffff;
-  padding: 12px 16px;
-  font-size: 15px;
-  transition: all 0.3s ease;
-}
-
-#login-overlay .login-card .form-control:focus {
-  background: rgba(0, 0, 0, 0.8);
-  border-color: #00ffff;
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
-  outline: none;
-}
-
-#login-overlay .login-card .btn-primary {
-  background: linear-gradient(135deg, #00ffff 0%, #bf00ff 100%);
-  border: none;
-  border-radius: 12px;
-  color: #000000;
-  font-weight: 700;
-  font-size: 16px;
-  padding: 14px;
-  width: 100%;
-  margin-top: 24px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-#login-overlay .login-card .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 255, 255, 0.4);
-}
-
-#login-overlay .login-card .btn-primary:active {
-  transform: translateY(0);
-}
-
-#login-overlay .login-card .alert {
-  background: rgba(255, 51, 102, 0.1);
-  border: 1px solid rgba(255, 51, 102, 0.3);
-  color: #ff3366;
-  border-radius: 12px;
-  padding: 12px 16px;
-  margin-top: 16px;
-  font-size: 14px;
-}
-
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
+body { font-family: 'Segoe UI','Sarabun',sans-serif; background: var(--bg); color: #111827; }
 /* PHASE 25.5 — VERSION BADGE */
+#version_badge {
 position: fixed;
 bottom: 12px;
 right: 12px;
@@ -226,175 +103,70 @@ border: 1px solid rgba(255,255,255,0.08);
 pointer-events: none;
 transition: opacity 0.3s;
 }
+#version_badge .ok { color: #34d399; }
+#version_badge .warn { color: #fbbf24; }
+#version_badge .err { color: #f87171; }
 /* ===== SIDEBAR ===== */
 .sidebar {
-  position: fixed; left: 0; top: 0; bottom: 0;
-  width: var(--sidebar-w);
-  background:
-    radial-gradient(circle at 30% 20%, rgba(0, 255, 255, 0.05) 0%, transparent 50%),
-    radial-gradient(circle at 70% 80%, rgba(191, 0, 255, 0.05) 0%, transparent 50%),
-    linear-gradient(180deg, #000000 0%, #0a0a0a 100%);
-  color: #ffffff; 
-  z-index: 100; 
-  display: flex; 
-  flex-direction: column;
-  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 
-    4px 0 24px rgba(0, 0, 0, 0.8),
-    inset -1px 0 0 rgba(255, 255, 255, 0.05);
-  border-right: 1px solid rgba(0, 255, 255, 0.1);
+position: fixed; left: 0; top: 0; bottom: 0;
+width: var(--sidebar-w);
+background:
+  radial-gradient(circle at 20% 10%, rgba(59, 130, 246, 0.18) 0%, transparent 50%),
+  linear-gradient(180deg, #0b1220 0%, #0f172a 100%);
+color: #fff; z-index: 100; display: flex; flex-direction: column;
+transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+box-shadow: 4px 0 24px rgba(15, 23, 42, 0.12);
+border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
-
 .sidebar-logo {
-  padding: 18px 20px 14px;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
-  display: flex; 
-  align-items: center; 
-  gap: 12px;
+padding: 18px 20px 14px;
+border-bottom: 1px solid rgba(255,255,255,0.08);
+display: flex; align-items: center; gap: 12px;
 }
-
 .sidebar-logo .logo-icon {
-  width: 40px; 
-  height: 40px; 
-  border-radius: 10px;
-  background: linear-gradient(135deg, #00ffff 0%, #bf00ff 100%);
-  display: flex; 
-  align-items: center; 
-  justify-content: center;
-  font-size: 20px; 
-  flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(0, 255, 255, 0.3);
+width: 40px; height: 40px; border-radius: 10px;
+background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+display: flex; align-items: center; justify-content: center;
+font-size: 20px; flex-shrink: 0;
 }
-
-.sidebar-logo .logo-text { 
-  font-size: 15px; 
-  font-weight: 800; 
-  line-height: 1.2; 
-  background: linear-gradient(135deg, #00ffff 0%, #bf00ff 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.sidebar-logo .logo-sub { 
-  font-size: 10px; 
-  opacity: 0.6; 
-  font-weight: 400; 
-  color: #a0a0a0;
-}
-
-.nav-section { 
-  padding: 12px 12px 4px; 
-  font-size: 10px; 
-  font-weight: 700; 
-  opacity: 0.5; 
-  text-transform: uppercase; 
-  letter-spacing: 1px; 
-  color: #a0a0a0;
-}
-
+.sidebar-logo .logo-text { font-size: 15px; font-weight: 800; line-height: 1.2; }
+.sidebar-logo .logo-sub { font-size: 10px; opacity: 0.5; font-weight: 400; }
+.nav-section { padding: 12px 12px 4px; font-size: 10px; font-weight: 700; opacity: 0.4; text-transform: uppercase; letter-spacing: 1px; }
 .nav-item {
-  display: flex; 
-  align-items: center; 
-  gap: 12px;
-  padding: 10px 16px; 
-  margin: 2px 8px; 
-  border-radius: 10px;
-  cursor: pointer; 
-  font-size: 14px; 
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.65);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  text-decoration: none;
-  position: relative;
+display: flex; align-items: center; gap: 12px;
+padding: 10px 16px; margin: 2px 8px; border-radius: 10px;
+cursor: pointer; font-size: 14px; font-weight: 500;
+color: rgba(255,255,255,0.65);
+transition: var(--cp-transition-smooth, all 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+text-decoration: none;
 }
-
 .nav-item:hover {
-  background: rgba(0, 255, 255, 0.08); 
-  color: #ffffff;
-  transform: translateX(4px);
+background: rgba(255,255,255,0.08); color: #fff;
+transform: translateX(2px);
 }
-
 .nav-item.active {
-  background: linear-gradient(135deg, rgba(0, 255, 255, 0.15) 0%, rgba(191, 0, 255, 0.15) 100%);
-  color: #00ffff; 
-  font-weight: 700;
-  box-shadow: 
-    0 4px 16px rgba(0, 255, 255, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(0, 255, 255, 0.2);
+background: linear-gradient(135deg, #2563eb, #0ea5e9);
+color: #fff; font-weight: 700;
+box-shadow: 0 10px 26px rgba(37, 99, 235, 0.28);
 }
-
-.nav-item.active::before {
-  content: '';
-  position: absolute;
-  left: -8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 4px;
-  height: 60%;
-  background: linear-gradient(180deg, #00ffff 0%, #bf00ff 100%);
-  border-radius: 0 4px 4px 0;
-}
-
-.nav-item i { 
-  font-size: 16px; 
-  width: 20px; 
-  text-align: center; 
-  flex-shrink: 0; 
-}
-
-.nav-badge { 
-  margin-left: auto; 
-  background: linear-gradient(135deg, #ff3366 0%, #ff0066 100%);
-  color: #ffffff; 
-  border-radius: 20px; 
-  padding: 1px 7px; 
-  font-size: 10px; 
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(255, 51, 102, 0.4);
-}
-
+.nav-item i { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+.nav-badge { margin-left: auto; background: #ef4444; color: #fff; border-radius: 20px; padding: 1px 7px; font-size: 10px; font-weight: 700; }
 .sidebar-footer {
-  margin-top: auto; 
-  padding: 16px;
-  border-top: 1px solid rgba(0, 255, 255, 0.1);
+margin-top: auto; padding: 16px;
+border-top: 1px solid rgba(255,255,255,0.08);
 }
-
 .user-chip {
-  display: flex; 
-  align-items: center; 
-  gap: 10px;
-  background: rgba(0, 255, 255, 0.05); 
-  border-radius: 10px; 
-  padding: 10px 12px;
-  border: 1px solid rgba(0, 255, 255, 0.1);
+display: flex; align-items: center; gap: 10px;
+background: rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 12px;
 }
-
 .user-avatar-sm {
-  width: 34px; 
-  height: 34px; 
-  border-radius: 50%;
-  background: linear-gradient(135deg, #00ffff 0%, #bf00ff 100%);
-  display: flex; 
-  align-items: center; 
-  justify-content: center;
-  font-weight: 800; 
-  font-size: 14px; 
-  color: #000000; 
-  flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(0, 255, 255, 0.3);
+width: 34px; height: 34px; border-radius: 50%;
+background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+display: flex; align-items: center; justify-content: center;
+font-weight: 800; font-size: 14px; color: #fff; flex-shrink: 0;
 }
-
-.user-name-sm { 
-  font-size: 13px; 
-  font-weight: 700; 
-  color: #ffffff; 
-}
-.user-role-sm { 
-  font-size: 10px; 
-  opacity: 0.6; 
-  color: #a0a0a0;
-}
+.user-name-sm { font-size: 13px; font-weight: 700; color: #fff; }
+.user-role-sm { font-size: 10px; opacity: 0.5; }
 /* ===== MAIN AREA ===== */
 .main-area {
 margin-left: var(--sidebar-w);
@@ -404,7 +176,7 @@ display: flex; flex-direction: column;
 /* ===== TOPBAR ===== */
 .topbar {
 height: var(--header-h);
-background: var(--cp-glass-bg, rgba(0, 0, 0, 0.9));
+background: var(--cp-glass-bg, rgba(255, 255, 255, 0.85));
 border-bottom: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
 display: flex; align-items: center; gap: 16px;
 padding: 0 24px; position: sticky; top: 0; z-index: 50;
@@ -412,10 +184,10 @@ backdrop-filter: var(--cp-glass-blur, blur(16px));
 -webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
 box-shadow: var(--cp-spatial-depth-1, 0 2px 8px rgba(0, 0, 0, 0.04));
 }
-.topbar-title { font-size: 18px; font-weight: 800; color: var(--text, #ffffff); flex: 1; }
+.topbar-title { font-size: 18px; font-weight: 800; color: #111827; flex: 1; }
 .topbar-date { font-size: 12px; color: var(--gray); }
 .btn-refresh {
-background: var(--card, #0a0a0a);
+background: var(--cp-glass-bg, rgba(255, 255, 255, 0.65));
 backdrop-filter: var(--cp-glass-blur, blur(16px));
 -webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
 border: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
@@ -425,7 +197,7 @@ transition: var(--cp-transition-smooth, all 0.3s cubic-bezier(0.4, 0, 0.2, 1));
 position: relative; overflow: hidden;
 }
 .btn-refresh:hover {
-background: rgba(0, 255, 255, 0.1);
+background: #e2e8f0;
 box-shadow: var(--cp-spatial-depth-2, 0 4px 16px rgba(0, 0, 0, 0.08));
 transform: translateY(-1px);
 }
@@ -448,7 +220,7 @@ filter: brightness(1.1);
 /* ===== KPI ROW ===== */
 .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
 .kpi-box {
-background: var(--card, #0a0a0a);
+background: var(--cp-glass-bg, rgba(255, 255, 255, 0.65));
 backdrop-filter: var(--cp-glass-blur, blur(16px));
 -webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
 border: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
@@ -483,7 +255,7 @@ font-size: 22px; flex-shrink: 0;
 .grid-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
 /* ===== CARD ===== */
 .card-box {
-background: var(--card, #0a0a0a);
+background: var(--cp-glass-bg, rgba(255, 255, 255, 0.65));
 backdrop-filter: var(--cp-glass-blur, blur(16px));
 -webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
 border: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
@@ -496,7 +268,7 @@ box-shadow: var(--cp-spatial-depth-3, 0 8px 32px rgba(0, 0, 0, 0.12));
 transform: translateY(-2px);
 }
 .card-title {
-font-size: 14px; font-weight: 800; color: var(--text, #ffffff);
+font-size: 14px; font-weight: 800; color: #111827;
 margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
 }
 .card-title .badge-count {
@@ -509,11 +281,11 @@ border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700;
 text-align: left; padding: 8px 12px;
 font-size: 11px; font-weight: 700; color: var(--gray);
 border-bottom: 2px solid var(--border);
-background: var(--card, #0a0a0a);
+background: #f8fafc;
 }
 .job-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .job-table tr:last-child td { border-bottom: none; }
-.job-table tr:hover td { background: rgba(0, 255, 255, 0.05); }
+.job-table tr:hover td { background: #f8fafc; }
 .job-table .job-id { font-weight: 700; color: var(--blue); font-size: 12px; }
 .job-table .customer { font-weight: 600; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .job-table .symptom { color: var(--gray); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
@@ -544,9 +316,9 @@ padding: 10px 0; border-bottom: 1px solid var(--border);
 /* ===== CHART ===== */
 .chart-wrap { position: relative; height: 220px; }
 /* ===== LOADING ===== */
-.loading-state { text-align: center; padding: 60px 20px; color: var(--text-secondary, #a0a0a0); }
+.loading-state { text-align: center; padding: 60px 20px; color: var(--gray); }
 .spinner-pc {
-width: 40px; height: 40px; border: 3px solid rgba(0, 255, 255, 0.2);
+width: 40px; height: 40px; border: 3px solid #e2e8f0;
 border-top-color: #3b82f6; border-radius: 50%;
 animation: spin 0.8s linear infinite; margin: 0 auto 16px;
 }
@@ -689,144 +461,6 @@ color: #ef4444; font-size: 13px; margin-top: 10px; min-height: 20px;
   font-size: 11px;
   color: #6b7280;
 }
-// ===== NAVIGATION & PAGE TRANSITION =====
-function loadSection(section) {
-  const mainArea = document.querySelector('.main-area');
-  if (!mainArea) {
-    console.warn('[loadSection] .main-area not found');
-    return;
-  }
-  
-  // Update active nav item
-  document.querySelectorAll('.nav-item').forEach(item => {
-    item.classList.remove('active');
-    const onclick = item.getAttribute('onclick') || '';
-    if (onclick.includes(`loadSection('${section}')`)) {
-      item.classList.add('active');
-    }
-  });
-  
-  // Fade-out transition
-  mainArea.classList.add('fade-out');
-  
-  setTimeout(() => {
-    console.log('[loadSection] Loading section:', section);
-    const content = document.querySelector('.content');
-    if (content) {
-      content.innerHTML = '<div class="loading-state"><div class="spinner-pc"></div><p>กำลังโหลด...</p></div>';
-    }
-    
-    // Map section to loader functions
-    const sectionLoaders = {
-      'dashboard': 'loadDashboard',
-      'jobs': 'loadJobs',
-      'po': 'loadPO',
-      'inventory': 'loadInventory',
-      'billing': 'loadBilling',
-      'warranty': 'loadWarranty',
-      'revenue': 'loadRevenue',
-      'tax': 'loadTax',
-      'reports': 'loadReports',
-      'analytics': 'loadAnalytics',
-      'performance': 'loadPerformance',
-      'backup': 'loadBackup',
-      'crm': 'loadCRM',
-      'attendance': 'loadAttendance',
-      'settings': 'loadSettings'
-    };
-    
-    const funcName = sectionLoaders[section];
-    if (funcName && typeof window[funcName] === 'function') {
-      window[funcName]();
-    } else {
-      console.warn('[loadSection] Loader not found:', funcName);
-      if (content) {
-        content.innerHTML = `
-          <div class="empty-state">
-            <i class="bi bi-exclamation-triangle" style="font-size:40px;color:#f59e0b;"></i>
-            <p>ไม่พบส่วน "${section}" หรือฟังก์ชันโหลดไม่ทำงาน</p>
-          </div>
-        `;
-      }
-    }
-    
-    // Fade-in transition
-    mainArea.classList.remove('fade-out');
-    mainArea.classList.add('fade-in');
-    setTimeout(() => mainArea.classList.remove('fade-in'), 400);
-  }, 400);
-}
-
-// ===== SMART SEARCH =====
-function handleSearchInput(query) {
-  const trimmed = query.trim();
-  const suggestions = document.getElementById('search-suggestions');
-  if (!suggestions) return;
-  
-  if (trimmed.length === 0) {
-    // Show search history
-    let history = [];
-    try {
-      history = JSON.parse(localStorage.getItem('comphone_search_history') || '[]');
-    } catch (e) {
-      history = [];
-    }
-    
-    if (history.length > 0) {
-      suggestions.innerHTML = history.map(item => `
-        <div class="search-suggestion-item" onclick="selectSearchHistory('${item.replace(/'/g, "\\'")}')">
-          <i class="bi bi-clock-history" style="color:#6b7280;font-size:14px;"></i>
-          <div class="search-suggestion-text">
-            <div class="search-suggestion-title">${item}</div>
-            <div class="search-suggestion-sub">ประวัติการค้นหา</div>
-          </div>
-        </div>
-      `).join('');
-      suggestions.style.display = 'block';
-    } else {
-      suggestions.style.display = 'none';
-    }
-  } else {
-    // Save to history
-    let history = [];
-    try {
-      history = JSON.parse(localStorage.getItem('comphone_search_history') || '[]');
-    } catch (e) {
-      history = [];
-    }
-    if (!history.includes(trimmed)) {
-      history.unshift(trimmed);
-      if (history.length > 10) history.pop();
-      try {
-        localStorage.setItem('comphone_search_history', JSON.stringify(history));
-      } catch (e) {
-        console.warn('[Search] Failed to save history:', e);
-      }
-    }
-    suggestions.style.display = 'none';
-  }
-}
-
-function selectSearchHistory(query) {
-  const searchInput = document.querySelector('.topbar-search input');
-  if (searchInput) {
-    searchInput.value = query;
-    if (typeof performSearch === 'function') {
-      performSearch(query);
-    } else {
-      console.log('[Search] Performing search for:', query);
-    }
-  }
-}
-
-// Close search suggestions when clicking outside
-document.addEventListener('click', function(e) {
-  const search = document.querySelector('.topbar-search');
-  const suggestions = document.getElementById('search-suggestions');
-  if (search && suggestions && !search.contains(e.target)) {
-    suggestions.style.display = 'none';
-  }
-});
 /* ===== PAGE TRANSITION ===== */
 .main-area {
   transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -837,7 +471,6 @@ document.addEventListener('click', function(e) {
 .main-area.fade-in {
   opacity: 1;
 }
-
 /* ===== BUTTON TOUCH TARGET ===== */
 .btn-refresh, .btn-pwa, .nav-item, button {
   min-height: 48px;
@@ -852,97 +485,22 @@ document.addEventListener('click', function(e) {
 </head>
 <body>
 <div id="approval-panel" style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: white; border: 1px solid #ccc; padding: 10px; max-width: 300px; max-height: 400px; overflow-y: auto;"></div>
-<!-- ===== LOGIN OVERLAY (Username + Password - Mobile App Style) ===== -->
+<!-- ===== LOGIN OVERLAY ===== -->
 <div id="login-overlay">
-  <div class="login-card">
-    <div class="login-logo" style="width:80px;height:80px;border-radius:20px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 16px;color:#fff;">📱</div>
-    <div class="login-title" style="font-size:24px;font-weight:800;color:#f0f6fc;margin-bottom:4px;">Comphone SuperApp AI</div>
-    <div class="login-sub" style="font-size:13px;color:#8b949e;margin-bottom:28px;">ระบบบริหารงานบริการ IT และโซลูชันเทคโนโลยี</div>
-    
-    <!-- Username Input -->
-    <div class="form-group-custom" style="margin-bottom:16px;">
-      <label style="color:#8b949e;font-size:12px;font-weight:600;display:block;margin-bottom:6px;">ชื่อผู้ใช้</label>
-      <div style="position:relative;">
-        <i class="bi bi-person-fill" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#64748b;font-size:16px;"></i>
-        <input type="text" id="login-username" placeholder="username" style="width:100%;padding:12px 14px 12px 42px;background:#010409;border:1.5px solid #21262d;border-radius:12px;color:#f0f6fc;font-size:15px;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#21262d'">
-      </div>
-    </div>
-
-    <!-- Password Input -->
-    <div class="form-group-custom" style="margin-bottom:20px;">
-      <label style="color:#8b949e;font-size:12px;font-weight:600;display:block;margin-bottom:6px;">รหัสผ่าน</label>
-      <div style="position:relative;">
-        <i class="bi bi-lock-fill" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#64748b;font-size:16px;"></i>
-        <input type="password" id="login-password" placeholder="password" style="width:100%;padding:12px 14px 12px 42px;background:#010409;border:1.5px solid #21262d;border-radius:12px;color:#f0f6fc;font-size:15px;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#21262d'">
-      </div>
-    </div>
-
-    <button class="login-btn" type="button" id="login-btn" onclick="_doLogin(event)" style="width:100%;padding:14px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:0.5px;transition:opacity 0.2s;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px;">
-      <i class="bi bi-box-arrow-in-right"></i>
-      <span>เข้าสู่ระบบ</span>
-    </button>
-    <div class="login-error" id="login-error" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:10px;color:#fca5a5;font-size:13px;text-align:center;"></div>
-    
-    <div style="margin-top:16px;text-align:center;">
-      <a href="#" onclick="showScriptUrlSetup(); return false;" style="color:#8b949e;font-size:12px;text-decoration:none;border-bottom:1px dashed #21262d;">ตั้งค่า Script URL</a>
-    </div>
-    <!-- Script URL Auto-fill Display -->
-    <div id="script-url-display" style="margin-top:12px;padding:8px 12px;background:#010409;border:1px solid #21262d;border-radius:8px;color:#484f58;font-size:11px;word-break:break-all;text-align:center;display:none;">
-      <i class="bi bi-link-45deg" style="color:#3b82f6;"></i> 
-      <span id="script-url-text">Loading...</span>
-    </div>
-    <div style="margin-top:12px;text-align:center;color:#484f58;font-size:11px;">Comphone SuperApp AI v5.19.0 · PWA</div>
-  </div>
+<div class="login-card">
+<div class="login-logo">📱</div>
+<div class="login-title" data-i18n="COMPHONE Dashboard">COMPHONE Dashboard</div>
+<div class="login-sub" data-i18n="Please login to continue">กรุณาเข้าสู่ระบบเพื่อดำเนินการต่อ</div>
+<form id="login-form" onsubmit="_doLogin(event)">
+<input class="login-field" type="text" id="login-user" data-i18n-placeholder="Username" placeholder="Username" autocomplete="username" required>
+<input class="login-field" type="password" id="login-pass" data-i18n-placeholder="Password" placeholder="Password" autocomplete="current-password" required>
+<button class="login-btn" type="button" id="login-btn" onclick="_doLogin()">
+<span data-i18n="Login">เข้าสู่ระบบ</span>
+</button>
+</form>
+<div class="login-error" id="login-error"></div>
 </div>
-
-<script>
-// Auto-fill Script URL from gas_config.js on login page
-function autoFillScriptUrl() {
-  const display = document.getElementById('script-url-display');
-  const text = document.getElementById('script-url-text');
-  if (!display || !text) return;
-  
-  let url = '';
-  
-  // Try gas_config.js first (priority)
-  if (window.GAS_CONFIG && window.GAS_CONFIG.url) {
-    url = window.GAS_CONFIG.url;
-  }
-  // Fallback to localStorage
-  if (!url) {
-    url = localStorage.getItem('comphone_script_url') || '';
-  }
-  
-  if (url) {
-    text.textContent = url;
-    display.style.display = 'block';
-    // Save to localStorage for offline use
-    localStorage.setItem('comphone_script_url', url);
-  } else {
-    display.style.display = 'none';
-  }
-}
-
-// Update showScriptUrlSetup to also update display
-function showScriptUrlSetup() {
-  const currentUrl = localStorage.getItem('comphone_script_url') || '';
-  const url = prompt('กรุณากรอก Script URL:', currentUrl);
-  if (url) {
-    localStorage.setItem('comphone_script_url', url);
-    // Update display
-    const text = document.getElementById('script-url-text');
-    const display = document.getElementById('script-url-display');
-    if (text) text.textContent = url;
-    if (display) display.style.display = 'block';
-    // Also update gas_config if possible (runtime only)
-    if (typeof updateScriptUrl === 'function') updateScriptUrl(url);
-    showToast('อัปเดต Script URL แล้ว');
-  }
-}
-
-// Auto-fill on page load
-document.addEventListener('DOMContentLoaded', autoFillScriptUrl);
-</script>
+</div>
 <!-- ===== SIDEBAR ===== -->
 <aside class="sidebar" id="sidebar">
 <div class="sidebar-logo">
@@ -1037,7 +595,7 @@ document.addEventListener('DOMContentLoaded', autoFillScriptUrl);
   <!-- Smart Search Bar -->
   <div class="topbar-search">
     <i class="bi bi-search search-icon"></i>
-    <input type="text" id="global-search" placeholder="ค้นหางาน, ลูกค้า, สต็อก..." oninput="handleSearchInput(this.value)" onfocus="showSearchSuggestions('')">
+    <input type="text" id="global-search" placeholder="ค้นหางาน, ลูกค้า, สต็อก..." onkeyup="handleSearchInput(event)" onfocus="showSearchSuggestions('')">
     <div id="search-suggestions"></div>
   </div>
   <button class="btn-refresh" onclick="loadDashboard()">
@@ -1202,6 +760,51 @@ const MOCK_DASHBOARD = {
   performance: { avgTime: '2.5h', satisfaction: 4.8 }
 };
 
+async function _doLogin() {
+  console.log('[Dashboard] Attempting login (MOCK MODE)...');
+  const username = document.getElementById('login-user')?.value;
+  const password = document.getElementById('login-pass')?.value;
+  if (!username || !password) { alert('กรุณากรอก username และ password'); return; }
+
+  const btn = document.querySelector('.login-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ...'; }
+
+  // MOCK LOGIN ONLY (skip GAS API for now)
+  console.log('[Login] Using mock login');
+  const loginResult = { ...MOCK_USER, username, timestamp: Date.now() };
+  window.DASHBOARD_DATA = MOCK_DASHBOARD;
+
+  if (btn) { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
+
+  if (loginResult.success || loginResult.valid) {
+    localStorage.setItem('comphone_auth_session', JSON.stringify(loginResult));
+    const loginOverlay = document.getElementById('login-overlay');
+    if (loginOverlay) loginOverlay.style.display = 'none';
+    const mainContent = document.getElementById('main-content');
+    if (mainContent) {
+      mainContent.style.display = 'block';
+      // Trigger dashboard load
+      if (typeof loadDashboardPage === 'function') {
+        loadDashboardPage();
+      } else {
+        // Fallback: show simple dashboard
+        mainContent.innerHTML = `
+          <div class="dashboard-header"><h1><i class="bi bi-speedometer2"></i> Dashboard</h1></div>
+          <div class="row">
+            <div class="col-md-3"><div class="card-box"><h3>งานทั้งหมด</h3><h2>${(MOCK_DASHBOARD.jobs||{}).total||0}</h2></div></div>
+            <div class="col-md-3"><div class="card-box"><h3>รายรับวันนี้</h3><h2>฿${((MOCK_DASHBOARD.revenue||{}).today||0).toLocaleString()}</h2></div></div>
+            <div class="col-md-3"><div class="card-box"><h3>ภาษี VAT</h3><h2>฿${((MOCK_DASHBOARD.tax||{}).vat||0).toLocaleString()}</h2></div></div>
+            <div class="col-md-3"><div class="card-box"><h3>ความพึงพอใจ</h3><h2>${(MOCK_DASHBOARD.performance||{}).satisfaction||0} ⭐</h2></div></div>
+          </div>
+          <p style="color:#9ca3af;margin-top:20px">✅ เข้าสู่ระบบสำเร็จ (Mock Mode)</p>
+        `;
+      }
+    }
+  } else {
+    alert('เข้าสู่ระบบไม่สำเร็จ: ' + (loginResult.error || loginResult.message || 'Unknown error'));
+  }
+}
+
 function loadSection(sectionName) {
   console.log('[Dashboard] Loading section:', sectionName);
   const sections = document.querySelectorAll('.dashboard-section, .section-content');
@@ -1265,58 +868,46 @@ function loadDashboard() {
 
 function _doLogin(event) {
   event.preventDefault();
-  console.log('[Dashboard] Attempting login via callApi...');
+  console.log('[Dashboard] Attempting login...');
   
-  // Use correct IDs: login-username, login-password (matching HTML)
-  const username = document.getElementById('login-username')?.value?.trim();
-  const password = document.getElementById('login-password')?.value?.trim();
+  const username = document.getElementById('login-user')?.value;
+  const password = document.getElementById('login-pass')?.value;
   
-  const errorDiv = document.getElementById('login-error');
-  
-  if (!username) {
-    if (errorDiv) { errorDiv.textContent = 'กรุณากรอกชื่อผู้ใช้'; errorDiv.style.display = 'block'; }
-    return;
-  }
-  if (!password) {
-    if (errorDiv) { errorDiv.textContent = 'กรุณากรอกรหัสผ่าน'; errorDiv.style.display = 'block'; }
+  if (!username || !password) {
+    alert('กรุณากรอก username และ password');
     return;
   }
   
+  // Use getGasUrl() dynamically to avoid cached const URL
+  const gasUrl = typeof getGasUrl === 'function' ? getGasUrl() : (window.GAS_CONFIG && window.GAS_CONFIG.url) || '';
+  if (!gasUrl) {
+    alert('GAS URL ไม่ได้ตั้งค่า');
+    return;
+  }
+  
+  const qs = new URLSearchParams({ action: 'loginUser', username: username, password: password, _t: Date.now() }).toString();
   const btn = document.querySelector('.login-btn');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> กำลังเข้าสู่ระบบ...'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ...'; }
   
-  // Use callApi like Mobile App
-  if (typeof callApi !== 'function') {
-    if (errorDiv) { errorDiv.textContent = 'callApi function not found. Please check Script URL setup.'; errorDiv.style.display = 'block'; }
-    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> <span>เข้าสู่ระบบ</span>'; }
-    return;
-  }
-  
-  callApi('login', { username: username, password: password })
+  fetch(gasUrl + '?' + qs, { redirect: 'follow' })
+    .then(res => res.json())
     .then(res => {
-      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> <span>เข้าสู่ระบบ</span>'; }
-      
-      console.log('[Login] Result:', res);
-      
-      if (res && (res.success || res.valid)) {
+      if (btn) { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
+      if (res.success || res.valid) {
         // Add loginAt timestamp for session expiry check
-        if (!res.loginAt) res.loginAt = Date.now();
+        res.loginAt = Date.now();
         localStorage.setItem('comphone_auth_session', JSON.stringify(res));
-        
         const loginOverlay = document.getElementById('login-overlay');
         if (loginOverlay) loginOverlay.style.display = 'none';
-        
         loadDashboard();
       } else {
-        const errorMsg = (res && (res.error || res.message)) || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
-        console.error('[Login] Failed:', errorMsg);
-        if (errorDiv) { errorDiv.textContent = 'เข้าสู่ระบบไม่สำเร็จ: ' + errorMsg; errorDiv.style.display = 'block'; }
+        alert('เข้าสู่ระบบไม่สำเร็จ: ' + (res.error || res.message || 'Unknown error'));
       }
     })
     .catch(err => {
-      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> <span>เข้าสู่ระบบ</span>'; }
+      if (btn) { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
       console.error('[Login] Error:', err);
-      if (errorDiv) { errorDiv.textContent = 'เกิดข้อผิดพลาด: ' + (err.message || err); errorDiv.style.display = 'block'; }
+      alert('เกิดข้อผิดพลาดในการเข้าสู่ระบบ: ' + err.message);
     });
 }
 
@@ -1370,88 +961,3 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
-
-<!-- ===== MODAL CONTAINERS ===== -->
-<!-- Job Detail Modal -->
-<div id="modal-job" class="modal-overlay hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;">
-  <div style="background:#0d1117;border:1px solid #21262d;border-radius:20px;width:90%;max-width:600px;max-height:90vh;overflow-y:auto;color:#f0f6fc;">
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #21262d;">
-      <div style="font-size:16px;font-weight:700;">รายละเอียดงาน</div>
-      <div style="cursor:pointer;font-size:20px;opacity:0.5;" onclick="closeModal('modal-job')">×</div>
-    </div>
-    <div id="modal-job-content">
-      <!-- Content will be inserted by showJobDetailV2() -->
-    </div>
-  </div>
-</div>
-
-<!-- Assign Job Modal -->
-<div id="modal-assign" class="modal-overlay hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;">
-  <div style="background:#0d1117;border:1px solid #21262d;border-radius:20px;width:90%;max-width:500px;padding:24px;color:#f0f6fc;">
-    <div style="font-size:16px;font-weight:700;margin-bottom:16px;">มอบหมายช่าง</div>
-    <div id="modal-assign-content">
-      <!-- Content will be inserted by openAssignJob() -->
-    </div>
-  </div>
-</div>
-
-<!-- Quick Note Modal -->
-<div id="modal-note" class="modal-overlay hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;">
-  <div style="background:#0d1117;border:1px solid #21262d;border-radius:20px;width:90%;max-width:500px;padding:24px;color:#f0f6fc;">
-    <div style="font-size:16px;font-weight:700;margin-bottom:16px;">บันทึกรายการ</div>
-    <div id="modal-note-content">
-      <!-- Content will be inserted by openQuickNote() -->
-    </div>
-  </div>
-</div>
-
-<!-- Timeline Modal -->
-<div id="modal-timeline" class="modal-overlay hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;">
-  <div style="background:#0d1117;border:1px solid #21262d;border-radius:20px;width:90%;max-width:600px;max-height:90vh;overflow-y:auto;padding:24px;color:#f0f6fc;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div style="font-size:16px;font-weight:700;">ประวัติงาน</div>
-      <div style="cursor:pointer;font-size:20px;opacity:0.5;" onclick="closeModal('modal-timeline')">×</div>
-    </div>
-    <div id="modal-timeline-content">
-      <!-- Content will be inserted by showJobTimeline() -->
-    </div>
-  </div>
-</div>
-
-<div id="version_badge">
-  <span class="label">Version:</span> <span id="vb-version">loading...</span> | 
-  <span class="label">Build:</span> <span id="vb-build">...</span>
-</div>
-
-<script>
-// Render version_badge from version_config.js at runtime
-function updatePcVersionBadge() {
-  try {
-    const cfg = window.VERSION_CONFIG;
-    if (cfg) {
-      const vb = document.getElementById('version_badge');
-      const vEl = document.getElementById('vb-version');
-      const bEl = document.getElementById('vb-build');
-      if (vb && vEl && bEl) {
-        vEl.textContent = cfg.version || 'unknown';
-        bEl.textContent = cfg.BUILD_TIMESTAMP || cfg.buildTimestamp || 'unknown';
-        vb.classList.add('ok');
-      }
-    }
-  } catch(e) {
-    console.error('[version_badge] Error:', e);
-  }
-}
-
-document.addEventListener('DOMContentLoaded', updatePcVersionBadge);
-</script>
-
-<script>
-function closeModal(id) {
-  const modal = document.getElementById(id);
-  if (modal) modal.classList.add('hidden');
-}
-</script>
-
-</body>
-</html>
