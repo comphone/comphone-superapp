@@ -236,7 +236,7 @@ function renderDashboard(data) {
           <i class="bi bi-clipboard2-plus-fill" style="font-size:20px;color:#3b82f6"></i>
           <span style="font-size:11px;margin-top:4px">สร้างงาน</span>
         </button>
-        <button class="btn-action" onclick="goPage('stock',document.getElementById('nav-more'))" style="padding:12px 8px">
+        <button class="btn-action" onclick="goPage('inventory',document.getElementById('nav-more'))" style="padding:12px 8px">
           <i class="bi bi-box-seam-fill" style="font-size:20px;color:#10b981"></i>
           <span style="font-size:11px;margin-top:4px">สต็อก</span>
         </button>
