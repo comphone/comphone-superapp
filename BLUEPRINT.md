@@ -1,10 +1,10 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.13.0-phase36 (PWA) / v5.12.0-phase34 (GAS Backend — ⚠️ OUT OF SYNC!)
+> **Version:** v5.18.2-dashboard (PWA) / GAS Backend v5.18.x @539
 
-> **Date:** 2026-05-03 | **Phase:** 36 (System Hardening & UX Polish — 🔴 GAS DEPLOYMENT PENDING)
+> **Date:** 2026-05-06 | **Phase:** 44 (Dashboard Modernization + Config Resync)
 
-> **Status:** ⚠️ PARTIAL — Score 90/100 (API Contract Fixed, Duplicates Removed, UX Verified, Login Issues Documented)
+> **Status:** RECOVERY BASELINE - correcting Hermes version/config drift
 
 ---
 
@@ -13,11 +13,11 @@
 | Item | Current Value | Source of Truth |
 |---|---|---|
 
-| App Version | `v5.13.0-phase36` | `pwa/version_config.js` |
-| Cache Version | `comphone-v5.13.0-phase36-20260502_1430` | `pwa/version_config.js`, `pwa/sw.js` |
-| Build Timestamp | `20260502_1430` | `pwa/version_config.js` |
-| GAS Backend Deploy | ⚠️ OUT OF SYNC (v5.12.0-phase34, needs clasp push to upgrade to v5.13.0-phase36) | `clasp-ready/Config.gs`, `clasp-ready/Router.gs` |
-| GAS Production URL | ✅ Active (`AKfycbwh4qGcSavl9vEy3v6UCk6pLamDLUZj9ehFG90HG3fc4ADFWLpswObq8e0mBLe2OTJPRg`) | `pwa/gas_config.js` |
+| App Version | `v5.18.2-dashboard` | `pwa/version_config.js` |
+| Cache Version | `comphone-v5.18.2-dashboard-20260506_1430` | `pwa/version_config.js`, `pwa/sw.js` |
+| Build Timestamp | `20260506_1430` | `pwa/version_config.js` |
+| GAS Backend Deploy | `539` / production URL in `pwa/gas_config.js` | `clasp-ready/Config.gs`, `clasp-ready/Router.gs` |
+| GAS Production URL | `https://script.google.com/macros/s/AKfycbyVK5KLJcHFNfm7oNce5e_WOrFdS2_UuiRQW27ipIUK2DeYGtVjSwWCmr-jIWLnkLcSgw/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-02.phase36-complete` | `pwa/api_contract.js` |
 | Last Production Commit | `f7e84b6` | GitHub `main` |
 | Validation Status | Static Guard OK, API Contract Fixed, Duplicates Removed, UX Verified | `scripts/` + `test_reports/*_latest.json` |

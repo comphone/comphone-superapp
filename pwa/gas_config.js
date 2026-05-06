@@ -3,11 +3,11 @@
 // Updated 2026-05-05: Phase 41 Modern Gradient 2026 Theme (Beautiful & Modern)
 const GAS_CONFIG = {
   url: 'https://script.google.com/macros/s/AKfycbyVK5KLJcHFNfm7oNce5e_WOrFdS2_UuiRQW27ipIUK2DeYGtVjSwWCmr-jIWLnkLcSgw/exec',
-  deployDate: '2026-05-05_1045',
-  version: 'v5.17.0-phase42'
+  deployDate: '2026-05-06_1430',
+  version: 'v5.18.2-dashboard'
 };
 
 // Expose globally for all frontend modules
 window.GAS_CONFIG = GAS_CONFIG;
 window.COMPHONE_GAS_URL = GAS_CONFIG.url;
-window.VERSION_CONFIG = GAS_CONFIG; // For runtime version rendering
+window.COMPHONE_GAS_CONFIG = GAS_CONFIG; // Do not overwrite VERSION_CONFIG

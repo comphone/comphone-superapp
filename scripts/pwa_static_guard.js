@@ -223,7 +223,12 @@ if (!dashboardPcHtml.includes("res._errorKind === 'offline'") || !dashboardPcHtm
 if (dashboardPcHtml.includes('serviceWorker.getRegistrations()') || dashboardPcHtml.includes('location.reload(true)')) {
   fail('dashboard_pc.html must not unregister service workers or force reload during boot.');
 }
-if (!dashboardPcHtml.includes('updatePcVersionBadge') || dashboardPcHtml.includes('<div id="version_badge">v5.9.0-phase2d')) {
+const dashboardPcCoreJs = fs.existsSync(path.join(PWA, 'dashboard_pc_core.js'))
+  ? readUtf8(path.join(PWA, 'dashboard_pc_core.js'))
+  : '';
+if ((!dashboardPcHtml.includes('updatePcVersionBadge') && !dashboardPcCoreJs.includes('updatePcVersionBadge')) ||
+    !dashboardPcHtml.includes('id="version_badge"') ||
+    dashboardPcHtml.includes('<div id="version_badge">v5.9.0-phase2d')) {
   fail('dashboard_pc.html must render version_badge from version_config.js at runtime.');
 }
 if (!apiContractJs.includes('getDashboardBundle')) {
