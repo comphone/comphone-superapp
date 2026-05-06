@@ -15,6 +15,7 @@ on:
       - 'scripts/pwa_api_smoke.js'
       - 'scripts/build_code_index.js'
       - 'scripts/regression-guard.sh'
+      - 'scripts/drift-guard.sh'
       - 'scripts/browser-smoke-test.py'
       - '.github/workflows/auto-deploy.yml'
       - 'memory/session.md'

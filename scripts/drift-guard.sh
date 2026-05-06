@@ -1,127 +1,148 @@
 #!/usr/bin/env bash
 # ============================================================
-# COMPHONE SUPER APP — DRIFT GUARD (PHMP v1 Freeze Protocol)
-# Purpose: Detect unauthorized drift from current baseline
-# Usage: ./scripts/drift-guard.sh [baseline_tag]
-# Exit: 0 = no drift, 1 = drift detected
+# COMPHONE SUPER APP - DRIFT GUARD
+# Purpose: detect risky config/version/security drift before deploy.
+# Usage: ./scripts/drift-guard.sh [optional-baseline-tag]
+# Exit: 0 = no blocking drift, 1 = blocking drift detected
 # ============================================================
 
 set -euo pipefail
 
-BASELINE_TAG="${1:-v5.7.3-phase2b2}"
-BASELINE_COMMIT=$(git rev-list -n1 "$BASELINE_TAG" 2>/dev/null || echo "")
+BASELINE_TAG="${1:-}"
+BASELINE_COMMIT=""
 DRIFT_FOUND=0
 ERRORS=()
 SKIP_DIVERGENCE=0
 
+if [ -n "$BASELINE_TAG" ]; then
+  BASELINE_COMMIT=$(git rev-list -n1 "$BASELINE_TAG" 2>/dev/null || echo "")
+fi
+
 function fail() {
-  ERRORS+=("❌ $1")
+  ERRORS+=("ERROR: $1")
   DRIFT_FOUND=1
 }
 
-echo "🔍 COMPHONE DRIFT GUARD — Baseline: $BASELINE_TAG ($BASELINE_COMMIT)"
+echo "COMPHONE DRIFT GUARD - Baseline: ${BASELINE_TAG:-current deploy} (${BASELINE_COMMIT:-no frozen tag})"
 echo "============================================================"
 
-# 1. Check baseline tag exists
-if [ -z "$BASELINE_COMMIT" ]; then
+if [ -z "$BASELINE_TAG" ]; then
+  echo "WARN: No baseline tag provided - skipping historical divergence check"
+  SKIP_DIVERGENCE=1
+elif [ -z "$BASELINE_COMMIT" ]; then
   if [ "${CI:-false}" = "true" ]; then
-    echo "⚠️  Baseline tag '$BASELINE_TAG' not found — skipping divergence checks (CI mode)"
+    echo "WARN: Baseline tag '$BASELINE_TAG' not found - skipping divergence checks in CI"
     SKIP_DIVERGENCE=1
   else
-    fail "Baseline tag '$BASELINE_TAG' not found. Run freeze setup first."
-    echo "${ERRORS[@]}"
-    exit 1
+    fail "Baseline tag '$BASELINE_TAG' not found"
   fi
 fi
 
-# 2. Version Drift Check
-echo "🔗 [1/5] Version Drift Check..."
+echo ""
+echo "[1/5] Version Drift Check..."
 CONFIG_VERSION=$(grep -oP "VERSION:\s*'\K[0-9.]+" clasp-ready/Config.gs | head -1 || echo "MISSING")
 SW_VERSION=$(grep -oP "CACHE_V\s*=\s*'comphone-v\K[0-9.]+" pwa/sw.js | head -1 || echo "MISSING")
-PC_VERSION=$(grep -oP "__APP_VERSION\s*=\s*'v\K[0-9.]+" pwa/dashboard_pc.html | head -1 || echo "MISSING")
+PC_VERSION=$(grep -oP "[?&]v=\K[0-9.]+" pwa/dashboard_pc.html | head -1 || echo "MISSING")
+MOBILE_VERSION=$(grep -oP "[?&]v=\K[0-9.]+" pwa/index.html | head -1 || echo "MISSING")
 
-# Frontend versions must match each other
+if [ "$SW_VERSION" = "MISSING" ]; then
+  fail "sw.js frontend version not found"
+fi
+if [ "$PC_VERSION" = "MISSING" ]; then
+  fail "dashboard_pc.html frontend asset version not found"
+fi
+if [ "$MOBILE_VERSION" = "MISSING" ]; then
+  fail "index.html frontend asset version not found"
+fi
 if [ "$SW_VERSION" != "$PC_VERSION" ]; then
   fail "Frontend version mismatch: sw.js=$SW_VERSION vs dashboard=$PC_VERSION"
 fi
-# Config.gs version is the GAS backend — may differ from frontend
+if [ "$SW_VERSION" != "$MOBILE_VERSION" ]; then
+  fail "Frontend version mismatch: sw.js=$SW_VERSION vs mobile=$MOBILE_VERSION"
+fi
 if [ "$CONFIG_VERSION" = "MISSING" ]; then
   fail "Config.gs VERSION not found"
 fi
-echo "   Config.gs=$CONFIG_VERSION | sw.js=$SW_VERSION | dashboard=$PC_VERSION"
+echo "   Config.gs=$CONFIG_VERSION | sw.js=$SW_VERSION | dashboard=$PC_VERSION | mobile=$MOBILE_VERSION"
 
-# 3. Load-Order Drift Check
-echo "🔗 [2/5] Load-Order Drift Check..."
-# Policy engine must load before ai_executor_runtime
-INDEX_POLICY_LINE=$(grep -n 'policy_engine.js' pwa/index.html | head -1 | cut -d: -f1 || echo "0")
-INDEX_AI_LINE=$(grep -n 'ai_executor_runtime.js' pwa/index.html | head -1 | cut -d: -f1 || echo "999")
-if [ "$INDEX_POLICY_LINE" -ge "$INDEX_AI_LINE" ]; then
-  fail "index.html: policy_engine.js must load BEFORE ai_executor_runtime.js"
+echo ""
+echo "[2/5] Load-Order Drift Check..."
+if ! grep -q 'version_config.js' pwa/index.html; then
+  fail "index.html missing version_config.js"
+fi
+if ! grep -q 'gas_config.js' pwa/index.html; then
+  fail "index.html missing gas_config.js"
+fi
+if ! grep -q 'api_client.js' pwa/index.html; then
+  fail "index.html missing api_client.js"
+fi
+if ! grep -q 'dashboard_pc_core.js' pwa/dashboard_pc.html; then
+  fail "dashboard_pc.html missing dashboard_pc_core.js"
+fi
+if grep -q '<script src="ai_executor_validation.js"' pwa/index.html pwa/dashboard_pc.html; then
+  fail "ai_executor_validation.js recurrence in HTML load order"
 fi
 
-PC_POLICY_LINE=$(grep -n 'policy_engine.js' pwa/dashboard_pc.html | head -1 | cut -d: -f1 || echo "0")
-PC_AI_LINE=$(grep -n 'ai_executor_runtime.js' pwa/dashboard_pc.html | head -1 | cut -d: -f1 || echo "999")
-if [ "$PC_POLICY_LINE" -ge "$PC_AI_LINE" ]; then
-  fail "dashboard_pc.html: policy_engine.js must load BEFORE ai_executor_runtime.js"
+INDEX_VERSION_LINE=$(grep -n 'version_config.js' pwa/index.html | head -1 | cut -d: -f1 || echo "999")
+INDEX_API_LINE=$(grep -n 'api_client.js' pwa/index.html | head -1 | cut -d: -f1 || echo "0")
+if [ "$INDEX_VERSION_LINE" -ge "$INDEX_API_LINE" ]; then
+  fail "index.html: version_config.js must load before api_client.js"
 fi
 
-# 4. Approval Invariant Drift
-echo "🔗 [3/5] Approval Invariant Drift Check..."
+echo ""
+echo "[3/5] Security Invariant Drift Check..."
 if ! grep -q '_checkAuthGateV55_' clasp-ready/Router.gs; then
-  fail "Router.gs: _checkAuthGateV55_ missing — auth gate removed!"
+  fail "Router.gs: _checkAuthGateV55_ missing"
 fi
 if ! grep -q 'functionName.charAt(0) === ._.' clasp-ready/Router.gs; then
-  fail "Router.gs: invokeFunctionByNameV55_ underscore guard missing!"
+  fail "Router.gs: invokeFunctionByNameV55_ underscore guard missing"
 fi
 if ! grep -q 'verifyLineSignature_' clasp-ready/Router.gs; then
-  fail "Router.gs: verifyLineSignature_ missing — LINE security removed!"
+  fail "Router.gs: verifyLineSignature_ missing"
 fi
-if ! grep -q 'comphone_self_heal_fix_log' pwa/policy_engine.js; then
-  fail "policy_engine.js: self-heal persistence missing!"
+if grep -A25 'var PUBLIC_ACTIONS' clasp-ready/Router.gs | grep -q "'listCustomers'"; then
+  fail "Router.gs: PUBLIC_ACTIONS exposes listCustomers"
 fi
-if ! grep -q 'maxFixPerMinute' pwa/policy_engine.js; then
-  fail "policy_engine.js: maxFixPerMinute missing!"
+if grep -A25 'var PUBLIC_ACTIONS' clasp-ready/Router.gs | grep -q "'getSecurityStatus'"; then
+  fail "Router.gs: PUBLIC_ACTIONS exposes getSecurityStatus"
+fi
+if grep -Eiq "COMPHONE_AUTH_TOKEN.*[a-f0-9]{24,}" BLUEPRINT.md docs/*.md 2>/dev/null; then
+  fail "Possible live COMPHONE_AUTH_TOKEN value documented"
 fi
 
-# 5. Stale Branch Divergence
-echo "🔗 [4/5] Branch Divergence Check..."
+echo ""
+echo "[4/5] Branch Divergence Check..."
 if [ "$SKIP_DIVERGENCE" -eq 1 ]; then
-  echo "   ⏭️  Skipped (no baseline tag in CI)"
+  echo "   Skipped"
 elif [ "${CI:-false}" = "true" ]; then
-  echo "   ⏭️  Skipped (CI environment — HEAD is always the deploy commit)"
+  echo "   Skipped in CI"
 else
   CURRENT_COMMIT=$(git rev-parse HEAD)
   if [ "$CURRENT_COMMIT" != "$BASELINE_COMMIT" ]; then
-    DIVERGED_FILES=$(git diff --name-only "$BASELINE_TAG" HEAD 2>/dev/null || echo "UNKNOWN")
+    DIVERGED_FILES=$(git diff --name-only "$BASELINE_TAG" HEAD 2>/dev/null || echo "")
     if [ -n "$DIVERGED_FILES" ]; then
-      fail "Branch has diverged from baseline. Changed files:\n$DIVERGED_FILES"
+      fail "Branch diverged from baseline $BASELINE_TAG"
     fi
   fi
 fi
 
-# 6. Undeclared Dependency Changes
-echo "🔗 [5/5] Undeclared Dependency Check..."
-# Check for new JS files in pwa/ not listed in index.html
-for js in pwa/*.js; do
-  fname=$(basename "$js")
-  if ! grep -q "$fname" pwa/index.html && \
-     ! grep -q "$fname" pwa/dashboard_pc.html && \
-     [ "$fname" != "error_boundary.js" ]; then
-    # Some files might be loaded dynamically; warn only
-    echo "⚠️  WARN: $fname not found in any HTML load order (may be dynamic)"
-  fi
-done
+echo ""
+echo "[5/5] Dependency Index Check..."
+if command -v node >/dev/null 2>&1 && [ -f scripts/build_code_index.js ]; then
+  node scripts/build_code_index.js
+else
+  fail "Node or scripts/build_code_index.js missing"
+fi
 
-# Report
 if [ "$DRIFT_FOUND" -eq 0 ]; then
   echo ""
-  echo "✅ NO DRIFT DETECTED — System is aligned with baseline $BASELINE_TAG"
+  echo "NO DRIFT DETECTED - System is aligned with ${BASELINE_TAG:-current deploy}"
   exit 0
-else
-  echo ""
-  echo "❌ DRIFT DETECTED — ${#ERRORS[@]} issue(s) found:"
-  for e in "${ERRORS[@]}"; do
-    echo "   $e"
-  done
-  exit 1
 fi
+
+echo ""
+echo "DRIFT DETECTED - ${#ERRORS[@]} issue(s) found:"
+for e in "${ERRORS[@]}"; do
+  echo "   $e"
+done
+exit 1
