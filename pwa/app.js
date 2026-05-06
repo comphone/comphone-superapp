@@ -5,11 +5,90 @@
 // URL source: gas_config.js / version_config.js. Do not hardcode deployment URLs here.
 const DEFAULT_SCRIPT_URL = window.COMPHONE_GAS_URL || (window.GAS_CONFIG && window.GAS_CONFIG.url) || '';
 const LAST_PAGE_KEY = 'comphone_last_mobile_page';
+const QUICK_ACTIONS_KEY = 'comphone_mobile_quick_actions';
 const RESTORABLE_PAGES = new Set([
   'home', 'jobs', 'camera', 'crm', 'po', 'attendance', 'profile',
   'reports', 'inventory', 'billing', 'warranty', 'dashboard',
   'analytics', 'revenue', 'tax', 'performance', 'admin'
 ]);
+
+const MENU_GROUPS = [
+  {
+    label: 'งานบริการ',
+    items: [
+      { id: 'jobs', page: 'jobs', icon: 'bi-clipboard2-check-fill', label: 'งานทั้งหมด' },
+      { id: 'openNewJob', fn: 'openNewJob', icon: 'bi-plus-circle-fill', label: 'เปิดงาน' },
+      { id: 'crm', page: 'crm', icon: 'bi-people-fill', label: 'ลูกค้า' },
+      { id: 'addCustomer', fn: 'addCustomer', icon: 'bi-person-plus-fill', label: 'ลูกค้าใหม่' },
+      { id: 'attendance', page: 'attendance', icon: 'bi-clock-fill', label: 'ลงเวลา' },
+      { id: 'warranty', page: 'warranty', icon: 'bi-shield-check', label: 'รับประกัน' }
+    ]
+  },
+  {
+    label: 'คลังและจัดซื้อ',
+    items: [
+      { id: 'inventory', page: 'inventory', icon: 'bi-boxes', label: 'สต็อก' },
+      { id: 'po', page: 'po', icon: 'bi-cart-fill', label: 'สั่งซื้อ' },
+      { id: 'billing', page: 'billing', icon: 'bi-receipt', label: 'วางบิล' },
+      { id: 'revenue', page: 'revenue', icon: 'bi-currency-exchange', label: 'รายรับ' },
+      { id: 'tax', page: 'tax', icon: 'bi-file-earmark-text', label: 'ภาษี' }
+    ]
+  },
+  {
+    label: 'บริหารและวิเคราะห์',
+    items: [
+      { id: 'dashboard', page: 'dashboard', icon: 'bi-speedometer2', label: 'Dashboard' },
+      { id: 'reports', page: 'reports', icon: 'bi-graph-up-arrow', label: 'รายงาน' },
+      { id: 'analytics', page: 'analytics', icon: 'bi-activity', label: 'Analytics' },
+      { id: 'performance', page: 'performance', icon: 'bi-lightning-charge-fill', label: 'Performance' }
+    ]
+  },
+  {
+    label: 'ระบบ',
+    items: [
+      { id: 'notifications', page: 'notifications', icon: 'bi-bell-fill', label: 'แจ้งเตือน' },
+      { id: 'customer-portal', page: 'customer-portal', icon: 'bi-person-badge', label: 'Portal' },
+      { id: 'profile', page: 'profile', icon: 'bi-gear-fill', label: 'ตั้งค่า' },
+      { id: 'admin', page: 'admin', icon: 'bi-shield-lock-fill', label: 'Admin', roles: ['admin', 'owner'] }
+    ]
+  }
+];
+
+const QUICK_ACTION_CATALOG = MENU_GROUPS.flatMap(group => group.items)
+  .filter(item => ['openNewJob', 'addCustomer', 'jobs', 'crm', 'billing', 'inventory', 'po', 'reports', 'dashboard', 'notifications'].includes(item.id))
+  .map(item => ({
+    id: item.id,
+    icon: item.icon,
+    label: item.label,
+    page: item.page,
+    fn: item.fn,
+    color: {
+      openNewJob: '#ede9fe',
+      addCustomer: '#ffedd5',
+      jobs: '#dbeafe',
+      crm: '#d1fae5',
+      billing: '#fef3c7',
+      inventory: '#e0f2fe',
+      po: '#fce7f3',
+      reports: '#dcfce7',
+      dashboard: '#fef9c3',
+      notifications: '#fee2e2'
+    }[item.id] || '#f8fafc',
+    textColor: {
+      openNewJob: '#5b21b6',
+      addCustomer: '#9a3412',
+      jobs: '#1e40af',
+      crm: '#065f46',
+      billing: '#92400e',
+      inventory: '#075985',
+      po: '#9d174d',
+      reports: '#166534',
+      dashboard: '#713f12',
+      notifications: '#991b1b'
+    }[item.id] || '#0f172a'
+  }));
+
+const DEFAULT_QUICK_ACTION_IDS = ['openNewJob', 'addCustomer', 'jobs', 'crm'];
 
 const APP = {
   user: null,
@@ -482,6 +561,53 @@ function goPage(page, btn, options = {}) {
       window.open(posUrl, '_blank');
     }
   }
+  ensurePageHasContent(page);
+}
+
+function getPageMount(page) {
+  return document.getElementById(page + '-content')
+    || document.getElementById('page-' + page)?.querySelector('[id$="-content"]')
+    || document.getElementById('page-' + page);
+}
+
+function ensurePageHasContent(page) {
+  const mount = getPageMount(page);
+  if (!mount || ['home', 'profile', 'jobs', 'camera'].includes(page)) return;
+  setTimeout(() => {
+    if (!mount || (mount.textContent || '').trim() || mount.querySelector('canvas,table,.card-box,.job-card,.kpi-box,.empty-state,.loading-state')) return;
+    mount.innerHTML = `
+      <div class="empty-state" style="padding:32px 18px">
+        <i class="bi bi-grid"></i>
+        <p style="font-weight:700;margin-bottom:4px">${getMenuItemLabel(page)}</p>
+        <p style="font-size:12px;color:#64748b">โมดูลนี้ยังไม่มีข้อมูลแสดงผลในขณะนี้</p>
+        <button class="btn-add-job" onclick="goPage('home', document.getElementById('nav-home'))">
+          <i class="bi bi-house"></i> กลับหน้าแรก
+        </button>
+      </div>`;
+  }, 900);
+}
+
+function getMenuItemLabel(id) {
+  const item = MENU_GROUPS.flatMap(group => group.items).find(entry => entry.id === id || entry.page === id);
+  return item ? item.label : id;
+}
+
+function getQuickActions() {
+  let ids = DEFAULT_QUICK_ACTION_IDS;
+  try {
+    const saved = JSON.parse(localStorage.getItem(QUICK_ACTIONS_KEY) || '[]');
+    if (Array.isArray(saved) && saved.length) ids = saved.slice(0, 6);
+  } catch (e) {}
+  const actions = ids.map(id => QUICK_ACTION_CATALOG.find(item => item.id === id)).filter(Boolean);
+  return actions.length ? actions : QUICK_ACTION_CATALOG.filter(item => DEFAULT_QUICK_ACTION_IDS.includes(item.id));
+}
+
+function runQuickAction(id) {
+  const action = QUICK_ACTION_CATALOG.find(item => item.id === id);
+  if (!action) return showToast('ไม่พบปุ่มด่วน');
+  if (action.fn && typeof window[action.fn] === 'function') return window[action.fn]();
+  if (action.page) return goPage(action.page, action.page === 'jobs' ? document.getElementById('nav-jobs') : document.getElementById('nav-more'));
+  showToast('ปุ่มนี้ยังไม่พร้อมใช้งาน');
 }
 
 // Actions + Search + Notifications → app_actions.js
@@ -510,6 +636,48 @@ function showSettings() {
     localStorage.setItem('comphone_user', JSON.stringify(APP.user));
     showToast('บันทึก Script URL แล้ว');
   }
+}
+function showQuickActionSettings() {
+  const selected = new Set(getQuickActions().map(item => item.id));
+  const rows = QUICK_ACTION_CATALOG.map(item => `
+    <label class="quick-settings-row">
+      <span><i class="bi ${item.icon}"></i> ${item.label}</span>
+      <input type="checkbox" value="${item.id}" ${selected.has(item.id) ? 'checked' : ''}>
+    </label>
+  `).join('');
+
+  const html = `
+    <div id="modal-quick-actions" class="modal-overlay" onclick="closeModal('modal-quick-actions')">
+      <div class="modal-sheet quick-settings-sheet" onclick="event.stopPropagation()">
+        <div class="modal-handle"></div>
+        <div class="modal-title-row">
+          <h5><i class="bi bi-sliders"></i> จัดปุ่มด่วนหน้า Dashboard</h5>
+          <button onclick="closeModal('modal-quick-actions')"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <p class="quick-settings-help">เลือกได้สูงสุด 6 ปุ่ม ระบบจะจำไว้ในเครื่องนี้และแสดงบนหน้าแรก</p>
+        <div class="quick-settings-list">${rows}</div>
+        <div class="quick-settings-actions">
+          <button class="btn-gray-sm" onclick="resetQuickActions()">ค่าเริ่มต้น</button>
+          <button class="btn-primary-sm" onclick="saveQuickActions()">บันทึก</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+function saveQuickActions() {
+  const modal = document.getElementById('modal-quick-actions');
+  const checked = Array.from(modal.querySelectorAll('input[type="checkbox"]:checked')).map(el => el.value).slice(0, 6);
+  if (!checked.length) return showToast('เลือกอย่างน้อย 1 ปุ่ม');
+  localStorage.setItem(QUICK_ACTIONS_KEY, JSON.stringify(checked));
+  closeModal('modal-quick-actions');
+  renderHome();
+  showToast('บันทึกปุ่มด่วนแล้ว');
+}
+function resetQuickActions() {
+  localStorage.removeItem(QUICK_ACTIONS_KEY);
+  closeModal('modal-quick-actions');
+  renderHome();
+  showToast('คืนค่าปุ่มด่วนเริ่มต้นแล้ว');
 }
 function toggleNotifications() {
   const toggle = document.getElementById('notif-toggle');
