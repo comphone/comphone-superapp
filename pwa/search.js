@@ -1,6 +1,6 @@
 /**
  * Smart Search for COMPHONE Dashboard
- * Version: v5.18.1-dashboard
+ * Version: v5.18.0-phase43
  * Features: Search jobs, customers, inventory; history; filters; keyboard navigation
  */
 

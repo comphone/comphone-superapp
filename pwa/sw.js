@@ -1,9 +1,9 @@
 // ===========================================================
-// COMPHONE SUPER APP v5.18.1-dashboard - Service Worker (Glassmorphism 2.0)
+// COMPHONE SUPER APP v5.17.0-phase42 - Service Worker (Modern Gradient 2026)
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ===========================================================
-const CACHE_V = 'comphone-v5.18.1-dashboard';
+const CACHE_V = 'comphone-v5.17.0-phase42-20260505_1130';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
 
