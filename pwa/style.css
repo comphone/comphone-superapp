@@ -428,7 +428,56 @@ html, body {
 .stat-trend.up { color: var(--success); }
 .stat-trend.down { color: var(--danger); }
 
-/* ═══ JOB CARDS ═══ */
+/* ═══ KPI CARDS — Glassmorphism 2.0 ═══ */
+.kpi-card-glass {
+  background: var(--glass-bg-strong);
+  backdrop-filter: var(--glass-blur-strong);
+  -webkit-backdrop-filter: var(--glass-blur-strong);
+  border: 1px solid var(--glass-border-glow);
+  border-radius: var(--radius-xl);
+  padding: 16px;
+  box-shadow: var(--glass-shadow), var(--glass-glow-cyan);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.kpi-card-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--glass-reflex);
+  pointer-events: none;
+  border-radius: inherit;
+}
+.kpi-card-glass:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--glass-shadow), var(--glass-glow-purple);
+}
+.kpi-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+  color: var(--primary);
+}
+.kpi-value {
+  font-size: 28px;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--primary), var(--violet));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.1;
+  margin: 4px 0;
+}
+.kpi-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.kpi-alert {
+  border-color: var(--glass-border-glow);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+}
 .job-card {
   background: var(--surface);
   margin: 0 14px 10px;
