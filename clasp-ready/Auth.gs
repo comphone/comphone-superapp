@@ -68,7 +68,10 @@ function loginUser(username, password) {
         login_at: new Date().toISOString(),
         expires_at: new Date(new Date().getTime() + 8 * 60 * 60 * 1000).toISOString()
       });
-      safeSetProperty(sessionKey, sessionData);  // Guard: prevent exceeding 50 props
+      var sessionStore = storeAuthSession_(sessionKey, sessionData);
+      if (!sessionStore.success) {
+        return { success: false, error: 'ไม่สามารถบันทึก session ได้: ' + sessionStore.error };
+      }
 
       try { logActivity('LOGIN', rowUser, 'เข้าสู่ระบบสำเร็จ role=' + role); } catch(e) {}
       try { resetFailedLogin_(rowUser); } catch(e) {}
@@ -141,7 +144,7 @@ function cleanupExpiredSessions_() {
 function logoutUser(token) {
   try {
     if (!token) return { success: false, error: 'ไม่มี token' };
-    PropertiesService.getScriptProperties().deleteProperty('SESSION_' + token);
+    deleteAuthSession_('SESSION_' + token);
     return { success: true };
   } catch (e) {
         try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'logoutUser', e, {source: 'AUTH'}); } catch(_le) {}
@@ -155,13 +158,14 @@ function logoutUser(token) {
 function verifySession(token) {
   try {
     if (!token) return { valid: false, error: 'ไม่มี token' };
-    var raw = PropertiesService.getScriptProperties().getProperty('SESSION_' + token);
+    var sessionKey = 'SESSION_' + token;
+    var raw = readAuthSession_(sessionKey);
     if (!raw) return { valid: false, error: 'Session ไม่พบหรือหมดอายุ' };
     var session = JSON.parse(raw);
     var now = new Date();
     var expires = new Date(session.expires_at);
     if (now > expires) {
-      PropertiesService.getScriptProperties().deleteProperty('SESSION_' + token);
+      deleteAuthSession_(sessionKey);
       return { valid: false, error: 'Session หมดอายุ กรุณาเข้าสู่ระบบใหม่' };
     }
     return {
@@ -174,6 +178,74 @@ function verifySession(token) {
   } catch (e) {
     return { success: false, valid: false, error: e.toString() };
   }
+}
+
+// ============================================================
+// 🔐 Auth Session Storage
+// ============================================================
+function storeAuthSession_(sessionKey, sessionData) {
+  try {
+    cleanupExpiredSessions_();
+    PropertiesService.getScriptProperties().setProperty(sessionKey, sessionData);
+    return { success: true, method: 'property' };
+  } catch (e) {
+    try {
+      if (typeof safeSetProperty === 'function') {
+        var safeResult = safeSetProperty(sessionKey, sessionData, { overflowToSheet: true });
+        if (safeResult && safeResult.success) return safeResult;
+      }
+    } catch (_safeErr) {}
+    return { success: false, error: e.toString() };
+  }
+}
+
+function readAuthSession_(sessionKey) {
+  var props = PropertiesService.getScriptProperties();
+  var raw = props.getProperty(sessionKey);
+  if (raw) return raw;
+  return readAuthSessionOverflow_(sessionKey);
+}
+
+function deleteAuthSession_(sessionKey) {
+  PropertiesService.getScriptProperties().deleteProperty(sessionKey);
+  deleteAuthSessionOverflow_(sessionKey);
+}
+
+function getAuthOverflowSheet_() {
+  try {
+    var ss = getComphoneSheet();
+    if (!ss) {
+      var ssId = PropertiesService.getScriptProperties().getProperty('DB_SS_ID');
+      if (ssId) ss = SpreadsheetApp.openById(ssId);
+    }
+    if (!ss) return null;
+    return ss.getSheetByName((typeof PROP_GUARD !== 'undefined' && PROP_GUARD.OVERFLOW_SHEET) || 'PROP_OVERFLOW');
+  } catch (e) {
+    return null;
+  }
+}
+
+function readAuthSessionOverflow_(sessionKey) {
+  try {
+    var sheet = getAuthOverflowSheet_();
+    if (!sheet || sheet.getLastRow() < 2) return '';
+    var values = sheet.getRange(2, 1, sheet.getLastRow() - 1, 4).getValues();
+    for (var i = values.length - 1; i >= 0; i--) {
+      if (String(values[i][1] || '') === sessionKey) return String(values[i][2] || '');
+    }
+  } catch (e) {}
+  return '';
+}
+
+function deleteAuthSessionOverflow_(sessionKey) {
+  try {
+    var sheet = getAuthOverflowSheet_();
+    if (!sheet || sheet.getLastRow() < 2) return;
+    var values = sheet.getRange(2, 2, sheet.getLastRow() - 1, 1).getValues();
+    for (var i = values.length - 1; i >= 0; i--) {
+      if (String(values[i][0] || '') === sessionKey) sheet.deleteRow(i + 2);
+    }
+  } catch (e) {}
 }
 
 // ============================================================
