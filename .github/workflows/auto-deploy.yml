@@ -16,6 +16,8 @@ on:
       - 'scripts/build_code_index.js'
       - 'scripts/regression-guard.sh'
       - 'scripts/drift-guard.sh'
+      - 'scripts/guard-self-test.sh'
+      - 'scripts/.guard-checksums.md5'
       - 'scripts/browser-smoke-test.py'
       - '.github/workflows/auto-deploy.yml'
       - 'memory/session.md'
