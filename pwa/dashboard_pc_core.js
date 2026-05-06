@@ -12,6 +12,12 @@
 (function initPcDashboardCore(global) {
   const AUTH_SESSION_KEY = 'comphone_auth_session';
   const MAX_SESSION_AGE_MS = 24 * 60 * 60 * 1000;
+  const LAST_SECTION_KEY = 'comphone_last_pc_section';
+  const PC_SECTIONS = new Set([
+    'dashboard', 'jobs', 'po', 'inventory', 'billing', 'warranty',
+    'revenue', 'tax', 'reports', 'analytics', 'performance', 'backup',
+    'crm', 'attendance', 'settings'
+  ]);
 
   const FALLBACK_DASHBOARD = {
     jobs: { total: 15, pending: 3, inProgress: 5, done: 7 },
@@ -149,6 +155,7 @@
   }
 
   function loadSection(sectionName) {
+    if (!PC_SECTIONS.has(sectionName)) sectionName = 'dashboard';
     console.log('[Dashboard] Loading section:', sectionName);
 
     document.querySelectorAll('.dashboard-section, .section-content').forEach((section) => {
@@ -169,11 +176,16 @@
     const data = global.DASHBOARD_DATA || FALLBACK_DASHBOARD;
     const main = document.getElementById('main-content');
     renderSection(sectionName, data, main);
+    try {
+      localStorage.setItem(LAST_SECTION_KEY, sectionName);
+      if (history && history.replaceState) history.replaceState({ section: sectionName }, '', location.href);
+    } catch (_) {}
   }
 
   function loadDashboard() {
     console.log('[Dashboard] Loading main dashboard...');
-    loadSection('dashboard');
+    const savedSection = localStorage.getItem(LAST_SECTION_KEY);
+    loadSection(PC_SECTIONS.has(savedSection) ? savedSection : 'dashboard');
 
     if (typeof global.callApi !== 'function') return;
     global.callApi({ action: 'getDashboardBundle' })
@@ -228,6 +240,13 @@
         console.error('[Login] Error:', error);
         alert('Login error: ' + error.message);
       });
+  }
+
+  function _doLogout() {
+    if (!confirm('ออกจากระบบ COMPHONE Dashboard?\n\nงานที่ยังไม่ได้บันทึกอาจหายไป')) return;
+    localStorage.removeItem(AUTH_SESSION_KEY);
+    localStorage.removeItem(LAST_SECTION_KEY);
+    showLoginOverlay();
   }
 
   function sessionAgeMs(session) {
@@ -300,6 +319,13 @@
 
   function bootPcDashboard() {
     updatePcVersionBadge();
+    window.addEventListener('beforeunload', (event) => {
+      const activeSection = localStorage.getItem(LAST_SECTION_KEY);
+      if (activeSection && activeSection !== 'dashboard') {
+        event.preventDefault();
+        event.returnValue = '';
+      }
+    });
     verifySavedSession();
   }
 
@@ -308,6 +334,7 @@
   global.loadSection = loadSection;
   global.loadDashboard = loadDashboard;
   global._doLogin = _doLogin;
+  global._doLogout = _doLogout;
   global.verifyPcDashboardSession = verifySavedSession;
 
   if (document.readyState === 'loading') {

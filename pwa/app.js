@@ -4,6 +4,12 @@
 // ===== STATE =====
 // URL source: gas_config.js / version_config.js. Do not hardcode deployment URLs here.
 const DEFAULT_SCRIPT_URL = window.COMPHONE_GAS_URL || (window.GAS_CONFIG && window.GAS_CONFIG.url) || '';
+const LAST_PAGE_KEY = 'comphone_last_mobile_page';
+const RESTORABLE_PAGES = new Set([
+  'home', 'jobs', 'camera', 'crm', 'po', 'attendance', 'profile',
+  'reports', 'inventory', 'billing', 'warranty', 'dashboard',
+  'analytics', 'revenue', 'tax', 'performance', 'admin'
+]);
 
 const APP = {
   user: null,
@@ -139,6 +145,36 @@ window.addEventListener('load', () => {
   }, 1800);
 });
 
+window.addEventListener('popstate', (event) => {
+  if (!document.getElementById('main-app') || document.getElementById('main-app').classList.contains('hidden')) return;
+  const moreMenu = document.getElementById('more-menu-overlay');
+  if (moreMenu && moreMenu.style.display === 'flex') {
+    closeMoreMenu();
+    history.pushState({ page: APP.currentPage }, '', location.href);
+    return;
+  }
+  const openModal = document.querySelector('.modal-overlay:not(.hidden), .cp-sheet-overlay:not(.hidden):not(#more-menu-overlay)');
+  if (openModal && openModal.id !== 'more-menu-overlay') {
+    openModal.classList.add('hidden');
+    document.body.style.overflow = '';
+    history.pushState({ page: APP.currentPage }, '', location.href);
+    return;
+  }
+  if (APP.currentPage && APP.currentPage !== 'home') {
+    goPage('home', document.getElementById('nav-home'), { skipHistory: true });
+    history.pushState({ page: 'home' }, '', location.href);
+  }
+});
+
+window.addEventListener('beforeunload', (event) => {
+  const hasOfflineQueue = !!localStorage.getItem('comphone_offline_queue');
+  const protectedPage = APP.currentPage && !['home', 'profile'].includes(APP.currentPage);
+  if (hasOfflineQueue || protectedPage) {
+    event.preventDefault();
+    event.returnValue = '';
+  }
+});
+
 function initApp() {
   const splash = document.getElementById('splash-screen');
   splash.style.opacity = '0';
@@ -234,7 +270,8 @@ function startMainApp() {
   renderProfile();
 
   // B1: Deep Link handler
-  handleDeepLink();
+  const deepLinked = handleDeepLink();
+  if (!deepLinked) restoreLastPage();
 
   // โหลดข้อมูลจริงจาก GAS API
   loadLiveData();
@@ -271,7 +308,7 @@ function handleDeepLink() {
   try {
     const params = new URLSearchParams(window.location.search);
     const page = params.get('page');
-    if (!page || page === 'home') return;
+    if (!page || page === 'home') return false;
 
     const navBtn = document.getElementById('nav-' + page);
     // รอให้ DOM เรนเอร์ก่อน
@@ -287,6 +324,17 @@ function handleDeepLink() {
         }, 800);
       }
     }, 300);
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
+function restoreLastPage() {
+  try {
+    const savedPage = localStorage.getItem(LAST_PAGE_KEY);
+    if (!savedPage || savedPage === 'home' || !RESTORABLE_PAGES.has(savedPage)) return;
+    setTimeout(() => goPage(savedPage, document.getElementById('nav-' + savedPage)), 350);
   } catch(e) {}
 }
 
@@ -322,7 +370,7 @@ function setActiveNav(page) {
   if (btn) btn.classList.add('active');
 }
 
-function goPage(page, btn) {
+function goPage(page, btn, options = {}) {
   // ===== PAGE REDIRECTS FOR MERGED/REMOVED PAGES =====
   // Customer Portal -> show as overlay (not a nav page)
   if (page === 'customer-portal') {
@@ -373,6 +421,12 @@ function goPage(page, btn) {
   if (btn) btn.classList.add('active');
   else setActiveNav(page);
   APP.currentPage = page;
+  if (RESTORABLE_PAGES.has(page)) {
+    localStorage.setItem(LAST_PAGE_KEY, page);
+    if (!options.skipHistory && history && history.pushState) {
+      history.pushState({ page }, '', location.href);
+    }
+  }
 
   if (page === 'jobs') renderJobsPage();
   if (page === 'profile') renderProfile();
@@ -473,7 +527,7 @@ function clearCache() {
   }
 }
 function resetApp() {
-  if (confirm('รีเซ็ตแอปและลบข้อมูลทั้งหมด?')) {
+  if (confirm('รีเซ็ตแอปและลบข้อมูลทั้งหมด?\n\nข้อมูล session, หน้าล่าสุด และคิว offline ในเครื่องนี้จะถูกล้าง')) {
     localStorage.clear();
     location.reload();
   }
@@ -672,11 +726,18 @@ function formatDate() {
 
 // ===== MORE MENU (Bottom Sheet) =====
 function showMoreMenu() {
-  document.getElementById('more-menu-overlay').style.display = 'flex';
+  const overlay = document.getElementById('more-menu-overlay');
+  if (!overlay) return;
+  overlay.style.display = 'flex';
+  overlay.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
+  if (history && history.pushState) history.pushState({ sheet: 'more-menu', page: APP.currentPage }, '', location.href);
 }
 function closeMoreMenu() {
-  document.getElementById('more-menu-overlay').style.display = 'none';
+  const overlay = document.getElementById('more-menu-overlay');
+  if (!overlay) return;
+  overlay.style.display = 'none';
+  overlay.classList.add('hidden');
   document.body.style.overflow = '';
 }
 function navigateFromMore(page) {

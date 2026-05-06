@@ -5,10 +5,10 @@
 // ===========================================================
 
 const VERSION_CONFIG = {
-  version: 'v5.18.11-menu-map',
+  version: 'v5.18.12-nav-ux',
   buildDate: '2026-05-06',
-  buildTimestamp: '20260506_2315',
-  cacheVersion: 'comphone-v5.18.11-menu-map-20260506_2315',
+  buildTimestamp: '20260507_0015',
+  cacheVersion: 'comphone-v5.18.12-nav-ux-20260507_0015',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -26,9 +26,9 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 
 // Backward-compatible exports for legacy modules and guards
-const APP_VERSION = 'v5.18.11-menu-map';
-const BUILD_TIMESTAMP = '20260506_2315';
-const CACHE_VERSION = 'comphone-v5.18.11-menu-map-20260506_2315';
+const APP_VERSION = 'v5.18.12-nav-ux';
+const BUILD_TIMESTAMP = '20260507_0015';
+const CACHE_VERSION = 'comphone-v5.18.12-nav-ux-20260507_0015';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;
