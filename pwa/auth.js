@@ -10,7 +10,7 @@
 // ============================================================
 
 // ===== AUTH STATE =====
-const AUTH=***
+const AUTH = {
   token: null,
   username: null,
   fullName: null,
@@ -23,11 +23,11 @@ const AUTH=***
 };
 
 // SESSION_KEY ใน localStorage
-const AUTH_SESSION_KEY='compho...sion';
-const AUTH_USER_KEY='***';
+const AUTH_SESSION_KEY = 'comphone_auth_session';
+const AUTH_USER_KEY = 'comphone_user';
 
 // Role mapping จาก GAS → PWA role
-const AUTH_ROLE_MAP=***
+const AUTH_ROLE_MAP = {
   'OWNER':      'admin',
   'owner':      'admin',
   'ADMIN':      'admin',
@@ -110,86 +110,89 @@ function applyAuthSession(session) {
 // 3.3 SHOW LOGIN SCREEN
 // ============================================================
 function showLoginScreen() {
-  // ซ่อน setup screen เดิม
   const setupScreen = document.getElementById('setup-screen');
   if (setupScreen) setupScreen.classList.add('hidden');
 
-  // ตรวจสอบว่ามี login screen แล้วหรือยัง
   let loginScreen = document.getElementById('login-screen');
   if (!loginScreen) {
     loginScreen = document.createElement('div');
     loginScreen.id = 'login-screen';
     loginScreen.className = 'screen';
-    loginScreen.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,#1e3a5f 0%,#0f172a 100%);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px';
     document.body.appendChild(loginScreen);
   }
 
+  const version = (window.VERSION_CONFIG && window.VERSION_CONFIG.version) || window.COMPHONE_VERSION || 'v5.18.2-dashboard';
+  const build = (window.VERSION_CONFIG && window.VERSION_CONFIG.buildTimestamp) || window.COMPHONE_BUILD || '';
+  loginScreen.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(circle at 18% 12%,rgba(34,211,238,.22),transparent 30%),radial-gradient(circle at 88% 18%,rgba(139,92,246,.28),transparent 32%),linear-gradient(145deg,#07111f 0%,#0f172a 48%,#111827 100%);overflow:auto';
   loginScreen.innerHTML = `
-    <div style="width:100%;max-width:360px">
-      <!-- Logo -->
-      <div style="text-align:center;margin-bottom:32px">
-        <div style="width:80px;height:80px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:24px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 8px 24px rgba(59,130,246,0.4)">
-          <i class="bi bi-phone-fill" style="font-size:36px;color:#fff"></i>
+    <div style="width:100%;max-width:430px">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="width:88px;height:88px;background:linear-gradient(135deg,#22d3ee,#3b82f6 52%,#8b5cf6);border-radius:28px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 22px 70px rgba(59,130,246,.42),inset 0 1px 0 rgba(255,255,255,.36)">
+          <i class="bi bi-phone-fill" style="font-size:38px;color:#fff"></i>
         </div>
-        <h1 style="color:#fff;font-size:24px;font-weight:800;margin:0">Comphone SuperApp AI</h1>
-        <p style="color:#94a3b8;font-size:14px;margin:8px 0 0">ระบบบริหารงานบริการ IT และโซลูชันเทคโนโลยี</p>
+        <h1 style="color:#f8fafc;font-size:28px;font-weight:900;margin:0;letter-spacing:0">Comphone SuperApp AI</h1>
+        <p style="color:#cbd5e1;font-size:14px;margin:8px 0 0">???????????????????? ?????? ????? ?????????</p>
       </div>
 
-      <!-- Login Form -->
-      <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px;backdrop-filter:blur(10px)">
+      <div style="background:rgba(15,23,42,.68);border:1px solid rgba(255,255,255,.16);border-radius:28px;padding:26px;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 28px 90px rgba(2,6,23,.48),inset 0 1px 0 rgba(255,255,255,.16)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px">
+          <div>
+            <div style="color:#f8fafc;font-size:18px;font-weight:800">???????????</div>
+            <div style="color:#94a3b8;font-size:12px;margin-top:2px">Secure session via Google Apps Script</div>
+          </div>
+          <span style="display:inline-flex;align-items:center;gap:6px;color:#bae6fd;background:rgba(14,165,233,.13);border:1px solid rgba(125,211,252,.24);border-radius:999px;padding:7px 10px;font-size:11px;font-weight:700"><i class="bi bi-shield-lock-fill"></i> LIVE</span>
+        </div>
         <div style="margin-bottom:16px">
-          <label style="color:#94a3b8;font-size:12px;font-weight:600;display:block;margin-bottom:6px">ชื่อผู้ใช้</label>
+          <label style="color:#cbd5e1;font-size:12px;font-weight:700;display:block;margin-bottom:7px">??????????</label>
           <div style="position:relative">
-            <i class="bi bi-person-fill" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#64748b;font-size:16px"></i>
+            <i class="bi bi-person-fill" style="position:absolute;left:15px;top:50%;transform:translateY(-50%);color:#60a5fa;font-size:16px"></i>
             <input type="text" id="login-username" placeholder="username"
-              style="width:100%;padding:12px 14px 12px 42px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.15);border-radius:12px;color:#fff;font-size:15px;outline:none;box-sizing:border-box"
+              style="width:100%;min-height:52px;padding:13px 14px 13px 44px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:16px;color:#fff;font-size:15px;outline:none;box-sizing:border-box"
               autocomplete="username" autocapitalize="none"
-              onfocus="this.style.borderColor='#3b82f6'"
-              onblur="this.style.borderColor='rgba(255,255,255,0.15)'"
+              onfocus="this.style.borderColor='#38bdf8';this.style.boxShadow='0 0 0 4px rgba(56,189,248,.14)'"
+              onblur="this.style.borderColor='rgba(255,255,255,.15)';this.style.boxShadow='none'"
               onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()">
           </div>
         </div>
 
         <div style="margin-bottom:20px">
-          <label style="color:#94a3b8;font-size:12px;font-weight:600;display:block;margin-bottom:6px">รหัสผ่าน</label>
+          <label style="color:#cbd5e1;font-size:12px;font-weight:700;display:block;margin-bottom:7px">????????</label>
           <div style="position:relative">
-            <i class="bi bi-lock-fill" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#64748b;font-size:16px"></i>
+            <i class="bi bi-lock-fill" style="position:absolute;left:15px;top:50%;transform:translateY(-50%);color:#60a5fa;font-size:16px"></i>
             <input type="password" id="login-password" placeholder="password"
-              style="width:100%;padding:12px 14px 12px 42px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.15);border-radius:12px;color:#fff;font-size:15px;outline:none;box-sizing:border-box"
+              style="width:100%;min-height:52px;padding:13px 14px 13px 44px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:16px;color:#fff;font-size:15px;outline:none;box-sizing:border-box"
               autocomplete="current-password"
-              onfocus="this.style.borderColor='#3b82f6'"
-              onblur="this.style.borderColor='rgba(255,255,255,0.15)'"
+              onfocus="this.style.borderColor='#38bdf8';this.style.boxShadow='0 0 0 4px rgba(56,189,248,.14)'"
+              onblur="this.style.borderColor='rgba(255,255,255,.15)';this.style.boxShadow='none'"
               onkeydown="if(event.key==='Enter')submitLogin()">
           </div>
         </div>
 
         <button id="login-btn" onclick="submitLogin()"
-          style="width:100%;padding:14px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:0.5px;transition:opacity 0.2s"
-          onmouseenter="this.style.opacity='0.9'" onmouseleave="this.style.opacity='1'">
-          <i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ
+          style="width:100%;min-height:54px;padding:14px;background:linear-gradient(135deg,#06b6d4,#3b82f6 48%,#7c3aed);color:#fff;border:none;border-radius:18px;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:0;transition:transform .18s ease,box-shadow .18s ease;box-shadow:0 18px 46px rgba(37,99,235,.34)"
+          onmouseenter="this.style.transform='translateY(-1px)';this.style.boxShadow='0 22px 56px rgba(37,99,235,.45)'"
+          onmouseleave="this.style.transform='none';this.style.boxShadow='0 18px 46px rgba(37,99,235,.34)'">
+          <i class="bi bi-box-arrow-in-right"></i> ???????????
         </button>
 
-        <div id="login-error" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:10px;color:#fca5a5;font-size:13px;text-align:center"></div>
+        <div id="login-error" style="display:none;margin-top:12px;padding:11px 14px;background:rgba(239,68,68,.15);border:1px solid rgba(248,113,113,.3);border-radius:14px;color:#fecaca;font-size:13px;text-align:center"></div>
       </div>
 
-      <!-- Quick Setup Link -->
       <div style="text-align:center;margin-top:16px">
         <button onclick="showQuickSetup()"
-          style="background:none;border:none;color:#64748b;font-size:12px;cursor:pointer;text-decoration:underline">
-          ตั้งค่า Script URL
+          style="background:none;border:none;color:#93c5fd;font-size:12px;cursor:pointer;text-decoration:underline;text-underline-offset:3px">
+          ??????? Script URL
         </button>
       </div>
 
-      <!-- Version -->
-      <div style="text-align:center;margin-top:24px;color:#334155;font-size:11px">
-        Comphone SuperApp AI v5.5 · PWA
+      <div style="text-align:center;margin-top:24px;color:#64748b;font-size:11px">
+        Comphone SuperApp AI ${version}${build ? ' ? ' + build : ''} ? PWA
       </div>
     </div>
   `;
 
   loginScreen.classList.remove('hidden');
 
-  // Focus username
   setTimeout(() => {
     const input = document.getElementById('login-username');
     if (input) input.focus();

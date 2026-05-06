@@ -5,6 +5,7 @@
     styles: [
       'dashboard_shared.css',
       'mobile_shared.css',
+      'mobile_glass.css',
       'style.css',
     ],
     scripts: [
@@ -43,6 +44,7 @@
       'api_contract.js',
       'dashboard_shared.css',
       'mobile_shared.css',
+      'mobile_glass.css',
       'style.css',
       'mobile_shared.js',
       'api_contract.js',
