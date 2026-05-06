@@ -9,9 +9,34 @@
 let _inventoryData = null;
 let _inventoryFilter = { search: '', location: '', alert: false };
 
+function _inventoryMount_() {
+  let mount = document.getElementById('main-content');
+  if (mount) return mount;
+  mount = document.getElementById('inventory-content');
+  if (mount) return mount;
+  const page = document.getElementById('page-inventory');
+  if (!page) return null;
+  page.innerHTML = '<div class="page-header"><h5><i class="bi bi-boxes" style="color:#7c3aed"></i> คลังสินค้า</h5></div><div id="inventory-content"></div>';
+  return document.getElementById('inventory-content');
+}
+
+if (typeof kpiBox !== 'function') {
+  function kpiBox(icon, bg, color, value, label, subtitle) {
+    return `<div style="background:${bg};border-radius:14px;padding:14px;text-align:center;min-width:130px;flex:1">
+      <i class="bi ${icon}" style="color:${color};font-size:22px"></i>
+      <div style="font-size:24px;font-weight:800;color:${color};margin-top:4px">${value}</div>
+      <div style="font-size:12px;color:#475569;font-weight:700">${label}</div>
+      <div style="font-size:11px;color:#64748b">${subtitle || ''}</div>
+    </div>`;
+  }
+}
+
 async function renderInventorySection(data) {
+  data = data || {};
+  const mount = _inventoryMount_();
+  if (!mount) return;
   // Show loading first, then fetch real inventory data
-  document.getElementById('main-content').innerHTML = `
+  mount.innerHTML = `
     <div class="loading-state">
       <div class="spinner-pc"></div>
       <p>กำลังโหลดข้อมูลสต็อก...</p>
@@ -25,7 +50,7 @@ async function renderInventorySection(data) {
   } catch(e) {
     // Fallback to dashboard summary
     const lowStock = Number((data.summary || {}).lowStock || 0);
-    document.getElementById('main-content').innerHTML = `
+    mount.innerHTML = `
       <div class="kpi-row" style="margin-bottom:16px">
         ${kpiBox('bi-box-seam-fill', lowStock > 0 ? '#fef3c7' : '#f1f5f9', lowStock > 0 ? '#d97706' : '#6b7280', lowStock, 'สินค้าสต็อกต่ำ', lowStock > 0 ? '⚠️ ต้องสั่งซื้อ' : 'ปกติ')}
       </div>
@@ -38,6 +63,8 @@ async function renderInventorySection(data) {
 }
 
 function _renderInventoryUI(invData) {
+  const mount = _inventoryMount_();
+  if (!mount) return;
   const items = invData.items || [];
   const totalItems = items.length;
   const totalQty = items.reduce((s,i) => s + Number(i.total_qty||0), 0);
@@ -127,7 +154,11 @@ function _renderInventoryUI(invData) {
     </div>` : ''}
   `;
 
-  document.getElementById('main-content').innerHTML = html;
+  mount.innerHTML = html;
+}
+
+function loadInventoryPage() {
+  return renderInventorySection(APP && APP.dashboardData ? APP.dashboardData : {});
 }
 
 function _buildInventoryTable(items) {

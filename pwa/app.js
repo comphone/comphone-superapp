@@ -296,6 +296,9 @@ function handleDeepLink() {
 function renderProfile() {
   const roleConf = ROLES[APP.role] || ROLES.tech;
   const initial = APP.user.name.charAt(0).toUpperCase();
+  const version = (window.VERSION_CONFIG && window.VERSION_CONFIG.version) || window.COMPHONE_VERSION || '';
+  const versionLabel = document.querySelector('.app-version [data-i18n="Version"]');
+  if (versionLabel && version) versionLabel.textContent = version;
 
   const avatarLg = document.getElementById('profile-avatar-large');
   if (avatarLg) {
@@ -311,6 +314,14 @@ function renderProfile() {
 }
 
 // ===== NAVIGATION =====
+function setActiveNav(page) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const direct = document.getElementById('nav-' + page);
+  const nestedPages = ['crm', 'inventory', 'po', 'billing', 'reports', 'attendance', 'warranty', 'profile', 'admin', 'revenue', 'tax', 'performance'];
+  const btn = direct || (nestedPages.includes(page) ? document.getElementById('nav-more') : null);
+  if (btn) btn.classList.add('active');
+}
+
 function goPage(page, btn) {
   // ===== PAGE REDIRECTS FOR MERGED/REMOVED PAGES =====
   // Dashboard -> Home (Dashboard merged into Home)
@@ -385,6 +396,7 @@ function goPage(page, btn) {
   }, currentPage && currentPage !== pageEl ? 300 : 0);
   
   if (btn) btn.classList.add('active');
+  else setActiveNav(page);
   APP.currentPage = page;
 
   if (page === 'jobs') renderJobsPage();

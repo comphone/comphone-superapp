@@ -3,8 +3,11 @@ REPORT MODULE – COMPHONE SUPER APP Phase 32
 ============================================ */
 async function renderReportModule(data) {
 setActiveNav('reports');
-document.getElementById('topbar-title').innerHTML = '📊 ศูนย์รวมรายงาน';
-document.getElementById('reports-content').innerHTML = `
+const titleEl = document.getElementById('topbar-title') || document.querySelector('#page-reports .page-header h5');
+if (titleEl) titleEl.innerHTML = '📊 ศูนย์รวมรายงาน';
+const mount = document.getElementById('reports-content') || document.getElementById('main-content');
+if (!mount) return;
+mount.innerHTML = `
 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:24px">
 <div onclick="_showReport('attendance')" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;border-radius:16px;padding:24px;cursor:pointer;transition:transform .2s,box-shadow .2s" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 12px 24px rgba(59,130,246,.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='none'">
 <div style="font-size:32px;margin-bottom:12px">⏰</div>

@@ -13,9 +13,12 @@ let _billingStatusFilter = 'ALL';
 // ===========================================================
 function renderBillingSection(data) {
   setActiveNav('billing');
-  document.getElementById('topbar-title').innerHTML = '💰 ใบแจ้งหนี้ / Billing';
+  const titleEl = document.getElementById('topbar-title') || document.querySelector('#page-billing .page-header h5');
+  if (titleEl) titleEl.innerHTML = '💰 ใบแจ้งหนี้ / Billing';
+  const mount = document.getElementById('main-content') || document.getElementById('billing-content');
+  if (!mount) return;
 
-  document.getElementById('main-content').innerHTML = `
+  mount.innerHTML = `
     <!-- KPI Row -->
     <div id="billing-kpi" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;">
       <div style="background:#f0f9ff;border-radius:12px;padding:16px;text-align:center">

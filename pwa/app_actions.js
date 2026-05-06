@@ -199,6 +199,10 @@ function openNewJob() {
   setTimeout(() => document.getElementById('nj-customer')?.focus(), 150);
 }
 
+function openJob() {
+  return openNewJob();
+}
+
 function stepNext_NJ(step) {
   const customer = document.getElementById('nj-customer')?.value.trim();
   const phone = document.getElementById('nj-phone')?.value.trim();
