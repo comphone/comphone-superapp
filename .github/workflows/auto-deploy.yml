@@ -125,10 +125,25 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
+      - name: Prepare Pages artifact
+        run: |
+          rm -rf site
+          mkdir -p site/pwa
+          cp -R pwa/. site/pwa/
+          printf '%s\n' \
+            '<!doctype html>' \
+            '<html><head>' \
+            '<meta charset="utf-8">' \
+            '<meta http-equiv="refresh" content="0; url=./pwa/">' \
+            '<title>Comphone SuperApp</title>' \
+            '<script>location.replace("./pwa/");</script>' \
+            '</head><body><a href="./pwa/">Open Comphone SuperApp</a></body></html>' \
+            > site/index.html
+
       - name: Upload PWA artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './pwa'
+          path: './site'
 
       - name: Deploy to GitHub Pages
         id: deployment
