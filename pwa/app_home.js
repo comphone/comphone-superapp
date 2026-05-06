@@ -1,12 +1,13 @@
 // ===== HOME RENDER =====
 function renderHome() {
   const roleConf = ROLES[APP.role] || ROLES.tech;
+  const quickActions = typeof getQuickActions === 'function' ? getQuickActions() : roleConf.quickActions;
 
   // Quick Actions
   const qaGrid = document.getElementById('quick-actions-grid');
-  qaGrid.className = roleConf.quickActions.length > 4 ? 'qa-grid-8' : 'qa-grid-4';
-  qaGrid.innerHTML = roleConf.quickActions.map(qa => `
-    <button class="qa-btn-item" style="background:${qa.color};color:${qa.textColor};" onclick="${qa.action}()">
+  qaGrid.className = quickActions.length > 4 ? 'qa-grid-8' : 'qa-grid-4';
+  qaGrid.innerHTML = quickActions.map(qa => `
+    <button class="qa-btn-item" style="background:${qa.color};color:${qa.textColor};" onclick="${qa.id ? `runQuickAction('${qa.id}')` : `${qa.action}()`}">
       <i class="bi ${qa.icon}"></i>
       ${qa.label}
     </button>

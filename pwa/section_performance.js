@@ -11,7 +11,7 @@ let PERFORMANCE_CHARTS = {};
  * Render Performance Dashboard
  */
 function renderPerformanceSection(data) {
-  const container = document.getElementById('main-content');
+  const container = document.getElementById('performance-content') || document.getElementById('main-content');
   if (!container) return;
   
   const metrics = data || {};

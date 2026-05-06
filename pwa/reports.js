@@ -187,12 +187,19 @@ const to = document.getElementById('rpt-jobs-to').value;
 const el = document.getElementById('rpt-jobs-content');
 el.innerHTML = '<div style="text-align:center;padding:20px;color:#6b7280">กำลังโหลด...</div>';
 try {
-const res = await callApi('getDashboardBundle', {});
+let res = await callApi('getDashboardBundle', {});
+if (!res || res.success === false) res = await callApi('getDashboardData', {});
 if (!res || !res.success) {
 el.innerHTML = '<div style="text-align:center;padding:30px;color:#6b7280">ไม่พบข้อมูล</div>';
 return;
 }
-const stats = res.stats || {};
+const summary = res.summary || {};
+const stats = res.stats || {
+total: summary.totalJobs || 0,
+pending: summary.pendingJobs || summary.openJobs || 0,
+in_progress: summary.inProgressJobs || 0,
+completed: summary.completedJobs || summary.doneJobs || 0
+};
 var html = `
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
 <div style="background:#f0fdf4;border-radius:12px;padding:14px;text-align:center"><div style="font-size:20px;font-weight:700;color:#059669">${stats.total||0}</div><div style="font-size:12px;color:#6b7280">งานทั้งหมด</div></div>

@@ -638,6 +638,7 @@ function showSettings() {
   }
 }
 function showQuickActionSettings() {
+  document.getElementById('modal-quick-actions')?.remove();
   const selected = new Set(getQuickActions().map(item => item.id));
   const rows = QUICK_ACTION_CATALOG.map(item => `
     <label class="quick-settings-row">
@@ -896,6 +897,7 @@ function formatDate() {
 function showMoreMenu() {
   const overlay = document.getElementById('more-menu-overlay');
   if (!overlay) return;
+  renderMoreMenu();
   overlay.style.display = 'flex';
   overlay.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
@@ -913,6 +915,37 @@ function navigateFromMore(page) {
   // Highlight the More button since these pages live under it
   const moreBtn = document.getElementById('nav-more');
   goPage(page, moreBtn);
+}
+function renderMoreMenu() {
+  const content = document.getElementById('more-menu-content');
+  if (!content) return;
+  const role = APP.user && APP.user.role;
+  content.innerHTML = `
+    <div class="cp-sheet-handle"></div>
+    <div class="more-menu-title" data-i18n="More">เพิ่มเติม</div>
+    ${MENU_GROUPS.map(group => {
+      const items = group.items.filter(item => !item.roles || item.roles.includes(role));
+      if (!items.length) return '';
+      return `
+        <div class="more-menu-group-label">${group.label}</div>
+        <div class="more-menu-grid">
+          ${items.map(item => `
+            <button class="more-menu-item" ${item.fn ? `data-quick-action="${item.id}"` : `data-menu-page="${item.page}"`}>
+              <div class="more-menu-icon"><i class="bi ${item.icon}"></i></div>
+              <span>${item.label}</span>
+            </button>
+          `).join('')}
+        </div>`;
+    }).join('')}`;
+  content.querySelectorAll('[data-quick-action]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      closeMoreMenu();
+      runQuickAction(btn.getAttribute('data-quick-action'));
+    });
+  });
+  content.querySelectorAll('[data-menu-page]').forEach(btn => {
+    btn.addEventListener('click', () => navigateFromMore(btn.getAttribute('data-menu-page')));
+  });
 }
 
 // ===== ACCOUNTING INTEGRATION (Phase 35) =====

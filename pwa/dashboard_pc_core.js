@@ -112,7 +112,8 @@
       },
       reports: () => {
         const c = document.getElementById('reports-content') || document.getElementById('section-reports');
-        if (typeof global.renderReportsSection === 'function' && c) c.innerHTML = global.renderReportsSection(data);
+        if (typeof global.renderReportModule === 'function') global.renderReportModule(data);
+        else if (typeof global.renderReportsSection === 'function' && c) c.innerHTML = global.renderReportsSection(data);
         else if (main) main.innerHTML = '<h3>Reports</h3><p>Coming soon...</p>';
       },
       analytics: () => {

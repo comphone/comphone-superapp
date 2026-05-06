@@ -1,9 +1,9 @@
 // ===========================================================
-// COMPHONE SUPER APP v5.18.12-nav-ux - Service Worker
+// COMPHONE SUPER APP v5.18.13-menu-settings - Service Worker
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ===========================================================
-const CACHE_V = 'comphone-v5.18.12-nav-ux-20260507_0015';
+const CACHE_V = 'comphone-v5.18.13-menu-settings-20260507_0830';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
 

@@ -14,14 +14,14 @@ async function renderRevenueSection(data) {
       if (res && res.success) {
         data = res;
       } else {
-        const main = document.getElementById('main-content');
+        const main = document.getElementById('revenue-content') || document.getElementById('main-content');
         if (main) {
           main.innerHTML = errorState(res?.error || 'ไม่สามารถโหลดข้อมูลรายรับได้', 'renderRevenueSection()');
         }
         return;
       }
     } catch (e) {
-      const main = document.getElementById('main-content');
+      const main = document.getElementById('revenue-content') || document.getElementById('main-content');
       if (main) {
         main.innerHTML = errorState('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'renderRevenueSection()');
       }
@@ -150,7 +150,8 @@ async function renderRevenueSection(data) {
       </div>
     </div>`;
 
-  document.getElementById('main-content').innerHTML = html;
+  const container = document.getElementById('revenue-content') || document.getElementById('main-content');
+  if (container) container.innerHTML = html;
 
   // Render chart
   setTimeout(() => {

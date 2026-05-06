@@ -106,10 +106,13 @@ function _copyTaxResult() {
 
 function renderTaxSection() {
   setActiveNav('tax');
-  document.getElementById('topbar-title').innerHTML =
+  const title = document.getElementById('topbar-title');
+  if (title) title.innerHTML =
     '<i class="bi bi-receipt-cutoff" style="color:#059669;margin-right:8px"></i>คำนวณภาษี (VAT / WHT)';
 
-  document.getElementById('main-content').innerHTML = `
+  const container = document.getElementById('tax-content') || document.getElementById('main-content');
+  if (!container) return;
+  container.innerHTML = `
     <div class="card-box" style="max-width:640px;margin:0 auto">
       <div class="card-title"><i class="bi bi-calculator" style="color:#059669"></i> คำนวณภาษีมูลค่าเพิ่ม + หัก ณ ที่จ่าย</div>
 
