@@ -1,10 +1,10 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.18.14-auth-guard (PWA) / GAS Backend v5.18.8-auth-session-store @544
+> **Version:** v5.18.15-integrity-audit (PWA) / GAS Backend v5.18.8-auth-session-store @544
 
-> **Date:** 2026-05-07 | **Phase:** 51 (Navigation UX + Session Continuity)
+> **Date:** 2026-05-07 | **Phase:** 52 (System Integrity Audit Layer)
 
-> **Status:** STABLE - PC/mobile menu runtime restored; mobile/PC navigation continuity improved; route/API index guard clean; protected API smoke and local UI audit pass
+> **Status:** STABLE - PC/mobile menu runtime restored; System Integrity Audit score 100/100; route/API/renderer/container relationship guard is now part of regression checks
 
 ---
 
@@ -12,14 +12,14 @@
 
 | Item | Current Value | Source of Truth |
 |---|---|---|
-| App Version | `v5.18.14-auth-guard` | `pwa/version_config.js` |
-| Cache Version | `comphone-v5.18.14-auth-guard-20260507_0915` | `pwa/version_config.js`, `pwa/sw.js` |
-| Build Timestamp | `20260507_0915` | `pwa/version_config.js` |
+| App Version | `v5.18.15-integrity-audit` | `pwa/version_config.js` |
+| Cache Version | `comphone-v5.18.15-integrity-audit-20260507_1030` | `pwa/version_config.js`, `pwa/sw.js` |
+| Build Timestamp | `20260507_1030` | `pwa/version_config.js` |
 | GAS Backend Deploy | `544` / production URL in `pwa/gas_config.js` | `clasp-ready/Config.gs`, `clasp-ready/Auth.gs`, `clasp-ready/Router.gs` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbyVK5KLJcHFNfm7oNce5e_WOrFdS2_UuiRQW27ipIUK2DeYGtVjSwWCmr-jIWLnkLcSgw/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-02.phase36-partial` | `pwa/api_contract.js` |
 | Last Production Commit | GitHub `main` HEAD | Use `git log -1 --oneline` for the exact commit |
-| Validation Status | Static Guard OK; Code Index OK; login OK; verifySession OK; protected API smoke OK; local PC/Mobile UI audit OK | `scripts/pwa_static_guard.js`, `scripts/build_code_index.js`, `scripts/pwa_api_smoke.js`, `test_reports/ui_audit_*` |
+| Validation Status | Static Guard OK; Code Index OK; System Integrity Audit OK; login OK; verifySession OK; protected API smoke OK; local PC/Mobile UI audit OK | `scripts/pwa_static_guard.js`, `scripts/build_code_index.js`, `scripts/system_integrity_audit.js`, `scripts/pwa_api_smoke.js`, `test_reports/*_latest.*` |
 
 ### Phase 51 Current Review (2026-05-07)
 - Status score: **95/100**. Core runtime is usable, PC duplicate auth/navigation drift is removed, mobile menu pages now open without offline/runtime errors, quick action modals open correctly, route/API drift now has an automated index guard, and GAS `loginUser` -> `verifySession` token persistence is fixed at deployment `@544`.
@@ -40,7 +40,10 @@
 - Mobile now stores the last active page in `localStorage['comphone_last_mobile_page']`, restores it on next launch, handles browser Back by closing sheets/modals or returning to Home before leaving, and warns before accidental unload on active work pages/offline queue.
 - PC dashboard now stores `localStorage['comphone_last_pc_section']`, restores the last active section after login/session restore, confirms logout, and uses a scroll-contained sidebar grouped by workflow: Main, Jobs/Inventory, Finance, Reports, System.
 - `scripts/build_code_index.js` now builds a local SocratiCode-lite map of PWA assets, routes, functions, API calls, GAS functions, router actions, public actions, dependency impact, workflow coverage, orphan/deprecated script candidates, and route risks. Generated reports are `test_reports/code_index_latest.json` and `test_reports/code_index_summary_latest.md`; both must stay uncommitted.
-- Service worker cache was bumped to `comphone-v5.18.14-auth-guard-20260507_0915` to force browsers off stale assets.
+- `scripts/system_integrity_audit.js` now builds the production relationship matrix for Mobile and PC menus: menu -> route/page/section -> renderer function -> loaded JS file -> API contract actions -> GAS handlers -> AI lock/telemetry. Generated reports are `test_reports/system_integrity_latest.json` and `test_reports/system_integrity_latest.md`; both must stay uncommitted.
+- `scripts/regression-guard.sh` now runs the System Integrity Audit after the code index so broken menu/renderer/container relationships block release before deployment.
+- PC CRM route alignment fixed: sidebar `loadSection('crm')` now matches `#section-crm` and `#crm-content` instead of the legacy `section-customers` id.
+- Service worker cache was bumped to `comphone-v5.18.15-integrity-audit-20260507_1030` to force browsers off stale assets.
 - BLUEPRINT is the source of truth. Old Hermes/SocratiCode notes below are historical unless explicitly marked current here.
 
 ### Current Validation Evidence
@@ -59,7 +62,7 @@
 ### 0-100 Health Review
 | Area | Score | Status | Reason |
 |---|---:|---|---|
-| Runtime config/version/cache | 94 | Strong | Central PWA config and service worker cache are aligned at `v5.18.14-auth-guard`; auxiliary/archival pages still need cleanup. |
+| Runtime config/version/cache | 94 | Strong | Central PWA config and service worker cache are aligned at `v5.18.15-integrity-audit`; auxiliary/archival pages still need cleanup. |
 | Mobile PWA auth/login | 94 | Strong | Modern login, session restore, menu pages, billing/reports/inventory adapters, and quick-action modals pass local UI audit. |
 | PC dashboard auth/login | 92 | Strong | Runtime is consolidated in `dashboard_pc_core.js`; core sections switch cleanly in local UI audit. |
 | API contract/backend availability | 92 | Strong | Fresh login, verifySession, and required protected smoke pass against production GAS @544. |
@@ -74,10 +77,11 @@
 | Done | Auth session persistence | `loginUser` returned a token that `verifySession` could not find when session writes overflowed away from Script Properties. | Fixed in `clasp-ready/Auth.gs`; deployed to GAS `@544`; protected smoke now passes. |
 | Done | PC dashboard duplicate runtime logic | Resolved in `v5.18.7-authguard`. | Keep static guard enforcing one `_doLogin` and no inline core functions in `dashboard_pc.html`. |
 | Done | Mobile menu/runtime recovery | Billing/Reports used PC-only `setActiveNav`, Inventory had no mobile loader, Profile showed stale version, and `openJob()` alias was missing. | Fixed in `v5.18.9-ui-menu`; local mobile UI audit passes. |
-| Done | Route/API intelligence guard | Legacy `stock` quick action pointed to a missing mobile page and future drift had no fast detector. | Fixed in `v5.18.14-auth-guard`; run `node scripts/build_code_index.js` before release. |
+| Done | Route/API intelligence guard | Legacy `stock` quick action pointed to a missing mobile page and future drift had no fast detector. | Fixed in `v5.18.15-integrity-audit`; run `node scripts/build_code_index.js` before release. |
 | Done | Code Intelligence Layer v2 | Future agents needed a compact impact map instead of rereading the full repo. | Added dependency graph, workflow map, orphan classification, and Markdown summary output to `scripts/build_code_index.js`. |
-| Done | Mobile menu map recovery | Operational pages existed but were hidden from the reduced More menu, and several pages were redirected away before loading. | Fixed in `v5.18.14-auth-guard`; full grouped menu restored and real pages can load directly. |
-| Done | Navigation continuity | Mobile/PC did not reliably reopen the last working page and accidental Back/close/logout could interrupt work. | Fixed in `v5.18.14-auth-guard`; mobile and PC persist current page/section and add accidental-exit safeguards. |
+| Done | System Integrity Audit Layer | Menu bugs could hide across route/page/renderer/API/container layers. | Added `scripts/system_integrity_audit.js`; regression guard now reports PC/Mobile menu matrix and AI workflow lock/telemetry status. |
+| Done | Mobile menu map recovery | Operational pages existed but were hidden from the reduced More menu, and several pages were redirected away before loading. | Fixed in `v5.18.15-integrity-audit`; full grouped menu restored and real pages can load directly. |
+| Done | Navigation continuity | Mobile/PC did not reliably reopen the last working page and accidental Back/close/logout could interrupt work. | Fixed in `v5.18.15-integrity-audit`; mobile and PC persist current page/section and add accidental-exit safeguards. |
 | P1 | Destructive write-flow validation | Open-job/customer modals open, but submitting writes should not be tested directly on production data. | Run staging write smoke for create job, create customer, billing/payment, inventory add/transfer, and offline queue replay. |
 | P1 | Auxiliary pages have old fallback versions | `executive_dashboard.html`, `monitoring_dashboard.html`, `system_graph.html`, some scripts still mention old versions. | Either align them to `version_config.js` or mark/archive them if unused. |
 | P2 | BLUEPRINT historical sections are noisy | Old Hermes/SocratiCode claims and v5.9/v5.5 notes can mislead future agents. | Move old phases into an archive section and keep only current rules at the top. |

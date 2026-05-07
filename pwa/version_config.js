@@ -5,10 +5,10 @@
 // ===========================================================
 
 const VERSION_CONFIG = {
-  version: 'v5.18.14-auth-guard',
+  version: 'v5.18.15-integrity-audit',
   buildDate: '2026-05-06',
-  buildTimestamp: '20260507_0915',
-  cacheVersion: 'comphone-v5.18.14-auth-guard-20260507_0915',
+  buildTimestamp: '20260507_1030',
+  cacheVersion: 'comphone-v5.18.15-integrity-audit-20260507_1030',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -26,9 +26,9 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 
 // Backward-compatible exports for legacy modules and guards
-const APP_VERSION = 'v5.18.14-auth-guard';
-const BUILD_TIMESTAMP = '20260507_0915';
-const CACHE_VERSION = 'comphone-v5.18.14-auth-guard-20260507_0915';
+const APP_VERSION = 'v5.18.15-integrity-audit';
+const BUILD_TIMESTAMP = '20260507_1030';
+const CACHE_VERSION = 'comphone-v5.18.15-integrity-audit-20260507_1030';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;

@@ -201,6 +201,16 @@ else
   warn "Node or build_code_index.js unavailable — skipping code index"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/system_integrity_audit.js" ]; then
+  if node scripts/system_integrity_audit.js; then
+    echo "   ✅ System integrity audit passed"
+  else
+    fail "System integrity audit FAILED"
+  fi
+else
+  warn "Node or system_integrity_audit.js unavailable — skipping system integrity audit"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"
