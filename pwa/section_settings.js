@@ -107,6 +107,8 @@ function renderSettingsSection() {  // [PATCH] เปลี่ยนเป็น
       </table>
     </div>
 
+    <div id="runtime-selftest-content" style="margin-bottom:16px"></div>
+
     <!-- Users -->
     <div class="card-box" style="margin-bottom:16px">
       <div class="card-title"><i class="bi bi-people" style="color:#059669"></i> ผู้ใช้ระบบ (${users.length})</div>
@@ -189,6 +191,13 @@ function _clearAllCaches() {
   caches.keys().then(ks => ks.forEach(k => caches.delete(k)));
   DASHBOARD_DATA = null;
   location.reload();
+}
+
+function hydrateSettingsRuntimePanels() {
+  const el = document.getElementById('runtime-selftest-content');
+  if (el && typeof renderRuntimeSelfTestPanel === 'function') {
+    renderRuntimeSelfTestPanel(el);
+  }
 }
 
 function renderGenericSection(section, data) {

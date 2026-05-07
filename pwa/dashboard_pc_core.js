@@ -139,7 +139,10 @@
         else if (main) main.innerHTML = '<h3>Attendance</h3><p>Coming soon...</p>';
       },
       settings: () => {
-        if (typeof global.renderSettingsSection === 'function' && main) main.innerHTML = global.renderSettingsSection();
+        if (typeof global.renderSettingsSection === 'function' && main) {
+          main.innerHTML = global.renderSettingsSection();
+          if (typeof global.hydrateSettingsRuntimePanels === 'function') global.hydrateSettingsRuntimePanels();
+        }
         else if (main) main.innerHTML = '<h3>Settings</h3><p>Coming soon...</p>';
       },
     };
