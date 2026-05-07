@@ -42,6 +42,12 @@ const PROTECTED_STEPS = [
     validate: body => body && body.success !== false,
   },
   {
+    action: 'getVisionFieldContext',
+    label: 'Vision field job context',
+    payload: { timelineLimit: 3 },
+    validate: body => body && body.success !== false && Object.prototype.hasOwnProperty.call(body, 'context_available'),
+  },
+  {
     action: 'getVisionReviewQueue',
     label: 'Vision human review queue',
     payload: { limit: 5, days: 30 },
@@ -102,6 +108,13 @@ function summarize(body) {
         decision: item.decision,
         confidence: item.confidence,
       })),
+    };
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'context_available')) {
+    return {
+      context_available: body.context_available === true,
+      job_id: body.job_id || '',
+      timeline_count: body.timeline_count || 0,
     };
   }
   return {

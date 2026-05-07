@@ -1,9 +1,9 @@
 // ===========================================================
-// COMPHONE SUPER APP v5.18.23-vision-e2e - Service Worker
+// COMPHONE SUPER APP v5.18.24-vision-field-link - Service Worker
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ===========================================================
-const CACHE_V = 'comphone-v5.18.23-vision-e2e-20260507_1430';
+const CACHE_V = 'comphone-v5.18.24-vision-field-link-20260507_1730';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
 

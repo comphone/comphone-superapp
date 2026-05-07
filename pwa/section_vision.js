@@ -10,6 +10,7 @@
     lastStats: null,
     lastVersion: null,
     lastResult: null,
+    currentFieldContext: null,
   };
 
   function esc(value) {
@@ -81,6 +82,8 @@
     const decision = result.decision || {};
     const data = result.data || {};
     const issues = result.issues || [];
+    const jobId = data.job_id || result.job_id || '';
+    const visionLogId = result.visionLogId || result.logId || '';
     const fields = Object.keys(data).slice(0, 8).map(key => `
       <div class="vision-type-row"><span>${esc(key)}</span><strong>${esc(typeof data[key] === 'object' ? JSON.stringify(data[key]) : data[key])}</strong></div>
     `).join('');
@@ -91,11 +94,16 @@
           <strong>${esc(result.type || '-')}</strong>
           <em>${Math.round(Number(result.confidence || 0) * 100)}% confidence</em>
         </div>
+        <div class="vision-muted" style="margin-top:6px">
+          ${visionLogId ? `Vision Log: ${esc(visionLogId)}` : ''}
+          ${jobId ? ` ${visionLogId ? '|' : ''} Job: ${esc(jobId)}` : ''}
+        </div>
         <p>${esc(decision.reason || result._error || 'No decision reason')}</p>
         ${issues.length ? `<div class="vision-issues">${issues.map(item => `<span>${esc(item)}</span>`).join('')}</div>` : ''}
         <div class="vision-type-list">${fields || '<div class="vision-empty">No structured data returned.</div>'}</div>
         <div class="vision-actions" style="margin-top:12px">
           <button class="vision-btn secondary" onclick="copyVisionResult()"><i class="bi bi-clipboard"></i> Copy</button>
+          <button class="vision-btn secondary" onclick="linkLastVisionToJobTimeline()"><i class="bi bi-diagram-3"></i> Link Timeline</button>
           <button class="vision-btn warn" onclick="submitLastVisionReview('APPROVED')"><i class="bi bi-check2-circle"></i> Approve</button>
           <button class="vision-btn secondary" onclick="submitLastVisionReview('REJECTED')"><i class="bi bi-x-circle"></i> Reject</button>
         </div>
@@ -111,11 +119,44 @@
           <span>${esc(item.visionLogId)} ${item.jobId ? '· Job ' + esc(item.jobId) : ''} · ${Math.round(Number(item.confidence || 0) * 100)}%</span>
         </div>
         <div class="vision-actions">
+          <button class="vision-btn secondary" onclick="loadVisionFieldContext('${esc(item.jobId || '')}','${esc(item.visionLogId)}')"><i class="bi bi-clock-history"></i></button>
           <button class="vision-btn secondary" onclick="submitQueuedVisionReview('${esc(item.visionLogId)}','APPROVED')"><i class="bi bi-check2"></i></button>
           <button class="vision-btn secondary" onclick="submitQueuedVisionReview('${esc(item.visionLogId)}','REJECTED')"><i class="bi bi-x"></i></button>
         </div>
       </div>
     `).join('');
+  }
+
+  function buildFieldContext(ctx) {
+    if (!ctx) return '<div class="vision-empty">Enter a Job ID or select a Vision item to load field context.</div>';
+    if (ctx.success === false) return `<div class="vision-empty">Field context unavailable: ${esc(ctx.error || 'unknown error')}</div>`;
+    if (!ctx.context_available) return '<div class="vision-empty">No Job ID linked yet.</div>';
+    const job = ctx.job || {};
+    const timeline = ctx.timeline || [];
+    return `
+      <div class="vision-result-card">
+        <div class="vision-result-head">
+          <span style="background:#2563eb">FIELD LINK</span>
+          <strong>${esc(ctx.job_id || '-')}</strong>
+          <em>${esc(job.status_label || 'no status')}</em>
+        </div>
+        <div class="vision-type-list" style="margin-top:8px">
+          <div class="vision-type-row"><span>Customer</span><strong>${esc(job.customer_name || '-')}</strong></div>
+          <div class="vision-type-row"><span>Technician</span><strong>${esc(job.technician || '-')}</strong></div>
+          <div class="vision-type-row"><span>Timeline items</span><strong>${esc(ctx.timeline_count || timeline.length || 0)}</strong></div>
+        </div>
+        <div style="margin-top:10px">
+          ${timeline.length ? timeline.map(item => `
+            <div class="vision-review-item">
+              <div>
+                <strong>${esc(item.action || item.to_status || 'Event')}</strong>
+                <span>${esc(item.timestamp || item.ts || '')} | ${esc(item.changed_by || item.user || '')}</span>
+                <span>${esc(item.note || item.detail || '')}</span>
+              </div>
+            </div>
+          `).join('') : '<div class="vision-empty">No timeline entries found.</div>'}
+        </div>
+      </div>`;
   }
 
   function buildVisionShell(mode) {
@@ -153,7 +194,9 @@
         .vision-review-item span{display:block;color:#64748b;font-size:12px;margin-top:3px}
         .vision-file{width:100%;border:1px dashed #94a3b8;border-radius:10px;padding:12px;background:#f8fafc}
         .vision-preview{max-width:100%;max-height:190px;border-radius:10px;margin-top:10px;display:none}
+        .vision-field-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
         @media(max-width:760px){.vision-hero{align-items:flex-start;flex-direction:column}.vision-grid,.vision-kpi-grid{grid-template-columns:1fr}.vision-card{border-radius:10px}.vision-btn{width:100%;justify-content:center}}
+        @media(max-width:760px){.vision-field-grid{grid-template-columns:1fr}}
       </style>
       <div class="vision-panel ${isMobile ? 'vision-mobile' : 'vision-pc'}">
         <div class="vision-hero">
@@ -180,6 +223,14 @@
             </div>
             <div class="vision-muted">For direct AI analysis, choose an image and run the selected pipeline. This may write Vision logs on the backend.</div>
             <div style="display:grid;gap:10px;margin-top:12px">
+              <div class="vision-field-grid">
+                <input id="vision-job-id" class="vision-file" type="text" placeholder="Job ID (optional)" onchange="loadVisionFieldContext(this.value)">
+                <input id="vision-expected-amount" class="vision-file" type="number" min="0" step="0.01" placeholder="Expected amount for slip">
+              </div>
+              <div class="vision-actions">
+                <button class="vision-btn secondary" onclick="loadVisionFieldContext()"><i class="bi bi-clock-history"></i> Load Job Context</button>
+                <button class="vision-btn secondary" onclick="linkLastVisionToJobTimeline()"><i class="bi bi-diagram-3"></i> Link Latest Result</button>
+              </div>
               <select id="vision-pipeline-type" class="vision-file">
                 <option value="QC">QC work photo</option>
                 <option value="SLIP">Payment slip</option>
@@ -199,6 +250,10 @@
                 <button class="vision-btn secondary" onclick="loadVisionReviewQueue()"><i class="bi bi-arrow-clockwise"></i></button>
               </div>
               <div id="vision-review-queue" style="margin-top:8px">${buildReviewQueue([])}</div>
+            </div>
+            <div style="margin-top:14px">
+              <h6 style="margin:0 0 10px">Job Link & Timeline</h6>
+              <div id="vision-field-context">${buildFieldContext(null)}</div>
             </div>
           </div>
         </div>
@@ -312,6 +367,53 @@
     if (typeof global.loadSection === 'function') return global.loadSection('reports');
   }
 
+  function getVisionJobId() {
+    const input = document.getElementById('vision-job-id');
+    const typed = input && input.value ? input.value.trim() : '';
+    const data = (VISION_STATE.lastResult && VISION_STATE.lastResult.data) || {};
+    return typed || data.job_id || VISION_STATE.currentFieldContext && VISION_STATE.currentFieldContext.job_id || '';
+  }
+
+  async function loadVisionFieldContext(jobId, visionLogId) {
+    const el = document.getElementById('vision-field-context');
+    if (el) el.innerHTML = '<div class="vision-empty">Loading field context...</div>';
+    try {
+      const id = (jobId || getVisionJobId() || '').trim();
+      const result = await visionApi('getVisionFieldContext', {
+        jobId: id,
+        visionLogId: visionLogId || (VISION_STATE.lastResult && VISION_STATE.lastResult.visionLogId) || '',
+        timelineLimit: 8,
+      });
+      VISION_STATE.currentFieldContext = result;
+      const input = document.getElementById('vision-job-id');
+      if (input && result && result.job_id) input.value = result.job_id;
+      if (el) el.innerHTML = buildFieldContext(result);
+      return result;
+    } catch (error) {
+      if (el) el.innerHTML = `<div class="vision-empty">Field context unavailable: ${esc(error.message)}</div>`;
+      return null;
+    }
+  }
+
+  async function linkLastVisionToJobTimeline() {
+    const result = VISION_STATE.lastResult || {};
+    const visionLogId = result.visionLogId || result.logId || '';
+    const jobId = getVisionJobId();
+    if (!visionLogId) return alert('No Vision result is available to link.');
+    if (!jobId) return alert('Enter a Job ID before linking to timeline.');
+    if (!confirm('Link this AI Vision result to the selected job timeline?')) return;
+    const res = await visionApi('linkVisionToJobTimeline', {
+      visionLogId,
+      jobId,
+      decision: (result.decision && result.decision.code) || 'VISION_RESULT',
+      reviewedBy: (global.APP && global.APP.user && (global.APP.user.username || global.APP.user.name)) || 'pwa-user',
+      note: 'Linked from AI Vision panel',
+    });
+    if (res && res.success === false) return alert(res.error || 'Timeline link failed');
+    alert('Vision result linked to job timeline.');
+    loadVisionFieldContext(jobId, visionLogId);
+  }
+
   function handleVisionFileSelected(input) {
     const file = input && input.files && input.files[0];
     const btn = document.getElementById('vision-run-btn');
@@ -347,6 +449,9 @@
     const result = document.getElementById('vision-result');
     const type = (typeEl && typeEl.value) || 'QC';
     const base64 = VISION_STATE.selectedDataUrl.split(',')[1] || '';
+    const jobId = getVisionJobId();
+    const expectedAmountEl = document.getElementById('vision-expected-amount');
+    const expectedAmount = expectedAmountEl && expectedAmountEl.value ? Number(expectedAmountEl.value) : 0;
     if (!base64) return;
     if (!confirm('Run AI Vision analysis for the selected image? This may write Vision logs.')) return;
     if (result) result.innerHTML = '<div class="vision-result">Running AI Vision pipeline...</div>';
@@ -357,14 +462,19 @@
           base64,
           mimeType: VISION_STATE.selectedFile.type || 'image/jpeg',
           fileName: VISION_STATE.selectedFile.name || 'vision-upload.jpg',
+          jobId,
+          expectedAmount,
         },
         context: {
           source: 'pwa_vision_panel',
           ui: global.innerWidth < 760 ? 'mobile' : 'pc',
+          jobId,
+          userId: (global.APP && global.APP.user && (global.APP.user.username || global.APP.user.name)) || '',
         },
       });
       VISION_STATE.lastResult = res;
       if (result) result.innerHTML = buildResultCards(res);
+      if (jobId) loadVisionFieldContext(jobId, res && res.visionLogId);
       refreshVisionPanel();
     } catch (error) {
       if (result) result.innerHTML = `<div class="vision-result">${esc(error.stack || error.message)}</div>`;
@@ -379,16 +489,20 @@
     if (!visionLogId) return alert('No visionLogId is available for review.');
     const note = prompt('Review note:', decision || 'APPROVED');
     if (note === null) return;
+    const jobId = getVisionJobId();
     const res = await visionApi('submitHumanReview', {
       visionLogId,
+      jobId,
       decision,
       reviewedBy: (global.APP && global.APP.user && (global.APP.user.username || global.APP.user.name)) || 'pwa-user',
       correctedData: correctedData || {},
       note,
+      linkJobTimeline: !!jobId,
     });
     if (res && res.success === false) return alert(res.error || 'Review failed');
     alert('Human review saved.');
     loadVisionReviewQueue();
+    if (jobId) loadVisionFieldContext(jobId, visionLogId);
   }
 
   function submitLastVisionReview(decision) {
@@ -414,6 +528,8 @@
   global.checkVisionVersions = checkVisionVersions;
   global.checkVisionReadiness = checkVisionReadiness;
   global.loadVisionReviewQueue = loadVisionReviewQueue;
+  global.loadVisionFieldContext = loadVisionFieldContext;
+  global.linkLastVisionToJobTimeline = linkLastVisionToJobTimeline;
   global.openVisionCamera = openVisionCamera;
   global.goVisionBilling = goVisionBilling;
   global.goVisionReports = goVisionReports;

@@ -65,6 +65,7 @@ const requiredRoutes = [
   'getVisionDashboardStats',
   'getVisionPipelineVersion',
   'getVisionLearningVersion',
+  'getVisionFieldContext',
   'getVisionReviewQueue',
   'handleProcessPhotos',
   'uploadPhoto',
@@ -72,6 +73,7 @@ const requiredRoutes = [
   'runSlipVerifyPipeline',
   'runVisionPipeline',
   'submitHumanReview',
+  'linkVisionToJobTimeline',
   'verifyPaymentSlip',
   'getPhotoGalleryData',
 ];
@@ -141,8 +143,11 @@ const checks = [
       has(text.sectionVision, 'function renderMobileVisionPage') &&
       has(text.sectionVision, "visionApi('getVisionDashboardStats'") &&
       has(text.sectionVision, "visionApi('runVisionPipeline'") &&
+      has(text.sectionVision, "visionApi('getVisionFieldContext'") &&
       has(text.sectionVision, "visionApi('getVisionReviewQueue'") &&
       has(text.sectionVision, "visionApi('submitHumanReview'") &&
+      has(text.sectionVision, "visionApi('linkVisionToJobTimeline'") &&
+      has(text.sectionVision, 'buildFieldContext') &&
       has(text.indexHtml, 'page-vision') &&
       has(text.dashboardPc, "loadSection('vision')") &&
       has(text.assetManifest, 'section_vision.js'),
@@ -154,6 +159,8 @@ const checks = [
     'API contract documents protected Vision reads and destructive Vision writes.',
     has(text.apiContract, 'vision_ai') &&
       has(text.apiContract, 'getVisionDashboardStats') &&
+      has(text.apiContract, 'getVisionFieldContext') &&
+      has(text.apiContract, 'linkVisionToJobTimeline') &&
       has(text.apiContract, 'runVisionPipeline') &&
       has(text.apiContract, 'verifyPaymentSlip') &&
       has(text.apiContract, 'smoke: false'),
@@ -166,6 +173,7 @@ const checks = [
     has(text.app, 'getVisionDashboardStats') &&
       has(text.app, 'getVisionPipelineVersion') &&
       has(text.app, 'getVisionLearningVersion') &&
+      has(text.app, 'getVisionFieldContext') &&
       has(text.app, 'getPhotoGalleryData'),
     'app.js READ_ACTIONS must know Vision dashboard/version/gallery calls are read-only.',
     [files.app]
@@ -183,7 +191,9 @@ const checks = [
     'learning-human-review',
     'Human review and learning loop are present for correcting Vision decisions over time.',
     has(text.visionPipeline, 'function submitHumanReview') &&
-      has(text.visionPipeline, 'function getVisionReviewQueue') &&
+    has(text.visionPipeline, 'function getVisionReviewQueue') &&
+      has(text.visionPipeline, 'function getVisionFieldContext') &&
+      has(text.visionPipeline, 'function linkVisionToJobTimeline') &&
       has(text.visionLearning, 'function processFeedbackLoop') &&
       has(text.visionLearning, 'function getLearningDashboard') &&
       has(text.visionLearning, 'function getVisionLearningVersion'),
@@ -221,6 +231,7 @@ const capabilities = [
   'Run QC and product/slip Vision pipelines with validation, cache, confidence, decision, and log output.',
   'Support AI-assisted billing slip verification from the PWA billing UI.',
   'Expose Vision dashboard stats, learning version, human review, and AgentGateway vision roles.',
+  'Link approved or reviewed Vision results back to job timeline context for field operations.',
   'Keep real Gemini/LINE/API keys out of the repo; only Script Property key names are tracked.',
 ];
 

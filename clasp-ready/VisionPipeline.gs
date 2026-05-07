@@ -36,9 +36,19 @@ var VP_ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 function runVisionPipeline(params) {
   var startTs = Date.now();
   try {
+    params = params || {};
     var type = (params.type || 'QC').toUpperCase();
-    var input = params.input || {};
+    var input = params.input || {
+      base64: params.base64 || '',
+      mimeType: params.mimeType || params.mime_type || 'image/jpeg',
+      imageUrl: params.imageUrl || '',
+      jobId: params.jobId || params.job_id || '',
+      expectedAmount: params.expectedAmount || params.expected_amount || 0,
+      fileName: params.fileName || params.file_name || ''
+    };
     var context = params.context || {};
+    if (!context.jobId && (input.jobId || input.job_id || params.jobId || params.job_id)) context.jobId = input.jobId || input.job_id || params.jobId || params.job_id;
+    if (!context.userId && (params._auth_user || params.userId || params.user_id)) context.userId = params._auth_user || params.userId || params.user_id;
 
     // Phase 8: Security — Validate input
     var validation = _vpValidateInput_(input);
@@ -422,7 +432,9 @@ function _vpSaveLog_(normalized, context) {
       sh.appendRow(['ts', 'type', 'confidence', 'decision', 'requires_human', 'tier', 'latency_ms',
         'job_id', 'user_id', 'issues', 'data_json', 'from_cache']);
     }
+    context = context || {};
     var data = normalized.data || {};
+    var jobId = data.job_id || context.jobId || context.job_id || '';
     sh.appendRow([
       new Date(normalized.ts || Date.now()),
       normalized.type || '',
@@ -431,13 +443,17 @@ function _vpSaveLog_(normalized, context) {
       (normalized.decision || {}).requiresHuman ? 'YES' : 'NO',
       normalized._tier || 2,
       normalized._latencyMs || 0,
-      data.job_id || '',
+      jobId,
       context.userId || '',
       JSON.stringify(normalized.issues || []),
       JSON.stringify(data),
       normalized._fromCache ? 'YES' : 'NO'
     ]);
     normalized.visionLogId = 'row-' + sh.getLastRow();
+    if (jobId && !data.job_id) {
+      data.job_id = jobId;
+      normalized.data = data;
+    }
   } catch (e) {
     Logger.log('VisionPipeline saveLog error: ' + e.toString());
   }
@@ -532,9 +548,12 @@ function _vpErrorResult_(type, errorMsg, startTs) {
  */
 function submitHumanReview(params) {
   try {
+    params = params || {};
     var ss = getComphoneSheet();
     var sh = ss.getSheetByName('VISION_LOG');
     if (!sh) return { success: false, error: 'VISION_LOG sheet not found' };
+    var visionItem = _vpGetVisionLogItem_(params.visionLogId);
+    var jobId = String(params.jobId || params.job_id || (visionItem && visionItem.jobId) || '').trim();
 
     // บันทึกลง VISION_REVIEW sheet
     var reviewSheet = ss.getSheetByName('VISION_REVIEW');
@@ -552,7 +571,19 @@ function submitHumanReview(params) {
       params.note || ''
     ]);
 
-    return { success: true, message: 'Human review บันทึกแล้ว' };
+    var timeline = null;
+    if (jobId && params.linkJobTimeline !== false && params.link_job_timeline !== false) {
+      timeline = linkVisionToJobTimeline({
+        visionLogId: params.visionLogId || '',
+        jobId: jobId,
+        decision: params.decision || '',
+        reviewedBy: params.reviewedBy || '',
+        note: params.note || '',
+        _session: params._session || null
+      });
+    }
+
+    return { success: true, message: 'Human review บันทึกแล้ว', job_id: jobId, timeline: timeline };
   } catch (e) {
     return { success: false, error: e.toString() };
   }
@@ -617,6 +648,118 @@ function getVisionReviewQueue(params) {
   } catch (e) {
     return { success: false, error: e.toString() };
   }
+}
+
+/**
+ * getVisionFieldContext — อ่าน context งานที่เกี่ยวข้องกับ Vision โดยไม่เขียนข้อมูล
+ * @param {Object} params - { jobId, visionLogId, timelineLimit }
+ */
+function getVisionFieldContext(params) {
+  try {
+    params = params || {};
+    var visionItem = _vpGetVisionLogItem_(params.visionLogId || '');
+    var jobId = String(params.jobId || params.job_id || (visionItem && visionItem.jobId) || '').trim();
+    var out = {
+      success: true,
+      context_available: !!jobId,
+      job_id: jobId,
+      vision: visionItem,
+      job: null,
+      timeline: [],
+      timeline_count: 0
+    };
+    if (!jobId) return out;
+    if (typeof getJobDetailById_ === 'function') {
+      var detail = getJobDetailById_(jobId);
+      if (detail && detail.success) out.job = detail.job || null;
+      else out.job_error = detail && detail.error || 'job not found';
+    }
+    if (typeof getJobTimelineV55_ === 'function') {
+      var timeline = getJobTimelineV55_(jobId);
+      out.timeline = (timeline && timeline.timeline || []).slice(0, Math.min(parseInt(params.timelineLimit || 8, 10), 20));
+      out.timeline_count = timeline && timeline.timeline ? timeline.timeline.length : 0;
+    }
+    return out;
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * linkVisionToJobTimeline — บันทึกผล Vision/Human Review ลง timeline ของงาน
+ * @param {Object} params - { visionLogId, jobId, decision, reviewedBy, note }
+ */
+function linkVisionToJobTimeline(params) {
+  try {
+    params = params || {};
+    var visionItem = _vpGetVisionLogItem_(params.visionLogId || '');
+    var jobId = String(params.jobId || params.job_id || (visionItem && visionItem.jobId) || '').trim();
+    if (!jobId) return { success: false, error: 'jobId is required' };
+    if (typeof getJobDetailById_ === 'function') {
+      var detail = getJobDetailById_(jobId);
+      if (!detail || !detail.success) return { success: false, error: detail && detail.error || 'job not found' };
+    }
+    var decision = String(params.decision || (visionItem && visionItem.decision) || 'VISION_REVIEW');
+    var user = String(params.reviewedBy || params.reviewed_by || (params._session && params._session.username) || 'AI Vision');
+    var note = _vpBuildJobTimelineNote_(visionItem, decision, params.note || '');
+    if (typeof appendJobStatusLog_ === 'function') {
+      appendJobStatusLog_(jobId, 'AI Vision', decision, user, note);
+    } else if (typeof addQuickNote === 'function') {
+      addQuickNote(jobId, note, user);
+    } else if (typeof logActivity === 'function') {
+      logActivity('VISION_JOB_LINK', user, jobId + ': ' + note);
+    }
+    return { success: true, job_id: jobId, visionLogId: params.visionLogId || '', decision: decision, note: note };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+function _vpGetVisionLogItem_(visionLogId) {
+  try {
+    if (!visionLogId) return null;
+    var m = String(visionLogId).match(/^row-(\d+)$/);
+    if (!m) return null;
+    var rowNumber = parseInt(m[1], 10);
+    if (rowNumber < 2) return null;
+    var ss = getComphoneSheet();
+    var sh = ss.getSheetByName('VISION_LOG');
+    if (!sh || sh.getLastRow() < rowNumber) return null;
+    var row = sh.getRange(rowNumber, 1, 1, 12).getValues()[0];
+    var data = {};
+    var issues = [];
+    try { data = JSON.parse(row[10] || '{}'); } catch (e1) {}
+    try { issues = JSON.parse(row[9] || '[]'); } catch (e2) {}
+    return {
+      visionLogId: String(visionLogId),
+      ts: row[0],
+      type: row[1] || '',
+      confidence: row[2] || 0,
+      decision: row[3] || '',
+      requiresHuman: String(row[4] || '').toUpperCase() === 'YES',
+      tier: row[5] || '',
+      latencyMs: row[6] || 0,
+      jobId: row[7] || data.job_id || '',
+      userId: row[8] || '',
+      issues: issues,
+      data: data
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+function _vpBuildJobTimelineNote_(visionItem, decision, note) {
+  visionItem = visionItem || {};
+  var parts = [
+    'AI Vision ' + (visionItem.type || 'RESULT'),
+    'decision=' + decision,
+    'confidence=' + Math.round(Number(visionItem.confidence || 0) * 100) + '%'
+  ];
+  if (visionItem.visionLogId) parts.push('log=' + visionItem.visionLogId);
+  if (visionItem.issues && visionItem.issues.length) parts.push('issues=' + visionItem.issues.join(', '));
+  if (note) parts.push('review_note=' + note);
+  return parts.join(' | ');
 }
 
 // ─── PHASE 18: DASHBOARD INTEGRATION ────────────────────────
