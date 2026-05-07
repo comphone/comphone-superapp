@@ -686,6 +686,33 @@ function getVisionFieldContext(params) {
 }
 
 /**
+ * getVisionActionSuggestions — แนะนำ next actions จากผล Vision + context งาน
+ * @param {Object} params - { visionLogId, jobId, result, timelineLimit }
+ */
+function getVisionActionSuggestions(params) {
+  try {
+    params = params || {};
+    var visionItem = _vpGetVisionLogItem_(params.visionLogId || '');
+    if (!visionItem && params.result) visionItem = _vpNormalizeSuggestionInput_(params.result);
+    var context = getVisionFieldContext({
+      jobId: params.jobId || params.job_id || (visionItem && visionItem.jobId) || '',
+      visionLogId: params.visionLogId || '',
+      timelineLimit: params.timelineLimit || 3
+    });
+    var suggestions = _vpBuildActionSuggestions_(visionItem, context);
+    return {
+      success: true,
+      suggestions: suggestions,
+      count: suggestions.length,
+      context_available: !!(context && context.context_available),
+      job_id: context && context.job_id || ''
+    };
+  } catch (e) {
+    return { success: false, error: e.toString(), suggestions: [] };
+  }
+}
+
+/**
  * linkVisionToJobTimeline — บันทึกผล Vision/Human Review ลง timeline ของงาน
  * @param {Object} params - { visionLogId, jobId, decision, reviewedBy, note }
  */
@@ -760,6 +787,65 @@ function _vpBuildJobTimelineNote_(visionItem, decision, note) {
   if (visionItem.issues && visionItem.issues.length) parts.push('issues=' + visionItem.issues.join(', '));
   if (note) parts.push('review_note=' + note);
   return parts.join(' | ');
+}
+
+function _vpNormalizeSuggestionInput_(result) {
+  result = result || {};
+  var data = result.data || {};
+  var decision = result.decision || {};
+  return {
+    visionLogId: result.visionLogId || result.logId || '',
+    type: result.type || '',
+    confidence: result.confidence || 0,
+    decision: decision.code || result.decision || '',
+    requiresHuman: decision.requiresHuman === true,
+    jobId: data.job_id || result.job_id || '',
+    issues: result.issues || [],
+    data: data
+  };
+}
+
+function _vpBuildActionSuggestions_(visionItem, context) {
+  visionItem = visionItem || {};
+  context = context || {};
+  var decision = String(visionItem.decision || '').toUpperCase();
+  var type = String(visionItem.type || '').toUpperCase();
+  var jobId = context.job_id || visionItem.jobId || '';
+  var hasJob = !!jobId;
+  var suggestions = [];
+
+  function add(id, label, action, priority, reason, destructive) {
+    suggestions.push({
+      id: id,
+      label: label,
+      action: action,
+      priority: priority || 'medium',
+      reason: reason || '',
+      requiresConfirm: destructive !== false,
+      destructive: destructive === true,
+      jobId: jobId,
+      visionLogId: visionItem.visionLogId || ''
+    });
+  }
+
+  if (hasJob && visionItem.visionLogId) {
+    add('link_timeline', 'Link to job timeline', 'linkVisionToJobTimeline', 'high', 'บันทึกผล AI Vision เป็นหลักฐานใน timeline งาน', true);
+  }
+  if (decision === VP_DECISIONS.APPROVED) {
+    add('approve_review', 'Approve human review', 'submitHumanReview:APPROVED', 'high', 'ผล AI ผ่านเกณฑ์ สามารถยืนยัน review ได้', true);
+    if (type === VP_TYPES.SLIP) add('open_billing', 'Open billing/payment', 'navigate:billing', 'medium', 'สลิปผ่าน ควรตรวจหน้าการชำระเงินต่อ', false);
+    if (type === VP_TYPES.QC && hasJob) add('inspect_job_timeline', 'Inspect job timeline', 'loadVisionFieldContext', 'medium', 'QC ผ่าน ควรดูสถานะงานล่าสุดก่อนเปลี่ยนสถานะ', false);
+  } else if (decision === VP_DECISIONS.NEED_REVIEW) {
+    add('request_review', 'Keep in review queue', 'loadVisionReviewQueue', 'high', 'confidence ยังไม่พอ ต้องให้คนตรวจ', false);
+    if (hasJob) add('inspect_context', 'Inspect job context', 'loadVisionFieldContext', 'high', 'ดูประวัติงานประกอบการตัดสินใจ', false);
+  } else if (decision === VP_DECISIONS.QC_FAIL || decision === VP_DECISIONS.PAYMENT_ERROR || decision === VP_DECISIONS.REJECTED) {
+    add('reject_review', 'Reject human review', 'submitHumanReview:REJECTED', 'high', 'ผล AI พบปัญหา ควรยืนยัน/ส่งกลับตรวจ', true);
+    if (hasJob) add('link_problem_timeline', 'Record issue in timeline', 'linkVisionToJobTimeline', 'high', 'เก็บปัญหาไว้ใน timeline เพื่อให้ทีมตามต่อ', true);
+  }
+
+  add('copy_result', 'Copy AI result', 'copyVisionResult', 'low', 'เก็บผลวิเคราะห์เพื่อส่งต่อหรือ debug', false);
+  if (!hasJob) add('enter_job_id', 'Add Job ID', 'focus:vision-job-id', 'medium', 'ใส่ Job ID เพื่อผูกผล AI เข้ากับงานจริง', false);
+  return suggestions;
 }
 
 // ─── PHASE 18: DASHBOARD INTEGRATION ────────────────────────

@@ -48,6 +48,12 @@ const PROTECTED_STEPS = [
     validate: body => body && body.success !== false && Object.prototype.hasOwnProperty.call(body, 'context_available'),
   },
   {
+    action: 'getVisionActionSuggestions',
+    label: 'Vision suggested next actions',
+    payload: { result: { type: 'QC', confidence: 0.9, decision: { code: 'APPROVED' }, data: {} } },
+    validate: body => body && body.success !== false && Array.isArray(body.suggestions),
+  },
+  {
     action: 'getVisionReviewQueue',
     label: 'Vision human review queue',
     payload: { limit: 5, days: 30 },
@@ -115,6 +121,17 @@ function summarize(body) {
       context_available: body.context_available === true,
       job_id: body.job_id || '',
       timeline_count: body.timeline_count || 0,
+    };
+  }
+  if (Array.isArray(body.suggestions)) {
+    return {
+      suggestionCount: body.count || body.suggestions.length,
+      sample: body.suggestions.slice(0, 3).map(item => ({
+        id: item.id,
+        action: item.action,
+        priority: item.priority,
+        destructive: item.destructive === true,
+      })),
     };
   }
   return {

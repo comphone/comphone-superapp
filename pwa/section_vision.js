@@ -11,6 +11,7 @@
     lastVersion: null,
     lastResult: null,
     currentFieldContext: null,
+    suggestions: [],
   };
 
   function esc(value) {
@@ -159,6 +160,22 @@
       </div>`;
   }
 
+  function buildActionSuggestions(items) {
+    if (!items || !items.length) return '<div class="vision-empty">No suggested next actions yet.</div>';
+    const rank = { high: 0, medium: 1, low: 2 };
+    return items.slice().sort((a, b) => (rank[a.priority] || 9) - (rank[b.priority] || 9)).map(item => `
+      <div class="vision-suggestion-item">
+        <div>
+          <strong>${esc(item.label || item.id || '-')}</strong>
+          <span>${esc(item.reason || '')}</span>
+        </div>
+        <button class="vision-btn ${item.destructive ? 'warn' : 'secondary'}" onclick="runVisionSuggestion('${esc(item.id)}')">
+          <i class="bi ${item.destructive ? 'bi-shield-check' : 'bi-lightning-charge'}"></i> Run
+        </button>
+      </div>
+    `).join('');
+  }
+
   function buildVisionShell(mode) {
     const isMobile = mode === 'mobile';
     return `
@@ -192,6 +209,8 @@
         .vision-issues span{background:#fff7ed;color:#c2410c;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:700}
         .vision-review-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #eef2f7}
         .vision-review-item span{display:block;color:#64748b;font-size:12px;margin-top:3px}
+        .vision-suggestion-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #eef2f7}
+        .vision-suggestion-item span{display:block;color:#64748b;font-size:12px;margin-top:3px}
         .vision-file{width:100%;border:1px dashed #94a3b8;border-radius:10px;padding:12px;background:#f8fafc}
         .vision-preview{max-width:100%;max-height:190px;border-radius:10px;margin-top:10px;display:none}
         .vision-field-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -254,6 +273,13 @@
             <div style="margin-top:14px">
               <h6 style="margin:0 0 10px">Job Link & Timeline</h6>
               <div id="vision-field-context">${buildFieldContext(null)}</div>
+            </div>
+            <div style="margin-top:14px">
+              <div class="vision-actions" style="justify-content:space-between">
+                <h6 style="margin:0">Suggested Next Actions</h6>
+                <button class="vision-btn secondary" onclick="loadVisionActionSuggestions()"><i class="bi bi-lightning-charge"></i></button>
+              </div>
+              <div id="vision-action-suggestions" style="margin-top:8px">${buildActionSuggestions([])}</div>
             </div>
           </div>
         </div>
@@ -395,6 +421,49 @@
     }
   }
 
+  async function loadVisionActionSuggestions() {
+    const el = document.getElementById('vision-action-suggestions');
+    if (el) el.innerHTML = '<div class="vision-empty">Loading suggestions...</div>';
+    try {
+      const result = VISION_STATE.lastResult || {};
+      const res = await visionApi('getVisionActionSuggestions', {
+        visionLogId: result.visionLogId || result.logId || '',
+        jobId: getVisionJobId(),
+        result,
+        timelineLimit: 3,
+      });
+      if (res && res.success === false) throw new Error(res.error || 'Suggestion engine failed');
+      VISION_STATE.suggestions = res.suggestions || [];
+      if (el) el.innerHTML = buildActionSuggestions(VISION_STATE.suggestions);
+      return VISION_STATE.suggestions;
+    } catch (error) {
+      if (el) el.innerHTML = `<div class="vision-empty">Suggestions unavailable: ${esc(error.message)}</div>`;
+      return [];
+    }
+  }
+
+  async function runVisionSuggestion(id) {
+    const item = (VISION_STATE.suggestions || []).find(row => row.id === id);
+    if (!item) return alert('Suggestion not found.');
+    if (item.requiresConfirm && !confirm('Run suggested action: ' + (item.label || item.id) + '?')) return;
+    const action = item.action || '';
+    if (action === 'linkVisionToJobTimeline') return linkLastVisionToJobTimeline();
+    if (action === 'loadVisionFieldContext') return loadVisionFieldContext(item.jobId || getVisionJobId(), item.visionLogId || '');
+    if (action === 'loadVisionReviewQueue') return loadVisionReviewQueue();
+    if (action === 'copyVisionResult') return copyVisionResult();
+    if (action === 'navigate:billing') return goVisionBilling();
+    if (action === 'navigate:reports') return goVisionReports();
+    if (action === 'focus:vision-job-id') {
+      const input = document.getElementById('vision-job-id');
+      if (input) input.focus();
+      return;
+    }
+    if (action.indexOf('submitHumanReview:') === 0) {
+      return submitLastVisionReview(action.split(':')[1] || 'APPROVED');
+    }
+    alert('Suggestion action is not wired yet: ' + action);
+  }
+
   async function linkLastVisionToJobTimeline() {
     const result = VISION_STATE.lastResult || {};
     const visionLogId = result.visionLogId || result.logId || '';
@@ -475,6 +544,7 @@
       VISION_STATE.lastResult = res;
       if (result) result.innerHTML = buildResultCards(res);
       if (jobId) loadVisionFieldContext(jobId, res && res.visionLogId);
+      loadVisionActionSuggestions();
       refreshVisionPanel();
     } catch (error) {
       if (result) result.innerHTML = `<div class="vision-result">${esc(error.stack || error.message)}</div>`;
@@ -503,6 +573,7 @@
     alert('Human review saved.');
     loadVisionReviewQueue();
     if (jobId) loadVisionFieldContext(jobId, visionLogId);
+    loadVisionActionSuggestions();
   }
 
   function submitLastVisionReview(decision) {
@@ -529,6 +600,8 @@
   global.checkVisionReadiness = checkVisionReadiness;
   global.loadVisionReviewQueue = loadVisionReviewQueue;
   global.loadVisionFieldContext = loadVisionFieldContext;
+  global.loadVisionActionSuggestions = loadVisionActionSuggestions;
+  global.runVisionSuggestion = runVisionSuggestion;
   global.linkLastVisionToJobTimeline = linkLastVisionToJobTimeline;
   global.openVisionCamera = openVisionCamera;
   global.goVisionBilling = goVisionBilling;

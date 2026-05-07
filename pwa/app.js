@@ -781,6 +781,7 @@ const READ_ACTIONS = {
   getTaxReminder: true, getJobStatusPublic: true, getDriveSyncStatus: true,
   getVisionDashboardStats: true, getVisionPipelineVersion: true, getVisionLearningVersion: true,
   getVisionFieldContext: true,
+  getVisionActionSuggestions: true,
   getVisionReviewQueue: true
 };
 

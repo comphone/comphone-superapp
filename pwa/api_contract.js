@@ -2,7 +2,7 @@
   'use strict';
 
   const API_CONTRACT = {
-    version: '2026-05-07.phase61-vision-field-link',
+    version: '2026-05-07.phase62-vision-action-suggestions',
     responseShape: {
       success: '{ success: true, data?, meta? }',
       failure: '{ success: false, error, code, kind?, action?, request_id? }',
@@ -80,6 +80,7 @@
           { action: 'getVisionPipelineVersion', required: true, read: true },
           { action: 'getVisionLearningVersion', read: true, optional: true },
           { action: 'getVisionFieldContext', payload: {}, read: true, optional: true },
+          { action: 'getVisionActionSuggestions', payload: {}, read: true, optional: true },
           { action: 'getVisionReviewQueue', payload: { limit: 10, days: 30 }, read: true, optional: true },
           { action: 'getPhotoGalleryData', payload: { jobId: '__SMOKE_EMPTY__' }, read: true, optional: true, smoke: false, smokeReason: 'requires a real jobId with photo records' },
         ],
@@ -183,6 +184,7 @@
           { action: 'getVisionPipelineVersion', required: true },
           { action: 'getVisionLearningVersion', optional: true },
           { action: 'getVisionFieldContext', payload: {}, optional: true },
+          { action: 'getVisionActionSuggestions', payload: {}, optional: true },
           { action: 'getVisionReviewQueue', payload: { limit: 10, days: 30 }, optional: true },
           { action: 'getPhotoGalleryData', payload: { jobId: '__SMOKE_EMPTY__' }, optional: true, smoke: false, smokeReason: 'requires a real jobId with photo records' },
         ],

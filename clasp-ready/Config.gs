@@ -5,7 +5,7 @@
 
 var CONFIG = {
   APP_NAME: 'COMPHONE SUPER APP v5.18.8-auth-session-store',
-  VERSION: '5.18.10-vision-field-link',
+  VERSION: '5.18.11-vision-action-suggestions',
   TIMEZONE: 'Asia/Bangkok',
 
   // ── ชื่อ Sheet ทั้งหมดในระบบ ──

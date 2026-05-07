@@ -5,10 +5,10 @@
 // ===========================================================
 
 const VERSION_CONFIG = {
-  version: 'v5.18.24-vision-field-link',
+  version: 'v5.18.25-vision-action-suggestions',
   buildDate: '2026-05-07',
-  buildTimestamp: '20260507_1730',
-  cacheVersion: 'comphone-v5.18.24-vision-field-link-20260507_1730',
+  buildTimestamp: '20260507_1810',
+  cacheVersion: 'comphone-v5.18.25-vision-action-suggestions-20260507_1810',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -25,7 +25,8 @@ const VERSION_CONFIG = {
     'AI Vision runtime smoke and browser self-test',
     'AI Vision Gemini readiness indicators',
     'AI Vision E2E safety gate and human review queue',
-    'AI Vision field job timeline link'
+    'AI Vision field job timeline link',
+    'AI Vision suggested next actions'
   ]
 };
 
@@ -35,9 +36,9 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 
 // Backward-compatible exports for legacy modules and guards
-const APP_VERSION = 'v5.18.24-vision-field-link';
-const BUILD_TIMESTAMP = '20260507_1730';
-const CACHE_VERSION = 'comphone-v5.18.24-vision-field-link-20260507_1730';
+const APP_VERSION = 'v5.18.25-vision-action-suggestions';
+const BUILD_TIMESTAMP = '20260507_1810';
+const CACHE_VERSION = 'comphone-v5.18.25-vision-action-suggestions-20260507_1810';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;

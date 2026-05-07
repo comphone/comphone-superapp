@@ -37,6 +37,10 @@ async function submitHumanReviewAction(payload = {}) {
   return callAPI('submitHumanReview', payload);
 }
 
+async function getVisionActionSuggestionsAction(payload = {}) {
+  return callAPI('getVisionActionSuggestions', payload);
+}
+
 async function linkVisionToJobTimelineAction(payload = {}) {
   return callAPI('linkVisionToJobTimeline', payload);
 }
@@ -48,6 +52,7 @@ window.runVisionPipelineAction = runVisionPipelineAction;
 window.runQCPipelineAction = runQCPipelineAction;
 window.runSlipVerifyPipelineAction = runSlipVerifyPipelineAction;
 window.submitHumanReviewAction = submitHumanReviewAction;
+window.getVisionActionSuggestionsAction = getVisionActionSuggestionsAction;
 window.linkVisionToJobTimelineAction = linkVisionToJobTimelineAction;
 
 function globalSearch(val) {

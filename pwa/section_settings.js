@@ -99,7 +99,7 @@ function renderSettingsSection() {  // [PATCH] เปลี่ยนเป็น
     <div class="card-box" style="margin-bottom:16px">
       <div class="card-title"><i class="bi bi-info-circle" style="color:#1e40af"></i> ข้อมูลระบบ</div>
       <table style="width:100%;font-size:13px">
-        <tr><td style="color:#6b7280;padding:6px 12px;width:140px">Version</td><td style="font-weight:600">${GAS_CONFIG?.version || 'N/A'} (GAS) / ${window.COMPHONE_VERSION || 'v5.18.24-vision-field-link'} (PWA)</td></tr>
+        <tr><td style="color:#6b7280;padding:6px 12px;width:140px">Version</td><td style="font-weight:600">${GAS_CONFIG?.version || 'N/A'} (GAS) / ${window.COMPHONE_VERSION || 'v5.18.25-vision-action-suggestions'} (PWA)</td></tr>
         <tr><td style="color:#6b7280;padding:6px 12px">GAS URL</td><td style="font-size:11px;word-break:break-all;color:#6b7280">${GAS_CONFIG?.url || ''}</td></tr>
         <tr><td style="color:#6b7280;padding:6px 12px">Spreadsheet</td><td><a href="https://docs.google.com/spreadsheets/d/19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA" target="_blank" style="color:#1e40af;font-size:12px">เปิด Google Sheets ↗</a></td></tr>
         <tr><td style="color:#6b7280;padding:6px 12px">Deploy Date</td><td>${GAS_CONFIG?.deployDate || '-'}</td></tr>

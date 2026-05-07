@@ -287,6 +287,7 @@ if (!apiContractJs.includes('vision_ai') ||
     !apiContractJs.includes('getVisionDashboardStats') ||
     !apiContractJs.includes('getVisionReviewQueue') ||
     !apiContractJs.includes('getVisionFieldContext') ||
+    !apiContractJs.includes('getVisionActionSuggestions') ||
     !apiContractJs.includes('linkVisionToJobTimeline') ||
     !apiContractJs.includes('runVisionPipeline') ||
     !apiContractJs.includes('verifyPaymentSlip')) {
@@ -309,11 +310,14 @@ if (!sectionVisionJs.includes('renderVisionSection') ||
     !sectionVisionJs.includes("visionApi('runVisionPipeline'") ||
     !sectionVisionJs.includes("visionApi('getVisionReviewQueue'") ||
     !sectionVisionJs.includes("visionApi('getVisionFieldContext'") ||
+    !sectionVisionJs.includes("visionApi('getVisionActionSuggestions'") ||
     !sectionVisionJs.includes("visionApi('linkVisionToJobTimeline'") ||
     !sectionVisionJs.includes("visionApi('submitHumanReview'") ||
     !sectionVisionJs.includes('buildResultCards') ||
     !sectionVisionJs.includes('buildReviewQueue') ||
     !sectionVisionJs.includes('buildFieldContext') ||
+    !sectionVisionJs.includes('buildActionSuggestions') ||
+    !sectionVisionJs.includes('runVisionSuggestion') ||
     !sectionVisionJs.includes('checkVisionReadiness') ||
     !sectionVisionJs.includes('gemini_ok')) {
   fail('section_vision.js must render PC/mobile Vision panels and call Vision stats/pipeline actions.');
@@ -348,6 +352,7 @@ if (!visionRuntimeSmokeJs.includes('Vision Runtime Smoke') ||
     !visionRuntimeSmokeJs.includes('getVisionLearningVersion') ||
     !visionRuntimeSmokeJs.includes('getVisionReviewQueue') ||
     !visionRuntimeSmokeJs.includes('getVisionFieldContext') ||
+    !visionRuntimeSmokeJs.includes('getVisionActionSuggestions') ||
     !visionRuntimeSmokeJs.includes('COMPHONE_AUTH_TOKEN') ||
     !visionRuntimeSmokeJs.includes('gemini_ok')) {
   fail('vision_runtime_smoke.js must provide token-aware read-only AI Vision runtime checks.');
