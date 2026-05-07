@@ -5,10 +5,10 @@
 // ===========================================================
 
 const VERSION_CONFIG = {
-  version: 'v5.18.15-integrity-audit',
-  buildDate: '2026-05-06',
-  buildTimestamp: '20260507_1030',
-  cacheVersion: 'comphone-v5.18.15-integrity-audit-20260507_1030',
+  version: 'v5.18.16-runtime-selftest',
+  buildDate: '2026-05-07',
+  buildTimestamp: '20260507_1100',
+  cacheVersion: 'comphone-v5.18.16-runtime-selftest-20260507_1100',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -16,7 +16,8 @@ const VERSION_CONFIG = {
     'DashboardBundle API (10x faster)',
     'Glassmorphism 2.0 KPI Cards',
     'Improved Cache Busting',
-    'Stable Login Flow'
+    'Stable Login Flow',
+    'Runtime Self-Test Panel'
   ]
 };
 
@@ -26,9 +27,9 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 
 // Backward-compatible exports for legacy modules and guards
-const APP_VERSION = 'v5.18.15-integrity-audit';
-const BUILD_TIMESTAMP = '20260507_1030';
-const CACHE_VERSION = 'comphone-v5.18.15-integrity-audit-20260507_1030';
+const APP_VERSION = 'v5.18.16-runtime-selftest';
+const BUILD_TIMESTAMP = '20260507_1100';
+const CACHE_VERSION = 'comphone-v5.18.16-runtime-selftest-20260507_1100';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;

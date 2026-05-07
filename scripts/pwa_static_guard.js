@@ -135,7 +135,7 @@ for (const match of swJs.matchAll(/BASE \+ '\/([^']+)'/g)) {
   if (!fs.existsSync(file)) fail(`sw.js pre-caches missing asset: ${asset}`);
 }
 
-const filesToScan = ['index.html', 'dashboard_pc.html', 'version_config.js', 'sw.js', 'pwa_asset_manifest.js', 'api_contract.js', 'api_client.js', 'app.js', 'auth.js', 'auth_guard.js', 'app_home.js', 'admin_panel.js', 'menu_health.js'];
+const filesToScan = ['index.html', 'dashboard_pc.html', 'version_config.js', 'sw.js', 'pwa_asset_manifest.js', 'api_contract.js', 'api_client.js', 'app.js', 'auth.js', 'auth_guard.js', 'app_home.js', 'admin_panel.js', 'menu_health.js', 'runtime_self_test.js'];
 for (const name of filesToScan) {
   const file = path.join(PWA, name);
   const text = readUtf8(file);
@@ -191,6 +191,9 @@ if (!indexHtml.includes('offline_db.js?')) {
 if (!indexHtml.includes('notification_center.js?')) {
   fail('index.html must load notification_center.js for the notifications menu.');
 }
+if (!indexHtml.includes('runtime_self_test.js?')) {
+  fail('index.html must load runtime_self_test.js for mobile system health checks.');
+}
 if (!appJs.includes('if (!isReadAction(action)) saveOfflineAction')) {
   fail('app.js must not queue read-only API failures as offline write actions.');
 }
@@ -227,6 +230,9 @@ if (pcContractIndex !== -1 && pcApiClientIndex !== -1 && pcContractIndex > pcApi
 }
 if (!dashboardPcHtml.includes('dashboard_shared.css?')) {
   fail('dashboard_pc.html must cache-bust dashboard_shared.css.');
+}
+if (!dashboardPcHtml.includes('runtime_self_test.js?')) {
+  fail('dashboard_pc.html must load runtime_self_test.js for PC settings health checks.');
 }
 if (dashboardPcHtml.includes('20260428_1130') || dashboardPcHtml.includes('v=282')) {
   fail('dashboard_pc.html contains stale cache-bust token.');
