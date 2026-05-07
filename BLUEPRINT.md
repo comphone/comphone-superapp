@@ -1,6 +1,6 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.18.23-vision-e2e (PWA) / GAS Backend v5.18.9-vision-review-queue @pending
+> **Version:** v5.18.23-vision-e2e (PWA) / GAS Backend v5.18.9-vision-review-queue @547
 
 > **Date:** 2026-05-07 | **Phase:** 60 (AI Vision E2E Field Workflow)
 
@@ -15,11 +15,11 @@
 | App Version | `v5.18.23-vision-e2e` | `pwa/version_config.js` |
 | Cache Version | `comphone-v5.18.23-vision-e2e-20260507_1430` | `pwa/version_config.js`, `pwa/sw.js` |
 | Build Timestamp | `20260507_1430` | `pwa/version_config.js` |
-| GAS Backend Deploy | `pending deploy` / production URL in `pwa/gas_config.js` | `clasp-ready/Config.gs`, `clasp-ready/Auth.gs`, `clasp-ready/Router.gs`, `clasp-ready/VisionPipeline.gs`, `clasp-ready/RouterSplit.gs` |
+| GAS Backend Deploy | `AKfycbyVK5KLJcHFNfm7oNce5e_WOrFdS2_UuiRQW27ipIUK2DeYGtVjSwWCmr-jIWLnkLcSgw @547` / production URL in `pwa/gas_config.js` | `clasp-ready/Config.gs`, `clasp-ready/Auth.gs`, `clasp-ready/Router.gs`, `clasp-ready/VisionPipeline.gs`, `clasp-ready/RouterSplit.gs` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbyVK5KLJcHFNfm7oNce5e_WOrFdS2_UuiRQW27ipIUK2DeYGtVjSwWCmr-jIWLnkLcSgw/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-07.phase60-vision-e2e` | `pwa/api_contract.js` |
 | Last Production Commit | GitHub `main` HEAD | Use `git log -1 --oneline` for the exact commit |
-| Validation Status | Static Guard OK; Code Index OK; System Integrity Audit OK; AI Vision Capability Audit OK; AI Vision Runtime Smoke OK with Gemini readiness; Vision E2E Smoke skip-safe; Vision UI wired on PC/Mobile; login OK; verifySession OK; protected API smoke OK; Runtime Self-Test UI added | `scripts/pwa_static_guard.js`, `scripts/build_code_index.js`, `scripts/system_integrity_audit.js`, `scripts/vision_capability_audit.js`, `scripts/vision_runtime_smoke.js`, `scripts/vision_e2e_smoke.js`, `scripts/pwa_api_smoke.js`, `pwa/runtime_self_test.js`, `test_reports/*_latest.*` |
+| Validation Status | Static Guard OK; Code Index OK; System Integrity Audit OK; AI Vision Capability Audit OK; AI Vision Runtime Smoke OK with Gemini readiness; Vision E2E Smoke skip-safe and gated run OK; Vision UI wired on PC/Mobile; login OK; verifySession OK; protected API smoke OK; Runtime Self-Test UI added | `scripts/pwa_static_guard.js`, `scripts/build_code_index.js`, `scripts/system_integrity_audit.js`, `scripts/vision_capability_audit.js`, `scripts/vision_runtime_smoke.js`, `scripts/vision_e2e_smoke.js`, `scripts/pwa_api_smoke.js`, `pwa/runtime_self_test.js`, `test_reports/*_latest.*` |
 
 ### Phase 60 Current Review (2026-05-07)
 - Status score: **99/100 field-workflow readiness**. AI Vision now has user-facing result cards, a human review queue, and a gated E2E analysis smoke path.
@@ -30,6 +30,7 @@
 - Added `scripts/vision_e2e_smoke.js`. It is skip-safe by default and only runs image analysis when all three gates are set: `COMPHONE_AUTH_TOKEN`, `COMPHONE_VISION_E2E=1`, `COMPHONE_VISION_E2E_CONFIRM=RUN_VISION_ANALYSIS`.
 - `scripts/vision_runtime_smoke.js` now also checks `getVisionReviewQueue` when a token is present.
 - Static/capability guards now enforce review queue coverage and gated E2E smoke coverage.
+- Production deploy verified at GAS deployment `@547`: public health/getVersion, protected API/menu smoke, Vision Runtime smoke, Workflow smoke, and gated Vision E2E smoke passed on 2026-05-07.
 
 ### Phase 59 Current Review (2026-05-07)
 - Status score: **99/100 AI readiness visibility**. AI Vision now distinguishes between route availability and actual Gemini readiness, so users and release checks can see whether the Vision backend is configured for real AI work.
