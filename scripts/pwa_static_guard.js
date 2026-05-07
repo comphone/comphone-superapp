@@ -135,7 +135,7 @@ for (const match of swJs.matchAll(/BASE \+ '\/([^']+)'/g)) {
   if (!fs.existsSync(file)) fail(`sw.js pre-caches missing asset: ${asset}`);
 }
 
-const filesToScan = ['index.html', 'dashboard_pc.html', 'version_config.js', 'sw.js', 'pwa_asset_manifest.js', 'api_contract.js', 'api_client.js', 'app.js', 'auth.js', 'auth_guard.js', 'app_home.js', 'admin_panel.js', 'menu_health.js', 'runtime_self_test.js'];
+const filesToScan = ['index.html', 'dashboard_pc.html', 'version_config.js', 'sw.js', 'pwa_asset_manifest.js', 'api_contract.js', 'api_client.js', 'app.js', 'auth.js', 'auth_guard.js', 'app_home.js', 'admin_panel.js', 'menu_health.js', 'runtime_self_test.js', 'section_vision.js'];
 for (const name of filesToScan) {
   const file = path.join(PWA, name);
   const text = readUtf8(file);
@@ -293,6 +293,18 @@ if (!appJs.includes('getVisionDashboardStats') ||
     !appJs.includes('getVisionPipelineVersion') ||
     !appJs.includes('getVisionLearningVersion')) {
   fail('app.js READ_ACTIONS must classify AI Vision dashboard/version reads as read-only.');
+}
+if (!indexHtml.includes('section_vision.js?') ||
+    !dashboardPcHtml.includes('section_vision.js?') ||
+    !assetManifestJs.includes('section_vision.js')) {
+  fail('PC/mobile must load and precache section_vision.js for the AI Vision UI.');
+}
+const sectionVisionJs = readUtf8(path.join(PWA, 'section_vision.js'));
+if (!sectionVisionJs.includes('renderVisionSection') ||
+    !sectionVisionJs.includes('renderMobileVisionPage') ||
+    !sectionVisionJs.includes("visionApi('getVisionDashboardStats'") ||
+    !sectionVisionJs.includes("visionApi('runVisionPipeline'")) {
+  fail('section_vision.js must render PC/mobile Vision panels and call Vision stats/pipeline actions.');
 }
 
 const smokeJs = readUtf8(path.join(ROOT, 'scripts', 'pwa_api_smoke.js'));

@@ -40,6 +40,10 @@ const files = {
   appActions: 'pwa/app_actions.js',
   billingSlip: 'pwa/billing_slip_verify.js',
   apiContract: 'pwa/api_contract.js',
+  sectionVision: 'pwa/section_vision.js',
+  indexHtml: 'pwa/index.html',
+  dashboardPc: 'pwa/dashboard_pc.html',
+  assetManifest: 'pwa/pwa_asset_manifest.js',
 };
 
 const text = Object.fromEntries(Object.entries(files).map(([key, file]) => [key, read(file)]));
@@ -128,6 +132,19 @@ const checks = [
       has(text.billingSlip, 'openSlipUploadModal'),
     'billing_slip_verify.js supports AI-assisted payment slip verification.',
     [files.billingSlip]
+  ),
+  check(
+    'vision-operations-ui',
+    'PC and mobile expose an AI Vision operations panel backed by the same protected actions.',
+    has(text.sectionVision, 'function renderVisionSection') &&
+      has(text.sectionVision, 'function renderMobileVisionPage') &&
+      has(text.sectionVision, "visionApi('getVisionDashboardStats'") &&
+      has(text.sectionVision, "visionApi('runVisionPipeline'") &&
+      has(text.indexHtml, 'page-vision') &&
+      has(text.dashboardPc, "loadSection('vision')") &&
+      has(text.assetManifest, 'section_vision.js'),
+    'section_vision.js must be loaded on PC/mobile and expose stats, version, camera, and guarded analysis actions.',
+    [files.sectionVision, files.indexHtml, files.dashboardPc, files.assetManifest]
   ),
   check(
     'api-contract-vision-workflow',

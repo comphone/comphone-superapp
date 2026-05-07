@@ -9,7 +9,7 @@ const QUICK_ACTIONS_KEY = 'comphone_mobile_quick_actions';
 const RESTORABLE_PAGES = new Set([
   'home', 'jobs', 'camera', 'crm', 'po', 'attendance', 'profile',
   'reports', 'inventory', 'billing', 'warranty', 'dashboard',
-  'analytics', 'revenue', 'tax', 'performance', 'admin'
+  'analytics', 'revenue', 'tax', 'performance', 'vision', 'admin'
 ]);
 
 const MENU_GROUPS = [
@@ -38,6 +38,7 @@ const MENU_GROUPS = [
     label: 'บริหารและวิเคราะห์',
     items: [
       { id: 'dashboard', page: 'dashboard', icon: 'bi-speedometer2', label: 'Dashboard' },
+      { id: 'vision', page: 'vision', icon: 'bi-stars', label: 'AI Vision' },
       { id: 'reports', page: 'reports', icon: 'bi-graph-up-arrow', label: 'รายงาน' },
       { id: 'analytics', page: 'analytics', icon: 'bi-activity', label: 'Analytics' },
       { id: 'performance', page: 'performance', icon: 'bi-lightning-charge-fill', label: 'Performance' }
@@ -55,7 +56,7 @@ const MENU_GROUPS = [
 ];
 
 const QUICK_ACTION_CATALOG = MENU_GROUPS.flatMap(group => group.items)
-  .filter(item => ['openNewJob', 'addCustomer', 'jobs', 'crm', 'billing', 'inventory', 'po', 'reports', 'dashboard', 'notifications'].includes(item.id))
+  .filter(item => ['openNewJob', 'addCustomer', 'jobs', 'crm', 'billing', 'inventory', 'po', 'reports', 'dashboard', 'vision', 'notifications'].includes(item.id))
   .map(item => ({
     id: item.id,
     icon: item.icon,
@@ -72,6 +73,7 @@ const QUICK_ACTION_CATALOG = MENU_GROUPS.flatMap(group => group.items)
       po: '#fce7f3',
       reports: '#dcfce7',
       dashboard: '#fef9c3',
+      vision: '#ccfbf1',
       notifications: '#fee2e2'
     }[item.id] || '#f8fafc',
     textColor: {
@@ -84,6 +86,7 @@ const QUICK_ACTION_CATALOG = MENU_GROUPS.flatMap(group => group.items)
       po: '#9d174d',
       reports: '#166534',
       dashboard: '#713f12',
+      vision: '#0f766e',
       notifications: '#991b1b'
     }[item.id] || '#0f172a'
   }));
@@ -553,6 +556,9 @@ function goPage(page, btn, options = {}) {
   if (page === 'performance') {
     if (typeof loadPerformancePage === 'function') loadPerformancePage();
     else if (typeof renderPerformanceSection === 'function') renderPerformanceSection();
+  }
+  if (page === 'vision') {
+    if (typeof renderMobileVisionPage === 'function') renderMobileVisionPage();
   }
   if (page === 'pos') {
     // POS page is standalone - open in new tab or redirect

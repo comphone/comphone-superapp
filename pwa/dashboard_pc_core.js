@@ -15,7 +15,7 @@
   const LAST_SECTION_KEY = 'comphone_last_pc_section';
   const PC_SECTIONS = new Set([
     'dashboard', 'jobs', 'po', 'inventory', 'billing', 'warranty',
-    'revenue', 'tax', 'reports', 'analytics', 'performance', 'backup',
+    'revenue', 'tax', 'reports', 'analytics', 'performance', 'vision', 'backup',
     'crm', 'attendance', 'settings'
   ]);
 
@@ -124,6 +124,13 @@
       performance: () => {
         if (typeof global.renderPerformanceSection === 'function') global.renderPerformanceSection(data);
         else if (main) main.innerHTML = '<h3>Performance</h3><p>Coming soon...</p>';
+      },
+      vision: () => {
+        const c = document.getElementById('vision-content') || document.getElementById('section-vision') || main;
+        if (typeof global.renderVisionSection === 'function' && c) {
+          c.innerHTML = global.renderVisionSection(data);
+          if (typeof global.hydrateVisionPanel === 'function') global.hydrateVisionPanel();
+        } else if (main) main.innerHTML = '<h3>AI Vision</h3><p>Vision module is not loaded.</p>';
       },
       backup: () => {
         if (typeof global.renderBackupSection === 'function') global.renderBackupSection();

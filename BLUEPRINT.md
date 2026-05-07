@@ -1,10 +1,10 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.18.19-vision-audit (PWA) / GAS Backend v5.18.8-auth-session-store @545
+> **Version:** v5.18.20-vision-ui (PWA) / GAS Backend v5.18.8-auth-session-store @545
 
-> **Date:** 2026-05-07 | **Phase:** 56 (AI Vision Capability Audit Layer)
+> **Date:** 2026-05-07 | **Phase:** 57 (AI Vision Operations UI)
 
-> **Status:** STABLE - PC/mobile menu runtime restored; System Integrity Audit score 100/100; Runtime Self-Test is live; core write flows have idempotency; gated write smoke is available; AI Vision has structural capability audit and API workflow contract
+> **Status:** STABLE - PC/mobile menu runtime restored; System Integrity Audit score 100/100; Runtime Self-Test is live; core write flows have idempotency; gated write smoke is available; AI Vision has structural capability audit, API workflow contract, and PC/mobile operations panel
 
 ---
 
@@ -12,14 +12,23 @@
 
 | Item | Current Value | Source of Truth |
 |---|---|---|
-| App Version | `v5.18.19-vision-audit` | `pwa/version_config.js` |
-| Cache Version | `comphone-v5.18.19-vision-audit-20260507_1230` | `pwa/version_config.js`, `pwa/sw.js` |
-| Build Timestamp | `20260507_1230` | `pwa/version_config.js` |
+| App Version | `v5.18.20-vision-ui` | `pwa/version_config.js` |
+| Cache Version | `comphone-v5.18.20-vision-ui-20260507_1245` | `pwa/version_config.js`, `pwa/sw.js` |
+| Build Timestamp | `20260507_1245` | `pwa/version_config.js` |
 | GAS Backend Deploy | `545` / production URL in `pwa/gas_config.js` | `clasp-ready/Config.gs`, `clasp-ready/Auth.gs`, `clasp-ready/Router.gs` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbyVK5KLJcHFNfm7oNce5e_WOrFdS2_UuiRQW27ipIUK2DeYGtVjSwWCmr-jIWLnkLcSgw/exec` | `pwa/gas_config.js` |
-| API Contract Version | `2026-05-07.phase56-vision-audit` | `pwa/api_contract.js` |
+| API Contract Version | `2026-05-07.phase57-vision-ui` | `pwa/api_contract.js` |
 | Last Production Commit | GitHub `main` HEAD | Use `git log -1 --oneline` for the exact commit |
-| Validation Status | Static Guard OK; Code Index OK; System Integrity Audit OK; AI Vision Capability Audit OK; login OK; verifySession OK; protected API smoke OK; local PC/Mobile UI audit OK; Runtime Self-Test UI added | `scripts/pwa_static_guard.js`, `scripts/build_code_index.js`, `scripts/system_integrity_audit.js`, `scripts/vision_capability_audit.js`, `scripts/pwa_api_smoke.js`, `pwa/runtime_self_test.js`, `test_reports/*_latest.*` |
+| Validation Status | Static Guard OK; Code Index OK; System Integrity Audit OK; AI Vision Capability Audit OK; Vision UI wired on PC/Mobile; login OK; verifySession OK; protected API smoke OK; local PC/Mobile UI audit OK; Runtime Self-Test UI added | `scripts/pwa_static_guard.js`, `scripts/build_code_index.js`, `scripts/system_integrity_audit.js`, `scripts/vision_capability_audit.js`, `scripts/pwa_api_smoke.js`, `pwa/runtime_self_test.js`, `test_reports/*_latest.*` |
+
+### Phase 57 Current Review (2026-05-07)
+- Status score: **98/100 functional readiness**. AI Vision is no longer only backend-ready; PC and Mobile now expose an operations panel that users can open from navigation.
+- Added `pwa/section_vision.js` as the shared Vision UI module for PC and Mobile.
+- PC Dashboard now has an `AI Vision` sidebar item and `section-vision` content area. The panel can refresh Vision stats, check backend Vision versions, jump to billing/reports, and run a guarded image analysis pipeline after a user chooses a file and confirms.
+- Mobile PWA now has `page-vision`, a More menu entry, and an optional quick action entry. It can refresh Vision stats, open camera/slip capture, and run the same guarded image analysis panel.
+- `pwa/pwa_asset_manifest.js`, `pwa/index.html`, and `pwa/dashboard_pc.html` now load/precache `section_vision.js` so installed PWA clients can use the panel offline-first after update.
+- `scripts/pwa_static_guard.js` now blocks releases where the Vision UI script is not loaded/pre-cached or does not call the Vision stats/pipeline actions.
+- Destructive Vision analysis still requires explicit user confirmation in the UI. Real secrets remain outside the repository.
 
 ### Phase 56 Current Review (2026-05-07)
 - Status score: **98/100 structural readiness**. AI Vision now has its own capability audit so the system can detect missing Vision routes, PWA call sites, backend handlers, and contract drift before users hit empty menus or broken image flows.
@@ -103,7 +112,7 @@
 ### 0-100 Health Review
 | Area | Score | Status | Reason |
 |---|---:|---|---|
-| Runtime config/version/cache | 94 | Strong | Central PWA config and service worker cache are aligned at `v5.18.19-vision-audit`; auxiliary/archival pages still need cleanup. |
+| Runtime config/version/cache | 94 | Strong | Central PWA config and service worker cache are aligned at `v5.18.20-vision-ui`; auxiliary/archival pages still need cleanup. |
 | Mobile PWA auth/login | 94 | Strong | Modern login, session restore, menu pages, billing/reports/inventory adapters, and quick-action modals pass local UI audit. |
 | PC dashboard auth/login | 92 | Strong | Runtime is consolidated in `dashboard_pc_core.js`; core sections switch cleanly in local UI audit. |
 | API contract/backend availability | 92 | Strong | Fresh login, verifySession, and required protected smoke pass against production GAS @545. |
@@ -118,11 +127,11 @@
 | Done | Auth session persistence | `loginUser` returned a token that `verifySession` could not find when session writes overflowed away from Script Properties. | Fixed in `clasp-ready/Auth.gs`; deployed to GAS `@545`; protected smoke now passes. |
 | Done | PC dashboard duplicate runtime logic | Resolved in `v5.18.7-authguard`. | Keep static guard enforcing one `_doLogin` and no inline core functions in `dashboard_pc.html`. |
 | Done | Mobile menu/runtime recovery | Billing/Reports used PC-only `setActiveNav`, Inventory had no mobile loader, Profile showed stale version, and `openJob()` alias was missing. | Fixed in `v5.18.9-ui-menu`; local mobile UI audit passes. |
-| Done | Route/API intelligence guard | Legacy `stock` quick action pointed to a missing mobile page and future drift had no fast detector. | Fixed in `v5.18.19-vision-audit`; run `node scripts/build_code_index.js` before release. |
+| Done | Route/API intelligence guard | Legacy `stock` quick action pointed to a missing mobile page and future drift had no fast detector. | Fixed in `v5.18.20-vision-ui`; run `node scripts/build_code_index.js` before release. |
 | Done | Code Intelligence Layer v2 | Future agents needed a compact impact map instead of rereading the full repo. | Added dependency graph, workflow map, orphan classification, and Markdown summary output to `scripts/build_code_index.js`. |
 | Done | System Integrity Audit Layer | Menu bugs could hide across route/page/renderer/API/container layers. | Added `scripts/system_integrity_audit.js`; regression guard now reports PC/Mobile menu matrix and AI workflow lock/telemetry status. |
-| Done | Mobile menu map recovery | Operational pages existed but were hidden from the reduced More menu, and several pages were redirected away before loading. | Fixed in `v5.18.19-vision-audit`; full grouped menu restored and real pages can load directly. |
-| Done | Navigation continuity | Mobile/PC did not reliably reopen the last working page and accidental Back/close/logout could interrupt work. | Fixed in `v5.18.19-vision-audit`; mobile and PC persist current page/section and add accidental-exit safeguards. |
+| Done | Mobile menu map recovery | Operational pages existed but were hidden from the reduced More menu, and several pages were redirected away before loading. | Fixed in `v5.18.20-vision-ui`; full grouped menu restored and real pages can load directly. |
+| Done | Navigation continuity | Mobile/PC did not reliably reopen the last working page and accidental Back/close/logout could interrupt work. | Fixed in `v5.18.20-vision-ui`; mobile and PC persist current page/section and add accidental-exit safeguards. |
 | P1 | Destructive write-flow validation | Open-job/customer modals open, but submitting writes should not be tested directly on production data. | Run staging write smoke for create job, create customer, billing/payment, inventory add/transfer, and offline queue replay. |
 | P1 | Auxiliary pages have old fallback versions | `executive_dashboard.html`, `monitoring_dashboard.html`, `system_graph.html`, some scripts still mention old versions. | Either align them to `version_config.js` or mark/archive them if unused. |
 | P2 | BLUEPRINT historical sections are noisy | Old Hermes/SocratiCode claims and v5.9/v5.5 notes can mislead future agents. | Move old phases into an archive section and keep only current rules at the top. |

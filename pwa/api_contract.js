@@ -2,7 +2,7 @@
   'use strict';
 
   const API_CONTRACT = {
-    version: '2026-05-07.phase56-vision-audit',
+    version: '2026-05-07.phase57-vision-ui',
     responseShape: {
       success: '{ success: true, data?, meta? }',
       failure: '{ success: false, error, code, kind?, action?, request_id? }',
