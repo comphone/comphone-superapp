@@ -75,6 +75,7 @@ const requiredRoutes = [
   'runVisionPipeline',
   'submitHumanReview',
   'linkVisionToJobTimeline',
+  'executeVisionSuggestion',
   'verifyPaymentSlip',
   'getPhotoGalleryData',
 ];
@@ -149,9 +150,11 @@ const checks = [
       has(text.sectionVision, "visionApi('getVisionReviewQueue'") &&
       has(text.sectionVision, "visionApi('submitHumanReview'") &&
       has(text.sectionVision, "visionApi('linkVisionToJobTimeline'") &&
+      has(text.sectionVision, "visionApi('executeVisionSuggestion'") &&
       has(text.sectionVision, 'buildFieldContext') &&
       has(text.sectionVision, 'buildActionSuggestions') &&
       has(text.sectionVision, 'runVisionSuggestion') &&
+      has(text.sectionVision, 'EXECUTE_VISION_SUGGESTION') &&
       has(text.indexHtml, 'page-vision') &&
       has(text.dashboardPc, "loadSection('vision')") &&
       has(text.assetManifest, 'section_vision.js'),
@@ -166,6 +169,7 @@ const checks = [
       has(text.apiContract, 'getVisionFieldContext') &&
       has(text.apiContract, 'getVisionActionSuggestions') &&
       has(text.apiContract, 'linkVisionToJobTimeline') &&
+      has(text.apiContract, 'executeVisionSuggestion') &&
       has(text.apiContract, 'runVisionPipeline') &&
       has(text.apiContract, 'verifyPaymentSlip') &&
       has(text.apiContract, 'smoke: false'),
@@ -201,6 +205,7 @@ const checks = [
       has(text.visionPipeline, 'function getVisionFieldContext') &&
       has(text.visionPipeline, 'function getVisionActionSuggestions') &&
       has(text.visionPipeline, 'function linkVisionToJobTimeline') &&
+      has(text.visionPipeline, 'function executeVisionSuggestion') &&
       has(text.visionLearning, 'function processFeedbackLoop') &&
       has(text.visionLearning, 'function getLearningDashboard') &&
       has(text.visionLearning, 'function getVisionLearningVersion'),
@@ -240,6 +245,7 @@ const capabilities = [
   'Expose Vision dashboard stats, learning version, human review, and AgentGateway vision roles.',
   'Link approved or reviewed Vision results back to job timeline context for field operations.',
   'Suggest next actions from Vision decisions while keeping writes behind human confirmation.',
+  'Execute selected Vision suggestions through a server whitelist and explicit confirmation gate.',
   'Keep real Gemini/LINE/API keys out of the repo; only Script Property key names are tracked.',
 ];
 

@@ -2,7 +2,7 @@
   'use strict';
 
   const API_CONTRACT = {
-    version: '2026-05-07.phase62-vision-action-suggestions',
+    version: '2026-05-07.phase63-vision-controlled-execution',
     responseShape: {
       success: '{ success: true, data?, meta? }',
       failure: '{ success: false, error, code, kind?, action?, request_id? }',
@@ -197,6 +197,7 @@
           { action: 'verifyPaymentSlip', destructive: true, smoke: false, smokeReason: 'requires real billing/slip image context' },
           { action: 'submitHumanReview', destructive: true, smoke: false, smokeReason: 'writes human review feedback for learning loop' },
           { action: 'linkVisionToJobTimeline', destructive: true, smoke: false, smokeReason: 'writes a Vision review note into the selected job timeline' },
+          { action: 'executeVisionSuggestion', destructive: true, smoke: false, smokeReason: 'controlled execution gate for Vision suggestions; requires explicit confirmation and may write jobs/billing/LINE/timeline' },
         ],
       },
     ],

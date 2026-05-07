@@ -299,6 +299,7 @@ var MODULE_ROUTER = {
   'getVisionFieldContext': function(p) { return getVisionFieldContext(p); },
   'getVisionReviewQueue': function(p) { return getVisionReviewQueue(p); },
   'getVisionActionSuggestions': function(p) { return getVisionActionSuggestions(p); },
+  'executeVisionSuggestion': function(p) { return executeVisionSuggestion(p); },
   'getWarrantyByJobId': function(p) { return getWarrantyByJobId(p); },
   'getWarrantyDue': function(p) { return getWarrantyDue(p); },
   'getWorkflowEngineVersion': function(p) { return getWorkflowEngineVersion(p); },

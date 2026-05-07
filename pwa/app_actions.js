@@ -45,6 +45,10 @@ async function linkVisionToJobTimelineAction(payload = {}) {
   return callAPI('linkVisionToJobTimeline', payload);
 }
 
+async function executeVisionSuggestionAction(payload = {}) {
+  return callAPI('executeVisionSuggestion', payload);
+}
+
 window.getVisionDashboardStatsAction = getVisionDashboardStatsAction;
 window.getVisionPipelineVersionAction = getVisionPipelineVersionAction;
 window.getVisionLearningVersionAction = getVisionLearningVersionAction;
@@ -54,6 +58,7 @@ window.runSlipVerifyPipelineAction = runSlipVerifyPipelineAction;
 window.submitHumanReviewAction = submitHumanReviewAction;
 window.getVisionActionSuggestionsAction = getVisionActionSuggestionsAction;
 window.linkVisionToJobTimelineAction = linkVisionToJobTimelineAction;
+window.executeVisionSuggestionAction = executeVisionSuggestionAction;
 
 function globalSearch(val) {
   const q = val.toLowerCase().trim();

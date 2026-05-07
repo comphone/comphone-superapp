@@ -447,6 +447,7 @@
     if (!item) return alert('Suggestion not found.');
     if (item.requiresConfirm && !confirm('Run suggested action: ' + (item.label || item.id) + '?')) return;
     const action = item.action || '';
+    if (item.executor === 'executeVisionSuggestion') return executeVisionSuggestion(item);
     if (action === 'linkVisionToJobTimeline') return linkLastVisionToJobTimeline();
     if (action === 'loadVisionFieldContext') return loadVisionFieldContext(item.jobId || getVisionJobId(), item.visionLogId || '');
     if (action === 'loadVisionReviewQueue') return loadVisionReviewQueue();
@@ -462,6 +463,26 @@
       return submitLastVisionReview(action.split(':')[1] || 'APPROVED');
     }
     alert('Suggestion action is not wired yet: ' + action);
+  }
+
+  async function executeVisionSuggestion(item) {
+    if (!item || !item.id) return alert('Suggestion not found.');
+    const jobId = item.jobId || getVisionJobId();
+    const result = VISION_STATE.lastResult || {};
+    const ok = confirm('Execute controlled Vision action: ' + (item.label || item.id) + '?\n\nThis will be audited and may write production data.');
+    if (!ok) return;
+    const res = await visionApi('executeVisionSuggestion', {
+      suggestionId: item.id,
+      visionLogId: item.visionLogId || result.visionLogId || result.logId || '',
+      jobId,
+      result,
+      confirm: 'EXECUTE_VISION_SUGGESTION',
+    });
+    if (res && res.success === false) return alert(res.error || 'Controlled execution failed');
+    alert('Controlled Vision action completed.');
+    loadVisionReviewQueue();
+    if (jobId) loadVisionFieldContext(jobId, item.visionLogId || result.visionLogId || '');
+    loadVisionActionSuggestions();
   }
 
   async function linkLastVisionToJobTimeline() {
@@ -602,6 +623,7 @@
   global.loadVisionFieldContext = loadVisionFieldContext;
   global.loadVisionActionSuggestions = loadVisionActionSuggestions;
   global.runVisionSuggestion = runVisionSuggestion;
+  global.executeVisionSuggestion = executeVisionSuggestion;
   global.linkLastVisionToJobTimeline = linkLastVisionToJobTimeline;
   global.openVisionCamera = openVisionCamera;
   global.goVisionBilling = goVisionBilling;

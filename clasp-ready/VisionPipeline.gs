@@ -713,6 +713,49 @@ function getVisionActionSuggestions(params) {
 }
 
 /**
+ * executeVisionSuggestion — รัน suggestion ที่ระบบสร้างไว้เท่านั้น พร้อม confirmation gate
+ * @param {Object} params - { suggestionId, visionLogId, jobId, result, confirm }
+ */
+function executeVisionSuggestion(params) {
+  try {
+    params = params || {};
+    if (String(params.confirm || '') !== 'EXECUTE_VISION_SUGGESTION') {
+      return { success: false, error: 'Missing confirmation gate', code: 'CONFIRM_REQUIRED' };
+    }
+    var suggestionId = String(params.suggestionId || params.id || '').trim();
+    if (!suggestionId) return { success: false, error: 'suggestionId is required' };
+    var suggestionSet = getVisionActionSuggestions(params);
+    if (!suggestionSet || suggestionSet.success === false) return suggestionSet;
+    var selected = null;
+    for (var i = 0; i < suggestionSet.suggestions.length; i++) {
+      if (suggestionSet.suggestions[i].id === suggestionId) {
+        selected = suggestionSet.suggestions[i];
+        break;
+      }
+    }
+    if (!selected) return { success: false, error: 'Suggestion is not allowed for current Vision context', code: 'SUGGESTION_NOT_ALLOWED' };
+    var result = _vpExecuteSuggestionById_(selected, params);
+    try {
+      if (typeof writeAuditLog === 'function') {
+        writeAuditLog('VISION_SUGGESTION_EXECUTE', params._auth_user || selected.reviewedBy || 'PWA', suggestionId + ' result=' + (result && result.success), {
+          result: result && result.success ? 'success' : 'error',
+          job_id: selected.jobId || '',
+          vision_log_id: selected.visionLogId || '',
+          action: selected.action || ''
+        });
+      }
+    } catch (auditErr) {}
+    return {
+      success: result && result.success !== false,
+      suggestion: selected,
+      execution: result
+    };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
  * linkVisionToJobTimeline — บันทึกผล Vision/Human Review ลง timeline ของงาน
  * @param {Object} params - { visionLogId, jobId, decision, reviewedBy, note }
  */
@@ -823,6 +866,7 @@ function _vpBuildActionSuggestions_(visionItem, context) {
       reason: reason || '',
       requiresConfirm: destructive !== false,
       destructive: destructive === true,
+      executor: destructive === true ? 'executeVisionSuggestion' : '',
       jobId: jobId,
       visionLogId: visionItem.visionLogId || ''
     });
@@ -834,18 +878,89 @@ function _vpBuildActionSuggestions_(visionItem, context) {
   if (decision === VP_DECISIONS.APPROVED) {
     add('approve_review', 'Approve human review', 'submitHumanReview:APPROVED', 'high', 'ผล AI ผ่านเกณฑ์ สามารถยืนยัน review ได้', true);
     if (type === VP_TYPES.SLIP) add('open_billing', 'Open billing/payment', 'navigate:billing', 'medium', 'สลิปผ่าน ควรตรวจหน้าการชำระเงินต่อ', false);
+    if (type === VP_TYPES.SLIP && hasJob && Number((visionItem.data || {}).amount || 0) > 0) add('mark_payment_received', 'Mark payment received', 'markBillingPaid', 'high', 'สลิปผ่านและพบยอดเงิน สามารถบันทึกรับชำระได้หลังยืนยัน', true);
     if (type === VP_TYPES.QC && hasJob) add('inspect_job_timeline', 'Inspect job timeline', 'loadVisionFieldContext', 'medium', 'QC ผ่าน ควรดูสถานะงานล่าสุดก่อนเปลี่ยนสถานะ', false);
+    if (type === VP_TYPES.QC && hasJob && context.job && (Number(context.job.current_status_code) === 6 || Number(context.job.current_status_code) === 7)) {
+      add('transition_job_done', 'Move job to done', 'transitionJob:8', 'high', 'QC ผ่านและสถานะงานพร้อมเปลี่ยนเป็นงานเสร็จ', true);
+    }
   } else if (decision === VP_DECISIONS.NEED_REVIEW) {
     add('request_review', 'Keep in review queue', 'loadVisionReviewQueue', 'high', 'confidence ยังไม่พอ ต้องให้คนตรวจ', false);
     if (hasJob) add('inspect_context', 'Inspect job context', 'loadVisionFieldContext', 'high', 'ดูประวัติงานประกอบการตัดสินใจ', false);
   } else if (decision === VP_DECISIONS.QC_FAIL || decision === VP_DECISIONS.PAYMENT_ERROR || decision === VP_DECISIONS.REJECTED) {
     add('reject_review', 'Reject human review', 'submitHumanReview:REJECTED', 'high', 'ผล AI พบปัญหา ควรยืนยัน/ส่งกลับตรวจ', true);
     if (hasJob) add('link_problem_timeline', 'Record issue in timeline', 'linkVisionToJobTimeline', 'high', 'เก็บปัญหาไว้ใน timeline เพื่อให้ทีมตามต่อ', true);
+    if (hasJob) add('add_problem_note', 'Add issue note', 'addQuickNote', 'high', 'เพิ่มหมายเหตุปัญหาในงานเพื่อให้ทีมตามต่อ', true);
+    if (decision === VP_DECISIONS.QC_FAIL) add('notify_technician', 'Notify technician team', 'sendLineNotify:TECHNICIAN', 'medium', 'แจ้งทีมช่างให้ตรวจภาพ/งานที่ไม่ผ่าน QC', true);
   }
 
   add('copy_result', 'Copy AI result', 'copyVisionResult', 'low', 'เก็บผลวิเคราะห์เพื่อส่งต่อหรือ debug', false);
   if (!hasJob) add('enter_job_id', 'Add Job ID', 'focus:vision-job-id', 'medium', 'ใส่ Job ID เพื่อผูกผล AI เข้ากับงานจริง', false);
   return suggestions;
+}
+
+function _vpExecuteSuggestionById_(selected, params) {
+  var id = selected.id || '';
+  var jobId = selected.jobId || params.jobId || params.job_id || '';
+  var user = params._auth_user || params.reviewedBy || params.reviewed_by || 'PWA';
+  var visionLogId = selected.visionLogId || params.visionLogId || '';
+  if (id === 'link_timeline' || id === 'link_problem_timeline') {
+    return linkVisionToJobTimeline({
+      visionLogId: visionLogId,
+      jobId: jobId,
+      decision: selected.id,
+      reviewedBy: user,
+      note: selected.reason || ''
+    });
+  }
+  if (id === 'approve_review' || id === 'reject_review') {
+    return submitHumanReview({
+      visionLogId: visionLogId,
+      jobId: jobId,
+      decision: id === 'approve_review' ? VP_DECISIONS.APPROVED : VP_DECISIONS.REJECTED,
+      reviewedBy: user,
+      note: selected.reason || '',
+      linkJobTimeline: !!jobId
+    });
+  }
+  if (id === 'add_problem_note') {
+    if (!jobId) return { success: false, error: 'jobId is required' };
+    var note = 'AI Vision issue: ' + (selected.reason || '') + (visionLogId ? ' | log=' + visionLogId : '');
+    if (typeof addQuickNote === 'function') return addQuickNote(jobId, note, user);
+    return linkVisionToJobTimeline({ visionLogId: visionLogId, jobId: jobId, decision: 'VISION_NOTE', reviewedBy: user, note: note });
+  }
+  if (id === 'notify_technician') {
+    if (typeof sendLineNotify !== 'function') return { success: false, error: 'sendLineNotify is not available' };
+    return sendLineNotify({
+      room: 'TECHNICIAN',
+      message: 'AI Vision QC alert' + (jobId ? '\nJob: ' + jobId : '') + (visionLogId ? '\nLog: ' + visionLogId : '') + '\n' + (selected.reason || '')
+    });
+  }
+  if (id === 'transition_job_done') {
+    if (!jobId) return { success: false, error: 'jobId is required' };
+    if (typeof transitionJob !== 'function') return { success: false, error: 'transitionJob is not available' };
+    return transitionJob(jobId, 8, {
+      changed_by: user,
+      source: 'AI Vision Controlled Execution',
+      note: 'AI Vision suggested completion' + (visionLogId ? ' | log=' + visionLogId : '')
+    });
+  }
+  if (id === 'mark_payment_received') {
+    if (!jobId) return { success: false, error: 'jobId is required' };
+    if (typeof markBillingPaid !== 'function') return { success: false, error: 'markBillingPaid is not available' };
+    var item = _vpGetVisionLogItem_(visionLogId) || _vpNormalizeSuggestionInput_(params.result || {});
+    var amount = Number((item.data || {}).amount || params.amount || 0);
+    if (amount <= 0) return { success: false, error: 'amount is required' };
+    return markBillingPaid({
+      job_id: jobId,
+      amount_paid: amount,
+      transaction_ref: (item.data || {}).transaction_ref || '',
+      changed_by: user,
+      source: 'AI Vision Controlled Execution',
+      skip_job_transition: false,
+      generate_receipt: true
+    });
+  }
+  return { success: false, error: 'Unsupported suggestion id: ' + id };
 }
 
 // ─── PHASE 18: DASHBOARD INTEGRATION ────────────────────────
