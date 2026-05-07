@@ -160,6 +160,11 @@ if (!appActionsJs.includes("callAPI('openJob'") || !appActionsJs.includes("callA
     !appActionsJs.includes('modal-add-customer-content') || !appActionsJs.includes('new-cust-name')) {
   fail('app_actions.js mobile quick actions must create jobs/customers through unified callAPI and include a local add-customer fallback form.');
 }
+if (!appActionsJs.includes('createWriteRequestId') ||
+    !appActionsJs.includes('client_request_id') ||
+    !appActionsJs.includes("dataset.submitting === '1'")) {
+  fail('app_actions.js write flows must include client_request_id idempotency and submit double-click guards.');
+}
 if (appActionsJs.includes("showToast('กำลังเปิดฟอร์มงานใหม่") || appActionsJs.includes("showToast('กำลังเปิดฟอร์มลูกค้าใหม่")) {
   fail('app_actions.js must not leave openNewJob/addCustomer as toast-only stubs.');
 }
@@ -286,6 +291,27 @@ if (!smokeJs.includes('COMPHONE_SMOKE_REPORT') || !smokeJs.includes('AUTH_FAIL')
 const workflowSmokeJs = readUtf8(path.join(ROOT, 'scripts', 'pwa_workflow_smoke.js'));
 if (!workflowSmokeJs.includes('COMPHONE_WORKFLOW_REPORT') || !workflowSmokeJs.includes('read-only') || !workflowSmokeJs.includes('latestJob')) {
   fail('pwa_workflow_smoke.js must provide read-only workflow smoke checks.');
+}
+const offlineDbJs = readUtf8(path.join(PWA, 'offline_db.js'));
+if (!offlineDbJs.includes('normalizeOfflineAction_') || !offlineDbJs.includes('const res = await callApi(item.action')) {
+  fail('offline_db.js must normalize offline writes and replay through callApi without re-queuing failures.');
+}
+const errorBoundaryJs = readUtf8(path.join(PWA, 'error_boundary.js'));
+if (!errorBoundaryJs.includes("if (typeof window.saveOfflineAction !== 'function')") ||
+    !errorBoundaryJs.includes("if (typeof window.syncOfflineQueue !== 'function')")) {
+  fail('error_boundary.js must not override the IndexedDB offline queue implementation.');
+}
+const jobsHandlerGs = readUtf8(path.join(ROOT, 'clasp-ready', 'JobsHandler.gs'));
+if (!jobsHandlerGs.includes('getIdempotentReplay_') ||
+    !jobsHandlerGs.includes('rememberIdempotentResult_') ||
+    !jobsHandlerGs.includes("getIdempotentReplay_('openJob'") ||
+    !jobsHandlerGs.includes("getIdempotentReplay_('createBilling'")) {
+  fail('JobsHandler.gs must protect openJob/createBilling with idempotent client_request_id replay.');
+}
+const customerManagerGs = readUtf8(path.join(ROOT, 'clasp-ready', 'CustomerManager.gs'));
+if (!customerManagerGs.includes("getIdempotentReplay_('createCustomer'") ||
+    !customerManagerGs.includes("rememberIdempotentResult_('createCustomer'")) {
+  fail('CustomerManager.gs must protect createCustomer with idempotent client_request_id replay.');
 }
 const menuHealthJs = readUtf8(path.join(PWA, 'menu_health.js'));
 if (!menuHealthJs.includes('exportMenuHealthReport') || !menuHealthJs.includes('smoke === false') || !menuHealthJs.includes('menu-health-observe')) {

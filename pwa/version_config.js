@@ -5,10 +5,10 @@
 // ===========================================================
 
 const VERSION_CONFIG = {
-  version: 'v5.18.16-runtime-selftest',
+  version: 'v5.18.17-writeflow-stability',
   buildDate: '2026-05-07',
-  buildTimestamp: '20260507_1100',
-  cacheVersion: 'comphone-v5.18.16-runtime-selftest-20260507_1100',
+  buildTimestamp: '20260507_1130',
+  cacheVersion: 'comphone-v5.18.17-writeflow-stability-20260507_1130',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -17,7 +17,8 @@ const VERSION_CONFIG = {
     'Glassmorphism 2.0 KPI Cards',
     'Improved Cache Busting',
     'Stable Login Flow',
-    'Runtime Self-Test Panel'
+    'Runtime Self-Test Panel',
+    'Write-flow idempotency and offline replay stability'
   ]
 };
 
@@ -27,9 +28,9 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 
 // Backward-compatible exports for legacy modules and guards
-const APP_VERSION = 'v5.18.16-runtime-selftest';
-const BUILD_TIMESTAMP = '20260507_1100';
-const CACHE_VERSION = 'comphone-v5.18.16-runtime-selftest-20260507_1100';
+const APP_VERSION = 'v5.18.17-writeflow-stability';
+const BUILD_TIMESTAMP = '20260507_1130';
+const CACHE_VERSION = 'comphone-v5.18.17-writeflow-stability-20260507_1130';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;
