@@ -1,5 +1,5 @@
 // ============================================================
-// COMPHONE SUPER APP v5.18.20-vision-ui - auth.js
+// COMPHONE SUPER APP v5.18.21-vision-runtime - auth.js
 // Auth session + Role-based Access Control
 //   3.1 checkAuthState() — ตรวจสอบ session ที่บันทึกไว้
 //   3.2 showLoginScreen() — แสดงหน้า Login PIN
@@ -121,7 +121,7 @@ function showLoginScreen() {
     document.body.appendChild(loginScreen);
   }
 
-  const version = (window.VERSION_CONFIG && window.VERSION_CONFIG.version) || window.COMPHONE_VERSION || 'v5.18.20-vision-ui';
+  const version = (window.VERSION_CONFIG && window.VERSION_CONFIG.version) || window.COMPHONE_VERSION || 'v5.18.21-vision-runtime';
   const build = (window.VERSION_CONFIG && window.VERSION_CONFIG.buildTimestamp) || window.COMPHONE_BUILD || '';
   loginScreen.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(circle at 18% 12%,rgba(34,211,238,.22),transparent 30%),radial-gradient(circle at 88% 18%,rgba(139,92,246,.28),transparent 32%),linear-gradient(145deg,#07111f 0%,#0f172a 48%,#111827 100%);overflow:auto';
   loginScreen.innerHTML = `

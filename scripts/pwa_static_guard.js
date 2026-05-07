@@ -329,6 +329,21 @@ if (!visionAuditJs.includes('Vision Capability Audit') ||
     !visionAuditJs.includes('COMPHONE_AUTH_TOKEN')) {
   fail('vision_capability_audit.js must validate AI Vision capability, protected routes, and token-aware runtime gaps.');
 }
+const visionRuntimeSmokeJs = readUtf8(path.join(ROOT, 'scripts', 'vision_runtime_smoke.js'));
+if (!visionRuntimeSmokeJs.includes('Vision Runtime Smoke') ||
+    !visionRuntimeSmokeJs.includes('getVisionDashboardStats') ||
+    !visionRuntimeSmokeJs.includes('getVisionPipelineVersion') ||
+    !visionRuntimeSmokeJs.includes('getVisionLearningVersion') ||
+    !visionRuntimeSmokeJs.includes('COMPHONE_AUTH_TOKEN')) {
+  fail('vision_runtime_smoke.js must provide token-aware read-only AI Vision runtime checks.');
+}
+const runtimeSelfTestJs = readUtf8(path.join(PWA, 'runtime_self_test.js'));
+if (!runtimeSelfTestJs.includes('ai-vision-runtime') ||
+    !runtimeSelfTestJs.includes('getVisionDashboardStats') ||
+    !runtimeSelfTestJs.includes('getVisionPipelineVersion') ||
+    !runtimeSelfTestJs.includes('getVisionLearningVersion')) {
+  fail('runtime_self_test.js must include browser-side AI Vision runtime checks.');
+}
 const offlineDbJs = readUtf8(path.join(PWA, 'offline_db.js'));
 if (!offlineDbJs.includes('normalizeOfflineAction_') || !offlineDbJs.includes('const res = await callApi(item.action')) {
   fail('offline_db.js must normalize offline writes and replay through callApi without re-queuing failures.');

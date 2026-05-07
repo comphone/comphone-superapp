@@ -135,6 +135,28 @@
         };
       },
     },
+    {
+      id: 'ai-vision-runtime',
+      label: 'AI Vision Runtime',
+      run: async () => {
+        const session = readJson('comphone_auth_session');
+        if (!session || !session.token) {
+          return { ok: true, warn: true, details: 'Vision protected checks skipped: no session token' };
+        }
+        const failures = [];
+        const stats = await global.callApi('getVisionDashboardStats', { days: 7 });
+        if (!stats || stats.success === false) failures.push('stats');
+        const pipeline = await global.callApi('getVisionPipelineVersion', {});
+        if (!pipeline || pipeline.success === false) failures.push('pipeline');
+        const learning = await global.callApi('getVisionLearningVersion', {});
+        if (!learning || learning.success === false) failures.push('learning');
+        const total = stats && stats.stats ? stats.stats.total || 0 : 0;
+        return {
+          ok: failures.length === 0,
+          details: failures.length ? `failed: ${failures.join(', ')}` : `Vision reads OK; 7-day records=${total}`,
+        };
+      },
+    },
   ];
 
   function readJson(key) {
