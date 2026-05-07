@@ -1,6 +1,6 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.18.26-vision-controlled-execution (PWA) / GAS Backend v5.18.12-vision-controlled-execution @pending
+> **Version:** v5.18.26-vision-controlled-execution (PWA) / GAS Backend v5.18.12-vision-controlled-execution @553
 
 > **Date:** 2026-05-07 | **Phase:** 63 (AI Vision Controlled Execution)
 
@@ -15,7 +15,7 @@
 | App Version | `v5.18.26-vision-controlled-execution` | `pwa/version_config.js` |
 | Cache Version | `comphone-v5.18.26-vision-controlled-execution-20260507_1840` | `pwa/version_config.js`, `pwa/sw.js` |
 | Build Timestamp | `20260507_1840` | `pwa/version_config.js` |
-| GAS Backend Deploy | `pending deploy` / production URL in `pwa/gas_config.js` | `clasp-ready/Config.gs`, `clasp-ready/Auth.gs`, `clasp-ready/Router.gs`, `clasp-ready/VisionPipeline.gs`, `clasp-ready/RouterSplit.gs` |
+| GAS Backend Deploy | `AKfycbyVK5KLJcHFNfm7oNce5e_WOrFdS2_UuiRQW27ipIUK2DeYGtVjSwWCmr-jIWLnkLcSgw @553` / production URL in `pwa/gas_config.js` | `clasp-ready/Config.gs`, `clasp-ready/Auth.gs`, `clasp-ready/Router.gs`, `clasp-ready/VisionPipeline.gs`, `clasp-ready/RouterSplit.gs` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbyVK5KLJcHFNfm7oNce5e_WOrFdS2_UuiRQW27ipIUK2DeYGtVjSwWCmr-jIWLnkLcSgw/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-07.phase63-vision-controlled-execution` | `pwa/api_contract.js` |
 | Last Production Commit | GitHub `main` HEAD | Use `git log -1 --oneline` for the exact commit |
@@ -27,6 +27,7 @@
 - The execution layer rebuilds current suggestions on the server and refuses arbitrary action names, so the frontend cannot invent a write action.
 - `pwa/section_vision.js` runs destructive suggestions through `executeVisionSuggestion()` and keeps local/navigation suggestions client-side.
 - `api_contract.js` and PWA bridge helpers now track `executeVisionSuggestion` as a destructive gated Vision action.
+- Production deploy verified at GAS deployment `@553`: backend version `5.18.12-vision-controlled-execution`, protected API smoke, Vision Runtime smoke, Workflow smoke, gated Vision E2E smoke, and negative confirmation-gate test passed on 2026-05-07.
 
 ### Phase 62 Current Review (2026-05-07)
 - Status score: **99/100 operator-assist readiness**. AI Vision now recommends next actions after analysis/review while keeping all write actions behind explicit user confirmation.
