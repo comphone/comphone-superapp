@@ -1,9 +1,9 @@
 // ===========================================================
-// COMPHONE SUPER APP v5.18.18-write-smoke - Service Worker
+// COMPHONE SUPER APP v5.18.19-vision-audit - Service Worker
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ===========================================================
-const CACHE_V = 'comphone-v5.18.18-write-smoke-20260507_1200';
+const CACHE_V = 'comphone-v5.18.19-vision-audit-20260507_1230';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
 

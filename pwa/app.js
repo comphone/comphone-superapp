@@ -772,7 +772,8 @@ const READ_ACTIONS = {
   getSchemaInfo: true, systemStatus: true, health: true, help: true,
   verifySession: true, listUsers: true, geminiReorderSuggestion: true,
   getWarrantyByJobId: true, listWarranties: true, getTaxReport: true,
-  getTaxReminder: true, getJobStatusPublic: true, getDriveSyncStatus: true
+  getTaxReminder: true, getJobStatusPublic: true, getDriveSyncStatus: true,
+  getVisionDashboardStats: true, getVisionPipelineVersion: true, getVisionLearningVersion: true
 };
 
 function isReadAction(action) {

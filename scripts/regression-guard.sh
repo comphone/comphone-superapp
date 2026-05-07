@@ -211,6 +211,16 @@ else
   warn "Node or system_integrity_audit.js unavailable — skipping system integrity audit"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/vision_capability_audit.js" ]; then
+  if node scripts/vision_capability_audit.js; then
+    echo "   AI Vision capability audit passed"
+  else
+    fail "AI Vision capability audit FAILED"
+  fi
+else
+  warn "Node or vision_capability_audit.js unavailable - skipping AI Vision capability audit"
+fi
+
 if command -v node &>/dev/null && [ -f "scripts/pwa_write_smoke.js" ]; then
   if node scripts/pwa_write_smoke.js; then
     echo "   Write smoke safety gate passed"

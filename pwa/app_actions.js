@@ -7,6 +7,44 @@ function showSearch() {
   setTimeout(() => document.getElementById('global-search-input').focus(), 100);
 }
 
+// AI Vision bridge helpers. These are intentionally thin wrappers so future
+// dashboard/mobile panels call the same protected GAS actions as the contract.
+async function getVisionDashboardStatsAction(days = 7) {
+  return callAPI('getVisionDashboardStats', { days });
+}
+
+async function getVisionPipelineVersionAction() {
+  return callAPI('getVisionPipelineVersion', {});
+}
+
+async function getVisionLearningVersionAction() {
+  return callAPI('getVisionLearningVersion', {});
+}
+
+async function runVisionPipelineAction(payload = {}) {
+  return callAPI('runVisionPipeline', payload);
+}
+
+async function runQCPipelineAction(payload = {}) {
+  return callAPI('runQCPipeline', payload);
+}
+
+async function runSlipVerifyPipelineAction(payload = {}) {
+  return callAPI('runSlipVerifyPipeline', payload);
+}
+
+async function submitHumanReviewAction(payload = {}) {
+  return callAPI('submitHumanReview', payload);
+}
+
+window.getVisionDashboardStatsAction = getVisionDashboardStatsAction;
+window.getVisionPipelineVersionAction = getVisionPipelineVersionAction;
+window.getVisionLearningVersionAction = getVisionLearningVersionAction;
+window.runVisionPipelineAction = runVisionPipelineAction;
+window.runQCPipelineAction = runQCPipelineAction;
+window.runSlipVerifyPipelineAction = runSlipVerifyPipelineAction;
+window.submitHumanReviewAction = submitHumanReviewAction;
+
 function globalSearch(val) {
   const q = val.toLowerCase().trim();
   const results = document.getElementById('search-results');

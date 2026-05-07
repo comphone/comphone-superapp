@@ -283,6 +283,17 @@ if (!apiContractJs.includes('workflows') || !apiContractJs.includes('job_e2e') |
 if (!apiContractJs.includes('smoke: false') || !apiContractJs.includes('smokeReason')) {
   fail('api_contract.js must mark record-specific actions that cannot be smoke-tested safely.');
 }
+if (!apiContractJs.includes('vision_ai') ||
+    !apiContractJs.includes('getVisionDashboardStats') ||
+    !apiContractJs.includes('runVisionPipeline') ||
+    !apiContractJs.includes('verifyPaymentSlip')) {
+  fail('api_contract.js must include AI Vision workflow contracts and protected Vision actions.');
+}
+if (!appJs.includes('getVisionDashboardStats') ||
+    !appJs.includes('getVisionPipelineVersion') ||
+    !appJs.includes('getVisionLearningVersion')) {
+  fail('app.js READ_ACTIONS must classify AI Vision dashboard/version reads as read-only.');
+}
 
 const smokeJs = readUtf8(path.join(ROOT, 'scripts', 'pwa_api_smoke.js'));
 if (!smokeJs.includes('COMPHONE_SMOKE_REPORT') || !smokeJs.includes('AUTH_FAIL') || !smokeJs.includes('CONTRACT') || !smokeJs.includes('SKIP')) {
@@ -298,6 +309,13 @@ if (!writeSmokeJs.includes('COMPHONE_WRITE_SMOKE_CONFIRM') ||
     !writeSmokeJs.includes('client_request_id') ||
     !writeSmokeJs.includes('idempotent_replay')) {
   fail('pwa_write_smoke.js must gate destructive writes and verify idempotent replay.');
+}
+const visionAuditJs = readUtf8(path.join(ROOT, 'scripts', 'vision_capability_audit.js'));
+if (!visionAuditJs.includes('Vision Capability Audit') ||
+    !visionAuditJs.includes('getVisionDashboardStats') ||
+    !visionAuditJs.includes('verifyPaymentSlip') ||
+    !visionAuditJs.includes('COMPHONE_AUTH_TOKEN')) {
+  fail('vision_capability_audit.js must validate AI Vision capability, protected routes, and token-aware runtime gaps.');
 }
 const offlineDbJs = readUtf8(path.join(PWA, 'offline_db.js'));
 if (!offlineDbJs.includes('normalizeOfflineAction_') || !offlineDbJs.includes('const res = await callApi(item.action')) {

@@ -2,7 +2,7 @@
   'use strict';
 
   const API_CONTRACT = {
-    version: '2026-05-02.phase36-partial',
+    version: '2026-05-07.phase56-vision-audit',
     responseShape: {
       success: '{ success: true, data?, meta? }',
       failure: '{ success: false, error, code, kind?, action?, request_id? }',
@@ -69,6 +69,17 @@
         actions: [
           { action: 'getBilling', payload: { job_id: '__SMOKE_EMPTY__' }, read: true, optional: true, smoke: false, smokeReason: 'requires a real job_id with an existing billing record' },
           { action: 'generatePromptPayQR', payload: { amount: 1, ref: 'SMOKE' }, read: true, optional: true },
+        ],
+      },
+      {
+        id: 'vision',
+        label: 'AI Vision',
+        icon: 'bi-camera-fill',
+        actions: [
+          { action: 'getVisionDashboardStats', payload: { days: 7 }, required: true, read: true },
+          { action: 'getVisionPipelineVersion', required: true, read: true },
+          { action: 'getVisionLearningVersion', read: true, optional: true },
+          { action: 'getPhotoGalleryData', payload: { jobId: '__SMOKE_EMPTY__' }, read: true, optional: true, smoke: false, smokeReason: 'requires a real jobId with photo records' },
         ],
       },
       {
@@ -159,6 +170,26 @@
           { action: 'healthCheck', required: true },
           { action: 'getAuditLog', payload: { limit: 5 }, required: true },
           { action: 'getSecurityStatus', required: true },
+        ],
+      },
+      {
+        id: 'vision_ai',
+        label: 'AI Vision',
+        description: 'Photo capture -> AI analysis -> QC/slip/human review',
+        readOnly: [
+          { action: 'getVisionDashboardStats', payload: { days: 7 }, required: true },
+          { action: 'getVisionPipelineVersion', required: true },
+          { action: 'getVisionLearningVersion', optional: true },
+          { action: 'getPhotoGalleryData', payload: { jobId: '__SMOKE_EMPTY__' }, optional: true, smoke: false, smokeReason: 'requires a real jobId with photo records' },
+        ],
+        writeActions: [
+          { action: 'handleProcessPhotos', destructive: true, smoke: false, smokeReason: 'requires image base64 and may write Drive/Sheets' },
+          { action: 'uploadPhoto', destructive: true, smoke: false, smokeReason: 'requires image base64 and may write Drive/Sheets' },
+          { action: 'runVisionPipeline', destructive: true, smoke: false, smokeReason: 'requires image input and may write VISION_LOG/human-review state' },
+          { action: 'runQCPipeline', destructive: true, smoke: false, smokeReason: 'requires job/image context and may write Vision logs' },
+          { action: 'runSlipVerifyPipeline', destructive: true, smoke: false, smokeReason: 'requires slip image context and may update verification logs' },
+          { action: 'verifyPaymentSlip', destructive: true, smoke: false, smokeReason: 'requires real billing/slip image context' },
+          { action: 'submitHumanReview', destructive: true, smoke: false, smokeReason: 'writes human review feedback for learning loop' },
         ],
       },
     ],
