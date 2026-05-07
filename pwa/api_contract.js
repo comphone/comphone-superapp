@@ -2,7 +2,7 @@
   'use strict';
 
   const API_CONTRACT = {
-    version: '2026-05-07.phase63-vision-controlled-execution',
+    version: '2026-05-07.phase64-vision-preview-line-router',
     responseShape: {
       success: '{ success: true, data?, meta? }',
       failure: '{ success: false, error, code, kind?, action?, request_id? }',
@@ -81,6 +81,7 @@
           { action: 'getVisionLearningVersion', read: true, optional: true },
           { action: 'getVisionFieldContext', payload: {}, read: true, optional: true },
           { action: 'getVisionActionSuggestions', payload: {}, read: true, optional: true },
+          { action: 'previewVisionSuggestion', payload: {}, read: true, optional: true, smoke: false, smokeReason: 'requires a current suggestion id/vision context' },
           { action: 'getVisionReviewQueue', payload: { limit: 10, days: 30 }, read: true, optional: true },
           { action: 'getPhotoGalleryData', payload: { jobId: '__SMOKE_EMPTY__' }, read: true, optional: true, smoke: false, smokeReason: 'requires a real jobId with photo records' },
         ],
@@ -185,6 +186,7 @@
           { action: 'getVisionLearningVersion', optional: true },
           { action: 'getVisionFieldContext', payload: {}, optional: true },
           { action: 'getVisionActionSuggestions', payload: {}, optional: true },
+          { action: 'previewVisionSuggestion', payload: {}, optional: true, smoke: false, smokeReason: 'requires a current suggestion id/vision context' },
           { action: 'getVisionReviewQueue', payload: { limit: 10, days: 30 }, optional: true },
           { action: 'getPhotoGalleryData', payload: { jobId: '__SMOKE_EMPTY__' }, optional: true, smoke: false, smokeReason: 'requires a real jobId with photo records' },
         ],

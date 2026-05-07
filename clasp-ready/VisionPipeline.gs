@@ -713,6 +713,22 @@ function getVisionActionSuggestions(params) {
 }
 
 /**
+ * previewVisionSuggestion — dry-run ว่าการ execute จะกระทบอะไรบ้าง
+ * @param {Object} params - { suggestionId, visionLogId, jobId, result }
+ */
+function previewVisionSuggestion(params) {
+  try {
+    params = params || {};
+    var selected = _vpFindAllowedSuggestion_(params);
+    if (!selected.success) return selected;
+    var preview = _vpBuildExecutionPreview_(selected.suggestion, params);
+    return { success: true, suggestion: selected.suggestion, preview: preview };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
  * executeVisionSuggestion — รัน suggestion ที่ระบบสร้างไว้เท่านั้น พร้อม confirmation gate
  * @param {Object} params - { suggestionId, visionLogId, jobId, result, confirm }
  */
@@ -722,32 +738,24 @@ function executeVisionSuggestion(params) {
     if (String(params.confirm || '') !== 'EXECUTE_VISION_SUGGESTION') {
       return { success: false, error: 'Missing confirmation gate', code: 'CONFIRM_REQUIRED' };
     }
-    var suggestionId = String(params.suggestionId || params.id || '').trim();
-    if (!suggestionId) return { success: false, error: 'suggestionId is required' };
-    var suggestionSet = getVisionActionSuggestions(params);
-    if (!suggestionSet || suggestionSet.success === false) return suggestionSet;
-    var selected = null;
-    for (var i = 0; i < suggestionSet.suggestions.length; i++) {
-      if (suggestionSet.suggestions[i].id === suggestionId) {
-        selected = suggestionSet.suggestions[i];
-        break;
-      }
-    }
-    if (!selected) return { success: false, error: 'Suggestion is not allowed for current Vision context', code: 'SUGGESTION_NOT_ALLOWED' };
-    var result = _vpExecuteSuggestionById_(selected, params);
+    var allowed = _vpFindAllowedSuggestion_(params);
+    if (!allowed.success) return allowed;
+    var preview = _vpBuildExecutionPreview_(allowed.suggestion, params);
+    var result = _vpExecuteSuggestionById_(allowed.suggestion, params);
     try {
       if (typeof writeAuditLog === 'function') {
-        writeAuditLog('VISION_SUGGESTION_EXECUTE', params._auth_user || selected.reviewedBy || 'PWA', suggestionId + ' result=' + (result && result.success), {
+        writeAuditLog('VISION_SUGGESTION_EXECUTE', params._auth_user || allowed.suggestion.reviewedBy || 'PWA', allowed.suggestion.id + ' result=' + (result && result.success), {
           result: result && result.success ? 'success' : 'error',
-          job_id: selected.jobId || '',
-          vision_log_id: selected.visionLogId || '',
-          action: selected.action || ''
+          job_id: allowed.suggestion.jobId || '',
+          vision_log_id: allowed.suggestion.visionLogId || '',
+          action: allowed.suggestion.action || ''
         });
       }
     } catch (auditErr) {}
     return {
       success: result && result.success !== false,
-      suggestion: selected,
+      suggestion: allowed.suggestion,
+      preview: preview,
       execution: result
     };
   } catch (e) {
@@ -858,6 +866,7 @@ function _vpBuildActionSuggestions_(visionItem, context) {
   var suggestions = [];
 
   function add(id, label, action, priority, reason, destructive) {
+    var rooms = _vpSuggestedRoomsFor_(id, action, type, decision);
     suggestions.push({
       id: id,
       label: label,
@@ -867,6 +876,7 @@ function _vpBuildActionSuggestions_(visionItem, context) {
       requiresConfirm: destructive !== false,
       destructive: destructive === true,
       executor: destructive === true ? 'executeVisionSuggestion' : '',
+      lineRooms: rooms,
       jobId: jobId,
       visionLogId: visionItem.visionLogId || ''
     });
@@ -896,6 +906,101 @@ function _vpBuildActionSuggestions_(visionItem, context) {
   add('copy_result', 'Copy AI result', 'copyVisionResult', 'low', 'เก็บผลวิเคราะห์เพื่อส่งต่อหรือ debug', false);
   if (!hasJob) add('enter_job_id', 'Add Job ID', 'focus:vision-job-id', 'medium', 'ใส่ Job ID เพื่อผูกผล AI เข้ากับงานจริง', false);
   return suggestions;
+}
+
+function _vpFindAllowedSuggestion_(params) {
+  var suggestionId = String(params.suggestionId || params.id || '').trim();
+  if (!suggestionId) return { success: false, error: 'suggestionId is required' };
+  var suggestionSet = getVisionActionSuggestions(params);
+  if (!suggestionSet || suggestionSet.success === false) return suggestionSet;
+  for (var i = 0; i < suggestionSet.suggestions.length; i++) {
+    if (suggestionSet.suggestions[i].id === suggestionId) return { success: true, suggestion: suggestionSet.suggestions[i] };
+  }
+  return { success: false, error: 'Suggestion is not allowed for current Vision context', code: 'SUGGESTION_NOT_ALLOWED' };
+}
+
+function _vpBuildExecutionPreview_(selected, params) {
+  selected = selected || {};
+  params = params || {};
+  var jobId = selected.jobId || params.jobId || params.job_id || '';
+  var item = _vpGetVisionLogItem_(selected.visionLogId || params.visionLogId || '') || _vpNormalizeSuggestionInput_(params.result || {});
+  var writes = [];
+  var notifications = [];
+  var warnings = [];
+
+  function write(sheet, action, detail) {
+    writes.push({ sheet: sheet, action: action, detail: detail || '' });
+  }
+  function notify(room, detail) {
+    notifications.push({ room: room, configured: !!_vpResolveLineRoom_(room), detail: detail || '' });
+  }
+
+  if (selected.id === 'link_timeline' || selected.id === 'link_problem_timeline') write('DB_JOB_LOGS', 'append timeline event', 'job=' + jobId + ' vision=' + (selected.visionLogId || ''));
+  if (selected.id === 'approve_review' || selected.id === 'reject_review') {
+    write('VISION_REVIEW', 'append human review', selected.id);
+    if (jobId) write('DB_JOB_LOGS', 'append review timeline event', 'job=' + jobId);
+  }
+  if (selected.id === 'add_problem_note') write('DBJOBS', 'append quick note', 'job=' + jobId);
+  if (selected.id === 'transition_job_done') write('DBJOBS/DB_JOB_LOGS', 'transition job to status 8', 'job=' + jobId);
+  if (selected.id === 'mark_payment_received') write('DB_BILLING/DBJOBS', 'mark billing paid and transition payment status', 'job=' + jobId + ' amount=' + Number((item.data || {}).amount || params.amount || 0));
+  if (selected.id === 'notify_technician') notify('TECHNICIAN', 'QC issue alert');
+
+  var rooms = selected.lineRooms || [];
+  for (var i = 0; i < rooms.length; i++) notify(rooms[i], 'Vision routed notification');
+  if (selected.destructive && writes.length === 0 && notifications.length === 0) warnings.push('No write/notification target detected for this destructive suggestion.');
+
+  return {
+    dryRun: true,
+    jobId: jobId,
+    visionLogId: selected.visionLogId || '',
+    action: selected.action || '',
+    writes: writes,
+    notifications: notifications,
+    warnings: warnings,
+    confirmationRequired: 'EXECUTE_VISION_SUGGESTION'
+  };
+}
+
+function _vpSuggestedRoomsFor_(id, action, type, decision) {
+  var rooms = [];
+  if (id === 'notify_technician' || type === VP_TYPES.QC || decision === VP_DECISIONS.QC_FAIL) rooms.push('TECHNICIAN');
+  if (type === VP_TYPES.SLIP || decision === VP_DECISIONS.PAYMENT_ERROR || id === 'mark_payment_received') rooms.push('ACCOUNTING');
+  if (type === VP_TYPES.PRODUCT) rooms.push('PROCUREMENT');
+  if (decision === VP_DECISIONS.REJECTED || decision === VP_DECISIONS.QC_FAIL || decision === VP_DECISIONS.PAYMENT_ERROR) rooms.push('EXECUTIVE');
+  var uniq = {};
+  return rooms.filter(function(room) { if (uniq[room]) return false; uniq[room] = true; return true; });
+}
+
+function _vpResolveLineRoom_(room) {
+  room = String(room || '').toUpperCase();
+  try {
+    if (typeof _getRoomGroupId === 'function') return _getRoomGroupId(room);
+  } catch (e1) {}
+  try {
+    return getConfig('LINE_GROUP_' + room, '') || '';
+  } catch (e2) {}
+  return '';
+}
+
+function _vpPushVisionLineRooms_(rooms, message) {
+  var results = [];
+  var seen = {};
+  rooms = rooms || [];
+  for (var i = 0; i < rooms.length; i++) {
+    var room = String(rooms[i] || '').toUpperCase();
+    if (!room || seen[room]) continue;
+    seen[room] = true;
+    var groupId = _vpResolveLineRoom_(room);
+    if (!groupId) {
+      results.push({ room: room, success: false, error: 'LINE_GROUP_' + room + ' not configured' });
+      try { if (typeof _logNotifyFallback === 'function') _logNotifyFallback('NO_GROUP', room, message); } catch (e1) {}
+      continue;
+    }
+    if (typeof sendLinePush === 'function') results.push(Object.assign({ room: room }, sendLinePush(message, groupId)));
+    else if (typeof pushLineMessage === 'function') results.push(Object.assign({ room: room }, pushLineMessage(groupId, [{ type: 'text', text: String(message || '').substring(0, 5000) }])));
+    else results.push({ room: room, success: false, error: 'LINE push helper not available' });
+  }
+  return results;
 }
 
 function _vpExecuteSuggestionById_(selected, params) {
@@ -929,11 +1034,9 @@ function _vpExecuteSuggestionById_(selected, params) {
     return linkVisionToJobTimeline({ visionLogId: visionLogId, jobId: jobId, decision: 'VISION_NOTE', reviewedBy: user, note: note });
   }
   if (id === 'notify_technician') {
-    if (typeof sendLineNotify !== 'function') return { success: false, error: 'sendLineNotify is not available' };
-    return sendLineNotify({
-      room: 'TECHNICIAN',
-      message: 'AI Vision QC alert' + (jobId ? '\nJob: ' + jobId : '') + (visionLogId ? '\nLog: ' + visionLogId : '') + '\n' + (selected.reason || '')
-    });
+    var lineResults = _vpPushVisionLineRooms_(selected.lineRooms && selected.lineRooms.length ? selected.lineRooms : ['TECHNICIAN'],
+      'AI Vision QC alert' + (jobId ? '\nJob: ' + jobId : '') + (visionLogId ? '\nLog: ' + visionLogId : '') + '\n' + (selected.reason || ''));
+    return { success: lineResults.length > 0, line: lineResults };
   }
   if (id === 'transition_job_done') {
     if (!jobId) return { success: false, error: 'jobId is required' };

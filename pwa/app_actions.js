@@ -49,6 +49,10 @@ async function executeVisionSuggestionAction(payload = {}) {
   return callAPI('executeVisionSuggestion', payload);
 }
 
+async function previewVisionSuggestionAction(payload = {}) {
+  return callAPI('previewVisionSuggestion', payload);
+}
+
 window.getVisionDashboardStatsAction = getVisionDashboardStatsAction;
 window.getVisionPipelineVersionAction = getVisionPipelineVersionAction;
 window.getVisionLearningVersionAction = getVisionLearningVersionAction;
@@ -59,6 +63,7 @@ window.submitHumanReviewAction = submitHumanReviewAction;
 window.getVisionActionSuggestionsAction = getVisionActionSuggestionsAction;
 window.linkVisionToJobTimelineAction = linkVisionToJobTimelineAction;
 window.executeVisionSuggestionAction = executeVisionSuggestionAction;
+window.previewVisionSuggestionAction = previewVisionSuggestionAction;
 
 function globalSearch(val) {
   const q = val.toLowerCase().trim();

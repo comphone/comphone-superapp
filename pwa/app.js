@@ -782,6 +782,7 @@ const READ_ACTIONS = {
   getVisionDashboardStats: true, getVisionPipelineVersion: true, getVisionLearningVersion: true,
   getVisionFieldContext: true,
   getVisionActionSuggestions: true,
+  previewVisionSuggestion: true,
   getVisionReviewQueue: true
 };
 

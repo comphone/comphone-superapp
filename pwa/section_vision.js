@@ -211,6 +211,7 @@
         .vision-review-item span{display:block;color:#64748b;font-size:12px;margin-top:3px}
         .vision-suggestion-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #eef2f7}
         .vision-suggestion-item span{display:block;color:#64748b;font-size:12px;margin-top:3px}
+        .vision-preview-box{background:#0f172a;color:#dbeafe;border-radius:10px;padding:10px;margin-top:8px;font-size:12px;white-space:pre-wrap}
         .vision-file{width:100%;border:1px dashed #94a3b8;border-radius:10px;padding:12px;background:#f8fafc}
         .vision-preview{max-width:100%;max-height:190px;border-radius:10px;margin-top:10px;display:none}
         .vision-field-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -469,7 +470,9 @@
     if (!item || !item.id) return alert('Suggestion not found.');
     const jobId = item.jobId || getVisionJobId();
     const result = VISION_STATE.lastResult || {};
-    const ok = confirm('Execute controlled Vision action: ' + (item.label || item.id) + '?\n\nThis will be audited and may write production data.');
+    const preview = await previewVisionSuggestion(item);
+    if (!preview) return;
+    const ok = confirm('Execute controlled Vision action: ' + (item.label || item.id) + '?\n\n' + formatVisionPreviewText(preview.preview || {}) + '\n\nThis will be audited and may write production data.');
     if (!ok) return;
     const res = await visionApi('executeVisionSuggestion', {
       suggestionId: item.id,
@@ -483,6 +486,35 @@
     loadVisionReviewQueue();
     if (jobId) loadVisionFieldContext(jobId, item.visionLogId || result.visionLogId || '');
     loadVisionActionSuggestions();
+  }
+
+  async function previewVisionSuggestion(item) {
+    const result = VISION_STATE.lastResult || {};
+    const res = await visionApi('previewVisionSuggestion', {
+      suggestionId: item.id,
+      visionLogId: item.visionLogId || result.visionLogId || result.logId || '',
+      jobId: item.jobId || getVisionJobId(),
+      result,
+    });
+    if (res && res.success === false) {
+      alert(res.error || 'Preview failed');
+      return null;
+    }
+    const el = document.getElementById('vision-action-suggestions');
+    if (el) {
+      const box = document.createElement('div');
+      box.className = 'vision-preview-box';
+      box.textContent = formatVisionPreviewText(res.preview || {});
+      el.prepend(box);
+    }
+    return res;
+  }
+
+  function formatVisionPreviewText(preview) {
+    const writes = (preview.writes || []).map(w => `WRITE ${w.sheet}: ${w.action}${w.detail ? ' - ' + w.detail : ''}`);
+    const notifications = (preview.notifications || []).map(n => `LINE ${n.room}: ${n.configured ? 'configured' : 'not configured'}${n.detail ? ' - ' + n.detail : ''}`);
+    const warnings = (preview.warnings || []).map(w => `WARN ${w}`);
+    return [`Job: ${preview.jobId || '-'}`, `Vision: ${preview.visionLogId || '-'}`, ...writes, ...notifications, ...warnings].join('\n');
   }
 
   async function linkLastVisionToJobTimeline() {
@@ -624,6 +656,7 @@
   global.loadVisionActionSuggestions = loadVisionActionSuggestions;
   global.runVisionSuggestion = runVisionSuggestion;
   global.executeVisionSuggestion = executeVisionSuggestion;
+  global.previewVisionSuggestion = previewVisionSuggestion;
   global.linkLastVisionToJobTimeline = linkLastVisionToJobTimeline;
   global.openVisionCamera = openVisionCamera;
   global.goVisionBilling = goVisionBilling;
