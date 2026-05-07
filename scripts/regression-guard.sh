@@ -221,6 +221,16 @@ else
   warn "Node or vision_capability_audit.js unavailable - skipping AI Vision capability audit"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/vision_runtime_smoke.js" ]; then
+  if node scripts/vision_runtime_smoke.js; then
+    echo "   AI Vision runtime smoke passed"
+  else
+    fail "AI Vision runtime smoke FAILED"
+  fi
+else
+  warn "Node or vision_runtime_smoke.js unavailable - skipping AI Vision runtime smoke"
+fi
+
 if command -v node &>/dev/null && [ -f "scripts/pwa_write_smoke.js" ]; then
   if node scripts/pwa_write_smoke.js; then
     echo "   Write smoke safety gate passed"
