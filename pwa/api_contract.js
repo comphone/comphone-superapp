@@ -2,7 +2,7 @@
   'use strict';
 
   const API_CONTRACT = {
-    version: '2026-05-07.phase64-vision-preview-line-router',
+    version: '2026-05-07.phase65-line-command-center',
     responseShape: {
       success: '{ success: true, data?, meta? }',
       failure: '{ success: false, error, code, kind?, action?, request_id? }',
@@ -84,6 +84,19 @@
           { action: 'previewVisionSuggestion', payload: {}, read: true, optional: true, smoke: false, smokeReason: 'requires a current suggestion id/vision context' },
           { action: 'getVisionReviewQueue', payload: { limit: 10, days: 30 }, read: true, optional: true },
           { action: 'getPhotoGalleryData', payload: { jobId: '__SMOKE_EMPTY__' }, read: true, optional: true, smoke: false, smokeReason: 'requires a real jobId with photo records' },
+        ],
+      },
+      {
+        id: 'line-center',
+        label: 'LINE Center',
+        icon: 'bi-broadcast-pin',
+        actions: [
+          { action: 'getLineCommandCenter', payload: { days: 7 }, required: true, read: true },
+          { action: 'getLineRoomStatus', required: true, read: true },
+          { action: 'getIntelAlertQueue', payload: { includeAcknowledged: false }, read: true },
+          { action: 'getGroupedAlerts', read: true },
+          { action: 'getAlertAnalytics', payload: { days: 7 }, read: true },
+          { action: 'previewLineRoomMessage', payload: { rooms: ['EXECUTIVE'], message: 'SMOKE PREVIEW' }, read: true, optional: true },
         ],
       },
       {
@@ -200,6 +213,25 @@
           { action: 'submitHumanReview', destructive: true, smoke: false, smokeReason: 'writes human review feedback for learning loop' },
           { action: 'linkVisionToJobTimeline', destructive: true, smoke: false, smokeReason: 'writes a Vision review note into the selected job timeline' },
           { action: 'executeVisionSuggestion', destructive: true, smoke: false, smokeReason: 'controlled execution gate for Vision suggestions; requires explicit confirmation and may write jobs/billing/LINE/timeline' },
+        ],
+      },
+      {
+        id: 'line_command_center',
+        label: 'LINE Command Center',
+        description: 'Room status -> alert queue -> ack tracking -> safe room push',
+        readOnly: [
+          { action: 'getLineCommandCenter', payload: { days: 7 }, required: true },
+          { action: 'getLineRoomStatus', required: true },
+          { action: 'getIntelAlertQueue', payload: { includeAcknowledged: false }, required: true },
+          { action: 'getGroupedAlerts', required: true },
+          { action: 'getAlertAnalytics', payload: { days: 7 }, required: true },
+          { action: 'previewLineRoomMessage', payload: { rooms: ['EXECUTIVE'], message: 'SMOKE PREVIEW' }, optional: true },
+        ],
+        writeActions: [
+          { action: 'acknowledgeLineAlert', destructive: true, smoke: false, smokeReason: 'requires an existing alert id and changes ack state' },
+          { action: 'bulkAcknowledgeLineAlerts', destructive: true, smoke: false, smokeReason: 'changes ack state for pending alerts' },
+          { action: 'queueLineCommandAlert', destructive: true, smoke: false, smokeReason: 'creates a dashboard alert' },
+          { action: 'sendLineRoomMessage', destructive: true, smoke: false, smokeReason: 'pushes a LINE message and requires explicit confirmation' },
         ],
       },
     ],

@@ -5,7 +5,7 @@
 
 var CONFIG = {
   APP_NAME: 'COMPHONE SUPER APP v5.18.8-auth-session-store',
-  VERSION: '5.18.13-vision-preview-line-router',
+  VERSION: '5.18.14-line-command-center',
   TIMEZONE: 'Asia/Bangkok',
 
   // ── ชื่อ Sheet ทั้งหมดในระบบ ──

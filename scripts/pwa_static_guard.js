@@ -135,7 +135,7 @@ for (const match of swJs.matchAll(/BASE \+ '\/([^']+)'/g)) {
   if (!fs.existsSync(file)) fail(`sw.js pre-caches missing asset: ${asset}`);
 }
 
-const filesToScan = ['index.html', 'dashboard_pc.html', 'version_config.js', 'sw.js', 'pwa_asset_manifest.js', 'api_contract.js', 'api_client.js', 'app.js', 'auth.js', 'auth_guard.js', 'app_home.js', 'admin_panel.js', 'menu_health.js', 'runtime_self_test.js', 'section_vision.js'];
+const filesToScan = ['index.html', 'dashboard_pc.html', 'version_config.js', 'sw.js', 'pwa_asset_manifest.js', 'api_contract.js', 'api_client.js', 'app.js', 'auth.js', 'auth_guard.js', 'app_home.js', 'admin_panel.js', 'menu_health.js', 'runtime_self_test.js', 'section_vision.js', 'section_line_center.js'];
 for (const name of filesToScan) {
   const file = path.join(PWA, name);
   const text = readUtf8(file);
@@ -304,6 +304,13 @@ if (!indexHtml.includes('section_vision.js?') ||
     !dashboardPcHtml.includes('section_vision.js?') ||
     !assetManifestJs.includes('section_vision.js')) {
   fail('PC/mobile must load and precache section_vision.js for the AI Vision UI.');
+}
+if (!indexHtml.includes('section_line_center.js?') ||
+    !dashboardPcHtml.includes('section_line_center.js?') ||
+    !assetManifestJs.includes('section_line_center.js') ||
+    !apiContractJs.includes('getLineCommandCenter') ||
+    !apiContractJs.includes('sendLineRoomMessage')) {
+  fail('PC/mobile must load, precache, and contract the LINE Command Center UI/actions.');
 }
 const sectionVisionJs = readUtf8(path.join(PWA, 'section_vision.js'));
 if (!sectionVisionJs.includes('renderVisionSection') ||

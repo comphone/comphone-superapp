@@ -38,6 +38,7 @@ if (typeof window.comphone_auth_session !== 'undefined') {
 <script src="section_backup.js?v=5.18.27-vision-preview-line-router&t=20260507_1910"></script>
 <script src="section_performance.js?v=5.18.27-vision-preview-line-router&t=20260507_1910"></script>
 <script src="section_vision.js?v=5.18.27-vision-preview-line-router&t=20260507_1910"></script>
+<script src="section_line_center.js?v=5.18.27-vision-preview-line-router&t=20260507_1910"></script>
 <script src="section_settings.js?v=5.18.27-vision-preview-line-router&t=20260507_1910"></script>
 <script src="menu_health.js?v=5.18.27-vision-preview-line-router&t=20260507_1910"></script>
 <script src="runtime_self_test.js?v=5.18.27-vision-preview-line-router&t=20260507_1910"></script>
@@ -582,6 +583,9 @@ color: #fecaca; font-size: 13px; margin-top: 10px; min-height: 20px;
 <a class="nav-item" href="#" onclick="loadSection('vision')">
 <i class="bi bi-stars"></i><span>AI Vision</span>
 </a>
+<a class="nav-item" href="#" onclick="loadSection('line-center')">
+<i class="bi bi-broadcast-pin"></i><span>LINE Center</span>
+</a>
 <a class="nav-item" href="#" onclick="loadSection('backup')">
 <i class="bi bi-cloud-arrow-up"></i><span data-i18n="Backup & Recovery">สำรองข้อมูล</span>
 </a>
@@ -737,7 +741,15 @@ color: #fecaca; font-size: 13px; margin-top: 10px; min-height: 20px;
     </div>
     <div id="vision-content"></div>
   </div>
-  
+
+  <!-- ===== LINE COMMAND CENTER SECTION ===== -->
+  <div id="section-line-center" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-broadcast-pin"></i> LINE Center</h2>
+    </div>
+    <div id="line-center-content"></div>
+  </div>
+
   <!-- ===== BACKUP SECTION ===== -->
   <div id="section-backup" class="dashboard-section" style="display:none;">
     <div class="section-header">

@@ -15,7 +15,7 @@
   const LAST_SECTION_KEY = 'comphone_last_pc_section';
   const PC_SECTIONS = new Set([
     'dashboard', 'jobs', 'po', 'inventory', 'billing', 'warranty',
-    'revenue', 'tax', 'reports', 'analytics', 'performance', 'vision', 'backup',
+    'revenue', 'tax', 'reports', 'analytics', 'performance', 'vision', 'line-center', 'backup',
     'crm', 'attendance', 'settings'
   ]);
 
@@ -131,6 +131,13 @@
           c.innerHTML = global.renderVisionSection(data);
           if (typeof global.hydrateVisionPanel === 'function') global.hydrateVisionPanel();
         } else if (main) main.innerHTML = '<h3>AI Vision</h3><p>Vision module is not loaded.</p>';
+      },
+      'line-center': () => {
+        const c = document.getElementById('line-center-content') || document.getElementById('section-line-center') || main;
+        if (typeof global.renderLineCenterSection === 'function' && c) {
+          c.innerHTML = global.renderLineCenterSection(data);
+          if (typeof global.hydrateLineCenterPanel === 'function') global.hydrateLineCenterPanel();
+        } else if (main) main.innerHTML = '<h3>LINE Center</h3><p>LINE module is not loaded.</p>';
       },
       backup: () => {
         if (typeof global.renderBackupSection === 'function') global.renderBackupSection();

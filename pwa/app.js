@@ -9,7 +9,7 @@ const QUICK_ACTIONS_KEY = 'comphone_mobile_quick_actions';
 const RESTORABLE_PAGES = new Set([
   'home', 'jobs', 'camera', 'crm', 'po', 'attendance', 'profile',
   'reports', 'inventory', 'billing', 'warranty', 'dashboard',
-  'analytics', 'revenue', 'tax', 'performance', 'vision', 'admin'
+  'analytics', 'revenue', 'tax', 'performance', 'vision', 'line-center', 'admin'
 ]);
 
 const MENU_GROUPS = [
@@ -39,6 +39,7 @@ const MENU_GROUPS = [
     items: [
       { id: 'dashboard', page: 'dashboard', icon: 'bi-speedometer2', label: 'Dashboard' },
       { id: 'vision', page: 'vision', icon: 'bi-stars', label: 'AI Vision' },
+      { id: 'line-center', page: 'line-center', icon: 'bi-broadcast-pin', label: 'LINE Center' },
       { id: 'reports', page: 'reports', icon: 'bi-graph-up-arrow', label: 'รายงาน' },
       { id: 'analytics', page: 'analytics', icon: 'bi-activity', label: 'Analytics' },
       { id: 'performance', page: 'performance', icon: 'bi-lightning-charge-fill', label: 'Performance' }
@@ -56,7 +57,7 @@ const MENU_GROUPS = [
 ];
 
 const QUICK_ACTION_CATALOG = MENU_GROUPS.flatMap(group => group.items)
-  .filter(item => ['openNewJob', 'addCustomer', 'jobs', 'crm', 'billing', 'inventory', 'po', 'reports', 'dashboard', 'vision', 'notifications'].includes(item.id))
+  .filter(item => ['openNewJob', 'addCustomer', 'jobs', 'crm', 'billing', 'inventory', 'po', 'reports', 'dashboard', 'vision', 'line-center', 'notifications'].includes(item.id))
   .map(item => ({
     id: item.id,
     icon: item.icon,
@@ -74,6 +75,7 @@ const QUICK_ACTION_CATALOG = MENU_GROUPS.flatMap(group => group.items)
       reports: '#dcfce7',
       dashboard: '#fef9c3',
       vision: '#ccfbf1',
+      'line-center': '#e0e7ff',
       notifications: '#fee2e2'
     }[item.id] || '#f8fafc',
     textColor: {
@@ -87,6 +89,7 @@ const QUICK_ACTION_CATALOG = MENU_GROUPS.flatMap(group => group.items)
       reports: '#166534',
       dashboard: '#713f12',
       vision: '#0f766e',
+      'line-center': '#3730a3',
       notifications: '#991b1b'
     }[item.id] || '#0f172a'
   }));
@@ -560,6 +563,9 @@ function goPage(page, btn, options = {}) {
   if (page === 'vision') {
     if (typeof renderMobileVisionPage === 'function') renderMobileVisionPage();
   }
+  if (page === 'line-center') {
+    if (typeof renderMobileLineCenterPage === 'function') renderMobileLineCenterPage();
+  }
   if (page === 'pos') {
     // POS page is standalone - open in new tab or redirect
     const posUrl = '/comphone-superapp/pwa/pos.html';
@@ -783,7 +789,13 @@ const READ_ACTIONS = {
   getVisionFieldContext: true,
   getVisionActionSuggestions: true,
   previewVisionSuggestion: true,
-  getVisionReviewQueue: true
+  getVisionReviewQueue: true,
+  getLineCommandCenter: true,
+  getLineRoomStatus: true,
+  getIntelAlertQueue: true,
+  getAlertAnalytics: true,
+  getGroupedAlerts: true,
+  previewLineRoomMessage: true
 };
 
 function isReadAction(action) {
