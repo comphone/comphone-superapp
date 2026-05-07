@@ -191,7 +191,7 @@ function parseGoPageRenderers(appText) {
 
 function parsePcRenderers(coreText) {
   const renderers = new Map();
-  const sectionRegex = /([a-z][a-z0-9_-]+):\s*\(\)\s*=>\s*\{([\s\S]*?)\n\s*\},/g;
+  const sectionRegex = /['"]?([a-z][a-z0-9_-]+)['"]?:\s*\(\)\s*=>\s*\{([\s\S]*?)\n\s*\},/g;
   for (const match of coreText.matchAll(sectionRegex)) {
     const section = match[1];
     const block = match[2];

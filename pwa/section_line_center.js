@@ -7,6 +7,41 @@
     return Promise.reject(new Error('API client is not available'));
   }
 
+  function getLineCommandCenterAction(payload) {
+    if (typeof global.callApi === 'function') return global.callApi('getLineCommandCenter', payload || {});
+    return lineApi('getLineCommandCenter', payload || {});
+  }
+
+  function getLineRoomStatusAction(payload) {
+    if (typeof global.callApi === 'function') return global.callApi('getLineRoomStatus', payload || {});
+    return lineApi('getLineRoomStatus', payload || {});
+  }
+
+  function acknowledgeLineAlertAction(payload) {
+    if (typeof global.callApi === 'function') return global.callApi('acknowledgeLineAlert', payload || {});
+    return lineApi('acknowledgeLineAlert', payload || {});
+  }
+
+  function bulkAcknowledgeLineAlertsAction(payload) {
+    if (typeof global.callApi === 'function') return global.callApi('bulkAcknowledgeLineAlerts', payload || {});
+    return lineApi('bulkAcknowledgeLineAlerts', payload || {});
+  }
+
+  function queueLineCommandAlertAction(payload) {
+    if (typeof global.callApi === 'function') return global.callApi('queueLineCommandAlert', payload || {});
+    return lineApi('queueLineCommandAlert', payload || {});
+  }
+
+  function previewLineRoomMessageAction(payload) {
+    if (typeof global.callApi === 'function') return global.callApi('previewLineRoomMessage', payload || {});
+    return lineApi('previewLineRoomMessage', payload || {});
+  }
+
+  function sendLineRoomMessageAction(payload) {
+    if (typeof global.callApi === 'function') return global.callApi('sendLineRoomMessage', payload || {});
+    return lineApi('sendLineRoomMessage', payload || {});
+  }
+
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) {
       return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
@@ -136,7 +171,8 @@
       if (el) el.innerHTML = '<div class="line-muted">Loading...</div>';
     });
     try {
-      const res = await lineApi('getLineCommandCenter', { days: 7 });
+      await getLineRoomStatusAction({});
+      const res = await getLineCommandCenterAction({ days: 7 });
       renderData(res && res.data ? res.data : res);
     } catch (error) {
       const el = document.getElementById('line-center-alerts');
@@ -152,7 +188,7 @@
     const message = document.getElementById('line-message-text')?.value || '';
     const previewEl = document.getElementById('line-message-preview');
     try {
-      const res = await lineApi('previewLineRoomMessage', { rooms: selectedRooms(), message });
+      const res = await previewLineRoomMessageAction({ rooms: selectedRooms(), message });
       const data = res && res.data ? res.data : res;
       if (previewEl) previewEl.textContent = JSON.stringify(data, null, 2);
     } catch (error) {
@@ -166,7 +202,7 @@
     if (!confirm('Send this message to selected LINE rooms?')) return;
     const previewEl = document.getElementById('line-message-preview');
     try {
-      const res = await lineApi('sendLineRoomMessage', {
+      const res = await sendLineRoomMessageAction({
         rooms: selectedRooms(),
         message,
         confirm: 'SEND_LINE_ROOM_MESSAGE'
@@ -179,13 +215,22 @@
   }
 
   async function ackLineAlert(id) {
-    await lineApi('acknowledgeLineAlert', { alertId: id });
+    await acknowledgeLineAlertAction({ alertId: id });
     refreshLineCommandCenter();
   }
 
   async function ackAllLineAlerts() {
     if (!confirm('Acknowledge all pending LINE alerts?')) return;
-    await lineApi('bulkAcknowledgeLineAlerts', { all: true });
+    await bulkAcknowledgeLineAlertsAction({ all: true });
+    refreshLineCommandCenter();
+  }
+
+  async function queueLineTestAlert() {
+    await queueLineCommandAlertAction({
+      alertType: 'MANUAL_ALERT',
+      detail: 'Manual LINE Center alert',
+      groupKey: 'MANUAL_ALERT'
+    });
     refreshLineCommandCenter();
   }
 
@@ -212,4 +257,5 @@
   global.sendLineMessageConfirmed = sendLineMessageConfirmed;
   global.ackLineAlert = ackLineAlert;
   global.ackAllLineAlerts = ackAllLineAlerts;
+  global.queueLineTestAlert = queueLineTestAlert;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -1,53 +1,53 @@
 {
-  "version": "5.13.0-phase35",
-  "buildTimestamp": "20260501_1930",
+  "version": "5.18.28-line-command-center",
+  "buildTimestamp": "20260507_1935",
   "projectName": "COMPHONE SUPER APP",
   "components": {
     "pwa": {
       "name": "Mobile PWA",
-      "version": "5.13.0-phase35",
-      "cacheBuster": "v=5.13.0-phase35&t=20260501_1930",
+      "version": "5.18.28-line-command-center",
+      "cacheBuster": "v=5.18.28-line-command-center&t=20260507_1935",
       "path": "pwa/",
       "mainFile": "index.html"
     },
     "dashboard_pc": {
       "name": "PC Dashboard",
-      "version": "5.13.0-phase35",
-      "cacheBuster": "v=5.13.0-phase35&t=20260501_1930",
+      "version": "5.18.28-line-command-center",
+      "cacheBuster": "v=5.18.28-line-command-center&t=20260507_1935",
       "path": "pwa/",
       "mainFile": "dashboard_pc.html"
     },
     "monitoring_dashboard": {
       "name": "Monitoring Dashboard",
-      "version": "5.13.0-phase35",
-      "cacheBuster": "v=5.13.0-phase35&t=20260501_1930",
+      "version": "5.18.28-line-command-center",
+      "cacheBuster": "v=5.18.28-line-command-center&t=20260507_1935",
       "path": "pwa/",
       "mainFile": "monitoring_dashboard.html"
     },
     "executive_dashboard": {
       "name": "Executive Dashboard",
-      "version": "5.13.0-phase35",
-      "cacheBuster": "v=5.13.0-phase35&t=20260501_1930",
+      "version": "5.18.28-line-command-center",
+      "cacheBuster": "v=5.18.28-line-command-center&t=20260507_1935",
       "path": "pwa/",
       "mainFile": "executive_dashboard.html"
     },
     "demo_dashboard": {
       "name": "Demo Dashboard",
-      "version": "5.13.0-phase35",
-      "cacheBuster": "v=5.13.0-phase35&t=20260501_1930",
+      "version": "5.18.28-line-command-center",
+      "cacheBuster": "v=5.18.28-line-command-center&t=20260507_1935",
       "path": "pwa/",
       "mainFile": "demo_dashboard.html"
     },
     "gas_backend": {
       "name": "GAS Backend",
-      "version": "5.13.0-phase35",
+      "version": "5.18.14-line-command-center",
       "path": "clasp-ready/",
       "mainFile": "Config.gs"
     }
   },
   "deployment": {
     "githubPages": "https://comphone.github.io/comphone-superapp/",
-    "gasScriptUrl": "[REDACTED]",
+    "gasScriptUrl": "https://script.google.com/macros/s/AKfycbx7I7AG7jd0TYNXdWneA-DPaDrVVokC_Pl-wsGttMSHncUmBJBI_dtvx5_4v7NF1Y75qA/exec",
     "driveSync": {
       "enabled": true,
       "rootFolderId": "1YRZRG9r1Y_jMHg2XFFKYjK4Hx-sW0Eq0"

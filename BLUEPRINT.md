@@ -1,10 +1,10 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.18.27-vision-preview-line-router (PWA) / GAS Backend v5.18.13-vision-preview-line-router @559
+> **Version:** v5.18.28-line-command-center (PWA) / GAS Backend v5.18.14-line-command-center @560
 
-> **Date:** 2026-05-07 | **Phase:** 64 (AI Vision Preview + LINE Room Router)
+> **Date:** 2026-05-07 | **Phase:** 65 (LINE Command Center)
 
-> **Status:** STABLE - PC/mobile menu runtime restored; System Integrity Audit score 100/100; Runtime Self-Test is live; core write flows have idempotency; gated write smoke is available; AI Vision has structural capability audit, API workflow contract, PC/mobile operations panel, token-aware runtime smoke, Gemini readiness indicators, guarded E2E smoke, result cards, human review queue, field job timeline linking, suggested next actions, controlled execution gate, execution preview, and LINE room routing
+> **Status:** STABLE - PC/mobile menu runtime restored; System Integrity Audit score 100/100; Runtime Self-Test is live; core write flows have idempotency; gated write smoke is available; AI Vision has structural capability audit, API workflow contract, PC/mobile operations panel, token-aware runtime smoke, Gemini readiness indicators, guarded E2E smoke, result cards, human review queue, field job timeline linking, suggested next actions, controlled execution gate, execution preview, and LINE room routing; LINE Command Center now exposes room status, alert queue, ack tracking, analytics, and safe room messaging
 
 ---
 
@@ -12,14 +12,23 @@
 
 | Item | Current Value | Source of Truth |
 |---|---|---|
-| App Version | `v5.18.27-vision-preview-line-router` | `pwa/version_config.js` |
-| Cache Version | `comphone-v5.18.27-vision-preview-line-router-20260507_1910` | `pwa/version_config.js`, `pwa/sw.js` |
-| Build Timestamp | `20260507_1910` | `pwa/version_config.js` |
-| GAS Backend Deploy | `AKfycbyVK5KLJcHFNfm7oNce5e_WOrFdS2_UuiRQW27ipIUK2DeYGtVjSwWCmr-jIWLnkLcSgw @559` / production URL in `pwa/gas_config.js` | `clasp-ready/Config.gs`, `clasp-ready/Auth.gs`, `clasp-ready/Router.gs`, `clasp-ready/VisionPipeline.gs`, `clasp-ready/RouterSplit.gs` |
-| GAS Production URL | `https://script.google.com/macros/s/AKfycbyVK5KLJcHFNfm7oNce5e_WOrFdS2_UuiRQW27ipIUK2DeYGtVjSwWCmr-jIWLnkLcSgw/exec` | `pwa/gas_config.js` |
-| API Contract Version | `2026-05-07.phase64-vision-preview-line-router` | `pwa/api_contract.js` |
+| App Version | `v5.18.28-line-command-center` | `pwa/version_config.js` |
+| Cache Version | `comphone-v5.18.28-line-command-center-20260507_1935` | `pwa/version_config.js`, `pwa/sw.js` |
+| Build Timestamp | `20260507_1935` | `pwa/version_config.js` |
+| GAS Backend Deploy | `AKfycbx7I7AG7jd0TYNXdWneA-DPaDrVVokC_Pl-wsGttMSHncUmBJBI_dtvx5_4v7NF1Y75qA @560` / production URL in `pwa/gas_config.js` | `Config.gs`, `RouterSplit.gs`, `LineCommandCenter.gs`, `clasp-ready/Config.gs`, `clasp-ready/RouterSplit.gs`, `clasp-ready/LineCommandCenter.gs` |
+| GAS Production URL | `https://script.google.com/macros/s/AKfycbx7I7AG7jd0TYNXdWneA-DPaDrVVokC_Pl-wsGttMSHncUmBJBI_dtvx5_4v7NF1Y75qA/exec` | `pwa/gas_config.js` |
+| API Contract Version | `2026-05-07.phase65-line-command-center` | `pwa/api_contract.js` |
 | Last Production Commit | GitHub `main` HEAD | Use `git log -1 --oneline` for the exact commit |
-| Validation Status | Static Guard OK; Code Index OK; System Integrity Audit OK; AI Vision Capability Audit OK; AI Vision Runtime Smoke OK with Gemini readiness; Vision E2E Smoke skip-safe and gated run OK; Vision UI wired on PC/Mobile; login OK; verifySession OK; protected API smoke OK; Runtime Self-Test UI added | `scripts/pwa_static_guard.js`, `scripts/build_code_index.js`, `scripts/system_integrity_audit.js`, `scripts/vision_capability_audit.js`, `scripts/vision_runtime_smoke.js`, `scripts/vision_e2e_smoke.js`, `scripts/pwa_api_smoke.js`, `pwa/runtime_self_test.js`, `test_reports/*_latest.*` |
+| Validation Status | Static Guard OK; Code Index OK with no risks; System Integrity Audit 100/100; public PWA smoke OK; protected live smoke OK for `getVersion`, `getLineRoomStatus`, `getLineCommandCenter`, and `previewLineRoomMessage`; regression guard OK with only the existing SW cleanup warning; drift guard OK | `scripts/pwa_static_guard.js`, `scripts/build_code_index.js`, `scripts/system_integrity_audit.js`, `scripts/pwa_api_smoke.js`, `scripts/regression-guard.sh`, `scripts/drift-guard.sh`, `test_reports/*_latest.*` |
+
+### Phase 65 Current Review (2026-05-07)
+- Status score: **100/100 command-center readiness**. PC and Mobile now have a shared LINE Center surface for room configuration visibility, alert queue monitoring, acknowledgement tracking, analytics, and safe manual room messaging.
+- Added `LineCommandCenter.gs` at both deploy root and `clasp-ready/` so the actual GAS deployment path and working source stay aligned.
+- New backend actions: `getLineCommandCenter`, `getLineRoomStatus`, `acknowledgeLineAlert`, `bulkAcknowledgeLineAlerts`, `queueLineCommandAlert`, `previewLineRoomMessage`, and `sendLineRoomMessage`.
+- `sendLineRoomMessage` is guarded by explicit confirmation `SEND_LINE_ROOM_MESSAGE`; preview is available before push, and no LINE group IDs or tokens are exposed to the frontend.
+- `pwa/section_line_center.js` renders the shared PC/Mobile LINE Center panel and calls the API actions explicitly so code-index and menu-integrity tools can verify the workflow.
+- `api_contract.js`, `app.js`, `dashboard_pc.html`, `dashboard_pc_core.js`, `index.html`, `pwa_asset_manifest.js`, `pwa_static_guard.js`, and `system_integrity_audit.js` now include LINE Center routing and release checks.
+- Production deploy verified at GAS deployment `@560`: backend version `5.18.14-line-command-center`, protected live checks for LINE room status, command center payload, and dry-run message preview passed on 2026-05-07.
 
 ### Phase 64 Current Review (2026-05-07)
 - Status score: **99/100 operator trust readiness**. Controlled execution now supports dry-run previews before final confirmation, so operators can see sheet writes and LINE rooms before committing.
