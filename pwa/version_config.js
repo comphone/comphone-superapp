@@ -5,10 +5,10 @@
 // ===========================================================
 
 const VERSION_CONFIG = {
-  version: 'v5.18.28-line-command-center',
+  version: 'v5.18.29-deploy-reliability',
   buildDate: '2026-05-07',
-  buildTimestamp: '20260507_1935',
-  cacheVersion: 'comphone-v5.18.28-line-command-center-20260507_1935',
+  buildTimestamp: '20260507_2010',
+  cacheVersion: 'comphone-v5.18.29-deploy-reliability-20260507_2010',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -29,7 +29,8 @@ const VERSION_CONFIG = {
     'AI Vision suggested next actions',
     'AI Vision controlled execution gate',
     'AI Vision execution preview and LINE room router',
-    'LINE Command Center with room status, ack tracking, and safe room messaging'
+    'LINE Command Center with room status, ack tracking, and safe room messaging',
+    'CI/CD deploy reliability guards and Pages freshness checks'
   ]
 };
 
@@ -39,9 +40,9 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 
 // Backward-compatible exports for legacy modules and guards
-const APP_VERSION = 'v5.18.28-line-command-center';
-const BUILD_TIMESTAMP = '20260507_1935';
-const CACHE_VERSION = 'comphone-v5.18.28-line-command-center-20260507_1935';
+const APP_VERSION = 'v5.18.29-deploy-reliability';
+const BUILD_TIMESTAMP = '20260507_2010';
+const CACHE_VERSION = 'comphone-v5.18.29-deploy-reliability-20260507_2010';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;

@@ -126,6 +126,8 @@ jobs:
           echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Guard Self-Test"
           chmod +x scripts/guard-self-test.sh
           bash scripts/guard-self-test.sh
+          node scripts/ci_readiness_check.js
+          node scripts/gas_source_alignment.js
           echo "[✅] Guard self-test passed"
 
       # ── STEP 1b: Check clasp config ──

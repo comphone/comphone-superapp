@@ -1,10 +1,10 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.18.28-line-command-center (PWA) / GAS Backend v5.18.14-line-command-center @560
+> **Version:** v5.18.29-deploy-reliability (PWA) / GAS Backend v5.18.14-line-command-center @560
 
-> **Date:** 2026-05-07 | **Phase:** 65 (LINE Command Center)
+> **Date:** 2026-05-07 | **Phase:** 66 (CI/CD Deploy Reliability)
 
-> **Status:** STABLE - PC/mobile menu runtime restored; System Integrity Audit score 100/100; Runtime Self-Test is live; core write flows have idempotency; gated write smoke is available; AI Vision has structural capability audit, API workflow contract, PC/mobile operations panel, token-aware runtime smoke, Gemini readiness indicators, guarded E2E smoke, result cards, human review queue, field job timeline linking, suggested next actions, controlled execution gate, execution preview, and LINE room routing; LINE Command Center now exposes room status, alert queue, ack tracking, analytics, and safe room messaging
+> **Status:** STABLE - PC/mobile menu runtime restored; System Integrity Audit score 100/100; Runtime Self-Test is live; core write flows have idempotency; gated write smoke is available; AI Vision has structural capability audit, API workflow contract, PC/mobile operations panel, token-aware runtime smoke, Gemini readiness indicators, guarded E2E smoke, result cards, human review queue, field job timeline linking, suggested next actions, controlled execution gate, execution preview, and LINE room routing; LINE Command Center now exposes room status, alert queue, ack tracking, analytics, and safe room messaging; CI/CD now verifies workflow script references, GAS source alignment, and GitHub Pages freshness
 
 ---
 
@@ -12,14 +12,23 @@
 
 | Item | Current Value | Source of Truth |
 |---|---|---|
-| App Version | `v5.18.28-line-command-center` | `pwa/version_config.js` |
-| Cache Version | `comphone-v5.18.28-line-command-center-20260507_1935` | `pwa/version_config.js`, `pwa/sw.js` |
-| Build Timestamp | `20260507_1935` | `pwa/version_config.js` |
+| App Version | `v5.18.29-deploy-reliability` | `pwa/version_config.js` |
+| Cache Version | `comphone-v5.18.29-deploy-reliability-20260507_2010` | `pwa/version_config.js`, `pwa/sw.js` |
+| Build Timestamp | `20260507_2010` | `pwa/version_config.js` |
 | GAS Backend Deploy | `AKfycbx7I7AG7jd0TYNXdWneA-DPaDrVVokC_Pl-wsGttMSHncUmBJBI_dtvx5_4v7NF1Y75qA @560` / production URL in `pwa/gas_config.js` | `Config.gs`, `RouterSplit.gs`, `LineCommandCenter.gs`, `clasp-ready/Config.gs`, `clasp-ready/RouterSplit.gs`, `clasp-ready/LineCommandCenter.gs` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbx7I7AG7jd0TYNXdWneA-DPaDrVVokC_Pl-wsGttMSHncUmBJBI_dtvx5_4v7NF1Y75qA/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-07.phase65-line-command-center` | `pwa/api_contract.js` |
 | Last Production Commit | GitHub `main` HEAD | Use `git log -1 --oneline` for the exact commit |
-| Validation Status | Static Guard OK; Code Index OK with no risks; System Integrity Audit 100/100; public PWA smoke OK; protected live smoke OK for `getVersion`, `getLineRoomStatus`, `getLineCommandCenter`, and `previewLineRoomMessage`; regression guard OK with only the existing SW cleanup warning; drift guard OK | `scripts/pwa_static_guard.js`, `scripts/build_code_index.js`, `scripts/system_integrity_audit.js`, `scripts/pwa_api_smoke.js`, `scripts/regression-guard.sh`, `scripts/drift-guard.sh`, `test_reports/*_latest.*` |
+| Validation Status | Static Guard OK; CI Readiness OK; GAS Source Alignment OK with legacy drift warnings only; Pages Deploy Verify OK; Code Index OK with no risks; System Integrity Audit 100/100; public/protected API smoke OK; regression guard OK with only the existing SW cleanup warning; drift guard OK | `scripts/pwa_static_guard.js`, `scripts/ci_readiness_check.js`, `scripts/gas_source_alignment.js`, `scripts/pages_deploy_verify.js`, `scripts/build_code_index.js`, `scripts/system_integrity_audit.js`, `scripts/pwa_api_smoke.js`, `scripts/regression-guard.sh`, `scripts/drift-guard.sh`, `test_reports/*_latest.*` |
+
+### Phase 66 Current Review (2026-05-07)
+- Status score: **100/100 deploy-observability readiness**. CI now has explicit checks that distinguish missing files, stale checksums, source drift, missing secrets, and GitHub Pages CDN delay.
+- Added `scripts/ci_readiness_check.js` to statically verify workflow script references, required guard files, `CLASPRC_JSON` coverage, and `clasp-ready/.clasp.json` availability without reading secret values.
+- Added `scripts/gas_source_alignment.js` to compare deploy-root and `clasp-ready` GAS files. It blocks drift for current deploy-critical files (`Config.gs`, `RouterSplit.gs`, `LineCommandCenter.gs`) and reports historical drift in `Router.gs`, `Auth.gs`, and `VisionPipeline.gs` as warnings for a later cleanup phase.
+- Added `scripts/pages_deploy_verify.js` to verify GitHub Pages is serving the committed PWA version, build timestamp, cache version, and production GAS URL. CDN delay is reported as `cdn_pending` instead of a false code failure.
+- `auto-deploy.yml` now runs CI readiness, GAS alignment, and Pages freshness verification. `deploy-gas.yml` now runs CI readiness and GAS alignment after guard self-test.
+- Browser Runtime Self-Test now checks LINE Command Center and GitHub Pages freshness from PC/Mobile Settings.
+- `pwa_static_guard.js` now blocks releases if LINE Center or Pages freshness runtime checks are removed.
 
 ### Phase 65 Current Review (2026-05-07)
 - Status score: **100/100 command-center readiness**. PC and Mobile now have a shared LINE Center surface for room configuration visibility, alert queue monitoring, acknowledgement tracking, analytics, and safe manual room messaging.

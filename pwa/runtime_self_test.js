@@ -160,6 +160,46 @@
         };
       },
     },
+    {
+      id: 'line-command-center',
+      label: 'LINE Command Center',
+      run: async () => {
+        const session = readJson('comphone_auth_session');
+        if (!session || !session.token) {
+          return { ok: true, warn: true, details: 'LINE Center protected checks skipped: no session token' };
+        }
+        const failures = [];
+        const roomStatus = await global.callApi('getLineRoomStatus', {});
+        if (!roomStatus || roomStatus.success === false) failures.push('rooms');
+        const center = await global.callApi('getLineCommandCenter', { days: 7 });
+        if (!center || center.success === false) failures.push('center');
+        const preview = await global.callApi('previewLineRoomMessage', { rooms: ['EXECUTIVE'], message: 'Runtime preview' });
+        if (!preview || preview.success === false || !preview.dryRun) failures.push('preview');
+        const rooms = roomStatus && roomStatus.rooms ? roomStatus.rooms.length : 0;
+        const configured = roomStatus && roomStatus.configured != null ? roomStatus.configured : '-';
+        return {
+          ok: failures.length === 0,
+          details: failures.length ? `failed: ${failures.join(', ')}` : `LINE Center OK; rooms=${configured}/${rooms}; preview=dry-run`,
+        };
+      },
+    },
+    {
+      id: 'pages-freshness',
+      label: 'GitHub Pages Freshness',
+      run: async () => {
+        const expectedVersion = global.COMPHONE_VERSION || global.__APP_VERSION || '';
+        const expectedBuild = global.COMPHONE_BUILD || '';
+        const res = await fetch(`version_config.js?runtime=${Date.now()}`, { cache: 'no-store' });
+        const text = await res.text();
+        const versionOk = expectedVersion && text.includes(expectedVersion);
+        const buildOk = expectedBuild && text.includes(expectedBuild);
+        return {
+          ok: res.ok && versionOk && buildOk,
+          warn: res.ok && (!versionOk || !buildOk),
+          details: `http=${res.status} version=${versionOk ? 'current' : 'pending'} build=${buildOk ? 'current' : 'pending'}`,
+        };
+      },
+    },
   ];
 
   function readJson(key) {
@@ -194,7 +234,7 @@
         <div class="runtime-selftest-head">
           <div>
             <div class="runtime-selftest-title"><i class="bi bi-radar"></i> Runtime Self-Test</div>
-            <div class="runtime-selftest-sub">Checks session, API, menu contract, cache, and AI safety from the live browser runtime.</div>
+            <div class="runtime-selftest-sub">Checks session, API, menu contract, cache, AI safety, LINE Center, and Pages freshness from the live browser runtime.</div>
           </div>
           <div class="runtime-selftest-score ${currentScore >= 90 ? 'ok' : currentScore >= 70 ? 'warn' : 'fail'}">${results.length ? currentScore : '--'}</div>
         </div>

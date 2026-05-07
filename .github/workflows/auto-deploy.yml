@@ -17,6 +17,9 @@ on:
       - 'scripts/regression-guard.sh'
       - 'scripts/drift-guard.sh'
       - 'scripts/guard-self-test.sh'
+      - 'scripts/pages_deploy_verify.js'
+      - 'scripts/ci_readiness_check.js'
+      - 'scripts/gas_source_alignment.js'
       - 'scripts/.guard-checksums.md5'
       - 'scripts/browser-smoke-test.py'
       - '.github/workflows/auto-deploy.yml'
@@ -60,7 +63,7 @@ jobs:
               FAILED=1
             fi
           done
-          for f in scripts/pwa_static_guard.js scripts/pwa_api_smoke.js scripts/build_code_index.js; do
+          for f in scripts/pwa_static_guard.js scripts/pwa_api_smoke.js scripts/build_code_index.js scripts/pages_deploy_verify.js scripts/ci_readiness_check.js scripts/gas_source_alignment.js; do
             if node --check "$f"; then
               echo "✅ $f"
             else
@@ -79,6 +82,16 @@ jobs:
         run: |
           echo "Running code intelligence / route drift guard..."
           node scripts/build_code_index.js
+
+      - name: CI Readiness Check
+        run: |
+          echo "Running CI/CD readiness check..."
+          node scripts/ci_readiness_check.js
+
+      - name: GAS Source Alignment
+        run: |
+          echo "Checking root/clasp-ready GAS source alignment..."
+          node scripts/gas_source_alignment.js
 
       - name: PWA API Smoke
         run: |
@@ -154,6 +167,11 @@ jobs:
         run: |
           echo "✅ PWA deployed successfully!"
           echo "URL: ${{ steps.deployment.outputs.page_url }}"
+
+      - name: Verify GitHub Pages freshness
+        run: |
+          echo "Checking whether GitHub Pages is serving this build..."
+          node scripts/pages_deploy_verify.js
 
   # ─────────────────────────────────────────────
   # Job 3: Backup session.md เมื่อมีการเปลี่ยนแปลง

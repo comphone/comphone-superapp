@@ -1,40 +1,40 @@
 {
-  "version": "5.18.28-line-command-center",
-  "buildTimestamp": "20260507_1935",
+  "version": "5.18.29-deploy-reliability",
+  "buildTimestamp": "20260507_2010",
   "projectName": "COMPHONE SUPER APP",
   "components": {
     "pwa": {
       "name": "Mobile PWA",
-      "version": "5.18.28-line-command-center",
-      "cacheBuster": "v=5.18.28-line-command-center&t=20260507_1935",
+      "version": "5.18.29-deploy-reliability",
+      "cacheBuster": "v=5.18.29-deploy-reliability&t=20260507_2010",
       "path": "pwa/",
       "mainFile": "index.html"
     },
     "dashboard_pc": {
       "name": "PC Dashboard",
-      "version": "5.18.28-line-command-center",
-      "cacheBuster": "v=5.18.28-line-command-center&t=20260507_1935",
+      "version": "5.18.29-deploy-reliability",
+      "cacheBuster": "v=5.18.29-deploy-reliability&t=20260507_2010",
       "path": "pwa/",
       "mainFile": "dashboard_pc.html"
     },
     "monitoring_dashboard": {
       "name": "Monitoring Dashboard",
-      "version": "5.18.28-line-command-center",
-      "cacheBuster": "v=5.18.28-line-command-center&t=20260507_1935",
+      "version": "5.18.29-deploy-reliability",
+      "cacheBuster": "v=5.18.29-deploy-reliability&t=20260507_2010",
       "path": "pwa/",
       "mainFile": "monitoring_dashboard.html"
     },
     "executive_dashboard": {
       "name": "Executive Dashboard",
-      "version": "5.18.28-line-command-center",
-      "cacheBuster": "v=5.18.28-line-command-center&t=20260507_1935",
+      "version": "5.18.29-deploy-reliability",
+      "cacheBuster": "v=5.18.29-deploy-reliability&t=20260507_2010",
       "path": "pwa/",
       "mainFile": "executive_dashboard.html"
     },
     "demo_dashboard": {
       "name": "Demo Dashboard",
-      "version": "5.18.28-line-command-center",
-      "cacheBuster": "v=5.18.28-line-command-center&t=20260507_1935",
+      "version": "5.18.29-deploy-reliability",
+      "cacheBuster": "v=5.18.29-deploy-reliability&t=20260507_2010",
       "path": "pwa/",
       "mainFile": "demo_dashboard.html"
     },

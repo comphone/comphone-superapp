@@ -312,6 +312,13 @@ if (!indexHtml.includes('section_line_center.js?') ||
     !apiContractJs.includes('sendLineRoomMessage')) {
   fail('PC/mobile must load, precache, and contract the LINE Command Center UI/actions.');
 }
+const runtimeSelfTestLineJs = readUtf8(path.join(PWA, 'runtime_self_test.js'));
+if (!runtimeSelfTestLineJs.includes("id: 'line-command-center'") ||
+    !runtimeSelfTestLineJs.includes("id: 'pages-freshness'") ||
+    !runtimeSelfTestLineJs.includes("callApi('getLineCommandCenter'") ||
+    !runtimeSelfTestLineJs.includes('version_config.js?runtime=')) {
+  fail('runtime_self_test.js must verify LINE Center and GitHub Pages freshness from the live browser runtime.');
+}
 const sectionVisionJs = readUtf8(path.join(PWA, 'section_vision.js'));
 if (!sectionVisionJs.includes('renderVisionSection') ||
     !sectionVisionJs.includes('renderMobileVisionPage') ||
