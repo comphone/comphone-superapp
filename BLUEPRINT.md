@@ -1,6 +1,6 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.18.25-vision-action-suggestions (PWA) / GAS Backend v5.18.11-vision-action-suggestions @pending
+> **Version:** v5.18.25-vision-action-suggestions (PWA) / GAS Backend v5.18.11-vision-action-suggestions @551
 
 > **Date:** 2026-05-07 | **Phase:** 62 (AI Vision Suggested Next Actions)
 
@@ -15,7 +15,7 @@
 | App Version | `v5.18.25-vision-action-suggestions` | `pwa/version_config.js` |
 | Cache Version | `comphone-v5.18.25-vision-action-suggestions-20260507_1810` | `pwa/version_config.js`, `pwa/sw.js` |
 | Build Timestamp | `20260507_1810` | `pwa/version_config.js` |
-| GAS Backend Deploy | `pending deploy` / production URL in `pwa/gas_config.js` | `clasp-ready/Config.gs`, `clasp-ready/Auth.gs`, `clasp-ready/Router.gs`, `clasp-ready/VisionPipeline.gs`, `clasp-ready/RouterSplit.gs` |
+| GAS Backend Deploy | `AKfycbyVK5KLJcHFNfm7oNce5e_WOrFdS2_UuiRQW27ipIUK2DeYGtVjSwWCmr-jIWLnkLcSgw @551` / production URL in `pwa/gas_config.js` | `clasp-ready/Config.gs`, `clasp-ready/Auth.gs`, `clasp-ready/Router.gs`, `clasp-ready/VisionPipeline.gs`, `clasp-ready/RouterSplit.gs` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbyVK5KLJcHFNfm7oNce5e_WOrFdS2_UuiRQW27ipIUK2DeYGtVjSwWCmr-jIWLnkLcSgw/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-07.phase62-vision-action-suggestions` | `pwa/api_contract.js` |
 | Last Production Commit | GitHub `main` HEAD | Use `git log -1 --oneline` for the exact commit |
@@ -26,6 +26,7 @@
 - GAS `VisionPipeline.gs` exposes `getVisionActionSuggestions()` to turn Vision decision, confidence, Job ID, and timeline context into safe next-action suggestions.
 - `pwa/section_vision.js` now renders Suggested Next Actions on PC/Mobile and can run local navigation, context loading, copy result, review approval/rejection, and timeline linking through existing guarded handlers.
 - `api_contract.js`, `app.js`, `app_actions.js`, and release guards now track `getVisionActionSuggestions` as a read-only Vision action.
+- Production deploy verified at GAS deployment `@551`: backend version `5.18.11-vision-action-suggestions`, protected API smoke, Vision Runtime smoke with `getVisionActionSuggestions`, Workflow smoke, and gated Vision E2E smoke passed on 2026-05-07.
 
 ### Phase 61 Current Review (2026-05-07)
 - Status score: **99/100 field-job workflow readiness**. AI Vision can now carry Job ID and expected slip amount context into analysis, read related job/timeline context, and link reviewed Vision results back to the job timeline.
