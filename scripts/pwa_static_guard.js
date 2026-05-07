@@ -288,6 +288,7 @@ if (!apiContractJs.includes('vision_ai') ||
     !apiContractJs.includes('getVisionReviewQueue') ||
     !apiContractJs.includes('getVisionFieldContext') ||
     !apiContractJs.includes('getVisionActionSuggestions') ||
+    !apiContractJs.includes('previewVisionSuggestion') ||
     !apiContractJs.includes('linkVisionToJobTimeline') ||
     !apiContractJs.includes('executeVisionSuggestion') ||
     !apiContractJs.includes('runVisionPipeline') ||
@@ -312,6 +313,7 @@ if (!sectionVisionJs.includes('renderVisionSection') ||
     !sectionVisionJs.includes("visionApi('getVisionReviewQueue'") ||
     !sectionVisionJs.includes("visionApi('getVisionFieldContext'") ||
     !sectionVisionJs.includes("visionApi('getVisionActionSuggestions'") ||
+    !sectionVisionJs.includes("visionApi('previewVisionSuggestion'") ||
     !sectionVisionJs.includes("visionApi('linkVisionToJobTimeline'") ||
     !sectionVisionJs.includes("visionApi('executeVisionSuggestion'") ||
     !sectionVisionJs.includes("visionApi('submitHumanReview'") ||
@@ -321,6 +323,7 @@ if (!sectionVisionJs.includes('renderVisionSection') ||
     !sectionVisionJs.includes('buildActionSuggestions') ||
     !sectionVisionJs.includes('runVisionSuggestion') ||
     !sectionVisionJs.includes('EXECUTE_VISION_SUGGESTION') ||
+    !sectionVisionJs.includes('formatVisionPreviewText') ||
     !sectionVisionJs.includes('checkVisionReadiness') ||
     !sectionVisionJs.includes('gemini_ok')) {
   fail('section_vision.js must render PC/mobile Vision panels and call Vision stats/pipeline actions.');

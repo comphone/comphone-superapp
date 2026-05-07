@@ -1,9 +1,9 @@
 // ===========================================================
-// COMPHONE SUPER APP v5.18.26-vision-controlled-execution - Service Worker
+// COMPHONE SUPER APP v5.18.27-vision-preview-line-router - Service Worker
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ===========================================================
-const CACHE_V = 'comphone-v5.18.26-vision-controlled-execution-20260507_1840';
+const CACHE_V = 'comphone-v5.18.27-vision-preview-line-router-20260507_1910';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
 

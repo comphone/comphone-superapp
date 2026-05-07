@@ -693,7 +693,7 @@ function getVisionActionSuggestions(params) {
   try {
     params = params || {};
     var visionItem = _vpGetVisionLogItem_(params.visionLogId || '');
-    if (!visionItem && params.result) visionItem = _vpNormalizeSuggestionInput_(params.result);
+    if (!visionItem && params.result) visionItem = _vpNormalizeSuggestionInput_(_vpParseJsonParam_(params.result));
     var context = getVisionFieldContext({
       jobId: params.jobId || params.job_id || (visionItem && visionItem.jobId) || '',
       visionLogId: params.visionLogId || '',
@@ -856,6 +856,11 @@ function _vpNormalizeSuggestionInput_(result) {
   };
 }
 
+function _vpParseJsonParam_(value) {
+  if (!value || typeof value !== 'string') return value || {};
+  try { return JSON.parse(value); } catch (e) { return {}; }
+}
+
 function _vpBuildActionSuggestions_(visionItem, context) {
   visionItem = visionItem || {};
   context = context || {};
@@ -923,15 +928,19 @@ function _vpBuildExecutionPreview_(selected, params) {
   selected = selected || {};
   params = params || {};
   var jobId = selected.jobId || params.jobId || params.job_id || '';
-  var item = _vpGetVisionLogItem_(selected.visionLogId || params.visionLogId || '') || _vpNormalizeSuggestionInput_(params.result || {});
+    var item = _vpGetVisionLogItem_(selected.visionLogId || params.visionLogId || '') || _vpNormalizeSuggestionInput_(_vpParseJsonParam_(params.result || {}));
   var writes = [];
   var notifications = [];
+  var notificationSeen = {};
   var warnings = [];
 
   function write(sheet, action, detail) {
     writes.push({ sheet: sheet, action: action, detail: detail || '' });
   }
   function notify(room, detail) {
+    room = String(room || '').toUpperCase();
+    if (!room || notificationSeen[room]) return;
+    notificationSeen[room] = true;
     notifications.push({ room: room, configured: !!_vpResolveLineRoom_(room), detail: detail || '' });
   }
 
@@ -1050,7 +1059,7 @@ function _vpExecuteSuggestionById_(selected, params) {
   if (id === 'mark_payment_received') {
     if (!jobId) return { success: false, error: 'jobId is required' };
     if (typeof markBillingPaid !== 'function') return { success: false, error: 'markBillingPaid is not available' };
-    var item = _vpGetVisionLogItem_(visionLogId) || _vpNormalizeSuggestionInput_(params.result || {});
+    var item = _vpGetVisionLogItem_(visionLogId) || _vpNormalizeSuggestionInput_(_vpParseJsonParam_(params.result || {}));
     var amount = Number((item.data || {}).amount || params.amount || 0);
     if (amount <= 0) return { success: false, error: 'amount is required' };
     return markBillingPaid({

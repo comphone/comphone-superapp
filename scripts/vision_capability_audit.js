@@ -67,6 +67,7 @@ const requiredRoutes = [
   'getVisionLearningVersion',
   'getVisionFieldContext',
   'getVisionActionSuggestions',
+  'previewVisionSuggestion',
   'getVisionReviewQueue',
   'handleProcessPhotos',
   'uploadPhoto',
@@ -147,6 +148,7 @@ const checks = [
       has(text.sectionVision, "visionApi('runVisionPipeline'") &&
       has(text.sectionVision, "visionApi('getVisionFieldContext'") &&
       has(text.sectionVision, "visionApi('getVisionActionSuggestions'") &&
+      has(text.sectionVision, "visionApi('previewVisionSuggestion'") &&
       has(text.sectionVision, "visionApi('getVisionReviewQueue'") &&
       has(text.sectionVision, "visionApi('submitHumanReview'") &&
       has(text.sectionVision, "visionApi('linkVisionToJobTimeline'") &&
@@ -155,6 +157,7 @@ const checks = [
       has(text.sectionVision, 'buildActionSuggestions') &&
       has(text.sectionVision, 'runVisionSuggestion') &&
       has(text.sectionVision, 'EXECUTE_VISION_SUGGESTION') &&
+      has(text.sectionVision, 'formatVisionPreviewText') &&
       has(text.indexHtml, 'page-vision') &&
       has(text.dashboardPc, "loadSection('vision')") &&
       has(text.assetManifest, 'section_vision.js'),
@@ -168,6 +171,7 @@ const checks = [
       has(text.apiContract, 'getVisionDashboardStats') &&
       has(text.apiContract, 'getVisionFieldContext') &&
       has(text.apiContract, 'getVisionActionSuggestions') &&
+      has(text.apiContract, 'previewVisionSuggestion') &&
       has(text.apiContract, 'linkVisionToJobTimeline') &&
       has(text.apiContract, 'executeVisionSuggestion') &&
       has(text.apiContract, 'runVisionPipeline') &&
@@ -204,6 +208,7 @@ const checks = [
     has(text.visionPipeline, 'function getVisionReviewQueue') &&
       has(text.visionPipeline, 'function getVisionFieldContext') &&
       has(text.visionPipeline, 'function getVisionActionSuggestions') &&
+      has(text.visionPipeline, 'function previewVisionSuggestion') &&
       has(text.visionPipeline, 'function linkVisionToJobTimeline') &&
       has(text.visionPipeline, 'function executeVisionSuggestion') &&
       has(text.visionLearning, 'function processFeedbackLoop') &&
@@ -246,6 +251,7 @@ const capabilities = [
   'Link approved or reviewed Vision results back to job timeline context for field operations.',
   'Suggest next actions from Vision decisions while keeping writes behind human confirmation.',
   'Execute selected Vision suggestions through a server whitelist and explicit confirmation gate.',
+  'Preview controlled execution writes and LINE rooms before committing production changes.',
   'Keep real Gemini/LINE/API keys out of the repo; only Script Property key names are tracked.',
 ];
 
