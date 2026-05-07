@@ -292,6 +292,13 @@ const workflowSmokeJs = readUtf8(path.join(ROOT, 'scripts', 'pwa_workflow_smoke.
 if (!workflowSmokeJs.includes('COMPHONE_WORKFLOW_REPORT') || !workflowSmokeJs.includes('read-only') || !workflowSmokeJs.includes('latestJob')) {
   fail('pwa_workflow_smoke.js must provide read-only workflow smoke checks.');
 }
+const writeSmokeJs = readUtf8(path.join(ROOT, 'scripts', 'pwa_write_smoke.js'));
+if (!writeSmokeJs.includes('COMPHONE_WRITE_SMOKE_CONFIRM') ||
+    !writeSmokeJs.includes('CREATE_TEST_RECORDS') ||
+    !writeSmokeJs.includes('client_request_id') ||
+    !writeSmokeJs.includes('idempotent_replay')) {
+  fail('pwa_write_smoke.js must gate destructive writes and verify idempotent replay.');
+}
 const offlineDbJs = readUtf8(path.join(PWA, 'offline_db.js'));
 if (!offlineDbJs.includes('normalizeOfflineAction_') || !offlineDbJs.includes('const res = await callApi(item.action')) {
   fail('offline_db.js must normalize offline writes and replay through callApi without re-queuing failures.');

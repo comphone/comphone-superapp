@@ -211,6 +211,16 @@ else
   warn "Node or system_integrity_audit.js unavailable — skipping system integrity audit"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/pwa_write_smoke.js" ]; then
+  if node scripts/pwa_write_smoke.js; then
+    echo "   Write smoke safety gate passed"
+  else
+    fail "Write smoke safety gate FAILED"
+  fi
+else
+  warn "Node or pwa_write_smoke.js unavailable - skipping write smoke safety gate"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"
