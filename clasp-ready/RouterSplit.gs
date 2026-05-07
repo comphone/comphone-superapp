@@ -296,6 +296,7 @@ var MODULE_ROUTER = {
   'getVisionDashboardStats': function(p) { return getVisionDashboardStats(p); },
   'getVisionLearningVersion': function(p) { return getVisionLearningVersion(p); },
   'getVisionPipelineVersion': function(p) { return getVisionPipelineVersion(p); },
+  'getVisionReviewQueue': function(p) { return getVisionReviewQueue(p); },
   'getWarrantyByJobId': function(p) { return getWarrantyByJobId(p); },
   'getWarrantyDue': function(p) { return getWarrantyDue(p); },
   'getWorkflowEngineVersion': function(p) { return getWorkflowEngineVersion(p); },

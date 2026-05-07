@@ -437,6 +437,7 @@ function _vpSaveLog_(normalized, context) {
       JSON.stringify(data),
       normalized._fromCache ? 'YES' : 'NO'
     ]);
+    normalized.visionLogId = 'row-' + sh.getLastRow();
   } catch (e) {
     Logger.log('VisionPipeline saveLog error: ' + e.toString());
   }
@@ -552,6 +553,67 @@ function submitHumanReview(params) {
     ]);
 
     return { success: true, message: 'Human review บันทึกแล้ว' };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * getVisionReviewQueue — รายการ Vision ที่ต้อง Human Review
+ * @param {Object} params - { limit, days }
+ */
+function getVisionReviewQueue(params) {
+  try {
+    params = params || {};
+    var limit = Math.min(parseInt(params.limit || 20, 10), 100);
+    var days = parseInt(params.days || 30, 10);
+    var cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    var ss = getComphoneSheet();
+    var sh = ss.getSheetByName('VISION_LOG');
+    if (!sh) return { success: true, queue: [], count: 0 };
+
+    var reviewed = {};
+    var reviewSheet = ss.getSheetByName('VISION_REVIEW');
+    if (reviewSheet && reviewSheet.getLastRow() > 1) {
+      var reviewRows = reviewSheet.getDataRange().getValues();
+      for (var r = 1; r < reviewRows.length; r++) {
+        if (reviewRows[r][1]) reviewed[String(reviewRows[r][1])] = true;
+      }
+    }
+
+    var rows = sh.getDataRange().getValues();
+    var queue = [];
+    for (var i = rows.length - 1; i >= 1; i--) {
+      var row = rows[i];
+      var id = 'row-' + (i + 1);
+      if (reviewed[id]) continue;
+      var ts = new Date(row[0]).getTime();
+      if (ts && ts < cutoff) continue;
+      var decision = String(row[3] || '');
+      var requiresHuman = String(row[4] || '').toUpperCase() === 'YES';
+      if (!requiresHuman && decision !== VP_DECISIONS.NEED_REVIEW && decision !== VP_DECISIONS.QC_FAIL && decision !== VP_DECISIONS.PAYMENT_ERROR && decision !== VP_DECISIONS.REJECTED) continue;
+      var data = {};
+      var issues = [];
+      try { data = JSON.parse(row[10] || '{}'); } catch (e1) {}
+      try { issues = JSON.parse(row[9] || '[]'); } catch (e2) {}
+      queue.push({
+        visionLogId: id,
+        ts: row[0],
+        type: row[1] || '',
+        confidence: row[2] || 0,
+        decision: decision,
+        requiresHuman: requiresHuman,
+        tier: row[5] || '',
+        latencyMs: row[6] || 0,
+        jobId: row[7] || '',
+        userId: row[8] || '',
+        issues: issues,
+        data: data
+      });
+      if (queue.length >= limit) break;
+    }
+
+    return { success: true, queue: queue, count: queue.length, days: days };
   } catch (e) {
     return { success: false, error: e.toString() };
   }

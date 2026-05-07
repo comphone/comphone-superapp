@@ -2,7 +2,7 @@
   'use strict';
 
   const API_CONTRACT = {
-    version: '2026-05-07.phase59-vision-readiness',
+    version: '2026-05-07.phase60-vision-e2e',
     responseShape: {
       success: '{ success: true, data?, meta? }',
       failure: '{ success: false, error, code, kind?, action?, request_id? }',
@@ -79,6 +79,7 @@
           { action: 'getVisionDashboardStats', payload: { days: 7 }, required: true, read: true },
           { action: 'getVisionPipelineVersion', required: true, read: true },
           { action: 'getVisionLearningVersion', read: true, optional: true },
+          { action: 'getVisionReviewQueue', payload: { limit: 10, days: 30 }, read: true, optional: true },
           { action: 'getPhotoGalleryData', payload: { jobId: '__SMOKE_EMPTY__' }, read: true, optional: true, smoke: false, smokeReason: 'requires a real jobId with photo records' },
         ],
       },
@@ -180,6 +181,7 @@
           { action: 'getVisionDashboardStats', payload: { days: 7 }, required: true },
           { action: 'getVisionPipelineVersion', required: true },
           { action: 'getVisionLearningVersion', optional: true },
+          { action: 'getVisionReviewQueue', payload: { limit: 10, days: 30 }, optional: true },
           { action: 'getPhotoGalleryData', payload: { jobId: '__SMOKE_EMPTY__' }, optional: true, smoke: false, smokeReason: 'requires a real jobId with photo records' },
         ],
         writeActions: [

@@ -9,6 +9,7 @@
     selectedDataUrl: '',
     lastStats: null,
     lastVersion: null,
+    lastResult: null,
   };
 
   function esc(value) {
@@ -68,6 +69,55 @@
     return rows || '<div class="vision-empty">No classified Vision records in this period.</div>';
   }
 
+  function decisionColor(code) {
+    if (code === 'APPROVED') return '#059669';
+    if (code === 'NEED_REVIEW') return '#d97706';
+    if (code === 'QC_FAIL' || code === 'PAYMENT_ERROR' || code === 'REJECTED') return '#dc2626';
+    return '#64748b';
+  }
+
+  function buildResultCards(result) {
+    if (!result) return '<div class="vision-empty">No AI response yet.</div>';
+    const decision = result.decision || {};
+    const data = result.data || {};
+    const issues = result.issues || [];
+    const fields = Object.keys(data).slice(0, 8).map(key => `
+      <div class="vision-type-row"><span>${esc(key)}</span><strong>${esc(typeof data[key] === 'object' ? JSON.stringify(data[key]) : data[key])}</strong></div>
+    `).join('');
+    return `
+      <div class="vision-result-card">
+        <div class="vision-result-head">
+          <span style="background:${decisionColor(decision.code)}">${esc(decision.code || 'UNKNOWN')}</span>
+          <strong>${esc(result.type || '-')}</strong>
+          <em>${Math.round(Number(result.confidence || 0) * 100)}% confidence</em>
+        </div>
+        <p>${esc(decision.reason || result._error || 'No decision reason')}</p>
+        ${issues.length ? `<div class="vision-issues">${issues.map(item => `<span>${esc(item)}</span>`).join('')}</div>` : ''}
+        <div class="vision-type-list">${fields || '<div class="vision-empty">No structured data returned.</div>'}</div>
+        <div class="vision-actions" style="margin-top:12px">
+          <button class="vision-btn secondary" onclick="copyVisionResult()"><i class="bi bi-clipboard"></i> Copy</button>
+          <button class="vision-btn warn" onclick="submitLastVisionReview('APPROVED')"><i class="bi bi-check2-circle"></i> Approve</button>
+          <button class="vision-btn secondary" onclick="submitLastVisionReview('REJECTED')"><i class="bi bi-x-circle"></i> Reject</button>
+        </div>
+      </div>`;
+  }
+
+  function buildReviewQueue(items) {
+    if (!items || !items.length) return '<div class="vision-empty">No items waiting for human review.</div>';
+    return items.map(item => `
+      <div class="vision-review-item">
+        <div>
+          <strong>${esc(item.type || '-')} · ${esc(item.decision || '-')}</strong>
+          <span>${esc(item.visionLogId)} ${item.jobId ? '· Job ' + esc(item.jobId) : ''} · ${Math.round(Number(item.confidence || 0) * 100)}%</span>
+        </div>
+        <div class="vision-actions">
+          <button class="vision-btn secondary" onclick="submitQueuedVisionReview('${esc(item.visionLogId)}','APPROVED')"><i class="bi bi-check2"></i></button>
+          <button class="vision-btn secondary" onclick="submitQueuedVisionReview('${esc(item.visionLogId)}','REJECTED')"><i class="bi bi-x"></i></button>
+        </div>
+      </div>
+    `).join('');
+  }
+
   function buildVisionShell(mode) {
     const isMobile = mode === 'mobile';
     return `
@@ -93,6 +143,14 @@
         .vision-type-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #eef2f7;font-size:13px}
         .vision-empty{padding:16px;text-align:center;color:#94a3b8;background:#f8fafc;border-radius:10px}
         .vision-result{white-space:pre-wrap;font-size:12px;background:#0f172a;color:#dbeafe;padding:12px;border-radius:10px;max-height:260px;overflow:auto}
+        .vision-result-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px}
+        .vision-result-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+        .vision-result-head span{color:#fff;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:800}
+        .vision-result-head em{font-style:normal;color:#64748b;font-size:12px}
+        .vision-issues{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+        .vision-issues span{background:#fff7ed;color:#c2410c;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:700}
+        .vision-review-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #eef2f7}
+        .vision-review-item span{display:block;color:#64748b;font-size:12px;margin-top:3px}
         .vision-file{width:100%;border:1px dashed #94a3b8;border-radius:10px;padding:12px;background:#f8fafc}
         .vision-preview{max-width:100%;max-height:190px;border-radius:10px;margin-top:10px;display:none}
         @media(max-width:760px){.vision-hero{align-items:flex-start;flex-direction:column}.vision-grid,.vision-kpi-grid{grid-template-columns:1fr}.vision-card{border-radius:10px}.vision-btn{width:100%;justify-content:center}}
@@ -135,11 +193,18 @@
           <div class="vision-card">
             <h6>Classification by Type</h6>
             <div id="vision-type-list">${buildTypeList({})}</div>
+            <div style="margin-top:14px">
+              <div class="vision-actions" style="justify-content:space-between">
+                <h6 style="margin:0">Human Review Queue</h6>
+                <button class="vision-btn secondary" onclick="loadVisionReviewQueue()"><i class="bi bi-arrow-clockwise"></i></button>
+              </div>
+              <div id="vision-review-queue" style="margin-top:8px">${buildReviewQueue([])}</div>
+            </div>
           </div>
         </div>
         <div class="vision-card">
           <h6>AI Response</h6>
-          <div id="vision-result" class="vision-result">No AI response yet.</div>
+          <div id="vision-result">${buildResultCards(null)}</div>
         </div>
       </div>`;
   }
@@ -169,6 +234,7 @@
       if (statsEl) statsEl.innerHTML = buildStatCards(stats);
       if (typeEl) typeEl.innerHTML = buildTypeList(stats);
       if (status) status.textContent = `AI Vision online - ${esc(res.period || '7 days')} window`;
+      loadVisionReviewQueue();
     } catch (error) {
       if (status) status.textContent = 'AI Vision status unavailable: ' + error.message;
       const result = document.getElementById('vision-result');
@@ -209,9 +275,22 @@
         visionApi('getVisionLearningVersion', {}),
       ]);
       VISION_STATE.lastVersion = { pipeline, learning };
-      if (result) result.textContent = JSON.stringify(VISION_STATE.lastVersion, null, 2);
+      if (result) result.innerHTML = `<div class="vision-result"><pre>${esc(JSON.stringify(VISION_STATE.lastVersion, null, 2))}</pre></div>`;
     } catch (error) {
-      if (result) result.textContent = error.stack || error.message;
+      if (result) result.innerHTML = `<div class="vision-result">${esc(error.stack || error.message)}</div>`;
+    }
+  }
+
+  async function loadVisionReviewQueue() {
+    const el = document.getElementById('vision-review-queue');
+    if (!el) return;
+    el.innerHTML = '<div class="vision-empty">Loading review queue...</div>';
+    try {
+      const res = await visionApi('getVisionReviewQueue', { limit: 10, days: 30 });
+      if (res && res.success === false) throw new Error(res.error || 'Review queue failed');
+      el.innerHTML = buildReviewQueue(res.queue || []);
+    } catch (error) {
+      el.innerHTML = `<div class="vision-empty">Review queue unavailable: ${esc(error.message)}</div>`;
     }
   }
 
@@ -270,7 +349,7 @@
     const base64 = VISION_STATE.selectedDataUrl.split(',')[1] || '';
     if (!base64) return;
     if (!confirm('Run AI Vision analysis for the selected image? This may write Vision logs.')) return;
-    if (result) result.textContent = 'Running AI Vision pipeline...';
+    if (result) result.innerHTML = '<div class="vision-result">Running AI Vision pipeline...</div>';
     try {
       const res = await visionApi('runVisionPipeline', {
         type,
@@ -284,11 +363,45 @@
           ui: global.innerWidth < 760 ? 'mobile' : 'pc',
         },
       });
-      if (result) result.textContent = JSON.stringify(res, null, 2);
+      VISION_STATE.lastResult = res;
+      if (result) result.innerHTML = buildResultCards(res);
       refreshVisionPanel();
     } catch (error) {
-      if (result) result.textContent = error.stack || error.message;
+      if (result) result.innerHTML = `<div class="vision-result">${esc(error.stack || error.message)}</div>`;
     }
+  }
+
+  async function submitVisionReview(visionLogId, decision, correctedData) {
+    if (!visionLogId) {
+      const result = VISION_STATE.lastResult || {};
+      visionLogId = result.visionLogId || result.logId || '';
+    }
+    if (!visionLogId) return alert('No visionLogId is available for review.');
+    const note = prompt('Review note:', decision || 'APPROVED');
+    if (note === null) return;
+    const res = await visionApi('submitHumanReview', {
+      visionLogId,
+      decision,
+      reviewedBy: (global.APP && global.APP.user && (global.APP.user.username || global.APP.user.name)) || 'pwa-user',
+      correctedData: correctedData || {},
+      note,
+    });
+    if (res && res.success === false) return alert(res.error || 'Review failed');
+    alert('Human review saved.');
+    loadVisionReviewQueue();
+  }
+
+  function submitLastVisionReview(decision) {
+    submitVisionReview('', decision, (VISION_STATE.lastResult && VISION_STATE.lastResult.data) || {});
+  }
+
+  function submitQueuedVisionReview(visionLogId, decision) {
+    submitVisionReview(visionLogId, decision, {});
+  }
+
+  function copyVisionResult() {
+    const text = JSON.stringify(VISION_STATE.lastResult || {}, null, 2);
+    if (navigator.clipboard) navigator.clipboard.writeText(text);
   }
 
   function hydrateVisionPanel() {
@@ -300,10 +413,15 @@
   global.refreshVisionPanel = refreshVisionPanel;
   global.checkVisionVersions = checkVisionVersions;
   global.checkVisionReadiness = checkVisionReadiness;
+  global.loadVisionReviewQueue = loadVisionReviewQueue;
   global.openVisionCamera = openVisionCamera;
   global.goVisionBilling = goVisionBilling;
   global.goVisionReports = goVisionReports;
   global.handleVisionFileSelected = handleVisionFileSelected;
   global.runSelectedVisionPipeline = runSelectedVisionPipeline;
+  global.submitVisionReview = submitVisionReview;
+  global.submitLastVisionReview = submitLastVisionReview;
+  global.submitQueuedVisionReview = submitQueuedVisionReview;
+  global.copyVisionResult = copyVisionResult;
   global.hydrateVisionPanel = hydrateVisionPanel;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -231,6 +231,16 @@ else
   warn "Node or vision_runtime_smoke.js unavailable - skipping AI Vision runtime smoke"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/vision_e2e_smoke.js" ]; then
+  if node scripts/vision_e2e_smoke.js; then
+    echo "   AI Vision E2E safety gate passed"
+  else
+    fail "AI Vision E2E safety gate FAILED"
+  fi
+else
+  warn "Node or vision_e2e_smoke.js unavailable - skipping AI Vision E2E safety gate"
+fi
+
 if command -v node &>/dev/null && [ -f "scripts/pwa_write_smoke.js" ]; then
   if node scripts/pwa_write_smoke.js; then
     echo "   Write smoke safety gate passed"

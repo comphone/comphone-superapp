@@ -41,6 +41,12 @@ const PROTECTED_STEPS = [
     label: 'Vision learning version',
     validate: body => body && body.success !== false,
   },
+  {
+    action: 'getVisionReviewQueue',
+    label: 'Vision human review queue',
+    payload: { limit: 5, days: 30 },
+    validate: body => body && body.success !== false && Array.isArray(body.queue),
+  },
 ];
 
 function classify(error, status) {
@@ -85,6 +91,17 @@ function summarize(body) {
       needReview: stats.needReview || 0,
       failed: stats.failed || 0,
       avgConfidence: stats.avgConfidence || '0',
+    };
+  }
+  if (Array.isArray(body.queue)) {
+    return {
+      queueCount: body.count || body.queue.length,
+      sample: body.queue.slice(0, 3).map(item => ({
+        visionLogId: item.visionLogId,
+        type: item.type,
+        decision: item.decision,
+        confidence: item.confidence,
+      })),
     };
   }
   return {

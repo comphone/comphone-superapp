@@ -5,10 +5,10 @@
 // ===========================================================
 
 const VERSION_CONFIG = {
-  version: 'v5.18.22-vision-readiness',
+  version: 'v5.18.23-vision-e2e',
   buildDate: '2026-05-07',
-  buildTimestamp: '20260507_1315',
-  cacheVersion: 'comphone-v5.18.22-vision-readiness-20260507_1315',
+  buildTimestamp: '20260507_1430',
+  cacheVersion: 'comphone-v5.18.23-vision-e2e-20260507_1430',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -23,7 +23,8 @@ const VERSION_CONFIG = {
     'AI Vision capability audit and workflow contract',
     'AI Vision PC and mobile operations panel',
     'AI Vision runtime smoke and browser self-test',
-    'AI Vision Gemini readiness indicators'
+    'AI Vision Gemini readiness indicators',
+    'AI Vision E2E safety gate and human review queue'
   ]
 };
 
@@ -33,9 +34,9 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 
 // Backward-compatible exports for legacy modules and guards
-const APP_VERSION = 'v5.18.22-vision-readiness';
-const BUILD_TIMESTAMP = '20260507_1315';
-const CACHE_VERSION = 'comphone-v5.18.22-vision-readiness-20260507_1315';
+const APP_VERSION = 'v5.18.23-vision-e2e';
+const BUILD_TIMESTAMP = '20260507_1430';
+const CACHE_VERSION = 'comphone-v5.18.23-vision-e2e-20260507_1430';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;

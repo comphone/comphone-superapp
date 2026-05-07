@@ -65,6 +65,7 @@ const requiredRoutes = [
   'getVisionDashboardStats',
   'getVisionPipelineVersion',
   'getVisionLearningVersion',
+  'getVisionReviewQueue',
   'handleProcessPhotos',
   'uploadPhoto',
   'runQCPipeline',
@@ -140,6 +141,8 @@ const checks = [
       has(text.sectionVision, 'function renderMobileVisionPage') &&
       has(text.sectionVision, "visionApi('getVisionDashboardStats'") &&
       has(text.sectionVision, "visionApi('runVisionPipeline'") &&
+      has(text.sectionVision, "visionApi('getVisionReviewQueue'") &&
+      has(text.sectionVision, "visionApi('submitHumanReview'") &&
       has(text.indexHtml, 'page-vision') &&
       has(text.dashboardPc, "loadSection('vision')") &&
       has(text.assetManifest, 'section_vision.js'),
@@ -180,6 +183,7 @@ const checks = [
     'learning-human-review',
     'Human review and learning loop are present for correcting Vision decisions over time.',
     has(text.visionPipeline, 'function submitHumanReview') &&
+      has(text.visionPipeline, 'function getVisionReviewQueue') &&
       has(text.visionLearning, 'function processFeedbackLoop') &&
       has(text.visionLearning, 'function getLearningDashboard') &&
       has(text.visionLearning, 'function getVisionLearningVersion'),
