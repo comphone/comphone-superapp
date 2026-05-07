@@ -1,6 +1,6 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.18.24-vision-field-link (PWA) / GAS Backend v5.18.10-vision-field-link @pending
+> **Version:** v5.18.24-vision-field-link (PWA) / GAS Backend v5.18.10-vision-field-link @549
 
 > **Date:** 2026-05-07 | **Phase:** 61 (AI Vision Field Job Link)
 
@@ -15,7 +15,7 @@
 | App Version | `v5.18.24-vision-field-link` | `pwa/version_config.js` |
 | Cache Version | `comphone-v5.18.24-vision-field-link-20260507_1730` | `pwa/version_config.js`, `pwa/sw.js` |
 | Build Timestamp | `20260507_1730` | `pwa/version_config.js` |
-| GAS Backend Deploy | `pending deploy` / production URL in `pwa/gas_config.js` | `clasp-ready/Config.gs`, `clasp-ready/Auth.gs`, `clasp-ready/Router.gs`, `clasp-ready/VisionPipeline.gs`, `clasp-ready/RouterSplit.gs` |
+| GAS Backend Deploy | `AKfycbyVK5KLJcHFNfm7oNce5e_WOrFdS2_UuiRQW27ipIUK2DeYGtVjSwWCmr-jIWLnkLcSgw @549` / production URL in `pwa/gas_config.js` | `clasp-ready/Config.gs`, `clasp-ready/Auth.gs`, `clasp-ready/Router.gs`, `clasp-ready/VisionPipeline.gs`, `clasp-ready/RouterSplit.gs` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbyVK5KLJcHFNfm7oNce5e_WOrFdS2_UuiRQW27ipIUK2DeYGtVjSwWCmr-jIWLnkLcSgw/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-07.phase61-vision-field-link` | `pwa/api_contract.js` |
 | Last Production Commit | GitHub `main` HEAD | Use `git log -1 --oneline` for the exact commit |
@@ -27,6 +27,7 @@
 - `submitHumanReview()` can attach approved/rejected Vision decisions to a job timeline when a Job ID is available, keeping AI output auditable instead of isolated.
 - `RouterSplit.gs`, `api_contract.js`, `app.js`, `vision_runtime_smoke.js`, `vision_capability_audit.js`, and `pwa_static_guard.js` now know the field-link actions.
 - `pwa/section_vision.js` now has Job ID/expected amount controls, a Job Link & Timeline panel, result-level Link Timeline action, and queue-level context loading for both PC and Mobile.
+- Production deploy verified at GAS deployment `@549`: backend version `5.18.10-vision-field-link`, protected API smoke, Vision Runtime smoke with `getVisionFieldContext`, Workflow smoke, and gated Vision E2E smoke passed on 2026-05-07.
 
 ### Phase 60 Current Review (2026-05-07)
 - Status score: **99/100 field-workflow readiness**. AI Vision now has user-facing result cards, a human review queue, and a gated E2E analysis smoke path.
