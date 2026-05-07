@@ -58,13 +58,14 @@ async function initOfflineDB() {
 // ===== QUEUE: เพิ่ม Action เข้า Queue =====
 async function saveOfflineAction(actionData) {
   try {
+    actionData = normalizeOfflineAction_(actionData);
     const db = await initOfflineDB();
     const tx = db.transaction(OFFLINE_DB.STORE_QUEUE, 'readwrite');
     const store = tx.objectStore(OFFLINE_DB.STORE_QUEUE);
 
     const record = {
       action: actionData.action || actionData.type || 'unknown',
-      params: actionData.params || actionData,
+      params: actionData.params || {},
       status: 'pending',     // pending | syncing | done | failed
       retries: 0,
       maxRetries: 3,
@@ -112,6 +113,28 @@ async function getPendingActions() {
     const queue = JSON.parse(localStorage.getItem('comphone_offline_queue') || '[]');
     return queue.map((item, i) => ({ id: i, ...item, status: 'pending' }));
   }
+}
+
+function normalizeOfflineAction_(actionData) {
+  const input = actionData || {};
+  const action = input.action || input.type || 'unknown';
+  const params = Object.assign({}, input.params || input);
+  delete params.action;
+  delete params.type;
+  if (!params.client_request_id && !input.client_request_id) {
+    params.client_request_id = [
+      'offline',
+      action,
+      input.time || Date.now(),
+      Math.random().toString(36).slice(2, 8)
+    ].join('_').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 100);
+  }
+  return Object.assign({}, input, {
+    action,
+    params,
+    client_request_id: params.client_request_id,
+    time: input.time || Date.now()
+  });
 }
 
 // ===== QUEUE: อัปเดตสถานะ action =====
@@ -163,8 +186,8 @@ async function syncOfflineQueueLegacy() {
       try {
         await updateActionStatus_(item.id, 'syncing');
 
-        // เรียก GAS API
-        const res = await callAPI(item.action, item.params || {});
+        // Replay through the central API client without re-queuing failures.
+        const res = await callApi(item.action, item.params || {});
 
         if (res && res.success) {
           await updateActionStatus_(item.id, 'done');

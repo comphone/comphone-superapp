@@ -28,7 +28,11 @@ var CUSTOMER_DEFAULT_HEADERS = [
 
 function createCustomer(data) {
   data = data || {};
-  return upsertCustomer(data, { mode: 'create' });
+  var replay = (typeof getIdempotentReplay_ === 'function') ? getIdempotentReplay_('createCustomer', data.client_request_id) : null;
+  if (replay) return replay;
+  var result = upsertCustomer(data, { mode: 'create' });
+  if (typeof rememberIdempotentResult_ === 'function') rememberIdempotentResult_('createCustomer', data.client_request_id, result);
+  return result;
 }
 
 function updateCustomer(data) {

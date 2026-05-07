@@ -123,6 +123,14 @@ function safeActionText(value) {
     .replace(/'/g, '&#39;');
 }
 
+function createWriteRequestId(prefix) {
+  return [
+    prefix || 'write',
+    Date.now(),
+    Math.random().toString(36).slice(2, 10)
+  ].join('_').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+}
+
 function openCameraQuick() { openCamera('job'); }
 function markDone() { showToast('เลือกงานที่ต้องการก่อน'); goPage('jobs', document.getElementById('nav-jobs')); }
 function markWaiting() { showToast('เลือกงานที่ต้องการก่อน'); goPage('jobs', document.getElementById('nav-jobs')); }
@@ -142,6 +150,7 @@ function callForHelp() {
 }
 function openNewJob() {
   const modal = ensureActionModal('modal-new-job', 'เปิดงานใหม่');
+  modal.dataset.clientRequestId = createWriteRequestId('job');
   const content = document.getElementById('modal-new-job-content');
   
   // Wizard structure with steps
@@ -240,9 +249,14 @@ async function submitNewJob() {
   if (!symptom) { showToast('กรุณากรอกอาการ/ปัญหา'); return; }
 
   const btn = document.getElementById('nj-submit-btn');
+  if (btn && btn.dataset.submitting === '1') return;
+  if (btn) btn.dataset.submitting = '1';
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> กำลังสร้างงาน...'; }
   const device = document.getElementById('nj-device')?.value.trim();
+  const modal = document.getElementById('modal-new-job');
   const payload = {
+    client_request_id: (modal && modal.dataset.clientRequestId) || createWriteRequestId('job'),
+    source: 'mobile_pwa',
     customer_name: customer,
     phone: document.getElementById('nj-phone')?.value.trim() || '',
     symptom: symptom + (device ? ` [${device}]` : ''),
@@ -262,7 +276,7 @@ async function submitNewJob() {
   }
   const info = typeof apiErrorInfo === 'function' ? apiErrorInfo(res && (res.error || res.message), 'openJob') : null;
   showToast(info ? `${info.title}: ${info.message}` : ((res && res.error) || 'สร้างงานไม่สำเร็จ'));
-  if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-plus-circle-fill"></i> สร้างงานใหม่'; }
+  if (btn) { btn.disabled = false; btn.dataset.submitting = '0'; btn.innerHTML = '<i class="bi bi-plus-circle-fill"></i> สร้างงานใหม่'; }
 }
 
 function openNewJob_delayed() { const fn = setInterval(() => { if(typeof openNewJob === 'function' && document.getElementById('modal-new-job-content')) { clearInterval(fn); openNewJob(); } }, 100); setTimeout(() => clearInterval(fn), 3000); }
@@ -297,6 +311,7 @@ function addCustomer() {
         <button class="btn-setup" onclick="saveNewCustomer()" style="flex:1"><i class="bi bi-person-plus-fill"></i> บันทึกลูกค้า</button>
       </div>`;
   }
+  modal.dataset.clientRequestId = createWriteRequestId('customer');
   modal.classList.remove('hidden');
   setTimeout(() => document.getElementById('new-cust-name')?.focus(), 150);
 }
@@ -307,7 +322,16 @@ async function saveNewCustomer() {
   if (!name) { showToast('กรุณากรอกชื่อลูกค้า'); return; }
   if (!phone) { showToast('กรุณากรอกเบอร์โทร'); return; }
 
+  const modal = document.getElementById('modal-add-customer');
+  const submit = modal && modal.querySelector('.btn-setup');
+  if (submit && submit.dataset.submitting === '1') return;
+  if (submit) {
+    submit.dataset.submitting = '1';
+    submit.disabled = true;
+  }
   const res = await callAPI('createCustomer', {
+    client_request_id: (modal && modal.dataset.clientRequestId) || createWriteRequestId('customer'),
+    source: 'mobile_pwa',
     name,
     customer_name: name,
     phone,
@@ -318,11 +342,16 @@ async function saveNewCustomer() {
   if (res && res.success) {
     closeModal('modal-add-customer');
     showToast('บันทึกลูกค้าใหม่สำเร็จ');
+    await loadLiveData();
     if (APP.currentPage === 'crm' && typeof loadCRMPage === 'function') loadCRMPage();
     return;
   }
   const info = typeof apiErrorInfo === 'function' ? apiErrorInfo(res && (res.error || res.message), 'createCustomer') : null;
   showToast(info ? `${info.title}: ${info.message}` : ((res && res.error) || 'บันทึกลูกค้าไม่สำเร็จ'));
+  if (submit) {
+    submit.dataset.submitting = '0';
+    submit.disabled = false;
+  }
 }
 function callCustomer(phone) {
   if (phone) window.location.href = 'tel:' + phone;

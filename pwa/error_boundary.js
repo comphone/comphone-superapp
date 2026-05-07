@@ -115,7 +115,7 @@ function clearErrorLogs() {
  * Override saveOfflineAction ใน app.js
  * @param {Object} action - { action, params, time, retries }
  */
-window.saveOfflineAction = function(action) {
+if (typeof window.saveOfflineAction !== 'function') window.saveOfflineAction = function(action) {
   try {
     const queue = JSON.parse(localStorage.getItem(EB_QUEUE_KEY) || '[]');
     queue.push({
@@ -135,7 +135,7 @@ window.saveOfflineAction = function(action) {
  * Sync offline queue เมื่อกลับมา online
  * Override syncOfflineQueue ใน app.js
  */
-window.syncOfflineQueue = async function() {
+if (typeof window.syncOfflineQueue !== 'function') window.syncOfflineQueue = async function() {
   const queue = JSON.parse(localStorage.getItem(EB_QUEUE_KEY) || '[]');
   if (!queue.length) return;
 

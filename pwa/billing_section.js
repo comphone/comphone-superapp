@@ -217,6 +217,9 @@ async function _showBillingDetail(jobId) {
 // ===========================================================
 function _showCreateBilling() {
   const modal = document.getElementById('billing-modal');
+  const clientRequestId = typeof createWriteRequestId === 'function'
+    ? createWriteRequestId('billing')
+    : ('billing_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10));
   modal.innerHTML = `
     <div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;" onclick="if(event.target===this)document.getElementById('billing-modal').innerHTML='';">
       <div style="background:#fff;border-radius:16px;padding:32px;max-width:560px;width:92%;max-height:85vh;overflow-y:auto;">
@@ -265,7 +268,7 @@ function _showCreateBilling() {
             <div style="font-size:24px;font-weight:700;color:#3b82f6;">฿0</div>
           </div>
 
-          <button id="cb-submit-btn" onclick="_doCreateBilling()"
+          <button id="cb-submit-btn" data-client-request-id="${clientRequestId}" onclick="_doCreateBilling()"
             style="background:#3b82f6;color:#fff;border:none;padding:10px 16px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600;">
             💾 สร้างบิล
           </button>
@@ -299,11 +302,15 @@ async function _doCreateBilling() {
   const notes = document.getElementById('cb-notes').value.trim();
 
   const btn = document.getElementById('cb-submit-btn');
+  if (btn && btn.dataset.submitting === '1') return;
+  if (btn) btn.dataset.submitting = '1';
   btn.disabled = true;
   btn.textContent = '⏳ กำลังสร้าง...';
 
   try {
     const res = await callApi('createBilling', {
+      client_request_id: (btn && btn.dataset.clientRequestId) || ('billing_' + Date.now()),
+      source: 'pwa_billing',
       job_id: jobId,
       parts: { description: partsDesc, cost: partsCost },
       labor: { cost: laborCost, discount: discount, notes: notes }
@@ -314,12 +321,14 @@ async function _doCreateBilling() {
     } else {
       alert('สร้างบิลไม่สำเร็จ: ' + (res && res.message ? res.message : 'Unknown error'));
       btn.disabled = false;
+      btn.dataset.submitting = '0';
       btn.textContent = '💾 สร้างบิล';
     }
   } catch (e) {
     console.error('createBilling error', e);
     alert('เกิดข้อผิดพลาด');
     btn.disabled = false;
+    btn.dataset.submitting = '0';
     btn.textContent = '💾 สร้างบิล';
   }
 }
