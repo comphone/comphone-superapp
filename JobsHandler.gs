@@ -336,6 +336,12 @@ function createBilling(jobId, parts, labor) {
   if (jobId && typeof jobId === 'object') {
     data = jobId;
     jobId = data.job_id || data.jobId || '';
+    if (typeof data.parts === 'string' && data.parts.charAt(0) === '{') {
+      try { data.parts = JSON.parse(data.parts); } catch (_partsParseErr) {}
+    }
+    if (typeof data.labor === 'string' && data.labor.charAt(0) === '{') {
+      try { data.labor = JSON.parse(data.labor); } catch (_laborParseErr) {}
+    }
     if (data.parts && typeof data.parts === 'object') {
       parts = data.parts.description || data.parts.parts_description || '';
       if (data.parts.cost != null && data.parts_cost == null) data.parts_cost = data.parts.cost;

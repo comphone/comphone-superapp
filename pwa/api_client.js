@@ -217,7 +217,11 @@ async function callApi(action, payload = {}, options = {}) {
   const timeout = options.timeout || COMPHONE_API_TIMEOUT;
   // Build GET URL with query params (POST body หายตอน GAS 302 redirect)
   const token = options.noAuth ? '' : getAuthToken();
-  const qs = new URLSearchParams({ action, token, ...payload, _t: Date.now() }).toString();
+  const serializedPayload = {};
+  Object.entries(payload || {}).forEach(([key, value]) => {
+    serializedPayload[key] = value && typeof value === 'object' ? JSON.stringify(value) : value;
+  });
+  const qs = new URLSearchParams({ action, token, ...serializedPayload, _t: Date.now() }).toString();
   const getUrl = url + '?' + qs;
 
   const controller = new AbortController();

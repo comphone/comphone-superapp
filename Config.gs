@@ -4,8 +4,8 @@
 // ============================================================
 
 var CONFIG = {
-  APP_NAME: 'COMPHONE SUPER APP v5.18.15-gas-source-alignment',
-  VERSION: '5.18.15-gas-source-alignment',
+  APP_NAME: 'COMPHONE SUPER APP v5.18.16-write-flow-validation',
+  VERSION: '5.18.16-write-flow-validation',
   TIMEZONE: 'Asia/Bangkok',
 
   // ── ชื่อ Sheet ทั้งหมดในระบบ ──

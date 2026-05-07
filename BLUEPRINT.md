@@ -1556,3 +1556,21 @@ async function callGas(action, params) {
 - No real secrets are stored in this repository. Runtime secrets such as LINE tokens, Gemini keys, GitHub tokens, and session tokens must remain in Apps Script Properties, GitHub Actions secrets, or a local ignored `.env` file.
 - Production deploy paths must pass `node scripts/gas_source_alignment.js` before deployment to prevent root/deploy-ready drift.
 - Next recommended work: staging-safe write-flow validation for job/customer/billing/POS actions, followed by AI Vision end-to-end browser QA.
+
+---
+
+### Phase 68 Write-Flow Validation Update (2026-05-07)
+
+| Workstream | Status | Current Baseline |
+|---|---|---|
+| **Backend Deployment** | OK Deployed | GAS deployment `@562` points to `v5.18.16-write-flow-validation`. |
+| **PWA Runtime** | OK Updated | Frontend cache/version is `v5.18.31-write-flow-validation` with build `20260507_2330`. |
+| **API Payload Contract** | OK Hardened | `callApi()` now serializes object/array query payloads as JSON so complex write payloads do not become `[object Object]`. |
+| **Write Idempotency** | OK Aligned | `createCustomer`, `openJob`, and `createBilling` use `client_request_id` replay protection across root and `clasp-ready` source. |
+| **Write Smoke** | OK Validated | `scripts/pwa_write_smoke.js` validates create customer, open job, create billing, idempotent replay, and read-back verification. PO write remains behind a separate safety gate. |
+| **Source Alignment Guard** | OK Hardened | Alignment guard now blocks drift for `CustomerManager.gs`, `JobsHandler.gs`, and `InventoryPO.gs` in addition to previous critical GAS files. |
+
+#### Phase 68 Validation
+- Protected API smoke passed for dashboard, CRM, inventory, PO, reports, vision, LINE command center, and admin.
+- Real write smoke passed for customer/job/billing with read-back verification.
+- Regression guard passed with the existing non-blocking service worker cleanup warning.

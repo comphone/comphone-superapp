@@ -7,6 +7,9 @@
 function createPurchaseOrder(data) {
   try {
     data = data || {};
+    if (typeof data.items === 'string') {
+      try { data.items = JSON.parse(data.items); } catch (_itemsParseErr) {}
+    }
     var items = data.items || [];
     if (!items.length) return { success: false, error: '\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32' };
 

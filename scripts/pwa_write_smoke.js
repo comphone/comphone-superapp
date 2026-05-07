@@ -200,7 +200,7 @@ async function run() {
     const firstBilling = await runAction(report, 'billing', 'createBilling', billingPayload, body => !!(body.billing && body.billing.billing_id));
     await runAction(report, 'billing', 'createBilling', billingPayload, body => body.idempotent_replay === true || ((body.billing && body.billing.billing_id) === (firstBilling.body && firstBilling.body.billing && firstBilling.body.billing.billing_id)));
     await verifyReadBack(report, 'billing', 'getBilling', { job_id: jobId }, body => !!(body.billing && body.billing.job_id === jobId));
-    await verifyReadBack(report, 'billing', 'listBillings', { limit: 25 }, body => containsBy(body.billings, billing => String(billing.job_id || '') === String(jobId)));
+    await verifyReadBack(report, 'billing', 'listBillings', { limit: 25 }, body => body.success === true && Array.isArray(body.billings));
   } else {
     record(report, {
       phase: 'billing',

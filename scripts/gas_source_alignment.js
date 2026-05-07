@@ -18,6 +18,7 @@ const BLOCKING = [
   'Auth.gs',
   'Config.gs',
   'CustomerManager.gs',
+  'InventoryPO.gs',
   'JobsHandler.gs',
   'RouterSplit.gs',
   'LineCommandCenter.gs',
