@@ -8,6 +8,8 @@ const GAS_URL = process.env.COMPHONE_GAS_URL || (urlMatch && urlMatch[1]);
 const TOKEN = process.env.COMPHONE_AUTH_TOKEN || '';
 const ENABLED = process.env.COMPHONE_WRITE_SMOKE === '1' || process.env.COMPHONE_WRITE_SMOKE === 'true';
 const CONFIRM = process.env.COMPHONE_WRITE_SMOKE_CONFIRM === 'CREATE_TEST_RECORDS';
+const PO_ENABLED = process.env.COMPHONE_PO_WRITE_SMOKE === '1' || process.env.COMPHONE_PO_WRITE_SMOKE === 'true';
+const PO_CONFIRM = process.env.COMPHONE_PO_WRITE_SMOKE_CONFIRM === 'CREATE_TEST_PO';
 const REPORT_PATH = process.env.COMPHONE_WRITE_SMOKE_REPORT || path.join(ROOT, 'test_reports', 'pwa_write_smoke_latest.json');
 
 if (!GAS_URL) {
@@ -29,6 +31,10 @@ function classify(error, status) {
 async function request(action, payload = {}) {
   const qsPayload = Object.assign({ action, _t: Date.now() }, payload);
   if (TOKEN) qsPayload.token = TOKEN;
+  for (const key of Object.keys(qsPayload)) {
+    const value = qsPayload[key];
+    if (value && typeof value === 'object') qsPayload[key] = JSON.stringify(value);
+  }
   const qs = new URLSearchParams(qsPayload);
   const res = await fetch(`${GAS_URL}?${qs.toString()}`, { redirect: 'follow' });
   const text = await res.text();
@@ -95,6 +101,14 @@ async function runAction(report, phase, action, payload, verifier) {
   }
 }
 
+function containsBy(list, predicate) {
+  return Array.isArray(list) && list.some(predicate);
+}
+
+async function verifyReadBack(report, phase, action, payload, verifier) {
+  return runAction(report, `${phase}:verify`, action, payload, verifier);
+}
+
 async function run() {
   const smokeId = makeId('WSMOKE');
   const report = {
@@ -105,6 +119,12 @@ async function run() {
     confirmation_present: CONFIRM,
     smoke_id: smokeId,
     cleanup: 'manual: test records are tagged with smoke_id and source=pwa_write_smoke',
+    safety_gates: {
+      write_enabled: ENABLED,
+      write_confirmation: CONFIRM,
+      po_enabled: PO_ENABLED,
+      po_confirmation: PO_CONFIRM,
+    },
     results: [],
   };
 
@@ -141,7 +161,11 @@ async function run() {
   };
 
   const firstCustomer = await runAction(report, 'customer', 'createCustomer', customerPayload, body => !!body.customer_id);
+  const customerId = firstCustomer.body && firstCustomer.body.customer_id;
   await runAction(report, 'customer', 'createCustomer', customerPayload, body => body.idempotent_replay === true || body.customer_id === (firstCustomer.body && firstCustomer.body.customer_id));
+  await verifyReadBack(report, 'customer', 'listCustomers', { search: customerName, limit: 5 }, body => (
+    containsBy(body.customers, customer => String(customer.customer_id || '') === String(customerId) || String(customer.customer_name || '') === customerName)
+  ));
 
   const jobRequestId = makeId('job');
   const jobPayload = {
@@ -159,6 +183,9 @@ async function run() {
   const firstJob = await runAction(report, 'job', 'openJob', jobPayload, body => !!body.job_id);
   const jobId = firstJob.body && firstJob.body.job_id;
   await runAction(report, 'job', 'openJob', jobPayload, body => body.idempotent_replay === true || body.job_id === jobId);
+  await verifyReadBack(report, 'job', 'checkJobs', { search: jobId || customerName }, body => (
+    containsBy(body.jobs, job => String(job.job_id || '') === String(jobId) || String(job.customer || '') === customerName)
+  ));
 
   if (jobId) {
     const billingRequestId = makeId('billing');
@@ -172,6 +199,8 @@ async function run() {
     };
     const firstBilling = await runAction(report, 'billing', 'createBilling', billingPayload, body => !!(body.billing && body.billing.billing_id));
     await runAction(report, 'billing', 'createBilling', billingPayload, body => body.idempotent_replay === true || ((body.billing && body.billing.billing_id) === (firstBilling.body && firstBilling.body.billing && firstBilling.body.billing.billing_id)));
+    await verifyReadBack(report, 'billing', 'getBilling', { job_id: jobId }, body => !!(body.billing && body.billing.job_id === jobId));
+    await verifyReadBack(report, 'billing', 'listBillings', { limit: 25 }, body => containsBy(body.billings, billing => String(billing.job_id || '') === String(jobId)));
   } else {
     record(report, {
       phase: 'billing',
@@ -181,6 +210,37 @@ async function run() {
       http_status: 0,
       elapsed_ms: 0,
       error: 'openJob did not return job_id',
+    });
+  }
+
+  if (PO_ENABLED && PO_CONFIRM) {
+    const poPayload = {
+      client_request_id: makeId('po'),
+      source: 'pwa_write_smoke',
+      smoke_id: smokeId,
+      supplier: `COMPHONE WRITE SMOKE SUPPLIER ${smokeId}`,
+      notes: `AUTO TEST ONLY ${smokeId}`,
+      items: [
+        {
+          item_code: `SMOKE-${smokeId}`,
+          item_name: `Smoke Test Item ${smokeId}`,
+          qty: 1,
+          unit_cost: 1,
+        },
+      ],
+    };
+    const po = await runAction(report, 'po', 'createPurchaseOrder', poPayload, body => !!body.po_id);
+    const poId = po.body && po.body.po_id;
+    await verifyReadBack(report, 'po', 'listPurchaseOrders', { limit: 25 }, body => containsBy(body.items, item => String(item.po_id || '') === String(poId)));
+  } else {
+    record(report, {
+      phase: 'po',
+      action: 'createPurchaseOrder',
+      ok: true,
+      status_label: 'SKIP',
+      http_status: 0,
+      elapsed_ms: 0,
+      error: 'PO write smoke skipped; set COMPHONE_PO_WRITE_SMOKE=1 and COMPHONE_PO_WRITE_SMOKE_CONFIRM=CREATE_TEST_PO',
     });
   }
 

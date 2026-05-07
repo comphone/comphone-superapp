@@ -6,12 +6,16 @@
 
 function openJob(data) {
   data = data || {};
+  var replay = getIdempotentReplay_('openJob', data.client_request_id);
+  if (replay) return replay;
   if (!data.customer_name && data.name) data.customer_name = data.name;
   if (!data.changed_by) data.changed_by = data.user || data.technician || 'SYSTEM||LINE';
   if (!data.current_status_code && !data.status_code) {
     data.current_status_code = normalizeStatusCode_(data.status) || 1;
   }
-  return createJob(data);
+  var result = createJob(data);
+  rememberIdempotentResult_('openJob', data.client_request_id, result);
+  return result;
 }
 
 function checkJobs(data) {
@@ -328,8 +332,63 @@ function cutStock(partsStr) {
 }
 
 function createBilling(jobId, parts, labor) {
+  var data = null;
+  if (jobId && typeof jobId === 'object') {
+    data = jobId;
+    jobId = data.job_id || data.jobId || '';
+    if (data.parts && typeof data.parts === 'object') {
+      parts = data.parts.description || data.parts.parts_description || '';
+      if (data.parts.cost != null && data.parts_cost == null) data.parts_cost = data.parts.cost;
+    } else {
+      parts = data.parts || data.parts_description || parts || '';
+    }
+    if (data.labor && typeof data.labor === 'object') {
+      labor = data.labor.cost || data.labor.labor_cost || labor || 0;
+      if (data.labor.discount != null && data.discount == null) data.discount = data.labor.discount;
+      if (data.labor.notes && !data.notes) data.notes = data.labor.notes;
+    } else {
+      labor = data.labor_cost || labor || 0;
+    }
+    var replay = getIdempotentReplay_('createBilling', data.client_request_id);
+    if (replay) return replay;
+  }
   if (typeof createBillingPhase2_ === 'function') {
-    return createBillingPhase2_(jobId, parts, labor);
+    var result = data && typeof autoGenerateBillingForJob === 'function'
+      ? autoGenerateBillingForJob(jobId, {
+          parts: parts || '',
+          parts_cost: data.parts_cost,
+          labor_cost: Number(labor || 0),
+          discount: data.discount,
+          notes: data.notes,
+          source: data.source || 'PWA'
+        })
+      : createBillingPhase2_(jobId, parts, labor);
+    if (data) rememberIdempotentResult_('createBilling', data.client_request_id, result);
+    return result;
   }
   return { success: false, error: 'BillingManager not available' };
+}
+
+function getIdempotentReplay_(action, clientRequestId) {
+  try {
+    clientRequestId = String(clientRequestId || '').trim();
+    if (!clientRequestId) return null;
+    var key = 'idem:' + action + ':' + clientRequestId;
+    var cached = CacheService.getScriptCache().get(key);
+    if (!cached) return null;
+    var replay = JSON.parse(cached);
+    replay.idempotent_replay = true;
+    return replay;
+  } catch (e) {
+    return null;
+  }
+}
+
+function rememberIdempotentResult_(action, clientRequestId, result) {
+  try {
+    clientRequestId = String(clientRequestId || '').trim();
+    if (!clientRequestId || !result || result.success === false) return;
+    var key = 'idem:' + action + ':' + clientRequestId;
+    CacheService.getScriptCache().put(key, JSON.stringify(result), 21600);
+  } catch (e) {}
 }
