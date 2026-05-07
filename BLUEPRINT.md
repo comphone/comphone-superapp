@@ -1539,3 +1539,20 @@ async function callGas(action, params) {
 - ✅ ลบไฟล์ coordination.md เก่าเรียบร้อย
 - ✅ น้อง H (Frontend) เสร็จ 100% (5 เมนูใหม่ + deploy v5.14.1)
 - ⏳ พี่ O (Backend) กำลังดำเนินการ (GAS API, Settings, Gateway)
+
+---
+
+### Phase 67 Source Alignment Update (2026-05-07)
+
+| Workstream | Status | Current Baseline |
+|---|---|---|
+| **GAS Source of Truth** | OK Hardened | Root GAS files and `clasp-ready/` are aligned for `Router.gs`, `Auth.gs`, `Config.gs`, `RouterSplit.gs`, `LineCommandCenter.gs`, and `VisionPipeline.gs`. |
+| **Deploy Guard** | OK Hardened | `scripts/gas_source_alignment.js` now treats all aligned GAS files as blocking checks instead of warning-only drift. |
+| **Auth Session Store** | OK Hardened | Session persistence combines PropertiesService, safeSetProperty/PROP_OVERFLOW, and CacheService fallback. Login returns a token only after a session is stored. |
+| **Router Security** | OK Aligned | Root `Router.gs` now includes the same sensitive-action auth gates, login alias, and dynamic invocation allowlist as the deploy-ready source. |
+| **AI Vision Pipeline** | OK Aligned | Root `VisionPipeline.gs` now includes the Phase 61-64 review queue, field context, suggestion preview/execute, and timeline integration helpers from deploy-ready source. |
+
+#### Phase 67 Notes
+- No real secrets are stored in this repository. Runtime secrets such as LINE tokens, Gemini keys, GitHub tokens, and session tokens must remain in Apps Script Properties, GitHub Actions secrets, or a local ignored `.env` file.
+- Production deploy paths must pass `node scripts/gas_source_alignment.js` before deployment to prevent root/deploy-ready drift.
+- Next recommended work: staging-safe write-flow validation for job/customer/billing/POS actions, followed by AI Vision end-to-end browser QA.

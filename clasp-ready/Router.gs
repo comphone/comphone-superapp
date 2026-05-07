@@ -103,7 +103,7 @@ function doGet(e) {
       // SECURITY: Check auth gate before sensitive operation
       var _authResult = _checkAuthGateV55_(action, params, e);
       if (_authResult != null) return jsonOutputV55_(_authResult);
-      
+
       return jsonOutputV55_(exportBillToAccounting(params.billId || ''));
     }
     if (action === 'checkaccountingconnection' || action === 'checkAccountingConnection') {
@@ -117,7 +117,7 @@ function doGet(e) {
       // SECURITY: Check auth gate before sensitive operation
       var _authResult = _checkAuthGateV55_(action, params, e);
       if (_authResult != null) return jsonOutputV55_(_authResult);
-      
+
       return jsonOutputV55_(createBackupAPI(params));
     }
     if (action === 'listbackups' || action === 'listBackups') {
@@ -130,7 +130,7 @@ function doGet(e) {
       // SECURITY: Check auth gate before sensitive operation
       var _authResult = _checkAuthGateV55_(action, params, e);
       if (_authResult != null) return jsonOutputV55_(_authResult);
-      
+
       return jsonOutputV55_(restoreBackupAPI(params));
     }
     // Security Audit (Phase 34)
@@ -138,7 +138,7 @@ function doGet(e) {
       // SECURITY: Check auth gate before sensitive operation
       var _authResult = _checkAuthGateV55_(action, params, e);
       if (_authResult != null) return jsonOutputV55_(_authResult);
-      
+
       return jsonOutputV55_(runPenTestAPI(params));
     }
     if (action === 'scanvulnerabilities' || action === 'scanVulnerabilities') {
@@ -165,7 +165,7 @@ function doGet(e) {
     if (params.page === 'pos' || action === 'pos') {
       return servePosUI();
     }
-    
+
     // Default: Route ALL unknown actions through routeActionV55 (PHASE 26.6)
     // This enables login, verifySession, and all other actions via GET
     // Previously this returned a static "API READY" response, blocking login on static hosting
@@ -331,7 +331,7 @@ function _checkAuthGateV55_(action, payload, e) {
   // ── Admin-only actions: require role=admin|owner ──
   var ADMIN_ACTIONS = {
     'listUsers': 1, 'createUser': 1, 'updateUserRole': 1, 'setUserActive': 1,
-     
+
     'setScriptProperties': 1, 'setupAllTriggers': 1, 'setupTriggers': 1,
     'setupUserSheet': 1, 'setupNotificationTriggers': 1,
     'forcePasswordChange': 1, 'lockAccount': 1, 'unlockAccount': 1,
@@ -342,7 +342,7 @@ function _checkAuthGateV55_(action, payload, e) {
     'setupTelegramWebhook': 1, 'deleteTelegramWebhook': 1, 'getTelegramBotInfo': 1,
     'testTelegramMessage': 1, 'sendTelegramMessage': 1,
     'sendPushToAll': 1, 'sendDailyDigest': 1, 'setupDailyDigestTrigger': 1,
-    'cronMorningAlert': 1, 
+    'cronMorningAlert': 1,
     'sendDashboardSummary': 1, 'sendLineMessage': 1, 'sendLineAlert': 1,
     'nudgeSalesTeam': 1, 'nudgeTech': 1,
     'mapLineUser': 1
@@ -354,17 +354,17 @@ function _checkAuthGateV55_(action, payload, e) {
   // Extract token — รองรับทั้ง query parameter (GET) และ POST body
   // Note: GAS redirect POST → GET ทำให้ body หาย ต้องใช้ query parameter เท่านั้น
   var token = '';
-  
+
   // Method 1: จาก payload (ซึ่งคือ e.parameter สำหรับ GET)
   if (payload) {
     token = payload.token || payload.auth_token || payload.access_token || '';
   }
-  
+
   // Method 2: จาก e.parameter โดยตรง (fallback)
   if (!token && e && e.parameter) {
     token = e.parameter.token || e.parameter.auth_token || e.parameter.access_token || '';
   }
-  
+
   // Method 3: จาก e.queryString (สำหรับกรณีพิเศษ)
   if (!token && e && e.queryString) {
     var match = (e.queryString || '').match(/(?:^|&)token=([^&]+)/);
@@ -374,7 +374,7 @@ function _checkAuthGateV55_(action, payload, e) {
       if (match) token = decodeURIComponent(match[1]);
     }
   }
-  
+
   if (!token) {
     return { success: false, error: 'Authentication required', code: 401, kind: 'auth', action: action };
   }
@@ -500,12 +500,12 @@ function normalizeActionV55_(action) {
 function invokeFunctionByNameV55_(functionName, args) {
   functionName = String(functionName || '').trim();
   if (!functionName) return { success: false, error: 'Function name is required' };
-  
+
   // ── SECURITY: Block private/underscore functions ──
   if (functionName.charAt(0) === '_') {
     return { success: false, error: 'Access denied: private function', action: functionName, code: 403 };
   }
-  
+
   // ── PHASE 35 HARDENING: Whitelist only allowed functions ──
   // Functions that are safe to call via dynamic invocation
   var ALLOWED_FUNCTIONS = {
@@ -524,7 +524,7 @@ function invokeFunctionByNameV55_(functionName, args) {
     'getJobDetail': 1, 'getRetailSales': 1, 'getTechHistory': 1,
     'listCustomers': 1, 'listPurchaseOrders': 1,
     'getCustomerReceipts': 1,
-    
+
     // Write operations (require auth gate - already checked before reaching here)
     'updateJobStatus': 1, 'transitionJob': 1, 'completeJob': 1,
     'createJob': 1, 'updateJob': 1, 'deleteJob': 1,
@@ -536,16 +536,16 @@ function invokeFunctionByNameV55_(functionName, args) {
     // Added from frontend actions (2026-05-02)
     'createPurchaseOrder': 1, 'logAfterSalesFollowUp': 1, 'receivePurchaseOrder': 1,
   };
-  
+
   if (!ALLOWED_FUNCTIONS[functionName]) {
-    return { 
-      success: false, 
-      error: 'Function not in whitelist: ' + functionName, 
-      action: functionName, 
-      code: 403 
+    return {
+      success: false,
+      error: 'Function not in whitelist: ' + functionName,
+      action: functionName,
+      code: 403
     };
   }
-  
+
   var globalScope = typeof globalThis !== 'undefined' ? globalThis : this;
   var fn = globalScope[functionName];
   if (typeof fn !== 'function') {

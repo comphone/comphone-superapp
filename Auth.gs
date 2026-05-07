@@ -68,55 +68,14 @@ function loginUser(username, password) {
         login_at: new Date().toISOString(),
         expires_at: new Date(new Date().getTime() + 8 * 60 * 60 * 1000).toISOString()
       });
-
-      // 🧹 Cleanup expired sessions BEFORE writing new one (avoids race condition
-      // where post-write cleanup could delete sessions from concurrent requests)
-      try { cleanupExpiredSessions_(); } catch(e) {
-        Logger.log('⚠️ loginUser: cleanupExpiredSessions failed: ' + e);
+      var sessionStore = storeAuthSession_(sessionKey, sessionData);
+      if (!sessionStore.success) {
+        return { success: false, error: 'ไม่สามารถบันทึก session ได้: ' + sessionStore.error };
       }
-
-      // 🔐 Persist session — MUST succeed before returning token
-      var sessionPersisted = false;
-      var persistMethod = 'none';
-
-      // Attempt 1: safeSetProperty (respects prop count limits)
-      var setResult = safeSetProperty(sessionKey, sessionData);
-      if (setResult && setResult.success) {
-        sessionPersisted = true;
-        persistMethod = setResult.method;
-      } else {
-        Logger.log('⚠️ loginUser: safeSetProperty failed for ' + sessionKey + ': ' + JSON.stringify(setResult));
-
-        // Attempt 2: CacheService fallback (survives ~10min, enough for short sessions)
-        try {
-          CacheService.getScriptCache().put(sessionKey, sessionData, 21600); // 6 hours TTL
-          sessionPersisted = true;
-          persistMethod = 'cache';
-          Logger.log('✅ loginUser: CacheService fallback OK for ' + sessionKey);
-        } catch (cacheErr) {
-          Logger.log('⚠️ loginUser: CacheService fallback failed: ' + cacheErr);
-
-          // Attempt 3: Direct PropertiesService as last resort
-          try {
-            PropertiesService.getScriptProperties().setProperty(sessionKey, sessionData);
-            sessionPersisted = true;
-            persistMethod = 'property-direct';
-            Logger.log('✅ loginUser: Direct property write OK for ' + sessionKey);
-          } catch (directErr) {
-            Logger.log('🔴 loginUser: ALL persist attempts failed for ' + sessionKey + ': ' + directErr);
-          }
-        }
-      }
-
-      if (!sessionPersisted) {
-        try { if (typeof _logError_ === 'function') _logError_('HIGH', 'loginUser', new Error('Session not persisted: ' + sessionKey), {source: 'AUTH'}); } catch(_le) {}
-        return { success: false, error: 'ไม่สามารถบันทึก session ได้ กรุณาลองใหม่' };
-      }
-
-      Logger.log('✅ loginUser: session persisted via ' + persistMethod + ' for user=' + rowUser);
 
       try { logActivity('LOGIN', rowUser, 'เข้าสู่ระบบสำเร็จ role=' + role); } catch(e) {}
       try { resetFailedLogin_(rowUser); } catch(e) {}
+      try { cleanupExpiredSessions_(); } catch(e) {}  // 🧹 Cleanup ทุกครั้งที่ login
 
       var forceChangePw = false;
       var colForce = idx['force_change_pw'] !== undefined ? idx['force_change_pw'] : -1;
@@ -185,9 +144,7 @@ function cleanupExpiredSessions_() {
 function logoutUser(token) {
   try {
     if (!token) return { success: false, error: 'ไม่มี token' };
-    var sessionKey = 'SESSION_' + token;
-    PropertiesService.getScriptProperties().deleteProperty(sessionKey);
-    try { CacheService.getScriptCache().remove(sessionKey); } catch(e) {}
+    deleteAuthSession_('SESSION_' + token);
     return { success: true };
   } catch (e) {
         try { if (typeof _logError_ === 'function') _logError_('MEDIUM', 'logoutUser', e, {source: 'AUTH'}); } catch(_le) {}
@@ -202,35 +159,13 @@ function verifySession(token) {
   try {
     if (!token) return { valid: false, error: 'ไม่มี token' };
     var sessionKey = 'SESSION_' + token;
-
-    // Attempt 1: PropertiesService (primary)
-    var raw = PropertiesService.getScriptProperties().getProperty(sessionKey);
-
-    // Attempt 2: CacheService fallback (if safeSetProperty failed during login)
-    if (!raw) {
-      try {
-        raw = CacheService.getScriptCache().get(sessionKey);
-        if (raw) {
-          Logger.log('✅ verifySession: found in CacheService fallback for ' + sessionKey);
-          // Try to promote back to PropertiesService for durability
-          try {
-            safeSetProperty(sessionKey, raw);
-          } catch (promoteErr) {
-            Logger.log('⚠️ verifySession: could not promote cache session to properties: ' + promoteErr);
-          }
-        }
-      } catch (cacheErr) {
-        Logger.log('⚠️ verifySession: CacheService lookup failed: ' + cacheErr);
-      }
-    }
-
+    var raw = readAuthSession_(sessionKey);
     if (!raw) return { valid: false, error: 'Session ไม่พบหรือหมดอายุ' };
     var session = JSON.parse(raw);
     var now = new Date();
     var expires = new Date(session.expires_at);
     if (now > expires) {
-      PropertiesService.getScriptProperties().deleteProperty(sessionKey);
-      try { CacheService.getScriptCache().remove(sessionKey); } catch(e) {}
+      deleteAuthSession_(sessionKey);
       return { valid: false, error: 'Session หมดอายุ กรุณาเข้าสู่ระบบใหม่' };
     }
     return {
@@ -243,6 +178,97 @@ function verifySession(token) {
   } catch (e) {
     return { success: false, valid: false, error: e.toString() };
   }
+}
+
+// ============================================================
+// 🔐 Auth Session Storage
+// ============================================================
+function storeAuthSession_(sessionKey, sessionData) {
+  var lastError = '';
+  try {
+    cleanupExpiredSessions_();
+    PropertiesService.getScriptProperties().setProperty(sessionKey, sessionData);
+    return { success: true, method: 'property' };
+  } catch (e) {
+    lastError = e.toString();
+    try {
+      if (typeof safeSetProperty === 'function') {
+        var safeResult = safeSetProperty(sessionKey, sessionData, { overflowToSheet: true });
+        if (safeResult && safeResult.success) return safeResult;
+        if (safeResult && safeResult.error) lastError = safeResult.error;
+      }
+    } catch (_safeErr) {
+      lastError = _safeErr.toString();
+    }
+    try {
+      CacheService.getScriptCache().put(sessionKey, sessionData, 21600);
+      return { success: true, method: 'cache' };
+    } catch (_cacheErr) {
+      lastError = _cacheErr.toString();
+    }
+    return { success: false, error: lastError || 'unknown session store error' };
+  }
+}
+
+function readAuthSession_(sessionKey) {
+  var props = PropertiesService.getScriptProperties();
+  var raw = props.getProperty(sessionKey);
+  if (raw) return raw;
+  raw = readAuthSessionOverflow_(sessionKey);
+  if (raw) return raw;
+  try {
+    raw = CacheService.getScriptCache().get(sessionKey);
+    if (raw) {
+      try {
+        if (typeof safeSetProperty === 'function') safeSetProperty(sessionKey, raw, { overflowToSheet: true });
+      } catch (_promoteErr) {}
+      return raw;
+    }
+  } catch (_cacheErr) {}
+  return '';
+}
+
+function deleteAuthSession_(sessionKey) {
+  PropertiesService.getScriptProperties().deleteProperty(sessionKey);
+  deleteAuthSessionOverflow_(sessionKey);
+  try { CacheService.getScriptCache().remove(sessionKey); } catch(e) {}
+}
+
+function getAuthOverflowSheet_() {
+  try {
+    var ss = getComphoneSheet();
+    if (!ss) {
+      var ssId = PropertiesService.getScriptProperties().getProperty('DB_SS_ID');
+      if (ssId) ss = SpreadsheetApp.openById(ssId);
+    }
+    if (!ss) return null;
+    return ss.getSheetByName((typeof PROP_GUARD !== 'undefined' && PROP_GUARD.OVERFLOW_SHEET) || 'PROP_OVERFLOW');
+  } catch (e) {
+    return null;
+  }
+}
+
+function readAuthSessionOverflow_(sessionKey) {
+  try {
+    var sheet = getAuthOverflowSheet_();
+    if (!sheet || sheet.getLastRow() < 2) return '';
+    var values = sheet.getRange(2, 1, sheet.getLastRow() - 1, 4).getValues();
+    for (var i = values.length - 1; i >= 0; i--) {
+      if (String(values[i][1] || '') === sessionKey) return String(values[i][2] || '');
+    }
+  } catch (e) {}
+  return '';
+}
+
+function deleteAuthSessionOverflow_(sessionKey) {
+  try {
+    var sheet = getAuthOverflowSheet_();
+    if (!sheet || sheet.getLastRow() < 2) return;
+    var values = sheet.getRange(2, 2, sheet.getLastRow() - 1, 1).getValues();
+    for (var i = values.length - 1; i >= 0; i--) {
+      if (String(values[i][0] || '') === sessionKey) sheet.deleteRow(i + 2);
+    }
+  } catch (e) {}
 }
 
 // ============================================================

@@ -184,18 +184,29 @@ function verifySession(token) {
 // 🔐 Auth Session Storage
 // ============================================================
 function storeAuthSession_(sessionKey, sessionData) {
+  var lastError = '';
   try {
     cleanupExpiredSessions_();
     PropertiesService.getScriptProperties().setProperty(sessionKey, sessionData);
     return { success: true, method: 'property' };
   } catch (e) {
+    lastError = e.toString();
     try {
       if (typeof safeSetProperty === 'function') {
         var safeResult = safeSetProperty(sessionKey, sessionData, { overflowToSheet: true });
         if (safeResult && safeResult.success) return safeResult;
+        if (safeResult && safeResult.error) lastError = safeResult.error;
       }
-    } catch (_safeErr) {}
-    return { success: false, error: e.toString() };
+    } catch (_safeErr) {
+      lastError = _safeErr.toString();
+    }
+    try {
+      CacheService.getScriptCache().put(sessionKey, sessionData, 21600);
+      return { success: true, method: 'cache' };
+    } catch (_cacheErr) {
+      lastError = _cacheErr.toString();
+    }
+    return { success: false, error: lastError || 'unknown session store error' };
   }
 }
 
@@ -203,12 +214,24 @@ function readAuthSession_(sessionKey) {
   var props = PropertiesService.getScriptProperties();
   var raw = props.getProperty(sessionKey);
   if (raw) return raw;
-  return readAuthSessionOverflow_(sessionKey);
+  raw = readAuthSessionOverflow_(sessionKey);
+  if (raw) return raw;
+  try {
+    raw = CacheService.getScriptCache().get(sessionKey);
+    if (raw) {
+      try {
+        if (typeof safeSetProperty === 'function') safeSetProperty(sessionKey, raw, { overflowToSheet: true });
+      } catch (_promoteErr) {}
+      return raw;
+    }
+  } catch (_cacheErr) {}
+  return '';
 }
 
 function deleteAuthSession_(sessionKey) {
   PropertiesService.getScriptProperties().deleteProperty(sessionKey);
   deleteAuthSessionOverflow_(sessionKey);
+  try { CacheService.getScriptCache().remove(sessionKey); } catch(e) {}
 }
 
 function getAuthOverflowSheet_() {

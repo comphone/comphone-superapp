@@ -14,15 +14,14 @@ const REPORT_DIR = path.join(ROOT, 'test_reports');
 const REPORT_JSON = path.join(REPORT_DIR, 'gas_source_alignment_latest.json');
 const REPORT_MD = path.join(REPORT_DIR, 'gas_source_alignment_latest.md');
 const BLOCKING = [
+  'Router.gs',
+  'Auth.gs',
   'Config.gs',
   'RouterSplit.gs',
   'LineCommandCenter.gs',
-];
-const WARN_ONLY = [
-  'Router.gs',
-  'Auth.gs',
   'VisionPipeline.gs',
 ];
+const WARN_ONLY = [];
 
 function hash(file) {
   return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');

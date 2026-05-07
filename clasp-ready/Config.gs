@@ -4,8 +4,8 @@
 // ============================================================
 
 var CONFIG = {
-  APP_NAME: 'COMPHONE SUPER APP v5.18.8-auth-session-store',
-  VERSION: '5.18.14-line-command-center',
+  APP_NAME: 'COMPHONE SUPER APP v5.18.15-gas-source-alignment',
+  VERSION: '5.18.15-gas-source-alignment',
   TIMEZONE: 'Asia/Bangkok',
 
   // ── ชื่อ Sheet ทั้งหมดในระบบ ──

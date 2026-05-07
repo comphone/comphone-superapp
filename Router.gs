@@ -100,6 +100,10 @@ function doGet(e) {
     }
     // Accounting Integration (Phase 35)
     if (action === 'exportbilltoaccounting' || action === 'exportBillToAccounting') {
+      // SECURITY: Check auth gate before sensitive operation
+      var _authResult = _checkAuthGateV55_(action, params, e);
+      if (_authResult != null) return jsonOutputV55_(_authResult);
+
       return jsonOutputV55_(exportBillToAccounting(params.billId || ''));
     }
     if (action === 'checkaccountingconnection' || action === 'checkAccountingConnection') {
@@ -110,6 +114,10 @@ function doGet(e) {
     }
     // Backup & Recovery (Phase 34)
     if (action === 'createbackup' || action === 'createBackup') {
+      // SECURITY: Check auth gate before sensitive operation
+      var _authResult = _checkAuthGateV55_(action, params, e);
+      if (_authResult != null) return jsonOutputV55_(_authResult);
+
       return jsonOutputV55_(createBackupAPI(params));
     }
     if (action === 'listbackups' || action === 'listBackups') {
@@ -119,10 +127,18 @@ function doGet(e) {
       return jsonOutputV55_(checkBackupHealthAPI(params));
     }
     if (action === 'restorebackup' || action === 'restoreBackup') {
+      // SECURITY: Check auth gate before sensitive operation
+      var _authResult = _checkAuthGateV55_(action, params, e);
+      if (_authResult != null) return jsonOutputV55_(_authResult);
+
       return jsonOutputV55_(restoreBackupAPI(params));
     }
     // Security Audit (Phase 34)
     if (action === 'runpentest' || action === 'runPenTest') {
+      // SECURITY: Check auth gate before sensitive operation
+      var _authResult = _checkAuthGateV55_(action, params, e);
+      if (_authResult != null) return jsonOutputV55_(_authResult);
+
       return jsonOutputV55_(runPenTestAPI(params));
     }
     if (action === 'scanvulnerabilities' || action === 'scanVulnerabilities') {
@@ -149,7 +165,7 @@ function doGet(e) {
     if (params.page === 'pos' || action === 'pos') {
       return servePosUI();
     }
-    
+
     // Default: Route ALL unknown actions through routeActionV55 (PHASE 26.6)
     // This enables login, verifySession, and all other actions via GET
     // Previously this returned a static "API READY" response, blocking login on static hosting
@@ -301,7 +317,7 @@ function _checkAuthGateV55_(action, payload, e) {
   // ── Public actions: no auth required ──
   var PUBLIC_ACTIONS = {
     // Auth entry points
-    'help': 1, 'loginuser': 1, 'loginUser': 1, 'verifysession': 1, 'verifySession': 1,
+    'help': 1, 'login': 1, 'loginuser': 1, 'loginUser': 1, 'verifySession': 1, 'verifySession': 1,
     // Public diagnostics
     'health': 1, 'getversion': 1, 'getVersion': 1, 'version': 1,
     // Error logging: frontend may not have a token while reporting boot failures.
@@ -315,7 +331,7 @@ function _checkAuthGateV55_(action, payload, e) {
   // ── Admin-only actions: require role=admin|owner ──
   var ADMIN_ACTIONS = {
     'listUsers': 1, 'createUser': 1, 'updateUserRole': 1, 'setUserActive': 1,
-     
+
     'setScriptProperties': 1, 'setupAllTriggers': 1, 'setupTriggers': 1,
     'setupUserSheet': 1, 'setupNotificationTriggers': 1,
     'forcePasswordChange': 1, 'lockAccount': 1, 'unlockAccount': 1,
@@ -326,7 +342,7 @@ function _checkAuthGateV55_(action, payload, e) {
     'setupTelegramWebhook': 1, 'deleteTelegramWebhook': 1, 'getTelegramBotInfo': 1,
     'testTelegramMessage': 1, 'sendTelegramMessage': 1,
     'sendPushToAll': 1, 'sendDailyDigest': 1, 'setupDailyDigestTrigger': 1,
-    'cronMorningAlert': 1, 
+    'cronMorningAlert': 1,
     'sendDashboardSummary': 1, 'sendLineMessage': 1, 'sendLineAlert': 1,
     'nudgeSalesTeam': 1, 'nudgeTech': 1,
     'mapLineUser': 1
@@ -338,17 +354,17 @@ function _checkAuthGateV55_(action, payload, e) {
   // Extract token — รองรับทั้ง query parameter (GET) และ POST body
   // Note: GAS redirect POST → GET ทำให้ body หาย ต้องใช้ query parameter เท่านั้น
   var token = '';
-  
+
   // Method 1: จาก payload (ซึ่งคือ e.parameter สำหรับ GET)
   if (payload) {
     token = payload.token || payload.auth_token || payload.access_token || '';
   }
-  
+
   // Method 2: จาก e.parameter โดยตรง (fallback)
   if (!token && e && e.parameter) {
     token = e.parameter.token || e.parameter.auth_token || e.parameter.access_token || '';
   }
-  
+
   // Method 3: จาก e.queryString (สำหรับกรณีพิเศษ)
   if (!token && e && e.queryString) {
     var match = (e.queryString || '').match(/(?:^|&)token=([^&]+)/);
@@ -358,7 +374,7 @@ function _checkAuthGateV55_(action, payload, e) {
       if (match) token = decodeURIComponent(match[1]);
     }
   }
-  
+
   if (!token) {
     return { success: false, error: 'Authentication required', code: 401, kind: 'auth', action: action };
   }
@@ -450,6 +466,7 @@ function dispatchActionV55_(action, payload, args, e) {
 function normalizeActionV55_(action) {
   action = String(action || '').trim();
   var map = {
+    'login': 'loginUser', // Map 'login' to 'loginUser' function
     'เปิดงาน': 'openJob',
     'create_job': 'createJob',
     'openjob': 'openJob',
@@ -483,14 +500,62 @@ function normalizeActionV55_(action) {
 function invokeFunctionByNameV55_(functionName, args) {
   functionName = String(functionName || '').trim();
   if (!functionName) return { success: false, error: 'Function name is required' };
+
   // ── SECURITY: Block private/underscore functions ──
   if (functionName.charAt(0) === '_') {
     return { success: false, error: 'Access denied: private function', action: functionName, code: 403 };
   }
+
+  // ── PHASE 35 HARDENING: Whitelist only allowed functions ──
+  // Functions that are safe to call via dynamic invocation
+  var ALLOWED_FUNCTIONS = {
+    // Read-only operations (safe)
+    'getDashboardBundle': 1, 'getStockList': 1, 'getJobList': 1, 'getJob': 1,
+    'checkStock': 1, 'checkJobs': 1, 'getInventoryOverview': 1, 'getLowStockItems': 1,
+    'getBillingList': 1, 'getBillById': 1, 'getCustomerList': 1, 'getCustomerById': 1,
+    'getAttendanceList': 1, 'getPerformanceMetrics': 1, 'getHistoricalMetrics': 1,
+    'getDashboardData': 1, 'getPhotoGalleryData': 1, 'getJobQRData': 1,
+    'getJobStateConfig': 1, 'getCRMSchedule': 1, 'getBackupList': 1, 'checkBackupHealth': 1,
+    'checkAccountingConnection': 1, 'getVersion': 1, 'health': 1,
+    'verifySession': 1, 'loginUser': 1, 'logSystemError': 1, 'logTelemetry': 1,
+    'getJobStatusPublic': 1, 'barcodeLookup': 1, 'sendDashboardSummary': 1,
+    // Added from frontend actions (2026-05-02)
+    'getAfterSalesDue': 1, 'getAttendanceReport': 1, 'getCustomerHistory': 1,
+    'getJobDetail': 1, 'getRetailSales': 1, 'getTechHistory': 1,
+    'listCustomers': 1, 'listPurchaseOrders': 1,
+    'getCustomerReceipts': 1,
+
+    // Write operations (require auth gate - already checked before reaching here)
+    'updateJobStatus': 1, 'transitionJob': 1, 'completeJob': 1,
+    'createJob': 1, 'updateJob': 1, 'deleteJob': 1,
+    'addInventoryItem': 1, 'updateInventoryItem': 1, 'deleteInventoryItem': 1,
+    'createCustomer': 1, 'updateCustomer': 1, 'deleteCustomer': 1,
+    'createBill': 1, 'updateBill': 1, 'deleteBill': 1, 'posCheckout': 1,
+    'exportBillToAccounting': 1, 'createBackup': 1, 'restoreBackup': 1,
+    'runPenTest': 1, 'scanVulnerabilities': 1,
+    // Added from frontend actions (2026-05-02)
+    'createPurchaseOrder': 1, 'logAfterSalesFollowUp': 1, 'receivePurchaseOrder': 1,
+  };
+
+  if (!ALLOWED_FUNCTIONS[functionName]) {
+    return {
+      success: false,
+      error: 'Function not in whitelist: ' + functionName,
+      action: functionName,
+      code: 403
+    };
+  }
+
   var globalScope = typeof globalThis !== 'undefined' ? globalThis : this;
   var fn = globalScope[functionName];
   if (typeof fn !== 'function') {
     return { success: false, error: 'Function not found: ' + functionName, action: functionName };
+  }
+  // SPECIAL CASE: loginUser expects 2 separate args (username, password)
+  // But args is [payload] where payload = { username, password }
+  if (functionName === 'loginUser' && args.length === 1 && typeof args[0] === 'object') {
+    var p = args[0];
+    return fn.call(globalScope, p.username, p.password);
   }
   return fn.apply(globalScope, Array.isArray(args) ? args : []);
 }
