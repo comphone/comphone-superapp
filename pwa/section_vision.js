@@ -109,6 +109,7 @@
           </div>
         </div>
         <div id="vision-status" class="vision-muted">Loading AI Vision status...</div>
+        <div id="vision-readiness" class="vision-muted">Checking Gemini readiness...</div>
         <div id="vision-stats">${buildStatCards({})}</div>
         <div class="vision-grid">
           <div class="vision-card">
@@ -157,6 +158,7 @@
   async function refreshVisionPanel(days) {
     const status = document.getElementById('vision-status');
     if (status) status.textContent = 'Loading AI Vision status...';
+    checkVisionReadiness();
     try {
       const res = await visionApi('getVisionDashboardStats', { days: days || 7 });
       if (res && res.success === false) throw new Error(res.error || 'Vision stats failed');
@@ -171,6 +173,30 @@
       if (status) status.textContent = 'AI Vision status unavailable: ' + error.message;
       const result = document.getElementById('vision-result');
       if (result) result.textContent = error.stack || error.message;
+    }
+  }
+
+  async function checkVisionReadiness() {
+    const el = document.getElementById('vision-readiness');
+    if (!el) return;
+    try {
+      const health = await visionApi('health', {});
+      const config = health && health.checks && health.checks.config;
+      const geminiOk = !!(config && config.gemini_ok);
+      const lineOk = !!(config && config.line_ok);
+      const missing = (config && config.missing) || [];
+      el.innerHTML = `
+        <span style="display:inline-flex;align-items:center;gap:7px;padding:8px 10px;border-radius:10px;background:${geminiOk ? '#ecfdf5' : '#fef2f2'};color:${geminiOk ? '#047857' : '#b91c1c'};font-weight:700">
+          <i class="bi ${geminiOk ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'}"></i>
+          Gemini Vision ${geminiOk ? 'ready' : 'not configured'}
+        </span>
+        <span style="display:inline-flex;align-items:center;gap:7px;margin-left:6px;padding:8px 10px;border-radius:10px;background:${lineOk ? '#eff6ff' : '#fff7ed'};color:${lineOk ? '#1d4ed8' : '#c2410c'};font-weight:700">
+          <i class="bi ${lineOk ? 'bi-chat-dots-fill' : 'bi-chat-dots'}"></i>
+          LINE ${lineOk ? 'ready' : 'partial'}
+        </span>
+        ${missing.length ? `<span style="margin-left:6px;color:#b91c1c">Missing: ${missing.map(esc).join(', ')}</span>` : ''}`;
+    } catch (error) {
+      el.textContent = 'Vision readiness unavailable: ' + error.message;
     }
   }
 
@@ -273,6 +299,7 @@
   global.renderMobileVisionPage = renderMobileVisionPage;
   global.refreshVisionPanel = refreshVisionPanel;
   global.checkVisionVersions = checkVisionVersions;
+  global.checkVisionReadiness = checkVisionReadiness;
   global.openVisionCamera = openVisionCamera;
   global.goVisionBilling = goVisionBilling;
   global.goVisionReports = goVisionReports;

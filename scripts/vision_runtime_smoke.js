@@ -15,7 +15,12 @@ if (!GAS_URL) {
 }
 
 const PUBLIC_STEPS = [
-  { action: 'health', label: 'GAS health' },
+  {
+    action: 'health',
+    label: 'GAS health + AI config',
+    validate: body => body && body.success !== false &&
+      (!body.checks || !body.checks.config || body.checks.config.gemini_ok === true),
+  },
   { action: 'getVersion', label: 'Backend version' },
 ];
 
@@ -63,6 +68,15 @@ async function request(action, payload = {}) {
 
 function summarize(body) {
   if (!body || typeof body !== 'object') return {};
+  if (body.checks && body.checks.config) {
+    return {
+      status: body.status || '',
+      version: body.version || '',
+      gemini_ok: body.checks.config.gemini_ok === true,
+      line_ok: body.checks.config.line_ok === true,
+      missing: body.checks.config.missing || [],
+    };
+  }
   const stats = body.stats || (body.data && body.data.stats);
   if (stats) {
     return {
