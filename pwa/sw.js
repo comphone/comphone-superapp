@@ -1,9 +1,9 @@
 // ===========================================================
-// COMPHONE SUPER APP v5.18.32-ui-write-contract - Service Worker
+// COMPHONE SUPER APP v5.18.33-menu-journey-reports - Service Worker
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ===========================================================
-const CACHE_V = 'comphone-v5.18.32-ui-write-contract-20260508_0015';
+const CACHE_V = 'comphone-v5.18.33-menu-journey-reports-20260508_1030';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
 

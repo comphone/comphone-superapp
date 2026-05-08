@@ -39,6 +39,7 @@ function main() {
     'scripts/pwa_api_smoke.js',
     'scripts/pwa_ui_write_contract.js',
     'scripts/pwa_ui_surface_audit.js',
+    'scripts/pwa_menu_journey_audit.js',
     'scripts/regression-guard.sh',
     'scripts/drift-guard.sh',
     'scripts/guard-self-test.sh',

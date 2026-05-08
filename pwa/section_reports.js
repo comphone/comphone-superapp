@@ -4,7 +4,7 @@
  *
  * The full reports experience lives in reports.js. This bridge exists because
  * the PC shell historically called renderReportsSection(); it must never render
- * an empty prototype or a coming-soon surface.
+ * an empty placeholder surface.
  */
 
 function renderReportsFallback() {

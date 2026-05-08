@@ -1,25 +1,25 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.18.29-deploy-reliability (PWA) / GAS Backend v5.18.14-line-command-center @560
+> **Version:** v5.18.33-menu-journey-reports (PWA) / GAS Backend v5.18.16-write-flow-validation @562
 
-> **Date:** 2026-05-07 | **Phase:** 66 (CI/CD Deploy Reliability)
+> **Date:** 2026-05-08 | **Phase:** 71 (Menu Journey Reports Hardening)
 
-> **Status:** STABLE - PC/mobile menu runtime restored; System Integrity Audit score 100/100; Runtime Self-Test is live; core write flows have idempotency; gated write smoke is available; AI Vision has structural capability audit, API workflow contract, PC/mobile operations panel, token-aware runtime smoke, Gemini readiness indicators, guarded E2E smoke, result cards, human review queue, field job timeline linking, suggested next actions, controlled execution gate, execution preview, and LINE room routing; LINE Command Center now exposes room status, alert queue, ack tracking, analytics, and safe room messaging; CI/CD now verifies workflow script references, GAS source alignment, and GitHub Pages freshness
+> **Status:** STABLE - PC/mobile menu runtime restored; System Integrity Audit score 100/100; Menu Journey Audit score 100/100; PC Reports now loads the real reports module; Runtime Self-Test is live; core write flows have idempotency; gated write smoke is available; AI Vision has structural capability audit, API workflow contract, PC/mobile operations panel, token-aware runtime smoke, Gemini readiness indicators, guarded E2E smoke, result cards, human review queue, field job timeline linking, suggested next actions, controlled execution gate, execution preview, and LINE room routing; LINE Command Center exposes room status, alert queue, ack tracking, analytics, and safe room messaging; CI/CD verifies workflow script references, GAS source alignment, GitHub Pages freshness, UI write contracts, UI surface contracts, and critical menu journeys
 
 ---
 
-## 0. Current Runtime Snapshot (2026-05-07)
+## 0. Current Runtime Snapshot (2026-05-08)
 
 | Item | Current Value | Source of Truth |
 |---|---|---|
-| App Version | `v5.18.29-deploy-reliability` | `pwa/version_config.js` |
-| Cache Version | `comphone-v5.18.29-deploy-reliability-20260507_2010` | `pwa/version_config.js`, `pwa/sw.js` |
-| Build Timestamp | `20260507_2010` | `pwa/version_config.js` |
-| GAS Backend Deploy | `AKfycbx7I7AG7jd0TYNXdWneA-DPaDrVVokC_Pl-wsGttMSHncUmBJBI_dtvx5_4v7NF1Y75qA @560` / production URL in `pwa/gas_config.js` | `Config.gs`, `RouterSplit.gs`, `LineCommandCenter.gs`, `clasp-ready/Config.gs`, `clasp-ready/RouterSplit.gs`, `clasp-ready/LineCommandCenter.gs` |
-| GAS Production URL | `https://script.google.com/macros/s/AKfycbx7I7AG7jd0TYNXdWneA-DPaDrVVokC_Pl-wsGttMSHncUmBJBI_dtvx5_4v7NF1Y75qA/exec` | `pwa/gas_config.js` |
+| App Version | `v5.18.33-menu-journey-reports` | `pwa/version_config.js` |
+| Cache Version | `comphone-v5.18.33-menu-journey-reports-20260508_1030` | `pwa/version_config.js`, `pwa/sw.js` |
+| Build Timestamp | `20260508_1030` | `pwa/version_config.js` |
+| GAS Backend Deploy | `AKfycbyzETP-tV6oLiq4DYlw1asZwkVHftRG_0vpuIBp3xhKJEUc--p-uy0mAUTH1ZcPgks9rg @562` / production URL in `pwa/gas_config.js` | `Config.gs`, `RouterSplit.gs`, `LineCommandCenter.gs`, `clasp-ready/Config.gs`, `clasp-ready/RouterSplit.gs`, `clasp-ready/LineCommandCenter.gs` |
+| GAS Production URL | `https://script.google.com/macros/s/AKfycbyzETP-tV6oLiq4DYlw1asZwkVHftRG_0vpuIBp3xhKJEUc--p-uy0mAUTH1ZcPgks9rg/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-07.phase65-line-command-center` | `pwa/api_contract.js` |
 | Last Production Commit | GitHub `main` HEAD | Use `git log -1 --oneline` for the exact commit |
-| Validation Status | Static Guard OK; CI Readiness OK; GAS Source Alignment OK with legacy drift warnings only; Pages Deploy Verify OK; Code Index OK with no risks; System Integrity Audit 100/100; public/protected API smoke OK; regression guard OK with only the existing SW cleanup warning; drift guard OK | `scripts/pwa_static_guard.js`, `scripts/ci_readiness_check.js`, `scripts/gas_source_alignment.js`, `scripts/pages_deploy_verify.js`, `scripts/build_code_index.js`, `scripts/system_integrity_audit.js`, `scripts/pwa_api_smoke.js`, `scripts/regression-guard.sh`, `scripts/drift-guard.sh`, `test_reports/*_latest.*` |
+| Validation Status | Static Guard OK; CI Readiness OK; GAS Source Alignment OK; Pages Deploy Verify OK for previous Pages build; Code Index OK with no risks; System Integrity Audit 100/100; Menu Journey Audit 100/100; UI Write Contract OK; UI Surface Audit OK; public/protected API smoke OK; regression guard OK with only the existing SW cleanup warning; drift guard OK | `scripts/pwa_static_guard.js`, `scripts/ci_readiness_check.js`, `scripts/gas_source_alignment.js`, `scripts/pages_deploy_verify.js`, `scripts/build_code_index.js`, `scripts/system_integrity_audit.js`, `scripts/pwa_menu_journey_audit.js`, `scripts/pwa_ui_write_contract.js`, `scripts/pwa_ui_surface_audit.js`, `scripts/pwa_api_smoke.js`, `scripts/regression-guard.sh`, `scripts/drift-guard.sh`, `test_reports/*_latest.*` |
 
 ### Phase 66 Current Review (2026-05-07)
 - Status score: **100/100 deploy-observability readiness**. CI now has explicit checks that distinguish missing files, stale checksums, source drift, missing secrets, and GitHub Pages CDN delay.
@@ -835,6 +835,13 @@ comphone-superapp/
 # Static frontend/backend contract guard
 node scripts\pwa_static_guard.js
 
+# Critical PC/mobile menu journey guard
+node scripts\pwa_menu_journey_audit.js
+
+# UI write and surface contract guards
+node scripts\pwa_ui_write_contract.js
+node scripts\pwa_ui_surface_audit.js
+
 # Code intelligence / route drift guard
 node scripts\build_code_index.js
 
@@ -1606,3 +1613,19 @@ async function callGas(action, params) {
 #### Phase 70 Notes
 - Browser-use plugin setup failed in this local session because its runtime could not write kernel assets. The fallback static/runtime audit layer was added so CI still catches UI contract drift until a browser engine is available.
 - Remaining next step: install or repair a browser automation engine, then run visual click-through for PC/Mobile modals and screenshots.
+
+---
+
+### Phase 71 Menu Journey Reports Hardening Update (2026-05-08)
+
+| Workstream | Status | Current Baseline |
+|---|---|---|
+| **PWA Runtime** | OK Updated | Frontend cache/version is `v5.18.33-menu-journey-reports` with build `20260508_1030`. |
+| **PC Reports Menu** | OK Fixed | `dashboard_pc.html` now loads `reports.js` before the legacy `section_reports.js` bridge, so PC Reports opens the real reports module instead of the old prototype surface. |
+| **Reports Compatibility Bridge** | OK Hardened | `section_reports.js` is now only a compatibility bridge and no longer renders prototype/coming-soon buttons or empty report cards. |
+| **Menu Journey Guard** | OK Added | New `scripts/pwa_menu_journey_audit.js` validates the priority operational journeys: Reports, service job, customer CRM, billing/payment, inventory/PO, and platform API contracts. |
+| **Regression Guard / CI** | OK Hardened | `pwa_menu_journey_audit.js` is required by CI readiness and runs in the regression guard pack. |
+
+#### Phase 71 Validation
+- `node scripts/pwa_menu_journey_audit.js` passed with **100/100**.
+- The next professional sequence is to continue menu-by-menu with real browser click-through once browser automation is available: Reports -> Open Job -> Customer -> Billing/Payment -> Inventory/PO -> AI Vision/LINE -> Admin Settings.
