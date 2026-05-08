@@ -159,6 +159,14 @@ async function cachedCallApi(action, payload = {}, ttl = COMPHONE_CACHE_TTL, for
   return data;
 }
 
+function createWriteRequestId(prefix) {
+  return [
+    prefix || 'write',
+    Date.now(),
+    Math.random().toString(36).slice(2, 10)
+  ].join('_').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+}
+
 /**
  * getLastUpdated(action) — ดึง timestamp ล่าสุดที่ fetch action นั้น
  */

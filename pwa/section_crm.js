@@ -274,6 +274,8 @@ async function _doAddCustomer() {
   try {
     resEl.style.display='block'; resEl.innerHTML='<span style="color:#6b7280;font-size:12px">กำลังเพิ่ม...</span>';
     const r = await callApi('createCustomer', {
+      client_request_id: (typeof createWriteRequestId === 'function') ? createWriteRequestId('customer') : ('customer_' + Date.now()),
+      source: 'pc_crm',
       customer_name: name,
       phone: document.getElementById('crm-add-phone').value,
       customer_type: document.getElementById('crm-add-type').value,

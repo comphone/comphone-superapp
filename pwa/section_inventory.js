@@ -581,7 +581,13 @@ async function _doCreatePO() {
   if(poItems.length === 0) { resEl.style.display='block'; resEl.innerHTML='<span style="color:#ef4444;font-size:12px">เลือกอย่างน้อย 1 รายการ</span>'; return; }
   try {
     resEl.style.display='block'; resEl.innerHTML='<span style="color:#6b7280;font-size:12px">กำลังสร้าง...</span>';
-    const r = await callApi('createPurchaseOrder', {items: poItems, supplier: supplier||'TBD', notes: 'Auto from low-stock alert'});
+    const r = await callApi('createPurchaseOrder', {
+      client_request_id: (typeof createWriteRequestId === 'function') ? createWriteRequestId('po') : ('po_' + Date.now()),
+      source: 'pc_inventory',
+      items: poItems,
+      supplier: supplier||'TBD',
+      notes: 'Auto from low-stock alert'
+    });
     if(r.success) {
       resEl.innerHTML = `<span style="color:#059669;font-size:12px">✅ สร้าง PO สำเร็จ: ${r.po_id} (${r.total_items} รายการ)</span>`;
       setTimeout(()=>{ document.getElementById('inv-modal-overlay').remove(); loadSection('po'); }, 1500);

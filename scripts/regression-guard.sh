@@ -251,6 +251,16 @@ else
   warn "Node or pwa_write_smoke.js unavailable - skipping write smoke safety gate"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/pwa_ui_write_contract.js" ]; then
+  if node scripts/pwa_ui_write_contract.js; then
+    echo "   PWA UI write contract passed"
+  else
+    fail "PWA UI write contract FAILED"
+  fi
+else
+  warn "Node or pwa_ui_write_contract.js unavailable - skipping PWA UI write contract"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"

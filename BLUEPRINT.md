@@ -1574,3 +1574,20 @@ async function callGas(action, params) {
 - Protected API smoke passed for dashboard, CRM, inventory, PO, reports, vision, LINE command center, and admin.
 - Real write smoke passed for customer/job/billing with read-back verification.
 - Regression guard passed with the existing non-blocking service worker cleanup warning.
+
+---
+
+### Phase 69 UI Write Contract Update (2026-05-08)
+
+| Workstream | Status | Current Baseline |
+|---|---|---|
+| **PWA Runtime** | OK Updated | Frontend cache/version is `v5.18.32-ui-write-contract` with build `20260508_0015`. |
+| **Write Request IDs** | OK Hardened | `createWriteRequestId()` is available from the central API client, so PC and mobile write flows share the same request id pattern. |
+| **PC CRM Write Flow** | OK Hardened | PC add-customer now sends `client_request_id` and `source=pc_crm`. |
+| **PC Inventory/PO Write Flow** | OK Hardened | PC create-PO now sends `client_request_id`, `source=pc_inventory`, and structured `items` through the JSON-safe API client. |
+| **Regression Guard** | OK Hardened | New `scripts/pwa_ui_write_contract.js` validates high-risk UI write flows and is included in the regression guard pack. |
+
+#### Phase 69 Validation
+- `scripts/pwa_ui_write_contract.js` passed.
+- Protected API smoke passed against GAS `@562`.
+- Regression guard passed with the existing non-blocking service worker cleanup warning.

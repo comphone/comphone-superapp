@@ -37,6 +37,7 @@ function main() {
   const requiredFiles = [
     'scripts/pwa_static_guard.js',
     'scripts/pwa_api_smoke.js',
+    'scripts/pwa_ui_write_contract.js',
     'scripts/regression-guard.sh',
     'scripts/drift-guard.sh',
     'scripts/guard-self-test.sh',

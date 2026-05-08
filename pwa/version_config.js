@@ -5,10 +5,10 @@
 // ===========================================================
 
 const VERSION_CONFIG = {
-  version: 'v5.18.31-write-flow-validation',
+  version: 'v5.18.32-ui-write-contract',
   buildDate: '2026-05-07',
-  buildTimestamp: '20260507_2330',
-  cacheVersion: 'comphone-v5.18.31-write-flow-validation-20260507_2330',
+  buildTimestamp: '20260508_0015',
+  cacheVersion: 'comphone-v5.18.32-ui-write-contract-20260508_0015',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -40,9 +40,9 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 
 // Backward-compatible exports for legacy modules and guards
-const APP_VERSION = 'v5.18.31-write-flow-validation';
-const BUILD_TIMESTAMP = '20260507_2330';
-const CACHE_VERSION = 'comphone-v5.18.31-write-flow-validation-20260507_2330';
+const APP_VERSION = 'v5.18.32-ui-write-contract';
+const BUILD_TIMESTAMP = '20260508_0015';
+const CACHE_VERSION = 'comphone-v5.18.32-ui-write-contract-20260508_0015';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;
