@@ -1,44 +1,53 @@
 /**
- * section_reports.js — COMPHONE SUPER APP v5.17.0-phase42
- * Reports Section (รายงาน)
- * Status: Prototype (coming soon → active development)
+ * section_reports.js - COMPHONE SUPER APP
+ * Compatibility bridge for the PC dashboard reports menu.
+ *
+ * The full reports experience lives in reports.js. This bridge exists because
+ * the PC shell historically called renderReportsSection(); it must never render
+ * an empty prototype or a coming-soon surface.
  */
 
-function renderReportsSection(data) {
-  console.log('[Reports] Rendering reports section...', data);
-  const reports = (data && data.reports && data.reports.items) || [
-    { id: 'R001', name: 'รายงานรายวัน', type: 'daily', lastRun: '2026-05-04', status: 'ready' },
-    { id: 'R002', name: 'รายงานรายเดือน', type: 'monthly', lastRun: '2026-05-01', status: 'ready' },
-    { id: 'R003', name: 'รายงานภาษี', type: 'tax', lastRun: '2026-04-30', status: 'ready' },
-  ];
-
+function renderReportsFallback() {
   return `
     <div class="section-header">
-      <h2><i class="bi bi-file-earmark-text"></i> รายงาน</h2>
-      <button class="btn btn-sm btn-primary" onclick="alert('Generate report — coming soon')">
-        <i class="bi bi-plus"></i> สร้างรายงานใหม่
+      <h2><i class="bi bi-file-earmark-text"></i> ศูนย์รายงาน</h2>
+      <button class="btn btn-sm btn-primary" onclick="if (typeof loadSection === 'function') loadSection('reports')">
+        <i class="bi bi-arrow-clockwise"></i> โหลดใหม่
       </button>
     </div>
-    <div class="row">
-      ${reports.map(r => `
-        <div class="col-md-4 mb-3">
-          <div class="card-box">
-            <h4>${r.name}</h4>
-            <p style="color:#9ca3af;font-size:0.9em">ประเภท: ${r.type} | ล่าสุด: ${r.lastRun}</p>
-            <button class="btn btn-sm btn-outline-primary" onclick="alert('View report ${r.id} — coming soon')">
-              <i class="bi bi-eye"></i> ดูรายงาน
-            </button>
-            <button class="btn btn-sm btn-outline-secondary" onclick="alert('Download report ${r.id} — coming soon')">
-              <i class="bi bi-download"></i> ดาวน์โหลด
-            </button>
-          </div>
-        </div>
-      `).join('')}
+    <div class="card-box">
+      <h3>กำลังเตรียมโมดูลรายงาน</h3>
+      <p style="color:#6b7280;margin-bottom:12px">
+        ระบบกำลังโหลดโมดูลรายงานหลัก หากหน้านี้ค้างให้กดโหลดใหม่หรือล้างแคช PWA หนึ่งครั้ง
+      </p>
+      <div class="d-flex flex-wrap gap-2">
+        <button class="btn btn-outline-primary btn-sm" onclick="if (typeof loadSection === 'function') loadSection('reports')">
+          <i class="bi bi-arrow-repeat"></i> โหลดรายงานอีกครั้ง
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="location.reload()">
+          <i class="bi bi-bootstrap-reboot"></i> รีเฟรชระบบ
+        </button>
+      </div>
     </div>
-    <p style="color:#9ca3af;margin-top:20px;text-align:center">
-      ⏳ ระบบรายงานเต็มรูปแบบกำลังพัฒนา...
-    </p>
   `;
 }
 
-console.log('[Reports] section_reports.js loaded (v5.17.0-phase42)');
+function renderReportsSection(data) {
+  console.log('[Reports] Delegating PC reports menu to reports.js', data);
+  if (typeof window !== 'undefined' && typeof window.renderReportModule === 'function') {
+    window.renderReportModule(data || {});
+    return `
+      <div class="card-box">
+        <h3>กำลังเปิดศูนย์รายงาน...</h3>
+        <p style="color:#6b7280;margin:0">ระบบกำลังเชื่อมต่อโมดูลรายงานหลัก</p>
+      </div>
+    `;
+  }
+  return renderReportsFallback();
+}
+
+if (typeof window !== 'undefined') {
+  window.renderReportsSection = renderReportsSection;
+}
+
+console.log('[Reports] section_reports.js compatibility bridge loaded');
