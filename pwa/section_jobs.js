@@ -1,7 +1,7 @@
 /* section_jobs.js — Jobs section extracted from dashboard_pc.html
    Functions: renderJobsSection, _buildJobsTableEnhanced, _filterJobs,
               _filterJobsByStatus, _showJobTimeline, _showJobTransition,
-              _doJobTransition, _statusColor, filterSectionJobs
+              _doJobTransition, _showPcCreateJob, _doPcCreateJob, _statusColor, filterSectionJobs
    Globals used: callGas, DASHBOARD_DATA, loadSection, kpiBox, sanitizeHTML */
 
 function renderJobsSection(data) {
@@ -33,6 +33,9 @@ function renderJobsSection(data) {
           <button class="btn-refresh" onclick="_filterJobsByStatus('')" style="font-size:11px;padding:4px 10px;background:#1e40af;color:#fff">ทั้งหมด</button>
           ${statusFilter.map(s => `<button class="btn-refresh" onclick="_filterJobsByStatus('${s}')" style="font-size:11px;padding:4px 10px">${s}</button>`).join('')}
         </div>
+        <button class="btn-refresh" onclick="_showPcCreateJob()" style="background:#059669;color:#fff;border:none">
+          <i class="bi bi-plus-circle"></i> เปิดงาน
+        </button>
         <button class="btn-refresh" onclick="loadSection('jobs')" style="background:#f1f5f9"><i class="bi bi-arrow-clockwise"></i></button>
       </div>
     </div>
@@ -53,7 +56,111 @@ function renderJobsSection(data) {
       <div id="jobs-section-list">${_buildJobsTableEnhanced(jobs)}</div>
     </div>`;
 
-  document.getElementById('main-content').innerHTML = html;
+  return html;
+}
+
+function _escapeJobText(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function _jobRequestId(prefix) {
+  return (typeof createWriteRequestId === 'function')
+    ? createWriteRequestId(prefix || 'job')
+    : ((prefix || 'job') + '_' + Date.now() + '_' + Math.random().toString(16).slice(2));
+}
+
+function _showPcCreateJob() {
+  const old = document.getElementById('job-modal-overlay');
+  if (old) old.remove();
+  const requestId = _jobRequestId('pc_job');
+  const modal = `<div id="job-modal-overlay" onclick="this.remove()" style="position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px">
+    <div onclick="event.stopPropagation()" style="background:#fff;border-radius:16px;padding:22px;max-width:560px;width:min(100%,560px);max-height:90vh;overflow:auto;box-shadow:0 24px 60px rgba(15,23,42,.28)">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px">
+        <div>
+          <h3 style="margin:0;font-size:18px;color:#0f172a"><i class="bi bi-plus-circle" style="color:#059669"></i> เปิดงานบริการ</h3>
+          <div style="font-size:12px;color:#64748b;margin-top:3px">สร้างงานจาก PC Dashboard พร้อม request id กันบันทึกซ้ำ</div>
+        </div>
+        <button onclick="document.getElementById('job-modal-overlay').remove()" style="background:#f1f5f9;border:none;width:34px;height:34px;border-radius:10px;cursor:pointer;color:#64748b"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <label style="font-size:13px;font-weight:600;color:#334155">ชื่อลูกค้า *
+          <input id="pc-job-customer" autocomplete="off" style="margin-top:6px;width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px">
+        </label>
+        <label style="font-size:13px;font-weight:600;color:#334155">เบอร์โทร
+          <input id="pc-job-phone" autocomplete="off" style="margin-top:6px;width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px">
+        </label>
+        <label style="grid-column:1/-1;font-size:13px;font-weight:600;color:#334155">อาการ / ปัญหา *
+          <input id="pc-job-symptom" autocomplete="off" style="margin-top:6px;width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px">
+        </label>
+        <label style="font-size:13px;font-weight:600;color:#334155">อุปกรณ์
+          <input id="pc-job-device" autocomplete="off" style="margin-top:6px;width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px">
+        </label>
+        <label style="font-size:13px;font-weight:600;color:#334155">ประเมินราคา
+          <input id="pc-job-price" type="number" min="0" step="50" style="margin-top:6px;width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px">
+        </label>
+        <label style="grid-column:1/-1;font-size:13px;font-weight:600;color:#334155">หมายเหตุ
+          <input id="pc-job-note" autocomplete="off" style="margin-top:6px;width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px">
+        </label>
+      </div>
+      <div id="pc-job-result" style="min-height:20px;margin-top:12px;font-size:13px"></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+        <button onclick="document.getElementById('job-modal-overlay').remove()" style="background:#f1f5f9;color:#334155;border:none;padding:9px 16px;border-radius:10px;font-size:13px;cursor:pointer">ยกเลิก</button>
+        <button id="pc-job-submit-btn" data-client-request-id="${requestId}" onclick="_doPcCreateJob()" style="background:#059669;color:#fff;border:none;padding:9px 16px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">
+          <i class="bi bi-plus-circle"></i> สร้างงาน
+        </button>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', modal);
+  setTimeout(() => document.getElementById('pc-job-customer')?.focus(), 80);
+}
+
+async function _doPcCreateJob() {
+  const customer = document.getElementById('pc-job-customer')?.value.trim() || '';
+  const symptom = document.getElementById('pc-job-symptom')?.value.trim() || '';
+  const result = document.getElementById('pc-job-result');
+  const btn = document.getElementById('pc-job-submit-btn');
+  if (!customer) { if (result) result.innerHTML = '<span style="color:#dc2626">กรุณากรอกชื่อลูกค้า</span>'; return; }
+  if (!symptom) { if (result) result.innerHTML = '<span style="color:#dc2626">กรุณากรอกอาการ/ปัญหา</span>'; return; }
+  if (!btn || btn.dataset.submitting === '1') return;
+  btn.dataset.submitting = '1';
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass-split"></i> กำลังสร้าง...';
+  if (result) result.innerHTML = '<span style="color:#64748b">กำลังบันทึกงานบริการ...</span>';
+  try {
+    const device = document.getElementById('pc-job-device')?.value.trim() || '';
+    const res = await callApi('openJob', {
+      client_request_id: btn.dataset.clientRequestId || _jobRequestId('pc_job'),
+      source: 'pc_dashboard_jobs',
+      customer_name: customer,
+      phone: document.getElementById('pc-job-phone')?.value.trim() || '',
+      symptom: symptom + (device ? ` [${device}]` : ''),
+      estimated_price: Number(document.getElementById('pc-job-price')?.value || 0),
+      note: document.getElementById('pc-job-note')?.value.trim() || '',
+      changed_by: 'PC Dashboard',
+    });
+    if (res && res.success) {
+      if (result) result.innerHTML = `<span style="color:#059669">สร้างงานสำเร็จ ${_escapeJobText(res.job_id || '')}</span>`;
+      setTimeout(() => {
+        const modal = document.getElementById('job-modal-overlay');
+        if (modal) modal.remove();
+        if (typeof DASHBOARD_DATA !== 'undefined') DASHBOARD_DATA = null;
+        if (typeof loadSection === 'function') loadSection('jobs');
+      }, 900);
+      return;
+    }
+    throw new Error((res && (res.error || res.message)) || 'สร้างงานไม่สำเร็จ');
+  } catch (err) {
+    if (result) result.innerHTML = `<span style="color:#dc2626">${_escapeJobText(err.message || err)}</span>`;
+    btn.dataset.submitting = '0';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-plus-circle"></i> สร้างงาน';
+  }
 }
 
 function _buildJobsTableEnhanced(jobs) {

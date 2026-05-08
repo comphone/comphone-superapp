@@ -1,10 +1,10 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.18.33-menu-journey-reports (PWA) / GAS Backend v5.18.16-write-flow-validation @562
+> **Version:** v5.18.34-job-menu-hardening (PWA) / GAS Backend v5.18.16-write-flow-validation @562
 
-> **Date:** 2026-05-08 | **Phase:** 71 (Menu Journey Reports Hardening)
+> **Date:** 2026-05-08 | **Phase:** 72 (Job Menu Hardening)
 
-> **Status:** STABLE - PC/mobile menu runtime restored; System Integrity Audit score 100/100; Menu Journey Audit score 100/100; PC Reports now loads the real reports module; Runtime Self-Test is live; core write flows have idempotency; gated write smoke is available; AI Vision has structural capability audit, API workflow contract, PC/mobile operations panel, token-aware runtime smoke, Gemini readiness indicators, guarded E2E smoke, result cards, human review queue, field job timeline linking, suggested next actions, controlled execution gate, execution preview, and LINE room routing; LINE Command Center exposes room status, alert queue, ack tracking, analytics, and safe room messaging; CI/CD verifies workflow script references, GAS source alignment, GitHub Pages freshness, UI write contracts, UI surface contracts, and critical menu journeys
+> **Status:** STABLE - PC/mobile menu runtime restored; System Integrity Audit score 100/100; Menu Journey Audit score 100/100; PC Reports loads the real reports module; PC Jobs renderer contract is fixed and PC Open Job is a real guarded write flow; Runtime Self-Test is live; core write flows have idempotency; gated write smoke is available; AI Vision has structural capability audit, API workflow contract, PC/mobile operations panel, token-aware runtime smoke, Gemini readiness indicators, guarded E2E smoke, result cards, human review queue, field job timeline linking, suggested next actions, controlled execution gate, execution preview, and LINE room routing; LINE Command Center exposes room status, alert queue, ack tracking, analytics, and safe room messaging; CI/CD verifies workflow script references, GAS source alignment, GitHub Pages freshness, UI write contracts, UI surface contracts, and critical menu journeys
 
 ---
 
@@ -12,9 +12,9 @@
 
 | Item | Current Value | Source of Truth |
 |---|---|---|
-| App Version | `v5.18.33-menu-journey-reports` | `pwa/version_config.js` |
-| Cache Version | `comphone-v5.18.33-menu-journey-reports-20260508_1030` | `pwa/version_config.js`, `pwa/sw.js` |
-| Build Timestamp | `20260508_1030` | `pwa/version_config.js` |
+| App Version | `v5.18.34-job-menu-hardening` | `pwa/version_config.js` |
+| Cache Version | `comphone-v5.18.34-job-menu-hardening-20260508_1100` | `pwa/version_config.js`, `pwa/sw.js` |
+| Build Timestamp | `20260508_1100` | `pwa/version_config.js` |
 | GAS Backend Deploy | `AKfycbyzETP-tV6oLiq4DYlw1asZwkVHftRG_0vpuIBp3xhKJEUc--p-uy0mAUTH1ZcPgks9rg @562` / production URL in `pwa/gas_config.js` | `Config.gs`, `RouterSplit.gs`, `LineCommandCenter.gs`, `clasp-ready/Config.gs`, `clasp-ready/RouterSplit.gs`, `clasp-ready/LineCommandCenter.gs` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbyzETP-tV6oLiq4DYlw1asZwkVHftRG_0vpuIBp3xhKJEUc--p-uy0mAUTH1ZcPgks9rg/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-07.phase65-line-command-center` | `pwa/api_contract.js` |
@@ -1629,3 +1629,18 @@ async function callGas(action, params) {
 #### Phase 71 Validation
 - `node scripts/pwa_menu_journey_audit.js` passed with **100/100**.
 - The next professional sequence is to continue menu-by-menu with real browser click-through once browser automation is available: Reports -> Open Job -> Customer -> Billing/Payment -> Inventory/PO -> AI Vision/LINE -> Admin Settings.
+
+---
+
+### Phase 72 Job Menu Hardening Update (2026-05-08)
+
+| Workstream | Status | Current Baseline |
+|---|---|---|
+| **PWA Runtime** | OK Updated | Frontend cache/version is `v5.18.34-job-menu-hardening` with build `20260508_1100`. |
+| **PC Jobs Renderer** | OK Fixed | `renderJobsSection()` now returns HTML to `dashboard_pc_core.js` and no longer replaces `main-content` directly, preventing section/page replacement drift. |
+| **PC Open Job Flow** | OK Added | PC Jobs now has a real open-job modal that calls `openJob` with `client_request_id`, `source=pc_dashboard_jobs`, required field validation, result feedback, and duplicate-click blocking. |
+| **Menu Journey Guard** | OK Expanded | `scripts/pwa_menu_journey_audit.js` now validates PC jobs render contract, PC open-job modal wiring, and PC open-job double-submit guard. |
+
+#### Phase 72 Validation
+- `node --check pwa/section_jobs.js` passed.
+- `node scripts/pwa_menu_journey_audit.js` passed with **100/100** and 22 checks.

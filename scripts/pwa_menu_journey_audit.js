@@ -87,6 +87,20 @@ function main() {
   check('service_job', 'job-write-contract',
     has(files.jobs, 'createWriteRequestId') && has(files.jobs, 'openJob'),
     'Job write journey must send a durable request id to openJob', 'P0');
+  check('service_job', 'pc-jobs-render-contract',
+    has(files.jobs, 'function renderJobsSection') &&
+      has(files.jobs, 'return html;') &&
+      !/function\s+renderJobsSection[\s\S]{0,4500}document\.getElementById\('main-content'\)\.innerHTML\s*=/.test(files.jobs),
+    'PC jobs renderer must return HTML to dashboard_pc_core and must not replace main-content directly', 'P0');
+  check('service_job', 'pc-open-job-entry-present',
+    has(files.jobs, '_showPcCreateJob') && has(files.jobs, '_doPcCreateJob') &&
+      has(files.jobs, 'pc_dashboard_jobs') && has(files.jobs, 'client_request_id'),
+    'PC jobs menu must provide a real open-job modal with client_request_id', 'P0');
+  check('service_job', 'pc-open-job-double-submit-guard',
+    has(files.jobs, "btn.dataset.submitting === '1'") &&
+      has(files.jobs, "btn.dataset.submitting = '1'") &&
+      has(files.jobs, 'btn.disabled = true'),
+    'PC open-job submit must block duplicate clicks', 'P1');
   check('service_job', 'job-transition-guard',
     has(files.jobs, 'transitionJob') && has(files.jobs, 'confirm('),
     'Job status transitions must require an explicit confirmation', 'P1');
