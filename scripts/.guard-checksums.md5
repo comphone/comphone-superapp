@@ -2,7 +2,7 @@
 a9978bbf3e12f14e602d2d94f96dad0e  scripts/guard-stewardship.sh
 b74379af34022c878d29d3ccaf490c04  scripts/guard-evolution-log.sh
 e72e7a5000f5841a58285526414dc99f  scripts/drift-guard.sh
-34677008fddcf3d7e1c49ee3f24eb850  scripts/regression-guard.sh
+e195888dac724d58859bf91850400408  scripts/regression-guard.sh
 4fe65412fa984cf6d14699484c5e32cb  scripts/browser-smoke-test.py
 9922fa7ddb007575544eab0438473a78  scripts/pre-merge-gate.sh
 af31e10241979d518e6c1b83f4183440  scripts/install-hooks.sh

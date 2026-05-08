@@ -1591,3 +1591,18 @@ async function callGas(action, params) {
 - `scripts/pwa_ui_write_contract.js` passed.
 - Protected API smoke passed against GAS `@562`.
 - Regression guard passed with the existing non-blocking service worker cleanup warning.
+
+---
+
+### Phase 70 UI Surface Audit Update (2026-05-08)
+
+| Workstream | Status | Current Baseline |
+|---|---|---|
+| **UI Surface Audit** | OK Added | New `scripts/pwa_ui_surface_audit.js` checks PC/mobile load order, modal handlers, scroll-safe modals, double-submit guards, and high-risk write button contracts. |
+| **Regression Guard** | OK Hardened | Regression pack now runs both `pwa_ui_write_contract.js` and `pwa_ui_surface_audit.js`. |
+| **CI Readiness** | OK Hardened | `pwa_ui_surface_audit.js` is listed as a required CI script. |
+| **Pages Freshness** | OK Verified | GitHub Pages is serving `v5.18.32-ui-write-contract`, build `20260508_0015`, and GAS `@562`. |
+
+#### Phase 70 Notes
+- Browser-use plugin setup failed in this local session because its runtime could not write kernel assets. The fallback static/runtime audit layer was added so CI still catches UI contract drift until a browser engine is available.
+- Remaining next step: install or repair a browser automation engine, then run visual click-through for PC/Mobile modals and screenshots.

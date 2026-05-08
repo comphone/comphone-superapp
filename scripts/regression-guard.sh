@@ -261,6 +261,16 @@ else
   warn "Node or pwa_ui_write_contract.js unavailable - skipping PWA UI write contract"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/pwa_ui_surface_audit.js" ]; then
+  if node scripts/pwa_ui_surface_audit.js; then
+    echo "   PWA UI surface audit passed"
+  else
+    fail "PWA UI surface audit FAILED"
+  fi
+else
+  warn "Node or pwa_ui_surface_audit.js unavailable - skipping PWA UI surface audit"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"
