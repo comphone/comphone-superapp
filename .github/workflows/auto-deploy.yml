@@ -11,17 +11,7 @@ on:
     branches: [ main ]
     paths:
       - 'pwa/**'
-      - 'scripts/pwa_static_guard.js'
-      - 'scripts/pwa_api_smoke.js'
-      - 'scripts/build_code_index.js'
-      - 'scripts/regression-guard.sh'
-      - 'scripts/drift-guard.sh'
-      - 'scripts/guard-self-test.sh'
-      - 'scripts/pages_deploy_verify.js'
-      - 'scripts/ci_readiness_check.js'
-      - 'scripts/gas_source_alignment.js'
-      - 'scripts/.guard-checksums.md5'
-      - 'scripts/browser-smoke-test.py'
+      - 'scripts/**'
       - '.github/workflows/auto-deploy.yml'
       - 'memory/session.md'
   workflow_dispatch:    # รันด้วยตนเองได้จาก GitHub UI
