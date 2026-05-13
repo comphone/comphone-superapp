@@ -11,6 +11,8 @@ on:
     branches: [ main ]
     paths:
       - 'pwa/**'
+      - '*.gs'
+      - 'clasp-ready/**'
       - 'scripts/**'
       - '.github/workflows/auto-deploy.yml'
       - 'memory/session.md'
