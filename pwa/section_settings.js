@@ -109,6 +109,24 @@ function renderSettingsSection() {  // [PATCH] เปลี่ยนเป็น
 
     <div id="runtime-selftest-content" style="margin-bottom:16px"></div>
 
+    <div class="card-box" style="margin-bottom:16px;border-left:4px solid #2563eb">
+      <div class="card-title"><i class="bi bi-radar" style="color:#2563eb"></i> Operations Diagnostics</div>
+      <div id="settings-diagnostics-content" style="font-size:13px;color:#64748b;padding:8px 0">
+        Loading live readiness...
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+        <button onclick="hydrateSystemDiagnostics()" style="background:#2563eb;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:12px;cursor:pointer">
+          <i class="bi bi-arrow-clockwise"></i> Run Diagnostics
+        </button>
+        <button onclick="exportComphoneDiagnostics()" style="background:#0f766e;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:12px;cursor:pointer">
+          <i class="bi bi-download"></i> Export Diagnostics
+        </button>
+        <button onclick="clearPwaRuntimeCache()" style="background:#dc2626;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:12px;cursor:pointer">
+          <i class="bi bi-trash3"></i> Clear PWA Cache
+        </button>
+      </div>
+    </div>
+
     <!-- Users -->
     <div class="card-box" style="margin-bottom:16px">
       <div class="card-title"><i class="bi bi-people" style="color:#059669"></i> ผู้ใช้ระบบ (${users.length})</div>
@@ -144,6 +162,9 @@ function renderSettingsSection() {  // [PATCH] เปลี่ยนเป็น
         </button>
         <button onclick="_clearAllCaches()" style="background:#ef4444;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:12px;cursor:pointer">
           <i class="bi bi-trash"></i> Clear All Caches
+        </button>
+        <button onclick="if(window.showQuickActionSettings){showQuickActionSettings()}else{alert('Quick action settings are available on Mobile Profile')}" style="background:#7c3aed;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:12px;cursor:pointer">
+          <i class="bi bi-sliders"></i> Quick Actions
         </button>
         <button onclick="window.open('https://docs.google.com/spreadsheets/d/19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA','_blank')" style="background:#059669;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:12px;cursor:pointer">
           <i class="bi bi-table"></i> Open Google Sheets
@@ -193,11 +214,118 @@ function _clearAllCaches() {
   location.reload();
 }
 
+async function clearPwaRuntimeCache() {
+  if (!confirm('Clear PWA cache and stale service workers on this device?')) return;
+  try {
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(key => caches.delete(key)));
+    }
+    if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs
+        .filter(reg => reg.scope && reg.scope.indexOf('/comphone-superapp/pwa/') !== -1)
+        .map(reg => reg.unregister()));
+    }
+    if (typeof showToast === 'function') showToast('PWA cache cleared. Reloading...');
+    setTimeout(() => location.reload(), 500);
+  } catch (err) {
+    alert('Clear cache failed: ' + (err && err.message ? err.message : err));
+  }
+}
+
+async function collectComphoneDiagnostics() {
+  const session = (() => {
+    try { return JSON.parse(localStorage.getItem('comphone_auth_session') || '{}'); } catch (_) { return {}; }
+  })();
+  const diagnostics = {
+    generatedAt: new Date().toISOString(),
+    appVersion: window.COMPHONE_VERSION || window.__APP_VERSION || '',
+    build: window.COMPHONE_BUILD || '',
+    cache: window.COMPHONE_CACHE || '',
+    gasUrl: window.COMPHONE_GAS_URL || (window.GAS_CONFIG && window.GAS_CONFIG.url) || '',
+    hasSession: !!session.token,
+    userRole: window.__USER_ROLE || (session.session && session.session.role) || '',
+    browserOnline: navigator.onLine,
+    serviceWorkers: [],
+    api: {},
+  };
+  if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    diagnostics.serviceWorkers = regs.map(reg => ({ scope: reg.scope, active: !!reg.active, waiting: !!reg.waiting }));
+  }
+  if (typeof callApi === 'function') {
+    for (const action of ['health', 'getVersion']) {
+      try {
+        const started = Date.now();
+        const res = await callApi(action, {});
+        diagnostics.api[action] = {
+          ok: !!res && res.success !== false && res.status !== 'error',
+          elapsedMs: Date.now() - started,
+          status: res && (res.status || res.version || res.backendVersion || 'ok'),
+          geminiOk: res && res.checks && res.checks.config ? res.checks.config.gemini_ok : undefined,
+          lineOk: res && res.checks && res.checks.config ? res.checks.config.line_ok : undefined,
+        };
+      } catch (err) {
+        diagnostics.api[action] = { ok: false, error: err.message };
+      }
+    }
+  }
+  return diagnostics;
+}
+
+async function hydrateSystemDiagnostics() {
+  const el = document.getElementById('settings-diagnostics-content');
+  if (!el) return;
+  el.innerHTML = '<div class="loading-state"><div class="spinner-pc"></div><p>Running diagnostics...</p></div>';
+  const data = await collectComphoneDiagnostics();
+  const health = data.api.health || {};
+  const version = data.api.getVersion || {};
+  const geminiReady = health.geminiOk === true;
+  const lineReady = health.lineOk === true;
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
+      ${_diagTile_('API', health.ok && version.ok, health.elapsedMs ? health.elapsedMs + 'ms' : '-')}
+      ${_diagTile_('Session', data.hasSession, data.userRole || '-')}
+      ${_diagTile_('Gemini', geminiReady, geminiReady ? 'ready' : 'not configured', true)}
+      ${_diagTile_('LINE', lineReady, lineReady ? 'ready' : 'check config', true)}
+      ${_diagTile_('Service Worker', data.serviceWorkers.length > 0, data.serviceWorkers.length + ' registration(s)', true)}
+      ${_diagTile_('Online', data.browserOnline, data.browserOnline ? 'online' : 'offline')}
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:#94a3b8;word-break:break-all">
+      ${data.appVersion} · ${data.cache} · ${data.gasUrl}
+    </div>`;
+  window.__COMPHONE_LAST_DIAGNOSTICS = data;
+}
+
+function _diagTile_(label, ok, sub, warnOnly) {
+  const color = ok ? '#059669' : warnOnly ? '#d97706' : '#dc2626';
+  const bg = ok ? '#ecfdf5' : warnOnly ? '#fffbeb' : '#fef2f2';
+  return `<div style="background:${bg};border:1px solid ${color}22;border-radius:10px;padding:10px">
+    <div style="font-weight:800;color:${color};font-size:13px">${ok ? 'OK' : warnOnly ? 'WARN' : 'FAIL'} · ${label}</div>
+    <div style="font-size:12px;color:#64748b;margin-top:4px">${sub || '-'}</div>
+  </div>`;
+}
+
+async function exportComphoneDiagnostics() {
+  const data = window.__COMPHONE_LAST_DIAGNOSTICS || await collectComphoneDiagnostics();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'comphone-diagnostics-' + new Date().toISOString().slice(0, 10) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 function hydrateSettingsRuntimePanels() {
   const el = document.getElementById('runtime-selftest-content');
   if (el && typeof renderRuntimeSelfTestPanel === 'function') {
     renderRuntimeSelfTestPanel(el);
   }
+  hydrateSystemDiagnostics();
 }
 
 function renderGenericSection(section, data) {

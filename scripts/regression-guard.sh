@@ -208,7 +208,17 @@ if command -v node &>/dev/null && [ -f "scripts/system_integrity_audit.js" ]; th
     fail "System integrity audit FAILED"
   fi
 else
-  warn "Node or system_integrity_audit.js unavailable — skipping system integrity audit"
+  warn "Node or system_integrity_audit.js unavailable - skipping system integrity audit"
+fi
+
+if command -v node &>/dev/null && [ -f "scripts/pwa_functional_menu_audit.js" ]; then
+  if node scripts/pwa_functional_menu_audit.js; then
+    echo "   ✅ Functional menu audit passed"
+  else
+    fail "Functional menu audit FAILED"
+  fi
+else
+  warn "Node or pwa_functional_menu_audit.js unavailable - skipping functional menu audit"
 fi
 
 if command -v node &>/dev/null && [ -f "scripts/vision_capability_audit.js" ]; then
@@ -249,6 +259,16 @@ if command -v node &>/dev/null && [ -f "scripts/pwa_write_smoke.js" ]; then
   fi
 else
   warn "Node or pwa_write_smoke.js unavailable - skipping write smoke safety gate"
+fi
+
+if command -v node &>/dev/null && [ -f "scripts/pwa_smoke_cleanup_plan.js" ]; then
+  if node scripts/pwa_smoke_cleanup_plan.js; then
+    echo "   Smoke cleanup planner passed"
+  else
+    fail "Smoke cleanup planner FAILED"
+  fi
+else
+  warn "Node or pwa_smoke_cleanup_plan.js unavailable - skipping smoke cleanup planner"
 fi
 
 if command -v node &>/dev/null && [ -f "scripts/pwa_ui_write_contract.js" ]; then

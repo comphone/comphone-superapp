@@ -1,4 +1,4 @@
-/**
+﻿/**
  * dashboard_pc_core.js - PC Dashboard runtime
  * Version: v5.18.7-authguard
  * Date: 2026-05-06
@@ -81,29 +81,29 @@
         if (typeof global.renderJobsSection === 'function') {
           const c = document.getElementById('jobs-content');
           if (c) c.innerHTML = global.renderJobsSection(data);
-        } else if (main) main.innerHTML = '<h3>Jobs</h3><p>Coming soon...</p>';
+        } else if (main) main.innerHTML = '<h3>Jobs</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
       },
       po: () => {
         if (typeof global.renderPOSection === 'function') global.renderPOSection(data);
-        else if (main) main.innerHTML = '<h3>PO</h3><p>Coming soon...</p>';
+        else if (main) main.innerHTML = '<h3>PO</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
       },
       inventory: () => {
         if (typeof global.renderInventorySection === 'function') global.renderInventorySection(data);
-        else if (main) main.innerHTML = '<h3>Inventory</h3><p>Coming soon...</p>';
+        else if (main) main.innerHTML = '<h3>Inventory</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
       },
       billing: () => {
         const c = document.getElementById('billing-content') || document.getElementById('section-billing');
         if (typeof global.renderBillingSection === 'function' && c) c.innerHTML = global.renderBillingSection(data);
-        else if (main) main.innerHTML = '<h3>Billing</h3><p>Coming soon...</p>';
+        else if (main) main.innerHTML = '<h3>Billing</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
       },
       warranty: () => {
         const c = document.getElementById('warranty-content') || document.getElementById('section-warranty');
         if (typeof global.renderWarrantySection === 'function' && c) c.innerHTML = global.renderWarrantySection(data);
-        else if (main) main.innerHTML = '<h3>Warranty</h3><p>Coming soon...</p>';
+        else if (main) main.innerHTML = '<h3>Warranty</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
       },
       revenue: () => {
         if (typeof global.renderRevenueSection === 'function') global.renderRevenueSection(data);
-        else if (main) main.innerHTML = '<h3>Revenue</h3><p>Coming soon...</p>';
+        else if (main) main.innerHTML = '<h3>Revenue</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
       },
       tax: () => {
         if (main) {
@@ -114,16 +114,16 @@
         const c = document.getElementById('reports-content') || document.getElementById('section-reports');
         if (typeof global.renderReportModule === 'function') global.renderReportModule(data);
         else if (typeof global.renderReportsSection === 'function' && c) c.innerHTML = global.renderReportsSection(data);
-        else if (main) main.innerHTML = '<h3>Reports</h3><p>Coming soon...</p>';
+        else if (main) main.innerHTML = '<h3>Reports</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
       },
       analytics: () => {
         const c = document.getElementById('analytics-content') || document.getElementById('section-analytics');
         if (typeof global.renderAnalyticsSection === 'function' && c) c.innerHTML = global.renderAnalyticsSection(data);
-        else if (main) main.innerHTML = '<h3>Analytics</h3><p>Coming soon...</p>';
+        else if (main) main.innerHTML = '<h3>Analytics</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
       },
       performance: () => {
         if (typeof global.renderPerformanceSection === 'function') global.renderPerformanceSection(data);
-        else if (main) main.innerHTML = '<h3>Performance</h3><p>Coming soon...</p>';
+        else if (main) main.innerHTML = '<h3>Performance</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
       },
       vision: () => {
         const c = document.getElementById('vision-content') || document.getElementById('section-vision') || main;
@@ -141,23 +141,23 @@
       },
       backup: () => {
         if (typeof global.renderBackupSection === 'function') global.renderBackupSection();
-        else if (main) main.innerHTML = '<h3>Backup</h3><p>Coming soon...</p>';
+        else if (main) main.innerHTML = '<h3>Backup</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
       },
       crm: () => {
         if (typeof global.renderCRMSection === 'function') global.renderCRMSection(data);
-        else if (main) main.innerHTML = '<h3>CRM</h3><p>Coming soon...</p>';
+        else if (main) main.innerHTML = '<h3>CRM</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
       },
       attendance: () => {
         const c = document.getElementById('attendance-content') || document.getElementById('section-attendance');
         if (typeof global.renderAttendanceSection === 'function' && c) c.innerHTML = global.renderAttendanceSection(data);
-        else if (main) main.innerHTML = '<h3>Attendance</h3><p>Coming soon...</p>';
+        else if (main) main.innerHTML = '<h3>Attendance</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
       },
       settings: () => {
         if (typeof global.renderSettingsSection === 'function' && main) {
           main.innerHTML = global.renderSettingsSection();
           if (typeof global.hydrateSettingsRuntimePanels === 'function') global.hydrateSettingsRuntimePanels();
         }
-        else if (main) main.innerHTML = '<h3>Settings</h3><p>Coming soon...</p>';
+        else if (main) main.innerHTML = '<h3>Settings</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
       },
     };
 
@@ -261,7 +261,7 @@
   }
 
   function _doLogout() {
-    if (!confirm('ออกจากระบบ COMPHONE Dashboard?\n\nงานที่ยังไม่ได้บันทึกอาจหายไป')) return;
+    if (!confirm('เธญเธญเธเธเธฒเธเธฃเธฐเธเธ COMPHONE Dashboard?\n\nเธเธฒเธเธ—เธตเนเธขเธฑเธเนเธกเนเนเธ”เนเธเธฑเธเธ—เธถเธเธญเธฒเธเธซเธฒเธขเนเธ')) return;
     localStorage.removeItem(AUTH_SESSION_KEY);
     localStorage.removeItem(LAST_SECTION_KEY);
     showLoginOverlay();
