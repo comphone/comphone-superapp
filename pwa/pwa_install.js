@@ -21,6 +21,12 @@ const SHOW_BANNER_AFTER = 3; // แสดงหลังเข้าใช้ค
 let _deferredPrompt = null;
 let _reloadAfterSwUpdate = false;
 let _didReloadForSwUpdate = false;
+let _didRepairServiceWorker = false;
+
+function _serviceWorkerUrl_() {
+  const build = window.COMPHONE_CACHE || window.COMPHONE_BUILD || Date.now();
+  return `./sw.js?v=${encodeURIComponent(build)}`;
+}
 
 // ============================================================
 // SERVICE WORKER REGISTRATION
@@ -34,9 +40,7 @@ function registerServiceWorker() {
     return;
   }
 
-  const swUrl = typeof getVersionedUrl === 'function'
-    ? getVersionedUrl('sw.js')
-    : './sw.js';
+  const swUrl = _serviceWorkerUrl_();
 
   navigator.serviceWorker.register(swUrl, { scope: './' })
     .then(registration => {
@@ -61,9 +65,7 @@ function registerServiceWorker() {
         });
       }
     })
-    .catch(err => {
-      console.error('[PWA] SW registration failed:', err.message);
-    });
+    .catch(err => _repairServiceWorker_(err));
 
   // รับ message จาก SW
   navigator.serviceWorker.addEventListener('message', event => {
@@ -90,6 +92,27 @@ function registerServiceWorker() {
       _reloadForSwUpdate_();
     }
   });
+}
+
+function _repairServiceWorker_(err) {
+  console.warn('[PWA] SW registration/update failed:', err && err.message ? err.message : err);
+  if (_didRepairServiceWorker || !navigator.serviceWorker.getRegistrations) return;
+  _didRepairServiceWorker = true;
+  navigator.serviceWorker.getRegistrations()
+    .then(registrations => Promise.all(registrations
+      .filter(reg => reg.scope && reg.scope.indexOf('/comphone-superapp/pwa/') !== -1)
+      .map(reg => reg.unregister())))
+    .then(() => {
+      console.log('[PWA] Removed stale service workers; retrying registration');
+      return navigator.serviceWorker.register(_serviceWorkerUrl_(), { scope: './' });
+    })
+    .then(registration => {
+      console.log('[PWA] SW repaired:', registration.scope);
+      return registration.update();
+    })
+    .catch(retryErr => {
+      console.warn('[PWA] SW repair skipped:', retryErr && retryErr.message ? retryErr.message : retryErr);
+    });
 }
 
 function _reloadForSwUpdate_() {

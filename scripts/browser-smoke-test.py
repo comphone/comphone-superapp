@@ -159,7 +159,12 @@ def check_dashboard(html):
             errors.append(f"FUNCTIONAL: {script} missing from load order")
 
     # F5: Service worker registration
-    if 'serviceWorker.register' in html:
+    pwa_install_path = os.path.join(PWA_DIR, 'pwa_install.js')
+    pwa_install_has_sw = False
+    if os.path.isfile(pwa_install_path):
+        with open(pwa_install_path, encoding='utf-8', errors='replace') as fh:
+            pwa_install_has_sw = 'navigator.serviceWorker.register' in fh.read()
+    if html_or_script_contains(html, 'navigator.serviceWorker.register') or pwa_install_has_sw:
         checks.append("✅ Service worker registration present")
     else:
         warnings.append("Service worker registration not found")

@@ -2,9 +2,9 @@
 
 > **Version:** v5.18.34-job-menu-hardening (PWA) / GAS Backend v5.18.16-write-flow-validation @604
 
-> **Date:** 2026-05-13 | **Phase:** 73 (System Recovery)
+> **Date:** 2026-05-13 | **Phase:** 73.1 (Post-Recovery Hardening)
 
-> **Status:** RECOVERED - repo restored from stable `db942bd`; PC/mobile menu runtime restored; System Integrity Audit score 100/100; Menu Journey Audit score 100/100; PC Reports loads the real reports module; PC Jobs renderer contract is fixed and PC Open Job is a real guarded write flow; GAS redeployed at @604; protected API smoke passes core menus including Vision/LINE read endpoints; Gemini secret readiness is currently false and must be restored in Script Properties before real Gemini Vision analysis is considered complete.
+> **Status:** RECOVERED + HARDENED - repo restored from stable `db942bd`; PC/mobile login and menu runtime verified on live GitHub Pages; System Integrity Audit score 100/100; Menu Journey Audit score 100/100; PC Reports loads the real reports module; PC Jobs renderer contract is fixed and PC Open Job is a real guarded write flow; GAS redeployed at @604; protected API smoke passes core menus including Vision/LINE read endpoints; GitHub Pages deploy is green; PWA service worker now uses a versioned script URL and stale-registration self-repair; Gemini secret readiness is currently false and must be restored in Script Properties before real Gemini Vision analysis is considered complete.
 
 ---
 
@@ -19,7 +19,18 @@
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-07.phase65-line-command-center` | `pwa/api_contract.js` |
 | Last Production Commit | GitHub `main` HEAD | Use `git log -1 --oneline` for the exact commit |
-| Validation Status | Static Guard OK; CI Readiness OK; GAS Source Alignment OK; Code Index OK with no risks; System Integrity Audit 100/100; Menu Journey Audit 100/100; UI Write Contract OK; UI Surface Audit OK; public/protected API smoke OK; Vision Capability Audit 100/100; Vision Runtime smoke public health reports `gemini_ok=false` because Gemini key is not present under supported Script Property names | `scripts/pwa_static_guard.js`, `scripts/ci_readiness_check.js`, `scripts/gas_source_alignment.js`, `scripts/build_code_index.js`, `scripts/system_integrity_audit.js`, `scripts/pwa_menu_journey_audit.js`, `scripts/pwa_ui_write_contract.js`, `scripts/pwa_ui_surface_audit.js`, `scripts/pwa_api_smoke.js`, `scripts/vision_capability_audit.js`, `scripts/vision_runtime_smoke.js`, `test_reports/*_latest.*` |
+| Validation Status | Static Guard OK; CI Readiness OK; GAS Source Alignment OK; Code Index OK with no risks; System Integrity Audit 100/100; Menu Journey Audit 100/100; UI Write Contract OK; UI Surface Audit OK; public/protected API smoke OK; Vision Capability Audit 100/100; Vision Runtime smoke OK with Gemini readiness warning; live PC/mobile login verified; GitHub Pages freshness OK | `scripts/pwa_static_guard.js`, `scripts/ci_readiness_check.js`, `scripts/gas_source_alignment.js`, `scripts/build_code_index.js`, `scripts/system_integrity_audit.js`, `scripts/pwa_menu_journey_audit.js`, `scripts/pwa_ui_write_contract.js`, `scripts/pwa_ui_surface_audit.js`, `scripts/pwa_api_smoke.js`, `scripts/vision_capability_audit.js`, `scripts/vision_runtime_smoke.js`, `scripts/pages_deploy_verify.js`, `test_reports/*_latest.*` |
+
+### Phase 73.1 Post-Recovery Hardening Update (2026-05-13)
+- Live GitHub Pages now serves `v5.18.34-job-menu-hardening` and production GAS deployment `@604`.
+- Mobile PWA login was verified with the production admin account and loads the operational dashboard after session creation.
+- PC Dashboard was verified from the same production session and successfully calls `getDashboardBundle`.
+- `pwa/pwa_install.js` now registers `sw.js` with the active cache/build version and repairs stale service worker registrations by unregistering old PWA workers and retrying once.
+- `pwa/sw.js` now tolerates partial CDN/precache failures, deletes old caches during activation, avoids caching navigations as stale app shells, and falls back to `index.html` only when offline.
+- `pwa/runtime_self_test.js` now treats missing Gemini key as a warning while keeping Vision stats/pipeline/learning endpoints as real failures. This prevents secret-readiness drift from blocking unrelated login/menu deployments.
+- `.github/workflows/auto-deploy.yml` now triggers on PWA, guard script, root GAS, and `clasp-ready` source changes so CI cannot miss deploy-critical drift.
+- `.github/workflows/drive-sync.yml` now skips safely when Google Drive repository secrets are missing, keeping app deployment green while clearly reporting the backup configuration gap.
+- Remaining operator action: restore Gemini secret in Apps Script Properties using one supported key name (`GEMINI_API_KEY`, `GOOGLE_AI_API_KEY`, `GOOGLE_GEMINI_API_KEY`, or `GEMINI_KEY`) and configure Google Drive backup secrets if GitHub Actions Drive backup is required.
 
 ### Phase 73 System Recovery Update (2026-05-13)
 - Restored repository tree from stable commit `db942bd` after the Phase 74 branch reduced the tracked system from 502 files to 65 files.

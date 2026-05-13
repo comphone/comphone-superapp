@@ -137,7 +137,7 @@ fi
 echo "   Backend=$CONFIG_V | Frontend=$SW_V"
 
 # C2: Service worker cache-bust logic
-if ! grep -q 'caches.keys().then(keys => keys.forEach' pwa/sw.js; then
+if ! grep -q 'caches.keys().then(keys' pwa/sw.js || ! grep -q 'keys.forEach' pwa/sw.js || ! grep -q 'caches.delete' pwa/sw.js; then
   warn "SW may be missing cache cleanup logic"
 fi
 

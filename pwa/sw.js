@@ -6,6 +6,7 @@
 const CACHE_V = 'comphone-v5.18.34-job-menu-hardening-20260508_1100';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
+const NAVIGATION_FALLBACK = BASE + '/index.html';
 
 importScripts(BASE + '/pwa_asset_manifest.js');
 
@@ -37,7 +38,10 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       console.log('[SW] Precaching assets:', ASSETS.length);
-      return cache.addAll(ASSETS);
+      return Promise.allSettled(ASSETS.map(asset => cache.add(asset))).then(results => {
+        const failed = results.filter(result => result.status === 'rejected');
+        if (failed.length) console.warn('[SW] Some assets were not precached:', failed.length);
+      });
     }).then(() => self.skipWaiting())
   );
 });
@@ -45,15 +49,15 @@ self.addEventListener('install', event => {
 // ===== ACTIVATE =====
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME) {
-            console.log('[SW] Deleting old cache:', key);
-            return caches.delete(key);
-          }
-        })
-      ).then(() => {
+    caches.keys().then(keys => {
+      const deletions = [];
+      keys.forEach(key => {
+        if (key !== CACHE_NAME) {
+          console.log('[SW] Deleting old cache:', key);
+          deletions.push(caches.delete(key));
+        }
+      });
+      return Promise.all(deletions).then(() => {
         // Notify all clients that SW is activated
         return self.clients.matchAll().then(clients => {
           clients.forEach(client => {
@@ -65,13 +69,14 @@ self.addEventListener('activate', event => {
           });
         });
       }).then(() => self.clients.claim())
-    )
+    })
   );
 });
 
 // ===== FETCH =====
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
+  const isNavigation = event.request.mode === 'navigate';
   
   // Network Only
   if (NETWORK_ONLY.some(pattern => pattern.test(url.pathname + url.search))) {
@@ -89,18 +94,17 @@ self.addEventListener('fetch', event => {
   
   // Cache First (default)
   event.respondWith(
-    caches.match(event.request).then(response =>
-      response || fetch(event.request).then(fetchResponse => {
+    (isNavigation ? fetch(event.request) : caches.match(event.request).then(response => response || fetch(event.request)))
+      .then(fetchResponse => {
         // Cache successful GET requests
-        if (event.request.method === 'GET' && fetchResponse.status === 200) {
+        if (!isNavigation && event.request.method === 'GET' && fetchResponse.status === 200) {
           const responseClone = fetchResponse.clone();
           caches.open(CACHE_NAME).then(cache => {
             cache.put(event.request, responseClone);
           });
         }
         return fetchResponse;
-      }).catch(() => caches.match(event.request))
-    )
+      }).catch(() => isNavigation ? caches.match(NAVIGATION_FALLBACK) : caches.match(event.request))
   );
 });
 

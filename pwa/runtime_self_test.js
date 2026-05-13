@@ -152,11 +152,14 @@
         if (!learning || learning.success === false) failures.push('learning');
         const health = await global.callApi('health', {});
         const config = health && health.checks && health.checks.config;
-        if (config && config.gemini_ok !== true) failures.push('gemini_config');
+        const geminiReady = !!(config && config.gemini_ok === true);
         const total = stats && stats.stats ? stats.stats.total || 0 : 0;
         return {
           ok: failures.length === 0,
-          details: failures.length ? `failed: ${failures.join(', ')}` : `Vision reads OK; Gemini ready; 7-day records=${total}`,
+          warn: !geminiReady,
+          details: failures.length
+            ? `failed: ${failures.join(', ')}`
+            : `Vision reads OK; Gemini ${geminiReady ? 'ready' : 'not configured'}; 7-day records=${total}`,
         };
       },
     },

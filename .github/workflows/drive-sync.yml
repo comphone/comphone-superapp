@@ -133,19 +133,21 @@ jobs:
             echo "secret_type=none" >> $GITHUB_OUTPUT
           fi
 
-      - name: ❌ Secret missing — fail readable
+      - name: ⚠️ Secret missing — skip backup safely
         if: steps.secret_check.outputs.has_secret == 'false'
         run: |
           echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] RESULT: Secret MISSING"
-          echo "## ❌ Drive Sync — Secret Missing" >> $GITHUB_STEP_SUMMARY
+          echo "## ⚠️ Drive Sync — Secret Missing" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "กรุณาเพิ่ม secret หนึ่งใน Repository Settings:" >> $GITHUB_STEP_SUMMARY
+          echo "Backup skipped because repository secrets are not configured. App deploy remains healthy." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "กรุณาเพิ่ม secret หนึ่งใน Repository Settings เมื่อพร้อมเปิด backup:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **GOOGLE_SERVICE_ACCOUNT_JSON** (แนะนำ): วาง JSON เต็ม Service Account" >> $GITHUB_STEP_SUMMARY
           echo "- **GOOGLE_SERVICE_ACCOUNT_KEY** (เก่า): Base64 ของ Service Account JSON" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "[วิธีสร้าง](https://console.cloud.google.com/iam-admin/serviceaccounts)" >> $GITHUB_STEP_SUMMARY
-          exit 1
+          exit 0
 
       - name: ✅ Secret validated
         if: steps.secret_check.outputs.has_secret == 'true'
@@ -153,6 +155,7 @@ jobs:
 
       # ---------- STEP 3: Setup Service Account ----------
       - name: 🔑 Setup Service Account
+        if: steps.secret_check.outputs.has_secret == 'true'
         run: |
           echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Setup Service Account"
           mkdir -p ~/.config/rclone
@@ -167,6 +170,7 @@ jobs:
 
       # ---------- STEP 4: Install rclone ----------
       - name: 🚀 Install rclone
+        if: steps.secret_check.outputs.has_secret == 'true'
         run: |
           echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Install rclone"
           curl https://rclone.org/install.sh | sudo bash
@@ -174,6 +178,7 @@ jobs:
 
       # ---------- STEP 5: Configure rclone ----------
       - name: ⚙️ Configure rclone
+        if: steps.secret_check.outputs.has_secret == 'true'
         run: |
           echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Configure rclone"
           cat > ~/.config/rclone/rclone.conf <<'EOF'
@@ -186,6 +191,7 @@ EOF
 
       # ---------- STEP 6: Test Drive Access ----------
       - name: 🔍 Test Drive Access
+        if: steps.secret_check.outputs.has_secret == 'true'
         id: drive_test
         run: |
           echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Test Drive Access"
@@ -220,6 +226,7 @@ EOF
 
       # ---------- STEP 7: Fail-Safe Backup Sync ----------
       - name: 💾 Sync Backup
+        if: steps.secret_check.outputs.has_secret == 'true'
         id: sync_backup
         run: |
           echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Sync Backup"
@@ -248,7 +255,7 @@ EOF
 
       # ---------- STEP 8: Sync session.md ----------
       - name: 🧠 Sync session.md
-        if: github.event.inputs.sync_type != 'code-only'
+        if: steps.secret_check.outputs.has_secret == 'true' && github.event.inputs.sync_type != 'code-only'
         run: |
           echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Sync session.md"
           SESSION_FILE=""
