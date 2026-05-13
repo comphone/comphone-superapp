@@ -13,8 +13,8 @@
 | Item | Current Value | Source of Truth |
 |---|---|---|
 | App Version | `v5.18.34-job-menu-hardening` | `pwa/version_config.js` |
-| Cache Version | `comphone-v5.18.34-job-menu-hardening-20260508_1100` | `pwa/version_config.js`, `pwa/sw.js` |
-| Build Timestamp | `20260508_1100` | `pwa/version_config.js` |
+| Cache Version | `comphone-v5.18.34-job-menu-hardening-20260513_2005` | `pwa/version_config.js`, `pwa/sw.js` |
+| Build Timestamp | `20260513_2005` | `pwa/version_config.js` |
 | GAS Backend Deploy | `AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA @604` / production URL in `pwa/gas_config.js` | `Config.gs`, `RouterSplit.gs`, `LineCommandCenter.gs`, `clasp-ready/Config.gs`, `clasp-ready/RouterSplit.gs`, `clasp-ready/LineCommandCenter.gs` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-07.phase65-line-command-center` | `pwa/api_contract.js` |
@@ -1664,7 +1664,7 @@ async function callGas(action, params) {
 
 | Workstream | Status | Current Baseline |
 |---|---|---|
-| **PWA Runtime** | OK Updated | Frontend cache/version is `v5.18.34-job-menu-hardening` with build `20260508_1100`. |
+| **PWA Runtime** | OK Updated | Frontend cache/version is `v5.18.34-job-menu-hardening` with build `20260513_2005`. |
 | **PC Jobs Renderer** | OK Fixed | `renderJobsSection()` now returns HTML to `dashboard_pc_core.js` and no longer replaces `main-content` directly, preventing section/page replacement drift. |
 | **PC Open Job Flow** | OK Added | PC Jobs now has a real open-job modal that calls `openJob` with `client_request_id`, `source=pc_dashboard_jobs`, required field validation, result feedback, and duplicate-click blocking. |
 | **Menu Journey Guard** | OK Expanded | `scripts/pwa_menu_journey_audit.js` now validates PC jobs render contract, PC open-job modal wiring, and PC open-job double-submit guard. |

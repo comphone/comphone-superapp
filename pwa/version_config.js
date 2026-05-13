@@ -7,8 +7,8 @@
 const VERSION_CONFIG = {
   version: 'v5.18.34-job-menu-hardening',
   buildDate: '2026-05-07',
-  buildTimestamp: '20260508_1100',
-  cacheVersion: 'comphone-v5.18.34-job-menu-hardening-20260508_1100',
+  buildTimestamp: '20260513_2005',
+  cacheVersion: 'comphone-v5.18.34-job-menu-hardening-20260513_2005',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -41,8 +41,8 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 // Backward-compatible exports for legacy modules and guards
 const APP_VERSION = 'v5.18.34-job-menu-hardening';
-const BUILD_TIMESTAMP = '20260508_1100';
-const CACHE_VERSION = 'comphone-v5.18.34-job-menu-hardening-20260508_1100';
+const BUILD_TIMESTAMP = '20260513_2005';
+const CACHE_VERSION = 'comphone-v5.18.34-job-menu-hardening-20260513_2005';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;
