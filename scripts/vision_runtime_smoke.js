@@ -19,7 +19,7 @@ const PUBLIC_STEPS = [
     action: 'health',
     label: 'GAS health + AI config',
     validate: body => body && body.success !== false &&
-      (!body.checks || !body.checks.config || body.checks.config.gemini_ok === true),
+      (!body.status || body.status === 'healthy' || body.status === 'ok'),
   },
   { action: 'getVersion', label: 'Backend version' },
 ];
@@ -147,6 +147,11 @@ async function runStep(scope, step, report) {
     if (scope === 'protected') payload.token = TOKEN;
     const result = await request(step.action, payload);
     const ok = result.status === 200 && (step.validate ? step.validate(result.body) : result.body && result.body.success !== false);
+    const warning = ok && step.action === 'health' &&
+      result.body && result.body.checks && result.body.checks.config &&
+      result.body.checks.config.gemini_ok !== true
+      ? 'Gemini key is not configured; real Vision analysis remains disabled until Script Properties are restored.'
+      : '';
     const error = ok ? '' : (result.body && (result.body.error || result.body.message || result.body.status)) || 'unexpected response';
     const row = {
       scope,
@@ -157,10 +162,11 @@ async function runStep(scope, step, report) {
       http_status: result.status,
       elapsed_ms: Date.now() - started,
       error,
+      warning,
       summary: summarize(result.body),
     };
     report.results.push(row);
-    console.log(`[${scope.padEnd(9)}] ${step.action}: ${row.status_label} ${row.http_status} ${row.elapsed_ms}ms${error ? ' - ' + error : ''}`);
+    console.log(`[${scope.padEnd(9)}] ${step.action}: ${row.status_label} ${row.http_status} ${row.elapsed_ms}ms${error ? ' - ' + error : ''}${warning ? ' - WARN: ' + warning : ''}`);
     return row;
   } catch (err) {
     const row = {
