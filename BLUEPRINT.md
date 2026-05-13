@@ -1,25 +1,34 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.18.34-job-menu-hardening (PWA) / GAS Backend v5.18.16-write-flow-validation @562
+> **Version:** v5.18.34-job-menu-hardening (PWA) / GAS Backend v5.18.16-write-flow-validation @604
 
-> **Date:** 2026-05-08 | **Phase:** 72 (Job Menu Hardening)
+> **Date:** 2026-05-13 | **Phase:** 73 (System Recovery)
 
-> **Status:** STABLE - PC/mobile menu runtime restored; System Integrity Audit score 100/100; Menu Journey Audit score 100/100; PC Reports loads the real reports module; PC Jobs renderer contract is fixed and PC Open Job is a real guarded write flow; Runtime Self-Test is live; core write flows have idempotency; gated write smoke is available; AI Vision has structural capability audit, API workflow contract, PC/mobile operations panel, token-aware runtime smoke, Gemini readiness indicators, guarded E2E smoke, result cards, human review queue, field job timeline linking, suggested next actions, controlled execution gate, execution preview, and LINE room routing; LINE Command Center exposes room status, alert queue, ack tracking, analytics, and safe room messaging; CI/CD verifies workflow script references, GAS source alignment, GitHub Pages freshness, UI write contracts, UI surface contracts, and critical menu journeys
+> **Status:** RECOVERED - repo restored from stable `db942bd`; PC/mobile menu runtime restored; System Integrity Audit score 100/100; Menu Journey Audit score 100/100; PC Reports loads the real reports module; PC Jobs renderer contract is fixed and PC Open Job is a real guarded write flow; GAS redeployed at @604; protected API smoke passes core menus including Vision/LINE read endpoints; Gemini secret readiness is currently false and must be restored in Script Properties before real Gemini Vision analysis is considered complete.
 
 ---
 
-## 0. Current Runtime Snapshot (2026-05-08)
+## 0. Current Runtime Snapshot (2026-05-13)
 
 | Item | Current Value | Source of Truth |
 |---|---|---|
 | App Version | `v5.18.34-job-menu-hardening` | `pwa/version_config.js` |
 | Cache Version | `comphone-v5.18.34-job-menu-hardening-20260508_1100` | `pwa/version_config.js`, `pwa/sw.js` |
 | Build Timestamp | `20260508_1100` | `pwa/version_config.js` |
-| GAS Backend Deploy | `AKfycbyzETP-tV6oLiq4DYlw1asZwkVHftRG_0vpuIBp3xhKJEUc--p-uy0mAUTH1ZcPgks9rg @562` / production URL in `pwa/gas_config.js` | `Config.gs`, `RouterSplit.gs`, `LineCommandCenter.gs`, `clasp-ready/Config.gs`, `clasp-ready/RouterSplit.gs`, `clasp-ready/LineCommandCenter.gs` |
-| GAS Production URL | `https://script.google.com/macros/s/AKfycbyzETP-tV6oLiq4DYlw1asZwkVHftRG_0vpuIBp3xhKJEUc--p-uy0mAUTH1ZcPgks9rg/exec` | `pwa/gas_config.js` |
+| GAS Backend Deploy | `AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA @604` / production URL in `pwa/gas_config.js` | `Config.gs`, `RouterSplit.gs`, `LineCommandCenter.gs`, `clasp-ready/Config.gs`, `clasp-ready/RouterSplit.gs`, `clasp-ready/LineCommandCenter.gs` |
+| GAS Production URL | `https://script.google.com/macros/s/AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-07.phase65-line-command-center` | `pwa/api_contract.js` |
 | Last Production Commit | GitHub `main` HEAD | Use `git log -1 --oneline` for the exact commit |
-| Validation Status | Static Guard OK; CI Readiness OK; GAS Source Alignment OK; Pages Deploy Verify OK for previous Pages build; Code Index OK with no risks; System Integrity Audit 100/100; Menu Journey Audit 100/100; UI Write Contract OK; UI Surface Audit OK; public/protected API smoke OK; regression guard OK with only the existing SW cleanup warning; drift guard OK | `scripts/pwa_static_guard.js`, `scripts/ci_readiness_check.js`, `scripts/gas_source_alignment.js`, `scripts/pages_deploy_verify.js`, `scripts/build_code_index.js`, `scripts/system_integrity_audit.js`, `scripts/pwa_menu_journey_audit.js`, `scripts/pwa_ui_write_contract.js`, `scripts/pwa_ui_surface_audit.js`, `scripts/pwa_api_smoke.js`, `scripts/regression-guard.sh`, `scripts/drift-guard.sh`, `test_reports/*_latest.*` |
+| Validation Status | Static Guard OK; CI Readiness OK; GAS Source Alignment OK; Code Index OK with no risks; System Integrity Audit 100/100; Menu Journey Audit 100/100; UI Write Contract OK; UI Surface Audit OK; public/protected API smoke OK; Vision Capability Audit 100/100; Vision Runtime smoke public health reports `gemini_ok=false` because Gemini key is not present under supported Script Property names | `scripts/pwa_static_guard.js`, `scripts/ci_readiness_check.js`, `scripts/gas_source_alignment.js`, `scripts/build_code_index.js`, `scripts/system_integrity_audit.js`, `scripts/pwa_menu_journey_audit.js`, `scripts/pwa_ui_write_contract.js`, `scripts/pwa_ui_surface_audit.js`, `scripts/pwa_api_smoke.js`, `scripts/vision_capability_audit.js`, `scripts/vision_runtime_smoke.js`, `test_reports/*_latest.*` |
+
+### Phase 73 System Recovery Update (2026-05-13)
+- Restored repository tree from stable commit `db942bd` after the Phase 74 branch reduced the tracked system from 502 files to 65 files.
+- Preserved the damaged state before recovery in stash `pre-recovery-phase74-damaged-state-20260513` and branch `codex/safety-before-recovery-20260513`.
+- Restored CI workflows, guard scripts, PWA modules, AI Vision/LINE Center surfaces, runtime self-test, offline/PWA install modules, and full `clasp-ready` GAS source set.
+- Re-deployed recovered GAS source to deployment `@604`.
+- `pwa/gas_config.js` now uses Web App deployment URL `AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA`, not the invalid script-id URL.
+- Backend `health` and `getVersion` now return JSON again. Protected API smoke passes dashboard, CRM, inventory, PO, reports, Vision read endpoints, LINE Center, and admin.
+- Remaining recovery item: restore Gemini secret in Apps Script Properties under `GEMINI_API_KEY` or another supported alias (`GOOGLE_AI_API_KEY`, `GOOGLE_GEMINI_API_KEY`, `GEMINI_KEY`) to make real Gemini Vision analysis ready.
 
 ### Phase 66 Current Review (2026-05-07)
 - Status score: **100/100 deploy-observability readiness**. CI now has explicit checks that distinguish missing files, stale checksums, source drift, missing secrets, and GitHub Pages CDN delay.
