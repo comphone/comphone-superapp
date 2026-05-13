@@ -18,6 +18,25 @@
     'revenue', 'tax', 'reports', 'analytics', 'performance', 'vision', 'line-center', 'backup',
     'crm', 'attendance', 'settings'
   ]);
+  const SECTION_TITLES = {
+    dashboard: '<i class="bi bi-bar-chart-fill" style="color:#f97316;margin-right:8px"></i>Executive Dashboard',
+    jobs: '<i class="bi bi-tools" style="color:#2563eb;margin-right:8px"></i>งานบริการ',
+    po: '<i class="bi bi-cart-fill" style="color:#db2777;margin-right:8px"></i>สั่งซื้อ',
+    inventory: '<i class="bi bi-box-seam-fill" style="color:#0284c7;margin-right:8px"></i>สต็อก',
+    billing: '<i class="bi bi-receipt" style="color:#d97706;margin-right:8px"></i>ใบเสร็จ/วางบิล',
+    warranty: '<i class="bi bi-shield-check" style="color:#059669;margin-right:8px"></i>รับประกัน',
+    revenue: '<i class="bi bi-currency-exchange" style="color:#059669;margin-right:8px"></i>รายรับ',
+    tax: '<i class="bi bi-receipt-cutoff" style="color:#059669;margin-right:8px"></i>คำนวณภาษี (VAT / WHT)',
+    reports: '<i class="bi bi-file-earmark-text" style="color:#2563eb;margin-right:8px"></i>รายงาน',
+    analytics: '<i class="bi bi-graph-up" style="color:#7c3aed;margin-right:8px"></i>Analytics',
+    performance: '<i class="bi bi-speedometer2" style="color:#0f766e;margin-right:8px"></i>Performance',
+    vision: '<i class="bi bi-stars" style="color:#0f766e;margin-right:8px"></i>AI Vision',
+    'line-center': '<i class="bi bi-broadcast-pin" style="color:#3730a3;margin-right:8px"></i>LINE Center',
+    backup: '<i class="bi bi-cloud-arrow-up" style="color:#64748b;margin-right:8px"></i>สำรองข้อมูล',
+    crm: '<i class="bi bi-people-fill" style="color:#059669;margin-right:8px"></i>ลูกค้า',
+    attendance: '<i class="bi bi-clock" style="color:#475569;margin-right:8px"></i>ลงเวลาทำงาน',
+    settings: '<i class="bi bi-gear-fill" style="color:#2563eb;margin-right:8px"></i>ตั้งค่า',
+  };
 
   const FALLBACK_DASHBOARD = {
     jobs: { total: 15, pending: 3, inProgress: 5, done: 7 },
@@ -182,7 +201,10 @@
     const target = document.getElementById('section-' + sectionName) ||
       document.getElementById(sectionName + '-section');
     if (target) target.style.display = 'block';
-    else console.warn('[Dashboard] Section not found:', sectionName);
+    else if (!renderersCanUseMain(sectionName)) console.warn('[Dashboard] Section not found:', sectionName);
+
+    const title = document.getElementById('topbar-title');
+    if (title && SECTION_TITLES[sectionName]) title.innerHTML = SECTION_TITLES[sectionName];
 
     document.querySelectorAll('.nav-item').forEach((item) => {
       item.classList.remove('active');
@@ -197,6 +219,10 @@
       localStorage.setItem(LAST_SECTION_KEY, sectionName);
       if (history && history.replaceState) history.replaceState({ section: sectionName }, '', location.href);
     } catch (_) {}
+  }
+
+  function renderersCanUseMain(sectionName) {
+    return ['tax', 'settings', 'backup', 'revenue', 'performance'].includes(sectionName);
   }
 
   function loadDashboard() {
