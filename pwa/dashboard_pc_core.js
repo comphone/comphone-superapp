@@ -106,9 +106,8 @@
         else if (main) main.innerHTML = '<h3>Revenue</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
       },
       tax: () => {
-        if (main) {
-          main.innerHTML = '<div class="card-box"><h3><i class="bi bi-calculator"></i> Tax</h3><button onclick="_showTaxCalculator()" style="background:#059669;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer">Open Tax Calculator</button></div>';
-        }
+        if (typeof global.renderTaxSection === 'function') global.renderTaxSection(data);
+        else if (main) main.innerHTML = '<h3>Tax</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
       },
       reports: () => {
         const c = document.getElementById('reports-content') || document.getElementById('section-reports');
