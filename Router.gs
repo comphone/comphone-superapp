@@ -637,7 +637,12 @@ function healthCheckV55_() {
       ok:       missingKeys.length === 0,
       missing:  missingKeys,
       line_ok:  !!props['LINE_CHANNEL_ACCESS_TOKEN'],
-      gemini_ok: !!props['GEMINI_API_KEY']
+      gemini_ok: !!(
+        props['GEMINI_API_KEY'] ||
+        props['GOOGLE_AI_API_KEY'] ||
+        props['GOOGLE_GEMINI_API_KEY'] ||
+        props['GEMINI_KEY']
+      )
     };
     if (missingKeys.length > 0) overallOk = false;
   } catch (e) {
