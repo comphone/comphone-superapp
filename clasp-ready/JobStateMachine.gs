@@ -300,6 +300,54 @@ function transitionJob(jobId, newStatus, options) {
   }
 }
 
+function addQuickNote(jobId, note, user) {
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch (e) { return { success: false, error: 'Lock timeout' }; }
+  try {
+    jobId = String(jobId || '').trim();
+    note = String(note || '').trim();
+    user = String(user || 'SYSTEM').trim() || 'SYSTEM';
+    if (!jobId) return { success: false, error: 'jobId is required' };
+    if (!note) return { success: false, error: 'note is required' };
+
+    var ss = getComphoneSheet();
+    if (!ss) return { success: false, error: 'Spreadsheet not found' };
+    var sh = findSheetByName(ss, 'DBJOBS');
+    if (!sh) return { success: false, error: 'DBJOBS not found' };
+
+    var ctx = getJobSheetContext_(sh);
+    var rowIndex = findJobRowIndexById_(sh, ctx, jobId);
+    if (rowIndex < 0) return { success: false, error: 'ไม่พบ Job ID: ' + jobId };
+
+    var rowValues = sh.getRange(rowIndex, 1, 1, ctx.headers.length).getValues()[0];
+    var statusCode = inferCurrentStatusCodeFromRow_(rowValues, ctx.indices);
+    var statusLabel = JOB_STATUS_MAP[statusCode] || safeCellValue_(rowValues, ctx.indices.statusText);
+    var oldNote = safeCellValue_(rowValues, ctx.indices.note);
+    var noteLine = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss') + ' [' + user + '] ' + note;
+    setIfIndex_(rowValues, ctx.indices.note, oldNote ? oldNote + '\n' + noteLine : noteLine);
+    setIfIndex_(rowValues, ctx.indices.updatedAt, new Date());
+    sh.getRange(rowIndex, 1, 1, ctx.headers.length).setValues([rowValues]);
+
+    appendJobStatusLog_(jobId, statusLabel, statusLabel, user, note);
+    try { if (typeof logActivity === 'function') logActivity('JOB_QUICK_NOTE', user, jobId + ' — ' + note); } catch (logErr) {}
+
+    return {
+      success: true,
+      job_id: jobId,
+      status_code: statusCode,
+      status_label: statusLabel,
+      note: note,
+      user: user,
+      job: buildJobObjectFromRow_(rowValues, ctx.indices)
+    };
+  } catch (e) {
+    try { if (typeof _logError_ === 'function') _logError_('LOW', 'addQuickNote', e, {source: 'JOB_STATE'}); } catch(_le) {}
+    return { success: false, error: e.toString() };
+  } finally {
+    try { lock.releaseLock(); } catch (releaseErr) {}
+  }
+}
+
 function generateJobQR(jobId) {
   jobId = String(jobId || '').trim();
   if (!jobId) return { success: false, error: 'jobId is required' };

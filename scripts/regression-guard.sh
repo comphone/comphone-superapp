@@ -321,6 +321,16 @@ else
   warn "Node or sprint75_jobs_billing_reports_audit.js unavailable - skipping Sprint 75 focused audit"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint76_jobs_e2e_audit.js" ]; then
+  if node scripts/sprint76_jobs_e2e_audit.js; then
+    echo "   Sprint 76 Jobs E2E audit passed"
+  else
+    fail "Sprint 76 Jobs E2E audit FAILED"
+  fi
+else
+  warn "Node or sprint76_jobs_e2e_audit.js unavailable - skipping Sprint 76 Jobs E2E audit"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"

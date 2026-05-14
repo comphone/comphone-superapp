@@ -6,6 +6,7 @@
 
 function renderJobsSection(data) {
   const jobs = data.jobs || [];
+  window.PC_JOBS_DATA = jobs;
   const statuses = (data.status_distribution || {}).statuses || [];
   const statusFilter = statuses.map(s => s.status || s.name).filter(Boolean);
   const open = jobs.filter(j => j.status !== 'เสร็จสิ้น' && j.status !== 'COMPLETED' && j.status !== 'ยกเลิก' && j.status !== 'CANCELLED');
@@ -72,6 +73,141 @@ function _jobRequestId(prefix) {
   return (typeof createWriteRequestId === 'function')
     ? createWriteRequestId(prefix || 'job')
     : ((prefix || 'job') + '_' + Date.now() + '_' + Math.random().toString(16).slice(2));
+}
+
+function _findPcJob(jobId) {
+  const key = String(jobId || '');
+  return ((window.PC_JOBS_DATA || (typeof DASHBOARD_DATA !== 'undefined' && DASHBOARD_DATA.jobs) || [])).find(j =>
+    String(j.job_id || j.id || '') === key
+  ) || { job_id: key, id: key };
+}
+
+function _pcJobModal(title, bodyHtml, width) {
+  const old = document.getElementById('job-modal-overlay');
+  if (old) old.remove();
+  const modal = `<div id="job-modal-overlay" onclick="this.remove()" style="position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px">
+    <div onclick="event.stopPropagation()" style="background:#fff;border-radius:16px;padding:22px;max-width:${width || 620}px;width:min(100%,${width || 620}px);max-height:90vh;overflow:auto;box-shadow:0 24px 60px rgba(15,23,42,.28)">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px">
+        <h3 style="margin:0;font-size:18px;color:#0f172a">${title}</h3>
+        <button onclick="document.getElementById('job-modal-overlay').remove()" style="background:#f1f5f9;border:none;width:34px;height:34px;border-radius:10px;cursor:pointer;color:#64748b"><i class="bi bi-x-lg"></i></button>
+      </div>
+      ${bodyHtml}
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', modal);
+}
+
+function _showPcJobDetail(jobId) {
+  const job = _findPcJob(jobId);
+  const id = _escapeJobText(job.job_id || job.id || jobId);
+  const customer = _escapeJobText(job.customer || job.customer_name || '-');
+  const symptom = _escapeJobText(job.symptom || job.issue || job.detail || '-');
+  const status = _escapeJobText(job.status || job.status_label || '-');
+  const tech = _escapeJobText(job.technician || job.tech || '-');
+  const note = _escapeJobText(job.note || job.notes || '-').replace(/\n/g, '<br>');
+  _pcJobModal(`<i class="bi bi-briefcase" style="color:#2563eb"></i> Job ${id}`, `
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:16px">
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px"><div style="font-size:11px;color:#64748b">Customer</div><div style="font-weight:700;color:#0f172a">${customer}</div></div>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px"><div style="font-size:11px;color:#64748b">Status</div><div style="font-weight:700;color:${_statusColor(status)}">${status}</div></div>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px"><div style="font-size:11px;color:#64748b">Technician</div><div style="font-weight:700;color:#0f172a">${tech}</div></div>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px"><div style="font-size:11px;color:#64748b">Created</div><div style="font-weight:700;color:#0f172a">${_escapeJobText(job.date || job.created || job.created_at || '-')}</div></div>
+    </div>
+    <div style="font-size:13px;color:#334155;margin-bottom:12px"><b>Issue:</b> ${symptom}</div>
+    <div style="font-size:13px;color:#334155;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:16px"><b>Notes:</b><br>${note}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="_showPcAssignJob('${id}')" style="background:#eff6ff;color:#2563eb;border:none;padding:9px 12px;border-radius:10px;font-weight:700;cursor:pointer"><i class="bi bi-person-check"></i> Assign</button>
+      <button onclick="_showPcQuickNote('${id}')" style="background:#fefce8;color:#a16207;border:none;padding:9px 12px;border-radius:10px;font-weight:700;cursor:pointer"><i class="bi bi-pencil-square"></i> Note</button>
+      <button onclick="_showJobTimeline('${id}')" style="background:#f1f5f9;color:#334155;border:none;padding:9px 12px;border-radius:10px;font-weight:700;cursor:pointer"><i class="bi bi-clock-history"></i> Timeline</button>
+      <button onclick="_openPcJobVision('${id}')" style="background:#f5f3ff;color:#7c3aed;border:none;padding:9px 12px;border-radius:10px;font-weight:700;cursor:pointer"><i class="bi bi-camera"></i> Vision</button>
+      <button onclick="_openPcJobBilling('${id}')" style="background:#ecfdf5;color:#047857;border:none;padding:9px 12px;border-radius:10px;font-weight:700;cursor:pointer"><i class="bi bi-receipt"></i> Billing</button>
+    </div>
+  `);
+}
+
+function _showPcAssignJob(jobId) {
+  const job = _findPcJob(jobId);
+  const id = _escapeJobText(job.job_id || job.id || jobId);
+  _pcJobModal(`<i class="bi bi-person-check" style="color:#2563eb"></i> Assign ${id}`, `
+    <label style="font-size:13px;font-weight:700;color:#334155">Technician
+      <input id="pc-job-assign-tech" value="${_escapeJobText(job.technician || job.tech || '')}" autocomplete="off" style="margin-top:6px;width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px">
+    </label>
+    <label style="display:block;margin-top:12px;font-size:13px;font-weight:700;color:#334155">Note
+      <input id="pc-job-assign-note" autocomplete="off" style="margin-top:6px;width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px" placeholder="Optional assignment note">
+    </label>
+    <div id="pc-job-assign-result" style="min-height:20px;margin-top:12px;font-size:13px"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+      <button onclick="document.getElementById('job-modal-overlay').remove()" style="background:#f1f5f9;color:#334155;border:none;padding:9px 16px;border-radius:10px;cursor:pointer">Cancel</button>
+      <button id="pc-job-assign-btn" onclick="_doPcAssignJob('${id}')" style="background:#2563eb;color:#fff;border:none;padding:9px 16px;border-radius:10px;font-weight:700;cursor:pointer">Save</button>
+    </div>
+  `, 480);
+  setTimeout(() => document.getElementById('pc-job-assign-tech')?.focus(), 60);
+}
+
+async function _doPcAssignJob(jobId) {
+  const tech = document.getElementById('pc-job-assign-tech')?.value.trim() || '';
+  const note = document.getElementById('pc-job-assign-note')?.value.trim() || '';
+  const result = document.getElementById('pc-job-assign-result');
+  const btn = document.getElementById('pc-job-assign-btn');
+  if (!tech) { if (result) result.innerHTML = '<span style="color:#dc2626">Please enter technician.</span>'; return; }
+  if (!btn || btn.dataset.submitting === '1') return;
+  btn.dataset.submitting = '1'; btn.disabled = true;
+  try {
+    const r = await callApi('transitionJob', { job_id: jobId, new_status: 2, technician: tech, note: note || 'Assigned from PC Dashboard', changed_by: 'PC Dashboard' });
+    if (!r || !r.success) throw new Error((r && (r.error || r.message)) || 'Assignment failed');
+    if (result) result.innerHTML = '<span style="color:#059669">Assigned successfully.</span>';
+    setTimeout(() => { document.getElementById('job-modal-overlay')?.remove(); if (typeof DASHBOARD_DATA !== 'undefined') DASHBOARD_DATA = null; if (typeof loadSection === 'function') loadSection('jobs'); }, 700);
+  } catch (e) {
+    if (result) result.innerHTML = `<span style="color:#dc2626">${_escapeJobText(e.message || e)}</span>`;
+    btn.dataset.submitting = '0'; btn.disabled = false;
+  }
+}
+
+function _showPcQuickNote(jobId) {
+  const id = _escapeJobText(jobId);
+  _pcJobModal(`<i class="bi bi-pencil-square" style="color:#a16207"></i> Note ${id}`, `
+    <textarea id="pc-job-note-text" rows="5" style="width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:12px;font-size:14px;resize:vertical" placeholder="Add field note..."></textarea>
+    <div id="pc-job-note-result" style="min-height:20px;margin-top:12px;font-size:13px"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+      <button onclick="document.getElementById('job-modal-overlay').remove()" style="background:#f1f5f9;color:#334155;border:none;padding:9px 16px;border-radius:10px;cursor:pointer">Cancel</button>
+      <button id="pc-job-note-btn" onclick="_doPcQuickNote('${id}')" style="background:#a16207;color:#fff;border:none;padding:9px 16px;border-radius:10px;font-weight:700;cursor:pointer">Save Note</button>
+    </div>
+  `, 520);
+  setTimeout(() => document.getElementById('pc-job-note-text')?.focus(), 60);
+}
+
+async function _doPcQuickNote(jobId) {
+  const note = document.getElementById('pc-job-note-text')?.value.trim() || '';
+  const result = document.getElementById('pc-job-note-result');
+  const btn = document.getElementById('pc-job-note-btn');
+  if (!note) { if (result) result.innerHTML = '<span style="color:#dc2626">Please enter note.</span>'; return; }
+  if (!btn || btn.dataset.submitting === '1') return;
+  btn.dataset.submitting = '1'; btn.disabled = true;
+  try {
+    const r = await callApi('addQuickNote', { job_id: jobId, note, user: 'PC Dashboard' });
+    if (!r || !r.success) throw new Error((r && (r.error || r.message)) || 'Save note failed');
+    if (result) result.innerHTML = '<span style="color:#059669">Note saved.</span>';
+    setTimeout(() => { document.getElementById('job-modal-overlay')?.remove(); if (typeof DASHBOARD_DATA !== 'undefined') DASHBOARD_DATA = null; if (typeof loadSection === 'function') loadSection('jobs'); }, 700);
+  } catch (e) {
+    if (result) result.innerHTML = `<span style="color:#dc2626">${_escapeJobText(e.message || e)}</span>`;
+    btn.dataset.submitting = '0'; btn.disabled = false;
+  }
+}
+
+function _openPcJobVision(jobId) {
+  try { localStorage.setItem('comphone_vision_job_id', String(jobId || '')); } catch (_) {}
+  document.getElementById('job-modal-overlay')?.remove();
+  if (typeof loadSection === 'function') loadSection('vision');
+  setTimeout(() => {
+    const input = document.getElementById('vision-job-id');
+    if (input) input.value = String(jobId || '');
+    if (typeof loadVisionFieldContext === 'function') loadVisionFieldContext(String(jobId || ''));
+  }, 500);
+}
+
+function _openPcJobBilling(jobId) {
+  document.getElementById('job-modal-overlay')?.remove();
+  if (typeof openBillingModal === 'function') openBillingModal(String(jobId || ''));
+  else if (typeof loadSection === 'function') loadSection('billing');
 }
 
 function _showPcCreateJob() {
@@ -164,41 +300,43 @@ async function _doPcCreateJob() {
 }
 
 function _buildJobsTableEnhanced(jobs) {
-  if (!jobs.length) return '<p style="color:#9ca3af;font-size:13px;text-align:center;padding:20px">ไม่มีงาน</p>';
+  if (!jobs.length) return '<p style="color:#9ca3af;font-size:13px;text-align:center;padding:20px">No jobs</p>';
   return `<div style="overflow-x:auto;max-height:500px;overflow-y:auto"><table class="job-table" style="width:100%">
     <thead><tr>
-      <th style="white-space:nowrap">Job ID</th><th>ลูกค้า</th><th>สถานะ</th><th>ช่าง</th><th>วันที่</th><th style="text-align:center">จัดการ</th>
+      <th style="white-space:nowrap">Job ID</th><th>Customer</th><th>Status</th><th>Tech</th><th>Date</th><th style="text-align:center">Actions</th>
     </tr></thead>
     <tbody id="jobs-tbody">${jobs.map(j => {
       const jobId = j.job_id || j.id || '';
-      const status = j.status || '-';
-      const tech = j.technician || '-';
+      const safeJobId = _escapeJobText(jobId);
+      const status = j.status || j.status_label || '-';
+      const tech = j.technician || j.tech || '-';
       const customer = j.customer || j.customer_name || '-';
-      const date = j.date || j.created || '-';
-      const isOverdue = j.sla_status === 'OVERDUE' || status === 'เกินกำหนด';
-      return `<tr data-jobid="${jobId.toLowerCase()}" data-customer="${customer.toLowerCase()}" data-tech="${tech.toLowerCase()}" data-status="${status}">
+      const date = j.date || j.created || j.created_at || '-';
+      const safeStatus = _escapeJobText(status);
+      const isOverdue = j.sla_status === 'OVERDUE' || status === 'OVERDUE';
+      return `<tr data-jobid="${_escapeJobText(String(jobId).toLowerCase())}" data-customer="${_escapeJobText(String(customer).toLowerCase())}" data-tech="${_escapeJobText(String(tech).toLowerCase())}" data-status="${safeStatus}">
         <td style="font-weight:600;font-size:13px;white-space:nowrap">
-          ${isOverdue ? '<span style="color:#dc2626;margin-right:4px">⚠️</span>' : ''}
-          ${jobId}
+          ${isOverdue ? '<span style="color:#dc2626;margin-right:4px">!</span>' : ''}
+          ${safeJobId}
         </td>
-        <td style="font-size:13px">${customer}</td>
-        <td><span style="background:${_statusColor(status)};padding:2px 8px;border-radius:10px;font-size:11px;color:#fff">${status}</span></td>
-        <td style="font-size:13px">${tech}</td>
-        <td style="font-size:12px;color:#6b7280;white-space:nowrap">${date}</td>
+        <td style="font-size:13px">${_escapeJobText(customer)}</td>
+        <td><span style="background:${_statusColor(status)};padding:2px 8px;border-radius:10px;font-size:11px;color:#fff">${safeStatus}</span></td>
+        <td style="font-size:13px">${_escapeJobText(tech)}</td>
+        <td style="font-size:12px;color:#6b7280;white-space:nowrap">${_escapeJobText(date)}</td>
         <td style="text-align:center">
           <div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap">
-            <button onclick="_showJobTimeline('${jobId}')" style="background:#dbeafe;color:#1e40af;border:none;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="ดู Timeline">
-              <i class="bi bi-clock-history"></i>
-            </button>
-            <button onclick="_showJobTransition('${jobId}','${status}')" style="background:#d1fae5;color:#059669;border:none;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="เปลี่ยนสถานะ">
-              <i class="bi bi-arrow-right-circle"></i>
-            </button>
+            <button onclick="_showPcJobDetail('${safeJobId}')" style="background:#f8fafc;color:#334155;border:1px solid #e2e8f0;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="Detail"><i class="bi bi-eye"></i></button>
+            <button onclick="_showPcAssignJob('${safeJobId}')" style="background:#eff6ff;color:#2563eb;border:none;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="Assign"><i class="bi bi-person-check"></i></button>
+            <button onclick="_showPcQuickNote('${safeJobId}')" style="background:#fefce8;color:#a16207;border:none;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="Note"><i class="bi bi-pencil-square"></i></button>
+            <button onclick="_showJobTimeline('${safeJobId}')" style="background:#dbeafe;color:#1e40af;border:none;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="Timeline"><i class="bi bi-clock-history"></i></button>
+            <button onclick="_showJobTransition('${safeJobId}','${safeStatus}')" style="background:#d1fae5;color:#059669;border:none;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="Status"><i class="bi bi-arrow-right-circle"></i></button>
+            <button onclick="_openPcJobVision('${safeJobId}')" style="background:#f5f3ff;color:#7c3aed;border:none;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="Vision"><i class="bi bi-camera"></i></button>
+            <button onclick="_openPcJobBilling('${safeJobId}')" style="background:#ecfdf5;color:#047857;border:none;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="Billing"><i class="bi bi-receipt"></i></button>
           </div>
         </td>
       </tr>`;
     }).join('')}</tbody></table></div>`;
 }
-
 function _filterJobs() {
   const search = (document.getElementById('jobs-search')||{}).value||'';
   const rows = document.querySelectorAll('#jobs-tbody tr');
@@ -307,5 +445,5 @@ window.filterSectionJobs = function(status) {
   const jobs = (DASHBOARD_DATA || {}).jobs || [];
   const filtered = status ? jobs.filter(j => j.status === status) : jobs;
   const el = document.getElementById('jobs-section-list');
-  if (el) el.innerHTML = _buildJobsTable(filtered);
+  if (el) el.innerHTML = _buildJobsTableEnhanced(filtered);
 };

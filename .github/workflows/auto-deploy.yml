@@ -55,7 +55,7 @@ jobs:
               FAILED=1
             fi
           done
-          for f in scripts/pwa_static_guard.js scripts/pwa_api_smoke.js scripts/build_code_index.js scripts/pages_deploy_verify.js scripts/ci_readiness_check.js scripts/gas_source_alignment.js scripts/sprint74_core_audit.js scripts/sprint75_jobs_billing_reports_audit.js scripts/set_gas_secret.js; do
+          for f in scripts/pwa_static_guard.js scripts/pwa_api_smoke.js scripts/build_code_index.js scripts/pages_deploy_verify.js scripts/ci_readiness_check.js scripts/gas_source_alignment.js scripts/sprint74_core_audit.js scripts/sprint75_jobs_billing_reports_audit.js scripts/sprint76_jobs_e2e_audit.js scripts/set_gas_secret.js; do
             if node --check "$f"; then
               echo "✅ $f"
             else
