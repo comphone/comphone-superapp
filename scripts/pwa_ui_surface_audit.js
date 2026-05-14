@@ -53,7 +53,7 @@ function main() {
       name: 'pc-load-order:api-before-sections',
       ok: checkOrder(pcScripts, 'api_client.js', 'section_crm.js') &&
         checkOrder(pcScripts, 'api_client.js', 'section_inventory.js') &&
-        checkOrder(pcScripts, 'api_client.js', 'section_billing.js'),
+        checkOrder(pcScripts, 'api_client.js', 'billing_section.js'),
       detail: 'PC dashboard loads api_client.js before write-flow sections',
     },
     {

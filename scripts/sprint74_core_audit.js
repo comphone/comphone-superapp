@@ -206,7 +206,7 @@ async function main() {
   const requiredPcScripts = [
     'version_config.js', 'gas_config.js', 'api_contract.js', 'api_client.js',
     'section_jobs.js', 'section_po.js', 'section_inventory.js', 'section_crm.js',
-    'section_billing.js', 'section_tax.js', 'section_vision.js', 'section_line_center.js',
+    'billing_section.js', 'section_tax.js', 'section_vision.js', 'section_line_center.js',
     'section_settings.js', 'reports.js', 'section_reports.js', 'menu_health.js',
     'runtime_self_test.js', 'dashboard_pc_core.js',
   ];

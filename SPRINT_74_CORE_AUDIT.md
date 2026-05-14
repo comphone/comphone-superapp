@@ -1,6 +1,6 @@
 # Sprint 74 Core System Audit
 
-Generated: 2026-05-14T07:30:02.625Z
+Generated: 2026-05-14T07:34:57.840Z
 
 Score: **100/100**
 Status: **OK**
@@ -62,7 +62,7 @@ No P0/P1/P2 findings. Core system contracts are aligned.
 | ci-cd-recovery | auto-deploy-watches-runtime-critical-paths | Auto deploy should trigger when PWA, GAS, clasp-ready, or guard scripts change. |
 | ci-cd-recovery | regression-guard-runs-focused-audits | Regression guard should run core focused audits before deploy. |
 | ci-cd-recovery | recovery-audit-documented | Recovery baseline should remain documented for rollback reasoning. |
-| technical-debt | smoke-test-data-review-tracked | 4 smoke/test records currently marked for review |
+| technical-debt | smoke-test-data-review-tracked | 0 smoke/test records currently marked for review |
 
 ## Next Operator Actions
 
