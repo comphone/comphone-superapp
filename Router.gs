@@ -345,7 +345,8 @@ function _checkAuthGateV55_(action, payload, e) {
     'cronMorningAlert': 1,
     'sendDashboardSummary': 1, 'sendLineMessage': 1, 'sendLineAlert': 1,
     'nudgeSalesTeam': 1, 'nudgeTech': 1,
-    'mapLineUser': 1
+    'mapLineUser': 1,
+    'cleanupSmokeTestRecords': 1
   };
 
   // Skip if public
@@ -535,6 +536,7 @@ function invokeFunctionByNameV55_(functionName, args) {
     'runPenTest': 1, 'scanVulnerabilities': 1,
     // Added from frontend actions (2026-05-02)
     'createPurchaseOrder': 1, 'logAfterSalesFollowUp': 1, 'receivePurchaseOrder': 1,
+    'cleanupSmokeTestRecords': 1,
   };
 
   if (!ALLOWED_FUNCTIONS[functionName]) {

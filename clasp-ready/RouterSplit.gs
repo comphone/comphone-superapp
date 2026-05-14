@@ -30,6 +30,7 @@ var MODULE_ROUTER = {
   'getJobStateConfig': function(p) { return getJobStateConfig(); },
   'getJobQRData': function(p) { return getJobWebAppPayload(p.job_id || p.jobId || ''); },
   'generateJobQR': function(p) { return generateJobQR(p.job_id || p.jobId || ''); },
+  'cleanupSmokeTestRecords': function(p) { return cleanupSmokeTestRecords(p); },
 
   // Inventory
   'inventoryOverview':    function(p) { return getInventoryOverview(p); },

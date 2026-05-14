@@ -112,7 +112,10 @@
       },
       billing: () => {
         const c = document.getElementById('billing-content') || document.getElementById('section-billing');
-        if (typeof global.renderBillingSection === 'function' && c) c.innerHTML = global.renderBillingSection(data);
+        if (typeof global.renderBillingSection === 'function' && c) {
+          const html = global.renderBillingSection(data);
+          if (typeof html === 'string') c.innerHTML = html;
+        }
         else if (main) main.innerHTML = '<h3>Billing</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
       },
       warranty: () => {

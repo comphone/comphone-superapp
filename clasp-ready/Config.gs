@@ -221,7 +221,7 @@ function setScriptPropertiesFromPayload(payload) {
   payload = payload || {};
   var props = PropertiesService.getScriptProperties();
   var allowed = [
-    'DB_SS_ID', 'ROOT_FOLDER_ID', 'WEB_APP_URL', 'GEMINI_API_KEY',
+    'DB_SS_ID', 'ROOT_FOLDER_ID', 'WEB_APP_URL', 'GEMINI_API_KEY', 'GOOGLE_AI_API_KEY', 'GOOGLE_GEMINI_API_KEY', 'GEMINI_KEY',
     'LINE_CHANNEL_ACCESS_TOKEN', 'LINE_GROUP_TECHNICIAN', 'LINE_GROUP_ACCOUNTING',
     'LINE_GROUP_PROCUREMENT', 'LINE_GROUP_SALES', 'LINE_GROUP_EXECUTIVE',
     'LINE_OA_TOKEN', 'VAT_RATE', 'WHT_RATE', 'LOW_STOCK_ALERT',
@@ -235,6 +235,13 @@ function setScriptPropertiesFromPayload(payload) {
     'LINE_CHANNEL_SECRET', 'HEALTH_ALERT_THRESHOLD'
   ];
   var properties = payload.properties || payload;
+  if (typeof properties === 'string') {
+    try {
+      properties = JSON.parse(properties);
+    } catch (parseError) {
+      return { success: false, error: 'Invalid properties JSON: ' + parseError.toString() };
+    }
+  }
   // ลบ action key ออก
   delete properties['action'];
   var set = [];

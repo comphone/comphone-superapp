@@ -108,6 +108,7 @@
           { action: 'getSecurityStatus', required: true, read: true },
           { action: 'getAuditLog', payload: { limit: 5 }, read: true },
           { action: 'listUsers', read: true },
+          { action: 'cleanupSmokeTestRecords', payload: { execute: false }, read: true, optional: true, smoke: false, smokeReason: 'review/cleanup action for smoke-created records; destructive execution requires explicit confirmation' },
         ],
       },
     ],

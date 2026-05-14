@@ -114,8 +114,20 @@ async function main() {
       report.status = 'blocked';
       report.notes.push('Execution blocked. Set COMPHONE_SMOKE_CLEANUP_CONFIRM=REVIEWED_SMOKE_RECORDS after reviewing the plan.');
     } else {
-      report.status = 'blocked';
-      report.notes.push('No production delete/archive cleanup action is currently wired. This script remains plan-only by design.');
+      const cleanup = await request(url, 'cleanupSmokeTestRecords', {
+        execute: 'true',
+        confirm: 'DELETE_REVIEWED_SMOKE_RECORDS',
+        records: JSON.stringify(report.candidates.map(item => ({ scope: item.scope, id: item.id }))),
+      });
+      report.cleanupAction = cleanup.body;
+      if (cleanup.status === 200 && cleanup.body && cleanup.body.success !== false) {
+        report.executed = !!cleanup.body.executed;
+        report.status = cleanup.body.status || 'cleanup-action-complete';
+        report.notes.push(`Backend cleanup action deleted ${((cleanup.body.deleted || []).length)} reviewed smoke records.`);
+      } else {
+        report.status = 'fail';
+        report.notes.push(`Backend cleanup action failed: ${(cleanup.body && (cleanup.body.error || cleanup.body.status)) || cleanup.status}`);
+      }
     }
   }
 
