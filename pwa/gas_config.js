@@ -1,8 +1,8 @@
 // AUTO-GENERATED — Current GAS deployment URL
-// Recovery baseline: stable Phase 72 code redeployed to GAS @604; Sprint 75 cleanup/billing guard @605
+// Recovery baseline: stable Phase 72 code redeployed to GAS @604; Sprint 75 cleanup/billing guard @605; Sprint 76 Jobs E2E @606
 const GAS_CONFIG = {
   url: 'https://script.google.com/macros/s/AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA/exec',
-  deployDate: '2026-05-14_1440',
+  deployDate: '2026-05-14_1611',
   version: 'v5.18.16-write-flow-validation'
 };
 
