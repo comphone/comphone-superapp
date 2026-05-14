@@ -38,6 +38,32 @@ mount.innerHTML = `
 </div>
 `;
 }
+
+function _normalizeReportData(res) {
+const raw = (res && res.data) ? res.data : (res || {});
+const revenue = Number(raw.revenue || raw.total_revenue || (raw.revenue && raw.revenue.period) || 0);
+const billCount = Number(raw.billing_count || raw.count || (raw.breakdown && raw.breakdown.length) || 0);
+const daily = raw.dailyRevenue || raw.daily_revenue || raw.records || [];
+const records = Array.isArray(daily) ? daily.map(r => ({
+date: r.date || r.day || r.period || '-',
+bill_no: r.billing_id || r.bill_no || r.job_id || '-',
+customer: r.customer || r.customer_name || '-',
+amount: Number(r.amount || r.total || r.revenue || 0),
+vat: Number(r.vat || r.vat_amount || 0)
+})) : [];
+return {
+success: res && res.success !== false,
+summary: {
+total_revenue: revenue,
+count: billCount || records.length,
+avg_per_bill: (billCount || records.length) > 0 ? revenue / (billCount || records.length) : 0,
+total_vat: Number(raw.total_vat || raw.vat_amount || 0)
+},
+records,
+raw
+};
+}
+
 async function _showReport(type) {
 const el = document.getElementById('report-detail');
 if (type === 'attendance') {
@@ -243,7 +269,8 @@ const to = document.getElementById('rpt-bill-to').value;
 const el = document.getElementById('rpt-bill-content');
 el.innerHTML = '<div style="text-align:center;padding:20px;color:#6b7280">กำลังโหลด...</div>';
 try {
-const res = await callApi('getReportData', { date_from: from, date_to: to });
+const apiRes = await callApi('getReportData', { period: 'month', date_from: from, date_to: to });
+const res = _normalizeReportData(apiRes);
 if (!res || !res.success) {
 el.innerHTML = '<div style="text-align:center;padding:30px;color:#6b7280">ไม่พบข้อมูล</div>';
 return;

@@ -60,6 +60,11 @@
         icon: 'bi-graph-up-arrow',
         actions: [
           { action: 'getReportData', payload: { period: 'month' }, required: true, read: true },
+          { action: 'getAttendanceMonthlySummary', payload: { group_by: 'month' }, read: true },
+          { action: 'getDashboardBundle', payload: {}, read: true, optional: true },
+          { action: 'inventoryOverview', payload: {}, read: true },
+          { action: 'analyzeBusiness', payload: { period: '7d' }, read: true, optional: true },
+          { action: 'getDashboardAnalytics', payload: { period: 'month' }, read: true, optional: true },
         ],
       },
       {
