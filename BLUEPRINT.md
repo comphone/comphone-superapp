@@ -2,13 +2,13 @@
 
 > **Version:** v5.18.34-job-menu-hardening (PWA) / GAS Backend v5.18.16-write-flow-validation @604
 
-> **Date:** 2026-05-13 | **Phase:** 73.2 (Functional Menu QA + Data Reality)
+> **Date:** 2026-05-14 | **Phase:** 74 (Core System Sprint Audit)
 
-> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED - repo restored from stable `db942bd`; PC/mobile login and menu runtime verified on live GitHub Pages; System Integrity Audit score 100/100; Menu Journey Audit score 100/100; Functional Menu Audit score 100/100; PC Reports loads the real reports module; PC Tax now has a real renderer; Settings includes Runtime Self-Test, operations diagnostics, diagnostics export, and safe PWA cache repair; GAS redeployed at @604; protected API smoke passes core menus including Vision/LINE read endpoints; GitHub Pages deploy is green; Gemini secret readiness is currently false and must be restored in Script Properties before real Gemini Vision analysis is considered complete.
+> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + CORE-AUDITED - repo restored from stable `db942bd`; PC/mobile login and menu runtime verified on live GitHub Pages; Sprint 74 Core System Audit score 100/100 across source-of-truth, backend contract, frontend runtime, menu/data reality, write-flow safety, AI/LINE readiness, secrets, CI/CD, and recovery controls; System Integrity Audit score 100/100; Menu Journey Audit score 100/100; Functional Menu Audit score 100/100; PC Reports loads the real reports module; PC Tax now has a real renderer; Settings includes Runtime Self-Test, operations diagnostics, diagnostics export, and safe PWA cache repair; GAS redeployed at @604; protected API smoke passes core menus including Vision/LINE read endpoints; GitHub Pages deploy is green; Smoke Cleanup Planner reports 4 review candidates; Gemini secret readiness is currently false and must be restored in Script Properties before real Gemini Vision analysis is considered complete.
 
 ---
 
-## 0. Current Runtime Snapshot (2026-05-13)
+## 0. Current Runtime Snapshot (2026-05-14)
 
 | Item | Current Value | Source of Truth |
 |---|---|---|
@@ -19,7 +19,15 @@
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-07.phase65-line-command-center` | `pwa/api_contract.js` |
 | Last Production Commit | GitHub `main` HEAD | Use `git log -1 --oneline` for the exact commit |
-| Validation Status | Static Guard OK; CI Readiness OK; GAS Source Alignment OK; Code Index OK with no risks; System Integrity Audit 100/100; Menu Journey Audit 100/100; Functional Menu Audit 100/100; UI Write Contract OK; UI Surface Audit OK; public/protected API smoke OK; Vision Capability Audit 100/100; Vision Runtime smoke OK with Gemini readiness warning; Smoke Cleanup Plan reports 4 review candidates; live PC/mobile login verified; GitHub Pages freshness OK | `scripts/pwa_static_guard.js`, `scripts/ci_readiness_check.js`, `scripts/gas_source_alignment.js`, `scripts/build_code_index.js`, `scripts/system_integrity_audit.js`, `scripts/pwa_menu_journey_audit.js`, `scripts/pwa_functional_menu_audit.js`, `scripts/pwa_ui_write_contract.js`, `scripts/pwa_ui_surface_audit.js`, `scripts/pwa_api_smoke.js`, `scripts/vision_capability_audit.js`, `scripts/vision_runtime_smoke.js`, `scripts/pwa_smoke_cleanup_plan.js`, `scripts/pages_deploy_verify.js`, `test_reports/*_latest.*` |
+| Validation Status | Static Guard OK; CI Readiness OK; GAS Source Alignment OK; Code Index OK with no risks; Sprint 74 Core System Audit 100/100; System Integrity Audit 100/100; Menu Journey Audit 100/100; Functional Menu Audit 100/100; UI Write Contract OK; UI Surface Audit OK; public/protected API smoke OK; Vision Capability Audit 100/100; Vision Runtime smoke OK with Gemini readiness warning; Smoke Cleanup Plan reports 4 review candidates; live PC/mobile login verified; GitHub Pages freshness OK | `scripts/pwa_static_guard.js`, `scripts/ci_readiness_check.js`, `scripts/gas_source_alignment.js`, `scripts/build_code_index.js`, `scripts/sprint74_core_audit.js`, `scripts/system_integrity_audit.js`, `scripts/pwa_menu_journey_audit.js`, `scripts/pwa_functional_menu_audit.js`, `scripts/pwa_ui_write_contract.js`, `scripts/pwa_ui_surface_audit.js`, `scripts/pwa_api_smoke.js`, `scripts/vision_capability_audit.js`, `scripts/vision_runtime_smoke.js`, `scripts/pwa_smoke_cleanup_plan.js`, `scripts/pages_deploy_verify.js`, `test_reports/*_latest.*`, `SPRINT_74_CORE_AUDIT.md` |
+
+### Phase 74 Core System Sprint Audit (2026-05-14)
+- Added `scripts/sprint74_core_audit.js` as the repo-level Code Intelligence Layer for release health. It checks source-of-truth drift, backend auth/API contracts, PC/mobile runtime scripts, last-page/last-section restore, service-worker repair safety, functional menu/data reality, write-flow idempotency, destructive action confirmation, AI Vision/LINE Center readiness, obvious secret leakage, CI/CD script coverage, and recovery documentation.
+- Current audit result: **100/100**, **0 P0**, **0 P1**, **0 P2** findings. Generated reports: `test_reports/sprint74_core_audit_latest.json`, `test_reports/sprint74_core_audit_latest.md`, and `SPRINT_74_CORE_AUDIT.md`.
+- `scripts/regression-guard.sh` now runs Sprint 74 Core System Audit, and `.github/workflows/auto-deploy.yml` includes the new audit script in Node syntax checks. Guard checksum was updated in `scripts/.guard-checksums.md5`.
+- Live protected API smoke was rerun with a short-lived admin session on 2026-05-14. Core protected menus passed: dashboard, CRM, inventory, purchase orders, reports, Vision stats/version, LINE Command Center/status, and admin security status.
+- Smoke Cleanup Planner scanned production read APIs and still reports 4 review candidates from prior write-smoke activity: jobs `J0022`, `J0021` and customers `C0003`, `C0002`. Keep cleanup manual/review-first until the operator approves destructive cleanup mode.
+- Remaining operator actions: restore the Gemini secret in Apps Script Properties for real Gemini Vision analysis, and keep all future Hermes/agent-assisted bulk edits gated by `node scripts/sprint74_core_audit.js` plus `bash scripts/regression-guard.sh`.
 
 ### Phase 73.2 Functional Menu QA + Data Reality Update (2026-05-13)
 - Added `scripts/pwa_functional_menu_audit.js` to validate that required PC/mobile menus have real containers, renderers/loaders, API contracts, diagnostics surfaces, and no required production menu is left as a blank/coming-soon shell.
