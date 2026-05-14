@@ -126,7 +126,7 @@ function sendLineRoomMessage(params) {
     var groupId = _lineCenterResolveRoomId_(room);
     if (!groupId) return { room: room, success: false, error: 'LINE group is not configured' };
     try {
-      if (typeof sendLinePush === 'function') return Object.assign({ room: room }, sendLinePush(groupId, message));
+      if (typeof sendLinePush === 'function') return Object.assign({ room: room }, sendLinePush(message, groupId));
       if (typeof pushLineMessage === 'function') return Object.assign({ room: room }, pushLineMessage(groupId, message));
       return { room: room, success: false, error: 'No LINE push adapter available' };
     } catch (e) {
