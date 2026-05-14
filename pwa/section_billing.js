@@ -3,7 +3,7 @@
  *
  * The production Billing UI lives in billing_section.js. This file remains in
  * the load order for backwards compatibility with older shells, but it must not
- * provide fake demo data or unfinished handlers.
+ * provide placeholder data or unfinished handlers.
  */
 (function(global) {
   'use strict';

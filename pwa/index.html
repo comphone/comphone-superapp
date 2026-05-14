@@ -536,6 +536,14 @@
 </div>
 </div>
 
+<!-- Billing Modal -->
+<div id="modal-billing" class="modal-overlay hidden" onclick="closeModal('modal-billing')">
+<div class="modal-sheet" onclick="event.stopPropagation()">
+<div class="modal-handle"></div>
+<div id="billing-modal-content"></div>
+</div>
+</div>
+
 <!-- Notifications Overlay -->
 <div id="notifications-overlay" class="cp-sheet-overlay hidden" onclick="closeNotifications()">
 <div class="cp-sheet" onclick="event.stopPropagation()">
@@ -571,6 +579,8 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     closeModal('modal-job');
     closeModal('modal-search');
+    closeModal('modal-billing');
+    if (typeof closeSlipUploadModal === 'function') closeSlipUploadModal();
     closeNotifications();
     closeMoreMenu();
   }

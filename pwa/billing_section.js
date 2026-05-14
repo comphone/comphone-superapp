@@ -8,6 +8,40 @@ let _billingData = [];
 let _billingSearchText = '';
 let _billingStatusFilter = 'ALL';
 
+function _normalizeBilling(billing) {
+  const b = billing || {};
+  const out = Object.assign({}, b);
+  const pairs = {
+    Billing_ID: 'billing_id',
+    Job_ID: 'job_id',
+    Customer_Name: 'customer_name',
+    Phone: 'phone',
+    Parts_Description: 'parts_description',
+    Parts_Cost: 'parts_cost',
+    Labor_Cost: 'labor_cost',
+    Subtotal: 'subtotal',
+    Discount: 'discount',
+    Total_Amount: 'total_amount',
+    Amount_Paid: 'amount_paid',
+    Balance_Due: 'balance_due',
+    Payment_Status: 'payment_status',
+    PromptPay_Biller_ID: 'promptpay_biller_id',
+    PromptPay_Payload: 'promptpay_payload',
+    PromptPay_QR_URL: 'promptpay_qr_url',
+    Receipt_No: 'receipt_no',
+    Receipt_URL: 'receipt_url',
+    Invoice_Date: 'invoice_date',
+    Paid_At: 'paid_at',
+    Notes: 'notes'
+  };
+  Object.keys(pairs).forEach(upper => {
+    const lower = pairs[upper];
+    if (out[upper] == null && out[lower] != null) out[upper] = out[lower];
+    if (out[lower] == null && out[upper] != null) out[lower] = out[upper];
+  });
+  return out;
+}
+
 // ===========================================================
 // 1. renderBillingSection(data) — main entry
 // ===========================================================
@@ -114,7 +148,7 @@ async function _listBillings() {
         '<tr><td colspan="14" style="text-align:center;padding:24px;color:#ef4444;">ไม่สามารถโหลดข้อมูลได้</td></tr>';
       return;
     }
-    _billingData = res.billings || [];
+    _billingData = (res.billings || []).map(_normalizeBilling);
     _updateBillingKPI();
     _renderBillingRows(_billingData);
   } catch (e) {
@@ -139,7 +173,7 @@ async function _showBillingDetail(jobId) {
       alert('ไม่พบข้อมูลบิล');
       return;
     }
-    const b = res.billing;
+    const b = _normalizeBilling(res.billing);
     const statusColor = b.Payment_Status === 'PAID' ? '#059669' : b.Payment_Status === 'PARTIAL' ? '#d97706' : '#ef4444';
     const statusBg = b.Payment_Status === 'PAID' ? '#d1fae5' : b.Payment_Status === 'PARTIAL' ? '#fef3c7' : '#fee2e2';
 
@@ -340,13 +374,13 @@ async function _doMarkPaid(jobId) {
   if (!confirm('ยืนยันการชำระเงินสำหรับ Job ' + jobId + '?')) return;
 
   // find billing to get amount
-  const b = _billingData.find(x => String(x.Job_ID) === String(jobId));
-  const balanceDue = b ? Number(b.Balance_Due || 0) : 0;
+  const b = _billingData.find(x => String(x.Job_ID) === String(jobId) || String(x.job_id) === String(jobId));
+  const totalForPayment = b ? Number(b.Total_Amount || b.total_amount || b.Balance_Due || b.balance_due || 0) : 0;
 
   try {
     const res = await callApi('markBillingPaid', {
       job_id: jobId,
-      amount_paid: balanceDue,
+      amount_paid: totalForPayment,
       payment_method: 'cash'
     });
     if (res && res.success) {
@@ -374,7 +408,7 @@ async function _showPromptPayQR(jobId) {
       return;
     }
 
-    const qrUrl = res.qr_url || '';
+    const qrUrl = res.qr_url || res.qr_image_url || res.promptpay_qr_url || '';
     const amount = res.amount || 0;
 
     // close current modal content and show QR
