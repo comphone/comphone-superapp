@@ -34,6 +34,7 @@ jobs:
             echo "✅ Backup: session_${TIMESTAMP}.md"
           else
             echo "⚠️ memory/session.md not found"
+            exit 0
           fi
 
       - name: Keep only last 30 backups
@@ -47,7 +48,7 @@ jobs:
         run: |
           git config user.name "COMPHONE Backup Bot"
           git config user.email "backup-bot@comphone.local"
-          git add backups/session/
+          git add -f backups/session/session_*.md backups/session/session_latest.md
           if git diff --staged --quiet; then
             echo "ℹ️ No changes to commit"
           else

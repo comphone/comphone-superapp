@@ -16,6 +16,10 @@ docs/SYSTEM_KEYS_BACKUP*.md
 *.bak
 *.tmp
 backups/
+!backups/
+backups/*
+!backups/session/
+!backups/session/*.md
 .git-rewrite/
 test_reports/*_latest.json
 test_reports/*_latest.md
