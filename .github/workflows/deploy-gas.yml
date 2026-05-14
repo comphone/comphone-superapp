@@ -79,30 +79,8 @@ jobs:
       - name: 🔍 Validate GS Syntax
         run: |
           echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Validate GS Syntax"
-          FAILED=0
-          for f in clasp-ready/*.gs; do
-            # GAS uses ES5-ish syntax — basic check: no unmatched brackets
-            node -e "
-              const fs = require('fs');
-              const code = fs.readFileSync('$f', 'utf8');
-              try {
-                // Simple bracket balance check
-                let depth = 0;
-                for (const c of code) {
-                  if (c === '{') depth++;
-                  if (c === '}') depth--;
-                  if (depth < 0) throw new Error('Unmatched }');
-                }
-                if (depth !== 0) throw new Error('Unmatched {');
-                console.log('✅ $f');
-              } catch (e) {
-                console.error('❌ $f:', e.message);
-                process.exit(1);
-              }
-            " || { echo "❌ $f FAILED"; FAILED=1; }
-          done
-          if [ "$FAILED" -eq 1 ]; then exit 1; fi
-          echo "[✅] All GS files passed basic validation"
+          node scripts/gas_syntax_guard.js
+          echo "[โ…] All GS files passed syntax guard"
 
       # ── STEP 1a2: Regression Guard (mandatory pre-deploy gate) ──
       - name: 🛡️ Regression Guard
