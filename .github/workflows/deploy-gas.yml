@@ -80,7 +80,7 @@ jobs:
         run: |
           echo "[⏰ $(date '+%Y-%m-%d %H:%M:%S UTC')] STEP: Validate GS Syntax"
           node scripts/gas_syntax_guard.js
-          echo "[โ…] All GS files passed syntax guard"
+          echo "[OK] All GS files passed syntax guard"
 
       # ── STEP 1a2: Regression Guard (mandatory pre-deploy gate) ──
       - name: 🛡️ Regression Guard
