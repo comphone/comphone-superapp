@@ -361,6 +361,16 @@ else
   warn "Node or sprint79_vision_line_flow_audit.js unavailable - skipping Sprint 79 Vision+LINE flow audit"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint80_production_journey_audit.js" ]; then
+  if node scripts/sprint80_production_journey_audit.js; then
+    echo "   Sprint 80 production journey audit passed"
+  else
+    fail "Sprint 80 production journey audit FAILED"
+  fi
+else
+  warn "Node or sprint80_production_journey_audit.js unavailable - skipping Sprint 80 production journey audit"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"

@@ -348,6 +348,18 @@ function sectionLabel(s) {
   return { jobs:'งานบริการ', po:'ใบสั่งซื้อ', inventory:'สต็อก', billing:'ใบเสร็จ/วางบิล', warranty:'รับประกัน', revenue:'รายรับ', tax:'ภาษี', crm:'ลูกค้า', attendance:'ลงเวลา', settings:'ตั้งค่า' }[s] || s;
 }
 
+function updateVersionBadge() {
+  const badge = document.getElementById('version_badge');
+  if (!badge) return;
+  const version = window.COMPHONE_VERSION || window.__APP_VERSION || 'v?';
+  const apiOk = !!(window.callApi || window.callAPI || window.COMPHONE_GAS_URL || (window.GAS_CONFIG && window.GAS_CONFIG.url));
+  const cacheOk = !!(window.COMPHONE_CACHE_VERSION || (window.VERSION_CONFIG && window.VERSION_CONFIG.cacheVersion));
+  const apiClass = apiOk ? 'ok' : 'warn';
+  const cacheClass = cacheOk ? 'ok' : 'warn';
+  badge.className = 'version-badge';
+  badge.innerHTML = `${version} | API:<span class="${apiClass}">${apiOk ? 'OK' : 'CHECK'}</span> | CACHE:<span class="${cacheClass}">${cacheOk ? 'OK' : 'CHECK'}</span>`;
+}
+
 function setActiveNav(section) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const items = document.querySelectorAll('.nav-item');
@@ -359,15 +371,7 @@ function setActiveNav(section) {
 }
 
 // PHASE 25.5 — VERSION BADGE
-(function updateVersionBadge() {
-  const badge = document.getElementById('version_badge');
-  if (!badge) return;
-  const aiOk = !!(window.AI_EXECUTOR && window.AI_EXECUTOR.execute);
-  const lockOk = !!(window.__TRUSTED_ACTIONS && Object.keys(window.__TRUSTED_ACTIONS).length > 0);
-  const aiClass = aiOk ? 'ok' : 'err';
-  const lockClass = lockOk ? 'ok' : 'err';
-  badge.innerHTML = `${window.__APP_VERSION || 'v?'} | AI:<span class="${aiClass}">${aiOk?'OK':'FAIL'}</span> | LOCK:<span class="${lockClass}">${lockOk?'OK':'FAIL'}</span>`;
-})();
+updateVersionBadge();
 
 function testAccountingConnection() {
   const software = document.getElementById('accounting-software').value;
@@ -413,12 +417,6 @@ function exportBillToAccountingUI() {
 }
 window.addEventListener('load', function() {
   setTimeout(function() {
-    const badge = document.getElementById('version_badge');
-    if (!badge) return;
-    const aiOk = !!(window.AI_EXECUTOR && window.AI_EXECUTOR.execute);
-    const lockOk = !!(window.__TRUSTED_ACTIONS && Object.keys(window.__TRUSTED_ACTIONS).length > 0);
-    const aiClass = aiOk ? 'ok' : 'err';
-    const lockClass = lockOk ? 'ok' : 'err';
-    badge.innerHTML = `${window.__APP_VERSION || 'v?'} | AI:<span class="${aiClass}">${aiOk?'OK':'FAIL'}</span> | LOCK:<span class="${lockClass}">${lockOk?'OK':'FAIL'}</span>`;
+    updateVersionBadge();
   }, 1500);
 });
