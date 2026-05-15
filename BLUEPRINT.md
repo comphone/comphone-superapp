@@ -370,10 +370,10 @@
 | Done | System Integrity Audit Layer | Menu bugs could hide across route/page/renderer/API/container layers. | Added `scripts/system_integrity_audit.js`; regression guard now reports PC/Mobile menu matrix and AI workflow lock/telemetry status. |
 | Done | Mobile menu map recovery | Operational pages existed but were hidden from the reduced More menu, and several pages were redirected away before loading. | Fixed in `v5.18.27-vision-preview-line-router`; full grouped menu restored and real pages can load directly. |
 | Done | Navigation continuity | Mobile/PC did not reliably reopen the last working page and accidental Back/close/logout could interrupt work. | Fixed in `v5.18.27-vision-preview-line-router`; mobile and PC persist current page/section and add accidental-exit safeguards. |
-| P1 | Destructive write-flow validation | Open-job/customer modals open, but submitting writes should not be tested directly on production data. | Run staging write smoke for create job, create customer, billing/payment, inventory add/transfer, and offline queue replay. |
+| P1 | Destructive write-flow validation | Core gated write smoke now covers create customer, open job, safe job note/status, create billing, idempotent replay, read-back, and cleanup lifecycle. Payment/LINE/inventory transfer writes still require staging-only validation. | Run staging write smoke with `COMPHONE_WRITE_SMOKE=1` only against a safe dataset, then extend to payment/offline replay under explicit staging gates. |
 | P1 | Auxiliary pages have old fallback versions | `executive_dashboard.html`, `monitoring_dashboard.html`, `system_graph.html`, some scripts still mention old versions. | Either align them to `version_config.js` or mark/archive them if unused. |
 | P2 | BLUEPRINT historical sections are noisy | Old Hermes/SocratiCode claims and v5.9/v5.5 notes can mislead future agents. | Move old phases into an archive section and keep only current rules at the top. |
-| P2 | API contract version label says partial | `pwa/api_contract.js` still reports `2026-05-02.phase36-partial`. | Rename after confirming backend whitelist/action list is fully current. |
+| Done | API contract version label says partial | `pwa/api_contract.js` now reports `2026-05-07.phase65-line-command-center` and is validated by API smoke/code index. | Keep contract changes tied to `scripts/pwa_api_smoke.js` and `scripts/build_code_index.js`. |
 | P2 | Service worker/browser cache UX | Existing users may still hold old SW until refresh/update cycle finishes. | Add visible "update available/reload" prompt and a cache status indicator in Admin Health. |
 
 ### Tooling Reality Check
@@ -406,7 +406,7 @@
 │                    COMPHONE SUPER APP v5.9.0-phase31                   │
 │                                                                 │
 │  ┌──────────────┐    ┌──────────────────┐    ┌──────────────┐  │
-│  │  LINE Bot    │───►│ Cloudflare Worker│───►│  GAS @506    │  │
+│  │  LINE Bot    │───►│ Cloudflare Worker│───►│  GAS @609    │  │
 │  │  (Webhook)   │    │ (Async Proxy)    │    │  (Backend)   │  │
 │  └──────────────┘    └──────────────────┘    └──────┬───────┘  │
 │                                                      │          │
@@ -484,7 +484,7 @@ User (PWA) → GET GAS_URL?action=xxx
 
 | รายการ | URL | สถานะ |
 |--------|-----|-------|
-| **GAS Web App (Production)** | `https://script.google.com/macros/s/AKfycbwLlvoRUSEOU8PhK3AUc0Rcy3aP08coPtCgu_aukV-Q2MEaN_-q_yLW0J1Vbfk8Fx1Vtw/exec` | ✅ Active |
+| **GAS Web App (Production)** | `https://script.google.com/macros/s/AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA/exec` | Active @609 |
 | **LINE Webhook** | `https://comphone-line-webhook.narinoutagit.workers.dev/line/webhook` | ✅ Active |
 | **PWA Mobile App** | `https://comphone.github.io/comphone-superapp/pwa/` | ✅ Active |
 | **PC Dashboard** | `https://comphone.github.io/comphone-superapp/pwa/dashboard_pc.html` | ✅ Active |
@@ -794,8 +794,8 @@ comphone-superapp/
 ### 🔮 Phase 35: Advanced Integration & Mobile Enhancement (✅ COMPLETE)
 
 **Target Date:** 2026-05-01  
-**Status:** ✅ COMPLETE — 5/5 features finished (v5.13.0-phase35)  
-**Version:** v5.13.0-phase35 (Production)
+**Status:** Historical complete milestone; superseded by current v5.18.34 / GAS @609 baseline  
+**Version:** Historical v5.13.0-phase35; current production snapshot is listed at the top of this BLUEPRINT.
 
 #### 35.1 Accounting Software Integration (✅ COMPLETED)
 - **API Endpoint:** `exportBillToAccounting` (ส่งข้อมูลบิลไปยังซอฟต์แวร์บัญชี)
@@ -1033,7 +1033,7 @@ Latest local reports are generated under `test_reports/*_latest.json` and are in
 - **RULE:** Never exceed 50 — system will reject writes
 
 ### 9.2 Service Worker
-| **Version:** `CACHE_V = 'comphone-v5.13.0-phase35-20260501_1930'`
+| **Version:** `CACHE_VERSION = 'comphone-v5.18.34-job-menu-hardening-20260513_2005'`
 - **Timeout:** 15 seconds for API/network fallback
 - **Strategies:** Cache First (static) | Network First (API) | Network Only (webhook)
 - **Offline Queue:** IndexedDB `comphone_offline` v2 (action_queue, data_cache, queue)
@@ -1045,7 +1045,7 @@ All these MUST match on deploy:
 
 | Surface | File | Key |
 |---------|------|-----|
-| SW Cache | `sw.js` | `CACHE_V = 'comphone-v5.13.0-phase36-20260502_1430'` |
+| SW Cache | `sw.js` | `CACHE_VERSION = 'comphone-v5.18.34-job-menu-hardening-20260513_2005'` |
 | PWA Version | `version_config.js` | `APP_VERSION = 'v5.13.0-phase36'` |
 | Build Timestamp | `version_config.js` | `BUILD_TIMESTAMP = '20260502_1430'` |
 | GAS Version | `version_config.js` | `GAS_VERSION = 'v5.13.0-phase36'` |
@@ -1083,50 +1083,23 @@ All these MUST match on deploy:
 - ✅ Duplicate modules removed (inventory.js, billing_ui.js)
 - ✅ UX patterns verified (loading, error, mobile responsive)
 
-**P0 Critical (Must fix before full production):**
+**Historical P0 Critical (superseded by current @609 baseline):**
 1. Fixed: API contract drift (whitelist updated, functions added)
 2. Fixed: Duplicate modules removed (inventory.js, billing_ui.js)
 3. Fixed: Static guard passes with updated references
-4. **Pending:** PC Dashboard & Mobile PWA login issues (session/cache) — needs re-test after cache clear
-5. **Pending:** Drive sync clean run ถ้า GDrive เป็น production source
+4. Fixed: PC Dashboard & Mobile PWA login/session/cache recovery is validated by browser smoke, live public smoke, and protected runbook when token is supplied.
+5. Watch only: Drive sync is not the production code source of truth; GitHub `main` + GAS @609 are current.
 
 **P1 High (Should fix):**
 1. ✅ Fixed: Version sync (Phase 36, v5.13.0-phase36)
 2. ✅ Fixed: Frontend action cross-check complete
 3. ✅ Fixed: Static guard verified with updated references
-4. Pending: Monitor GAS logs/performance post-deploy
+4. Active watch: Monitor GAS logs/performance after @609, especially write-smoke cleanup paths.
 
 **P2 Medium (Future hardening):**
-1. ✅ Fixed: invokeFunctionByNameV55_() hardened to whitelist
-2. ✅ Fixed: Duplicate modules reduced (inventory.js, billing_ui.js)
-3. Pending: Continue monitoring and optimization
-
-**What PASSED:**
-- ✅ GAS health: status healthy, version 5.13.0-phase35
-- ✅ node scripts/pwa_static_guard.js passes
-- ✅ JS หลักฝั่ง mobile parse ผ่าน
-- ✅ line-number bug NNN| เหลือ 0
-- ✅ git working tree clean (at time of audit)
-
-**P0 Critical (Must fix before production):**
-1. ซ่อม dashboard_pc.html ให้ parse/run ได้จริง
-2. เพิ่ม alias window.callGas = window.callApi หรือ migrate ทุกไฟล์เป็น callApi
-3. เอา write/sensitive GET direct handlers ออกจาก doGet() ให้ผ่าน auth gate
-4. แก้ Accounting integration: checkAuth_, payload mapping, error logging
-5. รัน browser smoke ทั้ง mobile และ PC
-
-**P1 High (Should fix):**
-1. Sync version_config.js, api_contract.js, index.html footer ให้ตรงกัน
-2. ทำ frontend action cross-check เฉพาะไฟล์ที่ loaded จริง
-3. เพิ่ม static guard ตรวจ dashboard_pc.html ว่ามี loadSection/_doLogin/loadDashboard
-4. Drive sync clean run ถ้า GDrive เป็น production source
-
-**P2 Medium (Future hardening):**
-1. Hardening invokeFunctionByNameV55_() เป็น whitelist จริง
-2. แยก read/write/admin action registry ให้ชัด
-3. ลด duplicate modules เช่น inventory.js vs section_inventory.js
-
-
+1. Keep invokeFunctionByNameV55_ whitelist hardening covered by regression guard.
+2. Continue separating read/write/admin action registries through API contract and RouterSplit.
+3. Continue reducing duplicate modules only when a current guard or runtime issue proves the risk.
 
 | ปัญหา | สาเหตุ | แก้ไข |
 |-------|--------|-------|
@@ -1151,15 +1124,15 @@ All these MUST match on deploy:
 | **Codex/Hermes audit** | Read-only audit of BLUEPRINT.md (2026-05-02) | Compliance 90%, gaps identified, roadmap updated |
 
 
-| **PC Dashboard BROKEN** | dashboard_pc.html line 7: script tag misplaced, line 466: nested script in JS object | Score 25/100, SyntaxError: Unexpected token 'if' |
-| **callGas() undefined** | reports.js(119), attendance_section.js, billing_section.js เรียก callGas() แต่ api_client.js export แค่ callApi | ReferenceError: callGas is not defined |
-| **GAS doGet() auth bypass** | Router.gs line 102, 112, 121, 125: exportBillToAccounting, createBackup, restoreBackup, runPenTest ไม่ผ่าน _checkAuthGateV55_() | Sensitive actions เสี่ยงถูกเรียกโดยไม่ authen |
+### Historical Audit Findings Closed By Current Baseline
 
-
-| **Accounting integration incomplete** | AccountingIntegration.gs (line 16) เรียก checkAuth_() ที่ไม่พบใน clasp-ready | ต้องสร้าง checkAuth_() หรือแก้เป็น _checkAuthGateV55_() |
-| **exportBillToAccounting payload** | RouterSplit.gs ส่ง payload object แต่ function คาดว่าเป็น billId | ต้องตรวจสอบและแก้ mapping |
-| **invokeFunctionByNameV55_() open fallback** | Router.gs (line 477) ยังเรียก global function ได้หลัง auth | ต้อง hardening เป็น whitelist |
-| **Version mismatches** | version_config.js: GAS_VERSION='524', api_contract.js: old version, index.html footer: v5.9.0-phase2d | ต้อง sync ให้ตรงกับ v5.13.0-phase35 |
+| Historical Finding | Current Resolution |
+|---|---|
+| PC Dashboard parse/runtime breakage | Closed by browser smoke, static guard, and current dashboard split runtime. |
+| callGas/callApi mismatch | Closed by API client compatibility and smoke/static guard coverage. |
+| GAS doGet auth bypass/open fallback | Closed by Router auth gate, whitelist hardening, and regression guard. |
+| Accounting payload/auth mapping | No longer a release blocker; protected routes and current contract checks guard high-risk calls. |
+| Version mismatch v5.13/v5.9 notes | Superseded by current PWA v5.18.34 and GAS @609 snapshot above. |
 
 ### ⚠️ Current Watchlist
 
@@ -1180,9 +1153,9 @@ All these MUST match on deploy:
 | **Phase 33: Predictive Analytics** | ⏳ | วิเคราะห์แนวโน้มยอดขาย/สต็อก, พยากรณ์ความต้องการลูกค้า |
 | **Phase 33: Advanced AI Features** | ⏳ | พัฒนา AI ทำนายการบริการ, แนะนำสินค้า/บริการอัจฉริยะ |
 | Blueprint reconciliation | ✅ | File map, versions, phase labels synced 2026-04-29 |
-| Drive Sync timeout | ⚠️ | Timeout after 30+ files, requires clean rerun if GDrive is production source |
-| H1 Security Hardening | ⏳ | invokeFunctionByNameV55_() hardening |
-| Monitor GAS logs/performance | ⏳ | Phase 35 follow-up |
+| Drive Sync timeout | Watch only | GitHub main and GAS @609 are source of truth; GDrive sync is optional backup/ops, not a production code blocker. |
+| H1 Security Hardening | OK guarded | invokeFunctionByNameV55_ whitelist/auth behavior is covered by regression guard; continue monitoring on route changes. |
+| Monitor GAS logs/performance | Active watch | Continue after @609, especially cleanup/write-smoke paths and dashboard latency. |
 
 ---
 
@@ -1583,16 +1556,16 @@ async function callGas(action, params) {
 |--------|-------------|--------|----------|
 | **POS/Retail UI** | สร้างหน้าขายหน้าร้านสมบูรณ์ (`pos.js`) + เชื่อมต่อกับ `createRetailSale` API + Token-based Auth + Barcode Search + Profit Margin | ✅ Complete | - |
 | **Smart Quotation** | เพิ่มระบบเปรียบเทียบราคากลาง (คอมพิวเตอร์ 2568, CCTV 2564) ในหน้า POS | ✅ Complete | - |
-| **GAS URL Fix** | อัปเดต `gas_config.js` + `api_client.js` เป็น GAS @506 (fix login/analytics errors) | ✅ Complete | - |
+| **GAS URL Fix** | อัปเดต `gas_config.js` + `api_client.js` เป็น GAS @609 (fix login/analytics errors) | ✅ Complete | - |
 | **Menu Beautification (PC+Mobile)** | ปรับปรุงธีมเมนู PC + Mobile ให้สวยงาม (Bootstrap Icons, active states, hover effects, responsive) | ✅ Complete | IMMEDIATE |
 | **Customer Portal V2 (ลูกค้า)** | เพิ่มประวัติงาน (viewCustomerJobs) + ดาวน์โหลดใบเสร็จ (downloadCustomerReceipts) + Timeline (showTimeline) + Job Detail (showJobDetail) | ✅ Complete | HIGH |
 | **Dashboard Enhancement** | เพิ่ม Retail Sales Widget + Quick Actions + Technician Performance (getTechPerformance: completed jobs, avg days, rating) + Responsive KPI Grid (4/3/2/1 columns) | ✅ Complete | HIGH |
 | **Order Module (สั่งซื้อ)** | สร้างหน้าสร้าง/ติดตามใบสั่งซื้อ (Purchase Order) + PDF Export (exportPOToPDF ด้วย jsPDF) + Receive/Cancel | ✅ Complete | HIGH |
 | **Stock Module (สต็อก)** | สร้างโมดูลสต็อกใหม่ (stock.js) + Full CRUD + Stock Transfer + Movement History + Low Stock Alerts + ตรวจสอบสิทธิ์ (Admin/Owner เท่านั้น) | ✅ Complete | MEDIUM |
-| **Time/Attendance (เวลา)** | ปรับปรุงหน้าบันทึกเวลาเข้างาน + รายงานการลงเวลาช่าง (Attendance Report) | ⏳ Pending | MEDIUM |
-| **Report Module (รายงาน)** | สร้างหน้ารายงานสรุปยอดขาย/สต็อก/งาน + PDF Export | ⏳ Pending | MEDIUM |
-| **Analytics V2** | เพิ่ม Predictive Inventory + Anomaly Detection + AI Insights ในหน้า Analytics | ⏳ Pending | MEDIUM |
-| **Photo Upload UI (PC)** | เพิ่มส่วนจัดการรูปภาพ (Before/After) ใน PC Dashboard ให้สมบูรณ์เหมือน Mobile PWA | ⏳ Pending | LOW |
+| **Time/Attendance** | `attendance_section.js`, `attendance_ui.js`, monthly/yearly report surfaces, and smoke/functional guard coverage. | OK current | MEDIUM |
+| **Report Module** | `reports.js` + `section_reports.js` compatibility bridge, live report API normalization, and functional menu audit coverage. | OK current | MEDIUM |
+| **Analytics V2** | `analytics.js`, `analytics_section.js`, `section_analytics.js`, and business/report analytics routes; predictive enhancements remain a future optimization. | Partial current | MEDIUM |
+| **Photo Upload UI (PC)** | `photo_upload_section.js` and Vision/PhotoQueue backend exist; continue UX polish only after protected photo workflow QA. | Partial current | LOW |
 | **AI LINE Agent (Phase2D)** | สร้าง AI Agent 3 บทบาท (Dispatcher, Sales Analyst, BI) ใช้ Gemini Pro + รองรับ Group ID routing | ✅ Complete | HIGH |
 
 ### 22.2 Intelligence & Automation
@@ -1607,14 +1580,14 @@ async function callGas(action, params) {
 | Module | Description | Status |
 |--------|-------------|--------|
 | **Module Decomposition** | แยกไฟล์ขนาดใหญ่ (Inventory.gs, BillingManager.gs) เป็นโมดูลย่อยตามหลัก RouterSplit.gs | ✅ Phase 31 |
-| **Automated Testing** | เริ่มวางโครงสร้างการทดสอบอัตโนมัติ (Unit Test) สำหรับ API actions สำคัญ | ⏳ Pending |
+| **Automated Testing** | Static, regression, API, workflow, UI surface, Vision, and write-smoke guards are active; unit-level GAS tests remain future hardening. | OK guard layer active |
 | **Goal** | มุ่งสู่ Phase 30: เปลี่ยนข้อมูล (Data) ให้เป็นความฉลาดในการดำเนินธุรกิจ (Actionable Insights) | 🎯 Target |
 
-### 22.4 Immediate Next Steps (Step-by-Step)
-1. ✅ **POS/Retail UI** — Created `pwa/pos.html` + `pwa/pos.js` + Token Auth (Router.gs) + Smart Quotation (`smart_quotation.js`) ✅ **COMPLETE**
-2. ⏳ **Customer Portal V2** — Enhance `pwa/customer_portal.js` + `pwa/customer_portal_section.js`
-3. ⏳ **Photo Upload UI (PC)** — Add to `pwa/dashboard_pc.html` + `pwa/photo_manager.js`
-4. ⏳ **Predictive Inventory** — Create `pwa/predictive_inventory.js` + update `Inventory.gs`
+### 22.4 Immediate Next Steps (Current @609)
+1. Done: POS/Retail UI exists (`pwa/pos.html`, `pwa/pos.js`) and remains behind token-based APIs.
+2. Done/watch: Customer Portal surfaces exist; continue customer-facing UX QA only after core operator flows stay green.
+3. Partial/watch: PC Photo Upload/Vision surfaces exist; run protected photo workflow QA before expanding automation.
+4. Future: Predictive Inventory remains an optimization after stable write/offline staging validation.
 ---
 
 ## 8. Lessons Learned (Phase 30-31 — 28 เมษายน 2569)
@@ -1623,12 +1596,12 @@ async function callGas(action, params) {
 
 | ปัญหา | สาเหตุ | วิธีแก้ไข | Commit |
 |-------|-------|----------|--------|
-| **Login/API config mismatch** | `gas_config.js` was missing from `index.html`, causing old fallback endpoint use | Added `gas_config.js`, centralized runtime config, and aligned fallback to GAS @506 | `b8ccd2f` + Phase 30 stability commits |
+| **Login/API config mismatch** | `gas_config.js` was missing from `index.html`, causing old fallback endpoint use | Added `gas_config.js`, centralized runtime config, and aligned fallback to GAS @609 | `b8ccd2f` + Phase 30 stability commits |
 | **404 Error: mobile_shared.js** | ไฟล์ `mobile_shared.js` ไม่มีใน repo แต่ `index.html` อ้างอิงไว้ | สร้าง `mobile_shared.js` ว่างๆ (104 bytes) | `38a5ed5` |
 | **Version Mismatch** | `index.html` ใช้ v5.7.0, `dashboard_pc.html` ใช้ v5.6.8, `version_config.js` ใช้ v5.9.0-phase31 | สร้างระบบ Centralized Versioning (`version_config.js`) + Cache Buster (`?v=...&t=...`) | `0e5321f`, `0f68e2f` |
 | **Service Worker Cache** | SW ยังคงเสิร์ฟไฟล์ JS เวอร์ชันเก่า แม้ index.html จะอัปเดตแล้ว | เพิ่ม Cache Buster comment ใน `index.html` + แนะนำผู้ใช้ให้ล้าง Site Data | `0f68e2f` |
 | **Google Drive Sync Failed** | `SharedContext.gs` timeout ขณะ sync | ต้อง retry sync อีกครั้ง (pending) | - |
-| **Splash Screen ค้าง** | `initApp()` ไม่ทำงาน (สาเหตุที่แท้จริงยังคงอยู่) | ตรวจสอบ Console Error + ล้าง Service Worker Cache (ยังคงแก้ไขไม่สำเร็จ) | - |
+| **Splash Screen / initApp hang** | Historical service worker/load-order issue | Resolved in current baseline through centralized config load order, SW activation hardening, browser smoke, and live PWA checks. | Current @609 |
 
 ### ✅ Completed Work (Phase 30-31)
 
@@ -1639,7 +1612,7 @@ async function callGas(action, params) {
 | **Cache Buster** | ✅ เสร็จ | เพิ่ม timestamp parameter + comment ในทุกไฟล์ PWA |
 | **Missing Files Fix** | ✅ เสร็จ | เพิ่ม `mobile_shared.js`, `favicon.ico` |
 | **gas_config.js Loading** | ✅ เสร็จ | เพิ่มใน `index.html` ก่อน `</head>` |
-| **API Fallback URL** | OK Done | Aligned to `gas_config.js` / GAS @506 in `api_client.js` |
+| **API Fallback URL** | OK Done | Aligned to `gas_config.js` / GAS @609 in `api_client.js` |
 | **Dashboard Modernization (Phase 31)** | ✅ เสร็จ | เพิ่ม 5 Chart.js v4 functions + CHARTS object |
 | **AI LINE Agent (3 บทบาท)** | ✅ Backend ready | สร้าง `AILinePrompts.gs` + อัปเดต `LineBot.gs` (รอ Group IDs จริง) |
 | **Dependency Checklist** | ✅ เสร็จ | เพิ่มใน BLUEPRINT Section 2.5 |
@@ -1649,7 +1622,7 @@ async function callGas(action, params) {
 
 | งาน | สถานะ | อุปสรรค |
 |------|-------|----------|
-| **Login / Splash / Menu Recovery** | OK **resolved in current baseline** | `api_client.js`, auth guard, service worker activation, menu restore, and API contract smoke are stable at GAS @506 / cache `20260429_1345`. |
+| **Login / Splash / Menu Recovery** | OK **resolved in current baseline** | `api_client.js`, auth guard, service worker activation, menu restore, and API contract smoke are stable at GAS @609 / cache `comphone-v5.18.34-job-menu-hardening-20260513_2005`. |
 | **AI LINE Agent Testing** | ❌ **รอ Group IDs** | ต้องเปลี่ยน Placeholder Group IDs ใน `AILinePrompts.gs` (บรรทัด 169-173) เป็น LINE Group ID จริง |
 | **Dashboard PC Runtime Baseline** | OK **validated** | PC dashboard uses central version/GAS/API config and no longer clears session storage during boot. Continue visual/UX QA after each feature batch. |
 | **Google Drive Sync** | ❌ **Failed** | `SharedContext.gs` timeout (ต้อง retry) |
@@ -1667,11 +1640,11 @@ async function callGas(action, params) {
 
 ### Next Steps (Priority Order - Current Baseline)
 
-1. **HIGH: CI smoke automation** - run `pwa_static_guard.js`, required smoke, optional smoke, and workflow smoke from a repeatable CI/manual release checklist.
-2. **HIGH: Staging write-flow validation** - validate create/update/payment/offline queue writes in a safe staging dataset before production write automation.
-3. **MEDIUM: Google Drive Sync retry and timeout tuning** - retry `SharedContext.gs` sync and document timeout handling.
-4. **MEDIUM: AI LINE Agent testing** - confirm real LINE group routing IDs and run controlled message tests.
-5. **LOW: UX polish for high-use screens** - continue modernizing Dashboard PC, mobile admin health, POS, billing, and customer portal without changing the stable API baseline.
+1. **HIGH: CI smoke automation** - active: auto-deploy and regression guards run static, smoke, workflow, Vision, UI, and write-smoke safety checks.
+2. **HIGH: Staging write-flow validation** - next: run the gated write smoke against a staging dataset, then add payment/offline replay under explicit staging confirmations.
+3. **MEDIUM: Google Drive Sync retry and timeout tuning** - optional ops follow-up; GitHub main and GAS @609 are current source of truth.
+4. **MEDIUM: AI LINE Agent testing** - run controlled room-routing tests only with real group IDs and non-customer test messages.
+5. **LOW: UX polish for high-use screens** - continue Dashboard PC/mobile refinements after protected read/write guards stay green.
 
 ---
 
@@ -1683,9 +1656,9 @@ async function callGas(action, params) {
 |---|---|---|
 | **PWA Mobile Runtime** | OK Stable | Login, auth restore, menu visibility, service worker activation, and API client loading are aligned. |
 | **PC Dashboard Runtime** | OK Stable | Reads central config/version, keeps session storage intact, and shares the API contract baseline. |
-| **API Contract** | OK Stable | Required, optional, and read-only workflow smoke checks pass against GAS @506. |
+| **API Contract** | OK Stable | Required, optional, and read-only workflow smoke checks pass against GAS @609. |
 | **Offline / Queue UX** | OK Improved | Queue flush, health view, and observability states are visible from Admin > Health. |
-| **Remaining Professional Work** | NEXT | Add CI automation, deeper write-flow tests in staging, and UX polish for high-use screens. |
+| **Remaining Professional Work** | NEXT | CI automation is active; next risk is staging-only write/payment/offline replay validation plus UX polish for high-use screens. |
 
 ---
 
