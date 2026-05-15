@@ -397,6 +397,14 @@ if (!visionE2eSmokeJs.includes('COMPHONE_VISION_E2E_CONFIRM') ||
     !visionE2eSmokeJs.includes('vision-e2e-gate')) {
   fail('vision_e2e_smoke.js must gate AI Vision image analysis behind explicit confirmation.');
 }
+const lineRoomSmokeJs = readUtf8(path.join(ROOT, 'scripts', 'pwa_line_room_smoke.js'));
+if (!lineRoomSmokeJs.includes('COMPHONE_LINE_SEND_CONFIRM') ||
+    !lineRoomSmokeJs.includes('SEND_TEST_LINE_MESSAGE') ||
+    !lineRoomSmokeJs.includes('previewLineRoomMessage') ||
+    !lineRoomSmokeJs.includes('sendLineRoomMessage') ||
+    !lineRoomSmokeJs.includes('line-smoke-gate')) {
+  fail('pwa_line_room_smoke.js must gate real LINE room sends and verify read-only preview flow.');
+}
 const runtimeSelfTestJs = readUtf8(path.join(PWA, 'runtime_self_test.js'));
 if (!runtimeSelfTestJs.includes('ai-vision-runtime') ||
     !runtimeSelfTestJs.includes('getVisionDashboardStats') ||

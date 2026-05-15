@@ -4,7 +4,7 @@
  *
  * Default mode is read-only. It searches live read APIs for records tagged by
  * write-smoke harnesses and writes a cleanup plan. It intentionally does not
- * delete data unless a future backend cleanup action is implemented and gated.
+ * delete data unless the backend cleanup action is explicitly confirmed.
  */
 'use strict';
 
@@ -52,7 +52,7 @@ function rowsFrom(action, body) {
   if (action === 'getDashboardData') return body.jobs || (body.summary && body.summary.recentJobs) || [];
   if (action === 'listCustomers') return body.customers || body.data || body.rows || [];
   if (action === 'listBillings') return body.billings || body.data || body.rows || [];
-  if (action === 'listPurchaseOrders') return body.purchaseOrders || body.orders || body.data || body.rows || [];
+  if (action === 'listPurchaseOrders') return body.items || body.purchaseOrders || body.orders || body.data || body.rows || [];
   if (action === 'getReportData') return body.rows || body.data || body.jobs || body.billings || [];
   return body.rows || body.data || [];
 }

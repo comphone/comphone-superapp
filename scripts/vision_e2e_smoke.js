@@ -68,7 +68,7 @@ async function run() {
       fileName: 'vision-e2e-smoke.png',
       source: 'vision_e2e_smoke',
     });
-    const ok = result.status === 200 && result.body && result.body.type === 'QC' && result.body.decision;
+    const ok = !!(result.status === 200 && result.body && result.body.type === 'QC' && result.body.decision);
     record({
       scope: 'protected',
       action: 'runVisionPipeline',

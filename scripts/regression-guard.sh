@@ -251,6 +251,16 @@ else
   warn "Node or vision_e2e_smoke.js unavailable - skipping AI Vision E2E safety gate"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/pwa_line_room_smoke.js" ]; then
+  if node scripts/pwa_line_room_smoke.js; then
+    echo "   LINE room smoke safety gate passed"
+  else
+    fail "LINE room smoke safety gate FAILED"
+  fi
+else
+  warn "Node or pwa_line_room_smoke.js unavailable - skipping LINE room smoke safety gate"
+fi
+
 if command -v node &>/dev/null && [ -f "scripts/pwa_write_smoke.js" ]; then
   if node scripts/pwa_write_smoke.js; then
     echo "   Write smoke safety gate passed"

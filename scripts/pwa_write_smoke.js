@@ -80,7 +80,14 @@ async function runAction(report, phase, action, payload, verifier) {
       http_status: result.status,
       elapsed_ms: Date.now() - started,
       error,
-      response_id: result.body && (result.body.job_id || result.body.customer_id || (result.body.billing && result.body.billing.billing_id)),
+      response_id: result.body && (
+        result.body.job_id ||
+        result.body.customer_id ||
+        result.body.po_id ||
+        (result.body.po && result.body.po.po_id) ||
+        (result.body.purchase_order && result.body.purchase_order.po_id) ||
+        (result.body.billing && result.body.billing.billing_id)
+      ),
       idempotent_replay: !!(result.body && result.body.idempotent_replay),
       request_id: result.body && (result.body.request_id || (result.body.meta && result.body.meta.request_id)),
     };
