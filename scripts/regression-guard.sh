@@ -411,6 +411,16 @@ else
   warn "Node or sprint85_live_mobile_menu_smoke.js unavailable - skipping Sprint 85 live mobile menu smoke"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint86_operator_ux_qa_checklist.js" ]; then
+  if node scripts/sprint86_operator_ux_qa_checklist.js; then
+    echo "   Sprint 86 operator UX QA checklist passed"
+  else
+    fail "Sprint 86 operator UX QA checklist FAILED"
+  fi
+else
+  warn "Node or sprint86_operator_ux_qa_checklist.js unavailable - skipping Sprint 86 operator UX QA checklist"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"
