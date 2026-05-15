@@ -20,6 +20,18 @@ function openJob(data) {
 
 function checkJobs(data) {
   try {
+    data = data || {};
+    var search = String(data.search || '').toLowerCase();
+    var limit = Math.max(1, parseInt(data.limit || 50, 10) || 50);
+    var cacheKey = 'jobs:check:' + search + ':' + limit;
+    var cache = CacheService.getScriptCache();
+    var cached = cache.get(cacheKey);
+    if (cached) {
+      var parsed = JSON.parse(cached);
+      parsed.cached = true;
+      return parsed;
+    }
+
     var ss = getComphoneSheet();
     var sh = findSheetByName(ss, 'DBJOBS');
     if (!sh) return { error: 'DBJOBS not found' };
@@ -32,17 +44,19 @@ function checkJobs(data) {
       if (h.indexOf('เวลาสร้าง') > -1) cc = hi;
       if (h.indexOf('folder') > -1 || h.indexOf('ลิงก์โฟลเดอร์') > -1) fc = hi;
     }
-    var search = (data.search || '').toLowerCase();
     var results = [];
-    for (var i = 1; i < all.length; i++) {
+    for (var i = all.length - 1; i >= 1; i--) {
       var j = all[i];
       if (!search || String(j[0]).toLowerCase().indexOf(search) > -1 || String(j[1]).toLowerCase().indexOf(search) > -1 || String(j[4] || '').toLowerCase().indexOf(search) > -1) {
         var created = '-';
         try { if (j[cc] && j[cc] instanceof Date) created = Utilities.formatDate(j[cc], 'Asia/Bangkok', 'dd/MM HH:mm'); } catch(e) {}
         results.push({ job_id: String(j[0]), customer: String(j[1]), symptom: String(j[2]), status: String(j[sc]), technician: String(j[4] || ''), folder_url: String(j[fc] || ''), created: created });
+        if (results.length >= limit) break;
       }
     }
-    return { count: results.length, jobs: results };
+    var response = { success: true, count: results.length, jobs: results, cached: false };
+    try { cache.put(cacheKey, JSON.stringify(response), 60); } catch (_cacheErr) {}
+    return response;
   } catch (e) { return { error: e.toString() }; }
 }
 
