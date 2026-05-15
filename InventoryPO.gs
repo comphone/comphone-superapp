@@ -69,10 +69,18 @@ function listPurchaseOrders(data) {
     data = data || {};
     var statusFilter = String(data.status || '').toUpperCase();
     var limit = parseInt(data.limit) || 100;
+    var cacheKey = 'po:list:' + statusFilter + ':' + limit;
+    var cache = CacheService.getScriptCache();
+    var cached = cache.get(cacheKey);
+    if (cached) {
+      var parsed = JSON.parse(cached);
+      parsed.cached = true;
+      return parsed;
+    }
 
     var ss = getComphoneSheet();
     var poSheet = findSheetByName(ss, 'DB_PURCHASE_ORDERS');
-    if (!poSheet) return { success: true, items: [], total: 0 };
+    if (!poSheet) return { success: true, items: [], total: 0, cached: false };
 
     var all = poSheet.getDataRange().getValues();
     var grouped = {};
@@ -107,7 +115,9 @@ function listPurchaseOrders(data) {
     result.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
     if (result.length > limit) result = result.slice(0, limit);
 
-    return { success: true, total: result.length, items: result };
+    var response = { success: true, total: result.length, items: result, cached: false };
+    try { cache.put(cacheKey, JSON.stringify(response), 60); } catch (_cacheErr) {}
+    return response;
   } catch(e) {
     return { success: false, error: e.toString() };
   }
