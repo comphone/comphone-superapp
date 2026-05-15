@@ -1,3 +1,3 @@
-5debaec6624fb96a2f752f19c2a11ea7  scripts/regression-guard.sh
+d5291e1700534b3fe61e628f1e0a0c1f  scripts/regression-guard.sh
 e72e7a5000f5841a58285526414dc99f  scripts/drift-guard.sh
 21a86da63d138ceaeb6340bf8c793ced  scripts/guard-self-test.sh
