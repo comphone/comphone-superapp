@@ -2,12 +2,29 @@
 let ALL_CUSTOMERS = [];
 let CRM_FILTER = 'all';
 
+function normalizeMobileCustomer(c) {
+  const raw = c || {};
+  return Object.assign({}, raw, {
+    id: raw.id || raw.customer_id || raw.Customer_ID || raw.phone || '',
+    name: raw.name || raw.customer_name || raw.Customer_Name || raw.full_name || '',
+    phone: raw.phone || raw.Phone || raw.mobile || raw.tel || '',
+    address: raw.address || raw.Address || raw.customer_address || '',
+    type: (raw.type || raw.customer_type || raw.Customer_Type || 'regular').toString().toLowerCase(),
+    notes: raw.notes || raw.Notes || raw.note || '',
+    totalJobs: Number(raw.totalJobs || raw.total_jobs || raw.jobs_count || 0),
+    totalSpent: Number(raw.totalSpent || raw.total_spent || raw.total_revenue || 0),
+    lastJobDate: raw.lastJobDate || raw.last_job_date || raw.lastJob || raw.last_job || '',
+    followUpDate: raw.followUpDate || raw.follow_up_date || raw.next_followup || '',
+    createdAt: raw.createdAt || raw.created_at || raw.Created_At || '',
+  });
+}
+
 function loadCRMPage() {
   if (ALL_CUSTOMERS.length > 0) { renderCRMList(ALL_CUSTOMERS); return; }
   document.getElementById('crm-list').innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af"><div class="spinner" style="margin:0 auto 12px"></div><p>กำลังโหลดข้อมูลลูกค้า...</p></div>';
   callApi({ action: 'listCustomers' }).then(res => {
     if (res && res.success) {
-      ALL_CUSTOMERS = res.customers || res.data || [];
+      ALL_CUSTOMERS = (res.customers || res.data || []).map(normalizeMobileCustomer);
       renderCRMList(ALL_CUSTOMERS);
       loadAfterSalesSection();
     } else {
@@ -20,6 +37,7 @@ function loadCRMPage() {
 
 function renderCRMList(customers) {
   const container = document.getElementById('crm-list');
+  customers = (customers || []).map(normalizeMobileCustomer);
   if (!customers || customers.length === 0) {
     container.innerHTML = '<div class="empty-state"><i class="bi bi-people"></i><p>ยังไม่มีข้อมูลลูกค้า</p><button class="btn-add-job" onclick="showAddCustomer()"><i class="bi bi-person-plus-fill"></i> เพิ่มลูกค้าใหม่</button></div>';
     return;
@@ -75,8 +93,12 @@ function filterCRMType(type, btn) {
 }
 
 function showCustomerDetail(customerId) {
-  const c = ALL_CUSTOMERS.find(x => (x.id === customerId || x.phone === customerId));
+  const c = ALL_CUSTOMERS.map(normalizeMobileCustomer).find(x => (x.id === customerId || x.phone === customerId));
   if (!c) return;
+  const modal = typeof ensureActionModal === 'function'
+    ? ensureActionModal('modal-customer', 'รายละเอียดลูกค้า')
+    : document.getElementById('modal-customer');
+  if (!modal) return;
   const typeLabel = { regular: 'ทั่วไป', vip: '⭐ VIP', corporate: '🏢 องค์กร' };
   document.getElementById('modal-customer-content').innerHTML = `
     <div style="padding:0 16px 20px">
@@ -109,6 +131,10 @@ function callCustomerPhone(phone) {
 }
 
 function showAddCustomer() {
+  if (typeof addCustomer === 'function') {
+    addCustomer();
+    return;
+  }
   document.getElementById('new-cust-name').value = '';
   document.getElementById('new-cust-phone').value = '';
   document.getElementById('new-cust-address').value = '';
@@ -123,6 +149,8 @@ function saveNewCustomerFromCRM() {
   if (!name || !phone) { showToast('⚠️ กรุณากรอกชื่อและเบอร์โทร'); return; }
   const payload = {
     action: 'addCustomer',
+    client_request_id: typeof createWriteRequestId === 'function' ? createWriteRequestId('customer') : ('customer_' + Date.now()),
+    source: 'mobile_crm',
     name, phone,
     address: document.getElementById('new-cust-address').value.trim(),
     notes: document.getElementById('new-cust-notes').value.trim(),
@@ -167,7 +195,11 @@ function loadAfterSalesSection() {
 }
 
 function showAfterSalesModal(customerId, customerName, jobId) {
+  if (typeof ensureActionModal === 'function') {
+    ensureActionModal('modal-aftersales', 'บันทึก After-Sales');
+  }
   const content = document.getElementById('modal-aftersales-content');
+  if (!content) return;
   content.innerHTML = `
     <div style="margin-bottom:12px">
       <div style="font-weight:700;font-size:15px;color:#111827">${customerName||'ลูกค้า'}</div>

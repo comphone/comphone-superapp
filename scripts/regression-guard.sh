@@ -381,6 +381,16 @@ else
   warn "Node or sprint82_mobile_quick_actions_audit.js unavailable - skipping Sprint 82 mobile quick actions audit"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint83_mobile_core_workflows_audit.js" ]; then
+  if node scripts/sprint83_mobile_core_workflows_audit.js; then
+    echo "   Sprint 83 mobile core workflows audit passed"
+  else
+    fail "Sprint 83 mobile core workflows audit FAILED"
+  fi
+else
+  warn "Node or sprint83_mobile_core_workflows_audit.js unavailable - skipping Sprint 83 mobile core workflows audit"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"
