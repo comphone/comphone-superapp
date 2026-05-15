@@ -17,6 +17,14 @@ function getLineCommandCenter(params) {
   params = params || {};
   var role = params.role || '';
   var days = Number(params.days || 7);
+  var cacheKey = 'line:center:' + role + ':' + days + ':' + (!!params.includeAcknowledged);
+  var cache = CacheService.getScriptCache();
+  var cached = cache.get(cacheKey);
+  if (cached) {
+    var parsed = JSON.parse(cached);
+    parsed.cached = true;
+    return parsed;
+  }
   var queue = (typeof getIntelAlertQueue === 'function')
     ? getIntelAlertQueue({ role: role, includeAcknowledged: !!params.includeAcknowledged })
     : { success: false, alerts: [] };
@@ -27,8 +35,9 @@ function getLineCommandCenter(params) {
     ? getAlertAnalytics(days)
     : { success: false, totals: {} };
 
-  return {
+  var response = {
     success: true,
+    cached: false,
     status: 'ok',
     version: '65-line-command-center',
     rooms: getLineRoomStatus(params).rooms,
@@ -42,6 +51,8 @@ function getLineCommandCenter(params) {
       { command: '#สถิติ', detail: 'Show 7-day alert analytics' }
     ]
   };
+  try { cache.put(cacheKey, JSON.stringify(response), 60); } catch (_cacheErr) {}
+  return response;
 }
 
 function getLineRoomStatus(params) {

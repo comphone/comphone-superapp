@@ -375,6 +375,13 @@ function getCRMFollowUpSchedule_(params) {
  */
 function getCRMMetrics_() {
   try {
+    var cache = CacheService.getScriptCache();
+    var cached = cache.get('crm:metrics:v1');
+    if (cached) {
+      var parsed = JSON.parse(cached);
+      parsed.cached = true;
+      return parsed;
+    }
     const sh = getFollowUpSheet_();
     const now = new Date();
     const todayStr = Utilities.formatDate(now, 'Asia/Bangkok', 'yyyy-MM-dd');
@@ -406,7 +413,9 @@ function getCRMMetrics_() {
       }
     }
 
-    return { success: true, today, overdue_yesterday: overdueYesterday, done_this_week: doneThisWeek, overdue_7days: overdue7days };
+    var response = { success: true, today, overdue_yesterday: overdueYesterday, done_this_week: doneThisWeek, overdue_7days: overdue7days, cached: false };
+    try { cache.put('crm:metrics:v1', JSON.stringify(response), 60); } catch (_cacheErr) {}
+    return response;
   } catch (e) {
     return { success: false, error: e.message };
   }

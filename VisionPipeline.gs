@@ -1083,9 +1083,17 @@ function _vpExecuteSuggestionById_(selected, params) {
 function getVisionDashboardStats(params) {
   try {
     var days = parseInt((params || {}).days || 7);
+    var cacheKey = 'vision:stats:' + days;
+    var cache = CacheService.getScriptCache();
+    var cached = cache.get(cacheKey);
+    if (cached) {
+      var parsed = JSON.parse(cached);
+      parsed.cached = true;
+      return parsed;
+    }
     var ss = getComphoneSheet();
     var sh = ss.getSheetByName('VISION_LOG');
-    if (!sh) return { success: true, stats: { total: 0, approved: 0, failed: 0, needReview: 0, avgConfidence: 0, avgLatencyMs: 0 } };
+    if (!sh) return { success: true, cached: false, stats: { total: 0, approved: 0, failed: 0, needReview: 0, avgConfidence: 0, avgLatencyMs: 0 } };
 
     var data = sh.getDataRange().getValues();
     var headers = data[0];
@@ -1113,8 +1121,9 @@ function getVisionDashboardStats(params) {
       stats.byType[type] = (stats.byType[type] || 0) + 1;
     }
 
-    return {
+    var response = {
       success: true,
+      cached: false,
       period: days + ' days',
       stats: {
         total: stats.total,
@@ -1130,6 +1139,8 @@ function getVisionDashboardStats(params) {
         byType: stats.byType
       }
     };
+    try { cache.put(cacheKey, JSON.stringify(response), 60); } catch (_cacheErr) {}
+    return response;
   } catch (e) {
     return { success: false, error: e.toString() };
   }
