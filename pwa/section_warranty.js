@@ -133,4 +133,8 @@ async function _viewWarrantyDetail(warrantyId) {
   }
 }
 
+function loadWarrantyPage() {
+  return renderWarrantySection();
+}
+
 console.log('[Warranty] section_warranty.js loaded (v5.17.0-phase42 — real API)');

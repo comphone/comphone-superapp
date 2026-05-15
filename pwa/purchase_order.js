@@ -32,6 +32,56 @@ if (typeof callApi === 'undefined') {
   };
 }
 
+function ensurePOModalShell() {
+  if (!document.getElementById('modal-po')) {
+    const modal = document.createElement('div');
+    modal.id = 'modal-po';
+    modal.className = 'modal-overlay hidden';
+    modal.onclick = () => closeModal('modal-po');
+    modal.innerHTML = `
+      <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div class="modal-handle"></div>
+        <div id="modal-po-content"></div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+
+  if (!document.getElementById('modal-create-po')) {
+    const modal = document.createElement('div');
+    modal.id = 'modal-create-po';
+    modal.className = 'modal-overlay hidden';
+    modal.onclick = () => closeModal('modal-create-po');
+    modal.innerHTML = `
+      <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div class="modal-handle"></div>
+        <div class="modal-title">สร้างใบสั่งซื้อ</div>
+        <div style="padding:0 16px 20px">
+          <div class="form-group-custom">
+            <label>ผู้จำหน่าย <span style="color:#ef4444">*</span></label>
+            <div class="input-wrap"><i class="bi bi-shop"></i><input id="po-supplier" type="text" placeholder="ชื่อผู้จำหน่าย"></div>
+          </div>
+          <div id="po-items-container"></div>
+          <button type="button" class="btn-gray-sm" onclick="addPOItem()" style="width:100%;margin:8px 0">
+            <i class="bi bi-plus-circle"></i> เพิ่มรายการ
+          </button>
+          <div class="form-group-custom">
+            <label>หมายเหตุ</label>
+            <div class="input-wrap"><i class="bi bi-chat-left-text"></i><input id="po-notes" type="text" placeholder="หมายเหตุเพิ่มเติม"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;background:#f8fafc;border-radius:12px;padding:12px;margin:10px 0">
+            <span style="font-weight:700;color:#475569">ยอดรวม</span>
+            <span id="po-total-display" style="font-weight:900;color:#059669">฿0</span>
+          </div>
+          <div class="form-button-group">
+            <button type="button" class="btn-cancel" onclick="closeModal('modal-create-po')"><i class="bi bi-x-circle"></i> ยกเลิก</button>
+            <button type="button" class="btn-setup" onclick="saveNewPO()" style="flex:1"><i class="bi bi-cart-plus-fill"></i> สร้าง PO</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+}
+
 // ===== LOAD PAGE =====
 function loadPurchaseOrderPage() {
   const container = document.getElementById('po-list');
@@ -164,6 +214,7 @@ function filterPOSearch(q) {
 function showPODetail(poId) {
   const po = ALL_PO.find(o => o.po_id === poId);
   if (!po) return;
+  ensurePOModalShell();
 
   const statusConfig = {
     PENDING:   { label: 'รอรับสินค้า', bg: '#fef3c7', color: '#92400e' },
@@ -350,6 +401,7 @@ function confirmReceivePO(poId) {
 
 // ===== CREATE PO MODAL =====
 function showCreatePOModal() {
+  ensurePOModalShell();
   PO_ITEMS = [];
   document.getElementById('po-supplier').value = '';
   document.getElementById('po-notes').value = '';
@@ -452,6 +504,8 @@ function saveNewPO() {
 
   callApi({
     action: 'createPurchaseOrder',
+    client_request_id: typeof createWriteRequestId === 'function' ? createWriteRequestId('po') : ('po_' + Date.now()),
+    source: 'mobile_po',
     supplier,
     notes,
     items: validItems.map(i => ({

@@ -53,6 +53,19 @@
         icon: 'bi-cart-check-fill',
         actions: [
           { action: 'listPurchaseOrders', payload: { limit: 10 }, required: true, read: true },
+          { action: 'createPurchaseOrder', destructive: true },
+          { action: 'receivePurchaseOrder', destructive: true },
+        ],
+      },
+      {
+        id: 'warranty',
+        label: 'Warranty',
+        icon: 'bi-shield-check',
+        actions: [
+          { action: 'listWarranties', payload: { limit: 20 }, read: true },
+          { action: 'getWarrantyByJobId', payload: { job_id: '__SMOKE_EMPTY__' }, read: true, optional: true, smoke: false, smokeReason: 'requires a real job_id or warranty_id' },
+          { action: 'createWarranty', destructive: true },
+          { action: 'updateWarrantyStatus', destructive: true },
         ],
       },
       {
