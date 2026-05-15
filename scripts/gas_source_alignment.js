@@ -20,6 +20,8 @@ const BLOCKING = [
   'CustomerManager.gs',
   'InventoryPO.gs',
   'JobsHandler.gs',
+  'Dashboard.gs',
+  'DashboardBundle.gs',
   'RouterSplit.gs',
   'LineCommandCenter.gs',
   'VisionPipeline.gs',

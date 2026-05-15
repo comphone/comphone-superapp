@@ -115,26 +115,41 @@ function invalidateBundleCache() {
 // ============================================================
 function _bundleReadAllSheets_(ss) {
   var data = {};
-  var sheetNames = ['DBJOBS', 'DBINVENTORY', 'DBBILLING', 'DBCUSTOMER', 'DBATTENDANCE', 'DBRETAILSALES'];
-  sheetNames.forEach(function(name) {
+  var sheetSpecs = [
+    { key: 'DBJOBS', names: ['DBJOBS', 'Jobs'] },
+    { key: 'DBINVENTORY', names: ['DB_INVENTORY', 'DBINVENTORY', 'Inventory'] },
+    { key: 'DBBILLING', names: ['DB_BILLING', 'DBBILLING', 'Billing'] },
+    { key: 'DBCUSTOMER', names: ['DB_CUSTOMER', 'DBCUSTOMER', 'Customers'] },
+    { key: 'DBATTENDANCE', names: ['DB_ATTENDANCE', 'DBATTENDANCE', 'Attendance'] },
+    { key: 'DBRETAILSALES', names: ['DB_RETAILSALES', 'DBRETAILSALES', 'RetailSales'] }
+  ];
+  sheetSpecs.forEach(function(spec) {
     try {
-      var sh = findSheetByName(ss, name);
+      var sh = _bundleFindSheetByNames_(ss, spec.names);
       if (sh && sh.getLastRow() > 1) {
         var lastRow = sh.getLastRow();
         var lastCol = sh.getLastColumn();
-        data[name] = {
+        data[spec.key] = {
           headers: sh.getRange(1, 1, 1, lastCol).getValues()[0],
           rows: sh.getRange(2, 1, lastRow - 1, lastCol).getValues(),
           lastRow: lastRow
         };
       } else {
-        data[name] = { headers: [], rows: [], lastRow: 1 };
+        data[spec.key] = { headers: [], rows: [], lastRow: 1 };
       }
     } catch(e) {
-      data[name] = { headers: [], rows: [], lastRow: 1 };
+      data[spec.key] = { headers: [], rows: [], lastRow: 1 };
     }
   });
   return data;
+}
+
+function _bundleFindSheetByNames_(ss, names) {
+  for (var i = 0; i < names.length; i++) {
+    var sh = findSheetByName(ss, names[i]);
+    if (sh) return sh;
+  }
+  return null;
 }
 
 // ============================================================
@@ -362,10 +377,10 @@ function _bundleBuildRetailSales_(sheetData) {
     if (!d || !d.rows || d.rows.length === 0) {
       return { success: true, total_sales: 0, categories: [], items: [] };
     }
-    
+
     var headers = d.headers;
     var rows = d.rows;
-    
+
     // Dynamic header mapping
     var colMap = { sale_id: 0, created_at: 1, items_json: 3, total: 7 };
     for (var hi = 0; hi < headers.length; hi++) {
@@ -375,39 +390,39 @@ function _bundleBuildRetailSales_(sheetData) {
       else if (h === 'itemsjson' || h === 'items_json') colMap.items_json = hi;
       else if (h === 'total') colMap.total = hi;
     }
-    
+
     // Aggregate by category
     var categoryMap = {};
     var now = new Date();
     var todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     var thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    
+
     var totalSales = 0;
     var todaySales = 0;
     var monthSales = 0;
-    
+
     rows.forEach(function(row) {
       try {
         var itemsJson = String(row[colMap.items_json] || '');
         if (!itemsJson) return;
-        
+
         var items = JSON.parse(itemsJson);
         if (!Array.isArray(items)) return;
-        
+
         var saleDate = new Date(row[colMap.created_at] || '');
         var isToday = saleDate >= todayStart;
         var isThisMonth = saleDate >= thisMonthStart;
-        
+
         items.forEach(function(item) {
           var name = String(item.name || item.item_name || '');
           var price = Number(item.price || 0);
           var qty = Number(item.qty || 1);
           var amount = price * qty;
-          
+
           totalSales += amount;
           if (isToday) todaySales += amount;
           if (isThisMonth) monthSales += amount;
-          
+
           // Categorize by product name
           var category = 'อื่นๆ';
           var nameUpper = name.toUpperCase();
@@ -419,7 +434,7 @@ function _bundleBuildRetailSales_(sheetData) {
           else if (nameUpper.indexOf('BATTERY') > -1 || nameUpper.indexOf('แบตเตอรี่') > -1) category = 'Battery';
           else if (nameUpper.indexOf('CHARGER') > -1 || nameUpper.indexOf('ชาร์จ') > -1) category = 'Charger';
           else if (nameUpper.indexOf('CABLE') > -1 || nameUpper.indexOf('สาย') > -1) category = 'Cable';
-          
+
           if (!categoryMap[category]) {
             categoryMap[category] = { name: category, total_amount: 0, item_count: 0 };
           }
@@ -428,11 +443,11 @@ function _bundleBuildRetailSales_(sheetData) {
         });
       } catch(e) {}
     });
-    
+
     var categories = Object.values(categoryMap).sort(function(a, b) {
       return b.total_amount - a.total_amount;
     });
-    
+
     return {
       success: true,
       total_sales: totalSales,

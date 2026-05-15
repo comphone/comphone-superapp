@@ -30,14 +30,51 @@ function dashboardDoGetV55_(e) {
 }
 
 function getDashboardData() {
-  return {
+  var start = Date.now();
+  var cacheKey = 'dashboard_data_v89';
+  try {
+    var cache = CacheService.getScriptCache();
+    var cached = cache.get(cacheKey);
+    if (cached) {
+      var parsed = JSON.parse(cached);
+      parsed._cached = true;
+      parsed._source = 'dashboard_data_cache';
+      parsed._elapsed_ms = Date.now() - start;
+      return parsed;
+    }
+  } catch (cacheReadErr) {}
+
+  try {
+    if (typeof getDashboardBundle === 'function') {
+      var bundle = getDashboardBundle({ source: 'getDashboardData' });
+      if (bundle && bundle.success !== false && bundle.summary) {
+        bundle.success = true;
+        bundle._compat = 'getDashboardData';
+        bundle._elapsed_ms = Date.now() - start;
+        try {
+          CacheService.getScriptCache().put(cacheKey, JSON.stringify(bundle), 60);
+        } catch (cacheWriteErr) {}
+        return bundle;
+      }
+    }
+  } catch (bundleErr) {
+    try { Logger.log('[getDashboardData] bundle fast path failed: ' + bundleErr); } catch (_) {}
+  }
+
+  var result = {
     success: true,
     jobs: getDashboardJobs(),
     inventory: getDashboardInventory(),
     summary: getDashboardSummary(),
     status_distribution: getJobStatusDistribution(),
-    alerts: getAlerts()
+    alerts: getAlerts(),
+    _source: 'legacy_fallback',
+    _elapsed_ms: Date.now() - start
   };
+  try {
+    CacheService.getScriptCache().put(cacheKey, JSON.stringify(result), 60);
+  } catch (legacyCacheErr) {}
+  return result;
 }
 
 function getTechPerformance(payload) {
