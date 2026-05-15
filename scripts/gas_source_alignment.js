@@ -22,6 +22,7 @@ const BLOCKING = [
   'JobsHandler.gs',
   'Dashboard.gs',
   'DashboardBundle.gs',
+  'SmokeCleanup.gs',
   'RouterSplit.gs',
   'LineCommandCenter.gs',
   'VisionPipeline.gs',

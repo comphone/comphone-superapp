@@ -105,6 +105,13 @@ function containsBy(list, predicate) {
   return Array.isArray(list) && list.some(predicate);
 }
 
+function nextSafeJobStatus(statusCode) {
+  const current = Number(statusCode || 1);
+  if (current === 1) return 2;
+  if (current === 2) return 3;
+  return 0;
+}
+
 async function verifyReadBack(report, phase, action, payload, verifier) {
   return runAction(report, `${phase}:verify`, action, payload, verifier);
 }
@@ -186,6 +193,36 @@ async function run() {
   await verifyReadBack(report, 'job', 'checkJobs', { search: jobId || customerName }, body => (
     containsBy(body.jobs, job => String(job.job_id || '') === String(jobId) || String(job.customer || '') === customerName)
   ));
+
+  if (jobId) {
+    await runAction(report, 'job-note', 'addQuickNote', {
+      job_id: jobId,
+      note: `AUTO WRITE SMOKE note ${smokeId}`,
+      user: 'PWA_WRITE_SMOKE',
+    }, body => body.success === true && String(body.job_id || '') === String(jobId));
+
+    const safeStatus = nextSafeJobStatus(firstJob.body && firstJob.body.status_code);
+    if (safeStatus) {
+      await runAction(report, 'job-status', 'transitionJob', {
+        job_id: jobId,
+        new_status: safeStatus,
+        changed_by: 'PWA_WRITE_SMOKE',
+        note: `AUTO WRITE SMOKE safe transition ${smokeId}`,
+      }, body => body.success === true && String(body.job_id || '') === String(jobId) && Number(body.to_status_code || 0) === safeStatus);
+    } else {
+      record(report, {
+        phase: 'job-status',
+        action: 'transitionJob',
+        ok: true,
+        status_label: 'SKIP',
+        http_status: 0,
+        elapsed_ms: 0,
+        error: `safe transition skipped from status ${(firstJob.body && firstJob.body.status_code) || 'unknown'}`,
+      });
+    }
+
+    await verifyReadBack(report, 'job-timeline', 'getJobTimeline', { job_id: jobId }, body => body.success === true && Array.isArray(body.timeline || body.logs || body.items || []));
+  }
 
   if (jobId) {
     const billingRequestId = makeId('billing');

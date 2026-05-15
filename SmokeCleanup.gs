@@ -41,6 +41,8 @@ function cleanupSmokeTestRecords(params) {
   var groups = groupSmokeCleanupRecords_(requested);
   scanSmokeCleanupSheet_(ss, archive, report, groups.jobs, 'jobs', CONFIG.SHEETS.JOBS, ['Job_ID', 'job_id', 'เลขงาน'], 0, execute, confirm);
   scanSmokeCleanupSheet_(ss, archive, report, groups.customers, 'customers', CONFIG.SHEETS.CUSTOMERS, ['Customer_ID', 'customer_id', 'รหัสลูกค้า'], 0, execute, confirm);
+  scanSmokeCleanupSheet_(ss, archive, report, groups.billings, 'billings', CONFIG.SHEETS.BILLING, ['Billing_ID', 'billing_id', 'Bill_ID', 'bill_id'], 0, execute, confirm);
+  scanSmokeCleanupSheet_(ss, archive, report, groups.purchase_orders, 'purchase_orders', CONFIG.SHEETS.PURCHASE_ORDERS, ['PO_ID', 'po_id', 'Purchase_Order_ID'], 0, execute, confirm);
 
   if (execute && confirm !== SMOKE_CLEANUP_CONFIRM) {
     report.status = 'blocked';
@@ -70,20 +72,25 @@ function normalizeSmokeCleanupRecords_(records) {
   records.forEach(function(item) {
     if (!item) return;
     if (typeof item === 'string') item = { id: item };
-    var id = String(item.id || item.job_id || item.customer_id || '').trim();
+    var id = String(item.id || item.job_id || item.customer_id || item.billing_id || item.po_id || '').trim();
     if (!id) return;
     var scope = String(item.scope || '').toLowerCase();
-    if (!scope) scope = id.charAt(0).toUpperCase() === 'J' ? 'jobs' : (id.charAt(0).toUpperCase() === 'C' ? 'customers' : 'unknown');
+    if (!scope) {
+      var first = id.charAt(0).toUpperCase();
+      scope = first === 'J' ? 'jobs' : (first === 'C' ? 'customers' : (id.indexOf('PO-') === 0 ? 'purchase_orders' : (first === 'B' ? 'billings' : 'unknown')));
+    }
     out.push({ scope: scope, id: id });
   });
   return out;
 }
 
 function groupSmokeCleanupRecords_(records) {
-  var groups = { jobs: {}, customers: {} };
+  var groups = { jobs: {}, customers: {}, billings: {}, purchase_orders: {} };
   records.forEach(function(item) {
     if (item.scope === 'jobs' || item.scope === 'job') groups.jobs[item.id] = true;
     if (item.scope === 'customers' || item.scope === 'customer') groups.customers[item.id] = true;
+    if (item.scope === 'billings' || item.scope === 'billing') groups.billings[item.id] = true;
+    if (item.scope === 'purchase_orders' || item.scope === 'purchase_order' || item.scope === 'po') groups.purchase_orders[item.id] = true;
   });
   return groups;
 }

@@ -77,9 +77,19 @@ function main() {
       detail: 'write smoke validates read-back after writes',
     },
     {
+      name: 'write-smoke:job-note-status-verification',
+      ok: has(files.writeSmoke, "'addQuickNote'") && has(files.writeSmoke, "'transitionJob'") && has(files.writeSmoke, "'getJobTimeline'") && has(files.writeSmoke, 'nextSafeJobStatus'),
+      detail: 'write smoke covers safe job note/status handoffs and timeline read-back',
+    },
+    {
       name: 'write-smoke:po-safety-gate',
       ok: has(files.writeSmoke, 'COMPHONE_PO_WRITE_SMOKE_CONFIRM') && has(files.writeSmoke, 'CREATE_TEST_PO'),
       detail: 'PO write smoke is behind an explicit safety gate',
+    },
+    {
+      name: 'cleanup:billing-po-lifecycle',
+      ok: has(files.writeSmoke, 'source=pwa_write_smoke') && has(read('clasp-ready/SmokeCleanup.gs'), 'groups.billings') && has(read('clasp-ready/SmokeCleanup.gs'), 'groups.purchase_orders'),
+      detail: 'backend smoke cleanup can archive/delete reviewed Billing and PO smoke rows',
     },
   ];
 

@@ -358,6 +358,19 @@ if (!writeSmokeJs.includes('COMPHONE_WRITE_SMOKE_CONFIRM') ||
     !writeSmokeJs.includes('idempotent_replay')) {
   fail('pwa_write_smoke.js must gate destructive writes and verify idempotent replay.');
 }
+if (!writeSmokeJs.includes("'addQuickNote'") ||
+    !writeSmokeJs.includes("'transitionJob'") ||
+    !writeSmokeJs.includes("'getJobTimeline'") ||
+    !writeSmokeJs.includes('nextSafeJobStatus')) {
+  fail('pwa_write_smoke.js must cover safe job note/status handoffs and timeline read-back.');
+}
+const smokeCleanupGs = readUtf8(path.join(ROOT, 'clasp-ready', 'SmokeCleanup.gs'));
+if (!smokeCleanupGs.includes('groups.billings') ||
+    !smokeCleanupGs.includes('groups.purchase_orders') ||
+    !smokeCleanupGs.includes('Billing_ID') ||
+    !smokeCleanupGs.includes('PO_ID')) {
+  fail('SmokeCleanup.gs must archive/delete reviewed smoke rows across Jobs, Customers, Billing, and PO.');
+}
 const visionAuditJs = readUtf8(path.join(ROOT, 'scripts', 'vision_capability_audit.js'));
 if (!visionAuditJs.includes('Vision Capability Audit') ||
     !visionAuditJs.includes('getVisionDashboardStats') ||

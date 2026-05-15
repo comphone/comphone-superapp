@@ -51,6 +51,7 @@ function rowsFrom(action, body) {
   if (!body) return [];
   if (action === 'getDashboardData') return body.jobs || (body.summary && body.summary.recentJobs) || [];
   if (action === 'listCustomers') return body.customers || body.data || body.rows || [];
+  if (action === 'listBillings') return body.billings || body.data || body.rows || [];
   if (action === 'listPurchaseOrders') return body.purchaseOrders || body.orders || body.data || body.rows || [];
   if (action === 'getReportData') return body.rows || body.data || body.jobs || body.billings || [];
   return body.rows || body.data || [];
@@ -86,6 +87,7 @@ async function main() {
   const scans = [
     ['jobs', 'getDashboardData', {}],
     ['customers', 'listCustomers', {}],
+    ['billings', 'listBillings', { limit: 100 }],
     ['purchase_orders', 'listPurchaseOrders', { limit: 100 }],
     ['reports', 'getReportData', { period: 'month' }],
   ];
