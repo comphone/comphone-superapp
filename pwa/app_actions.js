@@ -429,6 +429,10 @@ function addAppointment() {
   else showToast('กำลังเปดปฏิทิน...');
 }
 function moreActions() {
+  if (typeof showMoreMenu === 'function') {
+    showMoreMenu();
+    return;
+  }
   // แสดง bottom sheet เมนูเพิ่มเติม
   const items = [
     { label: '📦 คลังสินค้า', action: () => goPage('inventory', document.getElementById('nav-more')) },

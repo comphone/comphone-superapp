@@ -7,7 +7,7 @@ function renderHome() {
   const qaGrid = document.getElementById('quick-actions-grid');
   qaGrid.className = quickActions.length > 4 ? 'qa-grid-8' : 'qa-grid-4';
   qaGrid.innerHTML = quickActions.map(qa => `
-    <button class="qa-btn-item" style="background:${qa.color};color:${qa.textColor};" onclick="${qa.id ? `runQuickAction('${qa.id}')` : `${qa.action}()`}">
+    <button type="button" class="qa-btn-item" data-quick-action="${qa.id || qa.action || ''}" aria-label="${qa.label}" style="background:${qa.color};color:${qa.textColor};" onclick="${qa.id ? `runQuickAction('${qa.id}')` : `${qa.action}()`}">
       <i class="bi ${qa.icon}"></i>
       ${qa.label}
     </button>

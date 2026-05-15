@@ -30,6 +30,7 @@
         icon: 'bi-people-fill',
         actions: [
           { action: 'listCustomers', required: true, read: true },
+          { action: 'createCustomer', destructive: true },
           { action: 'getAfterSalesDue', read: true },
           { action: 'getAttendanceReport', payload: { days: 7 }, read: true },
           { action: 'getCustomerListWithStats', read: true },
@@ -178,6 +179,7 @@
           { action: 'getCRMMetrics', required: true },
         ],
         writeActions: [
+          { action: 'createCustomer', destructive: true },
           { action: 'scheduleFollowUp', destructive: true },
           { action: 'logFollowUpResult', destructive: true },
           { action: 'nudgeSalesTeam', destructive: true },
