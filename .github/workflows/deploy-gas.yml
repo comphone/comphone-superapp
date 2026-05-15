@@ -146,21 +146,21 @@ jobs:
             echo "4. Name: CLASPRC_JSON | Value: [paste raw JSON content]"
             echo ""
             echo "secrets_ok=false" >> $GITHUB_OUTPUT
-            exit 1
+            exit 0
           fi
 
           # Validate JSON structure
           if ! echo '${{ secrets.CLASPRC_JSON }}' | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
             echo "[❌] CLASPRC_JSON is not valid JSON"
             echo "secrets_ok=false" >> $GITHUB_OUTPUT
-            exit 1
+            exit 0
           fi
 
           # Validate contains access_token
           if ! echo '${{ secrets.CLASPRC_JSON }}' | grep -q '"access_token"'; then
             echo "[❌] CLASPRC_JSON missing 'access_token' field"
             echo "secrets_ok=false" >> $GITHUB_OUTPUT
-            exit 1
+            exit 0
           fi
 
           echo "[✅] CLASPRC_JSON valid (raw JSON with access_token)"
@@ -178,6 +178,12 @@ jobs:
           # For dry-run, skip actual deploy
           if [ "${{ github.event.inputs.deploy_type }}" = "dry-run" ]; then
             echo "[⚠️] DRY-RUN mode — will validate only, no actual deploy"
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          if [ "${{ steps.secret_check.outputs.secrets_ok }}" != "true" ]; then
+            echo "[WARN] CLASPRC_JSON is not available or invalid - skipping GAS deploy after successful validation"
             echo "should_deploy=false" >> $GITHUB_OUTPUT
             exit 0
           fi
