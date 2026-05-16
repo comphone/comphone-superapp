@@ -241,6 +241,16 @@ else
   warn "Node or vision_runtime_smoke.js unavailable - skipping AI Vision runtime smoke"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint99_live_readiness_audit.js" ]; then
+  if node scripts/sprint99_live_readiness_audit.js; then
+    echo "   Sprint 99 live readiness audit passed"
+  else
+    fail "Sprint 99 live readiness audit FAILED"
+  fi
+else
+  warn "Node or sprint99_live_readiness_audit.js unavailable - skipping Sprint 99 live readiness audit"
+fi
+
 if command -v node &>/dev/null && [ -f "scripts/vision_e2e_smoke.js" ]; then
   if node scripts/vision_e2e_smoke.js; then
     echo "   AI Vision E2E safety gate passed"

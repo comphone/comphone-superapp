@@ -419,6 +419,13 @@ if (!sprint98AuditJs.includes('Sprint 98 Operator Workflow Audit') ||
     !sprint98AuditJs.includes('vision-operational-loop')) {
   fail('sprint98_operator_workflow_audit.js must guard Jobs/Billing, mobile, PC dashboard, LINE, and Vision workflow polish.');
 }
+const sprint99AuditJs = readUtf8(path.join(ROOT, 'scripts', 'sprint99_live_readiness_audit.js'));
+if (!sprint99AuditJs.includes('Sprint 99 Live Readiness Audit') ||
+    !sprint99AuditJs.includes('single-build-timestamp') ||
+    !sprint99AuditJs.includes('legacy-quick-actions-migration') ||
+    !sprint99AuditJs.includes('command-center-live-surface')) {
+  fail('sprint99_live_readiness_audit.js must guard live cache freshness, quick-action migration, and PC command-center readiness.');
+}
 const offlineDbJs = readUtf8(path.join(PWA, 'offline_db.js'));
 if (!offlineDbJs.includes('normalizeOfflineAction_') || !offlineDbJs.includes('const res = await callApi(item.action')) {
   fail('offline_db.js must normalize offline writes and replay through callApi without re-queuing failures.');

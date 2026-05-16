@@ -95,6 +95,9 @@ const QUICK_ACTION_CATALOG = MENU_GROUPS.flatMap(group => group.items)
   }));
 
 const DEFAULT_QUICK_ACTION_IDS = ['openNewJob', 'addCustomer', 'jobs', 'billing', 'vision', 'line-center'];
+const LEGACY_QUICK_ACTION_DEFAULTS = [
+  ['openNewJob', 'addCustomer', 'jobs', 'crm']
+];
 
 const APP = {
   user: null,
@@ -608,7 +611,15 @@ function getQuickActions() {
   let ids = DEFAULT_QUICK_ACTION_IDS;
   try {
     const saved = JSON.parse(localStorage.getItem(QUICK_ACTIONS_KEY) || '[]');
-    if (Array.isArray(saved) && saved.length) ids = saved.slice(0, 6);
+    if (Array.isArray(saved) && saved.length) {
+      const isLegacyDefault = LEGACY_QUICK_ACTION_DEFAULTS.some(legacy =>
+        legacy.length === saved.length && legacy.every((id, index) => saved[index] === id)
+      );
+      ids = isLegacyDefault ? DEFAULT_QUICK_ACTION_IDS : saved.slice(0, 6);
+      if (isLegacyDefault) {
+        localStorage.setItem(QUICK_ACTIONS_KEY, JSON.stringify(ids));
+      }
+    }
   } catch (e) {}
   const actions = ids.map(id => QUICK_ACTION_CATALOG.find(item => item.id === id)).filter(Boolean);
   return actions.length ? actions : QUICK_ACTION_CATALOG.filter(item => DEFAULT_QUICK_ACTION_IDS.includes(item.id));
