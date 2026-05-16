@@ -412,6 +412,13 @@ if (!runtimeSelfTestJs.includes('ai-vision-runtime') ||
     !runtimeSelfTestJs.includes('getVisionLearningVersion')) {
   fail('runtime_self_test.js must include browser-side AI Vision runtime checks.');
 }
+const sprint98AuditJs = readUtf8(path.join(ROOT, 'scripts', 'sprint98_operator_workflow_audit.js'));
+if (!sprint98AuditJs.includes('Sprint 98 Operator Workflow Audit') ||
+    !sprint98AuditJs.includes('executive-command-center') ||
+    !sprint98AuditJs.includes('line-route-matrix') ||
+    !sprint98AuditJs.includes('vision-operational-loop')) {
+  fail('sprint98_operator_workflow_audit.js must guard Jobs/Billing, mobile, PC dashboard, LINE, and Vision workflow polish.');
+}
 const offlineDbJs = readUtf8(path.join(PWA, 'offline_db.js'));
 if (!offlineDbJs.includes('normalizeOfflineAction_') || !offlineDbJs.includes('const res = await callApi(item.action')) {
   fail('offline_db.js must normalize offline writes and replay through callApi without re-queuing failures.');

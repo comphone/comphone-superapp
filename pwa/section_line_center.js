@@ -71,6 +71,8 @@
         .line-input,.line-select{width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:9px;font-size:13px}
         .line-room-check{display:flex;align-items:center;gap:6px;font-size:12px;color:#334155}
         .line-preview{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:10px;font-size:12px;color:#334155;white-space:pre-wrap}
+        .line-route-matrix{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+        .line-route-cell{border:1px solid #e5e7eb;border-radius:10px;padding:10px;background:#f8fafc}
       </style>
       <div class="line-center-wrap">
         <div class="line-center-grid" id="line-center-kpis">
@@ -88,6 +90,7 @@
             <div class="line-actions" style="margin-bottom:8px">
               <button class="line-btn secondary" onclick="refreshLineCommandCenter()">Refresh</button>
               <button class="line-btn" onclick="ackAllLineAlerts()">Ack all</button>
+              <button class="line-btn secondary" onclick="queueLineTestAlert()">Queue test</button>
             </div>
             <div id="line-center-alerts"><div class="line-muted">Loading alerts...</div></div>
           </div>
@@ -109,6 +112,10 @@
             </div>
           </div>
           <div id="line-message-preview" class="line-preview" style="margin-top:10px">Preview will appear here.</div>
+        </div>
+        <div class="line-card">
+          <h4><i class="bi bi-signpost-split"></i> Role Routing Matrix</h4>
+          <div id="line-route-matrix" class="line-route-matrix"><div class="line-muted">Loading routing...</div></div>
         </div>
         <div class="line-card">
           <h4><i class="bi bi-terminal"></i> LINE Commands</h4>
@@ -138,6 +145,15 @@
           <div><strong>${esc(room.label || room.id)}</strong><div class="line-muted">${esc(room.key)} ${room.groupTail ? '...' + esc(room.groupTail) : ''}</div></div>
           ${statusBadge(room.configured)}
         </div>`).join('') || '<div class="line-muted">No rooms found.</div>';
+    }
+    const matrixEl = document.getElementById('line-route-matrix');
+    if (matrixEl) {
+      matrixEl.innerHTML = rooms.map(room => `
+        <div class="line-route-cell">
+          <strong>${esc(room.role || 'ops')}</strong>
+          <div class="line-muted">${esc(room.label || room.id)}</div>
+          ${statusBadge(room.configured)}
+        </div>`).join('') || '<div class="line-muted">No routing matrix available.</div>';
     }
     const checks = document.getElementById('line-center-room-checks');
     if (checks) {

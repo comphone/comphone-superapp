@@ -423,6 +423,7 @@ function _showJobTransition(jobId, currentStatus) {
 
 async function _doJobTransition(jobId, newStatus) {
   const resEl = document.getElementById('trans-result');
+  if (!confirm(`Confirm job status change for ${jobId} -> ${newStatus}?`)) return;
   try {
     resEl.style.display='block'; resEl.innerHTML='<span style="color:#6b7280;font-size:12px">กำลังเปลี่ยน...</span>';
     const r = await callApi('transitionJob', {job_id: jobId, status: newStatus, changed_by: 'PC Dashboard'});

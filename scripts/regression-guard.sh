@@ -441,6 +441,16 @@ else
   warn "Node or sprint87_protected_live_qa_runbook.js unavailable - skipping Sprint 87 protected live QA runbook"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint98_operator_workflow_audit.js" ]; then
+  if node scripts/sprint98_operator_workflow_audit.js; then
+    echo "   Sprint 98 operator workflow audit passed"
+  else
+    fail "Sprint 98 operator workflow audit FAILED"
+  fi
+else
+  warn "Node or sprint98_operator_workflow_audit.js unavailable - skipping Sprint 98 operator workflow audit"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"

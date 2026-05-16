@@ -215,6 +215,9 @@
         .vision-file{width:100%;border:1px dashed #94a3b8;border-radius:10px;padding:12px;background:#f8fafc}
         .vision-preview{max-width:100%;max-height:190px;border-radius:10px;margin-top:10px;display:none}
         .vision-field-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+        .vision-ops-loop{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:10px}
+        .vision-ops-step{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px}
+        .vision-ops-step strong{display:block;color:#0f172a;font-size:13px}.vision-ops-step span{font-size:11px;color:#64748b}
         @media(max-width:760px){.vision-hero{align-items:flex-start;flex-direction:column}.vision-grid,.vision-kpi-grid{grid-template-columns:1fr}.vision-card{border-radius:10px}.vision-btn{width:100%;justify-content:center}}
         @media(max-width:760px){.vision-field-grid{grid-template-columns:1fr}}
       </style>
@@ -235,6 +238,13 @@
         <div class="vision-grid">
           <div class="vision-card">
             <h4><i class="bi bi-camera-fill"></i> Vision Actions</h4>
+            <div class="vision-ops-loop" id="vision-operational-loop">
+              <div class="vision-ops-step"><strong>1. Capture</strong><span>job photo or slip</span></div>
+              <div class="vision-ops-step"><strong>2. Analyze</strong><span>Gemini pipeline</span></div>
+              <div class="vision-ops-step"><strong>3. Review</strong><span>human decision</span></div>
+              <div class="vision-ops-step"><strong>4. Link</strong><span>job timeline</span></div>
+              <div class="vision-ops-step"><strong>5. Notify</strong><span>LINE / reports</span></div>
+            </div>
             <div class="vision-actions" style="margin-bottom:12px">
               <button class="vision-btn" onclick="openVisionCamera('job')"><i class="bi bi-camera"></i> Work Photo</button>
               <button class="vision-btn" onclick="openVisionCamera('slip')"><i class="bi bi-receipt"></i> Slip Scan</button>
@@ -299,7 +309,19 @@
     const container = document.getElementById('vision-content') || document.getElementById('page-vision');
     if (!container) return;
     container.innerHTML = buildVisionShell('mobile');
+    restoreVisionJobContext();
     setTimeout(refreshVisionPanel, 0);
+  }
+
+  function restoreVisionJobContext() {
+    try {
+      const jobId = localStorage.getItem('comphone_vision_job_id') || localStorage.getItem('comphone_current_job_id') || '';
+      const input = document.getElementById('vision-job-id');
+      if (jobId && input && !input.value) {
+        input.value = jobId;
+        setTimeout(() => loadVisionFieldContext(jobId), 150);
+      }
+    } catch (_) {}
   }
 
   async function refreshVisionPanel(days) {
@@ -643,6 +665,7 @@
   }
 
   function hydrateVisionPanel() {
+    restoreVisionJobContext();
     setTimeout(refreshVisionPanel, 0);
   }
 

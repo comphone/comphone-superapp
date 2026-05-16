@@ -197,6 +197,8 @@ function renderJobsBadge() {
 function showJobDetail(jobId) {
   const job = APP.jobs.find(j => j.id === jobId);
   if (!job) return;
+  APP.currentJobId = job.id;
+  try { localStorage.setItem('comphone_current_job_id', job.id); } catch (_) {}
   const s = { urgent:'badge-urgent', inprog:'badge-inprog', waiting:'badge-wait', done:'badge-done', new:'badge-new' };
   const sl = { urgent:'ด่วนมาก', inprog:'กำลังซ่อม', waiting:'รอชิ้นส่วน', done:'เสร็จแล้ว', new:'รับเครื่องแล้ว' };
 
@@ -233,6 +235,17 @@ function showJobDetail(jobId) {
           <i class="bi bi-check2-circle"></i> เสร็จแล้ว
         </button>
       </div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px">
+        <button class="job-act-btn btn-gray-sm" style="padding:11px" onclick="openMobileJobTimeline('${job.id}')">
+          <i class="bi bi-clock-history"></i> Timeline
+        </button>
+        <button class="job-act-btn btn-gray-sm" style="padding:11px" onclick="openMobileJobBilling('${job.id}')">
+          <i class="bi bi-receipt"></i> Billing
+        </button>
+        <button class="job-act-btn btn-gray-sm" style="padding:11px" onclick="openMobileJobVision('${job.id}')">
+          <i class="bi bi-stars"></i> Vision
+        </button>
+      </div>
       <button class="job-act-btn btn-gray-sm" style="width:100%;margin-top:8px;padding:12px" onclick="callCustomer('${job.phone}')">
         <i class="bi bi-telephone-fill"></i> โทร ${job.customer}
       </button>
@@ -252,6 +265,51 @@ function showJobDetail(jobId) {
       createWarrantyModal(job.id, { customer_name: job.customer, description: job.title });
     });
   }
+}
+
+async function openMobileJobTimeline(jobId) {
+  const target = document.getElementById('modal-job-content');
+  if (target && !document.getElementById('mobile-job-timeline-inline')) {
+    target.insertAdjacentHTML('beforeend', '<div id="mobile-job-timeline-inline" style="margin:12px 16px;padding:12px;border-radius:12px;background:#f8fafc;color:#64748b;font-size:12px">Loading timeline...</div>');
+  }
+  try {
+    const res = await callAPI('getJobTimeline', { job_id: jobId });
+    const events = (res && (res.timeline || res.events || res.logs || res.items)) || [];
+    const el = document.getElementById('mobile-job-timeline-inline');
+    if (!el) return;
+    el.innerHTML = events.length ? events.slice(0, 6).map(e => `
+      <div style="padding:8px 0;border-bottom:1px solid #e5e7eb">
+        <div style="font-weight:700;color:#0f172a">${e.status || e.action || e.type || '-'}</div>
+        <div style="color:#64748b">${e.timestamp || e.date || ''} ${e.user || e.by ? '- ' + (e.user || e.by) : ''}</div>
+        ${e.notes || e.note ? `<div style="color:#475569;margin-top:3px">${e.notes || e.note}</div>` : ''}
+      </div>`).join('') : 'No timeline entries yet.';
+  } catch (error) {
+    const el = document.getElementById('mobile-job-timeline-inline');
+    if (el) el.textContent = error.message || String(error);
+  }
+}
+
+function openMobileJobBilling(jobId) {
+  APP.currentJobId = jobId;
+  try { localStorage.setItem('comphone_current_job_id', jobId); } catch (_) {}
+  closeModal('modal-job');
+  if (typeof openBillingModal === 'function') return openBillingModal(jobId);
+  return goPage('billing', document.getElementById('nav-more'));
+}
+
+function openMobileJobVision(jobId) {
+  APP.currentJobId = jobId;
+  try {
+    localStorage.setItem('comphone_current_job_id', jobId);
+    localStorage.setItem('comphone_vision_job_id', jobId);
+  } catch (_) {}
+  closeModal('modal-job');
+  goPage('vision', document.getElementById('nav-more'));
+  setTimeout(() => {
+    const input = document.getElementById('vision-job-id');
+    if (input) input.value = jobId;
+    if (typeof loadVisionFieldContext === 'function') loadVisionFieldContext(jobId);
+  }, 500);
 }
 
 function closeModal(id) {

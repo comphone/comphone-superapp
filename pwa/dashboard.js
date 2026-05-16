@@ -67,6 +67,21 @@ function renderDashboardError(msg) {
     </div>`;
 }
 
+function renderCommandTile(page, icon, value, label, targetPage) {
+  const risk = Number(value || 0) > 0 && ['inventory', 'vision', 'line-center'].includes(page);
+  return `
+    <button class="executive-command-tile" onclick="openDashboardCommand('${targetPage}')" style="text-align:left;border:1px solid ${risk ? '#fecaca' : '#e5e7eb'};background:${risk ? '#fff7ed' : '#fff'};border-radius:12px;padding:12px;min-height:86px;cursor:pointer;box-shadow:0 8px 20px rgba(15,23,42,.05)">
+      <i class="bi ${icon}" style="font-size:20px;color:${risk ? '#c2410c' : '#2563eb'}"></i>
+      <div style="font-size:22px;font-weight:900;color:#0f172a;margin-top:6px">${Number(value || 0).toLocaleString()}</div>
+      <div style="font-size:11px;color:#64748b;font-weight:700">${label}</div>
+    </button>`;
+}
+
+function openDashboardCommand(page) {
+  if (typeof goPage === 'function') return goPage(page, document.getElementById('nav-more'));
+  if (typeof loadSection === 'function') return loadSection(page);
+}
+
 // ===== RENDER DASHBOARD =====
 function renderDashboard(data) {
   const container = document.getElementById('dashboard-content');
@@ -88,6 +103,10 @@ function renderDashboard(data) {
   const statusDist = Array.isArray(sdRaw) ? sdRaw :
     (sdRaw.statuses || []).filter(s => s.job_count > 0);
   const dateStr = summary.date || new Date().toLocaleDateString('th-TH');
+  const billingOpen = Number(summary.billingOpen || summary.openBillings || summary.pendingBillings || 0);
+  const poOpen = Number(summary.poOpen || summary.openPurchaseOrders || summary.pendingPO || 0);
+  const visionReview = Number(summary.visionReview || summary.visionReviewQueue || summary.pendingVisionReviews || 0);
+  const linePending = alerts.length;
 
   container.innerHTML = `
     <!-- HEADER ROW -->
@@ -122,6 +141,19 @@ function renderDashboard(data) {
         <div class="kpi-icon"><i class="bi bi-box-seam-fill"></i></div>
         <div class="kpi-value">${lowStock}</div>
         <div class="kpi-label">สต็อกต่ำ</div>
+      </div>
+    </div>
+
+    <!-- EXECUTIVE COMMAND CENTER -->
+    <div class="section-card executive-command-center" style="margin:0 12px 10px">
+      <div class="section-label">Executive Command Center</div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+        ${renderCommandTile('jobs', 'bi-tools', totalJobs, overdueJobs > 0 ? `${overdueJobs} SLA risk` : 'service queue', 'jobs')}
+        ${renderCommandTile('billing', 'bi-receipt', billingOpen, 'billing follow-up', 'billing')}
+        ${renderCommandTile('po', 'bi-cart-check', poOpen, 'purchase queue', 'po')}
+        ${renderCommandTile('inventory', 'bi-box-seam', lowStock, 'stock risk', 'inventory')}
+        ${renderCommandTile('vision', 'bi-stars', visionReview, 'human review', 'vision')}
+        ${renderCommandTile('line-center', 'bi-broadcast-pin', linePending, 'LINE alerts', 'line-center')}
       </div>
     </div>
 

@@ -94,7 +94,7 @@ const QUICK_ACTION_CATALOG = MENU_GROUPS.flatMap(group => group.items)
     }[item.id] || '#0f172a'
   }));
 
-const DEFAULT_QUICK_ACTION_IDS = ['openNewJob', 'addCustomer', 'jobs', 'crm'];
+const DEFAULT_QUICK_ACTION_IDS = ['openNewJob', 'addCustomer', 'jobs', 'billing', 'vision', 'line-center'];
 
 const APP = {
   user: null,
@@ -450,7 +450,7 @@ function renderProfile() {
 function setActiveNav(page) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const direct = document.getElementById('nav-' + page);
-  const nestedPages = ['dashboard', 'crm', 'inventory', 'po', 'billing', 'reports', 'attendance', 'warranty', 'profile', 'admin', 'analytics', 'revenue', 'tax', 'performance'];
+  const nestedPages = ['dashboard', 'crm', 'inventory', 'po', 'billing', 'reports', 'attendance', 'warranty', 'profile', 'admin', 'analytics', 'revenue', 'tax', 'performance', 'vision', 'line-center'];
   const btn = direct || (nestedPages.includes(page) ? document.getElementById('nav-more') : null);
   if (btn) btn.classList.add('active');
 }
