@@ -105,6 +105,7 @@ function renderDashboard(data) {
   const dateStr = summary.date || new Date().toLocaleDateString('th-TH');
   const billingOpen = Number(summary.billingOpen || summary.openBillings || summary.pendingBillings || 0);
   const poOpen = Number(summary.poOpen || summary.openPurchaseOrders || summary.pendingPO || 0);
+  const reportModules = Number(summary.reportModules || summary.report_modules || 4);
   const visionReview = Number(summary.visionReview || summary.visionReviewQueue || summary.pendingVisionReviews || 0);
   const linePending = alerts.length;
 
@@ -147,9 +148,10 @@ function renderDashboard(data) {
     <!-- EXECUTIVE COMMAND CENTER -->
     <div class="section-card executive-command-center" style="margin:0 12px 10px">
       <div class="section-label">Executive Command Center</div>
-      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:8px">
         ${renderCommandTile('jobs', 'bi-tools', totalJobs, overdueJobs > 0 ? `${overdueJobs} SLA risk` : 'service queue', 'jobs')}
         ${renderCommandTile('billing', 'bi-receipt', billingOpen, 'billing follow-up', 'billing')}
+        ${renderCommandTile('reports', 'bi-file-earmark-bar-graph', reportModules, 'report center', 'reports')}
         ${renderCommandTile('po', 'bi-cart-check', poOpen, 'purchase queue', 'po')}
         ${renderCommandTile('inventory', 'bi-box-seam', lowStock, 'stock risk', 'inventory')}
         ${renderCommandTile('vision', 'bi-stars', visionReview, 'human review', 'vision')}

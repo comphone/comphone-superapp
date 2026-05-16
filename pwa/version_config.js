@@ -7,8 +7,8 @@
 const VERSION_CONFIG = {
   version: 'v5.18.34-job-menu-hardening',
   buildDate: '2026-05-07',
-  buildTimestamp: '20260516_0815',
-  cacheVersion: 'comphone-v5.18.34-job-menu-hardening-20260516_0815',
+  buildTimestamp: '20260516_0845',
+  cacheVersion: 'comphone-v5.18.34-job-menu-hardening-20260516_0845',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -31,7 +31,8 @@ const VERSION_CONFIG = {
     'AI Vision execution preview and LINE room router',
     'LINE Command Center with room status, ack tracking, and safe room messaging',
     'CI/CD deploy reliability guards and Pages freshness checks',
-    'Sprint 99 live cache-bust and operator readiness verification'
+    'Sprint 99 live cache-bust and operator readiness verification',
+    'Sprint 100 operator menu click-through guard'
   ]
 };
 
@@ -42,8 +43,8 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 // Backward-compatible exports for legacy modules and guards
 const APP_VERSION = 'v5.18.34-job-menu-hardening';
-const BUILD_TIMESTAMP = '20260516_0815';
-const CACHE_VERSION = 'comphone-v5.18.34-job-menu-hardening-20260516_0815';
+const BUILD_TIMESTAMP = '20260516_0845';
+const CACHE_VERSION = 'comphone-v5.18.34-job-menu-hardening-20260516_0845';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;
