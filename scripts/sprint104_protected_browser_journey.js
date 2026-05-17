@@ -311,17 +311,20 @@ const PROTECTED_STEPS = [
     capture: (state, body) => {
       const billings = normalizeArray(body, ['billings', 'items', 'data.billings', 'data.items', 'data']);
       const latest = billings.find(item => firstValue(item, ['Billing_ID', 'billing_id', 'id', 'ID']));
-      if (latest) state.latestBillingId = firstValue(latest, ['Billing_ID', 'billing_id', 'id', 'ID']);
+      if (latest) {
+        state.latestBillingId = firstValue(latest, ['Billing_ID', 'billing_id', 'id', 'ID']);
+        state.latestBillingJobId = firstValue(latest, ['Job_ID', 'job_id', 'jobId']);
+      }
     },
     recommendation: 'Fix BillingManager list route and response normalization.',
   },
   {
     menu: 'billing',
     action: 'getBilling',
-    payloadFromState: state => state.latestBillingId ? { billing_id: state.latestBillingId, billingId: state.latestBillingId } : null,
+    payloadFromState: state => state.latestBillingJobId ? { job_id: state.latestBillingJobId, jobId: state.latestBillingJobId } : null,
     optional: true,
     validate: okBase,
-    summarize: body => ({ id: firstValue(body, ['billing.Billing_ID', 'data.Billing_ID', 'id']) }),
+    summarize: body => ({ id: firstValue(body, ['billing.Billing_ID', 'billing.billing_id', 'data.Billing_ID', 'id']) }),
     recommendation: 'Billing detail is optional unless a latest billing record is available.',
   },
   {

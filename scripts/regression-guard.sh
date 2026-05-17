@@ -301,6 +301,16 @@ else
   warn "Node or sprint104_protected_browser_journey.js unavailable - skipping Sprint 104 protected browser journey"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint105_record_detail_completeness.js" ]; then
+  if node scripts/sprint105_record_detail_completeness.js; then
+    echo "   Sprint 105 record detail completeness passed or skipped safely"
+  else
+    fail "Sprint 105 record detail completeness FAILED"
+  fi
+else
+  warn "Node or sprint105_record_detail_completeness.js unavailable - skipping Sprint 105 record detail completeness"
+fi
+
 if command -v node &>/dev/null && [ -f "scripts/vision_e2e_smoke.js" ]; then
   if node scripts/vision_e2e_smoke.js; then
     echo "   AI Vision E2E safety gate passed"

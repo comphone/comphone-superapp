@@ -1,6 +1,6 @@
 # Sprint 74 Core System Audit
 
-Generated: 2026-05-17T04:33:50.100Z
+Generated: 2026-05-17T09:48:46.653Z
 
 Score: **100/100**
 Status: **OK**
@@ -38,7 +38,7 @@ No P0/P1/P2 findings. Core system contracts are aligned.
 | backend-contract | api-contract-public-actions-minimal | publicActions=getVersion, health |
 | backend-contract | router-auth-contract-accepts-valid-or-success | Router auth gate must accept the Auth.gs { valid, session } contract and legacy { success } contract. |
 | backend-contract | router-public-whitelist-not-sensitive | PUBLIC_ACTIONS must not expose customer, billing, inventory, reports, or security data. |
-| backend-contract | required-menu-actions-routed | 10 required actions routed |
+| backend-contract | required-menu-actions-routed | 11 required actions routed |
 | backend-contract | line-room-push-confirmation-gated | LINE room sends must require explicit confirmation. |
 | frontend-runtime | mobile-critical-scripts-loaded | 13 critical mobile scripts loaded |
 | frontend-runtime | pc-critical-scripts-loaded | 18 critical PC scripts loaded |
