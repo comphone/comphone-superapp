@@ -321,6 +321,16 @@ else
   warn "Node or sprint106_production_data_quality_guard.js unavailable - skipping Sprint 106 production data quality guard"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint107_controlled_data_cleanup_plan.js" ]; then
+  if node scripts/sprint107_controlled_data_cleanup_plan.js; then
+    echo "   Sprint 107 controlled data cleanup plan passed"
+  else
+    fail "Sprint 107 controlled data cleanup plan FAILED"
+  fi
+else
+  warn "Node or sprint107_controlled_data_cleanup_plan.js unavailable - skipping Sprint 107 controlled data cleanup plan"
+fi
+
 if command -v node &>/dev/null && [ -f "scripts/vision_e2e_smoke.js" ]; then
   if node scripts/vision_e2e_smoke.js; then
     echo "   AI Vision E2E safety gate passed"

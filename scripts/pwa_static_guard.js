@@ -478,6 +478,14 @@ if (!sprint106DataQualityJs.includes('Sprint 106 Production Data Quality Guard')
     !sprint106DataQualityJs.includes('COMPHONE_AUTH_TOKEN')) {
   fail('sprint106_production_data_quality_guard.js must guard token-aware production data quality warnings.');
 }
+const sprint107CleanupPlanJs = readUtf8(path.join(ROOT, 'scripts', 'sprint107_controlled_data_cleanup_plan.js'));
+if (!sprint107CleanupPlanJs.includes('Sprint 107 Controlled Data Cleanup') ||
+    !sprint107CleanupPlanJs.includes('COMPHONE_DATA_CLEANUP_CONFIRM') ||
+    !sprint107CleanupPlanJs.includes('REVIEWED_PRODUCTION_DATA_CLEANUP_PLAN') ||
+    !sprint107CleanupPlanJs.includes('archive-before-change') ||
+    !sprint107CleanupPlanJs.includes('safe_automation')) {
+  fail('sprint107_controlled_data_cleanup_plan.js must keep production cleanup/backfill in read-only planned mode with explicit future gates.');
+}
 const offlineDbJs = readUtf8(path.join(PWA, 'offline_db.js'));
 if (!offlineDbJs.includes('normalizeOfflineAction_') || !offlineDbJs.includes('const res = await callApi(item.action')) {
   fail('offline_db.js must normalize offline writes and replay through callApi without re-queuing failures.');
