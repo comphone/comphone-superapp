@@ -11,8 +11,9 @@ const ASSET_MANIFEST = path.join(PWA, 'pwa_asset_manifest.js');
 const SCHEMA_REGISTRY = path.join(ROOT, 'docs', 'database_schema_registry.json');
 const SPRINT108_GUARD = path.join(ROOT, 'scripts', 'sprint108_database_schema_registry_guard.js');
 const SPRINT109_REPAIR = path.join(ROOT, 'scripts', 'sprint109_data_repair_console_plan.js');
+const SPRINT111_REPAIR_EXECUTION = path.join(ROOT, 'scripts', 'sprint111_controlled_data_repair_execution.js');
 
-const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR];
+const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION];
 const badMarkers = [
   '\u00e0\u00b8',
   '\u00e0\u00b9',
@@ -232,6 +233,7 @@ if (!apiContractJs.includes('COMPHONE_API_CONTRACT') || !apiContractJs.includes(
 const schemaRegistryJson = readUtf8(SCHEMA_REGISTRY);
 const sprint108GuardJs = readUtf8(SPRINT108_GUARD);
 const sprint109RepairJs = readUtf8(SPRINT109_REPAIR);
+const sprint111RepairExecutionJs = readUtf8(SPRINT111_REPAIR_EXECUTION);
 if (!schemaRegistryJson.includes('"canonical_tables"') || !schemaRegistryJson.includes('"aliases"') || !schemaRegistryJson.includes('"DB_SS_ID"')) {
   fail('docs/database_schema_registry.json must define canonical_tables, aliases, and DB_SS_ID spreadsheet metadata.');
 }
@@ -245,6 +247,12 @@ if (!sprint109RepairJs.includes('Sprint 109 Data Repair Console Plan') ||
     !sprint109RepairJs.includes('archive_before_change') ||
     !sprint109RepairJs.includes('production_mutation: false')) {
   fail('scripts/sprint109_data_repair_console_plan.js must stay read-only and require archive-before-change repair policy.');
+}
+if (!sprint111RepairExecutionJs.includes('Sprint 111 Controlled Data Repair Execution Guard') ||
+    !sprint111RepairExecutionJs.includes('EXECUTE_REVIEWED_DATA_REPAIR') ||
+    !sprint111RepairExecutionJs.includes('archive-before-change') ||
+    !sprint111RepairExecutionJs.includes('DataRepairConsole.gs')) {
+  fail('scripts/sprint111_controlled_data_repair_execution.js must guard the controlled data repair execution layer.');
 }
 
 const pcContractIndex = dashboardPcHtml.indexOf('api_contract.js');

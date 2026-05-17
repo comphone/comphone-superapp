@@ -76,6 +76,8 @@
     getTaxReminder: true,
     getJobStatusPublic: true,
     getDriveSyncStatus: true,
+    getDataRepairStatus: true,
+    previewDataRepair: true,
     // === Public / Customer Portal ===
     submitCustomerRating: true,
     // === Write / Mutate (require approval) ===
@@ -151,6 +153,7 @@
     syncCodeToDrive: true,
     storeSessionContent: true,
     pruneAuditLog: true,
+    executeDataRepair: true,
     cronMorningAlert: false,  // ⛔ DISABLED by request 2026-05-05
     // === Security / Audit (internal) ===
     logApprovalAudit: true,

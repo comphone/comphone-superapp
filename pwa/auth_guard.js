@@ -44,6 +44,7 @@ const PERMISSION_MAP = {
   'action:markDone':      ['owner', 'technician'],
   'action:markWaiting':   ['owner', 'technician'],
   'action:createBilling': ['owner', 'accountant', 'sales'],
+  'action:dataRepair':    ['owner'],
   'action:transferStock': ['owner', 'accountant'],
   'action:createPO':      ['owner', 'accountant'],
 };

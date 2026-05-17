@@ -31,6 +31,9 @@ var MODULE_ROUTER = {
   'getJobQRData': function(p) { return getJobWebAppPayload(p.job_id || p.jobId || ''); },
   'generateJobQR': function(p) { return generateJobQR(p.job_id || p.jobId || ''); },
   'cleanupSmokeTestRecords': function(p) { return cleanupSmokeTestRecords(p); },
+  'previewDataRepair': function(p) { return previewDataRepair(p); },
+  'executeDataRepair': function(p) { return executeDataRepair(p); },
+  'getDataRepairStatus': function(p) { return getDataRepairStatus(p); },
 
   // Inventory
   'inventoryOverview':    function(p) { return getInventoryOverview(p); },

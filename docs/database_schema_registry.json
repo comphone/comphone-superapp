@@ -28,6 +28,8 @@
     "DB_AUDIT": { "domain": "audit" },
     "DB_AI_METRICS": { "domain": "ai" },
     "DB_CSAT": { "domain": "ai" },
+    "DB_DATA_REPAIR_ARCHIVE": { "domain": "maintenance" },
+    "DB_DATA_REPAIR_AUDIT": { "domain": "maintenance" },
     "DB_ERROR_TRENDS": { "domain": "telemetry" },
     "DB_ERRORS": { "domain": "telemetry" },
     "DB_FOLLOWUP": { "domain": "crm" },

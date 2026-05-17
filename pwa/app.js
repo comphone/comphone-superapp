@@ -812,7 +812,9 @@ const READ_ACTIONS = {
   getIntelAlertQueue: true,
   getAlertAnalytics: true,
   getGroupedAlerts: true,
-  previewLineRoomMessage: true
+  previewLineRoomMessage: true,
+  getDataRepairStatus: true,
+  previewDataRepair: true
 };
 
 function isReadAction(action) {
