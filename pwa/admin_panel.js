@@ -21,7 +21,8 @@ const ADMIN_PANEL = {
   auditLogs:   [],
   auditPage:   0,
   auditPerPage: 20,
-  tab:         'security'   /* 'security' | 'users' | 'config' | 'audit' */
+  repair:      null,
+  tab:         'security'   /* 'security' | 'health' | 'users' | 'config' | 'repair' | 'audit' */
 };
 
 /* ══════════════════════════════════════════════════════════════
@@ -60,6 +61,7 @@ function buildAdminPanelShell_(container) {
       <button class="admin-tab" data-tab="health"><i class="bi bi-activity"></i> Health</button>
       <button class="admin-tab" data-tab="users"><i class="bi bi-people-fill"></i> Users</button>
       <button class="admin-tab" data-tab="config"><i class="bi bi-gear-fill"></i> Config</button>
+      <button class="admin-tab" data-tab="repair"><i class="bi bi-tools"></i> Repair</button>
       <button class="admin-tab" data-tab="audit"><i class="bi bi-journal-text"></i> Audit Log</button>
     </div>
     <div id="admin-tab-content" style="padding:0 0 80px 0"></div>`;
@@ -86,6 +88,7 @@ function switchAdminTab_(tab) {
       break;
     case 'users':    renderUserManagement_(content);    break;
     case 'config':   renderConfigPanel_(content);       break;
+    case 'repair':   renderDataRepairConsole_(content); break;
     case 'audit':    renderAuditLogViewer_(content);    break;
   }
 }
@@ -456,6 +459,124 @@ function renderConfigPanel_(container) {
 /* ══════════════════════════════════════════════════════════════
    3d. Audit Log Viewer
 ══════════════════════════════════════════════════════════════ */
+
+async function renderDataRepairConsole_(container) {
+  container.innerHTML = `
+    <div style="padding:16px">
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+          <div>
+            <div style="font-size:15px;font-weight:800;color:#111827"><i class="bi bi-tools" style="color:#7c3aed"></i> Data Repair Console</div>
+            <div style="font-size:12px;color:#64748b;margin-top:4px">Preview production data issues before archive/delete. Execution requires owner confirmation.</div>
+          </div>
+          <button id="btn-repair-refresh" class="btn-primary-sm"><i class="bi bi-arrow-clockwise"></i> Refresh Preview</button>
+        </div>
+      </div>
+      <div id="admin-repair-status" style="font-size:13px;color:#64748b;margin-bottom:10px">Loading repair status...</div>
+      <div id="admin-repair-candidates"></div>
+    </div>`;
+
+  document.getElementById('btn-repair-refresh').addEventListener('click', () => renderDataRepairConsole_(container));
+  await hydrateAdminDataRepair_(container);
+}
+
+async function hydrateAdminDataRepair_(container) {
+  const statusEl = document.getElementById('admin-repair-status');
+  const listEl = document.getElementById('admin-repair-candidates');
+  if (!statusEl || !listEl) return;
+  statusEl.innerHTML = '<span style="color:#2563eb">Loading protected preview...</span>';
+  listEl.innerHTML = '<div class="loading-spinner-sm" style="margin:24px auto"></div>';
+  try {
+    const status = await callAPI('getDataRepairStatus', {});
+    const preview = await callAPI('previewDataRepair', { period: 'month' });
+    if (!status || status.success === false) throw new Error((status && status.error) || 'getDataRepairStatus failed');
+    if (!preview || preview.success === false) throw new Error((preview && preview.error) || 'previewDataRepair failed');
+    ADMIN_PANEL.repair = { status, preview };
+    const candidates = preview.candidates || status.candidates || [];
+    statusEl.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+        ${buildRepairMetric_('Candidates', candidates.length, '#2563eb')}
+        ${buildRepairMetric_('Executable', candidates.filter(c => c.executable).length, '#dc2626')}
+        ${buildRepairMetric_('Archive Sheet', status.archive_sheet || 'DB_DATA_REPAIR_ARCHIVE', '#059669')}
+        ${buildRepairMetric_('Audit Sheet', status.audit_sheet || 'DB_DATA_REPAIR_AUDIT', '#7c3aed')}
+      </div>`;
+    listEl.innerHTML = candidates.length
+      ? candidates.map(buildRepairCandidateCard_).join('')
+      : '<div style="padding:24px;text-align:center;color:#059669;background:#ecfdf5;border-radius:12px">No repair candidates found.</div>';
+    listEl.querySelectorAll('.btn-repair-execute').forEach(btn => {
+      btn.addEventListener('click', () => executeAdminDataRepair_(btn.dataset.repairId));
+    });
+  } catch (e) {
+    statusEl.innerHTML = `<span style="color:#dc2626">Repair preview failed: ${escapeAdminHtml_(e.message || e)}</span>`;
+    listEl.innerHTML = '';
+  }
+}
+
+function buildRepairMetric_(label, value, color) {
+  return `<div style="background:#fff;border:1px solid ${color}22;border-radius:10px;padding:10px">
+    <div style="font-size:11px;color:#64748b">${label}</div>
+    <div style="font-size:15px;font-weight:800;color:${color};word-break:break-word">${escapeAdminHtml_(value)}</div>
+  </div>`;
+}
+
+function buildRepairCandidateCard_(candidate) {
+  const executable = !!candidate.executable;
+  const color = executable ? '#dc2626' : '#d97706';
+  const preview = candidate.preview || {};
+  const previewRows = Object.keys(preview).slice(0, 8).map(key =>
+    `<tr><td style="color:#64748b;padding:4px 8px;width:38%">${escapeAdminHtml_(key)}</td><td style="padding:4px 8px;word-break:break-word">${escapeAdminHtml_(preview[key])}</td></tr>`
+  ).join('');
+  return `
+    <div class="repair-candidate-card" style="background:#fff;border:1px solid #e5e7eb;border-left:4px solid ${color};border-radius:12px;padding:14px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+        <div>
+          <div style="font-weight:800;color:#111827">${escapeAdminHtml_(candidate.repair_id || '-')}</div>
+          <div style="font-size:12px;color:#64748b;margin-top:2px">${escapeAdminHtml_(candidate.scope || '-')} / ${escapeAdminHtml_(candidate.source_sheet || '-')} row ${escapeAdminHtml_(candidate.source_row || '-')}</div>
+        </div>
+        <span style="background:${executable ? '#fef2f2' : '#fffbeb'};color:${color};padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800">${executable ? 'EXECUTABLE' : 'REVIEW ONLY'}</span>
+      </div>
+      <div style="font-size:12px;color:#475569;margin-top:10px">${escapeAdminHtml_(candidate.recommendation || '')}</div>
+      <div style="margin-top:10px;font-size:12px;color:#64748b">Missing: ${(candidate.missing_fields || []).map(escapeAdminHtml_).join(', ') || '-'}</div>
+      <table style="width:100%;font-size:12px;margin-top:10px;background:#f8fafc;border-radius:8px;overflow:hidden">${previewRows || '<tr><td style="padding:8px;color:#64748b">No preview fields</td></tr>'}</table>
+      ${executable ? `
+        <div style="margin-top:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px">
+          <label style="font-size:12px;color:#9a3412;font-weight:700">Type EXECUTE_REVIEWED_DATA_REPAIR to enable archive/delete</label>
+          <input class="repair-confirm-input" id="repair-confirm-${escapeAdminHtml_(candidate.repair_id)}" style="width:100%;margin-top:6px;padding:8px;border:1px solid #fdba74;border-radius:8px;font-size:12px" autocomplete="off">
+          <button class="btn-repair-execute" data-repair-id="${escapeAdminHtml_(candidate.repair_id)}" style="margin-top:8px;background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer">
+            <i class="bi bi-archive-fill"></i> Archive + Delete Reviewed Row
+          </button>
+        </div>` : ''}
+    </div>`;
+}
+
+async function executeAdminDataRepair_(repairId) {
+  const input = document.getElementById('repair-confirm-' + repairId);
+  const confirmText = input ? input.value.trim() : '';
+  if (confirmText !== 'EXECUTE_REVIEWED_DATA_REPAIR') {
+    showToast('Type the exact confirmation phrase before executing.');
+    return;
+  }
+  if (!confirm('Archive the row first, then delete this reviewed orphan Billing row?')) return;
+  const res = await callAPI('executeDataRepair', {
+    execute: true,
+    repair_id: repairId,
+    repair_action: 'archive_delete_orphan_billing_row',
+    confirm: confirmText,
+    operator: (APP.user && (APP.user.username || APP.user.name)) || 'admin-ui',
+    reason: 'Sprint 112 Admin Repair Console'
+  });
+  showToast(res && res.success ? 'Data repair executed and archived.' : 'Repair blocked: ' + ((res && res.error) || 'unknown error'));
+  if (res && res.success) renderDataRepairConsole_(document.getElementById('admin-tab-content'));
+}
+
+function escapeAdminHtml_(value) {
+  return String(value === null || value === undefined ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 async function renderAuditLogViewer_(container) {
   container.innerHTML = '<div class="loading-spinner-sm" style="margin:24px auto"></div>';

@@ -109,6 +109,16 @@ function renderSettingsSection() {  // [PATCH] เปลี่ยนเป็น
 
     <div id="runtime-selftest-content" style="margin-bottom:16px"></div>
 
+    <div class="card-box" style="margin-bottom:16px;border-left:4px solid #7c3aed">
+      <div class="card-title"><i class="bi bi-tools" style="color:#7c3aed"></i> Data Repair Console</div>
+      <div style="font-size:13px;color:#64748b;margin-bottom:10px">
+        Preview incomplete production data and execute only owner-confirmed archive-before-change repairs.
+      </div>
+      <div id="settings-data-repair-content">
+        <div class="loading-state"><div class="spinner-pc"></div><p>Loading repair preview...</p></div>
+      </div>
+    </div>
+
     <div class="card-box" style="margin-bottom:16px;border-left:4px solid #2563eb">
       <div class="card-title"><i class="bi bi-radar" style="color:#2563eb"></i> Operations Diagnostics</div>
       <div id="settings-diagnostics-content" style="font-size:13px;color:#64748b;padding:8px 0">
@@ -320,11 +330,116 @@ async function exportComphoneDiagnostics() {
   URL.revokeObjectURL(url);
 }
 
+async function hydrateSettingsDataRepairPanel() {
+  const el = document.getElementById('settings-data-repair-content');
+  if (!el) return;
+  if (typeof callApi !== 'function') {
+    el.innerHTML = '<div style="color:#dc2626;font-size:13px">callApi is not available.</div>';
+    return;
+  }
+  el.innerHTML = '<div class="loading-state"><div class="spinner-pc"></div><p>Loading repair preview...</p></div>';
+  try {
+    const status = await callApi('getDataRepairStatus', {});
+    const preview = await callApi('previewDataRepair', { period: 'month' });
+    if (!status || status.success === false) throw new Error((status && status.error) || 'getDataRepairStatus failed');
+    if (!preview || preview.success === false) throw new Error((preview && preview.error) || 'previewDataRepair failed');
+    const candidates = preview.candidates || status.candidates || [];
+    const executable = candidates.filter(c => c.executable).length;
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px">
+        ${_repairTile_('Candidates', candidates.length, '#2563eb')}
+        ${_repairTile_('Executable', executable, '#dc2626')}
+        ${_repairTile_('Archive', status.archive_sheet || 'DB_DATA_REPAIR_ARCHIVE', '#059669')}
+        ${_repairTile_('Audit', status.audit_sheet || 'DB_DATA_REPAIR_AUDIT', '#7c3aed')}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <button onclick="hydrateSettingsDataRepairPanel()" style="background:#7c3aed;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:12px;cursor:pointer">
+          <i class="bi bi-arrow-clockwise"></i> Refresh Preview
+        </button>
+      </div>
+      ${candidates.length ? candidates.map(_repairCandidateHtml_).join('') : '<div style="background:#ecfdf5;color:#047857;border-radius:10px;padding:14px;font-size:13px">No repair candidates found.</div>'}`;
+    el.querySelectorAll('.settings-repair-execute').forEach(btn => {
+      btn.addEventListener('click', () => executeSettingsDataRepair_(btn.dataset.repairId));
+    });
+  } catch (err) {
+    el.innerHTML = `<div style="background:#fef2f2;color:#b91c1c;border-radius:10px;padding:12px;font-size:13px">Repair preview failed: ${_escapeSettingsHtml_(err.message || err)}</div>`;
+  }
+}
+
+function _repairTile_(label, value, color) {
+  return `<div style="background:#fff;border:1px solid ${color}22;border-radius:10px;padding:10px">
+    <div style="font-size:11px;color:#64748b">${label}</div>
+    <div style="font-size:15px;font-weight:800;color:${color};word-break:break-word">${_escapeSettingsHtml_(value)}</div>
+  </div>`;
+}
+
+function _repairCandidateHtml_(candidate) {
+  const executable = !!candidate.executable;
+  const color = executable ? '#dc2626' : '#d97706';
+  const preview = candidate.preview || {};
+  const rows = Object.keys(preview).slice(0, 8).map(key =>
+    `<tr><td style="color:#64748b;padding:4px 8px;width:38%">${_escapeSettingsHtml_(key)}</td><td style="padding:4px 8px;word-break:break-word">${_escapeSettingsHtml_(preview[key])}</td></tr>`
+  ).join('');
+  return `<div style="border:1px solid #e5e7eb;border-left:4px solid ${color};border-radius:10px;padding:12px;margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <div>
+        <div style="font-weight:800;color:#111827">${_escapeSettingsHtml_(candidate.repair_id || '-')}</div>
+        <div style="font-size:12px;color:#64748b">${_escapeSettingsHtml_(candidate.scope || '-')} / ${_escapeSettingsHtml_(candidate.source_sheet || '-')} row ${_escapeSettingsHtml_(candidate.source_row || '-')}</div>
+      </div>
+      <span style="background:${executable ? '#fef2f2' : '#fffbeb'};color:${color};padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800">${executable ? 'EXECUTABLE' : 'REVIEW ONLY'}</span>
+    </div>
+    <div style="font-size:12px;color:#475569;margin-top:8px">${_escapeSettingsHtml_(candidate.recommendation || '')}</div>
+    <div style="font-size:12px;color:#64748b;margin-top:8px">Missing: ${(candidate.missing_fields || []).map(_escapeSettingsHtml_).join(', ') || '-'}</div>
+    <table style="width:100%;font-size:12px;margin-top:8px;background:#f8fafc;border-radius:8px;overflow:hidden">${rows || '<tr><td style="padding:8px;color:#64748b">No preview fields</td></tr>'}</table>
+    ${executable ? `<div style="margin-top:10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px">
+      <label style="font-size:12px;color:#9a3412;font-weight:700">Type EXECUTE_REVIEWED_DATA_REPAIR to enable archive/delete</label>
+      <input id="settings-repair-confirm-${_escapeSettingsHtml_(candidate.repair_id)}" style="width:100%;margin-top:6px;padding:8px;border:1px solid #fdba74;border-radius:8px;font-size:12px" autocomplete="off">
+      <button class="settings-repair-execute" data-repair-id="${_escapeSettingsHtml_(candidate.repair_id)}" style="margin-top:8px;background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer">
+        <i class="bi bi-archive-fill"></i> Archive + Delete Reviewed Row
+      </button>
+    </div>` : ''}
+  </div>`;
+}
+
+async function executeSettingsDataRepair_(repairId) {
+  const input = document.getElementById('settings-repair-confirm-' + repairId);
+  const confirmText = input ? input.value.trim() : '';
+  if (confirmText !== 'EXECUTE_REVIEWED_DATA_REPAIR') {
+    alert('Type the exact confirmation phrase before executing.');
+    return;
+  }
+  if (!confirm('Archive the row first, then delete this reviewed orphan Billing row?')) return;
+  const res = await callApi('executeDataRepair', {
+    execute: true,
+    repair_id: repairId,
+    repair_action: 'archive_delete_orphan_billing_row',
+    confirm: confirmText,
+    operator: 'pc-settings',
+    reason: 'Sprint 112 PC Settings Repair Console'
+  });
+  if (res && res.success) {
+    alert('Data repair executed and archived.');
+    hydrateSettingsDataRepairPanel();
+  } else {
+    alert('Repair blocked: ' + ((res && res.error) || 'unknown error'));
+  }
+}
+
+function _escapeSettingsHtml_(value) {
+  return String(value === null || value === undefined ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function hydrateSettingsRuntimePanels() {
   const el = document.getElementById('runtime-selftest-content');
   if (el && typeof renderRuntimeSelfTestPanel === 'function') {
     renderRuntimeSelfTestPanel(el);
   }
+  hydrateSettingsDataRepairPanel();
   hydrateSystemDiagnostics();
 }
 

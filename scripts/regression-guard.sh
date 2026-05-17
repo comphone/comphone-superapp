@@ -571,6 +571,16 @@ else
   warn "Node or sprint111_controlled_data_repair_execution.js unavailable - skipping Sprint 111 controlled data repair execution guard"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint112_admin_repair_console_audit.js" ]; then
+  if node scripts/sprint112_admin_repair_console_audit.js; then
+    echo "   Sprint 112 admin repair console audit passed"
+  else
+    fail "Sprint 112 admin repair console audit FAILED"
+  fi
+else
+  warn "Node or sprint112_admin_repair_console_audit.js unavailable - skipping Sprint 112 admin repair console audit"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"

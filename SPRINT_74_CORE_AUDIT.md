@@ -1,10 +1,10 @@
 # Sprint 74 Core System Audit
 
-Generated: 2026-05-17T09:48:46.653Z
+Generated: 2026-05-17T23:17:18.042Z
 
 Score: **100/100**
 Status: **OK**
-App: `v5.18.34-job-menu-hardening` / build `20260516_0845`
+App: `v5.18.34-job-menu-hardening` / build `20260518_0015`
 GAS: `v5.18.16-write-flow-validation` / https://script.google.com/macros/s/AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA/exec
 
 ## Area Summary
@@ -29,8 +29,8 @@ No P0/P1/P2 findings. Core system contracts are aligned.
 
 | Area | Check | Detail |
 |---|---|---|
-| source-of-truth | frontend-version-present | version=v5.18.34-job-menu-hardening build=20260516_0845 cache=comphone-v5.18.34-job-menu-hardening-20260516_0845 |
-| source-of-truth | service-worker-cache-matches-version-config | sw=comphone-v5.18.34-job-menu-hardening-20260516_0845 version_config=comphone-v5.18.34-job-menu-hardening-20260516_0845 |
+| source-of-truth | frontend-version-present | version=v5.18.34-job-menu-hardening build=20260518_0015 cache=comphone-v5.18.34-job-menu-hardening-20260518_0015 |
+| source-of-truth | service-worker-cache-matches-version-config | sw=comphone-v5.18.34-job-menu-hardening-20260518_0015 version_config=comphone-v5.18.34-job-menu-hardening-20260518_0015 |
 | source-of-truth | mobile-cache-bust-build-timestamp | Mobile shell should include the current build timestamp on local assets. |
 | source-of-truth | pc-cache-bust-build-timestamp | PC shell should include the current build timestamp on local assets. |
 | source-of-truth | gas-url-single-production-value | production GAS URL=https://script.google.com/macros/s/AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA/exec |

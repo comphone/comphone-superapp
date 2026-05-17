@@ -12,8 +12,9 @@ const SCHEMA_REGISTRY = path.join(ROOT, 'docs', 'database_schema_registry.json')
 const SPRINT108_GUARD = path.join(ROOT, 'scripts', 'sprint108_database_schema_registry_guard.js');
 const SPRINT109_REPAIR = path.join(ROOT, 'scripts', 'sprint109_data_repair_console_plan.js');
 const SPRINT111_REPAIR_EXECUTION = path.join(ROOT, 'scripts', 'sprint111_controlled_data_repair_execution.js');
+const SPRINT112_ADMIN_REPAIR = path.join(ROOT, 'scripts', 'sprint112_admin_repair_console_audit.js');
 
-const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION];
+const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR];
 const badMarkers = [
   '\u00e0\u00b8',
   '\u00e0\u00b9',
@@ -234,6 +235,7 @@ const schemaRegistryJson = readUtf8(SCHEMA_REGISTRY);
 const sprint108GuardJs = readUtf8(SPRINT108_GUARD);
 const sprint109RepairJs = readUtf8(SPRINT109_REPAIR);
 const sprint111RepairExecutionJs = readUtf8(SPRINT111_REPAIR_EXECUTION);
+const sprint112AdminRepairJs = readUtf8(SPRINT112_ADMIN_REPAIR);
 if (!schemaRegistryJson.includes('"canonical_tables"') || !schemaRegistryJson.includes('"aliases"') || !schemaRegistryJson.includes('"DB_SS_ID"')) {
   fail('docs/database_schema_registry.json must define canonical_tables, aliases, and DB_SS_ID spreadsheet metadata.');
 }
@@ -253,6 +255,12 @@ if (!sprint111RepairExecutionJs.includes('Sprint 111 Controlled Data Repair Exec
     !sprint111RepairExecutionJs.includes('archive-before-change') ||
     !sprint111RepairExecutionJs.includes('DataRepairConsole.gs')) {
   fail('scripts/sprint111_controlled_data_repair_execution.js must guard the controlled data repair execution layer.');
+}
+if (!sprint112AdminRepairJs.includes('Sprint 112 Admin Repair Console Audit') ||
+    !sprint112AdminRepairJs.includes('settings-data-repair-content') ||
+    !sprint112AdminRepairJs.includes('renderDataRepairConsole_') ||
+    !sprint112AdminRepairJs.includes('EXECUTE_REVIEWED_DATA_REPAIR')) {
+  fail('scripts/sprint112_admin_repair_console_audit.js must guard PC/mobile Admin Repair Console UI safety.');
 }
 
 const pcContractIndex = dashboardPcHtml.indexOf('api_contract.js');
