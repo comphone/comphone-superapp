@@ -311,6 +311,16 @@ else
   warn "Node or sprint105_record_detail_completeness.js unavailable - skipping Sprint 105 record detail completeness"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint106_production_data_quality_guard.js" ]; then
+  if node scripts/sprint106_production_data_quality_guard.js; then
+    echo "   Sprint 106 production data quality guard passed or reported warnings safely"
+  else
+    fail "Sprint 106 production data quality guard FAILED"
+  fi
+else
+  warn "Node or sprint106_production_data_quality_guard.js unavailable - skipping Sprint 106 production data quality guard"
+fi
+
 if command -v node &>/dev/null && [ -f "scripts/vision_e2e_smoke.js" ]; then
   if node scripts/vision_e2e_smoke.js; then
     echo "   AI Vision E2E safety gate passed"

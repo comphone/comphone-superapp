@@ -470,6 +470,14 @@ if (!sprint105DetailJs.includes('Sprint 105 Record Detail Completeness') ||
     !sprint105DetailJs.includes('COMPHONE_AUTH_TOKEN')) {
   fail('sprint105_record_detail_completeness.js must guard token-aware Jobs/Billing/Reports detail and drilldown reads.');
 }
+const sprint106DataQualityJs = readUtf8(path.join(ROOT, 'scripts', 'sprint106_production_data_quality_guard.js'));
+if (!sprint106DataQualityJs.includes('Sprint 106 Production Data Quality Guard') ||
+    !sprint106DataQualityJs.includes('listBillings') ||
+    !sprint106DataQualityJs.includes('incomplete_rows') ||
+    !sprint106DataQualityJs.includes('COMPHONE_DATA_QUALITY_FAIL_ON_WARN') ||
+    !sprint106DataQualityJs.includes('COMPHONE_AUTH_TOKEN')) {
+  fail('sprint106_production_data_quality_guard.js must guard token-aware production data quality warnings.');
+}
 const offlineDbJs = readUtf8(path.join(PWA, 'offline_db.js'));
 if (!offlineDbJs.includes('normalizeOfflineAction_') || !offlineDbJs.includes('const res = await callApi(item.action')) {
   fail('offline_db.js must normalize offline writes and replay through callApi without re-queuing failures.');
