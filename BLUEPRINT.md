@@ -8,6 +8,79 @@
 
 ---
 
+## Agent Handoff Snapshot (READ FIRST)
+
+This section is the latest handoff for any human or AI agent continuing COMPHONE work.
+
+### Current Production State
+- **Current phase:** Sprint / Phase 110.
+- **Latest stable verification commit before this handoff:** `249ff86 Document Sprint 110 GAS live verification`. Run `git log -1 --oneline` for the exact current repository HEAD.
+- **PWA version:** `v5.18.34-job-menu-hardening`.
+- **GAS backend version:** `v5.18.16-write-flow-validation`.
+- **Production GAS deployment:** `AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA @613`.
+- **Production GAS URL:** `https://script.google.com/macros/s/AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA/exec`.
+- **Production Spreadsheet ID:** `19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA`.
+- **Schema registry:** `docs/database_schema_registry.json`.
+- **Current status:** main foundation is recovered, hardened, deployed, and protected-live verified. PC/mobile login, dashboard shell, menus, Jobs, Billing, Reports, Vision, LINE read paths, and Admin read checks have passed the latest protected suites when a fresh session token is supplied.
+
+### What Is Already Complete
+- PWA loads the central API client and uses the unified API/session pattern.
+- Auth contract mismatch between protected router checks and session validation was corrected earlier.
+- GAS URL drift was consolidated around `pwa/gas_config.js` and the production GAS URL above.
+- Public/protected action boundaries were hardened; business read APIs are token-aware.
+- Dashboard PC and mobile surfaces were restored after menu/runtime regressions.
+- Mobile quick actions, More sheet, last-page restore, nested page recovery, and blank-shell recurrence guards are covered.
+- PC Jobs, Billing, Reports, Settings, AI Vision, and LINE Command Center have dedicated operator workflow coverage.
+- Root GAS source and `clasp-ready` source are expected to stay aligned.
+- Database sheet access was normalized through `getComphoneSheet()` / `findSheetByName()` and canonical aliases.
+- Database schema guard passes normal and strict mode with 0 warnings after Sprint 109.
+- GAS normalized source was pushed and redeployed to the existing production Web App at `@613`.
+- Protected live checks after `@613` passed for Dashboard, Jobs, CRM, Inventory, PO, Billing, Reports, Warranty, AI Vision, LINE Center, and Admin read paths.
+
+### Required Verification Commands
+Run these before claiming the system is stable after any code change:
+
+```powershell
+node scripts/pwa_static_guard.js
+node scripts/ci_readiness_check.js
+node scripts/gas_source_alignment.js
+node scripts/gas_syntax_guard.js
+node scripts/sprint108_database_schema_registry_guard.js
+$env:COMPHONE_SCHEMA_STRICT='1'; node scripts/sprint108_database_schema_registry_guard.js; Remove-Item Env:\COMPHONE_SCHEMA_STRICT -ErrorAction SilentlyContinue
+node scripts/sprint109_data_repair_console_plan.js
+bash scripts/regression-guard.sh
+node scripts/pages_deploy_verify.js
+```
+
+Token-aware live checks require a fresh session token in `COMPHONE_AUTH_TOKEN`. Never print the token:
+
+```powershell
+$env:COMPHONE_AUTH_TOKEN='<fresh-session-token>'
+node scripts/pwa_api_smoke.js
+node scripts/sprint87_protected_live_qa_runbook.js
+node scripts/sprint104_protected_browser_journey.js
+node scripts/sprint105_record_detail_completeness.js
+node scripts/sprint106_production_data_quality_guard.js
+node scripts/vision_runtime_smoke.js
+Remove-Item Env:\COMPHONE_AUTH_TOKEN -ErrorAction SilentlyContinue
+```
+
+### Known Remaining Work
+- **Data repair 1:** `DB_BILLING` row 1 is incomplete. It is missing required billing/job/payment fields. Treat as manual-review only until an archive-before-change repair action is confirmed.
+- **Data repair 2:** current-month report daily revenue records are empty. Verify real business activity before changing report logic.
+- **Next recommended sprint:** Sprint 111 Controlled Data Repair Execution / Admin Repair Console. Build preview, archive, owner confirmation, audit log, and rollback-safe execution before mutating production Sheet data.
+- **After Sprint 111:** continue menu-by-menu hardening in this order: Jobs -> Billing -> Reports -> AI Vision -> LINE Center -> Inventory/PO/Warranty -> Settings/Admin.
+
+### Non-Negotiable Rules For Future Agents
+- Do not change the production GAS URL unless intentionally migrating deployment. If changed, update `pwa/gas_config.js`, this BLUEPRINT, deploy verification expectations, and GitHub Pages verification together.
+- Do not create or reference new `DB_*` sheets without updating `docs/database_schema_registry.json` and passing the schema guard.
+- Do not use `SpreadsheetApp.getActiveSpreadsheet()` in production business modules when `getComphoneSheet()` or `findSheetByName()` can be used.
+- Do not write, delete, or repair real Sheet data without explicit preview, archive-before-change, owner confirmation, and audit logging.
+- Do not print or commit real secrets, session tokens, LINE tokens, Gemini keys, clasp credentials, or GitHub tokens. Real secrets belong in Apps Script Properties or GitHub Secrets only.
+- Keep root GAS files and `clasp-ready` files aligned. Run `node scripts/gas_source_alignment.js` before deployment.
+- Preserve Thai UTF-8 labels and verify mobile/PC menus after UI changes.
+- If a menu looks blank, check script load order, route mount target, auth/session state, More-sheet fallback, and service worker cache version before rewriting features.
+
 ## 0. Current Runtime Snapshot (2026-05-17)
 
 | Item | Current Value | Source of Truth |
