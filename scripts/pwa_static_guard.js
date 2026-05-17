@@ -447,6 +447,13 @@ if (!sprint102AuditJs.includes('Sprint 102 Live UX Menu Audit') ||
     !sprint102AuditJs.includes('more-menu-scrollable-grouped-surface')) {
   fail('sprint102_live_ux_menu_audit.js must guard PC/Mobile live UX menu runtime stability.');
 }
+const sprint103WalkthroughJs = readUtf8(path.join(ROOT, 'scripts', 'sprint103_visual_runtime_walkthrough.js'));
+if (!sprint103WalkthroughJs.includes('Sprint 103 Visual Runtime Walkthrough') ||
+    !sprint103WalkthroughJs.includes('no-main-shell-wipe-regression') ||
+    !sprint103WalkthroughJs.includes('Critical Thai label') ||
+    !sprint103WalkthroughJs.includes('service-to-cash-commands-visible')) {
+  fail('sprint103_visual_runtime_walkthrough.js must guard visual menu labels, PC shell stability, and service-to-cash surfaces.');
+}
 const offlineDbJs = readUtf8(path.join(PWA, 'offline_db.js'));
 if (!offlineDbJs.includes('normalizeOfflineAction_') || !offlineDbJs.includes('const res = await callApi(item.action')) {
   fail('offline_db.js must normalize offline writes and replay through callApi without re-queuing failures.');

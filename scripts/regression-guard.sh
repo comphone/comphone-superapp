@@ -281,6 +281,16 @@ else
   warn "Node or sprint102_live_ux_menu_audit.js unavailable - skipping Sprint 102 live UX menu audit"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint103_visual_runtime_walkthrough.js" ]; then
+  if node scripts/sprint103_visual_runtime_walkthrough.js; then
+    echo "   Sprint 103 visual runtime walkthrough passed"
+  else
+    fail "Sprint 103 visual runtime walkthrough FAILED"
+  fi
+else
+  warn "Node or sprint103_visual_runtime_walkthrough.js unavailable - skipping Sprint 103 visual runtime walkthrough"
+fi
+
 if command -v node &>/dev/null && [ -f "scripts/vision_e2e_smoke.js" ]; then
   if node scripts/vision_e2e_smoke.js; then
     echo "   AI Vision E2E safety gate passed"
