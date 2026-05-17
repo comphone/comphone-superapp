@@ -398,10 +398,9 @@ function handleDeepLink() {
     const page = params.get('page');
     if (!page || page === 'home') return false;
 
-    const navBtn = document.getElementById('nav-' + page);
     // รอให้ DOM เรนเอร์ก่อน
     setTimeout(() => {
-      goPage(page, navBtn);
+      goPage(page, getNavButtonForPage(page));
 
       // ถ้ามี id ให้เปิด modal อัตโนมัติ
       const id = params.get('id');
@@ -418,11 +417,18 @@ function handleDeepLink() {
   }
 }
 
+function getNavButtonForPage(page) {
+  const direct = document.getElementById('nav-' + page);
+  if (direct) return direct;
+  const morePages = ['dashboard', 'crm', 'inventory', 'po', 'billing', 'reports', 'attendance', 'warranty', 'admin', 'analytics', 'revenue', 'tax', 'performance', 'vision', 'line-center'];
+  return morePages.includes(page) ? document.getElementById('nav-more') : null;
+}
+
 function restoreLastPage() {
   try {
     const savedPage = localStorage.getItem(LAST_PAGE_KEY);
     if (!savedPage || savedPage === 'home' || !RESTORABLE_PAGES.has(savedPage)) return;
-    setTimeout(() => goPage(savedPage, document.getElementById('nav-' + savedPage)), 350);
+    setTimeout(() => goPage(savedPage, getNavButtonForPage(savedPage)), 350);
   } catch(e) {}
 }
 

@@ -11,7 +11,7 @@ let BACKUP_CHART = null;
  * Render Backup & Recovery Section
  */
 function renderBackupSection() {
-  const container = document.getElementById('main-content');
+  const container = document.getElementById('backup-content') || document.getElementById('main-content');
   if (!container) return;
   
   container.innerHTML = `

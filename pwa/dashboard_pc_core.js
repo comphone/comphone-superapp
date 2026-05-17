@@ -90,95 +90,113 @@
     badge.className = 'version-badge';
   }
 
+  function getSectionMount(sectionName, main) {
+    return document.getElementById(sectionName + '-content') ||
+      document.getElementById('section-' + sectionName) ||
+      main ||
+      null;
+  }
+
+  function renderMissingSection(sectionName, mount, label) {
+    const target = mount || getSectionMount(sectionName, document.getElementById('main-content'));
+    if (!target) return;
+    target.innerHTML = '<div class="empty-state" style="padding:28px 18px">' +
+      '<i class="bi bi-grid" style="font-size:28px;color:#94a3b8"></i>' +
+      '<h3 style="font-size:16px;margin:10px 0 4px">' + (label || sectionName) + '</h3>' +
+      '<p style="color:#64748b;font-size:13px;margin:0">Module is not loaded. Open Settings > Operations Diagnostics.</p>' +
+      '</div>';
+  }
+
   function renderSection(sectionName, data, main) {
     const renderers = {
       dashboard: () => {
         if (typeof global.loadDashboardPage === 'function') global.loadDashboardPage();
-        else if (main) main.innerHTML = '<h2>Dashboard</h2><p>Dashboard renderer is not loaded.</p>';
+        else renderMissingSection(sectionName, getSectionMount(sectionName, main), 'Dashboard');
       },
       jobs: () => {
+        const c = getSectionMount('jobs', main);
         if (typeof global.renderJobsSection === 'function') {
-          const c = document.getElementById('jobs-content');
           if (c) c.innerHTML = global.renderJobsSection(data);
-        } else if (main) main.innerHTML = '<h3>Jobs</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
+        } else renderMissingSection(sectionName, c, 'Jobs');
       },
       po: () => {
         if (typeof global.renderPOSection === 'function') global.renderPOSection(data);
-        else if (main) main.innerHTML = '<h3>PO</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
+        else renderMissingSection(sectionName, getSectionMount(sectionName, main), 'PO');
       },
       inventory: () => {
         if (typeof global.renderInventorySection === 'function') global.renderInventorySection(data);
-        else if (main) main.innerHTML = '<h3>Inventory</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
+        else renderMissingSection(sectionName, getSectionMount(sectionName, main), 'Inventory');
       },
       billing: () => {
-        const c = document.getElementById('billing-content') || document.getElementById('section-billing');
+        const c = getSectionMount('billing', main);
         if (typeof global.renderBillingSection === 'function' && c) {
           const html = global.renderBillingSection(data);
           if (typeof html === 'string') c.innerHTML = html;
         }
-        else if (main) main.innerHTML = '<h3>Billing</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
+        else renderMissingSection(sectionName, c, 'Billing');
       },
       warranty: () => {
-        const c = document.getElementById('warranty-content') || document.getElementById('section-warranty');
+        const c = getSectionMount('warranty', main);
         if (typeof global.renderWarrantySection === 'function' && c) c.innerHTML = global.renderWarrantySection(data);
-        else if (main) main.innerHTML = '<h3>Warranty</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
+        else renderMissingSection(sectionName, c, 'Warranty');
       },
       revenue: () => {
         if (typeof global.renderRevenueSection === 'function') global.renderRevenueSection(data);
-        else if (main) main.innerHTML = '<h3>Revenue</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
+        else renderMissingSection(sectionName, getSectionMount(sectionName, main), 'Revenue');
       },
       tax: () => {
         if (typeof global.renderTaxSection === 'function') global.renderTaxSection(data);
-        else if (main) main.innerHTML = '<h3>Tax</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
+        else renderMissingSection(sectionName, getSectionMount(sectionName, main), 'Tax');
       },
       reports: () => {
-        const c = document.getElementById('reports-content') || document.getElementById('section-reports');
+        const c = getSectionMount('reports', main);
         if (typeof global.renderReportModule === 'function') global.renderReportModule(data);
         else if (typeof global.renderReportsSection === 'function' && c) c.innerHTML = global.renderReportsSection(data);
-        else if (main) main.innerHTML = '<h3>Reports</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
+        else renderMissingSection(sectionName, c, 'Reports');
       },
       analytics: () => {
-        const c = document.getElementById('analytics-content') || document.getElementById('section-analytics');
+        const c = getSectionMount('analytics', main);
         if (typeof global.renderAnalyticsSection === 'function' && c) c.innerHTML = global.renderAnalyticsSection(data);
-        else if (main) main.innerHTML = '<h3>Analytics</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
+        else renderMissingSection(sectionName, c, 'Analytics');
       },
       performance: () => {
         if (typeof global.renderPerformanceSection === 'function') global.renderPerformanceSection(data);
-        else if (main) main.innerHTML = '<h3>Performance</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
+        else renderMissingSection(sectionName, getSectionMount(sectionName, main), 'Performance');
       },
       vision: () => {
-        const c = document.getElementById('vision-content') || document.getElementById('section-vision') || main;
+        const c = getSectionMount('vision', main);
         if (typeof global.renderVisionSection === 'function' && c) {
           c.innerHTML = global.renderVisionSection(data);
           if (typeof global.hydrateVisionPanel === 'function') global.hydrateVisionPanel();
-        } else if (main) main.innerHTML = '<h3>AI Vision</h3><p>Vision module is not loaded.</p>';
+        } else renderMissingSection(sectionName, c, 'AI Vision');
       },
       'line-center': () => {
-        const c = document.getElementById('line-center-content') || document.getElementById('section-line-center') || main;
+        const c = getSectionMount('line-center', main);
         if (typeof global.renderLineCenterSection === 'function' && c) {
           c.innerHTML = global.renderLineCenterSection(data);
           if (typeof global.hydrateLineCenterPanel === 'function') global.hydrateLineCenterPanel();
-        } else if (main) main.innerHTML = '<h3>LINE Center</h3><p>LINE module is not loaded.</p>';
+        } else renderMissingSection(sectionName, c, 'LINE Center');
       },
       backup: () => {
         if (typeof global.renderBackupSection === 'function') global.renderBackupSection();
-        else if (main) main.innerHTML = '<h3>Backup</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
+        else renderMissingSection(sectionName, getSectionMount(sectionName, main), 'Backup');
       },
       crm: () => {
         if (typeof global.renderCRMSection === 'function') global.renderCRMSection(data);
-        else if (main) main.innerHTML = '<h3>CRM</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
+        else renderMissingSection(sectionName, getSectionMount(sectionName, main), 'CRM');
       },
       attendance: () => {
-        const c = document.getElementById('attendance-content') || document.getElementById('section-attendance');
+        const c = getSectionMount('attendance', main);
         if (typeof global.renderAttendanceSection === 'function' && c) c.innerHTML = global.renderAttendanceSection(data);
-        else if (main) main.innerHTML = '<h3>Attendance</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
+        else renderMissingSection(sectionName, c, 'Attendance');
       },
       settings: () => {
-        if (typeof global.renderSettingsSection === 'function' && main) {
-          main.innerHTML = global.renderSettingsSection();
+        const c = getSectionMount('settings', main);
+        if (typeof global.renderSettingsSection === 'function' && c) {
+          c.innerHTML = global.renderSettingsSection();
           if (typeof global.hydrateSettingsRuntimePanels === 'function') global.hydrateSettingsRuntimePanels();
         }
-        else if (main) main.innerHTML = '<h3>Settings</h3><p>Module is not loaded. Open Settings > Operations Diagnostics.</p>';
+        else renderMissingSection(sectionName, c, 'Settings');
       },
     };
 
