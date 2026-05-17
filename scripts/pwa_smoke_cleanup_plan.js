@@ -48,6 +48,10 @@ function pushUniqueCandidate(report, candidate) {
   report.candidates.push(candidate);
 }
 
+function candidateKey(item) {
+  return `${item.scope}:${item.id}`;
+}
+
 function loadLatestWriteSmokeCandidates() {
   if (!fs.existsSync(WRITE_SMOKE_REPORT)) return [];
   try {
@@ -167,6 +171,16 @@ async function main() {
         report.executed = !!cleanup.body.executed;
         report.status = cleanup.body.status || 'cleanup-action-complete';
         report.notes.push(`Backend cleanup action deleted ${((cleanup.body.deleted || []).length)} reviewed smoke records.`);
+        const backendSeen = new Set([]
+          .concat(cleanup.body.candidates || [])
+          .concat(cleanup.body.deleted || [])
+          .concat(cleanup.body.skipped || [])
+          .map(candidateKey));
+        const notFound = report.candidates.filter(item => !backendSeen.has(candidateKey(item)));
+        if (notFound.length) {
+          report.notFoundAfterBackendScan = notFound.map(item => ({ scope: item.scope, id: item.id }));
+          report.notes.push(`Backend cleanup scan did not find ${notFound.length} requested records; these are not present in target sheets.`);
+        }
       } else {
         report.status = 'fail';
         report.notes.push(`Backend cleanup action failed: ${(cleanup.body && (cleanup.body.error || cleanup.body.status)) || cleanup.status}`);

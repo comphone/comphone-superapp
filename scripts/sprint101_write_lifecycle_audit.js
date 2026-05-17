@@ -84,7 +84,8 @@ function main() {
     has(files.cleanupPlan, 'pwa_write_smoke_latest.json') &&
       has(files.cleanupPlan, 'loadLatestWriteSmokeCandidates') &&
       has(files.cleanupPlan, 'latest-write-smoke-report') &&
-      has(files.cleanupPlan, 'pushUniqueCandidate'),
+      has(files.cleanupPlan, 'pushUniqueCandidate') &&
+      has(files.cleanupPlan, 'notFoundAfterBackendScan'),
     'Cleanup planner must merge IDs from the latest write-smoke report, not only broad list scans.',
     'P0');
 
