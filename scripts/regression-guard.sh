@@ -291,6 +291,16 @@ else
   warn "Node or sprint103_visual_runtime_walkthrough.js unavailable - skipping Sprint 103 visual runtime walkthrough"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint104_protected_browser_journey.js" ]; then
+  if node scripts/sprint104_protected_browser_journey.js; then
+    echo "   Sprint 104 protected browser journey passed or skipped safely"
+  else
+    fail "Sprint 104 protected browser journey FAILED"
+  fi
+else
+  warn "Node or sprint104_protected_browser_journey.js unavailable - skipping Sprint 104 protected browser journey"
+fi
+
 if command -v node &>/dev/null && [ -f "scripts/vision_e2e_smoke.js" ]; then
   if node scripts/vision_e2e_smoke.js; then
     echo "   AI Vision E2E safety gate passed"

@@ -454,6 +454,14 @@ if (!sprint103WalkthroughJs.includes('Sprint 103 Visual Runtime Walkthrough') ||
     !sprint103WalkthroughJs.includes('service-to-cash-commands-visible')) {
   fail('sprint103_visual_runtime_walkthrough.js must guard visual menu labels, PC shell stability, and service-to-cash surfaces.');
 }
+const sprint104JourneyJs = readUtf8(path.join(ROOT, 'scripts', 'sprint104_protected_browser_journey.js'));
+if (!sprint104JourneyJs.includes('Sprint 104 Protected Browser Journey') ||
+    !sprint104JourneyJs.includes('protected browser journey') ||
+    !sprint104JourneyJs.includes('getLineRoomStatus') ||
+    !sprint104JourneyJs.includes('getVisionPipelineVersion') ||
+    !sprint104JourneyJs.includes('COMPHONE_AUTH_TOKEN')) {
+  fail('sprint104_protected_browser_journey.js must guard token-aware protected browser journeys across Vision and LINE.');
+}
 const offlineDbJs = readUtf8(path.join(PWA, 'offline_db.js'));
 if (!offlineDbJs.includes('normalizeOfflineAction_') || !offlineDbJs.includes('const res = await callApi(item.action')) {
   fail('offline_db.js must normalize offline writes and replay through callApi without re-queuing failures.');
