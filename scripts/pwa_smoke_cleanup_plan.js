@@ -15,6 +15,7 @@ const ROOT = path.resolve(__dirname, '..');
 const REPORT_DIR = path.join(ROOT, 'test_reports');
 const REPORT_JSON = path.join(REPORT_DIR, 'pwa_smoke_cleanup_plan_latest.json');
 const REPORT_MD = path.join(REPORT_DIR, 'pwa_smoke_cleanup_plan_latest.md');
+const WRITE_SMOKE_REPORT = path.join(REPORT_DIR, 'pwa_write_smoke_latest.json');
 const TOKEN = process.env.COMPHONE_AUTH_TOKEN || '';
 const CONFIRM = process.env.COMPHONE_SMOKE_CLEANUP_CONFIRM || '';
 const EXECUTE = process.env.COMPHONE_SMOKE_CLEANUP === '1';
@@ -39,6 +40,42 @@ function containsSmokeMarker(value) {
 
 function idOf(row) {
   return row && (row.id || row.job_id || row.customer_id || row.billing_id || row.po_id || row.ref || row.no || row.number || '');
+}
+
+function pushUniqueCandidate(report, candidate) {
+  const key = `${candidate.scope}:${candidate.id}`;
+  if (!candidate.id || report.candidates.some(item => `${item.scope}:${item.id}` === key)) return;
+  report.candidates.push(candidate);
+}
+
+function loadLatestWriteSmokeCandidates() {
+  if (!fs.existsSync(WRITE_SMOKE_REPORT)) return [];
+  try {
+    const latest = JSON.parse(fs.readFileSync(WRITE_SMOKE_REPORT, 'utf8'));
+    if (!latest || latest.mode !== 'write' || !latest.smoke_id) return [];
+    const out = [];
+    (latest.results || []).forEach(row => {
+      if (!row || !row.ok || !row.response_id) return;
+      const phase = String(row.phase || '');
+      let scope = '';
+      if (phase.indexOf('job') === 0) scope = 'jobs';
+      if (phase.indexOf('customer') === 0) scope = 'customers';
+      if (phase.indexOf('billing') === 0) scope = 'billings';
+      if (phase.indexOf('po') === 0) scope = 'purchase_orders';
+      if (!scope) return;
+      out.push({
+        scope,
+        action: 'pwa_write_smoke_latest',
+        id: row.response_id,
+        label: latest.smoke_id,
+        cleanup: 'latest-write-smoke-report',
+        reason: `Latest write-smoke report produced ${row.response_id}`,
+      });
+    });
+    return out;
+  } catch (err) {
+    return [{ scope: 'report', action: 'pwa_write_smoke_latest', id: '', label: '', cleanup: 'read-error', reason: err.message }];
+  }
 }
 
 async function request(url, action, payload = {}) {
@@ -97,7 +134,7 @@ async function main() {
       const result = await request(url, action, payload);
       const rows = rowsFrom(action, result.body);
       rows.filter(containsSmokeMarker).forEach(row => {
-        report.candidates.push({
+        pushUniqueCandidate(report, {
           scope,
           action,
           id: idOf(row),
@@ -110,6 +147,10 @@ async function main() {
       report.notes.push(`${action} scan failed: ${err.message}`);
     }
   }
+
+  loadLatestWriteSmokeCandidates()
+    .filter(item => item.id)
+    .forEach(item => pushUniqueCandidate(report, item));
 
   if (EXECUTE) {
     if (CONFIRM !== 'REVIEWED_SMOKE_RECORDS') {

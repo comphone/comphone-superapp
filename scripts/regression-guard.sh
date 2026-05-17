@@ -261,6 +261,16 @@ else
   warn "Node or sprint100_operator_menu_audit.js unavailable - skipping Sprint 100 operator menu audit"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint101_write_lifecycle_audit.js" ]; then
+  if node scripts/sprint101_write_lifecycle_audit.js; then
+    echo "   Sprint 101 write lifecycle audit passed"
+  else
+    fail "Sprint 101 write lifecycle audit FAILED"
+  fi
+else
+  warn "Node or sprint101_write_lifecycle_audit.js unavailable - skipping Sprint 101 write lifecycle audit"
+fi
+
 if command -v node &>/dev/null && [ -f "scripts/vision_e2e_smoke.js" ]; then
   if node scripts/vision_e2e_smoke.js; then
     echo "   AI Vision E2E safety gate passed"

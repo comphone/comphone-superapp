@@ -141,7 +141,10 @@ function buildBillingSnapshotFromJob_(jobId, options) {
       paid_at: existing.success ? existing.billing.paid_at : '',
       created_at: existing.success ? existing.billing.created_at : new Date(),
       updated_at: new Date(),
-      notes: appendTimestampedNote_(existing.success ? existing.billing.notes : '', 'Billing synced from job state ' + (job.status_label || '')),
+      notes: appendTimestampedNote_(
+        existing.success ? existing.billing.notes : '',
+        [options.notes, 'Billing synced from job state ' + (job.status_label || '')].filter(Boolean).join(' | ')
+      ),
       customer_line_user_id: customerLine
     };
 

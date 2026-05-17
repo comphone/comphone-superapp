@@ -433,6 +433,13 @@ if (!sprint100AuditJs.includes('Sprint 100 Operator Menu Audit') ||
     !sprint100AuditJs.includes('line-read-preview-safe-send')) {
   fail('sprint100_operator_menu_audit.js must guard priority menu click-through readiness across Jobs, Billing, Reports, Vision, and LINE.');
 }
+const sprint101AuditJs = readUtf8(path.join(ROOT, 'scripts', 'sprint101_write_lifecycle_audit.js'));
+if (!sprint101AuditJs.includes('Sprint 101 Write Lifecycle Audit') ||
+    !sprint101AuditJs.includes('controlled Jobs/Billing write lifecycle and cleanup') ||
+    !sprint101AuditJs.includes('latest-write-report-candidates') ||
+    !sprint101AuditJs.includes('billing-smoke-marker-persisted')) {
+  fail('sprint101_write_lifecycle_audit.js must guard controlled Jobs/Billing write lifecycle and cleanup evidence.');
+}
 const offlineDbJs = readUtf8(path.join(PWA, 'offline_db.js'));
 if (!offlineDbJs.includes('normalizeOfflineAction_') || !offlineDbJs.includes('const res = await callApi(item.action')) {
   fail('offline_db.js must normalize offline writes and replay through callApi without re-queuing failures.');
