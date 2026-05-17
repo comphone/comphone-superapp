@@ -25,6 +25,39 @@ var CONFIG = {
     ACTIVITY_LOG:     'DB_ACTIVITY_LOG'
   },
 
+  // Database schema registry. Keep one canonical name per table and route
+  // legacy aliases through helpers before creating new sheets.
+  SHEET_ALIASES: {
+    DB_JOBS:            'DBJOBS',
+    DB_STOCK_MOVES:     'DB_STOCK_MOVEMENTS',
+    DB_WARRANTY:        'DB_WARRANTIES',
+    DB_WARRANTY_LEGACY: 'DB_WARRANTIES',
+    Inventory:          'DB_INVENTORY',
+    System_Logs:        'SYSTEM_LOGS'
+  },
+
+  SUPPORT_SHEETS: [
+    'DB_ACCOUNTING_EXPORTS',
+    'DB_AUDIT',
+    'DB_CSAT',
+    'DB_ERROR_TRENDS',
+    'DB_FOLLOWUP',
+    'DB_LOGS',
+    'DB_RATINGS',
+    'DB_RESERVATIONS',
+    'DB_STEWARDSHIP',
+    'DB_TELEMETRY',
+    'DB_TOOL_AUDITS',
+    'DB_TOR',
+    'LINE_ROOM_EVENTS',
+    'LineChatHistory',
+    'PROP_OVERFLOW',
+    'SYSTEM_LOGS',
+    'VISION_LOG',
+    'VISION_MISMATCH',
+    'VISION_REVIEW'
+  ],
+
   // ── ชื่อโฟลเดอร์ Google Drive ──
   FOLDERS: {
     ROOT:              'COMPHONE_SUPERAPP_ROOT',
@@ -198,6 +231,29 @@ var LINE_GROUP_EXECUTIVE   = getConfig('LINE_GROUP_EXECUTIVE',   '');
 // ── ฟังก์ชัน Helper เพิ่มเติม ──
 function getSheetName(key) {
   return (CONFIG.SHEETS[key] || key);
+}
+
+function getCanonicalSheetName(name) {
+  name = String(name || '').trim();
+  if (!name) return name;
+  return (CONFIG.SHEET_ALIASES && CONFIG.SHEET_ALIASES[name]) || name;
+}
+
+function findComphoneSheetByName(ss, name) {
+  if (!ss) return null;
+  name = String(name || '').trim();
+  var canonical = getCanonicalSheetName(name);
+  var sh = ss.getSheetByName(canonical);
+  if (sh) return sh;
+  if (canonical !== name) return ss.getSheetByName(name);
+  var aliases = CONFIG.SHEET_ALIASES || {};
+  for (var alias in aliases) {
+    if (aliases[alias] === canonical) {
+      sh = ss.getSheetByName(alias);
+      if (sh) return sh;
+    }
+  }
+  return null;
 }
 
 function getSlaHours(priority) {

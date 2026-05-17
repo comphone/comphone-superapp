@@ -1,0 +1,74 @@
+{
+  "version": "sprint108-database-schema-registry-1.0.0",
+  "spreadsheet": {
+    "property": "DB_SS_ID",
+    "id": "19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA",
+    "url": "https://docs.google.com/spreadsheets/d/19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA",
+    "policy": "One production spreadsheet. New spreadsheets are not allowed without updating BLUEPRINT.md and this registry."
+  },
+  "canonical_tables": {
+    "DBJOBS": { "domain": "jobs", "critical": true },
+    "DB_INVENTORY": { "domain": "inventory", "critical": true },
+    "DB_CUSTOMERS": { "domain": "crm", "critical": true },
+    "DB_CUSTOMER_LOGS": { "domain": "crm", "critical": false },
+    "DB_BILLING": { "domain": "billing", "critical": true },
+    "DB_STOCK_MOVEMENTS": { "domain": "inventory", "critical": true },
+    "DB_JOB_ITEMS": { "domain": "jobs", "critical": true },
+    "DB_PHOTO_QUEUE": { "domain": "vision", "critical": true },
+    "DB_PURCHASE_ORDERS": { "domain": "procurement", "critical": true },
+    "DB_ATTENDANCE": { "domain": "team", "critical": false },
+    "DB_AFTER_SALES": { "domain": "service", "critical": false },
+    "DB_JOB_LOGS": { "domain": "jobs", "critical": true },
+    "DB_USERS": { "domain": "auth", "critical": true },
+    "DB_ACTIVITY_LOG": { "domain": "audit", "critical": true },
+    "DB_WARRANTIES": { "domain": "service", "critical": false }
+  },
+  "support_tables": {
+    "DB_ACCOUNTING_EXPORTS": { "domain": "billing" },
+    "DB_AUDIT": { "domain": "audit" },
+    "DB_AI_METRICS": { "domain": "ai" },
+    "DB_CSAT": { "domain": "ai" },
+    "DB_ERROR_TRENDS": { "domain": "telemetry" },
+    "DB_ERRORS": { "domain": "telemetry" },
+    "DB_FOLLOWUP": { "domain": "crm" },
+    "DB_HEALTH_LOG": { "domain": "telemetry" },
+    "DB_LOGS": { "domain": "telemetry" },
+    "DB_RATINGS": { "domain": "customer_portal" },
+    "DB_RESERVATIONS": { "domain": "inventory" },
+    "DB_STEWARDSHIP": { "domain": "architecture" },
+    "DB_SMOKE_CLEANUP_ARCHIVE": { "domain": "maintenance" },
+    "DB_TAX_REPORT": { "domain": "tax" },
+    "DB_TECH_HISTORY": { "domain": "team" },
+    "DB_TELEMETRY": { "domain": "telemetry" },
+    "DB_TOOL_AUDITS": { "domain": "inventory" },
+    "DB_TOR": { "domain": "ai" },
+    "LINE_ROOM_EVENTS": { "domain": "line" },
+    "LineChatHistory": { "domain": "line", "legacy": true },
+    "PROP_OVERFLOW": { "domain": "system" },
+    "SYSTEM_LOGS": { "domain": "system" },
+    "VISION_LOG": { "domain": "vision" },
+    "VISION_MISMATCH": { "domain": "vision" },
+    "VISION_REVIEW": { "domain": "vision" }
+  },
+  "aliases": {
+    "DB_JOBS": "DBJOBS",
+    "DB_STOCK_MOVES": "DB_STOCK_MOVEMENTS",
+    "DB_WARRANTY": "DB_WARRANTIES",
+    "DB_WARRANTY_LEGACY": "DB_WARRANTIES",
+    "Inventory": "DB_INVENTORY",
+    "System_Logs": "SYSTEM_LOGS"
+  },
+  "creation_policy": {
+    "allowed_helpers": [
+      "ensureSheet_",
+      "findOrCreate",
+      "ensure*Sheet_"
+    ],
+    "rules": [
+      "Do not create an unregistered DB_* sheet.",
+      "Prefer getComphoneSheet() over SpreadsheetApp.getActiveSpreadsheet().",
+      "When an alias is found, read it for compatibility but create only the canonical table.",
+      "Archive production rows before destructive cleanup."
+    ]
+  }
+}

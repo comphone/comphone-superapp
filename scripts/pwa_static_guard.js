@@ -8,8 +8,10 @@ const DASHBOARD_PC = path.join(PWA, 'dashboard_pc.html');
 const VERSION = path.join(PWA, 'version_config.js');
 const SW = path.join(PWA, 'sw.js');
 const ASSET_MANIFEST = path.join(PWA, 'pwa_asset_manifest.js');
+const SCHEMA_REGISTRY = path.join(ROOT, 'docs', 'database_schema_registry.json');
+const SPRINT108_GUARD = path.join(ROOT, 'scripts', 'sprint108_database_schema_registry_guard.js');
 
-const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST];
+const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD];
 const badMarkers = [
   '\u00e0\u00b8',
   '\u00e0\u00b9',
@@ -224,6 +226,17 @@ if (!adminPanelJs.includes("data-tab=\"health\"") || !adminPanelJs.includes('ren
 const apiContractJs = readUtf8(path.join(PWA, 'api_contract.js'));
 if (!apiContractJs.includes('COMPHONE_API_CONTRACT') || !apiContractJs.includes('protectedActions')) {
   fail('api_contract.js must publish COMPHONE_API_CONTRACT with protectedActions.');
+}
+
+const schemaRegistryJson = readUtf8(SCHEMA_REGISTRY);
+const sprint108GuardJs = readUtf8(SPRINT108_GUARD);
+if (!schemaRegistryJson.includes('"canonical_tables"') || !schemaRegistryJson.includes('"aliases"') || !schemaRegistryJson.includes('"DB_SS_ID"')) {
+  fail('docs/database_schema_registry.json must define canonical_tables, aliases, and DB_SS_ID spreadsheet metadata.');
+}
+if (!sprint108GuardJs.includes('Sprint 108 Database Schema Registry Guard') ||
+    !sprint108GuardJs.includes('unregistered-sheet-name') ||
+    !sprint108GuardJs.includes('active-spreadsheet-context')) {
+  fail('scripts/sprint108_database_schema_registry_guard.js must guard unregistered sheets and active spreadsheet context drift.');
 }
 
 const pcContractIndex = dashboardPcHtml.indexOf('api_contract.js');

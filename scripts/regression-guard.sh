@@ -541,6 +541,16 @@ else
   warn "Node or sprint98_operator_workflow_audit.js unavailable - skipping Sprint 98 operator workflow audit"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint108_database_schema_registry_guard.js" ]; then
+  if node scripts/sprint108_database_schema_registry_guard.js; then
+    echo "   Sprint 108 database schema registry guard passed"
+  else
+    fail "Sprint 108 database schema registry guard FAILED"
+  fi
+else
+  warn "Node or sprint108_database_schema_registry_guard.js unavailable - skipping Sprint 108 database schema registry guard"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"
