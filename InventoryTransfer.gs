@@ -118,9 +118,9 @@ function findInventoryRowByLocationAndItem_(rows, ctx, itemKey, location) {
 // ─── Transfer Log ─────────────────────────────────────────
 
 function ensureInventoryTransferLogSheet_(ss) {
-  var sh = findSheetByName(ss, 'DB_STOCK_MOVES');
+  var sh = findSheetByName(ss, 'DB_STOCK_MOVEMENTS');
   var headers = ['Timestamp', 'Item_Code', 'Item_Name', 'Qty', 'From_Location', 'To_Location', 'Job_ID', 'Changed_By'];
-  if (!sh) sh = ss.insertSheet('DB_STOCK_MOVES');
+  if (!sh) sh = ss.insertSheet('DB_STOCK_MOVEMENTS');
   if (sh.getLastRow() === 0) sh.getRange(1, 1, 1, headers.length).setValues([headers]);
   return sh;
 }

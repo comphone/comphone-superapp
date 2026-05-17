@@ -30,7 +30,8 @@ function createRetailSale_(payload) {
     var items = payload.items || [];
     if (!items.length) return { success: false, error: 'ต้องมีสินค้าอย่างน้อย 1 รายการ' };
 
-    var ss = (typeof getComphoneSheet === 'function') ? getComphoneSheet() : SpreadsheetApp.getActiveSpreadsheet();
+    var ss = getComphoneSheet();
+    if (!ss) return { success: false, error: 'Spreadsheet not found' };
     if (!ss) return { success: false, error: 'Spreadsheet not found' };
     var sheet = ss.getSheetByName(RETAIL_SALE_SHEET);
     if (!sheet) {
@@ -91,7 +92,8 @@ function createRetailSale_(payload) {
 function listRetailSales_(payload) {
   try {
     payload = payload || {};
-    var ss = (typeof getComphoneSheet === 'function') ? getComphoneSheet() : SpreadsheetApp.getActiveSpreadsheet();
+    var ss = getComphoneSheet();
+    if (!ss) return { success: false, error: 'Spreadsheet not found' };
     if (!ss) return { success: false, error: 'Spreadsheet not found' };
     var sheet = ss.getSheetByName(RETAIL_SALE_SHEET);
     if (!sheet) return { success: true, items: [], total_count: 0 };

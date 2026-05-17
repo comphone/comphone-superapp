@@ -17,7 +17,12 @@ function getComphoneSheet() {
 }
 
 function findSheetByName(ss, sheetName) {
-  try { return ss.getSheetByName(sheetName); }
+  try {
+    if (typeof findComphoneSheetByName === 'function') {
+      return findComphoneSheetByName(ss, sheetName);
+    }
+    return ss.getSheetByName(sheetName);
+  }
   catch (e) { return null; }
 }
 

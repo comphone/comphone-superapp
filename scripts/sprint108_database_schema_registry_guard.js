@@ -16,6 +16,7 @@ const REPORT_DIR = path.join(ROOT, 'test_reports');
 const REPORT_JSON = path.join(REPORT_DIR, 'sprint108_database_schema_registry_guard_latest.json');
 const REPORT_MD = path.join(REPORT_DIR, 'sprint108_database_schema_registry_guard_latest.md');
 const REGISTRY_FILE = path.join(ROOT, 'docs', 'database_schema_registry.json');
+const STRICT = process.env.COMPHONE_SCHEMA_STRICT === '1';
 
 function read(rel) {
   return fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -144,12 +145,19 @@ function main() {
     warn('active-spreadsheet-context', `${rel} uses SpreadsheetApp.getActiveSpreadsheet(); prefer getComphoneSheet() for production modules.`);
   }
 
-  const status = failures.length ? 'fail' : 'warning';
+  if (STRICT && warnings.length) {
+    for (const row of warnings) {
+      fail('strict-' + row.code, row.detail);
+    }
+  }
+
+  const status = failures.length ? 'fail' : (warnings.length ? 'warning' : 'ok');
   const score = Math.max(0, 100 - failures.length * 25 - Math.min(warnings.length, 10));
   const report = {
     generated_at: new Date().toISOString(),
     version: registry.version,
     status,
+    strict: STRICT,
     score,
     spreadsheet_id: expectedSpreadsheetId,
     scanned_files: files.length,
@@ -167,6 +175,7 @@ function main() {
     '',
     `- Generated: ${report.generated_at}`,
     `- Status: ${report.status}`,
+    `- Strict: ${report.strict ? 'yes' : 'no'}`,
     `- Score: ${report.score}/100`,
     `- Spreadsheet ID: ${report.spreadsheet_id}`,
     `- Scanned files: ${report.scanned_files}`,
@@ -186,7 +195,7 @@ function main() {
     '',
   ].join('\n'), 'utf8');
 
-  console.log(`[Sprint 108 Schema Guard] ${status.toUpperCase()} score=${score}/100 warnings=${warnings.length} failures=${failures.length}`);
+  console.log(`[Sprint 108 Schema Guard] ${status.toUpperCase()} score=${score}/100 warnings=${warnings.length} failures=${failures.length} strict=${STRICT ? 'yes' : 'no'}`);
   if (failures.length) process.exit(1);
 }
 

@@ -9,7 +9,7 @@
 // ทุกค่า Config ใช้ getConfig() ตาม RULE 4
 // ============================================================
 
-var WARRANTY_SHEET = 'DB_WARRANTY';
+var WARRANTY_SHEET = 'DB_WARRANTIES';
 var WARRANTY_HEADERS = [
   'Warranty_ID', 'Job_ID', 'Customer_ID', 'Customer_Name', 'Phone',
   'Device_Model', 'Service_Type', 'Parts_Used', 'Warranty_Days',

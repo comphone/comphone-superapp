@@ -174,7 +174,7 @@ function simulateSQLInjection_() {
   };
   
   // Simulate a malicious input
-  var maliciousInput = "'; DROP TABLE DB_JOBS; --";
+  var maliciousInput = "'; DROP TABLE DBJOBS; --";
   // In GAS, we use SpreadsheetApp, not SQL, so this is not applicable
   // But we can check if inputs are properly sanitized
   
@@ -373,7 +373,9 @@ function scanTriggerSecurity_() {
 
 function logSecurityActivity_(action, data) {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB_ACTIVITY_LOG');
+    var ss = getComphoneSheet();
+    if (!ss) return;
+    var sheet = findSheetByName(ss, 'DB_ACTIVITY_LOG');
     if (!sheet) return;
     
     sheet.appendRow([

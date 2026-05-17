@@ -64,8 +64,8 @@ function loadChatContextV3(userId) {
     }
     
     // ถ้าไม่มีใน cache ให้โหลดจาก Sheet (long-term memory)
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName('LineChatHistory');
+    var ss = getComphoneSheet();
+    var sheet = findSheetByName(ss, 'LineChatHistory');
     if (!sheet) {
       // สร้าง Sheet ใหม่ถ้ายังไม่มี
       sheet = ss.insertSheet('LineChatHistory');
@@ -112,8 +112,8 @@ function loadChatContextV3(userId) {
 function saveChatContextV3(userId, message, intent) {
   try {
     // 1. บันทึกลง Sheet
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName('LineChatHistory');
+    var ss = getComphoneSheet();
+    var sheet = findSheetByName(ss, 'LineChatHistory');
     if (!sheet) {
       sheet = ss.insertSheet('LineChatHistory');
       sheet.getRange(1, 1, 1, 4).setValues([['UserId', 'Timestamp', 'Message', 'Intent']]);

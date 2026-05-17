@@ -298,7 +298,7 @@ function runIntegrityCheck() {
     report.checks.push(billingCheck);
     report.totalIssues += billingCheck.issues;
 
-    // ── Check 3: DB_WARRANTY — Job_ID ต้องมีอยู่ใน DBJOBS ──
+    // ── Check 3: DB_WARRANTIES — Job_ID ต้องมีอยู่ใน DBJOBS ──
     var warrantyCheck = checkWarrantyJobRelation_(ss);
     report.checks.push(warrantyCheck);
     report.totalIssues += warrantyCheck.issues;
@@ -385,10 +385,10 @@ function checkBillingJobRelation_(ss) {
 }
 
 function checkWarrantyJobRelation_(ss) {
-  var check = { name: 'DB_WARRANTY.Job_ID → DBJOBS', status: 'OK', issues: 0, details: [] };
+  var check = { name: 'DB_WARRANTIES.Job_ID → DBJOBS', status: 'OK', issues: 0, details: [] };
   try {
     var jobsSh = ss.getSheetByName('DBJOBS');
-    var warrantySh = ss.getSheetByName('DB_WARRANTY');
+    var warrantySh = findSheetByName(ss, 'DB_WARRANTIES');
     if (!jobsSh || !warrantySh || warrantySh.getLastRow() < 2) return check;
 
     var jobIds = new Set();
@@ -407,7 +407,7 @@ function checkWarrantyJobRelation_(ss) {
       var jid = String(row[0]).trim();
       if (jid && !jobIds.has(jid)) {
         check.issues++;
-        check.details.push('DB_WARRANTY row ' + (i + 2) + ': Job_ID "' + jid + '" ไม่มีใน DBJOBS');
+        check.details.push('DB_WARRANTIES row ' + (i + 2) + ': Job_ID "' + jid + '" ไม่มีใน DBJOBS');
       }
     });
     if (check.issues > 0) check.status = 'WARN';
@@ -473,7 +473,7 @@ function cleanAllData() {
     totalCleaned: 0
   };
 
-  var sheetsToClean = ['DBJOBS', 'DB_CUSTOMERS', 'DB_BILLING', 'DB_INVENTORY', 'DB_WARRANTY'];
+  var sheetsToClean = ['DBJOBS', 'DB_CUSTOMERS', 'DB_BILLING', 'DB_INVENTORY', 'DB_WARRANTIES'];
 
   try {
     var ss = getComphoneSheet();

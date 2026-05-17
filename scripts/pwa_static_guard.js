@@ -10,8 +10,9 @@ const SW = path.join(PWA, 'sw.js');
 const ASSET_MANIFEST = path.join(PWA, 'pwa_asset_manifest.js');
 const SCHEMA_REGISTRY = path.join(ROOT, 'docs', 'database_schema_registry.json');
 const SPRINT108_GUARD = path.join(ROOT, 'scripts', 'sprint108_database_schema_registry_guard.js');
+const SPRINT109_REPAIR = path.join(ROOT, 'scripts', 'sprint109_data_repair_console_plan.js');
 
-const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD];
+const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR];
 const badMarkers = [
   '\u00e0\u00b8',
   '\u00e0\u00b9',
@@ -230,13 +231,20 @@ if (!apiContractJs.includes('COMPHONE_API_CONTRACT') || !apiContractJs.includes(
 
 const schemaRegistryJson = readUtf8(SCHEMA_REGISTRY);
 const sprint108GuardJs = readUtf8(SPRINT108_GUARD);
+const sprint109RepairJs = readUtf8(SPRINT109_REPAIR);
 if (!schemaRegistryJson.includes('"canonical_tables"') || !schemaRegistryJson.includes('"aliases"') || !schemaRegistryJson.includes('"DB_SS_ID"')) {
   fail('docs/database_schema_registry.json must define canonical_tables, aliases, and DB_SS_ID spreadsheet metadata.');
 }
 if (!sprint108GuardJs.includes('Sprint 108 Database Schema Registry Guard') ||
     !sprint108GuardJs.includes('unregistered-sheet-name') ||
-    !sprint108GuardJs.includes('active-spreadsheet-context')) {
-  fail('scripts/sprint108_database_schema_registry_guard.js must guard unregistered sheets and active spreadsheet context drift.');
+    !sprint108GuardJs.includes('active-spreadsheet-context') ||
+    !sprint108GuardJs.includes('COMPHONE_SCHEMA_STRICT')) {
+  fail('scripts/sprint108_database_schema_registry_guard.js must guard unregistered sheets, active spreadsheet context drift, and strict schema mode.');
+}
+if (!sprint109RepairJs.includes('Sprint 109 Data Repair Console Plan') ||
+    !sprint109RepairJs.includes('archive_before_change') ||
+    !sprint109RepairJs.includes('production_mutation: false')) {
+  fail('scripts/sprint109_data_repair_console_plan.js must stay read-only and require archive-before-change repair policy.');
 }
 
 const pcContractIndex = dashboardPcHtml.indexOf('api_contract.js');

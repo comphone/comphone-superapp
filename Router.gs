@@ -726,7 +726,7 @@ function getSystemVersion() {
 // ============================================================
 
 /**
- * logSystemError — Log errors to System_Logs sheet
+ * logSystemError — Log errors to SYSTEM_LOGS sheet
  * No auth required (frontend may not have token when error occurs)
  * @param {Object} data - { level, source, message, stack, userAgent, url, userId }
  * @return {Object} { success }
@@ -736,9 +736,9 @@ function logSystemError(data) {
     var ssId = PropertiesService.getScriptProperties().getProperty('DB_SS_ID');
     if (!ssId) return { success: false, error: 'DB_SS_ID not set' };
     var ss = SpreadsheetApp.openById(ssId);
-    var sheet = ss.getSheetByName('System_Logs');
+    var sheet = findSheetByName(ss, 'SYSTEM_LOGS');
     if (!sheet) {
-      sheet = ss.insertSheet('System_Logs');
+      sheet = ss.insertSheet('SYSTEM_LOGS');
       sheet.appendRow(['timestamp', 'level', 'source', 'message', 'stack', 'user_agent', 'url', 'user_id']);
     }
     sheet.appendRow([
@@ -762,7 +762,7 @@ function logSystemError(data) {
 }
 
 /**
- * getSystemLogs — Read logs from System_Logs sheet (Admin only)
+ * getSystemLogs — Read logs from SYSTEM_LOGS sheet (Admin only)
  * @param {Object} params - { limit, level, token }
  * @return {Object} { success, data, count }
  */
@@ -771,7 +771,7 @@ function getSystemLogs(params) {
     var ssId = PropertiesService.getScriptProperties().getProperty('DB_SS_ID');
     if (!ssId) return { success: false, error: 'DB_SS_ID not set' };
     var ss = SpreadsheetApp.openById(ssId);
-    var sheet = ss.getSheetByName('System_Logs');
+    var sheet = findSheetByName(ss, 'SYSTEM_LOGS');
     if (!sheet) return { success: true, data: [], count: 0 };
     var limit = parseInt(params.limit) || 50;
     var level = params.level || null;

@@ -210,7 +210,7 @@ function getInventoryRecommendation(data) {
     var invRows = invSh.getRange(2, 1, invLastRow - 1, invHeaders.length).getValues();
     
     // Read Job history for velocity calculation
-    var jobsSh = ss.getSheetByName('DB_JOBS');
+    var jobsSh = findSheetByName(ss, 'DBJOBS');
     var velocityMap = {}; // { item_code: { total_used, days_active, velocity } }
     
     if (jobsSh) {
@@ -396,9 +396,9 @@ function predictCustomerDemand(data) {
     }
     
     // Read Job history for this customer
-    var jobsSh = ss.getSheetByName('DB_JOBS');
+    var jobsSh = findSheetByName(ss, 'DBJOBS');
     if (!jobsSh) {
-      return { success: false, error: 'DB_JOBS sheet not found' };
+      return { success: false, error: 'DBJOBS sheet not found' };
     }
     
     var jobLastRow = jobsSh.getLastRow();
@@ -654,8 +654,10 @@ function getAnomalyBaseline(data) {
  */
 function predictServiceLife(assetType, installDate) {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Inventory');
-    if (!sheet) return { success: false, error: 'Inventory sheet not found' };
+    var ss = getComphoneSheet();
+    if (!ss) return { success: false, error: 'Spreadsheet not found' };
+    var sheet = findSheetByName(ss, 'DB_INVENTORY');
+    if (!sheet) return { success: false, error: 'DB_INVENTORY sheet not found' };
     
     var data = sheet.getDataRange().getValues();
     var headers = data[0];
@@ -746,7 +748,8 @@ function getSmartRecommendation(module, context) {
     
     // ตรวจสอบจาก Inventory
     if (module === 'inventory' || module === 'all') {
-      var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Inventory');
+      var ss = getComphoneSheet();
+      var sheet = ss ? findSheetByName(ss, 'DB_INVENTORY') : null;
       if (sheet) {
         var data = sheet.getDataRange().getValues();
         var headers = data[0];

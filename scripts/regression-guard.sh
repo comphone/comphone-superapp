@@ -551,6 +551,16 @@ else
   warn "Node or sprint108_database_schema_registry_guard.js unavailable - skipping Sprint 108 database schema registry guard"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint109_data_repair_console_plan.js" ]; then
+  if node scripts/sprint109_data_repair_console_plan.js; then
+    echo "   Sprint 109 data repair console plan passed"
+  else
+    fail "Sprint 109 data repair console plan FAILED"
+  fi
+else
+  warn "Node or sprint109_data_repair_console_plan.js unavailable - skipping Sprint 109 data repair console plan"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"

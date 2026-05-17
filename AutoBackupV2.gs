@@ -13,7 +13,7 @@ var BACKUP_CONFIG = {
   keep_monthly: 3,  // Keep last 3 monthly backups
   backup_folder_name: 'COMPHONE_BACKUPS',
   sheets_to_backup: [
-    'DB_JOBS', 'DB_INVENTORY', 'DB_CUSTOMERS', 
+    'DBJOBS', 'DB_INVENTORY', 'DB_CUSTOMERS',
     'DB_BILLING', 'DB_STOCK_MOVEMENTS', 'DB_JOB_ITEMS',
     'DB_PHOTO_QUEUE', 'DB_PURCHASE_ORDERS', 'DB_ATTENDANCE',
     'DB_AFTER_SALES', 'DB_JOB_LOGS', 'DB_USERS', 'DB_ACTIVITY_LOG'
@@ -27,7 +27,8 @@ var BACKUP_CONFIG = {
 function createBackup() {
   try {
     var startTime = new Date();
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = getComphoneSheet();
+    if (!ss) return { success: false, error: 'Spreadsheet not found' };
     var backupFolder = getBackupFolder_();
     
     // Create timestamp-based backup name
@@ -49,7 +50,8 @@ function createBackup() {
     // Backup each sheet
     BACKUP_CONFIG.sheets_to_backup.forEach(function(sheetName) {
       try {
-        var sheet = ss.getSheetByName(sheetName);
+        sheetName = getCanonicalSheetName(sheetName);
+        var sheet = findSheetByName(ss, sheetName);
         if (!sheet) {
           backupResults.errors.push('Sheet not found: ' + sheetName);
           return;
@@ -249,7 +251,8 @@ function restoreBackup(backupId) {
       };
     }
     
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = getComphoneSheet();
+    if (!ss) return { success: false, error: 'Spreadsheet not found' };
     var restorationLog = {
       backup_id: backupId,
       backup_name: backupFolder.getName(),
@@ -282,7 +285,8 @@ function restoreBackup(backupId) {
         if (data.length === 0) continue;
         
         // Get or create sheet
-        var sheet = ss.getSheetByName(sheetName);
+        sheetName = getCanonicalSheetName(sheetName);
+        var sheet = findSheetByName(ss, sheetName);
         if (!sheet) {
           sheet = ss.insertSheet(sheetName);
         } else {
@@ -402,7 +406,9 @@ function csvToArray_(csv) {
  */
 function logBackupActivity_(action, data) {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB_ACTIVITY_LOG');
+    var ss = getComphoneSheet();
+    if (!ss) return;
+    var sheet = findSheetByName(ss, 'DB_ACTIVITY_LOG');
     if (!sheet) return;
     
     sheet.appendRow([

@@ -91,7 +91,8 @@ function getPwaMetrics() {
  */
 function getSheetsMetrics() {
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = getComphoneSheet();
+    if (!ss) return { error: 'Spreadsheet not found' };
     var sheets = ss.getSheets();
     
     var totalRows = 0;
@@ -107,7 +108,7 @@ function getSheetsMetrics() {
       total_sheets: sheets.length,
       total_rows: totalRows,
       estimated_size_mb: Math.round(totalSize / 1024 / 1024 * 100) / 100,
-      db_jobs_count: getSheetRowCount('DB_JOBS'),
+      db_jobs_count: getSheetRowCount('DBJOBS'),
       db_inventory_count: getSheetRowCount('DB_INVENTORY'),
       db_customers_count: getSheetRowCount('DB_CUSTOMERS')
     };
@@ -249,7 +250,10 @@ function getTriggerCount() {
  */
 function getSheetRowCount(sheetName) {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+    var ss = getComphoneSheet();
+    if (!ss) return 0;
+    sheetName = getCanonicalSheetName(sheetName);
+    var sheet = findSheetByName(ss, sheetName);
     return sheet ? sheet.getLastRow() - 1 : 0; // -1 for header
   } catch (e) {
     return 0;

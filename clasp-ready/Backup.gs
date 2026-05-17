@@ -14,7 +14,8 @@ function backupToDrive() {
       folder = DriveApp.getRootFolder();
     }
 
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getComphoneSheet();
+    if (!ss) throw new Error("Spreadsheet not found");
     const url = ss.getUrl();
     const name = ss.getName();
 
