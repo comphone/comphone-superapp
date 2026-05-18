@@ -7,8 +7,8 @@
 const VERSION_CONFIG = {
   version: 'v5.18.34-job-menu-hardening',
   buildDate: '2026-05-07',
-  buildTimestamp: '20260518_0415',
-  cacheVersion: 'comphone-v5.18.34-job-menu-hardening-20260518_0415',
+  buildTimestamp: '20260518_0435',
+  cacheVersion: 'comphone-v5.18.34-job-menu-hardening-20260518_0435',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -36,7 +36,8 @@ const VERSION_CONFIG = {
     'Sprint 112 Admin Repair Console for PC Settings and Mobile Admin',
     'Sprint 113-117 Jobs/Billing/Reports/Vision/LINE operational hardening',
     'Sprint 118 mobile quick action modal switching',
-    'Sprint 119 Inventory/PO/Warranty workflow hardening'
+    'Sprint 119 Inventory/PO/Warranty workflow hardening',
+    'Sprint 120 Settings/Admin runtime hardening'
   ]
 };
 
@@ -47,8 +48,8 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 // Backward-compatible exports for legacy modules and guards
 const APP_VERSION = 'v5.18.34-job-menu-hardening';
-const BUILD_TIMESTAMP = '20260518_0415';
-const CACHE_VERSION = 'comphone-v5.18.34-job-menu-hardening-20260518_0415';
+const BUILD_TIMESTAMP = '20260518_0435';
+const CACHE_VERSION = 'comphone-v5.18.34-job-menu-hardening-20260518_0435';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;

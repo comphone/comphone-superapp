@@ -19,8 +19,9 @@ const SPRINT115_BILLING_RESILIENCE = path.join(ROOT, 'scripts', 'sprint115_billi
 const SPRINT116_REPORTS_DRILLDOWN = path.join(ROOT, 'scripts', 'sprint116_reports_drilldown_audit.js');
 const SPRINT117_VISION_LINE_LOOP = path.join(ROOT, 'scripts', 'sprint117_vision_line_operational_loop_audit.js');
 const SPRINT119_INVENTORY_PO_WARRANTY = path.join(ROOT, 'scripts', 'sprint119_inventory_po_warranty_audit.js');
+const SPRINT120_SETTINGS_ADMIN_RUNTIME = path.join(ROOT, 'scripts', 'sprint120_settings_admin_runtime_audit.js');
 
-const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY];
+const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME];
 const badMarkers = [
   '\u00e0\u00b8',
   '\u00e0\u00b9',
@@ -248,6 +249,7 @@ const sprint115BillingResilienceJs = readUtf8(SPRINT115_BILLING_RESILIENCE);
 const sprint116ReportsDrilldownJs = readUtf8(SPRINT116_REPORTS_DRILLDOWN);
 const sprint117VisionLineLoopJs = readUtf8(SPRINT117_VISION_LINE_LOOP);
 const sprint119InventoryPoWarrantyJs = readUtf8(SPRINT119_INVENTORY_PO_WARRANTY);
+const sprint120SettingsAdminRuntimeJs = readUtf8(SPRINT120_SETTINGS_ADMIN_RUNTIME);
 if (!schemaRegistryJson.includes('"canonical_tables"') || !schemaRegistryJson.includes('"aliases"') || !schemaRegistryJson.includes('"DB_SS_ID"')) {
   fail('docs/database_schema_registry.json must define canonical_tables, aliases, and DB_SS_ID spreadsheet metadata.');
 }
@@ -309,6 +311,12 @@ if (!sprint119InventoryPoWarrantyJs.includes('Sprint 119 Inventory / PO / Warran
     !sprint119InventoryPoWarrantyJs.includes('warranty-detail-contract-safe') ||
     !sprint119InventoryPoWarrantyJs.includes('Inventory/PO/Warranty')) {
   fail('scripts/sprint119_inventory_po_warranty_audit.js must guard Inventory, PO, and Warranty workflow hardening.');
+}
+if (!sprint120SettingsAdminRuntimeJs.includes('Sprint 120 Settings/Admin Runtime Audit') ||
+    !sprint120SettingsAdminRuntimeJs.includes('pc-settings-live-summary') ||
+    !sprint120SettingsAdminRuntimeJs.includes('mobile-admin-operations-tabs') ||
+    !sprint120SettingsAdminRuntimeJs.includes('Settings/Admin')) {
+  fail('scripts/sprint120_settings_admin_runtime_audit.js must guard Settings/Admin runtime hardening.');
 }
 
 const pcContractIndex = dashboardPcHtml.indexOf('api_contract.js');
