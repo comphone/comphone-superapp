@@ -525,6 +525,12 @@ function invokeFunctionByNameV55_(functionName, args) {
     'getJobDetail': 1, 'getRetailSales': 1, 'getTechHistory': 1,
     'listCustomers': 1, 'listPurchaseOrders': 1,
     'getCustomerReceipts': 1,
+    'getLineRoomStatus': 1, 'getLineNotificationSettings': 1,
+    'getLineCommandCenter': 1, 'previewLineRoomMessage': 1,
+    'getVisionDashboardStats': 1, 'getVisionPipelineVersion': 1,
+    'getVisionLearningVersion': 1, 'getVisionFieldContext': 1,
+    'getVisionActionSuggestions': 1, 'getVisionReviewQueue': 1,
+    'previewVisionSuggestion': 1,
 
     // Write operations (require auth gate - already checked before reaching here)
     'updateJobStatus': 1, 'transitionJob': 1, 'completeJob': 1,
@@ -537,6 +543,8 @@ function invokeFunctionByNameV55_(functionName, args) {
     // Added from frontend actions (2026-05-02)
     'createPurchaseOrder': 1, 'logAfterSalesFollowUp': 1, 'receivePurchaseOrder': 1,
     'cleanupSmokeTestRecords': 1,
+    'updateLineNotificationSettings': 1, 'sendLineRoomMessage': 1,
+    'executeVisionSuggestion': 1,
   };
 
   if (!ALLOWED_FUNCTIONS[functionName]) {

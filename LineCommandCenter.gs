@@ -225,7 +225,16 @@ function queueLineCommandAlert(params) {
 
 function _lineCenterNormalizeRooms_(rooms) {
   if (!rooms) return ['EXECUTIVE'];
-  if (typeof rooms === 'string') rooms = rooms.split(',');
+  if (typeof rooms === 'string') {
+    var raw = rooms.trim();
+    if (raw.charAt(0) === '[') {
+      try {
+        var parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) rooms = parsed;
+      } catch (_) {}
+    }
+    if (typeof rooms === 'string') rooms = rooms.split(',');
+  }
   return rooms.map(function(room) { return String(room || '').trim().toUpperCase(); })
     .filter(function(room, index, all) { return room && all.indexOf(room) === index; });
 }
