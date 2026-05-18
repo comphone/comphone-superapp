@@ -139,6 +139,65 @@ function buildOperatorInsightCards(metrics) {
   ];
 }
 
+function getDashboardRole() {
+  const raw = (window.APP && APP.role) || (window.__USER_ROLE || '') || '';
+  const role = String(raw || '').toLowerCase();
+  if (role.includes('acct')) return 'acct';
+  if (role.includes('exec') || role.includes('owner')) return 'exec';
+  if (role.includes('tech')) return 'tech';
+  return 'admin';
+}
+
+function renderRoleFocusWidget(metrics) {
+  const role = getDashboardRole();
+  const cards = {
+    tech: {
+      title: 'Field Focus',
+      icon: 'bi-tools',
+      target: 'jobs',
+      primary: `${Number(metrics.overdueJobs || 0).toLocaleString()} SLA`,
+      secondary: `${Number(metrics.totalJobs || 0).toLocaleString()} service jobs`,
+      action: 'Open Jobs'
+    },
+    admin: {
+      title: 'Dispatch Focus',
+      icon: 'bi-headset',
+      target: 'jobs',
+      primary: `${Number(metrics.totalJobs || 0).toLocaleString()} jobs`,
+      secondary: `${Number(metrics.linePending || 0).toLocaleString()} LINE alerts`,
+      action: 'Review Queue'
+    },
+    acct: {
+      title: 'Cash Focus',
+      icon: 'bi-receipt-cutoff',
+      target: 'billing',
+      primary: formatDashboardMoney(metrics.revenueToday),
+      secondary: `${Number(metrics.billingOpen || 0).toLocaleString()} billing follow-up`,
+      action: 'Open Billing'
+    },
+    exec: {
+      title: 'Executive Focus',
+      icon: 'bi-graph-up-arrow',
+      target: 'reports',
+      primary: formatDashboardMoney(metrics.revenueMonth),
+      secondary: `${Number(metrics.riskQueue || 0).toLocaleString()} active risks`,
+      action: 'Open Reports'
+    }
+  };
+  const card = cards[role] || cards.admin;
+  return `
+    <section class="role-focus-widget" data-role-widget="${role}" aria-label="${card.title}">
+      <div class="role-focus-icon"><i class="bi ${card.icon}"></i></div>
+      <div class="role-focus-copy">
+        <div class="role-focus-kicker">Role Focus</div>
+        <strong>${card.title}</strong>
+        <span>${card.primary}</span>
+        <small>${card.secondary}</small>
+      </div>
+      <button type="button" class="role-focus-action" onclick="openDashboardCommand('${card.target}')">${card.action}</button>
+    </section>`;
+}
+
 // ===== RENDER DASHBOARD =====
 function renderDashboard(data) {
   const container = document.getElementById('dashboard-content');
@@ -167,6 +226,7 @@ function renderDashboard(data) {
   const linePending = alerts.length;
   const operatorInsightCards = buildOperatorInsightCards({
     revenueToday: revenue.today,
+    revenueMonth: revenue.month,
     totalJobs,
     overdueJobs,
     lowStock,
@@ -176,6 +236,7 @@ function renderDashboard(data) {
     linePending,
     alerts: alerts.length
   });
+  const riskQueue = lowStock + visionReview + alerts.length;
 
   container.innerHTML = `
     <!-- HEADER ROW -->
@@ -216,6 +277,18 @@ function renderDashboard(data) {
     <div class="operator-insight-strip" data-dashboard-polish="operator-insights" aria-label="Operator insight summary">
       ${operatorInsightCards.map(renderOperatorInsightCard).join('')}
     </div>
+
+    ${renderRoleFocusWidget({
+      revenueToday: revenue.today,
+      revenueMonth: revenue.month,
+      totalJobs,
+      overdueJobs,
+      lowStock,
+      billingOpen,
+      visionReview,
+      linePending,
+      riskQueue
+    })}
 
     <!-- EXECUTIVE COMMAND CENTER -->
     <div class="section-card executive-command-center" style="margin:0 12px 10px">

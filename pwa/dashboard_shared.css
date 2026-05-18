@@ -1004,3 +1004,75 @@
   .operator-insight-strip { grid-template-columns: 1fr; }
   .operator-insight-card { min-height: 86px; }
 }
+
+/* Sprint 125: role-based dashboard widgets */
+.role-focus-widget {
+  align-items: center;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 14px;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18);
+  color: #f8fafc;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  margin: 0 12px 10px;
+  padding: 14px;
+}
+
+.role-focus-icon {
+  align-items: center;
+  background: rgba(59, 130, 246, 0.2);
+  border-radius: 14px;
+  color: #bfdbfe;
+  display: inline-flex;
+  height: 44px;
+  justify-content: center;
+  width: 44px;
+}
+
+.role-focus-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.role-focus-kicker,
+.role-focus-copy small {
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.role-focus-copy strong {
+  font-size: 17px;
+  line-height: 1.15;
+}
+
+.role-focus-copy span {
+  color: #fde68a;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.role-focus-action {
+  background: #f8fafc;
+  border: 0;
+  border-radius: 999px;
+  color: #0f172a;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+  min-height: 36px;
+  padding: 8px 12px;
+}
+
+@media (max-width: 640px) {
+  .role-focus-widget {
+    align-items: stretch;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .role-focus-action {
+    grid-column: 1 / -1;
+  }
+}

@@ -2,7 +2,7 @@
 
 > **Version:** v5.18.34-job-menu-hardening (PWA) / GAS Backend v5.18.16-write-flow-validation @614
 
-> **Date:** 2026-05-18 | **Phase:** 124 (Protected Visual/Menu QA)
+> **Date:** 2026-05-18 | **Phase:** 125 (Role-Based Dashboard Widgets)
 
 > **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + CORE-AUDITED + FOCUS-AUDITED + JOBS-E2E-HARDENED + BILLING-E2E-HARDENED + REPORTS-E2E-HARDENED + VISION-LINE-FLOW-HARDENED + PRODUCTION-JOURNEY-HARDENED + BACKUP-WORKFLOW-HARDENED + MOBILE-QUICK-ACTIONS-HARDENED + MOBILE-CORE-WORKFLOWS-HARDENED + MOBILE-SECONDARY-WORKFLOWS-HARDENED + LIVE-MOBILE-MENU-SMOKE-HARDENED + OPERATOR-UX-QA-HARDENED + PROTECTED-LIVE-QA-RUNBOOK-HARDENED + PROTECTED-LIVE-QA-VERIFIED + DASHBOARD-PERFORMANCE-HARDENED + DEPLOY-GAS-CI-GATE-HARDENED + WRITE-SMOKE-LIFECYCLE-HARDENED + BLUEPRINT-RECONCILED + PO-READ-CACHE-HARDENED + JOBS-READ-CACHE-HARDENED + READ-DASHBOARD-CACHE-HARDENED + PRODUCTION-SAFETY-HARNESS-HARDENED + OPERATOR-WORKFLOW-POLISHED + LIVE-CACHE-FRESHNESS-HARDENED + OPERATOR-MENU-CLICKTHROUGH-HARDENED + CONTROLLED-WRITE-LIFECYCLE-HARDENED + LIVE-UX-MENU-RUNTIME-HARDENED + VISUAL-RUNTIME-WALKTHROUGH-HARDENED + PROTECTED-BROWSER-JOURNEY-HARDENED + RECORD-DETAIL-COMPLETENESS-HARDENED + PRODUCTION-DATA-QUALITY-GUARDED + CONTROLLED-DATA-CLEANUP-PLANNED + DATABASE-SCHEMA-REGISTRY-GUARDED + SHEET-CONTEXT-NORMALIZED + DATA-REPAIR-CONSOLE-PLANNED + DATA-REPAIR-EXECUTION-HARDENED + GAS-614-LIVE-VERIFIED + FULL-QA-SWEEP + GEMINI-READY - repo restored from stable `db942bd`; PC/mobile login and menu runtime verified on live GitHub Pages; Sprint 74 Core System Audit score 100/100; Sprint 75 Jobs/Billing/Reports Focus Audit score 100/100; Sprint 76 Jobs E2E Audit score 100/100; Sprint 77 Billing E2E Audit score 100/100; Sprint 78 Reports E2E Audit score 100/100; Sprint 79 Vision+LINE Flow Audit score 100/100; Sprint 80 Production Journey Audit score 100/100; Sprint 82 Mobile Quick Actions Audit score 100/100; Sprint 83 Mobile Core Workflows Audit score 100/100; Sprint 84 Mobile Secondary Workflows Audit score 100/100; Sprint 85 Live Mobile Menu Smoke public suite OK with token-aware protected read suite; Sprint 86 Operator UX QA Checklist score 100/100; Sprint 87 Protected Live QA Runbook is CI-safe without token and operator-ready with token; Sprint 88 live protected evidence confirms all protected read menus pass with one dashboard latency warning; Sprint 89 routes legacy `getDashboardData` through the cached single-pass Dashboard Bundle, aligns Dashboard source across root/clasp-ready, and is deployed to production GAS @608; protected Sprint 87 rerun after @608 reports 13 pass / 0 slow / 0 fail; Sprint 90 makes Deploy-GAS CI skip deployment cleanly when `CLASPRC_JSON` is missing/invalid while preserving real deployment when the secret exists; Sprint 91 expands write-smoke lifecycle coverage with safe job note/status checks and cleanup support for Billing/PO smoke rows, deployed to production GAS @609; Sprint 92 reconciles stale historical BLUEPRINT claims so agents no longer treat old GAS URLs, login/splash issues, and Phase 35 pending items as current blockers; Scheduled Session Backup workflow no longer fights `.gitignore`; System Integrity Audit score 100/100; Menu Journey Audit score 100/100; Functional Menu Audit score 100/100; PC Jobs now has detail, assign, quick note, timeline, status, Vision, and Billing handoffs; Mobile dashboard quick actions now have stable button contracts, real Open Job/Add Customer entry workflows, API-contract coverage, and a More-sheet fallback that avoids blank Bootstrap-modal paths; Mobile Jobs/CRM/Billing now have dedicated core workflow guard coverage, CRM backend-field normalization, CRM modal recovery, and safe legacy CRM write idempotency; Mobile Inventory/PO/Warranty/Reports now have dedicated secondary workflow guard coverage, PO modal recovery, PO create idempotency, Warranty loader alias, and expanded API-contract coverage; Operator UX QA checklist now documents PC/mobile walkthrough order, entrypoint load order, menu routes, recovery settings, live smoke readiness, and local browser-smoke coverage; PC/mobile Billing now has field-contract normalization, mobile modal shell recovery, PromptPay QR compatibility, and safer paid amount handling; Reports/Revenue now normalize backend report shapes and use live report APIs before fallbacks; AI Vision suggestions use preview + explicit confirmation + backend whitelist execution; LINE Command Center safe-send now uses the correct `sendLinePush(message, groupId)` contract and keeps room IDs/tokens hidden behind status tails; PC Settings badge now reports actual API/CACHE readiness instead of stale AI_EXECUTOR/LOCK false failures; backend `addQuickNote` is implemented and deployed; PC Reports loads the real reports module; PC Tax now has a real renderer; Billing legacy prototype shimmed out and PC Billing render no longer blanks when the production renderer paints directly into the DOM; Settings includes Runtime Self-Test, operations diagnostics, diagnostics export, and safe PWA cache repair; GAS redeployed at @614 with Sprint 111 controlled data repair execution on the existing Web App URL; protected API smoke passes core menus including Reports, Billing, Vision, and LINE read endpoints when a valid session token is supplied; Smoke Cleanup Planner now reports 0 candidates after deleting the 4 reviewed smoke records with archive-before-delete; Gemini secret is configured in Apps Script Properties under `GEMINI_API_KEY`; Vision runtime smoke passes public health/version and protected Vision read suite when token is supplied; Sprint 97 adds a dedicated LINE room smoke harness with read-only preview by default and an explicit real-send gate; Sprint 98 polishes the five operator workflow surfaces: Jobs/Billing handoffs, mobile field continuity, PC executive command dashboard, LINE role routing, and AI Vision operational loop; Sprint 99 bumps the live PWA cache/build timestamp, migrates legacy saved mobile quick actions to the field-operator default, and adds a live-readiness guard so GitHub Pages cannot silently serve stale PC/mobile assets; Sprint 100 adds a permanent operator menu audit for Jobs/Billing/Reports/Vision/LINE and promotes Reports into the PC/mobile Dashboard command center; Sprint 101 verifies the controlled service-to-cash write lifecycle with explicit gates, tightens billing smoke markers, and teaches cleanup to merge IDs from the latest write-smoke report; Sprint 102 hardens PC/Mobile menu runtime so PC sections cannot wipe the dashboard shell, mobile nested pages restore under More correctly, and protected live menu shape checks cover the priority menus; Sprint 103 adds a CI-safe visual/runtime walkthrough guard for PC/Mobile menu labels, script order, section mounts, service-to-cash command tiles, Thai UTF-8 labels, and blank-shell recurrence prevention; Sprint 104 adds a token-aware protected browser journey guard and verifies Jobs, Billing, Reports, AI Vision, LINE Center, and Settings with real protected read APIs when a fresh session token is supplied; Sprint 105 adds a record-detail completeness guard for Jobs timeline, Billing detail, and Reports drilldowns, and promotes `listBillings` into the Billing menu API contract; Sprint 106 adds a production data-quality guard for Jobs/Billing/Reports and records current non-blocking warnings for incomplete Billing rows and empty current-month report revenue records; Sprint 107 adds a read-only controlled cleanup/backfill plan for the Sprint 106 warnings and blocks mutation until a future archive-before-change backend action is implemented; Sprint 108 adds a database schema registry and CI guard for canonical sheet names, legacy aliases, one production Spreadsheet ID, and active-spreadsheet-context drift; Sprint 109 normalizes sheet context/legacy aliases to 0 schema warnings, adds schema strict mode, and adds a read-only data repair console plan for Jobs/Billing/Reports-first repair operations; Sprint 110 pushes the normalized GAS source to production deployment @613; Sprint 111 deploys the controlled Data Repair Console to production @614.
 
@@ -13,7 +13,7 @@
 This section is the latest handoff for any human or AI agent continuing COMPHONE work.
 
 ### Current Production State
-- **Current phase:** Sprint / Phase 124.
+- **Current phase:** Sprint / Phase 125.
 - **Latest stable verification commit before this handoff:** `249ff86 Document Sprint 110 GAS live verification`. Run `git log -1 --oneline` for the exact current repository HEAD.
 - **PWA version:** `v5.18.34-job-menu-hardening`.
 - **GAS backend version:** `v5.18.16-write-flow-validation`.
@@ -46,6 +46,7 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 - Sprint 122 adds an operator analytics layer on top of the restored dashboards: PC gets an `operator-insight-strip` for service pressure, cash, risk queue, and AI/LINE loop; Mobile gets a role-safe `operator-pulse-card` on every home role using existing dashboard data only.
 - Sprint 123 hardens live visual QA contracts. Mobile local scripts/styles loaded by `index.html` now have complete `pwa_asset_manifest.js` script/precache coverage, and the new guard locks critical page mounts, More-menu routes, quick action modals, dashboard command tiles, and blank-page diagnostics.
 - Sprint 124 adds a token-aware protected visual/menu QA runner. It checks Pages freshness, PC/Mobile visual route contracts, Operator Insight/Pulse contracts, quick-action real modal flows, and protected read APIs for Dashboard, Jobs, CRM, Billing, Reports, Inventory, PO, Warranty, Vision, LINE Center, and Admin when `COMPHONE_AUTH_TOKEN` is present.
+- Sprint 125 adds role-based PC/Mobile dashboard focus widgets for tech/admin/accounting/executive operators, keeps existing Operator Insight/Pulse surfaces intact, and wires a dedicated audit into static guard, regression guard, and GitHub Actions.
 
 ### Required Verification Commands
 Run these before claiming the system is stable after any code change:
@@ -71,6 +72,7 @@ node scripts/sprint121_performance_accessibility_audit.js
 node scripts/sprint122_dashboard_operator_analytics_audit.js
 node scripts/sprint123_live_visual_qa_guard.js
 node scripts/sprint124_protected_visual_menu_qa.js
+node scripts/sprint125_role_based_dashboard_widgets_audit.js
 bash scripts/regression-guard.sh
 bash scripts/guard-self-test.sh
 node scripts/pages_deploy_verify.js
@@ -93,8 +95,8 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN -ErrorAction SilentlyContinue
 ### Known Remaining Work
 - **Data repair 1:** `DB_BILLING` row 1 is incomplete. Sprint 115 now prevents blank Billing detail/QR navigation for missing `Job_ID`, but the row still needs owner review before archive/delete.
 - **Data repair 2:** current-month report daily revenue records are empty. Sprint 116 now shows a diagnostic `report-empty-state`; verify real business activity before changing report logic.
-- **Next recommended sprint:** Deploy build `20260518_0555`, rerun `pages_deploy_verify.js`, then run `node scripts/sprint124_protected_visual_menu_qa.js` again with a fresh session token to capture protected live evidence.
-- **After Sprint 124:** continue with role-based dashboard widgets and richer visual screenshots only after Pages confirms the new build is fresh.
+- **Next recommended sprint:** Deploy build `20260518_0615`, rerun `pages_deploy_verify.js`, then run `node scripts/sprint124_protected_visual_menu_qa.js` again with a fresh session token to capture protected live evidence.
+- **After Sprint 125:** continue with token-backed role-widget visual screenshots and richer per-role operator personalization only after Pages confirms build `20260518_0615` is fresh.
 
 ### Non-Negotiable Rules For Future Agents
 - Do not change the production GAS URL unless intentionally migrating deployment. If changed, update `pwa/gas_config.js`, this BLUEPRINT, deploy verification expectations, and GitHub Pages verification together.
@@ -111,8 +113,8 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN -ErrorAction SilentlyContinue
 | Item | Current Value | Source of Truth |
 |---|---|---|
 | App Version | `v5.18.34-job-menu-hardening` | `pwa/version_config.js` |
-| Cache Version | `comphone-v5.18.34-job-menu-hardening-20260518_0555` | `pwa/version_config.js`, `pwa/sw.js` |
-| Build Timestamp | `20260518_0555` | `pwa/version_config.js` |
+| Cache Version | `comphone-v5.18.34-job-menu-hardening-20260518_0615` | `pwa/version_config.js`, `pwa/sw.js` |
+| Build Timestamp | `20260518_0615` | `pwa/version_config.js` |
 | GAS Backend Deploy | `AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA @614` / production URL in `pwa/gas_config.js` | `Config.gs`, `Dashboard.gs`, `DashboardBundle.gs`, `RouterSplit.gs`, `JobStateMachine.gs`, `LineCommandCenter.gs`, `SmokeCleanup.gs`, `DataRepairConsole.gs`, `VisionPipeline.gs`, `clasp-ready/Config.gs`, `clasp-ready/Dashboard.gs`, `clasp-ready/DashboardBundle.gs`, `clasp-ready/RouterSplit.gs`, `clasp-ready/JobStateMachine.gs`, `clasp-ready/LineCommandCenter.gs`, `clasp-ready/SmokeCleanup.gs`, `clasp-ready/DataRepairConsole.gs`, `clasp-ready/VisionPipeline.gs` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-07.phase65-line-command-center` | `pwa/api_contract.js` |
@@ -124,14 +126,14 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN -ErrorAction SilentlyContinue
 - The runner always checks static visual contracts and GitHub Pages freshness; with `COMPHONE_AUTH_TOKEN`, it also verifies protected read APIs for Dashboard, Jobs, CRM, Billing, Reports, Inventory, PO, Warranty, Vision, LINE Center, and Admin.
 - Guarded mobile accidental-close/last-page restore, quick-action real modal flows, typed More-menu routes, Operator Insight/Pulse surfaces, and blank-page diagnostics in one release-ready script.
 - Wired Sprint 124 into `scripts/pwa_static_guard.js`, `scripts/regression-guard.sh`, and `.github/workflows/auto-deploy.yml`.
-- Bumped PWA cache/build timestamp to `20260518_0555` so mobile/PC clients pick up the protected visual/menu QA runbook.
+- Bumped PWA cache/build timestamp to `20260518_0615` so mobile/PC clients pick up the protected visual/menu QA runbook.
 
 ### Phase 123 Live Visual QA Guard (2026-05-18)
 - Completed mobile asset manifest coverage so every local script/stylesheet loaded by `pwa/index.html` is also listed in `pwa_asset_manifest.js` and pre-cached by the PWA asset manifest.
 - Hardened `scripts/pwa_static_guard.js` to fail future releases when mobile index assets drift out of manifest/precache coverage.
 - Added `scripts/sprint123_live_visual_qa_guard.js` to lock high-value visual/runtime contracts: page mounts, More-menu routes, quick actions, modal-backed Open Job/Add Customer, dashboard command tiles, and blank-page diagnostics.
 - Wired Sprint 123 into `scripts/regression-guard.sh` and `.github/workflows/auto-deploy.yml`.
-- Bumped PWA cache/build timestamp to `20260518_0555` so mobile/PC clients pick up the live visual QA guard pass.
+- Bumped PWA cache/build timestamp to `20260518_0615` so mobile/PC clients pick up the live visual QA guard pass.
 
 ### Phase 122 Dashboard Operator Analytics Polish (2026-05-18)
 - Added a PC Dashboard `operator-insight-strip` powered by existing `getDashboardBundle/getDashboardData` summary fields: service pulse, cash today, risk queue, and AI + LINE loop.
@@ -139,28 +141,28 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN -ErrorAction SilentlyContinue
 - Improved Executive Command Center button semantics with `type="button"` and `aria-label` so keyboard/focus QA remains stable after dashboard polish.
 - Added responsive styling in `pwa/dashboard_shared.css` and `pwa/mobile_glass.css` without adding new backend calls or write paths.
 - Added `scripts/sprint122_dashboard_operator_analytics_audit.js` and wired it into `scripts/pwa_static_guard.js`, `scripts/regression-guard.sh`, and `.github/workflows/auto-deploy.yml`.
-- Bumped PWA cache/build timestamp to `20260518_0555` so mobile/PC clients pick up the dashboard operator analytics polish.
+- Bumped PWA cache/build timestamp to `20260518_0615` so mobile/PC clients pick up the dashboard operator analytics polish.
 
 ### Phase 121 Performance/Accessibility Pass (2026-05-18)
 - Hardened mobile page routing in `pwa/app.js` with `markPageLoading`, `markPageReady`, `aria-busy`, `data-page-state`, and a loading watchdog that replaces silent blank content with a diagnostic fallback.
 - Added mobile CSS guardrails in `pwa/mobile_glass.css`: 44px minimum tap targets, `touch-action: manipulation`, visible focus rings, reduced-motion support, and loading diagnostic styles.
 - Added PC section busy/ready state in `pwa/dashboard_pc_core.js` and PC shared CSS guardrails in `pwa/dashboard_shared.css`.
 - Added `scripts/sprint121_performance_accessibility_audit.js` and wired it into `scripts/pwa_static_guard.js`, `scripts/regression-guard.sh`, and `.github/workflows/auto-deploy.yml`.
-- Bumped PWA cache/build timestamp to `20260518_0555` so mobile/PC clients pick up the performance/accessibility pass.
+- Bumped PWA cache/build timestamp to `20260518_0615` so mobile/PC clients pick up the performance/accessibility pass.
 
 ### Phase 120 Settings/Admin Runtime Hardening (2026-05-18)
 - Hardened `pwa/section_settings.js` so PC Settings no longer seeds fake healthy/user data. The page now renders a checking state and hydrates live `health` and `listUsers` after the section is opened.
 - The PC Settings maintenance surface now hydrates four live panels together: system summary, Runtime Self-Test, Data Repair Console, and Operations Diagnostics.
 - Kept Data Repair destructive execution gated by `EXECUTE_REVIEWED_DATA_REPAIR` and `archive_delete_orphan_billing_row`.
 - Added `scripts/sprint120_settings_admin_runtime_audit.js` and wired it into `scripts/pwa_static_guard.js`, `scripts/regression-guard.sh`, and `.github/workflows/auto-deploy.yml`.
-- Bumped PWA cache/build timestamp to `20260518_0555` so mobile/PC clients pick up the Settings/Admin runtime hardening.
+- Bumped PWA cache/build timestamp to `20260518_0615` so mobile/PC clients pick up the Settings/Admin runtime hardening.
 
 ### Phase 119 Inventory/PO/Warranty Workflow Hardening (2026-05-18)
 - Hardened `pwa/purchase_order.js` so Purchase Order fallback uses the unified `window.callAPI` bridge when `callApi` is not ready, and PO no longer falls back to `AI_EXECUTOR`.
 - Hardened `pwa/section_warranty.js` so Warranty detail opens from the loaded list cache first and only uses `getWarrantyByJobId` with a `job_id` payload, preventing the previous `warranty_id` vs `job_id` contract mismatch.
 - Added a Warranty detail modal with safe HTML escaping and a guarded `CLAIMED` status update path through `updateWarrantyStatus`.
 - Added `scripts/sprint119_inventory_po_warranty_audit.js` and wired it into `scripts/pwa_static_guard.js`, `scripts/regression-guard.sh`, and `.github/workflows/auto-deploy.yml`.
-- Bumped PWA cache/build timestamp to `20260518_0555` so mobile/PC clients pick up the Inventory/PO/Warranty hardening.
+- Bumped PWA cache/build timestamp to `20260518_0615` so mobile/PC clients pick up the Inventory/PO/Warranty hardening.
 
 ### Phase 118 Live Deploy Gate Repair (2026-05-18)
 - Live browser check confirmed GitHub Pages was still serving old PWA assets with `t=20260516_0845`, while repository HEAD was already `8dc362c`.

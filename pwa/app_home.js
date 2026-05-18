@@ -110,10 +110,46 @@ function renderOperatorPulse() {
     </section>`;
 }
 
+function renderMobileRoleFocus() {
+  const role = APP.role || 'tech';
+  const d = APP.dashboardData || {};
+  const summary = d.summary || d || {};
+  const revenue = summary.revenue || {};
+  const jobs = Array.isArray(APP.jobs) ? APP.jobs : [];
+  const alertsRaw = d.alerts || summary.alerts || {};
+  const alerts = Array.isArray(alertsRaw) ? alertsRaw : (alertsRaw.items || []);
+  const totalJobs = Number(summary.totalJobs || summary.total_jobs || jobs.length || 0);
+  const overdueJobs = Number(summary.overdueJobs || summary.overdue_jobs || 0);
+  const billingOpen = Number(summary.billingOpen || summary.openBillings || summary.pendingBillings || 0);
+  const lowStock = Number(summary.lowStock || summary.low_stock || 0);
+  const visionReview = Number(summary.visionReview || summary.visionReviewQueue || summary.pendingVisionReviews || 0);
+  const linePending = alerts.length;
+  const roleMap = {
+    tech: { title: 'Field Focus', icon: 'bi-tools', page: 'jobs', value: `${overdueJobs} SLA`, note: `${totalJobs} jobs in queue` },
+    admin: { title: 'Dispatch Focus', icon: 'bi-headset', page: 'jobs', value: `${totalJobs} jobs`, note: `${linePending} LINE alerts` },
+    acct: { title: 'Cash Focus', icon: 'bi-receipt', page: 'billing', value: `THB ${Number(revenue.today || 0).toLocaleString()}`, note: `${billingOpen} billing follow-up` },
+    exec: { title: 'Executive Focus', icon: 'bi-graph-up-arrow', page: 'reports', value: `THB ${Number(revenue.month || 0).toLocaleString()}`, note: `${lowStock + visionReview + linePending} active risks` }
+  };
+  const card = roleMap[role] || roleMap.admin;
+  return `
+    <section class="mobile-role-focus-card" data-mobile-role-widget="${role}" aria-label="${card.title}">
+      <div class="mobile-role-focus-icon"><i class="bi ${card.icon}"></i></div>
+      <div class="mobile-role-focus-copy">
+        <small>Role Focus</small>
+        <strong>${card.title}</strong>
+        <span>${card.value}</span>
+        <em>${card.note}</em>
+      </div>
+      <button type="button" class="mobile-role-focus-action" aria-label="Open ${card.title}" onclick="goPage('${card.page}', document.getElementById('${card.page === 'jobs' ? 'nav-jobs' : 'nav-more'}'))">
+        <i class="bi bi-arrow-right-short"></i>
+      </button>
+    </section>`;
+}
+
 function renderMainContent() {
   const area = document.getElementById('main-content-area');
   const role = APP.role;
-  const pulse = renderOperatorPulse();
+  const pulse = renderOperatorPulse() + renderMobileRoleFocus();
 
   if (role === 'tech') {
     area.innerHTML = pulse + renderTechHome();

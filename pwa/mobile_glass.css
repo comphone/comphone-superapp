@@ -694,3 +694,98 @@ html.cp-light .operator-pulse-foot { color: #64748b; }
 @media (max-width: 360px) {
   .operator-pulse-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Sprint 125: role-based mobile dashboard widgets */
+.mobile-role-focus-card {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 16px;
+  color: #f8fafc;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  margin: -4px 12px 12px;
+  padding: 12px;
+}
+
+html.cp-light .mobile-role-focus-card {
+  background: #fff;
+  border-color: #e2e8f0;
+  color: #0f172a;
+}
+
+.mobile-role-focus-icon {
+  align-items: center;
+  background: rgba(59, 130, 246, 0.18);
+  border-radius: 12px;
+  color: #93c5fd;
+  display: inline-flex;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+
+html.cp-light .mobile-role-focus-icon {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.mobile-role-focus-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.mobile-role-focus-copy small {
+  color: #93c5fd;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+html.cp-light .mobile-role-focus-copy small { color: #2563eb; }
+
+.mobile-role-focus-copy strong {
+  font-size: 14px;
+  line-height: 1.15;
+}
+
+.mobile-role-focus-copy span {
+  color: #fde68a;
+  font-size: 15px;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.cp-light .mobile-role-focus-copy span { color: #92400e; }
+
+.mobile-role-focus-copy em {
+  color: #cbd5e1;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+html.cp-light .mobile-role-focus-copy em { color: #64748b; }
+
+.mobile-role-focus-action {
+  align-items: center;
+  background: rgba(59, 130, 246, 0.18);
+  border: 1px solid rgba(147, 197, 253, 0.35);
+  border-radius: 999px;
+  color: #bfdbfe;
+  display: inline-flex;
+  height: 36px;
+  justify-content: center;
+  min-width: 36px;
+  touch-action: manipulation;
+}
+
+html.cp-light .mobile-role-focus-action {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #2563eb;
+}
