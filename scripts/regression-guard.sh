@@ -741,6 +741,16 @@ else
   warn "Node or sprint129_vision_line_suppression_live_qa.js unavailable - skipping Sprint 129 AI Vision LINE Suppression Live QA"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint131_line_real_send_readiness.js" ]; then
+  if node scripts/sprint131_line_real_send_readiness.js; then
+    echo "   Sprint 131 LINE Real-Send Readiness passed or skipped safely"
+  else
+    fail "Sprint 131 LINE Real-Send Readiness FAILED"
+  fi
+else
+  warn "Node or sprint131_line_real_send_readiness.js unavailable - skipping Sprint 131 LINE Real-Send Readiness"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"
