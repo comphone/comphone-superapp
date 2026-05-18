@@ -56,15 +56,10 @@ async function _showFollowUpSchedule() {
   }
 }
 
-function renderSettingsSection() {  // [PATCH] เปลี่ยนเป็น synchronous (ใช้ mock data แล้ว ไม่ต้อง async)
-  // [PATCH] ใช้ mock data โดยตรง (เนื่องจากระบบอยู่ใน mock mode 100%)
-  const guardResp = { total_properties: 45, max_properties: 50, status: 'healthy' };
-  const healthResp = { status: 'healthy', elapsed_ms: 120, success: true };
-  const usersResp = { users: [
-    { username: 'admin', full_name: 'ผู้ดูแลระบบ', role: 'OWNER', role_label: 'เจ้าของ', active: true },
-    { username: 'user1', full_name: 'สมชาย ใจดี', role: 'USER', role_label: 'ผู้ใช้', active: true },
-    { username: 'user2', full_name: 'วิชัย สบาย', role: 'USER', role_label: 'ผู้ใช้', active: false }
-  ] };
+function renderSettingsSection() {
+  const guardResp = { total_properties: '-', max_properties: 50, status: 'checking' };
+  const healthResp = { status: 'checking', elapsed_ms: null, success: false };
+  const usersResp = { users: [] };
 
   const propUsed = guardResp?.total_properties || guardResp?.used || '?';
   const propMax = guardResp?.max_properties || 50;
@@ -75,10 +70,10 @@ function renderSettingsSection() {  // [PATCH] เปลี่ยนเป็น
     <!-- System Health -->
     <div class="card-box" style="margin-bottom:16px;border-left:4px solid ${isHealthy?'#059669':'#ef4444'}">
       <div class="card-title"><i class="bi bi-heart-pulse" style="color:${isHealthy?'#059669':'#ef4444'}"></i> สถานะระบบ</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;padding:8px 0">
+      <div id="settings-system-summary-content" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;padding:8px 0">
         <div style="text-align:center">
           <div style="font-size:24px">${isHealthy ? '🟢' : '🔴'}</div>
-          <div style="font-size:12px;color:#6b7280">${isHealthy ? 'ระบบปกติ' : 'มีปัญหา'}</div>
+          <div style="font-size:12px;color:#6b7280">${isHealthy ? 'ระบบปกติ' : 'กำลังตรวจ'}</div>
         </div>
         <div style="text-align:center">
           <div style="font-size:24px;font-weight:700;color:#1e40af">${healthResp?.elapsed_ms || '?'}ms</div>
@@ -89,7 +84,7 @@ function renderSettingsSection() {  // [PATCH] เปลี่ยนเป็น
           <div style="font-size:12px;color:#6b7280">Properties</div>
         </div>
         <div style="text-align:center">
-          <div style="font-size:24px;font-weight:700;color:#1e40af">${users.length}</div>
+          <div id="settings-users-count" style="font-size:24px;font-weight:700;color:#1e40af">${users.length || '?'}</div>
           <div style="font-size:12px;color:#6b7280">ผู้ใช้</div>
         </div>
       </div>
@@ -103,7 +98,7 @@ function renderSettingsSection() {  // [PATCH] เปลี่ยนเป็น
         <tr><td style="color:#6b7280;padding:6px 12px">GAS URL</td><td style="font-size:11px;word-break:break-all;color:#6b7280">${GAS_CONFIG?.url || ''}</td></tr>
         <tr><td style="color:#6b7280;padding:6px 12px">Spreadsheet</td><td><a href="https://docs.google.com/spreadsheets/d/19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA" target="_blank" style="color:#1e40af;font-size:12px">เปิด Google Sheets ↗</a></td></tr>
         <tr><td style="color:#6b7280;padding:6px 12px">Deploy Date</td><td>${GAS_CONFIG?.deployDate || '-'}</td></tr>
-        <tr><td style="color:#6b7280;padding:6px 12px">Bundle Cache</td><td>${healthResp?.elapsed_ms < 500 ? '✅ HIT (cached)' : '🔄 MISS (fresh)'}</td></tr>
+        <tr><td style="color:#6b7280;padding:6px 12px">Bundle Cache</td><td id="settings-bundle-cache-status">Checking live health...</td></tr>
       </table>
     </div>
 
@@ -139,7 +134,8 @@ function renderSettingsSection() {  // [PATCH] เปลี่ยนเป็น
 
     <!-- Users -->
     <div class="card-box" style="margin-bottom:16px">
-      <div class="card-title"><i class="bi bi-people" style="color:#059669"></i> ผู้ใช้ระบบ (${users.length})</div>
+      <div class="card-title"><i class="bi bi-people" style="color:#059669"></i> ผู้ใช้ระบบ <span id="settings-users-title-count">(${users.length || '?'})</span></div>
+      <div id="settings-users-live-content">
       ${users.length === 0 ? '<p style="color:#9ca3af;font-size:13px;text-align:center;padding:12px">ไม่มีข้อมูลผู้ใช้</p>' :
         `<div style="overflow-x:auto">
           <table class="job-table" style="width:100%">
@@ -152,6 +148,7 @@ function renderSettingsSection() {  // [PATCH] เปลี่ยนเป็น
             </tr>`).join('')}</tbody>
           </table>
         </div>`}
+      </div>
     </div>
 
     <!-- Property Guard -->
@@ -282,6 +279,79 @@ async function collectComphoneDiagnostics() {
     }
   }
   return diagnostics;
+}
+
+async function hydrateSettingsSystemSummary() {
+  const summary = document.getElementById('settings-system-summary-content');
+  const cacheStatus = document.getElementById('settings-bundle-cache-status');
+  if (!summary) return;
+  try {
+    const started = Date.now();
+    const health = typeof callApi === 'function' ? await callApi('health', {}) : null;
+    const elapsed = Date.now() - started;
+    const ok = !!health && health.success !== false && !['error', 'fail'].includes(String(health.status || '').toLowerCase());
+    const checks = health && health.checks ? health.checks : {};
+    const config = checks.config || {};
+    const props = checks.properties || health.properties || {};
+    const propUsed = props.total_properties || props.used || '-';
+    const propMax = props.max_properties || props.max || 50;
+    const userCount = await hydrateSettingsUsersSummary();
+
+    summary.innerHTML = `
+      <div style="text-align:center">
+        <div style="font-size:24px">${ok ? '🟢' : '🔴'}</div>
+        <div style="font-size:12px;color:#6b7280">${ok ? 'Live API OK' : 'Live API issue'}</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:24px;font-weight:700;color:#1e40af">${elapsed}ms</div>
+        <div style="font-size:12px;color:#6b7280">Response Time</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:24px;font-weight:700;color:${Number(propUsed)>=49?'#d97706':'#059669'}">${_escapeSettingsHtml_(propUsed)}/${_escapeSettingsHtml_(propMax)}</div>
+        <div style="font-size:12px;color:#6b7280">Properties</div>
+      </div>
+      <div style="text-align:center">
+        <div id="settings-users-count" style="font-size:24px;font-weight:700;color:#1e40af">${_escapeSettingsHtml_(userCount || '-')}</div>
+        <div style="font-size:12px;color:#6b7280">Users</div>
+      </div>`;
+    if (cacheStatus) {
+      const gemini = config.gemini_ok === true ? 'Gemini OK' : 'Gemini CHECK';
+      const line = config.line_ok === true ? 'LINE OK' : 'LINE CHECK';
+      cacheStatus.textContent = `${ok ? 'Live API OK' : 'Live API CHECK'} / ${gemini} / ${line}`;
+    }
+  } catch (err) {
+    summary.innerHTML = `<div style="grid-column:1/-1;background:#fef2f2;color:#b91c1c;border-radius:10px;padding:12px;font-size:13px">Live system summary failed: ${_escapeSettingsHtml_(err.message || err)}</div>`;
+    if (cacheStatus) cacheStatus.textContent = 'Live health failed';
+  }
+}
+
+async function hydrateSettingsUsersSummary() {
+  const container = document.getElementById('settings-users-live-content');
+  const countBadge = document.getElementById('settings-users-title-count');
+  if (!container || typeof callApi !== 'function') return 0;
+  try {
+    const res = await callApi('listUsers', {});
+    const users = (res && (res.users || res.data || res.items)) || [];
+    if (!res || res.success === false) throw new Error((res && res.error) || 'listUsers failed');
+    if (countBadge) countBadge.textContent = `(${users.length})`;
+    container.innerHTML = users.length ? `
+      <div style="overflow-x:auto">
+        <table class="job-table" style="width:100%">
+          <thead><tr><th>Username</th><th>Name</th><th>Role</th><th>Status</th></tr></thead>
+          <tbody>${users.map(u => `<tr>
+            <td style="font-weight:600;font-size:13px">${_escapeSettingsHtml_(u.username || '-')}</td>
+            <td style="font-size:13px">${_escapeSettingsHtml_(u.full_name || u.fullName || '-')}</td>
+            <td><span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:10px;font-size:11px">${_escapeSettingsHtml_(u.role || '-')}</span></td>
+            <td style="font-size:12px;color:${u.active !== false && String(u.active || 'TRUE').toUpperCase() !== 'FALSE' ? '#059669' : '#ef4444'}">${u.active !== false && String(u.active || 'TRUE').toUpperCase() !== 'FALSE' ? 'Active' : 'Inactive'}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>` : '<p style="color:#9ca3af;font-size:13px;text-align:center;padding:12px">No users returned by listUsers.</p>';
+    return users.length;
+  } catch (err) {
+    if (countBadge) countBadge.textContent = '(check)';
+    container.innerHTML = `<div style="background:#fffbeb;color:#92400e;border-radius:10px;padding:12px;font-size:13px">User list unavailable: ${_escapeSettingsHtml_(err.message || err)}</div>`;
+    return 0;
+  }
 }
 
 async function hydrateSystemDiagnostics() {
@@ -439,6 +509,7 @@ function hydrateSettingsRuntimePanels() {
   if (el && typeof renderRuntimeSelfTestPanel === 'function') {
     renderRuntimeSelfTestPanel(el);
   }
+  hydrateSettingsSystemSummary();
   hydrateSettingsDataRepairPanel();
   hydrateSystemDiagnostics();
 }
