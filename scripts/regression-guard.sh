@@ -701,6 +701,16 @@ else
   warn "Node or sprint125_role_based_dashboard_widgets_audit.js unavailable - skipping Sprint 125 Role-Based Dashboard Widgets audit"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint126_ai_vision_role_readiness_audit.js" ]; then
+  if node scripts/sprint126_ai_vision_role_readiness_audit.js; then
+    echo "   Sprint 126 AI Vision + Role Readiness audit passed"
+  else
+    fail "Sprint 126 AI Vision + Role Readiness audit FAILED"
+  fi
+else
+  warn "Node or sprint126_ai_vision_role_readiness_audit.js unavailable - skipping Sprint 126 AI Vision + Role Readiness audit"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"
