@@ -275,6 +275,7 @@ if (!res || !res.success) {
 el.innerHTML = '<div style="text-align:center;padding:30px;color:#6b7280">ไม่พบข้อมูล</div>';
 return;
 }
+const records = Array.isArray(res.records) ? res.records : [];
 const summary = res.summary || {};
 var html = `
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
@@ -284,12 +285,18 @@ var html = `
 <div style="background:#fce7f3;border-radius:12px;padding:14px;text-align:center"><div style="font-size:20px;font-weight:700;color:#ec4899">${(summary.total_vat||0).toFixed(2)}</div><div style="font-size:12px;color:#6b7280">VAT รวม</div></div>
 </div>
 `;
-if (res.records && res.records.length > 0) {
+if (records.length > 0) {
 html += `<table class="job-table"><thead><tr><th>วันที่</th><th>บิล</th><th>ลูกค้า</th><th>ยอด</th><th>VAT</th></tr></thead><tbody>`;
-res.records.forEach(r => {
+records.forEach(r => {
 html += `<tr><td>${r.date||'-'}</td><td>${r.bill_no||'-'}</td><td>${r.customer||'-'}</td><td>${(r.amount||0).toFixed(2)}</td><td>${(r.vat||0).toFixed(2)}</td></tr>`;
 });
 html += '</tbody></table>';
+} else {
+html += `
+<div class="report-empty-state" style="border:1px dashed #f59e0b;background:#fffbeb;color:#92400e;border-radius:12px;padding:16px;line-height:1.6">
+  <div style="font-weight:800;margin-bottom:4px">No billing records for this period</div>
+  <div style="font-size:13px">Summary is available, but the daily drilldown returned no rows. Check the selected date range, Billing date/status/amount fields, or open the Data Repair Console if production rows look incomplete.</div>
+</div>`;
 }
 el.innerHTML = html;
 window._lastBillingReport = res;

@@ -451,6 +451,10 @@ function _updateBillingKPI() {
 // ===========================================================
 // Helper: render table rows
 // ===========================================================
+function _billingInlineArg(value) {
+  return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
 function _renderBillingRows(list) {
   const tbody = document.getElementById('billing-tbody');
   if (!list || list.length === 0) {
@@ -462,10 +466,28 @@ function _renderBillingRows(list) {
     const status = b.Payment_Status || 'UNPAID';
     const statusColor = status === 'PAID' ? '#059669' : status === 'PARTIAL' ? '#d97706' : '#ef4444';
     const statusBg = status === 'PAID' ? '#d1fae5' : status === 'PARTIAL' ? '#fef3c7' : '#fee2e2';
+    const jobId = String(b.Job_ID || b.job_id || '').trim();
+    const safeJobId = _billingInlineArg(jobId);
+    const missingCoreFields = !jobId || !String(b.Billing_ID || b.billing_id || '').trim() || !String(b.Payment_Status || b.payment_status || '').trim();
+    const repairBadge = missingCoreFields
+      ? '<div class="billing-row-incomplete" style="margin-top:4px;color:#b45309;font-size:10px;font-weight:700;">Repair review</div>'
+      : '';
+    const detailButton = jobId
+      ? `<button onclick="_showBillingDetail('${safeJobId}')"
+            style="background:#3b82f6;color:#fff;border:none;padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer;" title="View billing detail">view</button>`
+      : `<button disabled
+            style="background:#cbd5e1;color:#64748b;border:none;padding:4px 8px;border-radius:6px;font-size:11px;cursor:not-allowed;" title="Missing Job_ID - open Data Repair Console">view</button>`;
+    const qrButton = status !== 'PAID' && jobId
+      ? `<button onclick="_showPromptPayQR('${safeJobId}')"
+              style="background:#3b82f6;color:#fff;border:none;padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer;" title="PromptPay QR">QR</button>`
+      : status !== 'PAID'
+        ? `<button disabled
+              style="background:#cbd5e1;color:#64748b;border:none;padding:4px 8px;border-radius:6px;font-size:11px;cursor:not-allowed;" title="Missing Job_ID - open Data Repair Console">QR</button>`
+        : '';
 
     return `<tr>
       <td>${b.Billing_ID || '—'}</td>
-      <td>${b.Job_ID || '—'}</td>
+      <td>${b.Job_ID || '—'}${repairBadge}</td>
       <td>${b.Customer_Name || '—'}</td>
       <td>${b.Phone || '—'}</td>
       <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${b.Parts_Description || ''}">${b.Parts_Description || '—'}</td>
@@ -479,12 +501,8 @@ function _renderBillingRows(list) {
       <td style="font-size:12px;">${b.Invoice_Date || '—'}</td>
       <td>
         <div style="display:flex;gap:4px;">
-          <button onclick="_showBillingDetail('${b.Job_ID}')"
-            style="background:#3b82f6;color:#fff;border:none;padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer;" title="ดูรายละเอียด">👁</button>
-          ${status !== 'PAID' ? `
-            <button onclick="_showPromptPayQR('${b.Job_ID}')"
-              style="background:#3b82f6;color:#fff;border:none;padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer;" title="PromptPay QR">📱</button>
-          ` : ''}
+          ${detailButton}
+          ${qrButton}
         </div>
       </td>
     </tr>`;

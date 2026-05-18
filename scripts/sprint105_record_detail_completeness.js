@@ -139,7 +139,9 @@ function staticChecks() {
   check('billing_detail', 'detail-uses-job-id-contract',
     has(STATIC_FILES.billing, 'async function _showBillingDetail(jobId)') &&
       has(STATIC_FILES.billing, "callApi('getBilling', { job_id: jobId })") &&
-      has(STATIC_FILES.billing, "_showBillingDetail('${b.Job_ID}')"),
+      (has(STATIC_FILES.billing, "_showBillingDetail('${b.Job_ID}')") ||
+        (has(STATIC_FILES.billing, "_showBillingDetail('${safeJobId}')") &&
+          has(STATIC_FILES.billing, 'billing-row-incomplete'))),
     'Billing detail must use the backend getBilling job_id contract.');
 
   check('billing_detail', 'detail-modal-and-payment-handoffs',

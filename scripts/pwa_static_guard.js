@@ -13,8 +13,13 @@ const SPRINT108_GUARD = path.join(ROOT, 'scripts', 'sprint108_database_schema_re
 const SPRINT109_REPAIR = path.join(ROOT, 'scripts', 'sprint109_data_repair_console_plan.js');
 const SPRINT111_REPAIR_EXECUTION = path.join(ROOT, 'scripts', 'sprint111_controlled_data_repair_execution.js');
 const SPRINT112_ADMIN_REPAIR = path.join(ROOT, 'scripts', 'sprint112_admin_repair_console_audit.js');
+const SPRINT113_REPAIR_LIVE_QA = path.join(ROOT, 'scripts', 'sprint113_repair_console_live_qa.js');
+const SPRINT114_JOBS_POLISH = path.join(ROOT, 'scripts', 'sprint114_jobs_workflow_polish_audit.js');
+const SPRINT115_BILLING_RESILIENCE = path.join(ROOT, 'scripts', 'sprint115_billing_resilience_audit.js');
+const SPRINT116_REPORTS_DRILLDOWN = path.join(ROOT, 'scripts', 'sprint116_reports_drilldown_audit.js');
+const SPRINT117_VISION_LINE_LOOP = path.join(ROOT, 'scripts', 'sprint117_vision_line_operational_loop_audit.js');
 
-const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR];
+const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP];
 const badMarkers = [
   '\u00e0\u00b8',
   '\u00e0\u00b9',
@@ -236,6 +241,11 @@ const sprint108GuardJs = readUtf8(SPRINT108_GUARD);
 const sprint109RepairJs = readUtf8(SPRINT109_REPAIR);
 const sprint111RepairExecutionJs = readUtf8(SPRINT111_REPAIR_EXECUTION);
 const sprint112AdminRepairJs = readUtf8(SPRINT112_ADMIN_REPAIR);
+const sprint113RepairLiveQaJs = readUtf8(SPRINT113_REPAIR_LIVE_QA);
+const sprint114JobsPolishJs = readUtf8(SPRINT114_JOBS_POLISH);
+const sprint115BillingResilienceJs = readUtf8(SPRINT115_BILLING_RESILIENCE);
+const sprint116ReportsDrilldownJs = readUtf8(SPRINT116_REPORTS_DRILLDOWN);
+const sprint117VisionLineLoopJs = readUtf8(SPRINT117_VISION_LINE_LOOP);
 if (!schemaRegistryJson.includes('"canonical_tables"') || !schemaRegistryJson.includes('"aliases"') || !schemaRegistryJson.includes('"DB_SS_ID"')) {
   fail('docs/database_schema_registry.json must define canonical_tables, aliases, and DB_SS_ID spreadsheet metadata.');
 }
@@ -261,6 +271,36 @@ if (!sprint112AdminRepairJs.includes('Sprint 112 Admin Repair Console Audit') ||
     !sprint112AdminRepairJs.includes('renderDataRepairConsole_') ||
     !sprint112AdminRepairJs.includes('EXECUTE_REVIEWED_DATA_REPAIR')) {
   fail('scripts/sprint112_admin_repair_console_audit.js must guard PC/mobile Admin Repair Console UI safety.');
+}
+if (!sprint113RepairLiveQaJs.includes('Sprint 113 Repair Console Live QA') ||
+    !sprint113RepairLiveQaJs.includes('single-build-timestamp') ||
+    !sprint113RepairLiveQaJs.includes('pages_deploy_verify.js') ||
+    !sprint113RepairLiveQaJs.includes('EXECUTE_REVIEWED_DATA_REPAIR')) {
+  fail('scripts/sprint113_repair_console_live_qa.js must guard live repair console readiness and Pages freshness.');
+}
+if (!sprint114JobsPolishJs.includes('Sprint 114 Jobs Workflow Polish Audit') ||
+    !sprint114JobsPolishJs.includes('detail-timeline-vision-billing-handoffs') ||
+    !sprint114JobsPolishJs.includes('openMobileJobTimeline') ||
+    !sprint114JobsPolishJs.includes('transitionJob')) {
+  fail('scripts/sprint114_jobs_workflow_polish_audit.js must guard PC/mobile Jobs workflow continuity.');
+}
+if (!sprint115BillingResilienceJs.includes('Sprint 115 Billing Resilience Audit') ||
+    !sprint115BillingResilienceJs.includes('billing-row-incomplete') ||
+    !sprint115BillingResilienceJs.includes('Missing Job_ID - open Data Repair Console') ||
+    !sprint115BillingResilienceJs.includes('safe-inline-job-id')) {
+  fail('scripts/sprint115_billing_resilience_audit.js must guard incomplete Billing row resilience.');
+}
+if (!sprint116ReportsDrilldownJs.includes('Sprint 116 Reports Drilldown Audit') ||
+    !sprint116ReportsDrilldownJs.includes('report-empty-state') ||
+    !sprint116ReportsDrilldownJs.includes('No billing records for this period') ||
+    !sprint116ReportsDrilldownJs.includes('getReportData')) {
+  fail('scripts/sprint116_reports_drilldown_audit.js must guard Reports drilldown and diagnostic empty states.');
+}
+if (!sprint117VisionLineLoopJs.includes('Sprint 117 Vision + LINE Operational Loop Audit') ||
+    !sprint117VisionLineLoopJs.includes('preview-first') ||
+    !sprint117VisionLineLoopJs.includes('EXECUTE_VISION_SUGGESTION') ||
+    !sprint117VisionLineLoopJs.includes('line-route-matrix')) {
+  fail('scripts/sprint117_vision_line_operational_loop_audit.js must guard preview-first Vision and LINE operational loops.');
 }
 
 const pcContractIndex = dashboardPcHtml.indexOf('api_contract.js');

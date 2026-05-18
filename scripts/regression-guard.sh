@@ -581,6 +581,56 @@ else
   warn "Node or sprint112_admin_repair_console_audit.js unavailable - skipping Sprint 112 admin repair console audit"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint113_repair_console_live_qa.js" ]; then
+  if node scripts/sprint113_repair_console_live_qa.js; then
+    echo "   Sprint 113 repair console live QA passed"
+  else
+    fail "Sprint 113 repair console live QA FAILED"
+  fi
+else
+  warn "Node or sprint113_repair_console_live_qa.js unavailable - skipping Sprint 113 repair console live QA"
+fi
+
+if command -v node &>/dev/null && [ -f "scripts/sprint114_jobs_workflow_polish_audit.js" ]; then
+  if node scripts/sprint114_jobs_workflow_polish_audit.js; then
+    echo "   Sprint 114 Jobs workflow polish audit passed"
+  else
+    fail "Sprint 114 Jobs workflow polish audit FAILED"
+  fi
+else
+  warn "Node or sprint114_jobs_workflow_polish_audit.js unavailable - skipping Sprint 114 Jobs workflow polish audit"
+fi
+
+if command -v node &>/dev/null && [ -f "scripts/sprint115_billing_resilience_audit.js" ]; then
+  if node scripts/sprint115_billing_resilience_audit.js; then
+    echo "   Sprint 115 Billing resilience audit passed"
+  else
+    fail "Sprint 115 Billing resilience audit FAILED"
+  fi
+else
+  warn "Node or sprint115_billing_resilience_audit.js unavailable - skipping Sprint 115 Billing resilience audit"
+fi
+
+if command -v node &>/dev/null && [ -f "scripts/sprint116_reports_drilldown_audit.js" ]; then
+  if node scripts/sprint116_reports_drilldown_audit.js; then
+    echo "   Sprint 116 Reports drilldown audit passed"
+  else
+    fail "Sprint 116 Reports drilldown audit FAILED"
+  fi
+else
+  warn "Node or sprint116_reports_drilldown_audit.js unavailable - skipping Sprint 116 Reports drilldown audit"
+fi
+
+if command -v node &>/dev/null && [ -f "scripts/sprint117_vision_line_operational_loop_audit.js" ]; then
+  if node scripts/sprint117_vision_line_operational_loop_audit.js; then
+    echo "   Sprint 117 Vision + LINE operational loop audit passed"
+  else
+    fail "Sprint 117 Vision + LINE operational loop audit FAILED"
+  fi
+else
+  warn "Node or sprint117_vision_line_operational_loop_audit.js unavailable - skipping Sprint 117 Vision + LINE operational loop audit"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"
