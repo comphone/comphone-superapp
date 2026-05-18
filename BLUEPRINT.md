@@ -2,9 +2,9 @@
 
 > **Version:** v5.18.34-job-menu-hardening (PWA) / GAS Backend v5.18.16-write-flow-validation @616
 
-> **Date:** 2026-05-19 | **Phase:** 131 (LINE Real-Send Readiness)
+> **Date:** 2026-05-19 | **Phase:** 132 (Core Workflow Live QA)
 
-> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + CORE-AUDITED + FOCUS-AUDITED + JOBS-E2E-HARDENED + BILLING-E2E-HARDENED + REPORTS-E2E-HARDENED + VISION-LINE-FLOW-HARDENED + PRODUCTION-JOURNEY-HARDENED + BACKUP-WORKFLOW-HARDENED + MOBILE-QUICK-ACTIONS-HARDENED + MOBILE-CORE-WORKFLOWS-HARDENED + MOBILE-SECONDARY-WORKFLOWS-HARDENED + LIVE-MOBILE-MENU-SMOKE-HARDENED + OPERATOR-UX-QA-HARDENED + PROTECTED-LIVE-QA-RUNBOOK-HARDENED + PROTECTED-LIVE-QA-VERIFIED + DASHBOARD-PERFORMANCE-HARDENED + DEPLOY-GAS-CI-GATE-HARDENED + WRITE-SMOKE-LIFECYCLE-HARDENED + BLUEPRINT-RECONCILED + PO-READ-CACHE-HARDENED + JOBS-READ-CACHE-HARDENED + READ-DASHBOARD-CACHE-HARDENED + PRODUCTION-SAFETY-HARNESS-HARDENED + OPERATOR-WORKFLOW-POLISHED + LIVE-CACHE-FRESHNESS-HARDENED + OPERATOR-MENU-CLICKTHROUGH-HARDENED + CONTROLLED-WRITE-LIFECYCLE-HARDENED + LIVE-UX-MENU-RUNTIME-HARDENED + VISUAL-RUNTIME-WALKTHROUGH-HARDENED + PROTECTED-BROWSER-JOURNEY-HARDENED + RECORD-DETAIL-COMPLETENESS-HARDENED + PRODUCTION-DATA-QUALITY-GUARDED + CONTROLLED-DATA-CLEANUP-PLANNED + DATABASE-SCHEMA-REGISTRY-GUARDED + SHEET-CONTEXT-NORMALIZED + DATA-REPAIR-CONSOLE-PLANNED + DATA-REPAIR-EXECUTION-HARDENED + GAS-616-LIVE-VERIFIED + FULL-QA-SWEEP + GEMINI-READY + VISION-LINE-PROTECTED-LIVE-VERIFIED + LINE-REAL-SEND-READINESS-GUARDED - latest production GAS deployment is @616 on the existing Web App URL; Sprint 130 fixed the Router dynamic whitelist for Vision/LINE protected actions, hardened LINE room normalization for JSON-string/CSV/array room payloads, and verified protected live LINE toggle rollback, AI Vision muted-room suppression, Vision runtime reads, and LINE room preview without printing or storing session tokens. Sprint 131 adds owner-gated LINE real-send readiness: preview, confirmation-required proof, muted-send suppression proof, rollback, and no real outbound send unless `OWNER_APPROVED_REAL_LINE_SEND` is explicitly supplied.
+> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + CORE-AUDITED + FOCUS-AUDITED + JOBS-E2E-HARDENED + BILLING-E2E-HARDENED + REPORTS-E2E-HARDENED + VISION-LINE-FLOW-HARDENED + PRODUCTION-JOURNEY-HARDENED + BACKUP-WORKFLOW-HARDENED + MOBILE-QUICK-ACTIONS-HARDENED + MOBILE-CORE-WORKFLOWS-HARDENED + MOBILE-SECONDARY-WORKFLOWS-HARDENED + LIVE-MOBILE-MENU-SMOKE-HARDENED + OPERATOR-UX-QA-HARDENED + PROTECTED-LIVE-QA-RUNBOOK-HARDENED + PROTECTED-LIVE-QA-VERIFIED + DASHBOARD-PERFORMANCE-HARDENED + DEPLOY-GAS-CI-GATE-HARDENED + WRITE-SMOKE-LIFECYCLE-HARDENED + BLUEPRINT-RECONCILED + PO-READ-CACHE-HARDENED + JOBS-READ-CACHE-HARDENED + READ-DASHBOARD-CACHE-HARDENED + PRODUCTION-SAFETY-HARNESS-HARDENED + OPERATOR-WORKFLOW-POLISHED + LIVE-CACHE-FRESHNESS-HARDENED + OPERATOR-MENU-CLICKTHROUGH-HARDENED + CONTROLLED-WRITE-LIFECYCLE-HARDENED + LIVE-UX-MENU-RUNTIME-HARDENED + VISUAL-RUNTIME-WALKTHROUGH-HARDENED + PROTECTED-BROWSER-JOURNEY-HARDENED + RECORD-DETAIL-COMPLETENESS-HARDENED + PRODUCTION-DATA-QUALITY-GUARDED + CONTROLLED-DATA-CLEANUP-PLANNED + DATABASE-SCHEMA-REGISTRY-GUARDED + SHEET-CONTEXT-NORMALIZED + DATA-REPAIR-CONSOLE-PLANNED + DATA-REPAIR-EXECUTION-HARDENED + GAS-616-LIVE-VERIFIED + FULL-QA-SWEEP + GEMINI-READY + VISION-LINE-PROTECTED-LIVE-VERIFIED + LINE-REAL-SEND-READINESS-GUARDED + CORE-WORKFLOW-LIVE-VERIFIED - latest production GAS deployment is @616 on the existing Web App URL; Sprint 132 verifies the protected read-only workflow chain Jobs -> Billing -> Reports -> AI Vision -> LINE Center with a fresh hidden login token. Jobs, timeline, billing list, reports, Vision stats/suggestions/review queue, LINE command center/status, and LINE preview pass; Billing detail remains optional when the selected Job has no Billing row.
 
 ---
 
@@ -13,7 +13,7 @@
 This section is the latest handoff for any human or AI agent continuing COMPHONE work.
 
 ### Current Production State
-- **Current phase:** Sprint / Phase 131.
+- **Current phase:** Sprint / Phase 132.
 - **Latest stable verification commit before this handoff:** `249ff86 Document Sprint 110 GAS live verification`. Run `git log -1 --oneline` for the exact current repository HEAD.
 - **PWA version:** `v5.18.34-job-menu-hardening`.
 - **GAS backend version:** `v5.18.16-write-flow-validation`.
@@ -53,6 +53,7 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 - Sprint 129 adds token-aware AI Vision LINE suppression QA. Default mode is skip-safe; real proof requires `COMPHONE_VISION_LINE_SUPPRESSION_CONFIRM=RUN_MUTED_VISION_NOTIFICATION`, mutes one configured room, executes a muted Vision notification suggestion, verifies `skipped=true`, then rolls the room setting back.
 - Sprint 130 deploys GAS @616 on the existing production Web App URL, opens the Router dynamic whitelist for Vision/LINE protected actions, hardens LINE room payload normalization, and verifies the full protected Vision + LINE live suite with a fresh login token kept only in process memory.
 - Sprint 131 adds `scripts/sprint131_line_real_send_readiness.js`, a token-aware readiness guard that proves LINE preview, confirmation-required blocking, muted-send suppression, and rollback without sending outbound LINE messages. Real sends require owner approval through `COMPHONE_LINE_REAL_SEND=1`, `COMPHONE_LINE_REAL_SEND_CONFIRM=OWNER_APPROVED_REAL_LINE_SEND`, and `COMPHONE_LINE_REAL_SEND_MESSAGE`.
+- Sprint 132 adds `scripts/sprint132_core_workflow_live_qa.js`, a token-aware read-only workflow proof for Jobs -> Billing -> Reports -> AI Vision -> LINE Center. Protected live run passed; `getBilling` stayed optional because latest Job `J0020` has no Billing row.
 
 ### Required Verification Commands
 Run these before claiming the system is stable after any code change:
@@ -84,6 +85,7 @@ node scripts/sprint127_vision_line_notification_controls_audit.js
 node scripts/sprint128_line_notification_toggle_live_qa.js
 node scripts/sprint129_vision_line_suppression_live_qa.js
 node scripts/sprint131_line_real_send_readiness.js
+node scripts/sprint132_core_workflow_live_qa.js
 bash scripts/regression-guard.sh
 bash scripts/guard-self-test.sh
 node scripts/pages_deploy_verify.js
@@ -104,6 +106,7 @@ node scripts/sprint128_line_notification_toggle_live_qa.js
 node scripts/sprint129_vision_line_suppression_live_qa.js
 node scripts/pwa_line_room_smoke.js
 node scripts/sprint131_line_real_send_readiness.js
+node scripts/sprint132_core_workflow_live_qa.js
 Remove-Item Env:\COMPHONE_AUTH_TOKEN -ErrorAction SilentlyContinue
 ```
 
@@ -123,8 +126,8 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN,Env:\COMPHONE_LINE_TOGGLE_CONFIRM,Env:\COMP
 ### Known Remaining Work
 - **Data repair 1:** `DB_BILLING` row 1 is incomplete. Sprint 115 now prevents blank Billing detail/QR navigation for missing `Job_ID`, but the row still needs owner review before archive/delete.
 - **Data repair 2:** current-month report daily revenue records are empty. Sprint 116 now shows a diagnostic `report-empty-state`; verify real business activity before changing report logic.
-- **Next recommended sprint:** Sprint 132 should continue menu-by-menu protected live QA on the highest-value operational chain: Jobs -> Billing -> Reports -> AI Vision -> LINE Center, then use the same evidence style for Inventory/PO/Warranty and Admin Settings.
-- **After Sprint 131:** run a human-approved LINE real-send test only if the owner explicitly chooses a target room and message; otherwise keep LINE validation in preview/muted-send mode.
+- **Next recommended sprint:** Sprint 133 should extend the same protected live QA style to Inventory -> PO -> Warranty -> Admin Settings, keeping all writes behind existing explicit smoke gates.
+- **After Sprint 132:** run a human-approved LINE real-send test only if the owner explicitly chooses a target room and message; otherwise keep LINE validation in preview/muted-send mode.
 
 ### Non-Negotiable Rules For Future Agents
 - Do not change the production GAS URL unless intentionally migrating deployment. If changed, update `pwa/gas_config.js`, this BLUEPRINT, deploy verification expectations, and GitHub Pages verification together.
@@ -147,7 +150,14 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN,Env:\COMPHONE_LINE_TOGGLE_CONFIRM,Env:\COMP
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-07.phase65-line-command-center` | `pwa/api_contract.js` |
 | Last Production Commit | GitHub `main` HEAD | Use `git log -1 --oneline` for the exact commit |
-| Validation Status | Static Guard OK; CI Readiness OK; GAS Source Alignment OK; GAS Syntax Guard OK; Sprint 127 Vision + LINE Notification Controls Audit 100/100; production GAS @616 live verified with a fresh hidden login token: Sprint 128 LINE Notification Toggle Live QA OK with flip/preview/rollback, Sprint 129 AI Vision LINE Suppression QA OK with muted `notify_technician` execution and rollback, Vision Runtime Smoke OK across public health/version and protected Vision dashboard/pipeline/learning/context/suggestions/review queue, PWA LINE Room Smoke OK for protected room status/settings/command center/preview, and Sprint 131 LINE Real-Send Readiness OK for preview, confirm-required blocking, muted-send suppression, and rollback. AI Vision read-runtime ready; real image analysis remains confirmation-gated. Real LINE sends remain gated and were not executed. | `scripts/pwa_static_guard.js`, `scripts/ci_readiness_check.js`, `scripts/gas_source_alignment.js`, `scripts/gas_syntax_guard.js`, `scripts/regression-guard.sh`, `scripts/sprint127_vision_line_notification_controls_audit.js`, `scripts/sprint128_line_notification_toggle_live_qa.js`, `scripts/sprint129_vision_line_suppression_live_qa.js`, `scripts/sprint131_line_real_send_readiness.js`, `scripts/vision_runtime_smoke.js`, `scripts/pwa_line_room_smoke.js`, `test_reports/*_latest.*` |
+| Validation Status | Static Guard OK; CI Readiness OK; GAS Source Alignment OK; GAS Syntax Guard OK; Sprint 127 Vision + LINE Notification Controls Audit 100/100; production GAS @616 live verified with a fresh hidden login token: Sprint 128 LINE Notification Toggle Live QA OK with flip/preview/rollback, Sprint 129 AI Vision LINE Suppression QA OK with muted `notify_technician` execution and rollback, Vision Runtime Smoke OK across public health/version and protected Vision dashboard/pipeline/learning/context/suggestions/review queue, PWA LINE Room Smoke OK for protected room status/settings/command center/preview, Sprint 131 LINE Real-Send Readiness OK for preview/confirm-required/muted-send/rollback, and Sprint 132 Core Workflow Live QA OK for Jobs -> Billing -> Reports -> AI Vision -> LINE Center. AI Vision read-runtime ready; real image analysis remains confirmation-gated. Real LINE sends remain gated and were not executed. | `scripts/pwa_static_guard.js`, `scripts/ci_readiness_check.js`, `scripts/gas_source_alignment.js`, `scripts/gas_syntax_guard.js`, `scripts/regression-guard.sh`, `scripts/sprint127_vision_line_notification_controls_audit.js`, `scripts/sprint128_line_notification_toggle_live_qa.js`, `scripts/sprint129_vision_line_suppression_live_qa.js`, `scripts/sprint131_line_real_send_readiness.js`, `scripts/sprint132_core_workflow_live_qa.js`, `scripts/vision_runtime_smoke.js`, `scripts/pwa_line_room_smoke.js`, `test_reports/*_latest.*` |
+
+### Phase 132 Core Workflow Live QA (2026-05-19)
+- Added `scripts/sprint132_core_workflow_live_qa.js`, a CI-safe protected live QA for the main operator chain: Jobs -> Billing -> Reports -> AI Vision -> LINE Center.
+- Without `COMPHONE_AUTH_TOKEN`, the script records a skip-safe report and exits OK.
+- With a fresh token kept only in process memory, the protected run passed: `checkJobs`, `getJobTimeline`, `listBillings`, `getReportData`, `getVisionDashboardStats`, `getVisionActionSuggestions`, `getVisionReviewQueue`, `getLineCommandCenter`, `getLineRoomStatus`, and `previewLineRoomMessage`.
+- `getBilling` is intentionally optional in this sprint; latest Job `J0020` did not have a Billing row, so the script recorded the detail read as optional without creating or mutating production data.
+- Wired Sprint 132 into static guard, regression guard, and GitHub Actions syntax validation.
 
 ### Phase 131 LINE Real-Send Readiness (2026-05-19)
 - Added `scripts/sprint131_line_real_send_readiness.js`, a CI-safe and token-aware guard for the final LINE outbound safety boundary.

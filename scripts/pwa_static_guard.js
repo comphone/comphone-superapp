@@ -30,8 +30,9 @@ const SPRINT127_VISION_LINE_NOTIFICATION_CONTROLS = path.join(ROOT, 'scripts', '
 const SPRINT128_LINE_NOTIFICATION_TOGGLE_LIVE_QA = path.join(ROOT, 'scripts', 'sprint128_line_notification_toggle_live_qa.js');
 const SPRINT129_VISION_LINE_SUPPRESSION_LIVE_QA = path.join(ROOT, 'scripts', 'sprint129_vision_line_suppression_live_qa.js');
 const SPRINT131_LINE_REAL_SEND_READINESS = path.join(ROOT, 'scripts', 'sprint131_line_real_send_readiness.js');
+const SPRINT132_CORE_WORKFLOW_LIVE_QA = path.join(ROOT, 'scripts', 'sprint132_core_workflow_live_qa.js');
 
-const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME, SPRINT121_PERFORMANCE_ACCESSIBILITY, SPRINT122_DASHBOARD_OPERATOR_ANALYTICS, SPRINT123_LIVE_VISUAL_QA, SPRINT124_PROTECTED_VISUAL_MENU_QA, SPRINT125_ROLE_BASED_DASHBOARD_WIDGETS, SPRINT126_AI_VISION_ROLE_READINESS, SPRINT127_VISION_LINE_NOTIFICATION_CONTROLS, SPRINT128_LINE_NOTIFICATION_TOGGLE_LIVE_QA, SPRINT129_VISION_LINE_SUPPRESSION_LIVE_QA, SPRINT131_LINE_REAL_SEND_READINESS];
+const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME, SPRINT121_PERFORMANCE_ACCESSIBILITY, SPRINT122_DASHBOARD_OPERATOR_ANALYTICS, SPRINT123_LIVE_VISUAL_QA, SPRINT124_PROTECTED_VISUAL_MENU_QA, SPRINT125_ROLE_BASED_DASHBOARD_WIDGETS, SPRINT126_AI_VISION_ROLE_READINESS, SPRINT127_VISION_LINE_NOTIFICATION_CONTROLS, SPRINT128_LINE_NOTIFICATION_TOGGLE_LIVE_QA, SPRINT129_VISION_LINE_SUPPRESSION_LIVE_QA, SPRINT131_LINE_REAL_SEND_READINESS, SPRINT132_CORE_WORKFLOW_LIVE_QA];
 const badMarkers = [
   '\u00e0\u00b8',
   '\u00e0\u00b9',
@@ -278,6 +279,7 @@ const sprint127VisionLineNotificationControlsJs = readUtf8(SPRINT127_VISION_LINE
 const sprint128LineNotificationToggleLiveQaJs = readUtf8(SPRINT128_LINE_NOTIFICATION_TOGGLE_LIVE_QA);
 const sprint129VisionLineSuppressionLiveQaJs = readUtf8(SPRINT129_VISION_LINE_SUPPRESSION_LIVE_QA);
 const sprint131LineRealSendReadinessJs = readUtf8(SPRINT131_LINE_REAL_SEND_READINESS);
+const sprint132CoreWorkflowLiveQaJs = readUtf8(SPRINT132_CORE_WORKFLOW_LIVE_QA);
 if (!schemaRegistryJson.includes('"canonical_tables"') || !schemaRegistryJson.includes('"aliases"') || !schemaRegistryJson.includes('"DB_SS_ID"')) {
   fail('docs/database_schema_registry.json must define canonical_tables, aliases, and DB_SS_ID spreadsheet metadata.');
 }
@@ -405,6 +407,15 @@ if (!sprint131LineRealSendReadinessJs.includes('Sprint 131 LINE Real-Send Readin
     !sprint131LineRealSendReadinessJs.includes('muted-send') ||
     !sprint131LineRealSendReadinessJs.includes('real outbound LINE send skipped')) {
   fail('scripts/sprint131_line_real_send_readiness.js must keep real LINE sends owner-gated and prove muted send suppression safely.');
+}
+if (!sprint132CoreWorkflowLiveQaJs.includes('Sprint 132 Core Workflow Live QA') ||
+    !sprint132CoreWorkflowLiveQaJs.includes('Jobs -> Billing -> Reports -> AI Vision -> LINE Center') ||
+    !sprint132CoreWorkflowLiveQaJs.includes('checkJobs') ||
+    !sprint132CoreWorkflowLiveQaJs.includes('getBilling') ||
+    !sprint132CoreWorkflowLiveQaJs.includes('getReportData') ||
+    !sprint132CoreWorkflowLiveQaJs.includes('getVisionActionSuggestions') ||
+    !sprint132CoreWorkflowLiveQaJs.includes('previewLineRoomMessage')) {
+  fail('scripts/sprint132_core_workflow_live_qa.js must guard the protected Jobs/Billing/Reports/Vision/LINE read-only workflow chain.');
 }
 
 const pcContractIndex = dashboardPcHtml.indexOf('api_contract.js');
