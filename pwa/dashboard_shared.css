@@ -878,3 +878,49 @@
   .runtime-selftest-btn { flex: 1; justify-content: center; }
   .runtime-selftest-row { align-items: flex-start; }
 }
+
+/* Sprint 121: Accessibility + reduced-motion guardrails for PC surfaces */
+.cp-dark button,
+.cp-light button,
+.cp-dark .nav-item,
+.cp-light .nav-item,
+.cp-dark .cp-btn,
+.cp-light .cp-btn,
+.cp-dark a,
+.cp-light a {
+  touch-action: manipulation;
+}
+
+.cp-dark button:focus-visible,
+.cp-light button:focus-visible,
+.cp-dark .nav-item:focus-visible,
+.cp-light .nav-item:focus-visible,
+.cp-dark .cp-btn:focus-visible,
+.cp-light .cp-btn:focus-visible,
+.cp-dark a:focus-visible,
+.cp-light a:focus-visible,
+.cp-dark input:focus-visible,
+.cp-light input:focus-visible,
+.cp-dark select:focus-visible,
+.cp-light select:focus-visible,
+.cp-dark textarea:focus-visible,
+.cp-light textarea:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, 0.72);
+  outline-offset: 3px;
+}
+
+.dashboard-section[aria-busy="true"] {
+  cursor: progress;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-dark *,
+  .cp-light *,
+  .cp-dark *::before,
+  .cp-light *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}

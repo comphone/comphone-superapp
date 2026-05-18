@@ -221,7 +221,13 @@
 
     const target = document.getElementById('section-' + sectionName) ||
       document.getElementById(sectionName + '-section');
-    if (target) target.style.display = 'block';
+    const sectionToken = Date.now();
+    global.__PC_SECTION_LOAD_TOKEN = sectionToken;
+    if (target) {
+      target.style.display = 'block';
+      target.setAttribute('aria-busy', 'true');
+      target.setAttribute('data-section-state', 'loading');
+    }
     else if (!renderersCanUseMain(sectionName)) console.warn('[Dashboard] Section not found:', sectionName);
 
     const title = document.getElementById('topbar-title');
@@ -236,6 +242,11 @@
     const data = global.DASHBOARD_DATA || FALLBACK_DASHBOARD;
     const main = document.getElementById('main-content');
     renderSection(sectionName, data, main);
+    setTimeout(() => {
+      if (global.__PC_SECTION_LOAD_TOKEN !== sectionToken || !target) return;
+      target.setAttribute('aria-busy', 'false');
+      target.setAttribute('data-section-state', 'ready');
+    }, 900);
     try {
       localStorage.setItem(LAST_SECTION_KEY, sectionName);
       if (history && history.replaceState) history.replaceState({ section: sectionName }, '', location.href);

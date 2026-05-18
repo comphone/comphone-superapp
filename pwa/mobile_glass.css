@@ -257,6 +257,64 @@ html, body {
 .nav-btn.active i { text-shadow: 0 0 15px var(--accent-glow); }
 .nav-btn:active { transform: scale(0.9); }
 
+/* --- Sprint 121: Runtime Accessibility + Performance Guardrails --- */
+.nav-btn,
+.icon-btn,
+.qa-btn,
+.more-menu-item,
+.btn-add-job,
+.btn-setup,
+.btn-cancel,
+button[data-menu-page],
+button[data-quick-action] {
+  min-width: 44px;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+button:focus-visible,
+.nav-btn:focus-visible,
+.icon-btn:focus-visible,
+.qa-btn:focus-visible,
+.more-menu-item:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, 0.72);
+  outline-offset: 3px;
+}
+
+.page[aria-busy="true"] {
+  cursor: progress;
+}
+
+.page-loading-watchdog {
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.page-load-diagnostic {
+  border: 1px dashed rgba(59, 130, 246, 0.28);
+  background: rgba(59, 130, 246, 0.06);
+  border-radius: var(--radius-lg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
 /* --- More Menu (Glass Sheet) --- */
 .cp-sheet-overlay {
   position: fixed; inset: 0;

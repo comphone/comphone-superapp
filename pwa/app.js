@@ -483,6 +483,7 @@ function goPage(page, btn, options = {}) {
   
   const pageEl = document.getElementById('page-' + page);
   if (!pageEl) { showToast('ไม่พบหน้า ' + page); return; }
+  const pageLoadToken = markPageLoading(page, pageEl);
 
   // Page Exit Animation
   const currentPage = document.querySelector('.page.active');
@@ -583,6 +584,7 @@ function goPage(page, btn, options = {}) {
     }
   }
   ensurePageHasContent(page);
+  setTimeout(() => markPageReady(page, pageEl, pageLoadToken), 1200);
 }
 
 function getPageMount(page) {
@@ -591,18 +593,49 @@ function getPageMount(page) {
     || document.getElementById('page-' + page);
 }
 
-function ensurePageHasContent(page) {
+function markPageLoading(page, pageEl) {
+  if (!pageEl) return 0;
+  const token = Date.now();
+  APP.pageLoadToken = token;
+  pageEl.setAttribute('aria-busy', 'true');
+  pageEl.setAttribute('data-page-state', 'loading');
+  const mount = getPageMount(page);
+  if (mount && !['home', 'profile', 'jobs', 'camera'].includes(page) && !(mount.textContent || '').trim()) {
+    mount.innerHTML = `
+      <div class="loading-state page-loading-watchdog" data-loading-skeleton="true" style="padding:32px 18px">
+        <div class="spinner"></div>
+        <p>Loading ${getMenuItemLabel(page)}...</p>
+      </div>`;
+  }
+  setTimeout(() => {
+    if (APP.pageLoadToken !== token) return;
+    markPageReady(page, pageEl, token);
+    ensurePageHasContent(page, { forceDiagnostic: true });
+  }, 6500);
+  return token;
+}
+
+function markPageReady(page, pageEl, token) {
+  if (!pageEl || (token && APP.pageLoadToken !== token)) return;
+  pageEl.setAttribute('aria-busy', 'false');
+  pageEl.setAttribute('data-page-state', 'ready');
+}
+
+function ensurePageHasContent(page, options = {}) {
   const mount = getPageMount(page);
   if (!mount || ['home', 'profile', 'jobs', 'camera'].includes(page)) return;
   setTimeout(() => {
-    if (!mount || (mount.textContent || '').trim() || mount.querySelector('canvas,table,.card-box,.job-card,.kpi-box,.empty-state,.loading-state')) return;
+    const hasOnlyLoading = !!mount.querySelector('[data-loading-skeleton="true"]');
+    if (!mount) return;
+    if (!hasOnlyLoading && ((mount.textContent || '').trim() || mount.querySelector('canvas,table,.card-box,.job-card,.kpi-box,.empty-state,.loading-state'))) return;
+    if (hasOnlyLoading && !options.forceDiagnostic) return;
     mount.innerHTML = `
-      <div class="empty-state" style="padding:32px 18px">
+      <div class="empty-state page-load-diagnostic" style="padding:32px 18px">
         <i class="bi bi-grid"></i>
         <p style="font-weight:700;margin-bottom:4px">${getMenuItemLabel(page)}</p>
-        <p style="font-size:12px;color:#64748b">โมดูลนี้ยังไม่มีข้อมูลแสดงผลในขณะนี้</p>
+        <p style="font-size:12px;color:#64748b">No visible content was rendered yet. Try refresh, check network, or open Runtime Self-Test.</p>
         <button class="btn-add-job" onclick="goPage('home', document.getElementById('nav-home'))">
-          <i class="bi bi-house"></i> กลับหน้าแรก
+          <i class="bi bi-house"></i> Home
         </button>
       </div>`;
   }, 900);

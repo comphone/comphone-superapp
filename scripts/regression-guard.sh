@@ -651,6 +651,16 @@ else
   warn "Node or sprint120_settings_admin_runtime_audit.js unavailable - skipping Sprint 120 Settings/Admin runtime audit"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint121_performance_accessibility_audit.js" ]; then
+  if node scripts/sprint121_performance_accessibility_audit.js; then
+    echo "   Sprint 121 Performance/Accessibility audit passed"
+  else
+    fail "Sprint 121 Performance/Accessibility audit FAILED"
+  fi
+else
+  warn "Node or sprint121_performance_accessibility_audit.js unavailable - skipping Sprint 121 Performance/Accessibility audit"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"
