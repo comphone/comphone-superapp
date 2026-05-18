@@ -22,8 +22,9 @@ const SPRINT119_INVENTORY_PO_WARRANTY = path.join(ROOT, 'scripts', 'sprint119_in
 const SPRINT120_SETTINGS_ADMIN_RUNTIME = path.join(ROOT, 'scripts', 'sprint120_settings_admin_runtime_audit.js');
 const SPRINT121_PERFORMANCE_ACCESSIBILITY = path.join(ROOT, 'scripts', 'sprint121_performance_accessibility_audit.js');
 const SPRINT122_DASHBOARD_OPERATOR_ANALYTICS = path.join(ROOT, 'scripts', 'sprint122_dashboard_operator_analytics_audit.js');
+const SPRINT123_LIVE_VISUAL_QA = path.join(ROOT, 'scripts', 'sprint123_live_visual_qa_guard.js');
 
-const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME, SPRINT121_PERFORMANCE_ACCESSIBILITY, SPRINT122_DASHBOARD_OPERATOR_ANALYTICS];
+const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME, SPRINT121_PERFORMANCE_ACCESSIBILITY, SPRINT122_DASHBOARD_OPERATOR_ANALYTICS, SPRINT123_LIVE_VISUAL_QA];
 const badMarkers = [
   '\u00e0\u00b8',
   '\u00e0\u00b9',
@@ -132,6 +133,14 @@ for (const asset of manifestScripts) {
 }
 for (const asset of [...manifestStyles, ...manifestScripts]) {
   if (!manifestPrecache.includes(asset)) fail(`pwa_asset_manifest.js precache is missing loaded asset: ${asset}`);
+}
+for (const asset of indexStyles) {
+  if (!manifestStyles.includes(asset)) fail(`pwa_asset_manifest.js styles is missing index.html stylesheet: ${asset}`);
+  if (!manifestPrecache.includes(asset)) fail(`pwa_asset_manifest.js precache is missing index.html stylesheet: ${asset}`);
+}
+for (const asset of indexScripts) {
+  if (!manifestScripts.includes(asset)) fail(`pwa_asset_manifest.js scripts is missing index.html script: ${asset}`);
+  if (!manifestPrecache.includes(asset)) fail(`pwa_asset_manifest.js precache is missing index.html script: ${asset}`);
 }
 if (!manifestStyles.includes('mobile_glass.css') || !manifestPrecache.includes('mobile_glass.css')) {
   fail('pwa_asset_manifest.js must load and precache mobile_glass.css.');
@@ -254,6 +263,7 @@ const sprint119InventoryPoWarrantyJs = readUtf8(SPRINT119_INVENTORY_PO_WARRANTY)
 const sprint120SettingsAdminRuntimeJs = readUtf8(SPRINT120_SETTINGS_ADMIN_RUNTIME);
 const sprint121PerformanceAccessibilityJs = readUtf8(SPRINT121_PERFORMANCE_ACCESSIBILITY);
 const sprint122DashboardOperatorAnalyticsJs = readUtf8(SPRINT122_DASHBOARD_OPERATOR_ANALYTICS);
+const sprint123LiveVisualQaJs = readUtf8(SPRINT123_LIVE_VISUAL_QA);
 if (!schemaRegistryJson.includes('"canonical_tables"') || !schemaRegistryJson.includes('"aliases"') || !schemaRegistryJson.includes('"DB_SS_ID"')) {
   fail('docs/database_schema_registry.json must define canonical_tables, aliases, and DB_SS_ID spreadsheet metadata.');
 }
@@ -333,6 +343,12 @@ if (!sprint122DashboardOperatorAnalyticsJs.includes('Sprint 122 Dashboard Operat
     !sprint122DashboardOperatorAnalyticsJs.includes('mobile-operator-pulse') ||
     !sprint122DashboardOperatorAnalyticsJs.includes('Dashboard Operator Analytics')) {
   fail('scripts/sprint122_dashboard_operator_analytics_audit.js must guard dashboard operator analytics polish.');
+}
+if (!sprint123LiveVisualQaJs.includes('Sprint 123 Live Visual QA Guard') ||
+    !sprint123LiveVisualQaJs.includes('mobile-asset-manifest-complete') ||
+    !sprint123LiveVisualQaJs.includes('quick-actions-backed-by-real-surfaces') ||
+    !sprint123LiveVisualQaJs.includes('Live Visual QA')) {
+  fail('scripts/sprint123_live_visual_qa_guard.js must guard live visual QA contracts.');
 }
 
 const pcContractIndex = dashboardPcHtml.indexOf('api_contract.js');

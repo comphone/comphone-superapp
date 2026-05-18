@@ -671,6 +671,16 @@ else
   warn "Node or sprint122_dashboard_operator_analytics_audit.js unavailable - skipping Sprint 122 Dashboard Operator Analytics audit"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint123_live_visual_qa_guard.js" ]; then
+  if node scripts/sprint123_live_visual_qa_guard.js; then
+    echo "   Sprint 123 Live Visual QA guard passed"
+  else
+    fail "Sprint 123 Live Visual QA guard FAILED"
+  fi
+else
+  warn "Node or sprint123_live_visual_qa_guard.js unavailable - skipping Sprint 123 Live Visual QA guard"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"
