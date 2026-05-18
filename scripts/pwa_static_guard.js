@@ -23,8 +23,9 @@ const SPRINT120_SETTINGS_ADMIN_RUNTIME = path.join(ROOT, 'scripts', 'sprint120_s
 const SPRINT121_PERFORMANCE_ACCESSIBILITY = path.join(ROOT, 'scripts', 'sprint121_performance_accessibility_audit.js');
 const SPRINT122_DASHBOARD_OPERATOR_ANALYTICS = path.join(ROOT, 'scripts', 'sprint122_dashboard_operator_analytics_audit.js');
 const SPRINT123_LIVE_VISUAL_QA = path.join(ROOT, 'scripts', 'sprint123_live_visual_qa_guard.js');
+const SPRINT124_PROTECTED_VISUAL_MENU_QA = path.join(ROOT, 'scripts', 'sprint124_protected_visual_menu_qa.js');
 
-const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME, SPRINT121_PERFORMANCE_ACCESSIBILITY, SPRINT122_DASHBOARD_OPERATOR_ANALYTICS, SPRINT123_LIVE_VISUAL_QA];
+const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME, SPRINT121_PERFORMANCE_ACCESSIBILITY, SPRINT122_DASHBOARD_OPERATOR_ANALYTICS, SPRINT123_LIVE_VISUAL_QA, SPRINT124_PROTECTED_VISUAL_MENU_QA];
 const badMarkers = [
   '\u00e0\u00b8',
   '\u00e0\u00b9',
@@ -264,6 +265,7 @@ const sprint120SettingsAdminRuntimeJs = readUtf8(SPRINT120_SETTINGS_ADMIN_RUNTIM
 const sprint121PerformanceAccessibilityJs = readUtf8(SPRINT121_PERFORMANCE_ACCESSIBILITY);
 const sprint122DashboardOperatorAnalyticsJs = readUtf8(SPRINT122_DASHBOARD_OPERATOR_ANALYTICS);
 const sprint123LiveVisualQaJs = readUtf8(SPRINT123_LIVE_VISUAL_QA);
+const sprint124ProtectedVisualMenuQaJs = readUtf8(SPRINT124_PROTECTED_VISUAL_MENU_QA);
 if (!schemaRegistryJson.includes('"canonical_tables"') || !schemaRegistryJson.includes('"aliases"') || !schemaRegistryJson.includes('"DB_SS_ID"')) {
   fail('docs/database_schema_registry.json must define canonical_tables, aliases, and DB_SS_ID spreadsheet metadata.');
 }
@@ -349,6 +351,12 @@ if (!sprint123LiveVisualQaJs.includes('Sprint 123 Live Visual QA Guard') ||
     !sprint123LiveVisualQaJs.includes('quick-actions-backed-by-real-surfaces') ||
     !sprint123LiveVisualQaJs.includes('Live Visual QA')) {
   fail('scripts/sprint123_live_visual_qa_guard.js must guard live visual QA contracts.');
+}
+if (!sprint124ProtectedVisualMenuQaJs.includes('Sprint 124 Protected Visual/Menu QA') ||
+    !sprint124ProtectedVisualMenuQaJs.includes('COMPHONE_AUTH_TOKEN') ||
+    !sprint124ProtectedVisualMenuQaJs.includes('MENU_STEPS') ||
+    !sprint124ProtectedVisualMenuQaJs.includes('protected visual/menu QA')) {
+  fail('scripts/sprint124_protected_visual_menu_qa.js must guard token-aware protected visual/menu QA.');
 }
 
 const pcContractIndex = dashboardPcHtml.indexOf('api_contract.js');
