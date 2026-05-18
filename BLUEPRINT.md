@@ -80,7 +80,7 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN -ErrorAction SilentlyContinue
 ### Known Remaining Work
 - **Data repair 1:** `DB_BILLING` row 1 is incomplete. Sprint 115 now prevents blank Billing detail/QR navigation for missing `Job_ID`, but the row still needs owner review before archive/delete.
 - **Data repair 2:** current-month report daily revenue records are empty. Sprint 116 now shows a diagnostic `report-empty-state`; verify real business activity before changing report logic.
-- **Next recommended sprint:** Sprint 118 continues after GitHub Actions deploys successfully: rerun `pages_deploy_verify.js` until build `20260518_0300` is live, then run protected browser click-through for Repair Console -> Jobs -> Billing -> Reports -> Vision/LINE.
+- **Next recommended sprint:** Deploy build `20260518_0345`, rerun `pages_deploy_verify.js`, then do one final mobile quick-action live check for `openNewJob` -> `addCustomer` switching on the new build.
 - **After Sprint 118:** continue menu-by-menu hardening in this order: Inventory/PO -> Warranty -> Settings/Admin -> performance/accessibility pass.
 
 ### Non-Negotiable Rules For Future Agents
@@ -98,8 +98,8 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN -ErrorAction SilentlyContinue
 | Item | Current Value | Source of Truth |
 |---|---|---|
 | App Version | `v5.18.34-job-menu-hardening` | `pwa/version_config.js` |
-| Cache Version | `comphone-v5.18.34-job-menu-hardening-20260518_0300` | `pwa/version_config.js`, `pwa/sw.js` |
-| Build Timestamp | `20260518_0300` | `pwa/version_config.js` |
+| Cache Version | `comphone-v5.18.34-job-menu-hardening-20260518_0345` | `pwa/version_config.js`, `pwa/sw.js` |
+| Build Timestamp | `20260518_0345` | `pwa/version_config.js` |
 | GAS Backend Deploy | `AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA @614` / production URL in `pwa/gas_config.js` | `Config.gs`, `Dashboard.gs`, `DashboardBundle.gs`, `RouterSplit.gs`, `JobStateMachine.gs`, `LineCommandCenter.gs`, `SmokeCleanup.gs`, `DataRepairConsole.gs`, `VisionPipeline.gs`, `clasp-ready/Config.gs`, `clasp-ready/Dashboard.gs`, `clasp-ready/DashboardBundle.gs`, `clasp-ready/RouterSplit.gs`, `clasp-ready/JobStateMachine.gs`, `clasp-ready/LineCommandCenter.gs`, `clasp-ready/SmokeCleanup.gs`, `clasp-ready/DataRepairConsole.gs`, `clasp-ready/VisionPipeline.gs` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-07.phase65-line-command-center` | `pwa/api_contract.js` |
@@ -111,7 +111,10 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN -ErrorAction SilentlyContinue
 - GitHub Actions API showed the latest Auto Deploy run failed in `Validate Code`; Deploy PWA was skipped.
 - Root cause: `scripts/regression-guard.sh` changed to include Sprint 113-117, but `scripts/.guard-checksums.md5` still contained the previous checksum. `guard-self-test.sh` blocked deploy exactly as designed.
 - Updated `scripts/.guard-checksums.md5` with the new `regression-guard.sh` hash and verified `bash scripts/guard-self-test.sh` passes 8/8.
-- Until Actions deploys the next commit successfully, live Pages may remain on build `20260516_0845`; use `node scripts/pages_deploy_verify.js` as the deployment truth check.
+- GitHub Actions deploy succeeded after the checksum fix, and `node scripts/pages_deploy_verify.js` confirmed Pages was serving the Sprint 113-117 build.
+- Live protected PC click-through passed for Jobs, Billing, Reports, AI Vision, LINE Center, and Settings/Data Repair. Billing correctly disables detail/QR buttons for rows without `Job_ID`; Reports billing drilldown shows `report-empty-state`; Settings shows Data Repair candidates.
+- Live mobile More-menu click-through passed for Billing, Reports, AI Vision, LINE Center, and Admin Panel. Sprint 118 also hardens quick action modal switching so `openNewJob` and `addCustomer` close peer action modals before opening their own form.
+- Bumped PWA cache/build timestamp to `20260518_0345` for the mobile quick-action modal switching fix.
 
 ### Phase 117 Vision + LINE Operational Loop (2026-05-18)
 - Added `scripts/sprint117_vision_line_operational_loop_audit.js` to keep AI Vision and LINE Center preview-first and confirmation-gated.
@@ -140,7 +143,7 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN -ErrorAction SilentlyContinue
 ### Phase 113 Repair Console Live QA (2026-05-18)
 - Added `scripts/sprint113_repair_console_live_qa.js` to guard Repair Console live readiness without executing production repair.
 - The guard verifies Mobile Admin Repair tab, PC Settings Repair panel, exact confirmation gate, narrow repair action, and single cache timestamp.
-- Bumped PWA build/cache timestamp to `20260518_0300` so GitHub Pages/service worker clients pick up Sprint 113-117 UI fixes.
+- Bumped PWA build/cache timestamp to `20260518_0345` so GitHub Pages/service worker clients pick up Sprint 113-117 UI fixes.
 - Wired Sprint 113 into static guard, regression guard, and auto-deploy syntax checks.
 
 ### Phase 112 Admin Repair Console UI (2026-05-18)
@@ -149,7 +152,7 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN -ErrorAction SilentlyContinue
 - Both PC and mobile execute paths require the exact phrase `EXECUTE_REVIEWED_DATA_REPAIR`, show an additional browser confirmation, and call `executeDataRepair` only with `archive_delete_orphan_billing_row`.
 - Review-only report/backfill candidates are displayed but do not get an execute button.
 - Added `scripts/sprint112_admin_repair_console_audit.js` and wired it into static guard, regression guard, and auto-deploy syntax checks.
-- Bumped PWA build/cache timestamp to `20260518_0300` so GitHub Pages/service worker clients pick up the new Admin/Settings repair UI.
+- Bumped PWA build/cache timestamp to `20260518_0345` so GitHub Pages/service worker clients pick up the new Admin/Settings repair UI.
 
 ### Phase 111 Controlled Data Repair Execution (2026-05-17)
 - Added `DataRepairConsole.gs` to root and `clasp-ready` with three protected actions: `previewDataRepair`, `getDataRepairStatus`, and `executeDataRepair`.

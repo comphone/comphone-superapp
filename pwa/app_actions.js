@@ -172,6 +172,14 @@ function ensureActionModal(id, title) {
   return modal;
 }
 
+function closePeerActionModals(activeId) {
+  ['modal-new-job', 'modal-add-customer', 'modal-job', 'modal-billing'].forEach(id => {
+    if (id === activeId) return;
+    const modal = document.getElementById(id);
+    if (modal) modal.classList.add('hidden');
+  });
+}
+
 function safeActionText(value) {
   return String(value == null ? '' : value)
     .replace(/&/g, '&amp;')
@@ -207,6 +215,7 @@ function callForHelp() {
   }
 }
 function openNewJob() {
+  closePeerActionModals('modal-new-job');
   const modal = ensureActionModal('modal-new-job', 'เปิดงานใหม่');
   modal.dataset.clientRequestId = createWriteRequestId('job');
   const content = document.getElementById('modal-new-job-content');
@@ -339,6 +348,7 @@ async function submitNewJob() {
 
 function openNewJob_delayed() { const fn = setInterval(() => { if(typeof openNewJob === 'function' && document.getElementById('modal-new-job-content')) { clearInterval(fn); openNewJob(); } }, 100); setTimeout(() => clearInterval(fn), 3000); }
 function addCustomer() {
+  closePeerActionModals('modal-add-customer');
   if (typeof openAddCustomerModal === 'function') { openAddCustomerModal(); return; }
   const modal = document.getElementById('modal-add-customer') || ensureActionModal('modal-add-customer', 'เพิ่มลูกค้าใหม่');
   const content = document.getElementById('modal-add-customer-content');
