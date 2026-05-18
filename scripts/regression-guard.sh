@@ -721,6 +721,16 @@ else
   warn "Node or sprint127_vision_line_notification_controls_audit.js unavailable - skipping Sprint 127 Vision + LINE Notification Controls audit"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint128_line_notification_toggle_live_qa.js" ]; then
+  if node scripts/sprint128_line_notification_toggle_live_qa.js; then
+    echo "   Sprint 128 LINE Notification Toggle Live QA passed or skipped safely"
+  else
+    fail "Sprint 128 LINE Notification Toggle Live QA FAILED"
+  fi
+else
+  warn "Node or sprint128_line_notification_toggle_live_qa.js unavailable - skipping Sprint 128 LINE Notification Toggle Live QA"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"
