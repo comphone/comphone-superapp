@@ -1,6 +1,6 @@
 // ============================================================
 // COMPHONE SUPER APP — LINE Command Center
-// Phase 65: Room status, alert queue controls, and safe room push
+// Phase 127: Room status, alert queue controls, safe room push, and notification-only room toggles
 // ============================================================
 
 var LINE_CENTER_ROOMS = [
