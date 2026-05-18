@@ -28,8 +28,9 @@ const SPRINT125_ROLE_BASED_DASHBOARD_WIDGETS = path.join(ROOT, 'scripts', 'sprin
 const SPRINT126_AI_VISION_ROLE_READINESS = path.join(ROOT, 'scripts', 'sprint126_ai_vision_role_readiness_audit.js');
 const SPRINT127_VISION_LINE_NOTIFICATION_CONTROLS = path.join(ROOT, 'scripts', 'sprint127_vision_line_notification_controls_audit.js');
 const SPRINT128_LINE_NOTIFICATION_TOGGLE_LIVE_QA = path.join(ROOT, 'scripts', 'sprint128_line_notification_toggle_live_qa.js');
+const SPRINT129_VISION_LINE_SUPPRESSION_LIVE_QA = path.join(ROOT, 'scripts', 'sprint129_vision_line_suppression_live_qa.js');
 
-const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME, SPRINT121_PERFORMANCE_ACCESSIBILITY, SPRINT122_DASHBOARD_OPERATOR_ANALYTICS, SPRINT123_LIVE_VISUAL_QA, SPRINT124_PROTECTED_VISUAL_MENU_QA, SPRINT125_ROLE_BASED_DASHBOARD_WIDGETS, SPRINT126_AI_VISION_ROLE_READINESS, SPRINT127_VISION_LINE_NOTIFICATION_CONTROLS, SPRINT128_LINE_NOTIFICATION_TOGGLE_LIVE_QA];
+const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME, SPRINT121_PERFORMANCE_ACCESSIBILITY, SPRINT122_DASHBOARD_OPERATOR_ANALYTICS, SPRINT123_LIVE_VISUAL_QA, SPRINT124_PROTECTED_VISUAL_MENU_QA, SPRINT125_ROLE_BASED_DASHBOARD_WIDGETS, SPRINT126_AI_VISION_ROLE_READINESS, SPRINT127_VISION_LINE_NOTIFICATION_CONTROLS, SPRINT128_LINE_NOTIFICATION_TOGGLE_LIVE_QA, SPRINT129_VISION_LINE_SUPPRESSION_LIVE_QA];
 const badMarkers = [
   '\u00e0\u00b8',
   '\u00e0\u00b9',
@@ -274,6 +275,7 @@ const sprint125RoleBasedDashboardWidgetsJs = readUtf8(SPRINT125_ROLE_BASED_DASHB
 const sprint126AiVisionRoleReadinessJs = readUtf8(SPRINT126_AI_VISION_ROLE_READINESS);
 const sprint127VisionLineNotificationControlsJs = readUtf8(SPRINT127_VISION_LINE_NOTIFICATION_CONTROLS);
 const sprint128LineNotificationToggleLiveQaJs = readUtf8(SPRINT128_LINE_NOTIFICATION_TOGGLE_LIVE_QA);
+const sprint129VisionLineSuppressionLiveQaJs = readUtf8(SPRINT129_VISION_LINE_SUPPRESSION_LIVE_QA);
 if (!schemaRegistryJson.includes('"canonical_tables"') || !schemaRegistryJson.includes('"aliases"') || !schemaRegistryJson.includes('"DB_SS_ID"')) {
   fail('docs/database_schema_registry.json must define canonical_tables, aliases, and DB_SS_ID spreadsheet metadata.');
 }
@@ -388,6 +390,12 @@ if (!sprint128LineNotificationToggleLiveQaJs.includes('Sprint 128 LINE Notificat
     !sprint128LineNotificationToggleLiveQaJs.includes('toggle-with-rollback') ||
     !sprint128LineNotificationToggleLiveQaJs.includes('previewLineRoomMessage')) {
   fail('scripts/sprint128_line_notification_toggle_live_qa.js must guard token-aware notification toggle rollback QA.');
+}
+if (!sprint129VisionLineSuppressionLiveQaJs.includes('Sprint 129 AI Vision LINE Suppression Live QA') ||
+    !sprint129VisionLineSuppressionLiveQaJs.includes('RUN_MUTED_VISION_NOTIFICATION') ||
+    !sprint129VisionLineSuppressionLiveQaJs.includes('executeVisionSuggestion') ||
+    !sprint129VisionLineSuppressionLiveQaJs.includes('muted-vision-notification-with-rollback')) {
+  fail('scripts/sprint129_vision_line_suppression_live_qa.js must guard muted AI Vision LINE notification proof with rollback.');
 }
 
 const pcContractIndex = dashboardPcHtml.indexOf('api_contract.js');
