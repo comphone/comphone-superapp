@@ -70,18 +70,59 @@ function renderStats() {
   `).join('');
 }
 
+function renderOperatorPulse() {
+  const d = APP.dashboardData || {};
+  const summary = d.summary || d || {};
+  const revenue = summary.revenue || {};
+  const alertsRaw = d.alerts || summary.alerts || {};
+  const alerts = Array.isArray(alertsRaw) ? alertsRaw : (alertsRaw.items || []);
+  const jobs = Array.isArray(APP.jobs) ? APP.jobs : [];
+  const totalJobs = Number(summary.totalJobs || summary.total_jobs || jobs.length || 0);
+  const overdueJobs = Number(summary.overdueJobs || summary.overdue_jobs || 0);
+  const lowStock = Number(summary.lowStock || summary.low_stock || 0);
+  const billingOpen = Number(summary.billingOpen || summary.openBillings || summary.pendingBillings || 0);
+  const visionReview = Number(summary.visionReview || summary.visionReviewQueue || summary.pendingVisionReviews || 0);
+  const linePending = alerts.length;
+  const riskCount = overdueJobs + lowStock + visionReview + linePending;
+  const statusText = riskCount > 0 ? 'Action needed' : 'Stable';
+  const tone = riskCount > 0 ? 'watch' : 'ok';
+
+  return `
+    <section class="operator-pulse-card ${tone}" data-mobile-operator-pulse="true" aria-label="Operator pulse">
+      <div class="operator-pulse-head">
+        <div>
+          <div class="operator-pulse-kicker">Operator Pulse</div>
+          <strong>${statusText}</strong>
+        </div>
+        <button type="button" class="operator-pulse-action" aria-label="Open dashboard" onclick="goPage('dashboard', document.getElementById('nav-home'))">
+          <i class="bi bi-speedometer2"></i>
+        </button>
+      </div>
+      <div class="operator-pulse-row">
+        <div class="operator-pulse-metric"><span>${totalJobs.toLocaleString()}</span><small>Jobs</small></div>
+        <div class="operator-pulse-metric"><span>THB ${Number(revenue.today || 0).toLocaleString()}</span><small>Cash</small></div>
+        <div class="operator-pulse-metric ${overdueJobs > 0 ? 'hot' : ''}"><span>${overdueJobs}</span><small>SLA</small></div>
+        <div class="operator-pulse-metric ${riskCount > 0 ? 'hot' : ''}"><span>${riskCount}</span><small>Risk</small></div>
+      </div>
+      <div class="operator-pulse-foot">
+        Billing ${billingOpen} | Stock ${lowStock} | Vision ${visionReview} | LINE ${linePending}
+      </div>
+    </section>`;
+}
+
 function renderMainContent() {
   const area = document.getElementById('main-content-area');
   const role = APP.role;
+  const pulse = renderOperatorPulse();
 
   if (role === 'tech') {
-    area.innerHTML = renderTechHome();
+    area.innerHTML = pulse + renderTechHome();
   } else if (role === 'admin') {
-    area.innerHTML = renderAdminHome();
+    area.innerHTML = pulse + renderAdminHome();
   } else if (role === 'acct') {
-    area.innerHTML = renderAcctHome();
+    area.innerHTML = pulse + renderAcctHome();
   } else if (role === 'exec') {
-    area.innerHTML = renderExecHome();
+    area.innerHTML = pulse + renderExecHome();
   }
 }
 

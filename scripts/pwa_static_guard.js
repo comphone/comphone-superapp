@@ -21,8 +21,9 @@ const SPRINT117_VISION_LINE_LOOP = path.join(ROOT, 'scripts', 'sprint117_vision_
 const SPRINT119_INVENTORY_PO_WARRANTY = path.join(ROOT, 'scripts', 'sprint119_inventory_po_warranty_audit.js');
 const SPRINT120_SETTINGS_ADMIN_RUNTIME = path.join(ROOT, 'scripts', 'sprint120_settings_admin_runtime_audit.js');
 const SPRINT121_PERFORMANCE_ACCESSIBILITY = path.join(ROOT, 'scripts', 'sprint121_performance_accessibility_audit.js');
+const SPRINT122_DASHBOARD_OPERATOR_ANALYTICS = path.join(ROOT, 'scripts', 'sprint122_dashboard_operator_analytics_audit.js');
 
-const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME, SPRINT121_PERFORMANCE_ACCESSIBILITY];
+const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME, SPRINT121_PERFORMANCE_ACCESSIBILITY, SPRINT122_DASHBOARD_OPERATOR_ANALYTICS];
 const badMarkers = [
   '\u00e0\u00b8',
   '\u00e0\u00b9',
@@ -252,6 +253,7 @@ const sprint117VisionLineLoopJs = readUtf8(SPRINT117_VISION_LINE_LOOP);
 const sprint119InventoryPoWarrantyJs = readUtf8(SPRINT119_INVENTORY_PO_WARRANTY);
 const sprint120SettingsAdminRuntimeJs = readUtf8(SPRINT120_SETTINGS_ADMIN_RUNTIME);
 const sprint121PerformanceAccessibilityJs = readUtf8(SPRINT121_PERFORMANCE_ACCESSIBILITY);
+const sprint122DashboardOperatorAnalyticsJs = readUtf8(SPRINT122_DASHBOARD_OPERATOR_ANALYTICS);
 if (!schemaRegistryJson.includes('"canonical_tables"') || !schemaRegistryJson.includes('"aliases"') || !schemaRegistryJson.includes('"DB_SS_ID"')) {
   fail('docs/database_schema_registry.json must define canonical_tables, aliases, and DB_SS_ID spreadsheet metadata.');
 }
@@ -325,6 +327,12 @@ if (!sprint121PerformanceAccessibilityJs.includes('Sprint 121 Performance + Acce
     !sprint121PerformanceAccessibilityJs.includes('touch-focus-reduced-motion') ||
     !sprint121PerformanceAccessibilityJs.includes('Performance/Accessibility')) {
   fail('scripts/sprint121_performance_accessibility_audit.js must guard performance and accessibility hardening.');
+}
+if (!sprint122DashboardOperatorAnalyticsJs.includes('Sprint 122 Dashboard Operator Analytics Audit') ||
+    !sprint122DashboardOperatorAnalyticsJs.includes('pc-operator-insight-strip') ||
+    !sprint122DashboardOperatorAnalyticsJs.includes('mobile-operator-pulse') ||
+    !sprint122DashboardOperatorAnalyticsJs.includes('Dashboard Operator Analytics')) {
+  fail('scripts/sprint122_dashboard_operator_analytics_audit.js must guard dashboard operator analytics polish.');
 }
 
 const pcContractIndex = dashboardPcHtml.indexOf('api_contract.js');

@@ -7,8 +7,8 @@
 const VERSION_CONFIG = {
   version: 'v5.18.34-job-menu-hardening',
   buildDate: '2026-05-07',
-  buildTimestamp: '20260518_0455',
-  cacheVersion: 'comphone-v5.18.34-job-menu-hardening-20260518_0455',
+  buildTimestamp: '20260518_0515',
+  cacheVersion: 'comphone-v5.18.34-job-menu-hardening-20260518_0515',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -38,7 +38,8 @@ const VERSION_CONFIG = {
     'Sprint 118 mobile quick action modal switching',
     'Sprint 119 Inventory/PO/Warranty workflow hardening',
     'Sprint 120 Settings/Admin runtime hardening',
-    'Sprint 121 performance/accessibility guardrails'
+    'Sprint 121 performance/accessibility guardrails',
+    'Sprint 122 dashboard operator analytics polish'
   ]
 };
 
@@ -49,8 +50,8 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 // Backward-compatible exports for legacy modules and guards
 const APP_VERSION = 'v5.18.34-job-menu-hardening';
-const BUILD_TIMESTAMP = '20260518_0455';
-const CACHE_VERSION = 'comphone-v5.18.34-job-menu-hardening-20260518_0455';
+const BUILD_TIMESTAMP = '20260518_0515';
+const CACHE_VERSION = 'comphone-v5.18.34-job-menu-hardening-20260518_0515';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;

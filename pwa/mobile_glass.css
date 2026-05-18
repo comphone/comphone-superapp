@@ -575,3 +575,122 @@ html.cp-light .more-menu-item {
   .qa-grid-3 { grid-template-columns: repeat(3, 1fr); }
   .more-menu-grid { grid-template-columns: repeat(4, 1fr); }
 }
+
+/* Sprint 122: mobile operator pulse */
+.operator-pulse-card {
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.86));
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 18px;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.25);
+  color: #f8fafc;
+  margin: 0 12px 12px;
+  padding: 14px;
+}
+
+html.cp-light .operator-pulse-card {
+  background: linear-gradient(145deg, #ffffff, #f8fafc);
+  border-color: #e2e8f0;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.1);
+  color: #0f172a;
+}
+
+.operator-pulse-card.ok { border-left: 4px solid #22c55e; }
+.operator-pulse-card.watch { border-left: 4px solid #f59e0b; }
+
+.operator-pulse-head {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.operator-pulse-kicker {
+  color: #93c5fd;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+html.cp-light .operator-pulse-kicker { color: #2563eb; }
+
+.operator-pulse-head strong {
+  display: block;
+  font-size: 18px;
+  line-height: 1.15;
+  margin-top: 2px;
+}
+
+.operator-pulse-action {
+  align-items: center;
+  background: rgba(59, 130, 246, 0.18);
+  border: 1px solid rgba(147, 197, 253, 0.35);
+  border-radius: 999px;
+  color: #bfdbfe;
+  display: inline-flex;
+  height: 40px;
+  justify-content: center;
+  min-width: 40px;
+  touch-action: manipulation;
+}
+
+html.cp-light .operator-pulse-action {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #2563eb;
+}
+
+.operator-pulse-row {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 12px;
+}
+
+.operator-pulse-metric {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  min-width: 0;
+  padding: 8px 6px;
+  text-align: center;
+}
+
+html.cp-light .operator-pulse-metric {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+.operator-pulse-metric span {
+  display: block;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.operator-pulse-metric small {
+  color: #cbd5e1;
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  margin-top: 3px;
+}
+
+html.cp-light .operator-pulse-metric small { color: #64748b; }
+
+.operator-pulse-metric.hot span { color: #fb7185; }
+
+.operator-pulse-foot {
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+}
+
+html.cp-light .operator-pulse-foot { color: #64748b; }
+
+@media (max-width: 360px) {
+  .operator-pulse-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

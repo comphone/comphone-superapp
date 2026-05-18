@@ -70,7 +70,7 @@ function renderDashboardError(msg) {
 function renderCommandTile(page, icon, value, label, targetPage) {
   const risk = Number(value || 0) > 0 && ['inventory', 'vision', 'line-center'].includes(page);
   return `
-    <button class="executive-command-tile" onclick="openDashboardCommand('${targetPage}')" style="text-align:left;border:1px solid ${risk ? '#fecaca' : '#e5e7eb'};background:${risk ? '#fff7ed' : '#fff'};border-radius:12px;padding:12px;min-height:86px;cursor:pointer;box-shadow:0 8px 20px rgba(15,23,42,.05)">
+    <button type="button" class="executive-command-tile" aria-label="${label}" onclick="openDashboardCommand('${targetPage}')" style="text-align:left;border:1px solid ${risk ? '#fecaca' : '#e5e7eb'};background:${risk ? '#fff7ed' : '#fff'};border-radius:12px;padding:12px;min-height:86px;cursor:pointer;box-shadow:0 8px 20px rgba(15,23,42,.05)">
       <i class="bi ${icon}" style="font-size:20px;color:${risk ? '#c2410c' : '#2563eb'}"></i>
       <div style="font-size:22px;font-weight:900;color:#0f172a;margin-top:6px">${Number(value || 0).toLocaleString()}</div>
       <div style="font-size:11px;color:#64748b;font-weight:700">${label}</div>
@@ -80,6 +80,63 @@ function renderCommandTile(page, icon, value, label, targetPage) {
 function openDashboardCommand(page) {
   if (typeof goPage === 'function') return goPage(page, document.getElementById('nav-more'));
   if (typeof loadSection === 'function') return loadSection(page);
+}
+
+function formatDashboardMoney(value) {
+  return 'THB ' + Number(value || 0).toLocaleString();
+}
+
+function renderOperatorInsightCard(card) {
+  const tone = card.tone || 'neutral';
+  return `
+    <button type="button" class="operator-insight-card ${tone}" data-insight-target="${card.target}" aria-label="${card.title}" onclick="openDashboardCommand('${card.target}')">
+      <div class="operator-insight-icon"><i class="bi ${card.icon}"></i></div>
+      <div class="operator-insight-copy">
+        <div class="operator-insight-title">${card.title}</div>
+        <div class="operator-insight-value">${card.value}</div>
+        <div class="operator-insight-note">${card.note}</div>
+      </div>
+    </button>`;
+}
+
+function buildOperatorInsightCards(metrics) {
+  const serviceLoad = Number(metrics.totalJobs || 0) + Number(metrics.overdueJobs || 0);
+  const riskQueue = Number(metrics.lowStock || 0) + Number(metrics.visionReview || 0) + Number(metrics.alerts || 0);
+  const automationQueue = Number(metrics.visionReview || 0) + Number(metrics.linePending || 0);
+  return [
+    {
+      title: 'Service Pulse',
+      value: `${serviceLoad.toLocaleString()} active`,
+      note: metrics.overdueJobs > 0 ? `${metrics.overdueJobs} SLA risk` : 'queue stable',
+      icon: 'bi-activity',
+      target: 'jobs',
+      tone: metrics.overdueJobs > 0 ? 'danger' : 'ok'
+    },
+    {
+      title: 'Cash Today',
+      value: formatDashboardMoney(metrics.revenueToday),
+      note: `${Number(metrics.billingOpen || 0).toLocaleString()} billing follow-up`,
+      icon: 'bi-cash-coin',
+      target: 'billing',
+      tone: metrics.billingOpen > 0 ? 'watch' : 'ok'
+    },
+    {
+      title: 'Risk Queue',
+      value: riskQueue.toLocaleString(),
+      note: `${metrics.lowStock} stock / ${metrics.alerts} alerts`,
+      icon: 'bi-shield-exclamation',
+      target: metrics.lowStock > 0 ? 'inventory' : 'reports',
+      tone: riskQueue > 0 ? 'danger' : 'ok'
+    },
+    {
+      title: 'AI + LINE Loop',
+      value: automationQueue.toLocaleString(),
+      note: `${metrics.visionReview} vision / ${metrics.linePending} LINE`,
+      icon: 'bi-stars',
+      target: metrics.visionReview > 0 ? 'vision' : 'line-center',
+      tone: automationQueue > 0 ? 'watch' : 'neutral'
+    }
+  ];
 }
 
 // ===== RENDER DASHBOARD =====
@@ -108,6 +165,17 @@ function renderDashboard(data) {
   const reportModules = Number(summary.reportModules || summary.report_modules || 4);
   const visionReview = Number(summary.visionReview || summary.visionReviewQueue || summary.pendingVisionReviews || 0);
   const linePending = alerts.length;
+  const operatorInsightCards = buildOperatorInsightCards({
+    revenueToday: revenue.today,
+    totalJobs,
+    overdueJobs,
+    lowStock,
+    billingOpen,
+    poOpen,
+    visionReview,
+    linePending,
+    alerts: alerts.length
+  });
 
   container.innerHTML = `
     <!-- HEADER ROW -->
@@ -143,6 +211,10 @@ function renderDashboard(data) {
         <div class="kpi-value">${lowStock}</div>
         <div class="kpi-label">สต็อกต่ำ</div>
       </div>
+    </div>
+
+    <div class="operator-insight-strip" data-dashboard-polish="operator-insights" aria-label="Operator insight summary">
+      ${operatorInsightCards.map(renderOperatorInsightCard).join('')}
     </div>
 
     <!-- EXECUTIVE COMMAND CENTER -->
