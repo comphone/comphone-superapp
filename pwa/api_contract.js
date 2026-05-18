@@ -247,6 +247,7 @@
         readOnly: [
           { action: 'getLineCommandCenter', payload: { days: 7 }, required: true },
           { action: 'getLineRoomStatus', required: true },
+          { action: 'getLineNotificationSettings', required: true },
           { action: 'getIntelAlertQueue', payload: { includeAcknowledged: false }, required: true },
           { action: 'getGroupedAlerts', required: true },
           { action: 'getAlertAnalytics', payload: { days: 7 }, required: true },
@@ -256,6 +257,7 @@
           { action: 'acknowledgeLineAlert', destructive: true, smoke: false, smokeReason: 'requires an existing alert id and changes ack state' },
           { action: 'bulkAcknowledgeLineAlerts', destructive: true, smoke: false, smokeReason: 'changes ack state for pending alerts' },
           { action: 'queueLineCommandAlert', destructive: true, smoke: false, smokeReason: 'creates a dashboard alert' },
+          { action: 'updateLineNotificationSettings', destructive: true, smoke: false, smokeReason: 'toggles outbound room notifications only; backend processing and audit logs remain active' },
           { action: 'sendLineRoomMessage', destructive: true, smoke: false, smokeReason: 'pushes a LINE message and requires explicit confirmation' },
         ],
       },

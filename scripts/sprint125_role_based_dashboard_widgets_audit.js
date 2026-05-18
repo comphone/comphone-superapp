@@ -91,7 +91,7 @@ check(
   'blueprint-current',
   blueprint.includes('Phase 125 Role-Based Dashboard Widgets') &&
     blueprint.includes('sprint125_role_based_dashboard_widgets_audit.js') &&
-    blueprint.includes('20260518_0615'),
+    blueprint.includes('20260518_0730'),
   'BLUEPRINT.md must document Sprint 125 and current build timestamp.'
 );
 

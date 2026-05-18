@@ -26,8 +26,9 @@ const SPRINT123_LIVE_VISUAL_QA = path.join(ROOT, 'scripts', 'sprint123_live_visu
 const SPRINT124_PROTECTED_VISUAL_MENU_QA = path.join(ROOT, 'scripts', 'sprint124_protected_visual_menu_qa.js');
 const SPRINT125_ROLE_BASED_DASHBOARD_WIDGETS = path.join(ROOT, 'scripts', 'sprint125_role_based_dashboard_widgets_audit.js');
 const SPRINT126_AI_VISION_ROLE_READINESS = path.join(ROOT, 'scripts', 'sprint126_ai_vision_role_readiness_audit.js');
+const SPRINT127_VISION_LINE_NOTIFICATION_CONTROLS = path.join(ROOT, 'scripts', 'sprint127_vision_line_notification_controls_audit.js');
 
-const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME, SPRINT121_PERFORMANCE_ACCESSIBILITY, SPRINT122_DASHBOARD_OPERATOR_ANALYTICS, SPRINT123_LIVE_VISUAL_QA, SPRINT124_PROTECTED_VISUAL_MENU_QA, SPRINT125_ROLE_BASED_DASHBOARD_WIDGETS, SPRINT126_AI_VISION_ROLE_READINESS];
+const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME, SPRINT121_PERFORMANCE_ACCESSIBILITY, SPRINT122_DASHBOARD_OPERATOR_ANALYTICS, SPRINT123_LIVE_VISUAL_QA, SPRINT124_PROTECTED_VISUAL_MENU_QA, SPRINT125_ROLE_BASED_DASHBOARD_WIDGETS, SPRINT126_AI_VISION_ROLE_READINESS, SPRINT127_VISION_LINE_NOTIFICATION_CONTROLS];
 const badMarkers = [
   '\u00e0\u00b8',
   '\u00e0\u00b9',
@@ -270,6 +271,7 @@ const sprint123LiveVisualQaJs = readUtf8(SPRINT123_LIVE_VISUAL_QA);
 const sprint124ProtectedVisualMenuQaJs = readUtf8(SPRINT124_PROTECTED_VISUAL_MENU_QA);
 const sprint125RoleBasedDashboardWidgetsJs = readUtf8(SPRINT125_ROLE_BASED_DASHBOARD_WIDGETS);
 const sprint126AiVisionRoleReadinessJs = readUtf8(SPRINT126_AI_VISION_ROLE_READINESS);
+const sprint127VisionLineNotificationControlsJs = readUtf8(SPRINT127_VISION_LINE_NOTIFICATION_CONTROLS);
 if (!schemaRegistryJson.includes('"canonical_tables"') || !schemaRegistryJson.includes('"aliases"') || !schemaRegistryJson.includes('"DB_SS_ID"')) {
   fail('docs/database_schema_registry.json must define canonical_tables, aliases, and DB_SS_ID spreadsheet metadata.');
 }
@@ -373,6 +375,11 @@ if (!sprint126AiVisionRoleReadinessJs.includes('Sprint 126 AI Vision + Role Read
     !sprint126AiVisionRoleReadinessJs.includes('runtime-smoke-boundary') ||
     !sprint126AiVisionRoleReadinessJs.includes('AI Vision read-runtime ready; real image analysis remains confirmation-gated')) {
   fail('scripts/sprint126_ai_vision_role_readiness_audit.js must guard AI Vision readiness and role-dashboard operating boundaries.');
+}
+if (!sprint127VisionLineNotificationControlsJs.includes('Sprint 127 Vision + LINE Notification Controls Audit') ||
+    !sprint127VisionLineNotificationControlsJs.includes('mute-suppresses-only-push') ||
+    !sprint127VisionLineNotificationControlsJs.includes('notification-only-toggle')) {
+  fail('scripts/sprint127_vision_line_notification_controls_audit.js must guard muted LINE room notification behavior.');
 }
 
 const pcContractIndex = dashboardPcHtml.indexOf('api_contract.js');

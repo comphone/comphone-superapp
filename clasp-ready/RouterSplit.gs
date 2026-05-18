@@ -287,6 +287,8 @@ var MODULE_ROUTER = {
   'getIntelAlertQueue': function(p) { return getIntelAlertQueue(p); },
   'getLineCommandCenter': function(p) { return getLineCommandCenter(p); },
   'getLineRoomStatus': function(p) { return getLineRoomStatus(p); },
+  'getLineNotificationSettings': function(p) { return getLineNotificationSettings(p); },
+  'updateLineNotificationSettings': function(p) { return updateLineNotificationSettings(p); },
   'getLearningDashboard': function(p) { return getLearningDashboard(p); },
   'getLearningIntegrationVersion': function(p) { return getLearningIntegrationVersion(p); },
   'getLearningMemoryBridge': function(p) { return getLearningMemoryBridge(p); },

@@ -13,6 +13,19 @@ var LINE_CENTER_ROOMS = [
   { id: 'ADMIN', label: 'Admin', role: 'admin' }
 ];
 
+function getLineNotificationSettings(params) {
+  params = params || {};
+  return {
+    success: true,
+    status: 'ok',
+    mode: 'notification-only-toggle',
+    note: 'Disabled rooms suppress outbound LINE pushes only; backend processing, Vision logs, queues, and audit logs continue.',
+    rooms: LINE_CENTER_ROOMS.map(function(room) {
+      return _lineCenterRoomStatus_(room);
+    })
+  };
+}
+
 function getLineCommandCenter(params) {
   params = params || {};
   var role = params.role || '';
@@ -58,15 +71,7 @@ function getLineCommandCenter(params) {
 function getLineRoomStatus(params) {
   params = params || {};
   var rooms = LINE_CENTER_ROOMS.map(function(room) {
-    var groupId = _lineCenterResolveRoomId_(room.id);
-    return {
-      id: room.id,
-      label: room.label,
-      role: room.role,
-      configured: !!groupId,
-      key: 'LINE_GROUP_' + room.id,
-      groupTail: groupId ? String(groupId).slice(-6) : ''
-    };
+    return _lineCenterRoomStatus_(room);
   });
   return {
     success: true,
@@ -110,9 +115,12 @@ function previewLineRoomMessage(params) {
     dryRun: true,
     messagePreview: message.substring(0, 500),
     rooms: rooms.map(function(room) {
+      var enabled = _lineCenterIsRoomNotificationEnabled_(room);
       return {
         id: room,
         configured: !!(statusById[room] && statusById[room].configured),
+        notificationEnabled: enabled,
+        willNotify: enabled && !!(statusById[room] && statusById[room].configured),
         key: 'LINE_GROUP_' + room
       };
     })
@@ -136,6 +144,10 @@ function sendLineRoomMessage(params) {
   var results = rooms.map(function(room) {
     var groupId = _lineCenterResolveRoomId_(room);
     if (!groupId) return { room: room, success: false, error: 'LINE group is not configured' };
+    if (!_lineCenterIsRoomNotificationEnabled_(room)) {
+      _lineCenterRecordSuppressedNotification_(room, message, 'MANUAL_LINE_ROOM_MESSAGE');
+      return { room: room, success: true, skipped: true, notificationEnabled: false, reason: 'room notifications disabled; backend log retained' };
+    }
     try {
       if (typeof sendLinePush === 'function') return Object.assign({ room: room }, sendLinePush(message, groupId));
       if (typeof pushLineMessage === 'function') return Object.assign({ room: room }, pushLineMessage(groupId, message));
@@ -156,6 +168,41 @@ function sendLineRoomMessage(params) {
     status: 'ok',
     results: results,
     preview: previewLineRoomMessage(params)
+  };
+}
+
+function updateLineNotificationSettings(params) {
+  params = params || {};
+  var rooms = _lineCenterNormalizeRooms_(params.rooms || params.room || params.targetRooms);
+  var enabled = params.enabled;
+  if (typeof enabled === 'string') enabled = enabled.toLowerCase() !== 'false' && enabled !== '0' && enabled.toLowerCase() !== 'off';
+  enabled = enabled !== false;
+  var changed = [];
+  for (var i = 0; i < rooms.length; i++) {
+    var room = rooms[i];
+    var key = _lineCenterNotificationKey_(room);
+    if (!key) continue;
+    if (typeof setConfig === 'function') setConfig(key, enabled ? 'true' : 'false');
+    else PropertiesService.getScriptProperties().setProperty(key, enabled ? 'true' : 'false');
+    changed.push({ room: room, key: key, notificationEnabled: enabled });
+  }
+  if (typeof writeAuditLog === 'function') {
+    try {
+      writeAuditLog('LINE_NOTIFICATION_SETTINGS_UPDATE', 'SYSTEM', {
+        rooms: rooms,
+        enabled: enabled,
+        note: 'Notification toggle only; backend processing remains active.'
+      });
+    } catch (_) {}
+  }
+  try {
+    CacheService.getScriptCache().removeAll(['line:center::7:false', 'line:center::7:true']);
+  } catch (_cacheErr) {}
+  return {
+    success: true,
+    status: 'ok',
+    changed: changed,
+    settings: getLineNotificationSettings({}).rooms
   };
 }
 
@@ -194,4 +241,54 @@ function _lineCenterResolveRoomId_(room) {
   }
   if (typeof getConfig !== 'function') return '';
   return getConfig('LINE_GROUP_' + room, '') || getConfig('LINE_' + room + '_GROUP_ID', '');
+}
+
+function _lineCenterNotificationKey_(room) {
+  room = String(room || '').trim().toUpperCase();
+  return room ? 'LINE_NOTIFY_' + room + '_ENABLED' : '';
+}
+
+function _lineCenterIsRoomNotificationEnabled_(room) {
+  var key = _lineCenterNotificationKey_(room);
+  if (!key || typeof getConfig !== 'function') return true;
+  var value = String(getConfig(key, 'true') || 'true').toLowerCase();
+  return value !== 'false' && value !== '0' && value !== 'off' && value !== 'disabled';
+}
+
+function _lineCenterRoomStatus_(room) {
+  var groupId = _lineCenterResolveRoomId_(room.id);
+  var enabled = _lineCenterIsRoomNotificationEnabled_(room.id);
+  return {
+    id: room.id,
+    label: room.label,
+    role: room.role,
+    configured: !!groupId,
+    notificationEnabled: enabled,
+    notificationKey: _lineCenterNotificationKey_(room.id),
+    key: 'LINE_GROUP_' + room.id,
+    groupTail: groupId ? String(groupId).slice(-6) : ''
+  };
+}
+
+function _lineCenterRecordSuppressedNotification_(room, message, source) {
+  var summary = {
+    room: String(room || '').toUpperCase(),
+    source: source || 'LINE_NOTIFICATION_SUPPRESSED',
+    messagePreview: String(message || '').substring(0, 500),
+    reason: 'room notifications disabled',
+    backendContinues: true
+  };
+  if (typeof writeAuditLog === 'function') {
+    try { writeAuditLog('LINE_NOTIFICATION_SUPPRESSED', 'SYSTEM', summary); } catch (_) {}
+  }
+  if (typeof queueAlertIntelligent === 'function') {
+    try {
+      queueAlertIntelligent('LINE_NOTIFICATION_SUPPRESSED', summary, {
+        priority: 'low',
+        groupKey: 'LINE_NOTIFICATION_SUPPRESSED_' + summary.room,
+        targetRoles: ['admin']
+      });
+    } catch (_) {}
+  }
+  return summary;
 }

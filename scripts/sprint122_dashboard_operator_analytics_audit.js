@@ -82,7 +82,7 @@ addCheck(
   'blueprint-current',
   blueprint.includes('Phase 122 Dashboard Operator Analytics Polish') &&
     blueprint.includes('sprint122_dashboard_operator_analytics_audit.js') &&
-    blueprint.includes('20260518_0615'),
+    blueprint.includes('20260518_0730'),
   'BLUEPRINT.md must describe Sprint 122 and current build timestamp.'
 );
 

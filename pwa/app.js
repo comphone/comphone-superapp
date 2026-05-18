@@ -842,6 +842,7 @@ const READ_ACTIONS = {
   getVisionReviewQueue: true,
   getLineCommandCenter: true,
   getLineRoomStatus: true,
+  getLineNotificationSettings: true,
   getIntelAlertQueue: true,
   getAlertAnalytics: true,
   getGroupedAlerts: true,

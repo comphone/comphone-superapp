@@ -42,6 +42,11 @@
     return lineApi('sendLineRoomMessage', payload || {});
   }
 
+  function updateLineNotificationSettingsAction(payload) {
+    if (typeof global.callApi === 'function') return global.callApi('updateLineNotificationSettings', payload || {});
+    return lineApi('updateLineNotificationSettings', payload || {});
+  }
+
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) {
       return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
@@ -65,6 +70,7 @@
         .line-room-row:last-child,.line-alert-row:last-child{border-bottom:0}
         .line-badge{font-size:11px;font-weight:700;border-radius:999px;padding:4px 8px;background:#fef3c7;color:#92400e;white-space:nowrap}
         .line-badge.ok{background:#dcfce7;color:#166534}.line-badge.warn{background:#fee2e2;color:#991b1b}
+        .line-badge.muted{background:#e2e8f0;color:#475569}
         .line-actions{display:flex;gap:8px;flex-wrap:wrap}
         .line-btn{border:0;border-radius:9px;padding:8px 11px;font-size:12px;font-weight:700;cursor:pointer;background:#0f766e;color:#fff}
         .line-btn.secondary{background:#e2e8f0;color:#0f172a}.line-btn.danger{background:#ef4444;color:#fff}
@@ -73,6 +79,8 @@
         .line-preview{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:10px;font-size:12px;color:#334155;white-space:pre-wrap}
         .line-route-matrix{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
         .line-route-cell{border:1px solid #e5e7eb;border-radius:10px;padding:10px;background:#f8fafc}
+        .line-toggle{border:0;border-radius:999px;padding:6px 9px;font-size:11px;font-weight:800;cursor:pointer;background:#dcfce7;color:#166534}
+        .line-toggle.off{background:#e2e8f0;color:#475569}
       </style>
       <div class="line-center-wrap">
         <div class="line-center-grid" id="line-center-kpis">
@@ -142,8 +150,16 @@
     if (roomEl) {
       roomEl.innerHTML = rooms.map(room => `
         <div class="line-room-row">
-          <div><strong>${esc(room.label || room.id)}</strong><div class="line-muted">${esc(room.key)} ${room.groupTail ? '...' + esc(room.groupTail) : ''}</div></div>
-          ${statusBadge(room.configured)}
+          <div>
+            <strong>${esc(room.label || room.id)}</strong>
+            <div class="line-muted">${esc(room.key)} ${room.groupTail ? '...' + esc(room.groupTail) : ''}</div>
+            <div class="line-muted">Notify: ${room.notificationEnabled === false ? 'off (backend still logs)' : 'on'}</div>
+          </div>
+          <div class="line-actions">
+            ${statusBadge(room.configured)}
+            <span class="line-badge ${room.notificationEnabled === false ? 'muted' : 'ok'}">${room.notificationEnabled === false ? 'muted' : 'notify on'}</span>
+            <button class="line-toggle ${room.notificationEnabled === false ? 'off' : ''}" onclick="toggleLineRoomNotification('${esc(room.id)}', ${room.notificationEnabled === false ? 'true' : 'false'})">${room.notificationEnabled === false ? 'Enable' : 'Mute'}</button>
+          </div>
         </div>`).join('') || '<div class="line-muted">No rooms found.</div>';
     }
     const matrixEl = document.getElementById('line-route-matrix');
@@ -153,6 +169,7 @@
           <strong>${esc(room.role || 'ops')}</strong>
           <div class="line-muted">${esc(room.label || room.id)}</div>
           ${statusBadge(room.configured)}
+          <div style="margin-top:6px">${room.notificationEnabled === false ? '<span class="line-badge muted">notifications off</span>' : '<span class="line-badge ok">notifications on</span>'}</div>
         </div>`).join('') || '<div class="line-muted">No routing matrix available.</div>';
     }
     const checks = document.getElementById('line-center-room-checks');
@@ -250,6 +267,13 @@
     refreshLineCommandCenter();
   }
 
+  async function toggleLineRoomNotification(room, enabled) {
+    const verb = enabled ? 'enable' : 'mute';
+    if (!confirm(`${verb} LINE notifications for ${room}? Backend processing, Vision logs, and audit records will continue.`)) return;
+    await updateLineNotificationSettingsAction({ rooms: [room], enabled });
+    refreshLineCommandCenter();
+  }
+
   function renderLineCenterSection() {
     return renderShell(false);
   }
@@ -274,4 +298,5 @@
   global.ackLineAlert = ackLineAlert;
   global.ackAllLineAlerts = ackAllLineAlerts;
   global.queueLineTestAlert = queueLineTestAlert;
+  global.toggleLineRoomNotification = toggleLineRoomNotification;
 })(typeof window !== 'undefined' ? window : globalThis);

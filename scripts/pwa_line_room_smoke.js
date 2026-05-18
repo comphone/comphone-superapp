@@ -133,6 +133,7 @@ async function main() {
   }
 
   await runAction(report, 'protected', 'getLineRoomStatus', {}, body => Array.isArray(body.rooms));
+  await runAction(report, 'protected', 'getLineNotificationSettings', {}, body => Array.isArray(body.rooms) && body.mode === 'notification-only-toggle');
   await runAction(report, 'protected', 'getLineCommandCenter', { days: 7 }, body => !!(Array.isArray(body.rooms) && body.queue && body.analytics));
   await runAction(report, 'preview', 'previewLineRoomMessage', {
     rooms: ROOMS,

@@ -1005,6 +1005,15 @@ function _vpPushVisionLineRooms_(rooms, message) {
       try { if (typeof _logNotifyFallback === 'function') _logNotifyFallback('NO_GROUP', room, message); } catch (e1) {}
       continue;
     }
+    if (typeof _lineCenterIsRoomNotificationEnabled_ === 'function' && !_lineCenterIsRoomNotificationEnabled_(room)) {
+      try {
+        if (typeof _lineCenterRecordSuppressedNotification_ === 'function') {
+          _lineCenterRecordSuppressedNotification_(room, message, 'AI_VISION_LINE_NOTIFICATION');
+        }
+      } catch (e2) {}
+      results.push({ room: room, success: true, skipped: true, notificationEnabled: false, reason: 'room notifications disabled; Vision processing and logs retained' });
+      continue;
+    }
     if (typeof sendLinePush === 'function') results.push(Object.assign({ room: room }, sendLinePush(message, groupId)));
     else if (typeof pushLineMessage === 'function') results.push(Object.assign({ room: room }, pushLineMessage(groupId, [{ type: 'text', text: String(message || '').substring(0, 5000) }])));
     else results.push({ room: room, success: false, error: 'LINE push helper not available' });

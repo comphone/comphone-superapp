@@ -119,7 +119,7 @@ check(
   'blueprint-current',
   blueprint.includes('Phase 123 Live Visual QA Guard') &&
     blueprint.includes('sprint123_live_visual_qa_guard.js') &&
-    blueprint.includes('20260518_0615'),
+    blueprint.includes('20260518_0730'),
   'BLUEPRINT.md must document Sprint 123 and current build timestamp.'
 );
 
