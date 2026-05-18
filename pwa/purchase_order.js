@@ -6,28 +6,24 @@ let ALL_PO = [];
 let PO_FILTER = 'all';
 let PO_ITEMS = []; // รายการสินค้าในฟอร์มสร้าง PO
 
-// ===== callApi fallback — PHASE 20.4: ใช้ AI_EXECUTOR แทน fetch =====
+// ===== callApi fallback =====
 if (typeof callApi === 'undefined') {
-  window.callApi = async function(payload) {
-    payload = payload || {};
+  window.callApi = async function(actionOrPayload, maybePayload) {
+    const payload = (typeof actionOrPayload === 'string')
+      ? Object.assign({ action: actionOrPayload }, maybePayload || {})
+      : Object.assign({}, actionOrPayload || {});
     const action = payload.action;
-    if (!action) return { success: false, error: 'ไม่พบ action ใน payload' };
+    if (!action) return { success: false, error: 'Missing action in payload' };
     const params = Object.assign({}, payload);
     delete params.action;
 
     try {
-      const method = (typeof isReadAction === 'function' && isReadAction(action)) ? 'query' : 'execute';
-      if (!window.AI_EXECUTOR || !window.AI_EXECUTOR[method]) {
-        return { success: false, error: 'AI_EXECUTOR ยังไม่พร้อมใช้งาน' };
+      if (typeof window.callAPI === 'function') {
+        return await window.callAPI(action, params);
       }
-      const data = await window.AI_EXECUTOR[method]({ action: action, payload: params });
-      if (data && data._headers) delete data._headers;
-      return data;
+      return { success: false, error: 'API client is not ready for Purchase Orders' };
     } catch (e) {
-      if (e.message && e.message.includes('APPROVAL_REQUIRED')) {
-        return { success: false, error: 'APPROVAL_REQUIRED', message: 'กรุณาขออนุมัติการดำเนินการ' };
-      }
-      return { success: false, error: e.message };
+      return { success: false, error: e && e.message ? e.message : String(e) };
     }
   };
 }

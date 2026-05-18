@@ -631,6 +631,16 @@ else
   warn "Node or sprint117_vision_line_operational_loop_audit.js unavailable - skipping Sprint 117 Vision + LINE operational loop audit"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint119_inventory_po_warranty_audit.js" ]; then
+  if node scripts/sprint119_inventory_po_warranty_audit.js; then
+    echo "   Sprint 119 Inventory/PO/Warranty workflow audit passed"
+  else
+    fail "Sprint 119 Inventory/PO/Warranty workflow audit FAILED"
+  fi
+else
+  warn "Node or sprint119_inventory_po_warranty_audit.js unavailable - skipping Sprint 119 Inventory/PO/Warranty workflow audit"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"
