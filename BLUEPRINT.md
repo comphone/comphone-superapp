@@ -2,9 +2,9 @@
 
 > **Version:** v5.18.34-job-menu-hardening (PWA) / GAS Backend v5.18.16-write-flow-validation @616
 
-> **Date:** 2026-05-19 | **Phase:** 133 (Support/Admin Live QA)
+> **Date:** 2026-05-19 | **Phase:** 134 (Data Completeness Review)
 
-> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + CORE-AUDITED + FOCUS-AUDITED + JOBS-E2E-HARDENED + BILLING-E2E-HARDENED + REPORTS-E2E-HARDENED + VISION-LINE-FLOW-HARDENED + PRODUCTION-JOURNEY-HARDENED + BACKUP-WORKFLOW-HARDENED + MOBILE-QUICK-ACTIONS-HARDENED + MOBILE-CORE-WORKFLOWS-HARDENED + MOBILE-SECONDARY-WORKFLOWS-HARDENED + LIVE-MOBILE-MENU-SMOKE-HARDENED + OPERATOR-UX-QA-HARDENED + PROTECTED-LIVE-QA-RUNBOOK-HARDENED + PROTECTED-LIVE-QA-VERIFIED + DASHBOARD-PERFORMANCE-HARDENED + DEPLOY-GAS-CI-GATE-HARDENED + WRITE-SMOKE-LIFECYCLE-HARDENED + BLUEPRINT-RECONCILED + PO-READ-CACHE-HARDENED + JOBS-READ-CACHE-HARDENED + READ-DASHBOARD-CACHE-HARDENED + PRODUCTION-SAFETY-HARNESS-HARDENED + OPERATOR-WORKFLOW-POLISHED + LIVE-CACHE-FRESHNESS-HARDENED + OPERATOR-MENU-CLICKTHROUGH-HARDENED + CONTROLLED-WRITE-LIFECYCLE-HARDENED + LIVE-UX-MENU-RUNTIME-HARDENED + VISUAL-RUNTIME-WALKTHROUGH-HARDENED + PROTECTED-BROWSER-JOURNEY-HARDENED + RECORD-DETAIL-COMPLETENESS-HARDENED + PRODUCTION-DATA-QUALITY-GUARDED + CONTROLLED-DATA-CLEANUP-PLANNED + DATABASE-SCHEMA-REGISTRY-GUARDED + SHEET-CONTEXT-NORMALIZED + DATA-REPAIR-CONSOLE-PLANNED + DATA-REPAIR-EXECUTION-HARDENED + GAS-616-LIVE-VERIFIED + FULL-QA-SWEEP + GEMINI-READY + VISION-LINE-PROTECTED-LIVE-VERIFIED + LINE-REAL-SEND-READINESS-GUARDED + CORE-WORKFLOW-LIVE-VERIFIED + SUPPORT-ADMIN-LIVE-VERIFIED - latest production GAS deployment is @616 on the existing Web App URL; Sprint 133 verifies the protected read-only support/admin chain Inventory -> PO -> Warranty -> Admin Settings with a fresh hidden login token. Inventory overview/detail, PO list, warranty list/due, security status, users list, data repair status, and repair preview pass; Warranty detail remains optional because the live warranty list currently has no Job_ID row to inspect.
+> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + CORE-AUDITED + FOCUS-AUDITED + JOBS-E2E-HARDENED + BILLING-E2E-HARDENED + REPORTS-E2E-HARDENED + VISION-LINE-FLOW-HARDENED + PRODUCTION-JOURNEY-HARDENED + BACKUP-WORKFLOW-HARDENED + MOBILE-QUICK-ACTIONS-HARDENED + MOBILE-CORE-WORKFLOWS-HARDENED + MOBILE-SECONDARY-WORKFLOWS-HARDENED + LIVE-MOBILE-MENU-SMOKE-HARDENED + OPERATOR-UX-QA-HARDENED + PROTECTED-LIVE-QA-RUNBOOK-HARDENED + PROTECTED-LIVE-QA-VERIFIED + DASHBOARD-PERFORMANCE-HARDENED + DEPLOY-GAS-CI-GATE-HARDENED + WRITE-SMOKE-LIFECYCLE-HARDENED + BLUEPRINT-RECONCILED + PO-READ-CACHE-HARDENED + JOBS-READ-CACHE-HARDENED + READ-DASHBOARD-CACHE-HARDENED + PRODUCTION-SAFETY-HARNESS-HARDENED + OPERATOR-WORKFLOW-POLISHED + LIVE-CACHE-FRESHNESS-HARDENED + OPERATOR-MENU-CLICKTHROUGH-HARDENED + CONTROLLED-WRITE-LIFECYCLE-HARDENED + LIVE-UX-MENU-RUNTIME-HARDENED + VISUAL-RUNTIME-WALKTHROUGH-HARDENED + PROTECTED-BROWSER-JOURNEY-HARDENED + RECORD-DETAIL-COMPLETENESS-HARDENED + PRODUCTION-DATA-QUALITY-GUARDED + CONTROLLED-DATA-CLEANUP-PLANNED + DATABASE-SCHEMA-REGISTRY-GUARDED + SHEET-CONTEXT-NORMALIZED + DATA-REPAIR-CONSOLE-PLANNED + DATA-REPAIR-EXECUTION-HARDENED + GAS-616-LIVE-VERIFIED + FULL-QA-SWEEP + GEMINI-READY + VISION-LINE-PROTECTED-LIVE-VERIFIED + LINE-REAL-SEND-READINESS-GUARDED + CORE-WORKFLOW-LIVE-VERIFIED + SUPPORT-ADMIN-LIVE-VERIFIED + DATA-COMPLETENESS-REVIEWED - latest production GAS deployment is @616 on the existing Web App URL; Sprint 134 adds a read-only data completeness review for Billing, Reports, Warranty, and Data Repair preview. Live protected review found four data findings and no code-contract failure: 1 incomplete Billing row, latest Job `J0020` has no Billing detail, current-month daily revenue is empty, and Warranty list is currently empty.
 
 ---
 
@@ -13,7 +13,7 @@
 This section is the latest handoff for any human or AI agent continuing COMPHONE work.
 
 ### Current Production State
-- **Current phase:** Sprint / Phase 133.
+- **Current phase:** Sprint / Phase 134.
 - **Latest stable verification commit before this handoff:** `249ff86 Document Sprint 110 GAS live verification`. Run `git log -1 --oneline` for the exact current repository HEAD.
 - **PWA version:** `v5.18.34-job-menu-hardening`.
 - **GAS backend version:** `v5.18.16-write-flow-validation`.
@@ -55,6 +55,7 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 - Sprint 131 adds `scripts/sprint131_line_real_send_readiness.js`, a token-aware readiness guard that proves LINE preview, confirmation-required blocking, muted-send suppression, and rollback without sending outbound LINE messages. Real sends require owner approval through `COMPHONE_LINE_REAL_SEND=1`, `COMPHONE_LINE_REAL_SEND_CONFIRM=OWNER_APPROVED_REAL_LINE_SEND`, and `COMPHONE_LINE_REAL_SEND_MESSAGE`.
 - Sprint 132 adds `scripts/sprint132_core_workflow_live_qa.js`, a token-aware read-only workflow proof for Jobs -> Billing -> Reports -> AI Vision -> LINE Center. Protected live run passed; `getBilling` stayed optional because latest Job `J0020` has no Billing row.
 - Sprint 133 adds `scripts/sprint133_support_admin_live_qa.js`, a token-aware read-only workflow proof for Inventory -> PO -> Warranty -> Admin Settings. Protected live run passed for inventory overview/detail, PO list, warranty list/due, security status, users list, data repair status, and data repair preview; warranty detail stayed optional because the live list returned no `Job_ID`.
+- Sprint 134 adds `scripts/sprint134_data_completeness_review.js`, a read-only and token-aware data completeness review. Protected live run reports four business-data findings without failing CI: incomplete Billing source row, latest Job `J0020` missing Billing detail, empty current-month daily revenue rows, and empty Warranty list.
 
 ### Required Verification Commands
 Run these before claiming the system is stable after any code change:
@@ -88,6 +89,7 @@ node scripts/sprint129_vision_line_suppression_live_qa.js
 node scripts/sprint131_line_real_send_readiness.js
 node scripts/sprint132_core_workflow_live_qa.js
 node scripts/sprint133_support_admin_live_qa.js
+node scripts/sprint134_data_completeness_review.js
 bash scripts/regression-guard.sh
 bash scripts/guard-self-test.sh
 node scripts/pages_deploy_verify.js
@@ -110,6 +112,7 @@ node scripts/pwa_line_room_smoke.js
 node scripts/sprint131_line_real_send_readiness.js
 node scripts/sprint132_core_workflow_live_qa.js
 node scripts/sprint133_support_admin_live_qa.js
+node scripts/sprint134_data_completeness_review.js
 Remove-Item Env:\COMPHONE_AUTH_TOKEN -ErrorAction SilentlyContinue
 ```
 
@@ -127,9 +130,11 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN,Env:\COMPHONE_LINE_TOGGLE_CONFIRM,Env:\COMP
 ```
 
 ### Known Remaining Work
-- **Data repair 1:** `DB_BILLING` row 1 is incomplete. Sprint 115 now prevents blank Billing detail/QR navigation for missing `Job_ID`, but the row still needs owner review before archive/delete.
-- **Data repair 2:** current-month report daily revenue records are empty. Sprint 116 now shows a diagnostic `report-empty-state`; verify real business activity before changing report logic.
-- **Next recommended sprint:** Sprint 134 should run controlled data-completeness review for optional production gaps: missing Billing detail for latest Job `J0020`, empty live Warranty list detail linkage, and empty current-month report daily revenue. Keep it preview/archive-before-change only.
+- **Data repair 1:** `DB_BILLING` still has 1/1 incomplete source row. Sprint 134 confirms this is a business-data gap, not a routing failure.
+- **Data repair 2:** latest Job `J0020` still has no readable Billing detail. Confirm whether this job should have Billing before creating or repairing data.
+- **Data repair 3:** current-month report daily revenue records are empty. Sprint 116 shows `report-empty-state`; Sprint 134 confirms the backend is healthy but the selected period has no daily revenue rows.
+- **Data repair 4:** Warranty list is live and healthy but currently empty. No detail-link repair is possible until source warranty rows exist.
+- **Next recommended sprint:** Sprint 135 should add an owner-facing Data Completeness panel in PC Settings/Mobile Admin that reads the Sprint 134-style data state through existing APIs and clearly separates "system OK" from "business data needs review".
 - **After Sprint 133:** run a human-approved LINE real-send test only if the owner explicitly chooses a target room and message; otherwise keep LINE validation in preview/muted-send mode.
 
 ### Non-Negotiable Rules For Future Agents
@@ -153,7 +158,17 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN,Env:\COMPHONE_LINE_TOGGLE_CONFIRM,Env:\COMP
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-07.phase65-line-command-center` | `pwa/api_contract.js` |
 | Last Production Commit | GitHub `main` HEAD | Use `git log -1 --oneline` for the exact commit |
-| Validation Status | Static Guard OK; CI Readiness OK; GAS Source Alignment OK; GAS Syntax Guard OK; Guard Self-Test OK; full Regression Guard OK; Sprint 127 Vision + LINE Notification Controls Audit 100/100; production GAS @616 live verified with a fresh hidden login token: Sprint 128 LINE Notification Toggle Live QA OK with flip/preview/rollback, Sprint 129 AI Vision LINE Suppression QA OK with muted `notify_technician` execution and rollback, Vision Runtime Smoke OK across public health/version and protected Vision dashboard/pipeline/learning/context/suggestions/review queue, PWA LINE Room Smoke OK for protected room status/settings/command center/preview, Sprint 131 LINE Real-Send Readiness OK for preview/confirm-required/muted-send/rollback, Sprint 132 Core Workflow Live QA OK for Jobs -> Billing -> Reports -> AI Vision -> LINE Center, and Sprint 133 Support/Admin Live QA OK for Inventory -> PO -> Warranty -> Admin Settings. AI Vision read-runtime ready; real image analysis remains confirmation-gated. Real LINE sends remain gated and were not executed. | `scripts/pwa_static_guard.js`, `scripts/ci_readiness_check.js`, `scripts/gas_source_alignment.js`, `scripts/gas_syntax_guard.js`, `scripts/regression-guard.sh`, `scripts/guard-self-test.sh`, `scripts/sprint127_vision_line_notification_controls_audit.js`, `scripts/sprint128_line_notification_toggle_live_qa.js`, `scripts/sprint129_vision_line_suppression_live_qa.js`, `scripts/sprint131_line_real_send_readiness.js`, `scripts/sprint132_core_workflow_live_qa.js`, `scripts/sprint133_support_admin_live_qa.js`, `scripts/vision_runtime_smoke.js`, `scripts/pwa_line_room_smoke.js`, `test_reports/*_latest.*` |
+| Validation Status | Static Guard OK; CI Readiness OK; GAS Source Alignment OK; GAS Syntax Guard OK; Guard Self-Test OK; full Regression Guard OK; Sprint 127 Vision + LINE Notification Controls Audit 100/100; production GAS @616 live verified with a fresh hidden login token: Sprint 128 LINE Notification Toggle Live QA OK with flip/preview/rollback, Sprint 129 AI Vision LINE Suppression QA OK with muted `notify_technician` execution and rollback, Vision Runtime Smoke OK across public health/version and protected Vision dashboard/pipeline/learning/context/suggestions/review queue, PWA LINE Room Smoke OK for protected room status/settings/command center/preview, Sprint 131 LINE Real-Send Readiness OK for preview/confirm-required/muted-send/rollback, Sprint 132 Core Workflow Live QA OK for Jobs -> Billing -> Reports -> AI Vision -> LINE Center, Sprint 133 Support/Admin Live QA OK for Inventory -> PO -> Warranty -> Admin Settings, and Sprint 134 Data Completeness Review completed with safe data warnings. AI Vision read-runtime ready; real image analysis remains confirmation-gated. Real LINE sends remain gated and were not executed. | `scripts/pwa_static_guard.js`, `scripts/ci_readiness_check.js`, `scripts/gas_source_alignment.js`, `scripts/gas_syntax_guard.js`, `scripts/regression-guard.sh`, `scripts/guard-self-test.sh`, `scripts/sprint127_vision_line_notification_controls_audit.js`, `scripts/sprint128_line_notification_toggle_live_qa.js`, `scripts/sprint129_vision_line_suppression_live_qa.js`, `scripts/sprint131_line_real_send_readiness.js`, `scripts/sprint132_core_workflow_live_qa.js`, `scripts/sprint133_support_admin_live_qa.js`, `scripts/sprint134_data_completeness_review.js`, `scripts/vision_runtime_smoke.js`, `scripts/pwa_line_room_smoke.js`, `test_reports/*_latest.*` |
+
+### Phase 134 Data Completeness Review (2026-05-19)
+- Added `scripts/sprint134_data_completeness_review.js`, a CI-safe and token-aware data review for production gaps affecting Billing detail, Reports revenue drilldown, Warranty detail linkage, and Data Repair preview.
+- Without `COMPHONE_AUTH_TOKEN`, the script records a skip-safe report and exits OK.
+- With a fresh token kept only in process memory, the protected run passed endpoint checks and produced four non-blocking data findings:
+  - `DB_BILLING`: 1/1 Billing source rows are incomplete.
+  - Latest Job `J0020`: no readable Billing detail in current production data.
+  - Reports: current-month daily revenue rows are empty while `getReportData` is healthy.
+  - Warranty: `listWarranties` is healthy but currently returns no rows.
+- Wired Sprint 134 into static guard, regression guard, GitHub Actions syntax validation, and `scripts/.guard-checksums.md5`.
 
 ### Phase 133 Support/Admin Live QA (2026-05-19)
 - Added `scripts/sprint133_support_admin_live_qa.js`, a CI-safe protected live QA for the support/admin chain: Inventory -> PO -> Warranty -> Admin Settings.
