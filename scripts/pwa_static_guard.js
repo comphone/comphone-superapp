@@ -31,8 +31,9 @@ const SPRINT128_LINE_NOTIFICATION_TOGGLE_LIVE_QA = path.join(ROOT, 'scripts', 's
 const SPRINT129_VISION_LINE_SUPPRESSION_LIVE_QA = path.join(ROOT, 'scripts', 'sprint129_vision_line_suppression_live_qa.js');
 const SPRINT131_LINE_REAL_SEND_READINESS = path.join(ROOT, 'scripts', 'sprint131_line_real_send_readiness.js');
 const SPRINT132_CORE_WORKFLOW_LIVE_QA = path.join(ROOT, 'scripts', 'sprint132_core_workflow_live_qa.js');
+const SPRINT133_SUPPORT_ADMIN_LIVE_QA = path.join(ROOT, 'scripts', 'sprint133_support_admin_live_qa.js');
 
-const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME, SPRINT121_PERFORMANCE_ACCESSIBILITY, SPRINT122_DASHBOARD_OPERATOR_ANALYTICS, SPRINT123_LIVE_VISUAL_QA, SPRINT124_PROTECTED_VISUAL_MENU_QA, SPRINT125_ROLE_BASED_DASHBOARD_WIDGETS, SPRINT126_AI_VISION_ROLE_READINESS, SPRINT127_VISION_LINE_NOTIFICATION_CONTROLS, SPRINT128_LINE_NOTIFICATION_TOGGLE_LIVE_QA, SPRINT129_VISION_LINE_SUPPRESSION_LIVE_QA, SPRINT131_LINE_REAL_SEND_READINESS, SPRINT132_CORE_WORKFLOW_LIVE_QA];
+const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME, SPRINT121_PERFORMANCE_ACCESSIBILITY, SPRINT122_DASHBOARD_OPERATOR_ANALYTICS, SPRINT123_LIVE_VISUAL_QA, SPRINT124_PROTECTED_VISUAL_MENU_QA, SPRINT125_ROLE_BASED_DASHBOARD_WIDGETS, SPRINT126_AI_VISION_ROLE_READINESS, SPRINT127_VISION_LINE_NOTIFICATION_CONTROLS, SPRINT128_LINE_NOTIFICATION_TOGGLE_LIVE_QA, SPRINT129_VISION_LINE_SUPPRESSION_LIVE_QA, SPRINT131_LINE_REAL_SEND_READINESS, SPRINT132_CORE_WORKFLOW_LIVE_QA, SPRINT133_SUPPORT_ADMIN_LIVE_QA];
 const badMarkers = [
   '\u00e0\u00b8',
   '\u00e0\u00b9',
@@ -280,6 +281,7 @@ const sprint128LineNotificationToggleLiveQaJs = readUtf8(SPRINT128_LINE_NOTIFICA
 const sprint129VisionLineSuppressionLiveQaJs = readUtf8(SPRINT129_VISION_LINE_SUPPRESSION_LIVE_QA);
 const sprint131LineRealSendReadinessJs = readUtf8(SPRINT131_LINE_REAL_SEND_READINESS);
 const sprint132CoreWorkflowLiveQaJs = readUtf8(SPRINT132_CORE_WORKFLOW_LIVE_QA);
+const sprint133SupportAdminLiveQaJs = readUtf8(SPRINT133_SUPPORT_ADMIN_LIVE_QA);
 if (!schemaRegistryJson.includes('"canonical_tables"') || !schemaRegistryJson.includes('"aliases"') || !schemaRegistryJson.includes('"DB_SS_ID"')) {
   fail('docs/database_schema_registry.json must define canonical_tables, aliases, and DB_SS_ID spreadsheet metadata.');
 }
@@ -416,6 +418,15 @@ if (!sprint132CoreWorkflowLiveQaJs.includes('Sprint 132 Core Workflow Live QA') 
     !sprint132CoreWorkflowLiveQaJs.includes('getVisionActionSuggestions') ||
     !sprint132CoreWorkflowLiveQaJs.includes('previewLineRoomMessage')) {
   fail('scripts/sprint132_core_workflow_live_qa.js must guard the protected Jobs/Billing/Reports/Vision/LINE read-only workflow chain.');
+}
+if (!sprint133SupportAdminLiveQaJs.includes('Sprint 133 Support/Admin Live QA') ||
+    !sprint133SupportAdminLiveQaJs.includes('Inventory -> Purchase Orders -> Warranty -> Admin Settings') ||
+    !sprint133SupportAdminLiveQaJs.includes('inventoryOverview') ||
+    !sprint133SupportAdminLiveQaJs.includes('listPurchaseOrders') ||
+    !sprint133SupportAdminLiveQaJs.includes('listWarranties') ||
+    !sprint133SupportAdminLiveQaJs.includes('getSecurityStatus') ||
+    !sprint133SupportAdminLiveQaJs.includes('previewDataRepair')) {
+  fail('scripts/sprint133_support_admin_live_qa.js must guard the protected Inventory/PO/Warranty/Admin read-only workflow chain.');
 }
 
 const pcContractIndex = dashboardPcHtml.indexOf('api_contract.js');
