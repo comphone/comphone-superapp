@@ -781,6 +781,16 @@ else
   warn "Node or sprint134_data_completeness_review.js unavailable - skipping Sprint 134 Data Completeness Review"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint135_data_completeness_panel_audit.js" ]; then
+  if node scripts/sprint135_data_completeness_panel_audit.js; then
+    echo "   Sprint 135 Data Completeness Panel audit passed"
+  else
+    fail "Sprint 135 Data Completeness Panel audit FAILED"
+  fi
+else
+  warn "Node or sprint135_data_completeness_panel_audit.js unavailable - skipping Sprint 135 Data Completeness Panel audit"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"

@@ -472,12 +472,102 @@ async function renderDataRepairConsole_(container) {
           <button id="btn-repair-refresh" class="btn-primary-sm"><i class="bi bi-arrow-clockwise"></i> Refresh Preview</button>
         </div>
       </div>
+      <div id="admin-data-completeness" style="background:#fff;border:1px solid #bae6fd;border-left:4px solid #0ea5e9;border-radius:12px;padding:14px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+          <div>
+            <div style="font-size:15px;font-weight:800;color:#111827"><i class="bi bi-clipboard-data" style="color:#0ea5e9"></i> Data Completeness</div>
+            <div style="font-size:12px;color:#64748b;margin-top:4px">Read-only data state. Business-data warnings do not mean the system is down.</div>
+          </div>
+          <button id="btn-data-completeness-refresh" class="btn-primary-sm" style="background:#0ea5e9"><i class="bi bi-arrow-clockwise"></i> Refresh Data Review</button>
+        </div>
+        <div id="admin-data-completeness-body" style="margin-top:10px;color:#64748b;font-size:13px">Loading data completeness...</div>
+      </div>
       <div id="admin-repair-status" style="font-size:13px;color:#64748b;margin-bottom:10px">Loading repair status...</div>
       <div id="admin-repair-candidates"></div>
     </div>`;
 
   document.getElementById('btn-repair-refresh').addEventListener('click', () => renderDataRepairConsole_(container));
+  document.getElementById('btn-data-completeness-refresh').addEventListener('click', hydrateAdminDataCompleteness_);
+  hydrateAdminDataCompleteness_();
   await hydrateAdminDataRepair_(container);
+}
+
+async function hydrateAdminDataCompleteness_() {
+  const el = document.getElementById('admin-data-completeness-body');
+  if (!el) return;
+  el.innerHTML = '<span style="color:#2563eb">Reviewing live data...</span>';
+  try {
+    const [jobs, billings, reports, warranties, repair] = await Promise.all([
+      callAPI('checkJobs', { limit: 20 }),
+      callAPI('listBillings', { limit: 50 }),
+      callAPI('getReportData', { period: 'month' }),
+      callAPI('listWarranties', { limit: 50 }),
+      callAPI('previewDataRepair', { period: 'month' })
+    ]);
+    const jobRows = adminRowsFor_(jobs, ['jobs', 'items', 'data.jobs', 'data.items', 'data']);
+    const latestJobId = adminFirstValue_(jobRows[0] || {}, ['job_id', 'Job_ID', 'jobId', 'id', 'ID']);
+    const billingRows = adminRowsFor_(billings, ['billings', 'items', 'data.billings', 'data.items', 'data', 'rows']);
+    const billingSummary = adminSummarizeBillingRows_(billingRows);
+    let billingDetail = null;
+    if (latestJobId) {
+      try {
+        billingDetail = await callAPI('getBilling', { job_id: latestJobId });
+      } catch (err) {
+        billingDetail = { success: false, error: err.message || String(err) };
+      }
+    }
+    const revenueRows = adminRowsFor_(reports, ['dailyRevenue', 'data.dailyRevenue', 'report.dailyRevenue', 'records', 'data.records']);
+    const warrantyRows = adminRowsFor_(warranties, ['warranties', 'items', 'data.warranties', 'data.items', 'data', 'rows']);
+    const candidates = adminRowsFor_(repair, ['candidates', 'data.candidates', 'preview.candidates', 'tasks', 'data.tasks']);
+    const findings = [];
+    if (billingSummary.incomplete > 0) findings.push({ area: 'Billing rows', detail: `${billingSummary.incomplete}/${billingSummary.total} incomplete` });
+    if (latestJobId && (!billingDetail || billingDetail.success === false)) findings.push({ area: 'Latest job billing', detail: `${latestJobId} has no readable Billing detail` });
+    if (revenueRows.length === 0) findings.push({ area: 'Monthly revenue', detail: 'Daily revenue rows are empty' });
+    if (warrantyRows.length === 0) findings.push({ area: 'Warranty', detail: 'Warranty list is healthy but empty' });
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px;margin-bottom:10px">
+        ${buildRepairMetric_('System State', 'OK', '#059669')}
+        ${buildRepairMetric_('Data Findings', findings.length, findings.length ? '#d97706' : '#059669')}
+        ${buildRepairMetric_('Repair Preview', candidates.length, '#7c3aed')}
+        ${buildRepairMetric_('Latest Job', latestJobId || '-', '#2563eb')}
+      </div>
+      ${findings.length ? findings.map(f => `
+        <div style="border:1px solid #fed7aa;background:#fffbeb;border-left:4px solid #d97706;border-radius:10px;padding:10px;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:800;color:#92400e">${escapeAdminHtml_(f.area)}</div>
+          <div style="font-size:12px;color:#475569;margin-top:4px">${escapeAdminHtml_(f.detail)}</div>
+        </div>`).join('') : '<div style="background:#ecfdf5;color:#047857;border-radius:10px;padding:12px">No business-data warnings found.</div>'}`;
+    ADMIN_PANEL.dataCompleteness = { latestJobId, billingSummary, revenueRows: revenueRows.length, warrantyRows: warrantyRows.length, repairCandidates: candidates.length, findings };
+  } catch (err) {
+    el.innerHTML = `<span style="color:#dc2626">Data completeness review failed: ${escapeAdminHtml_(err.message || err)}</span>`;
+  }
+}
+
+function adminRowsFor_(body, keys) {
+  for (const key of keys) {
+    const value = key.split('.').reduce((current, part) => current && current[part], body);
+    if (Array.isArray(value)) return value;
+  }
+  return [];
+}
+
+function adminFirstValue_(obj, keys) {
+  for (const key of keys) {
+    const value = key.split('.').reduce((current, part) => current && current[part], obj);
+    if (value !== undefined && value !== null && value !== '') return String(value);
+  }
+  return '';
+}
+
+function adminSummarizeBillingRows_(rows) {
+  let incomplete = 0;
+  rows.forEach(row => {
+    const billingId = adminFirstValue_(row, ['Billing_ID', 'billing_id', 'billingId', 'id', 'ID']);
+    const jobId = adminFirstValue_(row, ['Job_ID', 'job_id', 'jobId']);
+    const amount = adminFirstValue_(row, ['Total_Amount', 'total_amount', 'amount', 'total']);
+    const status = adminFirstValue_(row, ['Payment_Status', 'payment_status', 'status']);
+    if (!(billingId && jobId && amount !== '' && status)) incomplete += 1;
+  });
+  return { total: rows.length, incomplete };
 }
 
 async function hydrateAdminDataRepair_(container) {

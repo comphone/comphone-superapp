@@ -104,6 +104,16 @@ function renderSettingsSection() {
 
     <div id="runtime-selftest-content" style="margin-bottom:16px"></div>
 
+    <div class="card-box" style="margin-bottom:16px;border-left:4px solid #0ea5e9">
+      <div class="card-title"><i class="bi bi-clipboard-data" style="color:#0ea5e9"></i> Data Completeness</div>
+      <div style="font-size:13px;color:#64748b;margin-bottom:10px">
+        Read-only business-data review. System checks can pass while source rows still need owner review.
+      </div>
+      <div id="settings-data-completeness-content">
+        <div class="loading-state"><div class="spinner-pc"></div><p>Loading data completeness...</p></div>
+      </div>
+    </div>
+
     <div class="card-box" style="margin-bottom:16px;border-left:4px solid #7c3aed">
       <div class="card-title"><i class="bi bi-tools" style="color:#7c3aed"></i> Data Repair Console</div>
       <div style="font-size:13px;color:#64748b;margin-bottom:10px">
@@ -387,6 +397,107 @@ function _diagTile_(label, ok, sub, warnOnly) {
   </div>`;
 }
 
+async function hydrateSettingsDataCompletenessPanel() {
+  const el = document.getElementById('settings-data-completeness-content');
+  if (!el) return;
+  if (typeof callApi !== 'function') {
+    el.innerHTML = '<div style="color:#dc2626;font-size:13px">callApi is not available.</div>';
+    return;
+  }
+  el.innerHTML = '<div class="loading-state"><div class="spinner-pc"></div><p>Reviewing live data...</p></div>';
+  try {
+    const [jobs, billings, reports, warranties, repair] = await Promise.all([
+      callApi('checkJobs', { limit: 20 }),
+      callApi('listBillings', { limit: 50 }),
+      callApi('getReportData', { period: 'month' }),
+      callApi('listWarranties', { limit: 50 }),
+      callApi('previewDataRepair', { period: 'month' })
+    ]);
+    const jobRows = _settingsRowsFor_(jobs, ['jobs', 'items', 'data.jobs', 'data.items', 'data']);
+    const latestJobId = _settingsFirstValue_(jobRows[0] || {}, ['job_id', 'Job_ID', 'jobId', 'id', 'ID']);
+    const billingRows = _settingsRowsFor_(billings, ['billings', 'items', 'data.billings', 'data.items', 'data', 'rows']);
+    const billingSummary = _settingsSummarizeBillingRows_(billingRows);
+    let billingDetail = null;
+    if (latestJobId) {
+      try {
+        billingDetail = await callApi('getBilling', { job_id: latestJobId });
+      } catch (err) {
+        billingDetail = { success: false, error: err.message || String(err) };
+      }
+    }
+    const revenueRows = _settingsRowsFor_(reports, ['dailyRevenue', 'data.dailyRevenue', 'report.dailyRevenue', 'records', 'data.records']);
+    const warrantyRows = _settingsRowsFor_(warranties, ['warranties', 'items', 'data.warranties', 'data.items', 'data', 'rows']);
+    const candidates = _settingsRowsFor_(repair, ['candidates', 'data.candidates', 'preview.candidates', 'tasks', 'data.tasks']);
+    const findings = [];
+    if (billingSummary.incomplete > 0) findings.push({ level: 'Review', area: 'Billing rows', detail: `${billingSummary.incomplete}/${billingSummary.total} incomplete` });
+    if (latestJobId && (!billingDetail || billingDetail.success === false)) findings.push({ level: 'Review', area: 'Latest job billing', detail: `${latestJobId} has no readable Billing detail` });
+    if (revenueRows.length === 0) findings.push({ level: 'Review', area: 'Monthly revenue', detail: 'Daily revenue rows are empty' });
+    if (warrantyRows.length === 0) findings.push({ level: 'Review', area: 'Warranty', detail: 'Warranty list is healthy but empty' });
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px">
+        ${_settingsDataTile_('System State', 'OK', '#059669', 'Endpoints responded')}
+        ${_settingsDataTile_('Data Findings', findings.length, findings.length ? '#d97706' : '#059669', findings.length ? 'Needs owner review' : 'No findings')}
+        ${_settingsDataTile_('Repair Preview', candidates.length, candidates.length ? '#7c3aed' : '#64748b', 'Read-only candidates')}
+        ${_settingsDataTile_('Latest Job', latestJobId || '-', latestJobId ? '#2563eb' : '#64748b', 'Billing lookup source')}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <button onclick="hydrateSettingsDataCompletenessPanel()" style="background:#0ea5e9;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:12px;cursor:pointer">
+          <i class="bi bi-arrow-clockwise"></i> Refresh Data Review
+        </button>
+      </div>
+      ${findings.length ? findings.map(_settingsDataFindingHtml_).join('') : '<div style="background:#ecfdf5;color:#047857;border-radius:10px;padding:14px;font-size:13px">Data completeness review found no business-data warnings.</div>'}`;
+    window.__COMPHONE_LAST_DATA_COMPLETENESS = { generated_at: new Date().toISOString(), latestJobId, billingSummary, revenueRows: revenueRows.length, warrantyRows: warrantyRows.length, repairCandidates: candidates.length, findings };
+  } catch (err) {
+    el.innerHTML = `<div style="background:#fef2f2;color:#b91c1c;border-radius:10px;padding:12px;font-size:13px">Data completeness review failed: ${_escapeSettingsHtml_(err.message || err)}</div>`;
+  }
+}
+
+function _settingsDataTile_(label, value, color, sub) {
+  return `<div style="background:#fff;border:1px solid ${color}22;border-radius:10px;padding:10px">
+    <div style="font-size:11px;color:#64748b">${_escapeSettingsHtml_(label)}</div>
+    <div style="font-size:17px;font-weight:800;color:${color};word-break:break-word">${_escapeSettingsHtml_(value)}</div>
+    <div style="font-size:11px;color:#94a3b8;margin-top:2px">${_escapeSettingsHtml_(sub || '')}</div>
+  </div>`;
+}
+
+function _settingsDataFindingHtml_(finding) {
+  return `<div style="border:1px solid #fed7aa;background:#fffbeb;border-left:4px solid #d97706;border-radius:10px;padding:12px;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <strong style="color:#92400e">${_escapeSettingsHtml_(finding.area)}</strong>
+      <span style="font-size:11px;font-weight:800;color:#b45309;background:#fef3c7;border-radius:999px;padding:4px 8px">${_escapeSettingsHtml_(finding.level)}</span>
+    </div>
+    <div style="font-size:12px;color:#475569;margin-top:6px">${_escapeSettingsHtml_(finding.detail)}</div>
+  </div>`;
+}
+
+function _settingsRowsFor_(body, keys) {
+  for (const key of keys) {
+    const value = key.split('.').reduce((current, part) => current && current[part], body);
+    if (Array.isArray(value)) return value;
+  }
+  return [];
+}
+
+function _settingsFirstValue_(obj, keys) {
+  for (const key of keys) {
+    const value = key.split('.').reduce((current, part) => current && current[part], obj);
+    if (value !== undefined && value !== null && value !== '') return String(value);
+  }
+  return '';
+}
+
+function _settingsSummarizeBillingRows_(rows) {
+  let incomplete = 0;
+  rows.forEach(row => {
+    const billingId = _settingsFirstValue_(row, ['Billing_ID', 'billing_id', 'billingId', 'id', 'ID']);
+    const jobId = _settingsFirstValue_(row, ['Job_ID', 'job_id', 'jobId']);
+    const amount = _settingsFirstValue_(row, ['Total_Amount', 'total_amount', 'amount', 'total']);
+    const status = _settingsFirstValue_(row, ['Payment_Status', 'payment_status', 'status']);
+    if (!(billingId && jobId && amount !== '' && status)) incomplete += 1;
+  });
+  return { total: rows.length, incomplete };
+}
+
 async function exportComphoneDiagnostics() {
   const data = window.__COMPHONE_LAST_DIAGNOSTICS || await collectComphoneDiagnostics();
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -510,6 +621,7 @@ function hydrateSettingsRuntimePanels() {
     renderRuntimeSelfTestPanel(el);
   }
   hydrateSettingsSystemSummary();
+  hydrateSettingsDataCompletenessPanel();
   hydrateSettingsDataRepairPanel();
   hydrateSystemDiagnostics();
 }

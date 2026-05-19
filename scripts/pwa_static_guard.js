@@ -33,8 +33,9 @@ const SPRINT131_LINE_REAL_SEND_READINESS = path.join(ROOT, 'scripts', 'sprint131
 const SPRINT132_CORE_WORKFLOW_LIVE_QA = path.join(ROOT, 'scripts', 'sprint132_core_workflow_live_qa.js');
 const SPRINT133_SUPPORT_ADMIN_LIVE_QA = path.join(ROOT, 'scripts', 'sprint133_support_admin_live_qa.js');
 const SPRINT134_DATA_COMPLETENESS_REVIEW = path.join(ROOT, 'scripts', 'sprint134_data_completeness_review.js');
+const SPRINT135_DATA_COMPLETENESS_PANEL = path.join(ROOT, 'scripts', 'sprint135_data_completeness_panel_audit.js');
 
-const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME, SPRINT121_PERFORMANCE_ACCESSIBILITY, SPRINT122_DASHBOARD_OPERATOR_ANALYTICS, SPRINT123_LIVE_VISUAL_QA, SPRINT124_PROTECTED_VISUAL_MENU_QA, SPRINT125_ROLE_BASED_DASHBOARD_WIDGETS, SPRINT126_AI_VISION_ROLE_READINESS, SPRINT127_VISION_LINE_NOTIFICATION_CONTROLS, SPRINT128_LINE_NOTIFICATION_TOGGLE_LIVE_QA, SPRINT129_VISION_LINE_SUPPRESSION_LIVE_QA, SPRINT131_LINE_REAL_SEND_READINESS, SPRINT132_CORE_WORKFLOW_LIVE_QA, SPRINT133_SUPPORT_ADMIN_LIVE_QA, SPRINT134_DATA_COMPLETENESS_REVIEW];
+const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME, SPRINT121_PERFORMANCE_ACCESSIBILITY, SPRINT122_DASHBOARD_OPERATOR_ANALYTICS, SPRINT123_LIVE_VISUAL_QA, SPRINT124_PROTECTED_VISUAL_MENU_QA, SPRINT125_ROLE_BASED_DASHBOARD_WIDGETS, SPRINT126_AI_VISION_ROLE_READINESS, SPRINT127_VISION_LINE_NOTIFICATION_CONTROLS, SPRINT128_LINE_NOTIFICATION_TOGGLE_LIVE_QA, SPRINT129_VISION_LINE_SUPPRESSION_LIVE_QA, SPRINT131_LINE_REAL_SEND_READINESS, SPRINT132_CORE_WORKFLOW_LIVE_QA, SPRINT133_SUPPORT_ADMIN_LIVE_QA, SPRINT134_DATA_COMPLETENESS_REVIEW, SPRINT135_DATA_COMPLETENESS_PANEL];
 const badMarkers = [
   '\u00e0\u00b8',
   '\u00e0\u00b9',
@@ -284,6 +285,7 @@ const sprint131LineRealSendReadinessJs = readUtf8(SPRINT131_LINE_REAL_SEND_READI
 const sprint132CoreWorkflowLiveQaJs = readUtf8(SPRINT132_CORE_WORKFLOW_LIVE_QA);
 const sprint133SupportAdminLiveQaJs = readUtf8(SPRINT133_SUPPORT_ADMIN_LIVE_QA);
 const sprint134DataCompletenessReviewJs = readUtf8(SPRINT134_DATA_COMPLETENESS_REVIEW);
+const sprint135DataCompletenessPanelJs = readUtf8(SPRINT135_DATA_COMPLETENESS_PANEL);
 if (!schemaRegistryJson.includes('"canonical_tables"') || !schemaRegistryJson.includes('"aliases"') || !schemaRegistryJson.includes('"DB_SS_ID"')) {
   fail('docs/database_schema_registry.json must define canonical_tables, aliases, and DB_SS_ID spreadsheet metadata.');
 }
@@ -437,6 +439,13 @@ if (!sprint134DataCompletenessReviewJs.includes('Sprint 134 Data Completeness Re
     !sprint134DataCompletenessReviewJs.includes('previewDataRepair') ||
     !sprint134DataCompletenessReviewJs.includes('COMPHONE_DATA_COMPLETENESS_FAIL_ON_GAP')) {
   fail('scripts/sprint134_data_completeness_review.js must preserve read-only Billing/Reports/Warranty/Data Repair completeness review coverage.');
+}
+if (!sprint135DataCompletenessPanelJs.includes('Sprint 135 Data Completeness Panel Audit') ||
+    !sprint135DataCompletenessPanelJs.includes('settings-data-completeness-content') ||
+    !sprint135DataCompletenessPanelJs.includes('admin-data-completeness') ||
+    !sprint135DataCompletenessPanelJs.includes('business-data warnings') ||
+    !sprint135DataCompletenessPanelJs.includes('executeDataRepair')) {
+  fail('scripts/sprint135_data_completeness_panel_audit.js must guard PC/mobile Data Completeness panels and repair separation.');
 }
 
 const pcContractIndex = dashboardPcHtml.indexOf('api_contract.js');
