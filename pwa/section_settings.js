@@ -444,6 +444,9 @@ async function hydrateSettingsDataCompletenessPanel() {
         <button onclick="hydrateSettingsDataCompletenessPanel()" style="background:#0ea5e9;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:12px;cursor:pointer">
           <i class="bi bi-arrow-clockwise"></i> Refresh Data Review
         </button>
+        <button onclick="exportSettingsDataCompletenessReview()" style="background:#0f766e;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:12px;cursor:pointer">
+          <i class="bi bi-download"></i> Export Review
+        </button>
       </div>
       ${findings.length ? findings.map(_settingsDataFindingHtml_).join('') : '<div style="background:#ecfdf5;color:#047857;border-radius:10px;padding:14px;font-size:13px">Data completeness review found no business-data warnings.</div>'}`;
     window.__COMPHONE_LAST_DATA_COMPLETENESS = { generated_at: new Date().toISOString(), latestJobId, billingSummary, revenueRows: revenueRows.length, warrantyRows: warrantyRows.length, repairCandidates: candidates.length, findings };
@@ -461,13 +464,76 @@ function _settingsDataTile_(label, value, color, sub) {
 }
 
 function _settingsDataFindingHtml_(finding) {
+  const key = _settingsFindingKey_(finding);
+  const review = _settingsGetReviewState_()[key] || {};
+  const reviewed = !!review.reviewed_at;
+  const target = _settingsFindingTarget_(finding.area);
   return `<div style="border:1px solid #fed7aa;background:#fffbeb;border-left:4px solid #d97706;border-radius:10px;padding:12px;margin-bottom:8px">
     <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
       <strong style="color:#92400e">${_escapeSettingsHtml_(finding.area)}</strong>
-      <span style="font-size:11px;font-weight:800;color:#b45309;background:#fef3c7;border-radius:999px;padding:4px 8px">${_escapeSettingsHtml_(finding.level)}</span>
+      <span style="font-size:11px;font-weight:800;color:${reviewed ? '#047857' : '#b45309'};background:${reviewed ? '#dcfce7' : '#fef3c7'};border-radius:999px;padding:4px 8px">${reviewed ? 'REVIEWED' : _escapeSettingsHtml_(finding.level)}</span>
     </div>
     <div style="font-size:12px;color:#475569;margin-top:6px">${_escapeSettingsHtml_(finding.detail)}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <button onclick="loadSection('${target}')" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:7px 10px;font-size:12px;cursor:pointer">Open ${_escapeSettingsHtml_(target)}</button>
+      <button onclick="markSettingsDataFindingReviewed('${_escapeSettingsHtml_(key)}')" style="background:#0f766e;color:#fff;border:none;border-radius:8px;padding:7px 10px;font-size:12px;cursor:pointer">Mark Reviewed</button>
+    </div>
+    <textarea onchange="saveSettingsDataFindingNote('${_escapeSettingsHtml_(key)}', this.value)" placeholder="Owner review note" style="width:100%;margin-top:8px;min-height:54px;border:1px solid #fed7aa;border-radius:8px;padding:8px;font-size:12px">${_escapeSettingsHtml_(review.note || '')}</textarea>
+    ${review.reviewed_at ? `<div style="font-size:11px;color:#64748b;margin-top:6px">Reviewed: ${_escapeSettingsHtml_(review.reviewed_at)}</div>` : ''}
   </div>`;
+}
+
+function _settingsFindingTarget_(area) {
+  const text = String(area || '').toLowerCase();
+  if (text.includes('billing')) return 'billing';
+  if (text.includes('revenue')) return 'reports';
+  if (text.includes('warranty')) return 'warranty';
+  return 'settings';
+}
+
+function _settingsFindingKey_(finding) {
+  return String((finding && finding.area) || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+}
+
+function _settingsGetReviewState_() {
+  try {
+    return JSON.parse(localStorage.getItem('comphone_data_completeness_reviews') || '{}') || {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function _settingsSetReviewState_(state) {
+  localStorage.setItem('comphone_data_completeness_reviews', JSON.stringify(state || {}));
+}
+
+function markSettingsDataFindingReviewed(key) {
+  const state = _settingsGetReviewState_();
+  state[key] = Object.assign({}, state[key] || {}, { reviewed_at: new Date().toISOString() });
+  _settingsSetReviewState_(state);
+  hydrateSettingsDataCompletenessPanel();
+}
+
+function saveSettingsDataFindingNote(key, note) {
+  const state = _settingsGetReviewState_();
+  state[key] = Object.assign({}, state[key] || {}, { note: String(note || ''), note_updated_at: new Date().toISOString() });
+  _settingsSetReviewState_(state);
+}
+
+function exportSettingsDataCompletenessReview() {
+  const data = Object.assign({}, window.__COMPHONE_LAST_DATA_COMPLETENESS || {}, {
+    review_state: _settingsGetReviewState_(),
+    exported_at: new Date().toISOString()
+  });
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'comphone-data-completeness-review-' + new Date().toISOString().slice(0, 10) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 function _settingsRowsFor_(body, keys) {

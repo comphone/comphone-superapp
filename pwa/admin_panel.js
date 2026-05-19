@@ -479,6 +479,7 @@ async function renderDataRepairConsole_(container) {
             <div style="font-size:12px;color:#64748b;margin-top:4px">Read-only data state. Business-data warnings do not mean the system is down.</div>
           </div>
           <button id="btn-data-completeness-refresh" class="btn-primary-sm" style="background:#0ea5e9"><i class="bi bi-arrow-clockwise"></i> Refresh Data Review</button>
+          <button id="btn-data-completeness-export" class="btn-primary-sm" style="background:#0f766e"><i class="bi bi-download"></i> Export Review</button>
         </div>
         <div id="admin-data-completeness-body" style="margin-top:10px;color:#64748b;font-size:13px">Loading data completeness...</div>
       </div>
@@ -488,6 +489,7 @@ async function renderDataRepairConsole_(container) {
 
   document.getElementById('btn-repair-refresh').addEventListener('click', () => renderDataRepairConsole_(container));
   document.getElementById('btn-data-completeness-refresh').addEventListener('click', hydrateAdminDataCompleteness_);
+  document.getElementById('btn-data-completeness-export').addEventListener('click', exportAdminDataCompletenessReview_);
   hydrateAdminDataCompleteness_();
   await hydrateAdminDataRepair_(container);
 }
@@ -531,15 +533,84 @@ async function hydrateAdminDataCompleteness_() {
         ${buildRepairMetric_('Repair Preview', candidates.length, '#7c3aed')}
         ${buildRepairMetric_('Latest Job', latestJobId || '-', '#2563eb')}
       </div>
-      ${findings.length ? findings.map(f => `
-        <div style="border:1px solid #fed7aa;background:#fffbeb;border-left:4px solid #d97706;border-radius:10px;padding:10px;margin-bottom:8px">
-          <div style="font-size:12px;font-weight:800;color:#92400e">${escapeAdminHtml_(f.area)}</div>
-          <div style="font-size:12px;color:#475569;margin-top:4px">${escapeAdminHtml_(f.detail)}</div>
-        </div>`).join('') : '<div style="background:#ecfdf5;color:#047857;border-radius:10px;padding:12px">No business-data warnings found.</div>'}`;
+      ${findings.length ? findings.map(buildAdminDataFinding_).join('') : '<div style="background:#ecfdf5;color:#047857;border-radius:10px;padding:12px">No business-data warnings found.</div>'}`;
     ADMIN_PANEL.dataCompleteness = { latestJobId, billingSummary, revenueRows: revenueRows.length, warrantyRows: warrantyRows.length, repairCandidates: candidates.length, findings };
   } catch (err) {
     el.innerHTML = `<span style="color:#dc2626">Data completeness review failed: ${escapeAdminHtml_(err.message || err)}</span>`;
   }
+}
+
+function buildAdminDataFinding_(finding) {
+  const key = adminFindingKey_(finding);
+  const review = adminGetReviewState_()[key] || {};
+  const reviewed = !!review.reviewed_at;
+  const target = adminFindingTarget_(finding.area);
+  return `<div style="border:1px solid #fed7aa;background:#fffbeb;border-left:4px solid #d97706;border-radius:10px;padding:10px;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <div style="font-size:12px;font-weight:800;color:#92400e">${escapeAdminHtml_(finding.area)}</div>
+      <span style="font-size:11px;font-weight:800;color:${reviewed ? '#047857' : '#b45309'};background:${reviewed ? '#dcfce7' : '#fef3c7'};border-radius:999px;padding:4px 8px">${reviewed ? 'REVIEWED' : 'REVIEW'}</span>
+    </div>
+    <div style="font-size:12px;color:#475569;margin-top:4px">${escapeAdminHtml_(finding.detail)}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <button onclick="goPage('${target}', document.getElementById('nav-more'))" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:7px 10px;font-size:12px">Open ${escapeAdminHtml_(target)}</button>
+      <button onclick="markAdminDataFindingReviewed_('${escapeAdminHtml_(key)}')" style="background:#0f766e;color:#fff;border:none;border-radius:8px;padding:7px 10px;font-size:12px">Mark Reviewed</button>
+    </div>
+    <textarea onchange="saveAdminDataFindingNote_('${escapeAdminHtml_(key)}', this.value)" placeholder="Owner review note" style="width:100%;margin-top:8px;min-height:54px;border:1px solid #fed7aa;border-radius:8px;padding:8px;font-size:12px">${escapeAdminHtml_(review.note || '')}</textarea>
+    ${review.reviewed_at ? `<div style="font-size:11px;color:#64748b;margin-top:6px">Reviewed: ${escapeAdminHtml_(review.reviewed_at)}</div>` : ''}
+  </div>`;
+}
+
+function adminFindingTarget_(area) {
+  const text = String(area || '').toLowerCase();
+  if (text.includes('billing')) return 'billing';
+  if (text.includes('revenue')) return 'reports';
+  if (text.includes('warranty')) return 'warranty';
+  return 'admin';
+}
+
+function adminFindingKey_(finding) {
+  return String((finding && finding.area) || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+}
+
+function adminGetReviewState_() {
+  try {
+    return JSON.parse(localStorage.getItem('comphone_data_completeness_reviews') || '{}') || {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function adminSetReviewState_(state) {
+  localStorage.setItem('comphone_data_completeness_reviews', JSON.stringify(state || {}));
+}
+
+function markAdminDataFindingReviewed_(key) {
+  const state = adminGetReviewState_();
+  state[key] = Object.assign({}, state[key] || {}, { reviewed_at: new Date().toISOString() });
+  adminSetReviewState_(state);
+  hydrateAdminDataCompleteness_();
+}
+
+function saveAdminDataFindingNote_(key, note) {
+  const state = adminGetReviewState_();
+  state[key] = Object.assign({}, state[key] || {}, { note: String(note || ''), note_updated_at: new Date().toISOString() });
+  adminSetReviewState_(state);
+}
+
+function exportAdminDataCompletenessReview_() {
+  const data = Object.assign({}, ADMIN_PANEL.dataCompleteness || {}, {
+    review_state: adminGetReviewState_(),
+    exported_at: new Date().toISOString()
+  });
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'comphone-data-completeness-review-' + new Date().toISOString().slice(0, 10) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 function adminRowsFor_(body, keys) {
