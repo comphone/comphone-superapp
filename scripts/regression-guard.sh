@@ -811,6 +811,16 @@ else
   warn "Node or sprint137_backend_review_log_audit.js unavailable - skipping Sprint 137 Backend Review Log audit"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint138_backend_review_log_live_qa.js" ]; then
+  if node scripts/sprint138_backend_review_log_live_qa.js; then
+    echo "   Sprint 138 Backend Review Log Live QA passed or skipped safely"
+  else
+    fail "Sprint 138 Backend Review Log Live QA FAILED"
+  fi
+else
+  warn "Node or sprint138_backend_review_log_live_qa.js unavailable - skipping Sprint 138 Backend Review Log Live QA"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"

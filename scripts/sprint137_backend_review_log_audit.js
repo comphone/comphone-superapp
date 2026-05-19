@@ -46,9 +46,9 @@ function check(id, ok, detail, severity = 'P0') {
 }
 
 check('backend-functions-present',
-  ['DATA_REVIEW_LOG_SHEET', 'getDataReviewLog', 'saveDataReviewLog', 'ensureDataReviewLog_', 'logDataReviewAudit_']
+  ['DATA_REVIEW_LOG_SHEET', 'getDataReviewLog', 'saveDataReviewLog', 'ensureDataReviewLog_', 'logDataReviewAudit_', 'script_properties_fallback']
     .every(token => has(files.rootRepair, token) && has(files.claspRepair, token)),
-  'Root and clasp-ready DataRepairConsole must expose durable review log helpers.');
+  'Root and clasp-ready DataRepairConsole must expose durable review log helpers and a safe properties fallback.');
 
 check('schema-registered',
   has(files.schema, '"DB_DATA_REVIEW_LOG"') && has(files.schema, '"domain": "maintenance"'),

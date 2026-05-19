@@ -36,8 +36,9 @@ const SPRINT134_DATA_COMPLETENESS_REVIEW = path.join(ROOT, 'scripts', 'sprint134
 const SPRINT135_DATA_COMPLETENESS_PANEL = path.join(ROOT, 'scripts', 'sprint135_data_completeness_panel_audit.js');
 const SPRINT136_DATA_REVIEW_WORKFLOW = path.join(ROOT, 'scripts', 'sprint136_data_review_workflow_audit.js');
 const SPRINT137_BACKEND_REVIEW_LOG = path.join(ROOT, 'scripts', 'sprint137_backend_review_log_audit.js');
+const SPRINT138_BACKEND_REVIEW_LOG_LIVE_QA = path.join(ROOT, 'scripts', 'sprint138_backend_review_log_live_qa.js');
 
-const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME, SPRINT121_PERFORMANCE_ACCESSIBILITY, SPRINT122_DASHBOARD_OPERATOR_ANALYTICS, SPRINT123_LIVE_VISUAL_QA, SPRINT124_PROTECTED_VISUAL_MENU_QA, SPRINT125_ROLE_BASED_DASHBOARD_WIDGETS, SPRINT126_AI_VISION_ROLE_READINESS, SPRINT127_VISION_LINE_NOTIFICATION_CONTROLS, SPRINT128_LINE_NOTIFICATION_TOGGLE_LIVE_QA, SPRINT129_VISION_LINE_SUPPRESSION_LIVE_QA, SPRINT131_LINE_REAL_SEND_READINESS, SPRINT132_CORE_WORKFLOW_LIVE_QA, SPRINT133_SUPPORT_ADMIN_LIVE_QA, SPRINT134_DATA_COMPLETENESS_REVIEW, SPRINT135_DATA_COMPLETENESS_PANEL, SPRINT136_DATA_REVIEW_WORKFLOW, SPRINT137_BACKEND_REVIEW_LOG];
+const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME, SPRINT121_PERFORMANCE_ACCESSIBILITY, SPRINT122_DASHBOARD_OPERATOR_ANALYTICS, SPRINT123_LIVE_VISUAL_QA, SPRINT124_PROTECTED_VISUAL_MENU_QA, SPRINT125_ROLE_BASED_DASHBOARD_WIDGETS, SPRINT126_AI_VISION_ROLE_READINESS, SPRINT127_VISION_LINE_NOTIFICATION_CONTROLS, SPRINT128_LINE_NOTIFICATION_TOGGLE_LIVE_QA, SPRINT129_VISION_LINE_SUPPRESSION_LIVE_QA, SPRINT131_LINE_REAL_SEND_READINESS, SPRINT132_CORE_WORKFLOW_LIVE_QA, SPRINT133_SUPPORT_ADMIN_LIVE_QA, SPRINT134_DATA_COMPLETENESS_REVIEW, SPRINT135_DATA_COMPLETENESS_PANEL, SPRINT136_DATA_REVIEW_WORKFLOW, SPRINT137_BACKEND_REVIEW_LOG, SPRINT138_BACKEND_REVIEW_LOG_LIVE_QA];
 const badMarkers = [
   '\u00e0\u00b8',
   '\u00e0\u00b9',
@@ -290,6 +291,7 @@ const sprint134DataCompletenessReviewJs = readUtf8(SPRINT134_DATA_COMPLETENESS_R
 const sprint135DataCompletenessPanelJs = readUtf8(SPRINT135_DATA_COMPLETENESS_PANEL);
 const sprint136DataReviewWorkflowJs = readUtf8(SPRINT136_DATA_REVIEW_WORKFLOW);
 const sprint137BackendReviewLogJs = readUtf8(SPRINT137_BACKEND_REVIEW_LOG);
+const sprint138BackendReviewLogLiveQaJs = readUtf8(SPRINT138_BACKEND_REVIEW_LOG_LIVE_QA);
 if (!schemaRegistryJson.includes('"canonical_tables"') || !schemaRegistryJson.includes('"aliases"') || !schemaRegistryJson.includes('"DB_SS_ID"')) {
   fail('docs/database_schema_registry.json must define canonical_tables, aliases, and DB_SS_ID spreadsheet metadata.');
 }
@@ -462,8 +464,17 @@ if (!sprint137BackendReviewLogJs.includes('Sprint 137 Backend Review Log Audit')
     !sprint137BackendReviewLogJs.includes('DB_DATA_REVIEW_LOG') ||
     !sprint137BackendReviewLogJs.includes('getDataReviewLog') ||
     !sprint137BackendReviewLogJs.includes('saveDataReviewLog') ||
+    !sprint137BackendReviewLogJs.includes('script_properties_fallback') ||
     !sprint137BackendReviewLogJs.includes('review-log-not-repair')) {
   fail('scripts/sprint137_backend_review_log_audit.js must guard durable backend review log and no-repair behavior.');
+}
+if (!sprint138BackendReviewLogLiveQaJs.includes('Sprint 138 Backend Review Log Live QA') ||
+    !sprint138BackendReviewLogLiveQaJs.includes('COMPHONE_AUTH_TOKEN') ||
+    !sprint138BackendReviewLogLiveQaJs.includes('review-log-live-qa-no-repair-execution') ||
+    !sprint138BackendReviewLogLiveQaJs.includes('getDataReviewLog') ||
+    !sprint138BackendReviewLogLiveQaJs.includes('saveDataReviewLog') ||
+    !sprint138BackendReviewLogLiveQaJs.includes('previewDataRepair')) {
+  fail('scripts/sprint138_backend_review_log_live_qa.js must guard token-aware backend review log live QA without repair execution.');
 }
 
 const pcContractIndex = dashboardPcHtml.indexOf('api_contract.js');

@@ -8,6 +8,8 @@ var DATA_REPAIR_CONFIRM = 'EXECUTE_REVIEWED_DATA_REPAIR';
 var DATA_REPAIR_ARCHIVE_SHEET = 'DB_DATA_REPAIR_ARCHIVE';
 var DATA_REPAIR_AUDIT_SHEET = 'DB_DATA_REPAIR_AUDIT';
 var DATA_REVIEW_LOG_SHEET = 'DB_DATA_REVIEW_LOG';
+var DATA_REVIEW_LOG_FALLBACK_PROP = 'DATA_REVIEW_LOG_JSON';
+var DATA_REVIEW_LOG_AUDIT_FALLBACK_PROP = 'DATA_REVIEW_LOG_AUDIT_JSON';
 
 function previewDataRepair(params) {
   params = params || {};
@@ -122,7 +124,14 @@ function getDataReviewLog(params) {
   try {
     var ss = getComphoneSheet();
     if (!ss) return { success: false, error: 'Spreadsheet not found' };
-    var sh = ensureDataReviewLog_(ss);
+    var sh;
+    try {
+      sh = ensureDataReviewLog_(ss);
+    } catch (sheetError) {
+      var fallback = getDataReviewLogFromProperties_();
+      fallback.fallback_reason = sheetError.toString();
+      return fallback;
+    }
     var values = sh.getDataRange().getValues();
     var reviews = {};
     for (var i = 1; i < values.length; i++) {
@@ -159,7 +168,12 @@ function saveDataReviewLog(params) {
     if (!findingKey) return { success: false, status: 'blocked', error: 'finding_key is required.' };
     var ss = getComphoneSheet();
     if (!ss) return { success: false, error: 'Spreadsheet not found' };
-    var sh = ensureDataReviewLog_(ss);
+    var sh;
+    try {
+      sh = ensureDataReviewLog_(ss);
+    } catch (sheetError) {
+      return saveDataReviewLogToProperties_(findingKey, params, sheetError);
+    }
     var now = new Date();
     var area = String(params.area || '');
     var note = String(params.note || '');
@@ -376,7 +390,88 @@ function logDataReviewAudit_(ss, status, findingKey, params, result) {
       JSON.stringify(result || {})
     ]);
   } catch (e) {
-    Logger.log('[DataRepairConsole] review audit failed: ' + e.toString());
+    logDataReviewAuditToProperties_(status, findingKey, params, result, e);
+  }
+}
+
+function getDataReviewLogFromProperties_() {
+  var reviews = readDataReviewLogProperties_();
+  return {
+    success: true,
+    status: 'ok',
+    sheet: DATA_REVIEW_LOG_SHEET,
+    storage: 'script_properties_fallback',
+    count: Object.keys(reviews).length,
+    reviews: reviews
+  };
+}
+
+function saveDataReviewLogToProperties_(findingKey, params, sheetError) {
+  var now = new Date();
+  var reviews = readDataReviewLogProperties_();
+  reviews[findingKey] = {
+    finding_key: findingKey,
+    area: String(params.area || ''),
+    status: String(params.status || 'reviewed'),
+    note: String(params.note || ''),
+    reviewed_at: params.reviewed_at || now.toISOString(),
+    reviewed_by: String(params.operator || params.user || params.username || 'unknown'),
+    source: String(params.source || 'data-completeness-panel'),
+    updated_at: now.toISOString(),
+    storage: 'script_properties_fallback'
+  };
+  writeDataReviewLogProperties_(reviews);
+  logDataReviewAuditToProperties_('review-log-saved-fallback', findingKey, params, {
+    status: reviews[findingKey].status,
+    fallback_reason: sheetError && sheetError.toString()
+  }, sheetError);
+  return {
+    success: true,
+    status: 'saved',
+    sheet: DATA_REVIEW_LOG_SHEET,
+    storage: 'script_properties_fallback',
+    finding_key: findingKey,
+    reviewed_at: reviews[findingKey].reviewed_at,
+    updated_at: reviews[findingKey].updated_at,
+    fallback_reason: sheetError && sheetError.toString()
+  };
+}
+
+function readDataReviewLogProperties_() {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(DATA_REVIEW_LOG_FALLBACK_PROP);
+    if (!raw) return {};
+    var parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (e) {
+    Logger.log('[DataRepairConsole] read review log fallback failed: ' + e.toString());
+    return {};
+  }
+}
+
+function writeDataReviewLogProperties_(reviews) {
+  PropertiesService.getScriptProperties().setProperty(DATA_REVIEW_LOG_FALLBACK_PROP, JSON.stringify(reviews || {}));
+}
+
+function logDataReviewAuditToProperties_(status, findingKey, params, result, originalError) {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var raw = props.getProperty(DATA_REVIEW_LOG_AUDIT_FALLBACK_PROP);
+    var audit = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(audit)) audit = [];
+    audit.push({
+      logged_at: new Date().toISOString(),
+      status: status,
+      finding_key: findingKey,
+      operator: String((params && (params.operator || params.user || params.username)) || 'unknown'),
+      source: params && params.source,
+      result: result || {},
+      original_error: originalError ? originalError.toString() : ''
+    });
+    if (audit.length > 100) audit = audit.slice(audit.length - 100);
+    props.setProperty(DATA_REVIEW_LOG_AUDIT_FALLBACK_PROP, JSON.stringify(audit));
+  } catch (e) {
+    Logger.log('[DataRepairConsole] review audit fallback failed: ' + e.toString());
   }
 }
 

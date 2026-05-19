@@ -1,10 +1,10 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.18.34-job-menu-hardening (PWA) / GAS Backend v5.18.16-write-flow-validation @616
+> **Version:** v5.18.34-job-menu-hardening (PWA) / GAS Backend v5.18.16-write-flow-validation @618
 
-> **Date:** 2026-05-19 | **Phase:** 137 (Backend Review Log)
+> **Date:** 2026-05-19 | **Phase:** 138 (Backend Review Log Live QA)
 
-> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + CORE-AUDITED + FOCUS-AUDITED + JOBS-E2E-HARDENED + BILLING-E2E-HARDENED + REPORTS-E2E-HARDENED + VISION-LINE-FLOW-HARDENED + PRODUCTION-JOURNEY-HARDENED + BACKUP-WORKFLOW-HARDENED + MOBILE-QUICK-ACTIONS-HARDENED + MOBILE-CORE-WORKFLOWS-HARDENED + MOBILE-SECONDARY-WORKFLOWS-HARDENED + LIVE-MOBILE-MENU-SMOKE-HARDENED + OPERATOR-UX-QA-HARDENED + PROTECTED-LIVE-QA-RUNBOOK-HARDENED + PROTECTED-LIVE-QA-VERIFIED + DASHBOARD-PERFORMANCE-HARDENED + DEPLOY-GAS-CI-GATE-HARDENED + WRITE-SMOKE-LIFECYCLE-HARDENED + BLUEPRINT-RECONCILED + PO-READ-CACHE-HARDENED + JOBS-READ-CACHE-HARDENED + READ-DASHBOARD-CACHE-HARDENED + PRODUCTION-SAFETY-HARNESS-HARDENED + OPERATOR-WORKFLOW-POLISHED + LIVE-CACHE-FRESHNESS-HARDENED + OPERATOR-MENU-CLICKTHROUGH-HARDENED + CONTROLLED-WRITE-LIFECYCLE-HARDENED + LIVE-UX-MENU-RUNTIME-HARDENED + VISUAL-RUNTIME-WALKTHROUGH-HARDENED + PROTECTED-BROWSER-JOURNEY-HARDENED + RECORD-DETAIL-COMPLETENESS-HARDENED + PRODUCTION-DATA-QUALITY-GUARDED + CONTROLLED-DATA-CLEANUP-PLANNED + DATABASE-SCHEMA-REGISTRY-GUARDED + SHEET-CONTEXT-NORMALIZED + DATA-REPAIR-CONSOLE-PLANNED + DATA-REPAIR-EXECUTION-HARDENED + GAS-616-LIVE-VERIFIED + FULL-QA-SWEEP + GEMINI-READY + VISION-LINE-PROTECTED-LIVE-VERIFIED + LINE-REAL-SEND-READINESS-GUARDED + CORE-WORKFLOW-LIVE-VERIFIED + SUPPORT-ADMIN-LIVE-VERIFIED + DATA-COMPLETENESS-REVIEWED + DATA-COMPLETENESS-PANEL-HARDENED + DATA-REVIEW-WORKFLOW-HARDENED + BACKEND-REVIEW-LOG-HARDENED - latest production GAS deployment is @616 on the existing Web App URL; Sprint 137 adds a durable backend review log (`DB_DATA_REVIEW_LOG`) for Data Completeness notes/reviewed state with audit entries, while keeping actual data repair behind the existing archive-before-change confirmation flow.
+> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + CORE-AUDITED + FOCUS-AUDITED + JOBS-E2E-HARDENED + BILLING-E2E-HARDENED + REPORTS-E2E-HARDENED + VISION-LINE-FLOW-HARDENED + PRODUCTION-JOURNEY-HARDENED + BACKUP-WORKFLOW-HARDENED + MOBILE-QUICK-ACTIONS-HARDENED + MOBILE-CORE-WORKFLOWS-HARDENED + MOBILE-SECONDARY-WORKFLOWS-HARDENED + LIVE-MOBILE-MENU-SMOKE-HARDENED + OPERATOR-UX-QA-HARDENED + PROTECTED-LIVE-QA-RUNBOOK-HARDENED + PROTECTED-LIVE-QA-VERIFIED + DASHBOARD-PERFORMANCE-HARDENED + DEPLOY-GAS-CI-GATE-HARDENED + WRITE-SMOKE-LIFECYCLE-HARDENED + BLUEPRINT-RECONCILED + PO-READ-CACHE-HARDENED + JOBS-READ-CACHE-HARDENED + READ-DASHBOARD-CACHE-HARDENED + PRODUCTION-SAFETY-HARNESS-HARDENED + OPERATOR-WORKFLOW-POLISHED + LIVE-CACHE-FRESHNESS-HARDENED + OPERATOR-MENU-CLICKTHROUGH-HARDENED + CONTROLLED-WRITE-LIFECYCLE-HARDENED + LIVE-UX-MENU-RUNTIME-HARDENED + VISUAL-RUNTIME-WALKTHROUGH-HARDENED + PROTECTED-BROWSER-JOURNEY-HARDENED + RECORD-DETAIL-COMPLETENESS-HARDENED + PRODUCTION-DATA-QUALITY-GUARDED + CONTROLLED-DATA-CLEANUP-PLANNED + DATABASE-SCHEMA-REGISTRY-GUARDED + SHEET-CONTEXT-NORMALIZED + DATA-REPAIR-CONSOLE-PLANNED + DATA-REPAIR-EXECUTION-HARDENED + GAS-618-LIVE-VERIFIED + FULL-QA-SWEEP + GEMINI-READY + VISION-LINE-PROTECTED-LIVE-VERIFIED + LINE-REAL-SEND-READINESS-GUARDED + CORE-WORKFLOW-LIVE-VERIFIED + SUPPORT-ADMIN-LIVE-VERIFIED + DATA-COMPLETENESS-REVIEWED + DATA-COMPLETENESS-PANEL-HARDENED + DATA-REVIEW-WORKFLOW-HARDENED + BACKEND-REVIEW-LOG-HARDENED + BACKEND-REVIEW-LOG-LIVE-QA-VERIFIED - latest production GAS deployment is @618 on the existing Web App URL; Sprint 138 adds token-aware production QA for `getDataReviewLog` / `saveDataReviewLog` and proves the review-log path writes metadata only, while keeping actual data repair behind the existing archive-before-change confirmation flow.
 
 ---
 
@@ -13,11 +13,11 @@
 This section is the latest handoff for any human or AI agent continuing COMPHONE work.
 
 ### Current Production State
-- **Current phase:** Sprint / Phase 137.
+- **Current phase:** Sprint / Phase 138.
 - **Latest stable verification commit before this handoff:** `249ff86 Document Sprint 110 GAS live verification`. Run `git log -1 --oneline` for the exact current repository HEAD.
 - **PWA version:** `v5.18.34-job-menu-hardening`.
 - **GAS backend version:** `v5.18.16-write-flow-validation`.
-- **Production GAS deployment:** `AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA @616`.
+- **Production GAS deployment:** `AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA @618`.
 - **Production GAS URL:** `https://script.google.com/macros/s/AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA/exec`.
 - **Production Spreadsheet ID:** `19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA`.
 - **Schema registry:** `docs/database_schema_registry.json`.
@@ -59,6 +59,7 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 - Sprint 135 adds owner-facing Data Completeness panels to PC Settings and Mobile Admin. Both panels use read-only APIs (`checkJobs`, `listBillings`, `getBilling`, `getReportData`, `listWarranties`, `previewDataRepair`) and keep destructive repair behind the existing `EXECUTE_REVIEWED_DATA_REPAIR` flow.
 - Sprint 136 adds owner review workflow controls to those panels: export review summary JSON, localStorage-backed review notes, mark-reviewed status, and deep links to Billing/Reports/Warranty. These controls never call `executeDataRepair`.
 - Sprint 137 adds backend review log actions `getDataReviewLog` and `saveDataReviewLog`, registers `DB_DATA_REVIEW_LOG`, and updates PC/Mobile panels to sync review notes/status through the backend with localStorage fallback.
+- Sprint 138 adds `scripts/sprint138_backend_review_log_live_qa.js`, a token-aware protected live QA for `getDataReviewLog` and `saveDataReviewLog`. It writes only a QA review metadata row (`sprint138-live-qa-review-log`) and confirms `previewDataRepair` remains preview-only. If the deploying account can read the spreadsheet but cannot create/write the new review sheet, the backend stores review metadata in Apps Script Properties under a `script_properties_fallback` path until spreadsheet edit permissions are corrected.
 
 ### Required Verification Commands
 Run these before claiming the system is stable after any code change:
@@ -96,6 +97,7 @@ node scripts/sprint134_data_completeness_review.js
 node scripts/sprint135_data_completeness_panel_audit.js
 node scripts/sprint136_data_review_workflow_audit.js
 node scripts/sprint137_backend_review_log_audit.js
+node scripts/sprint138_backend_review_log_live_qa.js
 bash scripts/regression-guard.sh
 bash scripts/guard-self-test.sh
 node scripts/pages_deploy_verify.js
@@ -119,6 +121,7 @@ node scripts/sprint131_line_real_send_readiness.js
 node scripts/sprint132_core_workflow_live_qa.js
 node scripts/sprint133_support_admin_live_qa.js
 node scripts/sprint134_data_completeness_review.js
+node scripts/sprint138_backend_review_log_live_qa.js
 Remove-Item Env:\COMPHONE_AUTH_TOKEN -ErrorAction SilentlyContinue
 ```
 
@@ -140,7 +143,7 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN,Env:\COMPHONE_LINE_TOGGLE_CONFIRM,Env:\COMP
 - **Data repair 2:** latest Job `J0020` still has no readable Billing detail. Confirm whether this job should have Billing before creating or repairing data.
 - **Data repair 3:** current-month report daily revenue records are empty. Sprint 116 shows `report-empty-state`; Sprint 134 confirms the backend is healthy but the selected period has no daily revenue rows.
 - **Data repair 4:** Warranty list is live and healthy but currently empty. No detail-link repair is possible until source warranty rows exist.
-- **Next recommended sprint:** Sprint 138 should deploy GAS, then run protected live QA for `getDataReviewLog` / `saveDataReviewLog` to confirm the new backend log sheet and audit row are working in production.
+- **Next recommended sprint:** Sprint 139 should move to owner-facing cleanup triage: review the four Sprint 134 business-data findings from the Data Completeness panels, decide which items require manual backfill versus controlled repair, and keep all mutations behind archive-before-change confirmation.
 - **After Sprint 133:** run a human-approved LINE real-send test only if the owner explicitly chooses a target room and message; otherwise keep LINE validation in preview/muted-send mode.
 
 ### Non-Negotiable Rules For Future Agents
@@ -160,11 +163,19 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN,Env:\COMPHONE_LINE_TOGGLE_CONFIRM,Env:\COMP
 | App Version | `v5.18.34-job-menu-hardening` | `pwa/version_config.js` |
 | Cache Version | `comphone-v5.18.34-job-menu-hardening-20260518_0730` | `pwa/version_config.js`, `pwa/sw.js` |
 | Build Timestamp | `20260518_0730` | `pwa/version_config.js` |
-| GAS Backend Deploy | `AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA @616` / production URL in `pwa/gas_config.js` | `Config.gs`, `Dashboard.gs`, `DashboardBundle.gs`, `Router.gs`, `RouterSplit.gs`, `JobStateMachine.gs`, `LineCommandCenter.gs`, `SmokeCleanup.gs`, `DataRepairConsole.gs`, `VisionPipeline.gs`, `clasp-ready/Config.gs`, `clasp-ready/Dashboard.gs`, `clasp-ready/DashboardBundle.gs`, `clasp-ready/Router.gs`, `clasp-ready/RouterSplit.gs`, `clasp-ready/JobStateMachine.gs`, `clasp-ready/LineCommandCenter.gs`, `clasp-ready/SmokeCleanup.gs`, `clasp-ready/DataRepairConsole.gs`, `clasp-ready/VisionPipeline.gs` |
+| GAS Backend Deploy | `AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA @618` / production URL in `pwa/gas_config.js` | `Config.gs`, `Dashboard.gs`, `DashboardBundle.gs`, `Router.gs`, `RouterSplit.gs`, `JobStateMachine.gs`, `LineCommandCenter.gs`, `SmokeCleanup.gs`, `DataRepairConsole.gs`, `VisionPipeline.gs`, `clasp-ready/Config.gs`, `clasp-ready/Dashboard.gs`, `clasp-ready/DashboardBundle.gs`, `clasp-ready/Router.gs`, `clasp-ready/RouterSplit.gs`, `clasp-ready/JobStateMachine.gs`, `clasp-ready/LineCommandCenter.gs`, `clasp-ready/SmokeCleanup.gs`, `clasp-ready/DataRepairConsole.gs`, `clasp-ready/VisionPipeline.gs` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-07.phase65-line-command-center` | `pwa/api_contract.js` |
 | Last Production Commit | GitHub `main` HEAD | Use `git log -1 --oneline` for the exact commit |
-| Validation Status | Static Guard OK; CI Readiness OK; GAS Source Alignment OK; GAS Syntax Guard OK; Guard Self-Test OK; full Regression Guard OK; Sprint 127 Vision + LINE Notification Controls Audit 100/100; production GAS @616 live verified with a fresh hidden login token: Sprint 128 LINE Notification Toggle Live QA OK with flip/preview/rollback, Sprint 129 AI Vision LINE Suppression QA OK with muted `notify_technician` execution and rollback, Vision Runtime Smoke OK across public health/version and protected Vision dashboard/pipeline/learning/context/suggestions/review queue, PWA LINE Room Smoke OK for protected room status/settings/command center/preview, Sprint 131 LINE Real-Send Readiness OK for preview/confirm-required/muted-send/rollback, Sprint 132 Core Workflow Live QA OK for Jobs -> Billing -> Reports -> AI Vision -> LINE Center, Sprint 133 Support/Admin Live QA OK for Inventory -> PO -> Warranty -> Admin Settings, Sprint 134 Data Completeness Review completed with safe data warnings, Sprint 135 Data Completeness Panel audit OK, Sprint 136 Data Review Workflow audit OK, and Sprint 137 Backend Review Log audit OK. AI Vision read-runtime ready; real image analysis remains confirmation-gated. Real LINE sends remain gated and were not executed. | `scripts/pwa_static_guard.js`, `scripts/ci_readiness_check.js`, `scripts/gas_source_alignment.js`, `scripts/gas_syntax_guard.js`, `scripts/regression-guard.sh`, `scripts/guard-self-test.sh`, `scripts/sprint127_vision_line_notification_controls_audit.js`, `scripts/sprint128_line_notification_toggle_live_qa.js`, `scripts/sprint129_vision_line_suppression_live_qa.js`, `scripts/sprint131_line_real_send_readiness.js`, `scripts/sprint132_core_workflow_live_qa.js`, `scripts/sprint133_support_admin_live_qa.js`, `scripts/sprint134_data_completeness_review.js`, `scripts/sprint135_data_completeness_panel_audit.js`, `scripts/sprint136_data_review_workflow_audit.js`, `scripts/sprint137_backend_review_log_audit.js`, `scripts/vision_runtime_smoke.js`, `scripts/pwa_line_room_smoke.js`, `test_reports/*_latest.*` |
+| Validation Status | Static Guard OK; CI Readiness OK; GAS Source Alignment OK; GAS Syntax Guard OK; Guard Self-Test OK; full Regression Guard OK; Sprint 127 Vision + LINE Notification Controls Audit 100/100; production GAS @618 live verified with a fresh hidden login token: Sprint 128 LINE Notification Toggle Live QA OK with flip/preview/rollback, Sprint 129 AI Vision LINE Suppression QA OK with muted `notify_technician` execution and rollback, Vision Runtime Smoke OK across public health/version and protected Vision dashboard/pipeline/learning/context/suggestions/review queue, PWA LINE Room Smoke OK for protected room status/settings/command center/preview, Sprint 131 LINE Real-Send Readiness OK for preview/confirm-required/muted-send/rollback, Sprint 132 Core Workflow Live QA OK for Jobs -> Billing -> Reports -> AI Vision -> LINE Center, Sprint 133 Support/Admin Live QA OK for Inventory -> PO -> Warranty -> Admin Settings, Sprint 134 Data Completeness Review completed with safe data warnings, Sprint 135 Data Completeness Panel audit OK, Sprint 136 Data Review Workflow audit OK, Sprint 137 Backend Review Log audit OK, and Sprint 138 Backend Review Log Live QA OK 100/100 for read-before, metadata save, read-after, and preview-only proof. AI Vision read-runtime ready; real image analysis remains confirmation-gated. Real LINE sends remain gated and were not executed. | `scripts/pwa_static_guard.js`, `scripts/ci_readiness_check.js`, `scripts/gas_source_alignment.js`, `scripts/gas_syntax_guard.js`, `scripts/regression-guard.sh`, `scripts/guard-self-test.sh`, `scripts/sprint127_vision_line_notification_controls_audit.js`, `scripts/sprint128_line_notification_toggle_live_qa.js`, `scripts/sprint129_vision_line_suppression_live_qa.js`, `scripts/sprint131_line_real_send_readiness.js`, `scripts/sprint132_core_workflow_live_qa.js`, `scripts/sprint133_support_admin_live_qa.js`, `scripts/sprint134_data_completeness_review.js`, `scripts/sprint135_data_completeness_panel_audit.js`, `scripts/sprint136_data_review_workflow_audit.js`, `scripts/sprint137_backend_review_log_audit.js`, `scripts/sprint138_backend_review_log_live_qa.js`, `scripts/vision_runtime_smoke.js`, `scripts/pwa_line_room_smoke.js`, `test_reports/*_latest.*` |
+
+### Phase 138 Backend Review Log Live QA (2026-05-19)
+- Added `scripts/sprint138_backend_review_log_live_qa.js`.
+- Default CI mode is skip-safe when `COMPHONE_AUTH_TOKEN` is absent.
+- Protected mode verifies `getDataReviewLog`, writes one QA metadata row via `saveDataReviewLog`, reads it back, and calls `previewDataRepair` only as preview proof.
+- The script is wired into `scripts/pwa_static_guard.js`, `scripts/regression-guard.sh`, and `.github/workflows/auto-deploy.yml`.
+- No production business record is created, repaired, archived, or deleted by this QA. The only intentional write is review metadata under `DB_DATA_REVIEW_LOG` plus audit context under `DB_DATA_REPAIR_AUDIT`; if sheet write permission is unavailable, review metadata/audit context falls back to Apps Script Properties (`DATA_REVIEW_LOG_JSON`, `DATA_REVIEW_LOG_AUDIT_JSON`) and reports `storage: script_properties_fallback`.
+- Deployed to the existing production Web App as GAS `@618` and protected live QA passed 100/100 with a hidden token kept only in process memory.
 
 ### Phase 137 Backend Review Log (2026-05-19)
 - Added backend actions `getDataReviewLog` and `saveDataReviewLog` in root and `clasp-ready` `DataRepairConsole.gs`.
