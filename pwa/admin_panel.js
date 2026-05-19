@@ -526,6 +526,7 @@ async function hydrateAdminDataCompleteness_() {
     if (latestJobId && (!billingDetail || billingDetail.success === false)) findings.push({ area: 'Latest job billing', detail: `${latestJobId} has no readable Billing detail` });
     if (revenueRows.length === 0) findings.push({ area: 'Monthly revenue', detail: 'Daily revenue rows are empty' });
     if (warrantyRows.length === 0) findings.push({ area: 'Warranty', detail: 'Warranty list is healthy but empty' });
+    await adminSyncReviewStateFromBackend_();
     el.innerHTML = `
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px;margin-bottom:10px">
         ${buildRepairMetric_('System State', 'OK', '#059669')}
@@ -590,17 +591,42 @@ function adminSetReviewState_(state) {
   localStorage.setItem('comphone_data_completeness_reviews', JSON.stringify(state || {}));
 }
 
-function markAdminDataFindingReviewed_(key) {
+async function adminSyncReviewStateFromBackend_() {
+  try {
+    const res = await callAPI('getDataReviewLog', {});
+    if (res && res.success && res.reviews) adminSetReviewState_(res.reviews);
+  } catch (_) {
+    // Backend review log may be unavailable before the latest GAS deploy; local review state remains usable.
+  }
+}
+
+async function markAdminDataFindingReviewed_(key) {
   const state = adminGetReviewState_();
   state[key] = Object.assign({}, state[key] || {}, { reviewed_at: new Date().toISOString() });
   adminSetReviewState_(state);
+  try {
+    await callAPI('saveDataReviewLog', {
+      finding_key: key,
+      status: 'reviewed',
+      note: state[key].note || '',
+      source: 'mobile-admin-data-completeness'
+    });
+  } catch (_) {}
   hydrateAdminDataCompleteness_();
 }
 
-function saveAdminDataFindingNote_(key, note) {
+async function saveAdminDataFindingNote_(key, note) {
   const state = adminGetReviewState_();
   state[key] = Object.assign({}, state[key] || {}, { note: String(note || ''), note_updated_at: new Date().toISOString() });
   adminSetReviewState_(state);
+  try {
+    await callAPI('saveDataReviewLog', {
+      finding_key: key,
+      status: state[key].reviewed_at ? 'reviewed' : 'noted',
+      note: String(note || ''),
+      source: 'mobile-admin-data-completeness'
+    });
+  } catch (_) {}
 }
 
 function exportAdminDataCompletenessReview_() {

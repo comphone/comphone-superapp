@@ -531,6 +531,7 @@ function invokeFunctionByNameV55_(functionName, args) {
     'getVisionLearningVersion': 1, 'getVisionFieldContext': 1,
     'getVisionActionSuggestions': 1, 'getVisionReviewQueue': 1,
     'previewVisionSuggestion': 1,
+    'getDataReviewLog': 1,
 
     // Write operations (require auth gate - already checked before reaching here)
     'updateJobStatus': 1, 'transitionJob': 1, 'completeJob': 1,
@@ -545,6 +546,7 @@ function invokeFunctionByNameV55_(functionName, args) {
     'cleanupSmokeTestRecords': 1,
     'updateLineNotificationSettings': 1, 'sendLineRoomMessage': 1,
     'executeVisionSuggestion': 1,
+    'saveDataReviewLog': 1,
   };
 
   if (!ALLOWED_FUNCTIONS[functionName]) {

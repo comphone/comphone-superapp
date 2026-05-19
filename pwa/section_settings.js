@@ -433,6 +433,7 @@ async function hydrateSettingsDataCompletenessPanel() {
     if (latestJobId && (!billingDetail || billingDetail.success === false)) findings.push({ level: 'Review', area: 'Latest job billing', detail: `${latestJobId} has no readable Billing detail` });
     if (revenueRows.length === 0) findings.push({ level: 'Review', area: 'Monthly revenue', detail: 'Daily revenue rows are empty' });
     if (warrantyRows.length === 0) findings.push({ level: 'Review', area: 'Warranty', detail: 'Warranty list is healthy but empty' });
+    await _settingsSyncReviewStateFromBackend_();
     el.innerHTML = `
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px">
         ${_settingsDataTile_('System State', 'OK', '#059669', 'Endpoints responded')}
@@ -513,17 +514,47 @@ function _settingsSetReviewState_(state) {
   localStorage.setItem('comphone_data_completeness_reviews', JSON.stringify(state || {}));
 }
 
-function markSettingsDataFindingReviewed(key) {
+async function _settingsSyncReviewStateFromBackend_() {
+  if (typeof callApi !== 'function') return;
+  try {
+    const res = await callApi('getDataReviewLog', {});
+    if (res && res.success && res.reviews) _settingsSetReviewState_(res.reviews);
+  } catch (_) {
+    // Backend review log may be unavailable before the latest GAS deploy; local review state remains usable.
+  }
+}
+
+async function markSettingsDataFindingReviewed(key) {
   const state = _settingsGetReviewState_();
   state[key] = Object.assign({}, state[key] || {}, { reviewed_at: new Date().toISOString() });
   _settingsSetReviewState_(state);
+  if (typeof callApi === 'function') {
+    try {
+      await callApi('saveDataReviewLog', {
+        finding_key: key,
+        status: 'reviewed',
+        note: state[key].note || '',
+        source: 'pc-settings-data-completeness'
+      });
+    } catch (_) {}
+  }
   hydrateSettingsDataCompletenessPanel();
 }
 
-function saveSettingsDataFindingNote(key, note) {
+async function saveSettingsDataFindingNote(key, note) {
   const state = _settingsGetReviewState_();
   state[key] = Object.assign({}, state[key] || {}, { note: String(note || ''), note_updated_at: new Date().toISOString() });
   _settingsSetReviewState_(state);
+  if (typeof callApi === 'function') {
+    try {
+      await callApi('saveDataReviewLog', {
+        finding_key: key,
+        status: state[key].reviewed_at ? 'reviewed' : 'noted',
+        note: String(note || ''),
+        source: 'pc-settings-data-completeness'
+      });
+    } catch (_) {}
+  }
 }
 
 function exportSettingsDataCompletenessReview() {

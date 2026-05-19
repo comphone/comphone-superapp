@@ -34,6 +34,8 @@ var MODULE_ROUTER = {
   'previewDataRepair': function(p) { return previewDataRepair(p); },
   'executeDataRepair': function(p) { return executeDataRepair(p); },
   'getDataRepairStatus': function(p) { return getDataRepairStatus(p); },
+  'getDataReviewLog': function(p) { return getDataReviewLog(p); },
+  'saveDataReviewLog': function(p) { return saveDataReviewLog(p); },
 
   // Inventory
   'inventoryOverview':    function(p) { return getInventoryOverview(p); },

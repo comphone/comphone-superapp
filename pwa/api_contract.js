@@ -131,6 +131,8 @@
           { action: 'cleanupSmokeTestRecords', payload: { execute: false }, read: true, optional: true, smoke: false, smokeReason: 'review/cleanup action for smoke-created records; destructive execution requires explicit confirmation' },
           { action: 'getDataRepairStatus', read: true, optional: true },
           { action: 'previewDataRepair', payload: { period: 'month' }, read: true, optional: true },
+          { action: 'getDataReviewLog', read: true, optional: true },
+          { action: 'saveDataReviewLog', smoke: false, smokeReason: 'writes owner review notes/status only; does not repair production data' },
           { action: 'executeDataRepair', destructive: true, smoke: false, smokeReason: 'production data repair requires preview, owner confirmation, archive-before-change, and EXECUTE_REVIEWED_DATA_REPAIR confirmation' },
         ],
       },

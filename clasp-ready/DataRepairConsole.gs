@@ -7,6 +7,7 @@
 var DATA_REPAIR_CONFIRM = 'EXECUTE_REVIEWED_DATA_REPAIR';
 var DATA_REPAIR_ARCHIVE_SHEET = 'DB_DATA_REPAIR_ARCHIVE';
 var DATA_REPAIR_AUDIT_SHEET = 'DB_DATA_REPAIR_AUDIT';
+var DATA_REVIEW_LOG_SHEET = 'DB_DATA_REVIEW_LOG';
 
 function previewDataRepair(params) {
   params = params || {};
@@ -114,6 +115,89 @@ function getDataRepairStatus(params) {
     candidate_count: preview.candidates.length,
     candidates: preview.candidates
   };
+}
+
+function getDataReviewLog(params) {
+  params = params || {};
+  try {
+    var ss = getComphoneSheet();
+    if (!ss) return { success: false, error: 'Spreadsheet not found' };
+    var sh = ensureDataReviewLog_(ss);
+    var values = sh.getDataRange().getValues();
+    var reviews = {};
+    for (var i = 1; i < values.length; i++) {
+      var row = values[i];
+      var key = String(row[1] || '').trim();
+      if (!key) continue;
+      reviews[key] = {
+        finding_key: key,
+        area: String(row[2] || ''),
+        status: String(row[3] || 'reviewed'),
+        note: String(row[4] || ''),
+        reviewed_at: row[5] || '',
+        reviewed_by: String(row[6] || ''),
+        source: String(row[7] || ''),
+        updated_at: row[8] || ''
+      };
+    }
+    return {
+      success: true,
+      status: 'ok',
+      sheet: DATA_REVIEW_LOG_SHEET,
+      count: Object.keys(reviews).length,
+      reviews: reviews
+    };
+  } catch (e) {
+    return { success: false, status: 'review-log-error', error: e.toString() };
+  }
+}
+
+function saveDataReviewLog(params) {
+  params = params || {};
+  try {
+    var findingKey = String(params.finding_key || params.key || '').trim();
+    if (!findingKey) return { success: false, status: 'blocked', error: 'finding_key is required.' };
+    var ss = getComphoneSheet();
+    if (!ss) return { success: false, error: 'Spreadsheet not found' };
+    var sh = ensureDataReviewLog_(ss);
+    var now = new Date();
+    var area = String(params.area || '');
+    var note = String(params.note || '');
+    var status = String(params.status || 'reviewed');
+    var reviewedAt = params.reviewed_at ? new Date(params.reviewed_at) : now;
+    var reviewedBy = String(params.operator || params.user || params.username || 'unknown');
+    var source = String(params.source || 'data-completeness-panel');
+    var rowIndex = findDataReviewLogRow_(sh, findingKey);
+    var row = [
+      now,
+      findingKey,
+      area,
+      status,
+      note,
+      reviewedAt,
+      reviewedBy,
+      source,
+      now
+    ];
+    if (rowIndex > 0) {
+      sh.getRange(rowIndex, 1, 1, row.length).setValues([row]);
+    } else {
+      sh.appendRow(row);
+      rowIndex = sh.getLastRow();
+    }
+    logDataReviewAudit_(ss, 'review-log-saved', findingKey, params, { row: rowIndex, status: status });
+    return {
+      success: true,
+      status: 'saved',
+      sheet: DATA_REVIEW_LOG_SHEET,
+      finding_key: findingKey,
+      row: rowIndex,
+      reviewed_at: reviewedAt,
+      updated_at: now
+    };
+  } catch (e) {
+    return { success: false, status: 'review-log-save-error', error: e.toString() };
+  }
 }
 
 function scanIncompleteBillingRows_(ss) {
@@ -257,6 +341,42 @@ function logDataRepairAudit_(ss, status, repairId, action, params, candidate, re
     ]);
   } catch (e) {
     Logger.log('[DataRepairConsole] audit failed: ' + e.toString());
+  }
+}
+
+function ensureDataReviewLog_(ss) {
+  var sh = findSheetByName(ss, DATA_REVIEW_LOG_SHEET);
+  if (!sh) sh = ss.insertSheet(DATA_REVIEW_LOG_SHEET);
+  if (sh.getLastRow() < 1) {
+    sh.appendRow(['Logged_At', 'Finding_Key', 'Area', 'Status', 'Note', 'Reviewed_At', 'Reviewed_By', 'Source', 'Updated_At']);
+  }
+  return sh;
+}
+
+function findDataReviewLogRow_(sh, findingKey) {
+  var last = sh.getLastRow();
+  if (last < 2) return -1;
+  var values = sh.getRange(2, 2, last - 1, 1).getValues();
+  for (var i = 0; i < values.length; i++) {
+    if (String(values[i][0] || '').trim() === findingKey) return i + 2;
+  }
+  return -1;
+}
+
+function logDataReviewAudit_(ss, status, findingKey, params, result) {
+  try {
+    var audit = ensureDataRepairAudit_(ss);
+    audit.appendRow([
+      new Date(),
+      status,
+      findingKey,
+      'data_review_log',
+      String((params && (params.operator || params.user || params.username)) || 'unknown'),
+      JSON.stringify({ finding_key: findingKey, area: params && params.area, source: params && params.source }),
+      JSON.stringify(result || {})
+    ]);
+  } catch (e) {
+    Logger.log('[DataRepairConsole] review audit failed: ' + e.toString());
   }
 }
 

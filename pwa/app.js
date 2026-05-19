@@ -848,7 +848,8 @@ const READ_ACTIONS = {
   getGroupedAlerts: true,
   previewLineRoomMessage: true,
   getDataRepairStatus: true,
-  previewDataRepair: true
+  previewDataRepair: true,
+  getDataReviewLog: true
 };
 
 function isReadAction(action) {
