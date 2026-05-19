@@ -534,6 +534,12 @@ async function hydrateAdminDataCompleteness_() {
         ${buildRepairMetric_('Latest Job', latestJobId || '-', '#2563eb')}
       </div>
       ${findings.length ? findings.map(buildAdminDataFinding_).join('') : '<div style="background:#ecfdf5;color:#047857;border-radius:10px;padding:12px">No business-data warnings found.</div>'}`;
+    el.querySelectorAll('.admin-data-open').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-target') || 'admin';
+        if (typeof goPage === 'function') goPage(target, document.getElementById('nav-more'));
+      });
+    });
     ADMIN_PANEL.dataCompleteness = { latestJobId, billingSummary, revenueRows: revenueRows.length, warrantyRows: warrantyRows.length, repairCandidates: candidates.length, findings };
   } catch (err) {
     el.innerHTML = `<span style="color:#dc2626">Data completeness review failed: ${escapeAdminHtml_(err.message || err)}</span>`;
@@ -552,7 +558,7 @@ function buildAdminDataFinding_(finding) {
     </div>
     <div style="font-size:12px;color:#475569;margin-top:4px">${escapeAdminHtml_(finding.detail)}</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-      <button onclick="goPage('${target}', document.getElementById('nav-more'))" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:7px 10px;font-size:12px">Open ${escapeAdminHtml_(target)}</button>
+      <button class="admin-data-open" data-target="${escapeAdminHtml_(target)}" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:7px 10px;font-size:12px">Open ${escapeAdminHtml_(target)}</button>
       <button onclick="markAdminDataFindingReviewed_('${escapeAdminHtml_(key)}')" style="background:#0f766e;color:#fff;border:none;border-radius:8px;padding:7px 10px;font-size:12px">Mark Reviewed</button>
     </div>
     <textarea onchange="saveAdminDataFindingNote_('${escapeAdminHtml_(key)}', this.value)" placeholder="Owner review note" style="width:100%;margin-top:8px;min-height:54px;border:1px solid #fed7aa;border-radius:8px;padding:8px;font-size:12px">${escapeAdminHtml_(review.note || '')}</textarea>

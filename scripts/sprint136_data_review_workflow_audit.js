@@ -56,8 +56,10 @@ check('owner-notes-and-reviewed-state',
   'Both panels must support local review notes and mark-reviewed state.');
 
 check('deep-links-to-source-menus',
-  has(files.settings, "loadSection('${target}')") &&
-    has(files.admin, "goPage('${target}'") &&
+  has(files.settings, 'settings-data-open') &&
+    has(files.settings, 'loadSection(target)') &&
+    has(files.admin, 'admin-data-open') &&
+    has(files.admin, "goPage(target") &&
     ['billing', 'reports', 'warranty'].every(token => has(files.settings, token) && has(files.admin, token)),
   'Findings must deep-link operators to Billing, Reports, or Warranty review surfaces.');
 

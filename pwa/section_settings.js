@@ -449,6 +449,12 @@ async function hydrateSettingsDataCompletenessPanel() {
         </button>
       </div>
       ${findings.length ? findings.map(_settingsDataFindingHtml_).join('') : '<div style="background:#ecfdf5;color:#047857;border-radius:10px;padding:14px;font-size:13px">Data completeness review found no business-data warnings.</div>'}`;
+    el.querySelectorAll('.settings-data-open').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-target') || 'settings';
+        if (typeof loadSection === 'function') loadSection(target);
+      });
+    });
     window.__COMPHONE_LAST_DATA_COMPLETENESS = { generated_at: new Date().toISOString(), latestJobId, billingSummary, revenueRows: revenueRows.length, warrantyRows: warrantyRows.length, repairCandidates: candidates.length, findings };
   } catch (err) {
     el.innerHTML = `<div style="background:#fef2f2;color:#b91c1c;border-radius:10px;padding:12px;font-size:13px">Data completeness review failed: ${_escapeSettingsHtml_(err.message || err)}</div>`;
@@ -475,7 +481,7 @@ function _settingsDataFindingHtml_(finding) {
     </div>
     <div style="font-size:12px;color:#475569;margin-top:6px">${_escapeSettingsHtml_(finding.detail)}</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-      <button onclick="loadSection('${target}')" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:7px 10px;font-size:12px;cursor:pointer">Open ${_escapeSettingsHtml_(target)}</button>
+      <button class="settings-data-open" data-target="${_escapeSettingsHtml_(target)}" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:7px 10px;font-size:12px;cursor:pointer">Open ${_escapeSettingsHtml_(target)}</button>
       <button onclick="markSettingsDataFindingReviewed('${_escapeSettingsHtml_(key)}')" style="background:#0f766e;color:#fff;border:none;border-radius:8px;padding:7px 10px;font-size:12px;cursor:pointer">Mark Reviewed</button>
     </div>
     <textarea onchange="saveSettingsDataFindingNote('${_escapeSettingsHtml_(key)}', this.value)" placeholder="Owner review note" style="width:100%;margin-top:8px;min-height:54px;border:1px solid #fed7aa;border-radius:8px;padding:8px;font-size:12px">${_escapeSettingsHtml_(review.note || '')}</textarea>
