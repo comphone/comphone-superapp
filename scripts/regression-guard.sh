@@ -871,6 +871,56 @@ else
   warn "Node or sprint143_permission_ops_hardening.js unavailable - skipping Sprint 143 Permission/Ops Hardening"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint144_owner_data_resolution.js" ]; then
+  if node scripts/sprint144_owner_data_resolution.js; then
+    echo "   Sprint 144 Owner Data Resolution passed or skipped safely"
+  else
+    fail "Sprint 144 Owner Data Resolution FAILED"
+  fi
+else
+  warn "Node or sprint144_owner_data_resolution.js unavailable - skipping Sprint 144 Owner Data Resolution"
+fi
+
+if command -v node &>/dev/null && [ -f "scripts/sprint145_mobile_ux_walkthrough.js" ]; then
+  if node scripts/sprint145_mobile_ux_walkthrough.js; then
+    echo "   Sprint 145 Mobile UX Walkthrough passed or skipped safely"
+  else
+    fail "Sprint 145 Mobile UX Walkthrough FAILED"
+  fi
+else
+  warn "Node or sprint145_mobile_ux_walkthrough.js unavailable - skipping Sprint 145 Mobile UX Walkthrough"
+fi
+
+if command -v node &>/dev/null && [ -f "scripts/sprint146_ai_vision_pilot_workflow.js" ]; then
+  if node scripts/sprint146_ai_vision_pilot_workflow.js; then
+    echo "   Sprint 146 AI Vision Pilot Workflow passed or skipped safely"
+  else
+    fail "Sprint 146 AI Vision Pilot Workflow FAILED"
+  fi
+else
+  warn "Node or sprint146_ai_vision_pilot_workflow.js unavailable - skipping Sprint 146 AI Vision Pilot Workflow"
+fi
+
+if command -v node &>/dev/null && [ -f "scripts/sprint147_dashboard_decision_layer_audit.js" ]; then
+  if node scripts/sprint147_dashboard_decision_layer_audit.js; then
+    echo "   Sprint 147 Dashboard Decision Layer passed"
+  else
+    fail "Sprint 147 Dashboard Decision Layer FAILED"
+  fi
+else
+  warn "Node or sprint147_dashboard_decision_layer_audit.js unavailable - skipping Sprint 147 Dashboard Decision Layer"
+fi
+
+if command -v node &>/dev/null && [ -f "scripts/sprint148_ops_permission_cleanup.js" ]; then
+  if node scripts/sprint148_ops_permission_cleanup.js; then
+    echo "   Sprint 148 Ops Permission Cleanup passed or skipped safely"
+  else
+    fail "Sprint 148 Ops Permission Cleanup FAILED"
+  fi
+else
+  warn "Node or sprint148_ops_permission_cleanup.js unavailable - skipping Sprint 148 Ops Permission Cleanup"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"

@@ -198,6 +198,92 @@ function renderRoleFocusWidget(metrics) {
     </section>`;
 }
 
+function buildDashboardDecisionItems(metrics) {
+  const items = [
+    {
+      id: 'jobs',
+      title: 'Service Dispatch',
+      note: metrics.overdueJobs > 0 ? `${metrics.overdueJobs} SLA jobs need action` : `${metrics.totalJobs} active jobs`,
+      icon: 'bi-tools',
+      target: 'jobs',
+      value: Number(metrics.overdueJobs || metrics.totalJobs || 0),
+      priority: metrics.overdueJobs > 0 ? 'high' : 'normal'
+    },
+    {
+      id: 'billing',
+      title: 'Billing Follow-up',
+      note: metrics.billingOpen > 0 ? `${metrics.billingOpen} invoices/jobs to review` : 'cash workflow is clear',
+      icon: 'bi-receipt-cutoff',
+      target: 'billing',
+      value: Number(metrics.billingOpen || 0),
+      priority: metrics.billingOpen > 0 ? 'high' : 'normal'
+    },
+    {
+      id: 'reports',
+      title: 'Management Reports',
+      note: metrics.revenueMonth > 0 ? `${formatDashboardMoney(metrics.revenueMonth)} this month` : 'review monthly report health',
+      icon: 'bi-file-earmark-bar-graph',
+      target: 'reports',
+      value: Number(metrics.reportModules || 0),
+      priority: metrics.revenueToday <= 0 && metrics.revenueMonth <= 0 ? 'watch' : 'normal'
+    },
+    {
+      id: 'inventory',
+      title: 'Inventory Risk',
+      note: metrics.lowStock > 0 ? `${metrics.lowStock} low-stock items` : 'stock risk is clear',
+      icon: 'bi-box-seam',
+      target: 'inventory',
+      value: Number(metrics.lowStock || 0),
+      priority: metrics.lowStock > 0 ? 'watch' : 'normal'
+    },
+    {
+      id: 'vision',
+      title: 'AI Vision Review',
+      note: metrics.visionReview > 0 ? `${metrics.visionReview} cases waiting` : 'pilot queue ready',
+      icon: 'bi-stars',
+      target: 'vision',
+      value: Number(metrics.visionReview || 0),
+      priority: metrics.visionReview > 0 ? 'watch' : 'normal'
+    },
+    {
+      id: 'line-center',
+      title: 'LINE Rooms',
+      note: metrics.linePending > 0 ? `${metrics.linePending} alerts to inspect` : 'room notifications healthy',
+      icon: 'bi-broadcast-pin',
+      target: 'line-center',
+      value: Number(metrics.linePending || 0),
+      priority: metrics.linePending > 0 ? 'watch' : 'normal'
+    }
+  ];
+  const order = { high: 0, watch: 1, normal: 2 };
+  return items.sort((a, b) => (order[a.priority] - order[b.priority]) || (b.value - a.value));
+}
+
+function renderDashboardDecisionLayer(metrics) {
+  const items = buildDashboardDecisionItems(metrics).slice(0, 6);
+  return `
+    <section class="section-card dashboard-decision-layer" data-dashboard-polish="decision-layer" style="margin:0 12px 10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px">
+        <div>
+          <div class="section-label" style="margin-bottom:2px">Decision Layer</div>
+          <div style="font-size:11px;color:#64748b;font-weight:700">Next best actions from live dashboard signals</div>
+        </div>
+        <span style="font-size:10px;font-weight:900;color:#2563eb;background:#dbeafe;border-radius:999px;padding:5px 8px">Sprint 147</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+        ${items.map(item => `
+          <button type="button" class="dashboard-decision-item decision-priority-${item.priority}" onclick="openDashboardCommand('${item.target}')" style="border:1px solid ${item.priority === 'high' ? '#fecaca' : item.priority === 'watch' ? '#fde68a' : '#e5e7eb'};background:${item.priority === 'high' ? '#fff1f2' : item.priority === 'watch' ? '#fffbeb' : '#ffffff'};border-radius:14px;padding:10px;text-align:left;cursor:pointer;display:flex;gap:10px;align-items:flex-start;min-height:74px">
+            <span style="width:32px;height:32px;border-radius:11px;display:grid;place-items:center;background:${item.priority === 'high' ? '#fee2e2' : item.priority === 'watch' ? '#fef3c7' : '#eff6ff'};color:${item.priority === 'high' ? '#dc2626' : item.priority === 'watch' ? '#d97706' : '#2563eb'}"><i class="bi ${item.icon}"></i></span>
+            <span style="min-width:0">
+              <strong style="display:block;font-size:12px;color:#0f172a;line-height:1.25">${item.title}</strong>
+              <small style="display:block;margin-top:4px;font-size:11px;color:#64748b;line-height:1.35">${item.note}</small>
+            </span>
+          </button>
+        `).join('')}
+      </div>
+    </section>`;
+}
+
 // ===== RENDER DASHBOARD =====
 function renderDashboard(data) {
   const container = document.getElementById('dashboard-content');
@@ -285,9 +371,22 @@ function renderDashboard(data) {
       overdueJobs,
       lowStock,
       billingOpen,
+      reportModules,
       visionReview,
       linePending,
       riskQueue
+    })}
+
+    ${renderDashboardDecisionLayer({
+      revenueToday: Number(revenue.today || 0),
+      revenueMonth: Number(revenue.month || 0),
+      totalJobs,
+      overdueJobs,
+      lowStock,
+      billingOpen,
+      reportModules,
+      visionReview,
+      linePending
     })}
 
     <!-- EXECUTIVE COMMAND CENTER -->
