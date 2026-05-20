@@ -43,6 +43,8 @@ function main() {
     checks.push(row);
     if (!row.ok) issues.push(row);
   }
+  const buildMatch = files.version.match(/BUILD_TIMESTAMP\s*=\s*'([^']+)'/);
+  const build = buildMatch && buildMatch[1];
 
   check('mobile', 'repair-console-rendered',
     has(files.admin, 'data-tab="repair"') &&
@@ -65,10 +67,10 @@ function main() {
     'Both UI surfaces must keep exact confirmation and narrow repair action.');
 
   check('freshness', 'single-build-timestamp',
-    has(files.version, "BUILD_TIMESTAMP = '20260518_0730'") &&
-      has(files.sw, "20260518_0730") &&
-      has(files.index, 't=20260518_0730') &&
-      has(files.pc, 't=20260518_0730'),
+    !!build &&
+      has(files.sw, build) &&
+      has(files.index, `t=${build}`) &&
+      has(files.pc, `t=${build}`),
     'PWA shell, service worker, PC, and mobile pages must share the latest cache token.');
 
   check('pages', 'pages-freshness-tool-present',
@@ -86,7 +88,8 @@ function main() {
   check('blueprint', 'blueprint-documents-sprint113',
     has(files.blueprint, 'Phase 113 Repair Console Live QA') &&
       has(files.blueprint, 'pages_deploy_verify.js') &&
-      has(files.blueprint, '20260518_0730'),
+      !!build &&
+      has(files.blueprint, build),
     'BLUEPRINT must document live Repair Console QA and Pages freshness state.');
 
   const p0 = issues.filter(item => item.severity === 'P0').length;

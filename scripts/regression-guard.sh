@@ -921,6 +921,56 @@ else
   warn "Node or sprint148_ops_permission_cleanup.js unavailable - skipping Sprint 148 Ops Permission Cleanup"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint149_live_browser_visual_qa.js" ]; then
+  if node scripts/sprint149_live_browser_visual_qa.js; then
+    echo "   Sprint 149 Live Browser Visual QA passed or skipped safely"
+  else
+    fail "Sprint 149 Live Browser Visual QA FAILED"
+  fi
+else
+  warn "Node or sprint149_live_browser_visual_qa.js unavailable - skipping Sprint 149 Live Browser Visual QA"
+fi
+
+if command -v node &>/dev/null && [ -f "scripts/sprint150_data_cleanup_owner_workflow.js" ]; then
+  if node scripts/sprint150_data_cleanup_owner_workflow.js; then
+    echo "   Sprint 150 Data Cleanup Owner Workflow passed or skipped safely"
+  else
+    fail "Sprint 150 Data Cleanup Owner Workflow FAILED"
+  fi
+else
+  warn "Node or sprint150_data_cleanup_owner_workflow.js unavailable - skipping Sprint 150 Data Cleanup Owner Workflow"
+fi
+
+if command -v node &>/dev/null && [ -f "scripts/sprint151_dashboard_ux_polish_audit.js" ]; then
+  if node scripts/sprint151_dashboard_ux_polish_audit.js; then
+    echo "   Sprint 151 Dashboard UX Polish passed"
+  else
+    fail "Sprint 151 Dashboard UX Polish FAILED"
+  fi
+else
+  warn "Node or sprint151_dashboard_ux_polish_audit.js unavailable - skipping Sprint 151 Dashboard UX Polish"
+fi
+
+if command -v node &>/dev/null && [ -f "scripts/sprint152_ai_vision_real_pilot_guard.js" ]; then
+  if node scripts/sprint152_ai_vision_real_pilot_guard.js; then
+    echo "   Sprint 152 AI Vision Real Pilot passed or skipped safely"
+  else
+    fail "Sprint 152 AI Vision Real Pilot FAILED"
+  fi
+else
+  warn "Node or sprint152_ai_vision_real_pilot_guard.js unavailable - skipping Sprint 152 AI Vision Real Pilot"
+fi
+
+if command -v node &>/dev/null && [ -f "scripts/sprint153_permission_fallback_closure.js" ]; then
+  if node scripts/sprint153_permission_fallback_closure.js; then
+    echo "   Sprint 153 Permission Fallback Closure passed or skipped safely"
+  else
+    fail "Sprint 153 Permission Fallback Closure FAILED"
+  fi
+else
+  warn "Node or sprint153_permission_fallback_closure.js unavailable - skipping Sprint 153 Permission Fallback Closure"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"

@@ -1,10 +1,10 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.18.34-job-menu-hardening (PWA) / GAS Backend v5.18.16-write-flow-validation @618
+> **Version:** v5.18.35-sprint153 (PWA) / GAS Backend v5.18.16-write-flow-validation @618
 
-> **Date:** 2026-05-20 | **Phase:** 148 (Ops Permission Cleanup + Dashboard Decision Layer Pack)
+> **Date:** 2026-05-21 | **Phase:** 153 (Live Visual + AI Vision Pilot + Permission Closure Pack)
 
-> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + CORE-AUDITED + FOCUS-AUDITED + JOBS-E2E-HARDENED + BILLING-E2E-HARDENED + REPORTS-E2E-HARDENED + VISION-LINE-FLOW-HARDENED + PRODUCTION-JOURNEY-HARDENED + BACKUP-WORKFLOW-HARDENED + MOBILE-QUICK-ACTIONS-HARDENED + MOBILE-CORE-WORKFLOWS-HARDENED + MOBILE-SECONDARY-WORKFLOWS-HARDENED + LIVE-MOBILE-MENU-SMOKE-HARDENED + OPERATOR-UX-QA-HARDENED + PROTECTED-LIVE-QA-RUNBOOK-HARDENED + PROTECTED-LIVE-QA-VERIFIED + DASHBOARD-PERFORMANCE-HARDENED + DEPLOY-GAS-CI-GATE-HARDENED + WRITE-SMOKE-LIFECYCLE-HARDENED + BLUEPRINT-RECONCILED + PO-READ-CACHE-HARDENED + JOBS-READ-CACHE-HARDENED + READ-DASHBOARD-CACHE-HARDENED + PRODUCTION-SAFETY-HARNESS-HARDENED + OPERATOR-WORKFLOW-POLISHED + LIVE-CACHE-FRESHNESS-HARDENED + OPERATOR-MENU-CLICKTHROUGH-HARDENED + CONTROLLED-WRITE-LIFECYCLE-HARDENED + LIVE-UX-MENU-RUNTIME-HARDENED + VISUAL-RUNTIME-WALKTHROUGH-HARDENED + PROTECTED-BROWSER-JOURNEY-HARDENED + RECORD-DETAIL-COMPLETENESS-HARDENED + PRODUCTION-DATA-QUALITY-GUARDED + CONTROLLED-DATA-CLEANUP-PLANNED + DATABASE-SCHEMA-REGISTRY-GUARDED + SHEET-CONTEXT-NORMALIZED + DATA-REPAIR-CONSOLE-PLANNED + DATA-REPAIR-EXECUTION-HARDENED + GAS-618-LIVE-VERIFIED + FULL-QA-SWEEP + GEMINI-READY + VISION-LINE-PROTECTED-LIVE-VERIFIED + LINE-REAL-SEND-READINESS-GUARDED + CORE-WORKFLOW-LIVE-VERIFIED + SUPPORT-ADMIN-LIVE-VERIFIED + DATA-COMPLETENESS-REVIEWED + DATA-COMPLETENESS-PANEL-HARDENED + DATA-REVIEW-WORKFLOW-HARDENED + BACKEND-REVIEW-LOG-HARDENED + BACKEND-REVIEW-LOG-LIVE-QA-VERIFIED + DATA-CLEANUP-TRIAGE-GUARDED + JBR-LIVE-POLISH-GUARDED + MOBILE-MENU-DEEP-QA-GUARDED + AI-VISION-REAL-USE-GUARDED + PERMISSION-OPS-HARDENED + OWNER-DATA-RESOLUTION-GUARDED + MOBILE-UX-WALKTHROUGH-GUARDED + AI-VISION-PILOT-GUARDED + DASHBOARD-DECISION-LAYER-GUARDED + OPS-PERMISSION-CLEANUP-GUARDED - latest production GAS deployment is @618 on the existing Web App URL; Sprints 144-148 add owner-approved data resolution planning, mobile UX walkthrough guard, AI Vision pilot guard, PC dashboard decision layer, and ops permission cleanup readiness.
+> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + CORE-AUDITED + FOCUS-AUDITED + JOBS-E2E-HARDENED + BILLING-E2E-HARDENED + REPORTS-E2E-HARDENED + VISION-LINE-FLOW-HARDENED + PRODUCTION-JOURNEY-HARDENED + BACKUP-WORKFLOW-HARDENED + MOBILE-QUICK-ACTIONS-HARDENED + MOBILE-CORE-WORKFLOWS-HARDENED + MOBILE-SECONDARY-WORKFLOWS-HARDENED + LIVE-MOBILE-MENU-SMOKE-HARDENED + OPERATOR-UX-QA-HARDENED + PROTECTED-LIVE-QA-RUNBOOK-HARDENED + PROTECTED-LIVE-QA-VERIFIED + DASHBOARD-PERFORMANCE-HARDENED + DEPLOY-GAS-CI-GATE-HARDENED + WRITE-SMOKE-LIFECYCLE-HARDENED + BLUEPRINT-RECONCILED + PO-READ-CACHE-HARDENED + JOBS-READ-CACHE-HARDENED + READ-DASHBOARD-CACHE-HARDENED + PRODUCTION-SAFETY-HARNESS-HARDENED + OPERATOR-WORKFLOW-POLISHED + LIVE-CACHE-FRESHNESS-HARDENED + OPERATOR-MENU-CLICKTHROUGH-HARDENED + CONTROLLED-WRITE-LIFECYCLE-HARDENED + LIVE-UX-MENU-RUNTIME-HARDENED + VISUAL-RUNTIME-WALKTHROUGH-HARDENED + PROTECTED-BROWSER-JOURNEY-HARDENED + RECORD-DETAIL-COMPLETENESS-HARDENED + PRODUCTION-DATA-QUALITY-GUARDED + CONTROLLED-DATA-CLEANUP-PLANNED + DATABASE-SCHEMA-REGISTRY-GUARDED + SHEET-CONTEXT-NORMALIZED + DATA-REPAIR-CONSOLE-PLANNED + DATA-REPAIR-EXECUTION-HARDENED + GAS-618-LIVE-VERIFIED + FULL-QA-SWEEP + GEMINI-READY + VISION-LINE-PROTECTED-LIVE-VERIFIED + LINE-REAL-SEND-READINESS-GUARDED + CORE-WORKFLOW-LIVE-VERIFIED + SUPPORT-ADMIN-LIVE-VERIFIED + DATA-COMPLETENESS-REVIEWED + DATA-COMPLETENESS-PANEL-HARDENED + DATA-REVIEW-WORKFLOW-HARDENED + BACKEND-REVIEW-LOG-HARDENED + BACKEND-REVIEW-LOG-LIVE-QA-VERIFIED + DATA-CLEANUP-TRIAGE-GUARDED + JBR-LIVE-POLISH-GUARDED + MOBILE-MENU-DEEP-QA-GUARDED + AI-VISION-REAL-USE-GUARDED + PERMISSION-OPS-HARDENED + OWNER-DATA-RESOLUTION-GUARDED + MOBILE-UX-WALKTHROUGH-GUARDED + AI-VISION-PILOT-GUARDED + DASHBOARD-DECISION-LAYER-GUARDED + OPS-PERMISSION-CLEANUP-GUARDED + LIVE-BROWSER-VISUAL-QA-GUARDED + DATA-CLEANUP-OWNER-WORKFLOW-GUARDED + MOBILE-DASHBOARD-DECISION-LAYER-GUARDED + AI-VISION-REAL-PILOT-GUARDED + PERMISSION-FALLBACK-CLOSURE-GUARDED - latest production GAS deployment is @618 on the existing Web App URL; Sprints 149-153 add live Pages visual QA, owner data cleanup workflow, mobile dashboard decision layer, AI Vision real-pilot guard, and permission fallback closure readiness.
 
 ---
 
@@ -13,9 +13,9 @@
 This section is the latest handoff for any human or AI agent continuing COMPHONE work.
 
 ### Current Production State
-- **Current phase:** Sprint / Phase 148.
+- **Current phase:** Sprint / Phase 153.
 - **Latest stable verification commit before this handoff:** `249ff86 Document Sprint 110 GAS live verification`. Run `git log -1 --oneline` for the exact current repository HEAD.
-- **PWA version:** `v5.18.34-job-menu-hardening`.
+- **PWA version:** `v5.18.35-sprint153`.
 - **GAS backend version:** `v5.18.16-write-flow-validation`.
 - **Production GAS deployment:** `AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA @618`.
 - **Production GAS URL:** `https://script.google.com/macros/s/AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA/exec`.
@@ -70,6 +70,11 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 - Sprint 146 adds `scripts/sprint146_ai_vision_pilot_workflow.js` to prove the AI Vision pilot loop can read Vision/LINE state and preview room messages without real sends.
 - Sprint 147 adds the PC `dashboard-decision-layer` in `pwa/dashboard.js` plus `scripts/sprint147_dashboard_decision_layer_audit.js` so Jobs/Billing/Reports/Inventory/Vision/LINE next actions remain visible and read-only.
 - Sprint 148 adds `scripts/sprint148_ops_permission_cleanup.js` to guard `DB_DATA_REVIEW_LOG` registry coverage, fallback visibility, production URL stability, and committed-secret hygiene before retiring fallback storage.
+- Sprint 149 adds `scripts/sprint149_live_browser_visual_qa.js` for live GitHub Pages PC/Mobile visual readiness, build freshness, and protected read probes.
+- Sprint 150 adds `scripts/sprint150_data_cleanup_owner_workflow.js` for owner-approved cleanup workflow around `jobs:J0022`, `jobs:J0021`, `customers:C0003`, and `customers:C0002` without mutation.
+- Sprint 151 adds a Mobile Dashboard Decision Layer in `pwa/app_home.js` with CSS in `pwa/mobile_glass.css`, aligned with the PC dashboard decision layer.
+- Sprint 152 adds `scripts/sprint152_ai_vision_real_pilot_guard.js` for AI Vision real-pilot readiness. Real image analysis requires explicit env gates; real LINE send is not performed by the guard.
+- Sprint 153 adds `scripts/sprint153_permission_fallback_closure.js` to keep review-log fallback visible until live storage proves `DB_DATA_REVIEW_LOG` sheet writes are stable.
 
 ### Required Verification Commands
 Run these before claiming the system is stable after any code change:
@@ -118,6 +123,11 @@ node scripts/sprint145_mobile_ux_walkthrough.js
 node scripts/sprint146_ai_vision_pilot_workflow.js
 node scripts/sprint147_dashboard_decision_layer_audit.js
 node scripts/sprint148_ops_permission_cleanup.js
+node scripts/sprint149_live_browser_visual_qa.js
+node scripts/sprint150_data_cleanup_owner_workflow.js
+node scripts/sprint151_dashboard_ux_polish_audit.js
+node scripts/sprint152_ai_vision_real_pilot_guard.js
+node scripts/sprint153_permission_fallback_closure.js
 bash scripts/regression-guard.sh
 bash scripts/guard-self-test.sh
 node scripts/pages_deploy_verify.js
@@ -151,6 +161,10 @@ node scripts/sprint144_owner_data_resolution.js
 node scripts/sprint145_mobile_ux_walkthrough.js
 node scripts/sprint146_ai_vision_pilot_workflow.js
 node scripts/sprint148_ops_permission_cleanup.js
+node scripts/sprint149_live_browser_visual_qa.js
+node scripts/sprint150_data_cleanup_owner_workflow.js
+node scripts/sprint152_ai_vision_real_pilot_guard.js
+node scripts/sprint153_permission_fallback_closure.js
 Remove-Item Env:\COMPHONE_AUTH_TOKEN -ErrorAction SilentlyContinue
 ```
 
@@ -172,7 +186,7 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN,Env:\COMPHONE_LINE_TOGGLE_CONFIRM,Env:\COMP
 - **Data repair 2:** latest Job `J0020` still has no readable Billing detail. Confirm whether this job should have Billing before creating or repairing data.
 - **Data repair 3:** current-month report daily revenue records are empty. Sprint 116 shows `report-empty-state`; Sprint 134 confirms the backend is healthy but the selected period has no daily revenue rows.
 - **Data repair 4:** Warranty list is live and healthy but currently empty. No detail-link repair is possible until source warranty rows exist.
-- **Next recommended sprint:** Sprint 149 should run a browser visual QA sweep on the live GitHub Pages PC/mobile surfaces, then follow with owner-approved manual data backfill or a separately approved controlled repair sprint for the four data-cleanup findings. Do not run real LINE sends or `executeDataRepair` from CI.
+- **Next recommended sprint:** Sprint 154 should do post-deploy GitHub Pages confirmation after CI publishes the new mobile decision layer, then Sprint 155 can perform owner-approved manual data backfill or a separately approved controlled repair sprint. Do not run real LINE sends or `executeDataRepair` from CI.
 - **After Sprint 133:** run a human-approved LINE real-send test only if the owner explicitly chooses a target room and message; otherwise keep LINE validation in preview/muted-send mode.
 
 ### Non-Negotiable Rules For Future Agents
@@ -189,14 +203,24 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN,Env:\COMPHONE_LINE_TOGGLE_CONFIRM,Env:\COMP
 
 | Item | Current Value | Source of Truth |
 |---|---|---|
-| App Version | `v5.18.34-job-menu-hardening` | `pwa/version_config.js` |
-| Cache Version | `comphone-v5.18.34-job-menu-hardening-20260518_0730` | `pwa/version_config.js`, `pwa/sw.js` |
-| Build Timestamp | `20260518_0730` | `pwa/version_config.js` |
+| App Version | `v5.18.35-sprint153` | `pwa/version_config.js` |
+| Cache Version | `comphone-v5.18.35-sprint153-20260521_0000` | `pwa/version_config.js`, `pwa/sw.js` |
+| Build Timestamp | `20260521_0000` | `pwa/version_config.js` |
 | GAS Backend Deploy | `AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA @618` / production URL in `pwa/gas_config.js` | `Config.gs`, `Dashboard.gs`, `DashboardBundle.gs`, `Router.gs`, `RouterSplit.gs`, `JobStateMachine.gs`, `LineCommandCenter.gs`, `SmokeCleanup.gs`, `DataRepairConsole.gs`, `VisionPipeline.gs`, `clasp-ready/Config.gs`, `clasp-ready/Dashboard.gs`, `clasp-ready/DashboardBundle.gs`, `clasp-ready/Router.gs`, `clasp-ready/RouterSplit.gs`, `clasp-ready/JobStateMachine.gs`, `clasp-ready/LineCommandCenter.gs`, `clasp-ready/SmokeCleanup.gs`, `clasp-ready/DataRepairConsole.gs`, `clasp-ready/VisionPipeline.gs` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-07.phase65-line-command-center` | `pwa/api_contract.js` |
 | Last Production Commit | GitHub `main` HEAD | Use `git log -1 --oneline` for the exact commit |
-| Validation Status | Static Guard OK; CI Readiness OK; GAS Source Alignment OK; GAS Syntax Guard OK; Guard Self-Test OK; full Regression Guard OK; Sprint 127 Vision + LINE Notification Controls Audit 100/100; production GAS @618 live verified with a fresh hidden login token: Sprint 128 LINE Notification Toggle Live QA OK with flip/preview/rollback, Sprint 129 AI Vision LINE Suppression QA OK with muted `notify_technician` execution and rollback, Vision Runtime Smoke OK across public health/version and protected Vision dashboard/pipeline/learning/context/suggestions/review queue, PWA LINE Room Smoke OK for protected room status/settings/command center/preview, Sprint 131 LINE Real-Send Readiness OK for preview/confirm-required/muted-send/rollback, Sprint 132 Core Workflow Live QA OK for Jobs -> Billing -> Reports -> AI Vision -> LINE Center, Sprint 133 Support/Admin Live QA OK for Inventory -> PO -> Warranty -> Admin Settings, Sprint 134 Data Completeness Review completed with safe data warnings, Sprint 135 Data Completeness Panel audit OK, Sprint 136 Data Review Workflow audit OK, Sprint 137 Backend Review Log audit OK, Sprint 138 Backend Review Log Live QA OK 100/100, Sprint 139-143 protected live sweep OK with hidden token, and Sprint 144-148 static/skip-safe guard pack OK 100/100. Sprint 147 PC Dashboard Decision Layer is in `pwa/dashboard.js`. AI Vision read-runtime ready; real image analysis remains confirmation-gated. Real LINE sends and real data repair remain gated and were not executed. | `scripts/pwa_static_guard.js`, `scripts/ci_readiness_check.js`, `scripts/gas_source_alignment.js`, `scripts/gas_syntax_guard.js`, `scripts/regression-guard.sh`, `scripts/guard-self-test.sh`, `scripts/sprint127_vision_line_notification_controls_audit.js`, `scripts/sprint128_line_notification_toggle_live_qa.js`, `scripts/sprint129_vision_line_suppression_live_qa.js`, `scripts/sprint131_line_real_send_readiness.js`, `scripts/sprint132_core_workflow_live_qa.js`, `scripts/sprint133_support_admin_live_qa.js`, `scripts/sprint134_data_completeness_review.js`, `scripts/sprint135_data_completeness_panel_audit.js`, `scripts/sprint136_data_review_workflow_audit.js`, `scripts/sprint137_backend_review_log_audit.js`, `scripts/sprint138_backend_review_log_live_qa.js`, `scripts/sprint139_data_cleanup_triage.js`, `scripts/sprint140_jobs_billing_reports_live_polish.js`, `scripts/sprint141_mobile_menu_deep_qa.js`, `scripts/sprint142_ai_vision_real_use_readiness.js`, `scripts/sprint143_permission_ops_hardening.js`, `scripts/sprint144_owner_data_resolution.js`, `scripts/sprint145_mobile_ux_walkthrough.js`, `scripts/sprint146_ai_vision_pilot_workflow.js`, `scripts/sprint147_dashboard_decision_layer_audit.js`, `scripts/sprint148_ops_permission_cleanup.js`, `scripts/vision_runtime_smoke.js`, `scripts/pwa_line_room_smoke.js`, `test_reports/*_latest.*` |
+| Validation Status | Static Guard OK; CI Readiness OK; GAS Source Alignment OK; GAS Syntax Guard OK; Guard Self-Test OK; full Regression Guard OK; Sprint 127 Vision + LINE Notification Controls Audit 100/100; production GAS @618 live verified with a fresh hidden login token: Sprint 128 LINE Notification Toggle Live QA OK with flip/preview/rollback, Sprint 129 AI Vision LINE Suppression QA OK with muted `notify_technician` execution and rollback, Vision Runtime Smoke OK across public health/version and protected Vision dashboard/pipeline/learning/context/suggestions/review queue, PWA LINE Room Smoke OK for protected room status/settings/command center/preview, Sprint 131 LINE Real-Send Readiness OK for preview/confirm-required/muted-send/rollback, Sprint 132 Core Workflow Live QA OK for Jobs -> Billing -> Reports -> AI Vision -> LINE Center, Sprint 133 Support/Admin Live QA OK for Inventory -> PO -> Warranty -> Admin Settings, Sprint 134 Data Completeness Review completed with safe data warnings, Sprint 135 Data Completeness Panel audit OK, Sprint 136 Data Review Workflow audit OK, Sprint 137 Backend Review Log audit OK, Sprint 138 Backend Review Log Live QA OK 100/100, Sprint 139-143 protected live sweep OK with hidden token, Sprint 144-148 guard pack OK, and Sprint 149-153 protected live/skip-safe guard pack OK 100/100. Sprint 147 PC Dashboard Decision Layer is in `pwa/dashboard.js`; Sprint 151 Mobile Dashboard Decision Layer is in `pwa/app_home.js` and `pwa/mobile_glass.css`. AI Vision read-runtime ready; real image analysis remains confirmation-gated. Real LINE sends and real data repair remain gated and were not executed. | `scripts/pwa_static_guard.js`, `scripts/ci_readiness_check.js`, `scripts/gas_source_alignment.js`, `scripts/gas_syntax_guard.js`, `scripts/regression-guard.sh`, `scripts/guard-self-test.sh`, `scripts/sprint127_vision_line_notification_controls_audit.js`, `scripts/sprint128_line_notification_toggle_live_qa.js`, `scripts/sprint129_vision_line_suppression_live_qa.js`, `scripts/sprint131_line_real_send_readiness.js`, `scripts/sprint132_core_workflow_live_qa.js`, `scripts/sprint133_support_admin_live_qa.js`, `scripts/sprint134_data_completeness_review.js`, `scripts/sprint135_data_completeness_panel_audit.js`, `scripts/sprint136_data_review_workflow_audit.js`, `scripts/sprint137_backend_review_log_audit.js`, `scripts/sprint138_backend_review_log_live_qa.js`, `scripts/sprint139_data_cleanup_triage.js`, `scripts/sprint140_jobs_billing_reports_live_polish.js`, `scripts/sprint141_mobile_menu_deep_qa.js`, `scripts/sprint142_ai_vision_real_use_readiness.js`, `scripts/sprint143_permission_ops_hardening.js`, `scripts/sprint144_owner_data_resolution.js`, `scripts/sprint145_mobile_ux_walkthrough.js`, `scripts/sprint146_ai_vision_pilot_workflow.js`, `scripts/sprint147_dashboard_decision_layer_audit.js`, `scripts/sprint148_ops_permission_cleanup.js`, `scripts/sprint149_live_browser_visual_qa.js`, `scripts/sprint150_data_cleanup_owner_workflow.js`, `scripts/sprint151_dashboard_ux_polish_audit.js`, `scripts/sprint152_ai_vision_real_pilot_guard.js`, `scripts/sprint153_permission_fallback_closure.js`, `scripts/vision_runtime_smoke.js`, `scripts/pwa_line_room_smoke.js`, `test_reports/*_latest.*` |
+
+### Phase 153 Live Visual + AI Vision Pilot + Permission Closure Pack (2026-05-21)
+- Sprint 149: added live GitHub Pages visual readiness guard for PC/Mobile HTML, build freshness, central API client, decision-layer presence, More-menu safety, and optional protected route read probes.
+- Sprint 150: added owner data cleanup workflow for `jobs:J0022`, `jobs:J0021`, `customers:C0003`, and `customers:C0002`. This is plan/inspect only and never invokes `executeDataRepair`.
+- Sprint 151: added Mobile Dashboard Decision Layer. The mobile home now ranks next actions across Service, Billing, Reports, Stock, Vision, and LINE and links the settings button to quick-action editing.
+- Sprint 152: added AI Vision real-pilot guard. Default mode verifies readiness and preview paths only; real image analysis requires `COMPHONE_AI_VISION_REAL_PILOT=1` and `COMPHONE_AI_VISION_REAL_PILOT_CONFIRM=RUN_AI_VISION_PILOT`. The guard never sends real LINE messages.
+- Sprint 153: added permission fallback closure guard. Fallback remains active until protected live storage proves `DB_DATA_REVIEW_LOG` sheet storage is stable.
+- Wired Sprint 149-153 into `scripts/pwa_static_guard.js`, `scripts/regression-guard.sh`, and `.github/workflows/auto-deploy.yml`.
+- Local skip-safe run on 2026-05-21 passed Sprint 149 9/9, Sprint 150 7/7, Sprint 151 7/7, Sprint 152 7/7, and Sprint 153 6/6.
+- Protected live sweep on 2026-05-21 used a fresh hidden admin token kept only in process memory. Sprint 149 passed 15/15, Sprint 150 passed 10/10, Sprint 152 passed 12/12, and Sprint 153 passed 7/7. Sprint 151 is static UI/contract guard and passed 7/7. No real data repair, real Vision write, or real LINE send was executed.
 
 ### Phase 148 Ops Permission + Decision Layer Pack (2026-05-20)
 - Sprint 144: added owner data resolution planning for the Sprint 139 data findings. It creates `test_reports/sprint144_owner_data_resolution_latest.json` and `.md`, requires owner approval, and never invokes `executeDataRepair`.

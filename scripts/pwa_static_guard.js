@@ -47,8 +47,13 @@ const SPRINT145_MOBILE_UX_WALKTHROUGH = path.join(ROOT, 'scripts', 'sprint145_mo
 const SPRINT146_AI_VISION_PILOT = path.join(ROOT, 'scripts', 'sprint146_ai_vision_pilot_workflow.js');
 const SPRINT147_DASHBOARD_DECISION_LAYER = path.join(ROOT, 'scripts', 'sprint147_dashboard_decision_layer_audit.js');
 const SPRINT148_OPS_PERMISSION_CLEANUP = path.join(ROOT, 'scripts', 'sprint148_ops_permission_cleanup.js');
+const SPRINT149_LIVE_BROWSER_VISUAL_QA = path.join(ROOT, 'scripts', 'sprint149_live_browser_visual_qa.js');
+const SPRINT150_DATA_CLEANUP_OWNER_WORKFLOW = path.join(ROOT, 'scripts', 'sprint150_data_cleanup_owner_workflow.js');
+const SPRINT151_DASHBOARD_UX_POLISH = path.join(ROOT, 'scripts', 'sprint151_dashboard_ux_polish_audit.js');
+const SPRINT152_AI_VISION_REAL_PILOT = path.join(ROOT, 'scripts', 'sprint152_ai_vision_real_pilot_guard.js');
+const SPRINT153_PERMISSION_FALLBACK_CLOSURE = path.join(ROOT, 'scripts', 'sprint153_permission_fallback_closure.js');
 
-const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME, SPRINT121_PERFORMANCE_ACCESSIBILITY, SPRINT122_DASHBOARD_OPERATOR_ANALYTICS, SPRINT123_LIVE_VISUAL_QA, SPRINT124_PROTECTED_VISUAL_MENU_QA, SPRINT125_ROLE_BASED_DASHBOARD_WIDGETS, SPRINT126_AI_VISION_ROLE_READINESS, SPRINT127_VISION_LINE_NOTIFICATION_CONTROLS, SPRINT128_LINE_NOTIFICATION_TOGGLE_LIVE_QA, SPRINT129_VISION_LINE_SUPPRESSION_LIVE_QA, SPRINT131_LINE_REAL_SEND_READINESS, SPRINT132_CORE_WORKFLOW_LIVE_QA, SPRINT133_SUPPORT_ADMIN_LIVE_QA, SPRINT134_DATA_COMPLETENESS_REVIEW, SPRINT135_DATA_COMPLETENESS_PANEL, SPRINT136_DATA_REVIEW_WORKFLOW, SPRINT137_BACKEND_REVIEW_LOG, SPRINT138_BACKEND_REVIEW_LOG_LIVE_QA, SPRINT139_DATA_CLEANUP_TRIAGE, SPRINT140_JOBS_BILLING_REPORTS, SPRINT141_MOBILE_MENU_DEEP_QA, SPRINT142_AI_VISION_REAL_USE, SPRINT143_PERMISSION_OPS, SPRINT144_OWNER_DATA_RESOLUTION, SPRINT145_MOBILE_UX_WALKTHROUGH, SPRINT146_AI_VISION_PILOT, SPRINT147_DASHBOARD_DECISION_LAYER, SPRINT148_OPS_PERMISSION_CLEANUP];
+const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME, SPRINT121_PERFORMANCE_ACCESSIBILITY, SPRINT122_DASHBOARD_OPERATOR_ANALYTICS, SPRINT123_LIVE_VISUAL_QA, SPRINT124_PROTECTED_VISUAL_MENU_QA, SPRINT125_ROLE_BASED_DASHBOARD_WIDGETS, SPRINT126_AI_VISION_ROLE_READINESS, SPRINT127_VISION_LINE_NOTIFICATION_CONTROLS, SPRINT128_LINE_NOTIFICATION_TOGGLE_LIVE_QA, SPRINT129_VISION_LINE_SUPPRESSION_LIVE_QA, SPRINT131_LINE_REAL_SEND_READINESS, SPRINT132_CORE_WORKFLOW_LIVE_QA, SPRINT133_SUPPORT_ADMIN_LIVE_QA, SPRINT134_DATA_COMPLETENESS_REVIEW, SPRINT135_DATA_COMPLETENESS_PANEL, SPRINT136_DATA_REVIEW_WORKFLOW, SPRINT137_BACKEND_REVIEW_LOG, SPRINT138_BACKEND_REVIEW_LOG_LIVE_QA, SPRINT139_DATA_CLEANUP_TRIAGE, SPRINT140_JOBS_BILLING_REPORTS, SPRINT141_MOBILE_MENU_DEEP_QA, SPRINT142_AI_VISION_REAL_USE, SPRINT143_PERMISSION_OPS, SPRINT144_OWNER_DATA_RESOLUTION, SPRINT145_MOBILE_UX_WALKTHROUGH, SPRINT146_AI_VISION_PILOT, SPRINT147_DASHBOARD_DECISION_LAYER, SPRINT148_OPS_PERMISSION_CLEANUP, SPRINT149_LIVE_BROWSER_VISUAL_QA, SPRINT150_DATA_CLEANUP_OWNER_WORKFLOW, SPRINT151_DASHBOARD_UX_POLISH, SPRINT152_AI_VISION_REAL_PILOT, SPRINT153_PERMISSION_FALLBACK_CLOSURE];
 const badMarkers = [
   '\u00e0\u00b8',
   '\u00e0\u00b9',
@@ -312,6 +317,11 @@ const sprint145MobileUxWalkthroughJs = readUtf8(SPRINT145_MOBILE_UX_WALKTHROUGH)
 const sprint146AiVisionPilotJs = readUtf8(SPRINT146_AI_VISION_PILOT);
 const sprint147DashboardDecisionLayerJs = readUtf8(SPRINT147_DASHBOARD_DECISION_LAYER);
 const sprint148OpsPermissionCleanupJs = readUtf8(SPRINT148_OPS_PERMISSION_CLEANUP);
+const sprint149LiveBrowserVisualQaJs = readUtf8(SPRINT149_LIVE_BROWSER_VISUAL_QA);
+const sprint150DataCleanupOwnerWorkflowJs = readUtf8(SPRINT150_DATA_CLEANUP_OWNER_WORKFLOW);
+const sprint151DashboardUxPolishJs = readUtf8(SPRINT151_DASHBOARD_UX_POLISH);
+const sprint152AiVisionRealPilotJs = readUtf8(SPRINT152_AI_VISION_REAL_PILOT);
+const sprint153PermissionFallbackClosureJs = readUtf8(SPRINT153_PERMISSION_FALLBACK_CLOSURE);
 if (!schemaRegistryJson.includes('"canonical_tables"') || !schemaRegistryJson.includes('"aliases"') || !schemaRegistryJson.includes('"DB_SS_ID"')) {
   fail('docs/database_schema_registry.json must define canonical_tables, aliases, and DB_SS_ID spreadsheet metadata.');
 }
@@ -557,11 +567,49 @@ if (!sprint148OpsPermissionCleanupJs.includes('Sprint 148 Ops Permission Cleanup
     !sprint148OpsPermissionCleanupJs.includes('no-google-api-key-leak')) {
   fail('scripts/sprint148_ops_permission_cleanup.js must guard ops permission cleanup and secret hygiene.');
 }
+if (!sprint149LiveBrowserVisualQaJs.includes('Sprint 149 Live Browser Visual QA') ||
+    !sprint149LiveBrowserVisualQaJs.includes('live-browser-visual-qa-read-only') ||
+    !sprint149LiveBrowserVisualQaJs.includes('COMPHONE_PAGES_BASE') ||
+    !sprint149LiveBrowserVisualQaJs.includes('protected route read probes')) {
+  fail('scripts/sprint149_live_browser_visual_qa.js must guard live Pages visual readiness and protected read probes.');
+}
+if (!sprint150DataCleanupOwnerWorkflowJs.includes('Sprint 150 Data Cleanup Owner Workflow') ||
+    !sprint150DataCleanupOwnerWorkflowJs.includes('data-cleanup-owner-workflow-no-mutation') ||
+    !sprint150DataCleanupOwnerWorkflowJs.includes('jobs:J0022') ||
+    !sprint150DataCleanupOwnerWorkflowJs.includes('does-not-execute-repair')) {
+  fail('scripts/sprint150_data_cleanup_owner_workflow.js must guard owner-approved data cleanup without mutation.');
+}
+if (!sprint151DashboardUxPolishJs.includes('Sprint 151 Dashboard UX Polish Audit') ||
+    !sprint151DashboardUxPolishJs.includes('mobile-decision-layer') ||
+    !sprint151DashboardUxPolishJs.includes('renderMobileDecisionLayer') ||
+    !sprint151DashboardUxPolishJs.includes('decision-layers-read-only')) {
+  fail('scripts/sprint151_dashboard_ux_polish_audit.js must guard PC/Mobile dashboard decision-layer UX.');
+}
+if (!sprint152AiVisionRealPilotJs.includes('Sprint 152 AI Vision Real Pilot Guard') ||
+    !sprint152AiVisionRealPilotJs.includes('COMPHONE_AI_VISION_REAL_PILOT_CONFIRM') ||
+    !sprint152AiVisionRealPilotJs.includes('ai-vision-real-pilot-guard-no-real-line-send') ||
+    !sprint152AiVisionRealPilotJs.includes('runVisionPipeline')) {
+  fail('scripts/sprint152_ai_vision_real_pilot_guard.js must guard the gated AI Vision real pilot.');
+}
+if (!sprint153PermissionFallbackClosureJs.includes('Sprint 153 Permission Fallback Closure') ||
+    !sprint153PermissionFallbackClosureJs.includes('permission-fallback-closure-readiness') ||
+    !sprint153PermissionFallbackClosureJs.includes('fallback-retirement-ready') ||
+    !sprint153PermissionFallbackClosureJs.includes('DB_DATA_REVIEW_LOG')) {
+  fail('scripts/sprint153_permission_fallback_closure.js must guard review-log fallback closure readiness.');
+}
 if (!dashboardJs.includes('renderDashboardDecisionLayer') ||
     !dashboardJs.includes('buildDashboardDecisionItems') ||
     !dashboardJs.includes('dashboard-decision-layer') ||
     !dashboardJs.includes('decision-priority')) {
   fail('pwa/dashboard.js must render the Sprint 147 dashboard decision layer.');
+}
+const appHomeJs = readUtf8(path.join(PWA, 'app_home.js'));
+const mobileGlassCss = readUtf8(path.join(PWA, 'mobile_glass.css'));
+if (!appHomeJs.includes('renderMobileDecisionLayer') ||
+    !appHomeJs.includes('buildMobileDecisionItems') ||
+    !appHomeJs.includes('data-mobile-decision-layer') ||
+    !mobileGlassCss.includes('.mobile-decision-layer')) {
+  fail('Mobile home must render and style the Sprint 151 decision layer.');
 }
 
 const pcContractIndex = dashboardPcHtml.indexOf('api_contract.js');

@@ -38,6 +38,8 @@ const staticGuard = read('scripts/pwa_static_guard.js');
 const regressionGuard = read('scripts/regression-guard.sh');
 const autoDeploy = read('.github/workflows/auto-deploy.yml');
 const blueprint = read('BLUEPRINT.md');
+const versionJs = read('pwa/version_config.js');
+const build = (versionJs.match(/BUILD_TIMESTAMP\s*=\s*'([^']+)'/) || [])[1] || '';
 
 const manifestStyles = manifestList(manifest, 'styles');
 const manifestScripts = manifestList(manifest, 'scripts');
@@ -119,7 +121,8 @@ check(
   'blueprint-current',
   blueprint.includes('Phase 123 Live Visual QA Guard') &&
     blueprint.includes('sprint123_live_visual_qa_guard.js') &&
-    blueprint.includes('20260518_0730'),
+    build &&
+    blueprint.includes(build),
   'BLUEPRINT.md must document Sprint 123 and current build timestamp.'
 );
 

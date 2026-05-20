@@ -29,6 +29,8 @@ const staticGuard = read('scripts/pwa_static_guard.js');
 const regressionGuard = read('scripts/regression-guard.sh');
 const autoDeploy = read('.github/workflows/auto-deploy.yml');
 const blueprint = read('BLUEPRINT.md');
+const versionJs = read('pwa/version_config.js');
+const build = (versionJs.match(/BUILD_TIMESTAMP\s*=\s*'([^']+)'/) || [])[1] || '';
 
 check(
   'pc-role-widget-renderer',
@@ -91,7 +93,8 @@ check(
   'blueprint-current',
   blueprint.includes('Phase 125 Role-Based Dashboard Widgets') &&
     blueprint.includes('sprint125_role_based_dashboard_widgets_audit.js') &&
-    blueprint.includes('20260518_0730'),
+    build &&
+    blueprint.includes(build),
   'BLUEPRINT.md must document Sprint 125 and current build timestamp.'
 );
 

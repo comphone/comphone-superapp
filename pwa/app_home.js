@@ -146,10 +146,58 @@ function renderMobileRoleFocus() {
     </section>`;
 }
 
+function buildMobileDecisionItems() {
+  const d = APP.dashboardData || {};
+  const summary = d.summary || d || {};
+  const revenue = summary.revenue || {};
+  const alertsRaw = d.alerts || summary.alerts || {};
+  const alerts = Array.isArray(alertsRaw) ? alertsRaw : (alertsRaw.items || []);
+  const totalJobs = Number(summary.totalJobs || summary.total_jobs || (APP.jobs || []).length || 0);
+  const overdueJobs = Number(summary.overdueJobs || summary.overdue_jobs || 0);
+  const billingOpen = Number(summary.billingOpen || summary.openBillings || summary.pendingBillings || 0);
+  const lowStock = Number(summary.lowStock || summary.low_stock || 0);
+  const visionReview = Number(summary.visionReview || summary.visionReviewQueue || summary.pendingVisionReviews || 0);
+  const linePending = alerts.length;
+  const items = [
+    { id: 'jobs', page: 'jobs', icon: 'bi-tools', title: 'Service', note: overdueJobs > 0 ? `${overdueJobs} SLA risk` : `${totalJobs} jobs`, value: overdueJobs || totalJobs, priority: overdueJobs > 0 ? 'high' : 'normal' },
+    { id: 'billing', page: 'billing', icon: 'bi-receipt', title: 'Billing', note: billingOpen > 0 ? `${billingOpen} follow-up` : 'cash clear', value: billingOpen, priority: billingOpen > 0 ? 'high' : 'normal' },
+    { id: 'reports', page: 'reports', icon: 'bi-graph-up-arrow', title: 'Reports', note: Number(revenue.month || 0) > 0 ? `THB ${Number(revenue.month || 0).toLocaleString()}` : 'review period', value: Number(revenue.month || 0), priority: Number(revenue.today || 0) <= 0 && Number(revenue.month || 0) <= 0 ? 'watch' : 'normal' },
+    { id: 'inventory', page: 'inventory', icon: 'bi-boxes', title: 'Stock', note: lowStock > 0 ? `${lowStock} low-stock` : 'healthy', value: lowStock, priority: lowStock > 0 ? 'watch' : 'normal' },
+    { id: 'vision', page: 'vision', icon: 'bi-stars', title: 'Vision', note: visionReview > 0 ? `${visionReview} reviews` : 'pilot ready', value: visionReview, priority: visionReview > 0 ? 'watch' : 'normal' },
+    { id: 'line-center', page: 'line-center', icon: 'bi-broadcast-pin', title: 'LINE', note: linePending > 0 ? `${linePending} alerts` : 'rooms healthy', value: linePending, priority: linePending > 0 ? 'watch' : 'normal' }
+  ];
+  const order = { high: 0, watch: 1, normal: 2 };
+  return items.sort((a, b) => (order[a.priority] - order[b.priority]) || (b.value - a.value)).slice(0, 4);
+}
+
+function renderMobileDecisionLayer() {
+  const items = buildMobileDecisionItems();
+  return `
+    <section class="mobile-decision-layer" data-mobile-decision-layer="true" aria-label="Mobile decision layer">
+      <div class="mobile-decision-head">
+        <div>
+          <small>Decision Layer</small>
+          <strong>Next best actions</strong>
+        </div>
+        <button type="button" class="mobile-decision-settings" aria-label="Edit quick actions" onclick="showQuickActionSettings()">
+          <i class="bi bi-sliders"></i>
+        </button>
+      </div>
+      <div class="mobile-decision-grid">
+        ${items.map(item => `
+          <button type="button" class="mobile-decision-item priority-${item.priority}" onclick="goPage('${item.page}', document.getElementById('${item.page === 'jobs' ? 'nav-jobs' : 'nav-more'}'))">
+            <i class="bi ${item.icon}"></i>
+            <span><strong>${item.title}</strong><small>${item.note}</small></span>
+          </button>
+        `).join('')}
+      </div>
+    </section>`;
+}
+
 function renderMainContent() {
   const area = document.getElementById('main-content-area');
   const role = APP.role;
-  const pulse = renderOperatorPulse() + renderMobileRoleFocus();
+  const pulse = renderOperatorPulse() + renderMobileRoleFocus() + renderMobileDecisionLayer();
 
   if (role === 'tech') {
     area.innerHTML = pulse + renderTechHome();

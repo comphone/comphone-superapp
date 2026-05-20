@@ -21,6 +21,8 @@ const staticGuard = read('scripts/pwa_static_guard.js');
 const regressionGuard = read('scripts/regression-guard.sh');
 const autoDeploy = read('.github/workflows/auto-deploy.yml');
 const blueprint = read('BLUEPRINT.md');
+const versionJs = read('pwa/version_config.js');
+const build = (versionJs.match(/BUILD_TIMESTAMP\s*=\s*'([^']+)'/) || [])[1] || '';
 
 addCheck(
   'pc-operator-insight-strip',
@@ -82,7 +84,8 @@ addCheck(
   'blueprint-current',
   blueprint.includes('Phase 122 Dashboard Operator Analytics Polish') &&
     blueprint.includes('sprint122_dashboard_operator_analytics_audit.js') &&
-    blueprint.includes('20260518_0730'),
+    build &&
+    blueprint.includes(build),
   'BLUEPRINT.md must describe Sprint 122 and current build timestamp.'
 );
 
