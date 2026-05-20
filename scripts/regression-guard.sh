@@ -821,6 +821,56 @@ else
   warn "Node or sprint138_backend_review_log_live_qa.js unavailable - skipping Sprint 138 Backend Review Log Live QA"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/sprint139_data_cleanup_triage.js" ]; then
+  if node scripts/sprint139_data_cleanup_triage.js; then
+    echo "   Sprint 139 Data Cleanup Triage passed or skipped safely"
+  else
+    fail "Sprint 139 Data Cleanup Triage FAILED"
+  fi
+else
+  warn "Node or sprint139_data_cleanup_triage.js unavailable - skipping Sprint 139 Data Cleanup Triage"
+fi
+
+if command -v node &>/dev/null && [ -f "scripts/sprint140_jobs_billing_reports_live_polish.js" ]; then
+  if node scripts/sprint140_jobs_billing_reports_live_polish.js; then
+    echo "   Sprint 140 Jobs/Billing/Reports Live Polish passed or skipped safely"
+  else
+    fail "Sprint 140 Jobs/Billing/Reports Live Polish FAILED"
+  fi
+else
+  warn "Node or sprint140_jobs_billing_reports_live_polish.js unavailable - skipping Sprint 140 Jobs/Billing/Reports Live Polish"
+fi
+
+if command -v node &>/dev/null && [ -f "scripts/sprint141_mobile_menu_deep_qa.js" ]; then
+  if node scripts/sprint141_mobile_menu_deep_qa.js; then
+    echo "   Sprint 141 Mobile Menu Deep QA passed or skipped safely"
+  else
+    fail "Sprint 141 Mobile Menu Deep QA FAILED"
+  fi
+else
+  warn "Node or sprint141_mobile_menu_deep_qa.js unavailable - skipping Sprint 141 Mobile Menu Deep QA"
+fi
+
+if command -v node &>/dev/null && [ -f "scripts/sprint142_ai_vision_real_use_readiness.js" ]; then
+  if node scripts/sprint142_ai_vision_real_use_readiness.js; then
+    echo "   Sprint 142 AI Vision Real-Use Readiness passed or skipped safely"
+  else
+    fail "Sprint 142 AI Vision Real-Use Readiness FAILED"
+  fi
+else
+  warn "Node or sprint142_ai_vision_real_use_readiness.js unavailable - skipping Sprint 142 AI Vision Real-Use Readiness"
+fi
+
+if command -v node &>/dev/null && [ -f "scripts/sprint143_permission_ops_hardening.js" ]; then
+  if node scripts/sprint143_permission_ops_hardening.js; then
+    echo "   Sprint 143 Permission/Ops Hardening passed or skipped safely"
+  else
+    fail "Sprint 143 Permission/Ops Hardening FAILED"
+  fi
+else
+  warn "Node or sprint143_permission_ops_hardening.js unavailable - skipping Sprint 143 Permission/Ops Hardening"
+fi
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"

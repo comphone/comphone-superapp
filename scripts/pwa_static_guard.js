@@ -37,8 +37,13 @@ const SPRINT135_DATA_COMPLETENESS_PANEL = path.join(ROOT, 'scripts', 'sprint135_
 const SPRINT136_DATA_REVIEW_WORKFLOW = path.join(ROOT, 'scripts', 'sprint136_data_review_workflow_audit.js');
 const SPRINT137_BACKEND_REVIEW_LOG = path.join(ROOT, 'scripts', 'sprint137_backend_review_log_audit.js');
 const SPRINT138_BACKEND_REVIEW_LOG_LIVE_QA = path.join(ROOT, 'scripts', 'sprint138_backend_review_log_live_qa.js');
+const SPRINT139_DATA_CLEANUP_TRIAGE = path.join(ROOT, 'scripts', 'sprint139_data_cleanup_triage.js');
+const SPRINT140_JOBS_BILLING_REPORTS = path.join(ROOT, 'scripts', 'sprint140_jobs_billing_reports_live_polish.js');
+const SPRINT141_MOBILE_MENU_DEEP_QA = path.join(ROOT, 'scripts', 'sprint141_mobile_menu_deep_qa.js');
+const SPRINT142_AI_VISION_REAL_USE = path.join(ROOT, 'scripts', 'sprint142_ai_vision_real_use_readiness.js');
+const SPRINT143_PERMISSION_OPS = path.join(ROOT, 'scripts', 'sprint143_permission_ops_hardening.js');
 
-const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME, SPRINT121_PERFORMANCE_ACCESSIBILITY, SPRINT122_DASHBOARD_OPERATOR_ANALYTICS, SPRINT123_LIVE_VISUAL_QA, SPRINT124_PROTECTED_VISUAL_MENU_QA, SPRINT125_ROLE_BASED_DASHBOARD_WIDGETS, SPRINT126_AI_VISION_ROLE_READINESS, SPRINT127_VISION_LINE_NOTIFICATION_CONTROLS, SPRINT128_LINE_NOTIFICATION_TOGGLE_LIVE_QA, SPRINT129_VISION_LINE_SUPPRESSION_LIVE_QA, SPRINT131_LINE_REAL_SEND_READINESS, SPRINT132_CORE_WORKFLOW_LIVE_QA, SPRINT133_SUPPORT_ADMIN_LIVE_QA, SPRINT134_DATA_COMPLETENESS_REVIEW, SPRINT135_DATA_COMPLETENESS_PANEL, SPRINT136_DATA_REVIEW_WORKFLOW, SPRINT137_BACKEND_REVIEW_LOG, SPRINT138_BACKEND_REVIEW_LOG_LIVE_QA];
+const mustExist = [INDEX, DASHBOARD_PC, VERSION, SW, ASSET_MANIFEST, SCHEMA_REGISTRY, SPRINT108_GUARD, SPRINT109_REPAIR, SPRINT111_REPAIR_EXECUTION, SPRINT112_ADMIN_REPAIR, SPRINT113_REPAIR_LIVE_QA, SPRINT114_JOBS_POLISH, SPRINT115_BILLING_RESILIENCE, SPRINT116_REPORTS_DRILLDOWN, SPRINT117_VISION_LINE_LOOP, SPRINT119_INVENTORY_PO_WARRANTY, SPRINT120_SETTINGS_ADMIN_RUNTIME, SPRINT121_PERFORMANCE_ACCESSIBILITY, SPRINT122_DASHBOARD_OPERATOR_ANALYTICS, SPRINT123_LIVE_VISUAL_QA, SPRINT124_PROTECTED_VISUAL_MENU_QA, SPRINT125_ROLE_BASED_DASHBOARD_WIDGETS, SPRINT126_AI_VISION_ROLE_READINESS, SPRINT127_VISION_LINE_NOTIFICATION_CONTROLS, SPRINT128_LINE_NOTIFICATION_TOGGLE_LIVE_QA, SPRINT129_VISION_LINE_SUPPRESSION_LIVE_QA, SPRINT131_LINE_REAL_SEND_READINESS, SPRINT132_CORE_WORKFLOW_LIVE_QA, SPRINT133_SUPPORT_ADMIN_LIVE_QA, SPRINT134_DATA_COMPLETENESS_REVIEW, SPRINT135_DATA_COMPLETENESS_PANEL, SPRINT136_DATA_REVIEW_WORKFLOW, SPRINT137_BACKEND_REVIEW_LOG, SPRINT138_BACKEND_REVIEW_LOG_LIVE_QA, SPRINT139_DATA_CLEANUP_TRIAGE, SPRINT140_JOBS_BILLING_REPORTS, SPRINT141_MOBILE_MENU_DEEP_QA, SPRINT142_AI_VISION_REAL_USE, SPRINT143_PERMISSION_OPS];
 const badMarkers = [
   '\u00e0\u00b8',
   '\u00e0\u00b9',
@@ -292,6 +297,11 @@ const sprint135DataCompletenessPanelJs = readUtf8(SPRINT135_DATA_COMPLETENESS_PA
 const sprint136DataReviewWorkflowJs = readUtf8(SPRINT136_DATA_REVIEW_WORKFLOW);
 const sprint137BackendReviewLogJs = readUtf8(SPRINT137_BACKEND_REVIEW_LOG);
 const sprint138BackendReviewLogLiveQaJs = readUtf8(SPRINT138_BACKEND_REVIEW_LOG_LIVE_QA);
+const sprint139DataCleanupTriageJs = readUtf8(SPRINT139_DATA_CLEANUP_TRIAGE);
+const sprint140JobsBillingReportsJs = readUtf8(SPRINT140_JOBS_BILLING_REPORTS);
+const sprint141MobileMenuDeepQaJs = readUtf8(SPRINT141_MOBILE_MENU_DEEP_QA);
+const sprint142AiVisionRealUseJs = readUtf8(SPRINT142_AI_VISION_REAL_USE);
+const sprint143PermissionOpsJs = readUtf8(SPRINT143_PERMISSION_OPS);
 if (!schemaRegistryJson.includes('"canonical_tables"') || !schemaRegistryJson.includes('"aliases"') || !schemaRegistryJson.includes('"DB_SS_ID"')) {
   fail('docs/database_schema_registry.json must define canonical_tables, aliases, and DB_SS_ID spreadsheet metadata.');
 }
@@ -475,6 +485,36 @@ if (!sprint138BackendReviewLogLiveQaJs.includes('Sprint 138 Backend Review Log L
     !sprint138BackendReviewLogLiveQaJs.includes('saveDataReviewLog') ||
     !sprint138BackendReviewLogLiveQaJs.includes('previewDataRepair')) {
   fail('scripts/sprint138_backend_review_log_live_qa.js must guard token-aware backend review log live QA without repair execution.');
+}
+if (!sprint139DataCleanupTriageJs.includes('Sprint 139 Data Cleanup Triage') ||
+    !sprint139DataCleanupTriageJs.includes('manual_backfill') ||
+    !sprint139DataCleanupTriageJs.includes('controlled_repair_candidate') ||
+    !sprint139DataCleanupTriageJs.includes('production_mutation: false')) {
+  fail('scripts/sprint139_data_cleanup_triage.js must classify data gaps without production mutation.');
+}
+if (!sprint140JobsBillingReportsJs.includes('Sprint 140 Jobs -> Billing -> Reports Live Polish') ||
+    !sprint140JobsBillingReportsJs.includes('checkJobs') ||
+    !sprint140JobsBillingReportsJs.includes('listBillings') ||
+    !sprint140JobsBillingReportsJs.includes('getReportData')) {
+  fail('scripts/sprint140_jobs_billing_reports_live_polish.js must guard the Jobs/Billing/Reports chain.');
+}
+if (!sprint141MobileMenuDeepQaJs.includes('Sprint 141 Mobile Menu Deep QA') ||
+    !sprint141MobileMenuDeepQaJs.includes('ROUTES') ||
+    !sprint141MobileMenuDeepQaJs.includes('blank-page') ||
+    !sprint141MobileMenuDeepQaJs.includes('COMPHONE_AUTH_TOKEN')) {
+  fail('scripts/sprint141_mobile_menu_deep_qa.js must guard mobile route/page and protected menu action readiness.');
+}
+if (!sprint142AiVisionRealUseJs.includes('Sprint 142 AI Vision Real-Use Readiness') ||
+    !sprint142AiVisionRealUseJs.includes('preview-first') ||
+    !sprint142AiVisionRealUseJs.includes('OWNER_APPROVED_REAL_LINE_SEND') ||
+    !sprint142AiVisionRealUseJs.includes('no-real-send')) {
+  fail('scripts/sprint142_ai_vision_real_use_readiness.js must guard AI Vision real-use and no-real-send boundaries.');
+}
+if (!sprint143PermissionOpsJs.includes('Sprint 143 Permission & Ops Hardening') ||
+    !sprint143PermissionOpsJs.includes('script_properties_fallback') ||
+    !sprint143PermissionOpsJs.includes('no-google-api-key-leak') ||
+    !sprint143PermissionOpsJs.includes('saveDataReviewLog')) {
+  fail('scripts/sprint143_permission_ops_hardening.js must guard permissions, fallback visibility, and secret hygiene.');
 }
 
 const pcContractIndex = dashboardPcHtml.indexOf('api_contract.js');
