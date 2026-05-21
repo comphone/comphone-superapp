@@ -971,6 +971,25 @@ else
   warn "Node or sprint153_permission_fallback_closure.js unavailable - skipping Sprint 153 Permission Fallback Closure"
 fi
 
+for sprint_script in \
+  sprint154_post_deploy_pages_confirmation \
+  sprint155_owner_data_backfill_readiness \
+  sprint156_mobile_menu_e2e_guard \
+  sprint157_pc_dashboard_workflow_guard \
+  sprint158_ai_vision_line_room_control_guard
+do
+  script_path="scripts/${sprint_script}.js"
+  if command -v node &>/dev/null && [ -f "$script_path" ]; then
+    if node "$script_path"; then
+      echo "   ${sprint_script} passed or skipped safely"
+    else
+      fail "${sprint_script} FAILED"
+    fi
+  else
+    warn "Node or ${script_path} unavailable - skipping ${sprint_script}"
+  fi
+done
+
 # E2: Post-incident recurrence patterns (check ALL surfaces)
 if grep -q '<script src="ai_executor_validation.js"' pwa/dashboard_pc.html; then
   fail "RECURRENCE: ai_executor_validation.js loaded in dashboard_pc.html"

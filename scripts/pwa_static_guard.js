@@ -791,6 +791,18 @@ if (!lineRoomSmokeJs.includes('COMPHONE_LINE_SEND_CONFIRM') ||
     !lineRoomSmokeJs.includes('line-smoke-gate')) {
   fail('pwa_line_room_smoke.js must gate real LINE room sends and verify read-only preview flow.');
 }
+for (const [fileName, marker, tokenAware] of [
+  ['sprint154_post_deploy_pages_confirmation.js', 'Post-Deploy Pages Confirmation', false],
+  ['sprint155_owner_data_backfill_readiness.js', 'Owner Data Backfill Readiness', true],
+  ['sprint156_mobile_menu_e2e_guard.js', 'Mobile Menu E2E Guard', true],
+  ['sprint157_pc_dashboard_workflow_guard.js', 'PC Dashboard Workflow Guard', true],
+  ['sprint158_ai_vision_line_room_control_guard.js', 'AI Vision + LINE Room Control Guard', true],
+]) {
+  const body = readUtf8(path.join(ROOT, 'scripts', fileName));
+  if (!body.includes(marker) || (tokenAware && !body.includes('COMPHONE_AUTH_TOKEN'))) {
+    fail(`${fileName} must document and guard ${marker}.`);
+  }
+}
 const runtimeSelfTestJs = readUtf8(path.join(PWA, 'runtime_self_test.js'));
 if (!runtimeSelfTestJs.includes('ai-vision-runtime') ||
     !runtimeSelfTestJs.includes('getVisionDashboardStats') ||
