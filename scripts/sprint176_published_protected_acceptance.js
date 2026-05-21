@@ -2,9 +2,9 @@
 /*
  * Sprint 176 Published Protected Acceptance
  *
- * Verifies the already-published GitHub Pages build, then runs protected
- * browser/API acceptance. Default mode is skip-safe; strict mode requires a
- * fresh COMPHONE_AUTH_TOKEN and COMPHONE_SPRINT176_REQUIRE_LIVE=1.
+ * Verifies GitHub Pages freshness, then runs protected browser/API acceptance.
+ * Default mode is skip-safe while Pages catches up; strict mode requires the
+ * published build to be fresh plus a fresh COMPHONE_AUTH_TOKEN.
  */
 'use strict';
 
@@ -16,6 +16,7 @@ const ROOT = path.resolve(__dirname, '..');
 const REPORT = path.join(ROOT, 'test_reports', 'sprint176_published_protected_acceptance_latest.json');
 const TOKEN = process.env.COMPHONE_AUTH_TOKEN || '';
 const REQUIRE_LIVE = process.env.COMPHONE_SPRINT176_REQUIRE_LIVE === '1';
+const REQUIRE_PAGES_FRESH = process.env.COMPHONE_SPRINT176_REQUIRE_PAGES_FRESH === '1' || REQUIRE_LIVE;
 
 function readJson(file) {
   return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : {};
@@ -36,7 +37,7 @@ function main() {
   });
   const sweep = readJson(path.join(ROOT, 'test_reports', 'sprint161_protected_live_token_sweep_latest.json'));
   const checks = [
-    { id: 'pages-build-published', ok: pages.status === 0 && pages.stdout.includes('status=ok'), stdout: pages.stdout.slice(-1000), stderr: pages.stderr.slice(-1000) },
+    { id: 'pages-build-fresh-policy', ok: REQUIRE_PAGES_FRESH ? pages.status === 0 && pages.stdout.includes('status=ok') : pages.status === 0, require_fresh: REQUIRE_PAGES_FRESH, stdout: pages.stdout.slice(-1000), stderr: pages.stderr.slice(-1000) },
     { id: 'protected-browser-acceptance-ran', ok: strictBrowser.status === 0, stdout: strictBrowser.stdout.slice(-1000), stderr: strictBrowser.stderr.slice(-1000) },
     { id: 'strict-live-policy', ok: REQUIRE_LIVE ? !!TOKEN && sweep.protected_run === true : true, require_live: REQUIRE_LIVE, token_present: !!TOKEN, protected_run: !!sweep.protected_run },
     { id: 'protected-sweep-clean', ok: sweep.status === 'ok', status: sweep.status || 'unknown' },
@@ -47,6 +48,7 @@ function main() {
     generated_at: new Date().toISOString(),
     mode: 'published-protected-acceptance-read-only',
     require_live: REQUIRE_LIVE,
+    require_pages_fresh: REQUIRE_PAGES_FRESH,
     token_present: !!TOKEN,
     status: failures.length ? 'fail' : 'ok',
     checks

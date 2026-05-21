@@ -314,8 +314,15 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN,Env:\COMPHONE_LINE_TOGGLE_CONFIRM,Env:\COMP
 - Sprint 174: added Strict Protected Browser Runbook. Default mode is CI-safe; strict mode requires `COMPHONE_AUTH_TOKEN` plus `COMPHONE_REQUIRE_PROTECTED_BROWSER_ACCEPTANCE=1` or `COMPHONE_SPRINT174_STRICT_PROTECTED_BROWSER=1` and proves protected browser/API reads actually ran.
 - Sprint 175: added AI Vision Sample Pilot Gate. Default mode verifies readiness only; real sample analysis requires `COMPHONE_AUTH_TOKEN`, sample image input, `COMPHONE_AI_VISION_SAMPLE_PILOT=1`, `COMPHONE_AI_VISION_SAMPLE_CONFIRM=RUN_REAL_SAMPLE_ANALYSIS`, and `COMPHONE_SPRINT175_OWNER_CONFIRM=RUN_OWNER_APPROVED_AI_SAMPLE`.
 - Sprint 175 never sends LINE messages. Do not set `COMPHONE_LINE_SEND_CONFIRM` during this pilot.
-- PWA cache was bumped to `v5.18.41-sprint177` / `20260521_0600`; PC and Mobile asset query strings now point at the same build.
+- PWA cache was bumped to `v5.18.40-sprint175` / `20260521_0500`; PC and Mobile asset query strings now point at the same build.
 - Wired Sprint 174-175 into `scripts/pwa_static_guard.js`, `scripts/regression-guard.sh`, and `.github/workflows/auto-deploy.yml`.
+
+### Phase 177 Published Protected Acceptance + AI Vision Real Sample Evidence Pack (2026-05-21)
+- Sprint 176: added Published Protected Acceptance. It verifies the live GitHub Pages build first, then runs the strict protected browser runbook; strict live proof requires `COMPHONE_AUTH_TOKEN` and `COMPHONE_SPRINT176_REQUIRE_LIVE=1`.
+- Sprint 177: added AI Vision Real Sample Evidence. Default mode is readiness-only; real analysis requires `COMPHONE_SPRINT177_EXECUTE_REAL_SAMPLE=1` plus all Sprint 175 token/sample/owner gates.
+- Sprint 177 never sends LINE messages and blocks if LINE real-send env vars are present.
+- PWA cache was bumped to `v5.18.41-sprint177` / `20260521_0600`; PC and Mobile asset query strings now point at the same build.
+- Wired Sprint 176-177 into `scripts/pwa_static_guard.js`, `scripts/regression-guard.sh`, and `.github/workflows/auto-deploy.yml`.
 
 ### Phase 148 Ops Permission + Decision Layer Pack (2026-05-20)
 - Sprint 144: added owner data resolution planning for the Sprint 139 data findings. It creates `test_reports/sprint144_owner_data_resolution_latest.json` and `.md`, requires owner approval, and never invokes `executeDataRepair`.
