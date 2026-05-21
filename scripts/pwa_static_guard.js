@@ -797,6 +797,11 @@ for (const [fileName, marker, tokenAware] of [
   ['sprint156_mobile_menu_e2e_guard.js', 'Mobile Menu E2E Guard', true],
   ['sprint157_pc_dashboard_workflow_guard.js', 'PC Dashboard Workflow Guard', true],
   ['sprint158_ai_vision_line_room_control_guard.js', 'AI Vision + LINE Room Control Guard', true],
+  ['sprint159_post_deploy_publish_confirmation.js', 'Post-Deploy Publish Confirmation', false],
+  ['sprint160_real_browser_clickthrough_contract.js', 'Real Browser Click-Through Contract', true],
+  ['sprint161_protected_live_token_sweep.js', 'Protected Live Token Sweep', true],
+  ['sprint162_owner_data_cleanup_decision.js', 'Owner Data Cleanup Decision', true],
+  ['sprint163_ai_vision_real_sample_pilot.js', 'AI Vision Real Sample Pilot', true],
 ]) {
   const body = readUtf8(path.join(ROOT, 'scripts', fileName));
   if (!body.includes(marker) || (tokenAware && !body.includes('COMPHONE_AUTH_TOKEN'))) {

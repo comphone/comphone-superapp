@@ -976,7 +976,12 @@ for sprint_script in \
   sprint155_owner_data_backfill_readiness \
   sprint156_mobile_menu_e2e_guard \
   sprint157_pc_dashboard_workflow_guard \
-  sprint158_ai_vision_line_room_control_guard
+  sprint158_ai_vision_line_room_control_guard \
+  sprint159_post_deploy_publish_confirmation \
+  sprint160_real_browser_clickthrough_contract \
+  sprint161_protected_live_token_sweep \
+  sprint162_owner_data_cleanup_decision \
+  sprint163_ai_vision_real_sample_pilot
 do
   script_path="scripts/${sprint_script}.js"
   if command -v node &>/dev/null && [ -f "$script_path" ]; then
