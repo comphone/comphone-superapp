@@ -14,8 +14,9 @@ function renderJobCard(job) {
     ? `<div class="sla-timer sla-warn"><i class="bi bi-clock"></i> เหลือ ${job.sla} นาที</div>`
     : `<div class="sla-timer sla-ok"><i class="bi bi-clock"></i> เหลือ ${Math.floor(job.sla/60)} ชม. ${job.sla%60} นาที</div>`;
 
+  const jobArg = JSON.stringify(String(job.id || ''));
   return `
-    <div class="job-card ${s.border}" onclick="showJobDetail('${job.id}')">
+    <div class="job-card ${s.border}" onclick="showJobDetail(${jobArg})">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
           <div class="job-id">${job.id}</div>

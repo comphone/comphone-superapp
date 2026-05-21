@@ -60,6 +60,101 @@ function checkJobs(data) {
   } catch (e) { return { error: e.toString() }; }
 }
 
+function getJobDetail(data) {
+  data = data || {};
+  var jobId = data.job_id || data.jobId || data.id || '';
+  if (!jobId) return { success: false, error: 'job_id is required' };
+  if (typeof getJobDetailById_ !== 'function') return { success: false, error: 'Job detail service not loaded' };
+  return getJobDetailById_(jobId);
+}
+
+function deleteJob(data) {
+  data = data || {};
+  var jobId = String(data.job_id || data.jobId || data.id || '').trim();
+  var confirmText = String(data.confirm || data.confirmation || '').trim();
+  var reason = String(data.reason || '').trim();
+  var user = String(data._auth_user || data.user || 'SYSTEM').trim();
+  var role = String(data._auth_role || data.role || '').toLowerCase();
+
+  if (!jobId) return { success: false, error: 'job_id is required' };
+  if (confirmText !== 'DELETE_JOB') {
+    return { success: false, error: 'DELETE_JOB confirmation is required' };
+  }
+  if (role && role !== 'admin' && role !== 'owner') {
+    return { success: false, error: 'Admin access required' };
+  }
+
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch (e) { return { success: false, error: 'Lock timeout' }; }
+  try {
+    var ss = getComphoneSheet();
+    var sh = findSheetByName(ss, 'DBJOBS');
+    if (!sh) return { success: false, error: 'DBJOBS not found' };
+    var values = sh.getDataRange().getValues();
+    if (values.length < 2) return { success: false, error: 'No jobs found' };
+
+    var headers = values[0];
+    var jobIdCol = findHeaderIndex_(headers, ['JobID', 'Job_ID', 'jobid', 'job_id']);
+    if (jobIdCol < 0) jobIdCol = 0;
+
+    var rowIndex = -1;
+    for (var i = 1; i < values.length; i++) {
+      if (String(values[i][jobIdCol] || '').trim() === jobId) {
+        rowIndex = i + 1;
+        break;
+      }
+    }
+    if (rowIndex < 0) return { success: false, error: 'Job not found: ' + jobId };
+
+    var row = sh.getRange(rowIndex, 1, 1, headers.length).getValues()[0];
+    var archive = getOrCreateJobArchiveSheet_(ss, headers);
+    archive.appendRow([
+      Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss'),
+      user || 'SYSTEM',
+      role || '',
+      reason || 'Deleted from COMPHONE PWA',
+      JSON.stringify({ source_sheet: 'DBJOBS', source_row: rowIndex })
+    ].concat(row));
+
+    sh.deleteRow(rowIndex);
+    try {
+      writeAuditLog('DELETE_JOB', user || 'SYSTEM', 'Archived and deleted job ' + jobId + (reason ? ': ' + reason : ''), {
+        role: role,
+        job_id: jobId,
+        result: 'ok'
+      });
+    } catch (_auditErr) {}
+
+    return {
+      success: true,
+      job_id: jobId,
+      archived: true,
+      archive_sheet: 'DBJOBS_ARCHIVE',
+      deleted: 1,
+      message: 'Job archived and deleted'
+    };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  } finally {
+    try { lock.releaseLock(); } catch (_unlockErr) {}
+  }
+}
+
+function getOrCreateJobArchiveSheet_(ss, sourceHeaders) {
+  var name = 'DBJOBS_ARCHIVE';
+  var sh = findSheetByName(ss, name);
+  var headers = ['archived_at', 'archived_by', 'archived_role', 'archive_reason', 'archive_meta'].concat(sourceHeaders || []);
+  if (!sh) {
+    sh = ss.insertSheet(name);
+    sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+    return sh;
+  }
+  if (sh.getLastRow() === 0) {
+    sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+  }
+  return sh;
+}
+
 function completeJob(data) {
   var lock = LockService.getScriptLock();
   try { lock.waitLock(10000); } catch(e) { return { error: 'Lock timeout' }; }

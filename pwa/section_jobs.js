@@ -75,6 +75,10 @@ function _jobRequestId(prefix) {
     : ((prefix || 'job') + '_' + Date.now() + '_' + Math.random().toString(16).slice(2));
 }
 
+function _jobJsArg(value) {
+  return JSON.stringify(String(value == null ? '' : value));
+}
+
 function _findPcJob(jobId) {
   const key = String(jobId || '');
   return ((window.PC_JOBS_DATA || (typeof DASHBOARD_DATA !== 'undefined' && DASHBOARD_DATA.jobs) || [])).find(j =>
@@ -97,8 +101,16 @@ function _pcJobModal(title, bodyHtml, width) {
   document.body.insertAdjacentHTML('beforeend', modal);
 }
 
-function _showPcJobDetail(jobId) {
-  const job = _findPcJob(jobId);
+async function _showPcJobDetail(jobId) {
+  let job = _findPcJob(jobId);
+  const key = String(jobId || '');
+  if ((!job || (!job.customer && !job.customer_name && !job.symptom && !job.issue)) && key && typeof callApi === 'function') {
+    _pcJobModal(`<i class="bi bi-briefcase" style="color:#2563eb"></i> Job ${_escapeJobText(key)}`, '<div style="padding:16px;color:#64748b">Loading job detail...</div>');
+    try {
+      const detail = await callApi('getJobDetail', { job_id: key });
+      if (detail && detail.success && detail.job) job = detail.job;
+    } catch (_detailErr) {}
+  }
   const id = _escapeJobText(job.job_id || job.id || jobId);
   const customer = _escapeJobText(job.customer || job.customer_name || '-');
   const symptom = _escapeJobText(job.symptom || job.issue || job.detail || '-');
@@ -120,8 +132,48 @@ function _showPcJobDetail(jobId) {
       <button onclick="_showJobTimeline('${id}')" style="background:#f1f5f9;color:#334155;border:none;padding:9px 12px;border-radius:10px;font-weight:700;cursor:pointer"><i class="bi bi-clock-history"></i> Timeline</button>
       <button onclick="_openPcJobVision('${id}')" style="background:#f5f3ff;color:#7c3aed;border:none;padding:9px 12px;border-radius:10px;font-weight:700;cursor:pointer"><i class="bi bi-camera"></i> Vision</button>
       <button onclick="_openPcJobBilling('${id}')" style="background:#ecfdf5;color:#047857;border:none;padding:9px 12px;border-radius:10px;font-weight:700;cursor:pointer"><i class="bi bi-receipt"></i> Billing</button>
+      <button onclick="_showPcDeleteJob('${id}')" style="background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;padding:9px 12px;border-radius:10px;font-weight:700;cursor:pointer"><i class="bi bi-trash3"></i> Delete</button>
     </div>
   `);
+}
+
+function _showPcDeleteJob(jobId) {
+  const id = _escapeJobText(jobId);
+  _pcJobModal(`<i class="bi bi-trash3" style="color:#dc2626"></i> Delete Job ${id}`, `
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:12px;color:#7f1d1d;font-size:13px;margin-bottom:12px">
+      This will archive the job to DBJOBS_ARCHIVE first, then remove it from DBJOBS.
+    </div>
+    <label style="font-size:13px;font-weight:700;color:#334155">Reason
+      <input id="pc-job-delete-reason" autocomplete="off" placeholder="Why is this job being deleted?" style="margin-top:6px;width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px">
+    </label>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button onclick="document.getElementById('job-modal-overlay').remove()" style="background:#f8fafc;color:#334155;border:1px solid #e2e8f0;padding:9px 14px;border-radius:10px;font-weight:700;cursor:pointer">Cancel</button>
+      <button id="pc-job-delete-btn" onclick="_doPcDeleteJob('${id}')" style="background:#dc2626;color:#fff;border:none;padding:9px 14px;border-radius:10px;font-weight:700;cursor:pointer">Archive & Delete</button>
+    </div>
+    <div id="pc-job-delete-result" style="margin-top:10px;font-size:12px"></div>
+  `);
+}
+
+async function _doPcDeleteJob(jobId) {
+  const reason = (document.getElementById('pc-job-delete-reason') || {}).value || '';
+  const result = document.getElementById('pc-job-delete-result');
+  const btn = document.getElementById('pc-job-delete-btn');
+  if (!confirm(`Archive and delete job ${jobId}?`)) return;
+  try {
+    if (btn) btn.disabled = true;
+    if (result) result.innerHTML = '<span style="color:#64748b">Deleting...</span>';
+    const res = await callApi('deleteJob', { job_id: jobId, confirm: 'DELETE_JOB', reason: reason || 'Deleted from PC Jobs' });
+    if (!res || !res.success) throw new Error((res && (res.error || res.message)) || 'Delete failed');
+    if (result) result.innerHTML = '<span style="color:#059669">Archived and deleted.</span>';
+    if (window.PC_JOBS_DATA) window.PC_JOBS_DATA = window.PC_JOBS_DATA.filter(j => String(j.job_id || j.id || '') !== String(jobId));
+    if (typeof DASHBOARD_DATA !== 'undefined' && DASHBOARD_DATA && Array.isArray(DASHBOARD_DATA.jobs)) {
+      DASHBOARD_DATA.jobs = DASHBOARD_DATA.jobs.filter(j => String(j.job_id || j.id || '') !== String(jobId));
+    }
+    setTimeout(() => { document.getElementById('job-modal-overlay')?.remove(); if (typeof loadSection === 'function') loadSection('jobs'); }, 700);
+  } catch (e) {
+    if (btn) btn.disabled = false;
+    if (result) result.innerHTML = `<span style="color:#dc2626">${_escapeJobText(e.message || e)}</span>`;
+  }
 }
 
 function _showPcAssignJob(jobId) {
@@ -325,13 +377,14 @@ function _buildJobsTableEnhanced(jobs) {
         <td style="font-size:12px;color:#6b7280;white-space:nowrap">${_escapeJobText(date)}</td>
         <td style="text-align:center">
           <div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap">
-            <button onclick="_showPcJobDetail('${safeJobId}')" style="background:#f8fafc;color:#334155;border:1px solid #e2e8f0;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="Detail"><i class="bi bi-eye"></i></button>
-            <button onclick="_showPcAssignJob('${safeJobId}')" style="background:#eff6ff;color:#2563eb;border:none;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="Assign"><i class="bi bi-person-check"></i></button>
-            <button onclick="_showPcQuickNote('${safeJobId}')" style="background:#fefce8;color:#a16207;border:none;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="Note"><i class="bi bi-pencil-square"></i></button>
-            <button onclick="_showJobTimeline('${safeJobId}')" style="background:#dbeafe;color:#1e40af;border:none;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="Timeline"><i class="bi bi-clock-history"></i></button>
-            <button onclick="_showJobTransition('${safeJobId}','${safeStatus}')" style="background:#d1fae5;color:#059669;border:none;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="Status"><i class="bi bi-arrow-right-circle"></i></button>
-            <button onclick="_openPcJobVision('${safeJobId}')" style="background:#f5f3ff;color:#7c3aed;border:none;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="Vision"><i class="bi bi-camera"></i></button>
-            <button onclick="_openPcJobBilling('${safeJobId}')" style="background:#ecfdf5;color:#047857;border:none;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="Billing"><i class="bi bi-receipt"></i></button>
+            <button onclick="_showPcJobDetail(${_jobJsArg(jobId)})" style="background:#f8fafc;color:#334155;border:1px solid #e2e8f0;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="Detail"><i class="bi bi-eye"></i></button>
+            <button onclick="_showPcAssignJob(${_jobJsArg(jobId)})" style="background:#eff6ff;color:#2563eb;border:none;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="Assign"><i class="bi bi-person-check"></i></button>
+            <button onclick="_showPcQuickNote(${_jobJsArg(jobId)})" style="background:#fefce8;color:#a16207;border:none;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="Note"><i class="bi bi-pencil-square"></i></button>
+            <button onclick="_showJobTimeline(${_jobJsArg(jobId)})" style="background:#dbeafe;color:#1e40af;border:none;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="Timeline"><i class="bi bi-clock-history"></i></button>
+            <button onclick="_showJobTransition(${_jobJsArg(jobId)},${_jobJsArg(status)})" style="background:#d1fae5;color:#059669;border:none;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="Status"><i class="bi bi-arrow-right-circle"></i></button>
+            <button onclick="_openPcJobVision(${_jobJsArg(jobId)})" style="background:#f5f3ff;color:#7c3aed;border:none;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="Vision"><i class="bi bi-camera"></i></button>
+            <button onclick="_openPcJobBilling(${_jobJsArg(jobId)})" style="background:#ecfdf5;color:#047857;border:none;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="Billing"><i class="bi bi-receipt"></i></button>
+            <button onclick="_showPcDeleteJob(${_jobJsArg(jobId)})" style="background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" title="Delete"><i class="bi bi-trash3"></i></button>
           </div>
         </td>
       </tr>`;
