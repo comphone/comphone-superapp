@@ -981,7 +981,12 @@ for sprint_script in \
   sprint160_real_browser_clickthrough_contract \
   sprint161_protected_live_token_sweep \
   sprint162_owner_data_cleanup_decision \
-  sprint163_ai_vision_real_sample_pilot
+  sprint163_ai_vision_real_sample_pilot \
+  sprint164_pages_publish_lock \
+  sprint165_browser_profile_clickthrough_pack \
+  sprint166_protected_token_full_sweep_pack \
+  sprint167_owner_cleanup_execution_readiness \
+  sprint168_ai_vision_real_sample_runbook
 do
   script_path="scripts/${sprint_script}.js"
   if command -v node &>/dev/null && [ -f "$script_path" ]; then

@@ -5,10 +5,10 @@
 // ===========================================================
 
 const VERSION_CONFIG = {
-  version: 'v5.18.37-sprint163',
+  version: 'v5.18.38-sprint168',
   buildDate: '2026-05-07',
-  buildTimestamp: '20260521_0200',
-  cacheVersion: 'comphone-v5.18.37-sprint163-20260521_0200',
+  buildTimestamp: '20260521_0300',
+  cacheVersion: 'comphone-v5.18.38-sprint168-20260521_0300',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -53,7 +53,12 @@ const VERSION_CONFIG = {
     'Sprint 160 real browser click-through contract',
     'Sprint 161 protected live token sweep',
     'Sprint 162 owner data cleanup decision pack',
-    'Sprint 163 AI Vision real sample pilot gate'
+    'Sprint 163 AI Vision real sample pilot gate',
+    'Sprint 164 Pages publish lock',
+    'Sprint 165 browser profile click-through pack',
+    'Sprint 166 protected token full sweep pack',
+    'Sprint 167 owner cleanup execution readiness',
+    'Sprint 168 AI Vision real sample runbook'
   ]
 };
 
@@ -63,9 +68,9 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 
 // Backward-compatible exports for legacy modules and guards
-const APP_VERSION = 'v5.18.37-sprint163';
-const BUILD_TIMESTAMP = '20260521_0200';
-const CACHE_VERSION = 'comphone-v5.18.37-sprint163-20260521_0200';
+const APP_VERSION = 'v5.18.38-sprint168';
+const BUILD_TIMESTAMP = '20260521_0300';
+const CACHE_VERSION = 'comphone-v5.18.38-sprint168-20260521_0300';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;
