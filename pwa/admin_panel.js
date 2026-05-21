@@ -483,6 +483,16 @@ async function renderDataRepairConsole_(container) {
         </div>
         <div id="admin-data-completeness-body" style="margin-top:10px;color:#64748b;font-size:13px">Loading data completeness...</div>
       </div>
+      <div id="admin-smoke-cleanup" style="background:#fff;border:1px solid #fecaca;border-left:4px solid #dc2626;border-radius:12px;padding:14px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+          <div>
+            <div style="font-size:15px;font-weight:800;color:#111827"><i class="bi bi-trash3" style="color:#dc2626"></i> Smoke/Test Data Cleanup</div>
+            <div style="font-size:12px;color:#64748b;margin-top:4px">Archive and delete only reviewed smoke rows such as J0022, J0021, C0003, and C0002. Rows without a smoke marker are skipped.</div>
+          </div>
+          <button id="btn-smoke-cleanup-refresh" class="btn-primary-sm" style="background:#dc2626"><i class="bi bi-arrow-clockwise"></i> Refresh Cleanup</button>
+        </div>
+        <div id="admin-smoke-cleanup-body" style="margin-top:10px;color:#64748b;font-size:13px">Loading smoke cleanup preview...</div>
+      </div>
       <div id="admin-repair-status" style="font-size:13px;color:#64748b;margin-bottom:10px">Loading repair status...</div>
       <div id="admin-repair-candidates"></div>
     </div>`;
@@ -490,8 +500,72 @@ async function renderDataRepairConsole_(container) {
   document.getElementById('btn-repair-refresh').addEventListener('click', () => renderDataRepairConsole_(container));
   document.getElementById('btn-data-completeness-refresh').addEventListener('click', hydrateAdminDataCompleteness_);
   document.getElementById('btn-data-completeness-export').addEventListener('click', exportAdminDataCompletenessReview_);
+  document.getElementById('btn-smoke-cleanup-refresh').addEventListener('click', hydrateAdminSmokeCleanup_);
   hydrateAdminDataCompleteness_();
+  hydrateAdminSmokeCleanup_();
   await hydrateAdminDataRepair_(container);
+}
+
+async function hydrateAdminSmokeCleanup_() {
+  const el = document.getElementById('admin-smoke-cleanup-body');
+  if (!el) return;
+  el.innerHTML = '<span style="color:#dc2626">Loading protected smoke cleanup preview...</span>';
+  try {
+    const res = await callAPI('cleanupSmokeTestRecords', { execute: false });
+    if (!res || res.success === false) throw new Error((res && res.error) || 'cleanup preview failed');
+    const candidates = res.candidates || [];
+    const skipped = res.skipped || [];
+    const deleted = res.deleted || [];
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px;margin-bottom:10px">
+        ${buildRepairMetric_('Candidates', candidates.length, '#2563eb')}
+        ${buildRepairMetric_('Marker Skips', skipped.length, skipped.length ? '#d97706' : '#059669')}
+        ${buildRepairMetric_('Deleted', deleted.length, '#dc2626')}
+        ${buildRepairMetric_('Archive', 'DB_SMOKE_CLEANUP_ARCHIVE', '#0f766e')}
+      </div>
+      ${candidates.length ? candidates.map(buildAdminSmokeCandidate_).join('') : '<div style="background:#ecfdf5;color:#047857;border-radius:10px;padding:12px">No reviewed smoke/test rows found for cleanup.</div>'}
+      <div style="margin-top:10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px">
+        <label style="font-size:12px;color:#9a3412;font-weight:800">Type DELETE_REVIEWED_SMOKE_RECORDS to archive/delete smoke-marker rows only</label>
+        <input id="admin-smoke-cleanup-confirm" style="width:100%;margin-top:6px;padding:8px;border:1px solid #fdba74;border-radius:8px;font-size:12px" autocomplete="off">
+        <button id="btn-admin-smoke-cleanup-execute" style="margin-top:8px;background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer">
+          <i class="bi bi-archive-fill"></i> Archive + Delete Reviewed Smoke Rows
+        </button>
+      </div>`;
+    const btn = document.getElementById('btn-admin-smoke-cleanup-execute');
+    if (btn) btn.addEventListener('click', executeAdminSmokeCleanup_);
+  } catch (e) {
+    el.innerHTML = `<div style="background:#fef2f2;color:#b91c1c;border-radius:10px;padding:12px;font-size:13px">Smoke cleanup preview failed: ${escapeAdminHtml_(e.message || e)}</div>`;
+  }
+}
+
+function buildAdminSmokeCandidate_(candidate) {
+  const markerOk = !!candidate.marker_ok;
+  return `<div style="background:#fff;border:1px solid #e5e7eb;border-left:4px solid ${markerOk ? '#dc2626' : '#d97706'};border-radius:10px;padding:10px;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <strong>${escapeAdminHtml_(candidate.scope || '-')} / ${escapeAdminHtml_(candidate.id || '-')}</strong>
+      <span style="font-size:11px;font-weight:800;color:${markerOk ? '#dc2626' : '#d97706'}">${markerOk ? 'DELETABLE' : 'SKIP: NO SMOKE MARKER'}</span>
+    </div>
+    <div style="font-size:12px;color:#64748b;margin-top:4px">${escapeAdminHtml_(candidate.sheet || '-')} row ${escapeAdminHtml_(candidate.row || '-')}</div>
+    <div style="font-size:11px;color:#94a3b8;margin-top:4px;word-break:break-word">${escapeAdminHtml_(candidate.preview || '')}</div>
+  </div>`;
+}
+
+async function executeAdminSmokeCleanup_() {
+  const input = document.getElementById('admin-smoke-cleanup-confirm');
+  const confirmText = input ? input.value.trim() : '';
+  if (confirmText !== 'DELETE_REVIEWED_SMOKE_RECORDS') {
+    showToast('Type the exact smoke cleanup confirmation phrase first.');
+    return;
+  }
+  if (!confirm('Archive then delete reviewed smoke/test rows with smoke markers only?')) return;
+  const res = await callAPI('cleanupSmokeTestRecords', {
+    execute: true,
+    confirm: confirmText,
+    operator: (APP.user && (APP.user.username || APP.user.name)) || 'admin-ui',
+    reason: 'Sprint 182 Admin Smoke Cleanup'
+  });
+  showToast(res && res.success ? `Smoke cleanup complete: ${(res.deleted || []).length} row(s) deleted.` : 'Smoke cleanup blocked: ' + ((res && res.error) || 'unknown error'));
+  hydrateAdminSmokeCleanup_();
 }
 
 async function hydrateAdminDataCompleteness_() {

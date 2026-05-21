@@ -124,6 +124,16 @@ function renderSettingsSection() {
       </div>
     </div>
 
+    <div class="card-box" style="margin-bottom:16px;border-left:4px solid #dc2626">
+      <div class="card-title"><i class="bi bi-trash3" style="color:#dc2626"></i> Smoke/Test Data Cleanup</div>
+      <div style="font-size:13px;color:#64748b;margin-bottom:10px">
+        Archive and delete only reviewed smoke/test rows with a smoke marker. Real customer data is skipped.
+      </div>
+      <div id="settings-smoke-cleanup-content">
+        <div class="loading-state"><div class="spinner-pc"></div><p>Loading smoke cleanup preview...</p></div>
+      </div>
+    </div>
+
     <div class="card-box" style="margin-bottom:16px;border-left:4px solid #2563eb">
       <div class="card-title"><i class="bi bi-radar" style="color:#2563eb"></i> Operations Diagnostics</div>
       <div id="settings-diagnostics-content" style="font-size:13px;color:#64748b;padding:8px 0">
@@ -726,6 +736,7 @@ function hydrateSettingsRuntimePanels() {
   hydrateSettingsSystemSummary();
   hydrateSettingsDataCompletenessPanel();
   hydrateSettingsDataRepairPanel();
+  hydrateSettingsSmokeCleanupPanel();
   hydrateSystemDiagnostics();
 }
 

@@ -309,6 +309,7 @@ var MODULE_ROUTER = {
   'getVisionLearningVersion': function(p) { return getVisionLearningVersion(p); },
   'getVisionPipelineVersion': function(p) { return getVisionPipelineVersion(p); },
   'getVisionFieldContext': function(p) { return getVisionFieldContext(p); },
+  'getVisionLineIngressStatus': function(p) { return getVisionLineIngressStatus(p); },
   'getVisionReviewQueue': function(p) { return getVisionReviewQueue(p); },
   'getVisionActionSuggestions': function(p) { return getVisionActionSuggestions(p); },
   'previewVisionSuggestion': function(p) { return previewVisionSuggestion(p); },
