@@ -816,6 +816,8 @@ for (const [fileName, marker, tokenAware] of [
   ['sprint175_ai_vision_sample_pilot_gate.js', 'AI Vision Sample Pilot Gate', true],
   ['sprint176_published_protected_acceptance.js', 'Published Protected Acceptance', true],
   ['sprint177_ai_vision_real_sample_evidence.js', 'AI Vision Real Sample Evidence', true],
+  ['sprint178_strict_live_acceptance_gate.js', 'Strict Live Acceptance Gate', true],
+  ['sprint179_ai_vision_real_sample_execution.js', 'AI Vision Real Sample Execution', true],
 ]) {
   const body = readUtf8(path.join(ROOT, 'scripts', fileName));
   if (!body.includes(marker) || (tokenAware && !body.includes('COMPHONE_AUTH_TOKEN'))) {
