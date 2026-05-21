@@ -1,10 +1,10 @@
 # Sprint 74 Core System Audit
 
-Generated: 2026-05-21T11:09:49.571Z
+Generated: 2026-05-21T11:21:21.246Z
 
 Score: **100/100**
 Status: **OK**
-App: `v5.18.46-sprint184` / build `20260521_1130`
+App: `v5.18.47-sprint184` / build `20260521_1200`
 GAS: `v5.18.16-write-flow-validation` / https://script.google.com/macros/s/AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ/exec
 
 ## Area Summary
@@ -29,8 +29,8 @@ No P0/P1/P2 findings. Core system contracts are aligned.
 
 | Area | Check | Detail |
 |---|---|---|
-| source-of-truth | frontend-version-present | version=v5.18.46-sprint184 build=20260521_1130 cache=comphone-v5.18.46-sprint184-20260521_1130 |
-| source-of-truth | service-worker-cache-matches-version-config | sw=comphone-v5.18.46-sprint184-20260521_1130 version_config=comphone-v5.18.46-sprint184-20260521_1130 |
+| source-of-truth | frontend-version-present | version=v5.18.47-sprint184 build=20260521_1200 cache=comphone-v5.18.47-sprint184-20260521_1200 |
+| source-of-truth | service-worker-cache-matches-version-config | sw=comphone-v5.18.47-sprint184-20260521_1200 version_config=comphone-v5.18.47-sprint184-20260521_1200 |
 | source-of-truth | mobile-cache-bust-build-timestamp | Mobile shell should include the current build timestamp on local assets. |
 | source-of-truth | pc-cache-bust-build-timestamp | PC shell should include the current build timestamp on local assets. |
 | source-of-truth | gas-url-single-production-value | production GAS URL=https://script.google.com/macros/s/AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ/exec |
