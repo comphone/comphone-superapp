@@ -1,6 +1,6 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.18.39-sprint173 (PWA) / GAS Backend v5.18.16-write-flow-validation @618
+> **Version:** v5.18.40-sprint175 (PWA) / GAS Backend v5.18.16-write-flow-validation @618
 
 > **Date:** 2026-05-21 | **Phase:** 173 (Pages Fresh + Protected Browser + AI Vision Evidence + LINE Matrix + Release Readiness Pack)
 
@@ -15,7 +15,7 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 ### Current Production State
 - **Current phase:** Sprint / Phase 173.
 - **Latest stable verification commit before this handoff:** `249ff86 Document Sprint 110 GAS live verification`. Run `git log -1 --oneline` for the exact current repository HEAD.
-- **PWA version:** `v5.18.39-sprint173`.
+- **PWA version:** `v5.18.40-sprint175`.
 - **GAS backend version:** `v5.18.16-write-flow-validation`.
 - **Production GAS deployment:** `AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA @618`.
 - **Production GAS URL:** `https://script.google.com/macros/s/AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA/exec`.
@@ -243,9 +243,9 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN,Env:\COMPHONE_LINE_TOGGLE_CONFIRM,Env:\COMP
 
 | Item | Current Value | Source of Truth |
 |---|---|---|
-| App Version | `v5.18.39-sprint173` | `pwa/version_config.js` |
-| Cache Version | `comphone-v5.18.39-sprint173-20260521_0400` | `pwa/version_config.js`, `pwa/sw.js` |
-| Build Timestamp | `20260521_0400` | `pwa/version_config.js` |
+| App Version | `v5.18.40-sprint175` | `pwa/version_config.js` |
+| Cache Version | `comphone-v5.18.40-sprint175-20260521_0500` | `pwa/version_config.js`, `pwa/sw.js` |
+| Build Timestamp | `20260521_0500` | `pwa/version_config.js` |
 | GAS Backend Deploy | `AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA @618` / production URL in `pwa/gas_config.js` | `Config.gs`, `Dashboard.gs`, `DashboardBundle.gs`, `Router.gs`, `RouterSplit.gs`, `JobStateMachine.gs`, `LineCommandCenter.gs`, `SmokeCleanup.gs`, `DataRepairConsole.gs`, `VisionPipeline.gs`, `clasp-ready/Config.gs`, `clasp-ready/Dashboard.gs`, `clasp-ready/DashboardBundle.gs`, `clasp-ready/Router.gs`, `clasp-ready/RouterSplit.gs`, `clasp-ready/JobStateMachine.gs`, `clasp-ready/LineCommandCenter.gs`, `clasp-ready/SmokeCleanup.gs`, `clasp-ready/DataRepairConsole.gs`, `clasp-ready/VisionPipeline.gs` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-07.phase65-line-command-center` | `pwa/api_contract.js` |
@@ -298,7 +298,7 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN,Env:\COMPHONE_LINE_TOGGLE_CONFIRM,Env:\COMP
 - Sprint 171: added AI Vision Sample Evidence Contract. It proves the real-sample path records `visionLogId`, supports review queue/human review, field context, and job timeline linking without exposing secrets or sending LINE.
 - Sprint 172: added LINE Room Notification Matrix Gate. It verifies per-room notification toggles are notification-only: backend processing, Vision logs, queues, and audit continue even when room pushes are muted.
 - Sprint 173: added Release Readiness Master Gate. It aggregates Pages, browser, AI Vision evidence, LINE matrix, and PWA static guard; strict Pages/protected modes require explicit env flags.
-- PWA cache was bumped to `v5.18.39-sprint173` / `20260521_0400`; PC and Mobile asset query strings now point at the same build.
+- PWA cache was bumped to `v5.18.40-sprint175` / `20260521_0500`; PC and Mobile asset query strings now point at the same build.
 - Local skip-safe run on 2026-05-21 is intended to pass Sprint 169 only after Pages publishes this commit; Sprint 170-173 remain read-only/skip-safe without a token. No real data repair, real Vision write, or real LINE send is executed by this pack.
 - Wired Sprint 169-173 into `scripts/pwa_static_guard.js`, `scripts/regression-guard.sh`, and `.github/workflows/auto-deploy.yml`.
 

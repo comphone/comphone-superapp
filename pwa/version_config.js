@@ -5,10 +5,10 @@
 // ===========================================================
 
 const VERSION_CONFIG = {
-  version: 'v5.18.39-sprint173',
+  version: 'v5.18.40-sprint175',
   buildDate: '2026-05-07',
-  buildTimestamp: '20260521_0400',
-  cacheVersion: 'comphone-v5.18.39-sprint173-20260521_0400',
+  buildTimestamp: '20260521_0500',
+  cacheVersion: 'comphone-v5.18.40-sprint175-20260521_0500',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -63,7 +63,9 @@ const VERSION_CONFIG = {
     'Sprint 170 protected browser acceptance gate',
     'Sprint 171 AI Vision sample evidence contract',
     'Sprint 172 LINE room notification matrix gate',
-    'Sprint 173 release readiness master gate'
+    'Sprint 173 release readiness master gate',
+    'Sprint 174 strict protected browser runbook',
+    'Sprint 175 AI Vision sample pilot gate'
   ]
 };
 
@@ -73,9 +75,9 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 
 // Backward-compatible exports for legacy modules and guards
-const APP_VERSION = 'v5.18.39-sprint173';
-const BUILD_TIMESTAMP = '20260521_0400';
-const CACHE_VERSION = 'comphone-v5.18.39-sprint173-20260521_0400';
+const APP_VERSION = 'v5.18.40-sprint175';
+const BUILD_TIMESTAMP = '20260521_0500';
+const CACHE_VERSION = 'comphone-v5.18.40-sprint175-20260521_0500';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;
