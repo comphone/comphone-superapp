@@ -806,6 +806,52 @@ function getPhotoQueueCount() {
   };
 }
 
+function getVisionLineIngressStatus(params) {
+  params = params || {};
+  try {
+    var queue = getPhotoQueueCount();
+    var lineTokenConfigured = !!(getConfig('LINE_CHANNEL_ACCESS_TOKEN') || '');
+    var geminiConfigured = !!(getConfig('GEMINI_API_KEY') || getConfig('GOOGLE_AI_API_KEY') || '');
+    var checks = {
+      line_webhook_handler: typeof handleLineWebhook === 'function',
+      line_signature_guard: typeof verifyLineSignature_ === 'function',
+      line_image_queue: typeof queuePhotoFromLINE === 'function',
+      photo_queue_sheet: !!getPhotoQueueSheet(),
+      queued_processing: typeof processImageSorting === 'function',
+      dashboard_process_action: typeof handleProcessPhotos === 'function',
+      gemini_secret: geminiConfigured,
+      line_channel_token: lineTokenConfigured,
+      notification_toggles: typeof _lineCenterIsRoomNotificationEnabled_ === 'function'
+    };
+    var ready = checks.line_webhook_handler &&
+      checks.line_signature_guard &&
+      checks.line_image_queue &&
+      checks.photo_queue_sheet &&
+      checks.queued_processing &&
+      checks.gemini_secret &&
+      checks.line_channel_token;
+    return {
+      success: true,
+      status: ready ? 'ready' : 'attention',
+      mode: 'line-image-to-ai-vision-queue',
+      ready: ready,
+      pending_photos: queue && queue.pending || 0,
+      total_photos: queue && (queue.totalRows || queue.total) || 0,
+      checks: checks,
+      workflow: [
+        'LINE group sends image with JobID in caption/text context',
+        'handleLineWebhook verifies signature and calls queuePhotoFromLINE',
+        'PhotoQueue stores image in Drive and PHOTO_QUEUE sheet',
+        'processImageSorting/handleProcessPhotos runs AI analysis with Gemini and writes results back to Sheet/Drive',
+        'LINE notification toggles affect outbound push only; queue/log processing continues'
+      ],
+      note: 'Webhook queues images safely; analysis runs through the queued Vision processor to avoid webhook timeout.'
+    };
+  } catch (e) {
+    return { success: false, status: 'error', error: e.toString() };
+  }
+}
+
 // ============================================================
 // INTERNAL HELPERS
 // ============================================================

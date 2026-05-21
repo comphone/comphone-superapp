@@ -719,6 +719,79 @@ async function executeSettingsDataRepair_(repairId) {
   }
 }
 
+async function hydrateSettingsSmokeCleanupPanel() {
+  const el = document.getElementById('settings-smoke-cleanup-content');
+  if (!el) return;
+  if (typeof callApi !== 'function') {
+    el.innerHTML = '<div style="color:#dc2626;font-size:13px">callApi is not available.</div>';
+    return;
+  }
+  el.innerHTML = '<div class="loading-state"><div class="spinner-pc"></div><p>Loading smoke cleanup preview...</p></div>';
+  try {
+    const res = await callApi('cleanupSmokeTestRecords', { execute: false });
+    if (!res || res.success === false) throw new Error((res && res.error) || 'cleanup preview failed');
+    const candidates = res.candidates || [];
+    const skipped = res.skipped || [];
+    const deleted = res.deleted || [];
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px">
+        ${_repairTile_('Candidates', candidates.length, '#2563eb')}
+        ${_repairTile_('Marker Skips', skipped.length, skipped.length ? '#d97706' : '#059669')}
+        ${_repairTile_('Deleted', deleted.length, '#dc2626')}
+        ${_repairTile_('Archive', 'DB_SMOKE_CLEANUP_ARCHIVE', '#0f766e')}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <button onclick="hydrateSettingsSmokeCleanupPanel()" style="background:#dc2626;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:12px;cursor:pointer">
+          <i class="bi bi-arrow-clockwise"></i> Refresh Cleanup
+        </button>
+      </div>
+      ${candidates.length ? candidates.map(_settingsSmokeCandidateHtml_).join('') : '<div style="background:#ecfdf5;color:#047857;border-radius:10px;padding:14px;font-size:13px">No reviewed smoke/test rows found for cleanup.</div>'}
+      <div style="margin-top:10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px">
+        <label style="font-size:12px;color:#9a3412;font-weight:800">Type DELETE_REVIEWED_SMOKE_RECORDS to archive/delete smoke-marker rows only</label>
+        <input id="settings-smoke-cleanup-confirm" style="width:100%;margin-top:6px;padding:8px;border:1px solid #fdba74;border-radius:8px;font-size:12px" autocomplete="off">
+        <button onclick="executeSettingsSmokeCleanup_()" style="margin-top:8px;background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer">
+          <i class="bi bi-archive-fill"></i> Archive + Delete Reviewed Smoke Rows
+        </button>
+      </div>`;
+  } catch (err) {
+    el.innerHTML = `<div style="background:#fef2f2;color:#b91c1c;border-radius:10px;padding:12px;font-size:13px">Smoke cleanup preview failed: ${_escapeSettingsHtml_(err.message || err)}</div>`;
+  }
+}
+
+function _settingsSmokeCandidateHtml_(candidate) {
+  const markerOk = !!candidate.marker_ok;
+  return `<div style="border:1px solid #e5e7eb;border-left:4px solid ${markerOk ? '#dc2626' : '#d97706'};border-radius:10px;padding:12px;margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <strong style="color:#111827">${_escapeSettingsHtml_(candidate.scope || '-')} / ${_escapeSettingsHtml_(candidate.id || '-')}</strong>
+      <span style="font-size:11px;font-weight:800;color:${markerOk ? '#dc2626' : '#d97706'}">${markerOk ? 'DELETABLE' : 'SKIP: NO SMOKE MARKER'}</span>
+    </div>
+    <div style="font-size:12px;color:#64748b;margin-top:4px">${_escapeSettingsHtml_(candidate.sheet || '-')} row ${_escapeSettingsHtml_(candidate.row || '-')}</div>
+    <div style="font-size:11px;color:#94a3b8;margin-top:4px;word-break:break-word">${_escapeSettingsHtml_(candidate.preview || '')}</div>
+  </div>`;
+}
+
+async function executeSettingsSmokeCleanup_() {
+  const input = document.getElementById('settings-smoke-cleanup-confirm');
+  const confirmText = input ? input.value.trim() : '';
+  if (confirmText !== 'DELETE_REVIEWED_SMOKE_RECORDS') {
+    alert('Type the exact smoke cleanup confirmation phrase first.');
+    return;
+  }
+  if (!confirm('Archive then delete reviewed smoke/test rows with smoke markers only?')) return;
+  const res = await callApi('cleanupSmokeTestRecords', {
+    execute: true,
+    confirm: confirmText,
+    operator: 'pc-settings',
+    reason: 'Sprint 182 PC Settings Smoke Cleanup'
+  });
+  if (res && res.success) {
+    alert('Smoke cleanup complete: ' + ((res.deleted || []).length) + ' row(s) deleted.');
+    hydrateSettingsSmokeCleanupPanel();
+  } else {
+    alert('Smoke cleanup blocked: ' + ((res && res.error) || 'unknown error'));
+  }
+}
+
 function _escapeSettingsHtml_(value) {
   return String(value === null || value === undefined ? '' : value)
     .replace(/&/g, '&amp;')

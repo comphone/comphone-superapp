@@ -820,11 +820,23 @@ for (const [fileName, marker, tokenAware] of [
   ['sprint179_ai_vision_real_sample_execution.js', 'AI Vision Real Sample Execution', true],
   ['sprint180_strict_protected_live_proof.js', 'Strict Protected Live Proof', true],
   ['sprint181_ai_vision_owner_sample_run.js', 'AI Vision Owner Sample Run', true],
+  ['sprint182_smoke_cleanup_execution.js', 'Sprint 182 Smoke Cleanup Execution', true],
+  ['sprint183_line_ai_vision_ingress_guard.js', 'Sprint 183 LINE AI Vision Ingress Guard', true],
 ]) {
   const body = readUtf8(path.join(ROOT, 'scripts', fileName));
   if (!body.includes(marker) || (tokenAware && !body.includes('COMPHONE_AUTH_TOKEN'))) {
     fail(`${fileName} must document and guard ${marker}.`);
   }
+}
+if (!adminPanelJs.includes('Smoke/Test Data Cleanup') ||
+    !adminPanelJs.includes('executeAdminSmokeCleanup_') ||
+    !readUtf8(path.join(PWA, 'section_settings.js')).includes('executeSettingsSmokeCleanup_')) {
+  fail('PC Settings and Mobile Admin must expose owner-confirmed smoke/test data cleanup controls.');
+}
+if (!apiContractJs.includes('getVisionLineIngressStatus') ||
+    !readUtf8(path.join(ROOT, 'clasp-ready', 'PhotoQueue.gs')).includes('getVisionLineIngressStatus') ||
+    !readUtf8(path.join(ROOT, 'clasp-ready', 'RouterSplit.gs')).includes('getVisionLineIngressStatus')) {
+  fail('AI Vision LINE ingress status must be exposed through GAS and the PWA API contract.');
 }
 const runtimeSelfTestJs = readUtf8(path.join(PWA, 'runtime_self_test.js'));
 if (!runtimeSelfTestJs.includes('ai-vision-runtime') ||

@@ -836,6 +836,7 @@ const READ_ACTIONS = {
   getWarrantyByJobId: true, listWarranties: true, getTaxReport: true,
   getTaxReminder: true, getJobStatusPublic: true, getDriveSyncStatus: true,
   getVisionDashboardStats: true, getVisionPipelineVersion: true, getVisionLearningVersion: true,
+  getVisionLineIngressStatus: true,
   getVisionFieldContext: true,
   getVisionActionSuggestions: true,
   previewVisionSuggestion: true,
@@ -849,6 +850,7 @@ const READ_ACTIONS = {
   previewLineRoomMessage: true,
   getDataRepairStatus: true,
   previewDataRepair: true,
+  cleanupSmokeTestRecords: true,
   getDataReviewLog: true
 };
 

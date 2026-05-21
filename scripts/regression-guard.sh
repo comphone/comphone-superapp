@@ -999,7 +999,9 @@ for sprint_script in \
   sprint178_strict_live_acceptance_gate \
   sprint179_ai_vision_real_sample_execution \
   sprint180_strict_protected_live_proof \
-  sprint181_ai_vision_owner_sample_run
+  sprint181_ai_vision_owner_sample_run \
+  sprint182_smoke_cleanup_execution \
+  sprint183_line_ai_vision_ingress_guard
 do
   script_path="scripts/${sprint_script}.js"
   if command -v node &>/dev/null && [ -f "$script_path" ]; then
