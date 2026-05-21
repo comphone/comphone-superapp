@@ -1,11 +1,11 @@
 # Sprint 74 Core System Audit
 
-Generated: 2026-05-21T10:22:02.350Z
+Generated: 2026-05-21T10:39:03.831Z
 
 Score: **100/100**
 Status: **OK**
-App: `v5.18.44-sprint183` / build `20260521_0930`
-GAS: `v5.18.16-write-flow-validation` / https://script.google.com/macros/s/AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA/exec
+App: `v5.18.45-sprint183` / build `20260521_1030`
+GAS: `v5.18.16-write-flow-validation` / https://script.google.com/macros/s/AKfycbyrhcek5kfmG26fJfi3RAbKAKlZWXvWwEow9AdLNb4QAsqOf_tqEQEFs_a5avUokOVk/exec
 
 ## Area Summary
 
@@ -29,11 +29,11 @@ No P0/P1/P2 findings. Core system contracts are aligned.
 
 | Area | Check | Detail |
 |---|---|---|
-| source-of-truth | frontend-version-present | version=v5.18.44-sprint183 build=20260521_0930 cache=comphone-v5.18.44-sprint183-20260521_0930 |
-| source-of-truth | service-worker-cache-matches-version-config | sw=comphone-v5.18.44-sprint183-20260521_0930 version_config=comphone-v5.18.44-sprint183-20260521_0930 |
+| source-of-truth | frontend-version-present | version=v5.18.45-sprint183 build=20260521_1030 cache=comphone-v5.18.45-sprint183-20260521_1030 |
+| source-of-truth | service-worker-cache-matches-version-config | sw=comphone-v5.18.45-sprint183-20260521_1030 version_config=comphone-v5.18.45-sprint183-20260521_1030 |
 | source-of-truth | mobile-cache-bust-build-timestamp | Mobile shell should include the current build timestamp on local assets. |
 | source-of-truth | pc-cache-bust-build-timestamp | PC shell should include the current build timestamp on local assets. |
-| source-of-truth | gas-url-single-production-value | production GAS URL=https://script.google.com/macros/s/AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA/exec |
+| source-of-truth | gas-url-single-production-value | production GAS URL=https://script.google.com/macros/s/AKfycbyrhcek5kfmG26fJfi3RAbKAKlZWXvWwEow9AdLNb4QAsqOf_tqEQEFs_a5avUokOVk/exec |
 | source-of-truth | blueprint-runtime-snapshot-current | BLUEPRINT should mention the current app version and GAS URL. |
 | backend-contract | api-contract-public-actions-minimal | publicActions=getVersion, health |
 | backend-contract | router-auth-contract-accepts-valid-or-success | Router auth gate must accept the Auth.gs { valid, session } contract and legacy { success } contract. |

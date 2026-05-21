@@ -37,7 +37,7 @@ function secretLeakChecks() {
     { id: 'no-google-api-key-leak', ok: !/AIza[0-9A-Za-z_-]{20,}/.test(text), type: 'static' },
     { id: 'no-line-token-leak', ok: !/[A-Za-z0-9+/]{120,}={0,2}/.test(text), type: 'static' },
     { id: 'review-log-fallback-documented', ok: has(text, 'script_properties_fallback') && has(text, 'DATA_REVIEW_LOG_JSON'), type: 'static' },
-    { id: 'production-url-stable', ok: has(read('pwa/gas_config.js'), 'AKfycbwN_mbyHOJ4vXRNpHjuN8dUFbXjERwtgTbNROt5_ynakfYm6Xv4RrgvhPMvI53lIhPWBA'), type: 'static' },
+    { id: 'production-url-stable', ok: has(read('pwa/gas_config.js'), 'AKfycbyrhcek5kfmG26fJfi3RAbKAKlZWXvWwEow9AdLNb4QAsqOf_tqEQEFs_a5avUokOVk'), type: 'static' },
   ];
 }
 
