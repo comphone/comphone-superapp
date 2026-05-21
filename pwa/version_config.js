@@ -1,14 +1,14 @@
-﻿// ===========================================================
+// ===========================================================
 // COMPHONE SUPER APP - Centralized Version Config
 // Single Source of Truth for all version numbers
 // Phase 44 - Dashboard Modernization + Setup Fix
 // ===========================================================
 
 const VERSION_CONFIG = {
-  version: 'v5.18.38-sprint168',
+  version: 'v5.18.39-sprint173',
   buildDate: '2026-05-07',
-  buildTimestamp: '20260521_0300',
-  cacheVersion: 'comphone-v5.18.38-sprint168-20260521_0300',
+  buildTimestamp: '20260521_0400',
+  cacheVersion: 'comphone-v5.18.39-sprint173-20260521_0400',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -58,7 +58,12 @@ const VERSION_CONFIG = {
     'Sprint 165 browser profile click-through pack',
     'Sprint 166 protected token full sweep pack',
     'Sprint 167 owner cleanup execution readiness',
-    'Sprint 168 AI Vision real sample runbook'
+    'Sprint 168 AI Vision real sample runbook',
+    'Sprint 169 Pages fresh release gate',
+    'Sprint 170 protected browser acceptance gate',
+    'Sprint 171 AI Vision sample evidence contract',
+    'Sprint 172 LINE room notification matrix gate',
+    'Sprint 173 release readiness master gate'
   ]
 };
 
@@ -68,9 +73,9 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 
 // Backward-compatible exports for legacy modules and guards
-const APP_VERSION = 'v5.18.38-sprint168';
-const BUILD_TIMESTAMP = '20260521_0300';
-const CACHE_VERSION = 'comphone-v5.18.38-sprint168-20260521_0300';
+const APP_VERSION = 'v5.18.39-sprint173';
+const BUILD_TIMESTAMP = '20260521_0400';
+const CACHE_VERSION = 'comphone-v5.18.39-sprint173-20260521_0400';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;

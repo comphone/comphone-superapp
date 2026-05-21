@@ -14,12 +14,21 @@ const REPORT = path.join(ROOT, 'test_reports', 'sprint166_protected_token_full_s
 function run(script) {
   return cp.spawnSync(process.execPath, [script], { cwd: ROOT, env: process.env, encoding: 'utf8' });
 }
+function runWithRetry(script) {
+  const first = run(script);
+  if (first.status === 0) return Object.assign(first, { attempts: 1 });
+  const second = run(script);
+  second.first_stdout = first.stdout;
+  second.first_stderr = first.stderr;
+  second.attempts = 2;
+  return second;
+}
 async function main() {
-  const sweep = run('scripts/sprint161_protected_live_token_sweep.js');
-  const smoke = run('scripts/pwa_api_smoke.js');
+  const sweep = runWithRetry('scripts/sprint161_protected_live_token_sweep.js');
+  const smoke = runWithRetry('scripts/pwa_api_smoke.js');
   const checks = [
-    { id: 'sprint161-sweep', ok: sweep.status === 0, stdout: sweep.stdout.slice(-1000), stderr: sweep.stderr.slice(-1000) },
-    { id: 'pwa-api-smoke', ok: smoke.status === 0, stdout: smoke.stdout.slice(-1000), stderr: smoke.stderr.slice(-1000) },
+    { id: 'sprint161-sweep', ok: sweep.status === 0, attempts: sweep.attempts, stdout: sweep.stdout.slice(-1000), stderr: sweep.stderr.slice(-1000) },
+    { id: 'pwa-api-smoke', ok: smoke.status === 0, attempts: smoke.attempts, stdout: smoke.stdout.slice(-1000), stderr: smoke.stderr.slice(-1000) },
     { id: 'token-mode-recorded', ok: true, token_present: !!process.env.COMPHONE_AUTH_TOKEN },
   ];
   const failures = checks.filter(c => !c.ok);

@@ -807,6 +807,11 @@ for (const [fileName, marker, tokenAware] of [
   ['sprint166_protected_token_full_sweep_pack.js', 'Protected Token Full Sweep Pack', true],
   ['sprint167_owner_cleanup_execution_readiness.js', 'Owner Cleanup Execution Readiness', false],
   ['sprint168_ai_vision_real_sample_runbook.js', 'AI Vision Real Sample Runbook', false],
+  ['sprint169_pages_fresh_release_gate.js', 'Pages Fresh Release Gate', false],
+  ['sprint170_protected_browser_acceptance_gate.js', 'Protected Browser Acceptance Gate', true],
+  ['sprint171_ai_vision_sample_evidence_contract.js', 'AI Vision Sample Evidence Contract', false],
+  ['sprint172_line_room_notification_matrix_gate.js', 'LINE Room Notification Matrix Gate', false],
+  ['sprint173_release_readiness_master_gate.js', 'Release Readiness Master Gate', false],
 ]) {
   const body = readUtf8(path.join(ROOT, 'scripts', fileName));
   if (!body.includes(marker) || (tokenAware && !body.includes('COMPHONE_AUTH_TOKEN'))) {
