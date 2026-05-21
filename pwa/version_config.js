@@ -5,10 +5,10 @@
 // ===========================================================
 
 const VERSION_CONFIG = {
-  version: 'v5.18.46-sprint184',
+  version: 'v5.18.47-sprint184',
   buildDate: '2026-05-07',
-  buildTimestamp: '20260521_1130',
-  cacheVersion: 'comphone-v5.18.46-sprint184-20260521_1130',
+  buildTimestamp: '20260521_1200',
+  cacheVersion: 'comphone-v5.18.47-sprint184-20260521_1200',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -74,7 +74,8 @@ const VERSION_CONFIG = {
     'Sprint 181 AI Vision owner sample run gate',
     'Sprint 182 smoke/test data cleanup execution controls',
     'Sprint 183 LINE AI Vision ingress readiness guard',
-    'Sprint 184 Jobs detail and archive-delete repair'
+    'Sprint 184 Jobs detail and archive-delete repair',
+    'Sprint 184 inline job action syntax repair'
   ]
 };
 
@@ -84,9 +85,9 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 
 // Backward-compatible exports for legacy modules and guards
-const APP_VERSION = 'v5.18.46-sprint184';
-const BUILD_TIMESTAMP = '20260521_1130';
-const CACHE_VERSION = 'comphone-v5.18.46-sprint184-20260521_1130';
+const APP_VERSION = 'v5.18.47-sprint184';
+const BUILD_TIMESTAMP = '20260521_1200';
+const CACHE_VERSION = 'comphone-v5.18.47-sprint184-20260521_1200';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;
