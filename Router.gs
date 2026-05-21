@@ -346,7 +346,8 @@ function _checkAuthGateV55_(action, payload, e) {
     'sendDashboardSummary': 1, 'sendLineMessage': 1, 'sendLineAlert': 1,
     'nudgeSalesTeam': 1, 'nudgeTech': 1,
     'mapLineUser': 1,
-    'cleanupSmokeTestRecords': 1
+    'cleanupSmokeTestRecords': 1,
+    'deleteJob': 1
   };
 
   // Skip if public

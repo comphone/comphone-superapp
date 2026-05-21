@@ -24,6 +24,8 @@ var MODULE_ROUTER = {
   'createJob':    function(p) { return openJob(p); },
   'updateJobById': function(p) { return updateJobById(p.job_id || p.jobId || '', p); },
   'updateJobStatus': function(p) { return updateJobStatus(p); },
+  'getJobDetail': function(p) { return getJobDetail(p); },
+  'deleteJob': function(p) { return deleteJob(p); },
   'transitionJob': function(p) { return transitionJob(p.job_id || p.jobId || '', p.new_status || p.to_status || p.status, p); },
   'addQuickNote': function(p) { return addQuickNote(p.job_id || p.jobId || '', p.note || '', p.user || 'SYSTEM'); },
   'getJobTimeline': function(p) { return getJobTimelineV55_(p.job_id || p.jobId || ''); },

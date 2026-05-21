@@ -822,7 +822,7 @@ function startVoiceSearch() {
 // callAPI(action, params) — ใช้ใน job_workflow.js และทั่วไป
 // Mobile PWA delegates to api_client.js so every module uses one auth/session path.
 const READ_ACTIONS = {
-  getDashboardData: true, getJobStateConfig: true, getJobTimeline: true,
+  getDashboardData: true, getJobDetail: true, getJobStateConfig: true, getJobTimeline: true,
   getJobQRData: true, getPhotoGalleryData: true, inventoryOverview: true,
   getInventoryItemDetail: true, getStockMovementHistory: true, checkStock: true,
   barcodeLookup: true, listPurchaseOrders: true, getCustomer: true,

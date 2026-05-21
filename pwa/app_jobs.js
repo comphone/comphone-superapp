@@ -1,20 +1,21 @@
 // ===== JOB CARD RENDER =====
 function renderJobCard(job) {
   const statusMap = {
-    urgent: { badge: 'badge-urgent', label: 'ด่วนมาก', border: 'urgent' },
-    inprog: { badge: 'badge-inprog', label: 'กำลังซ่อม', border: 'inprog' },
-    waiting: { badge: 'badge-wait', label: 'รอชิ้นส่วน', border: 'waiting' },
-    done: { badge: 'badge-done', label: 'เสร็จแล้ว', border: 'done' },
-    new: { badge: 'badge-new', label: 'รับเครื่องแล้ว', border: '' }
+    urgent: { badge: 'badge-urgent', label: 'Urgent', border: 'urgent' },
+    inprog: { badge: 'badge-inprog', label: 'In progress', border: 'inprog' },
+    waiting: { badge: 'badge-wait', label: 'Waiting parts', border: 'waiting' },
+    done: { badge: 'badge-done', label: 'Done', border: 'done' },
+    cancel: { badge: 'badge-done', label: 'Cancelled', border: 'done' },
+    new: { badge: 'badge-new', label: 'New', border: '' }
   };
   const s = statusMap[job.status] || statusMap.new;
-  const slaHtml = job.sla < 0
-    ? `<div class="sla-timer sla-breach"><i class="bi bi-clock-fill"></i> เกิน SLA ${Math.abs(job.sla)} นาที</div>`
-    : job.sla < 120
-    ? `<div class="sla-timer sla-warn"><i class="bi bi-clock"></i> เหลือ ${job.sla} นาที</div>`
-    : `<div class="sla-timer sla-ok"><i class="bi bi-clock"></i> เหลือ ${Math.floor(job.sla/60)} ชม. ${job.sla%60} นาที</div>`;
-
   const jobArg = JSON.stringify(String(job.id || ''));
+  const slaHtml = job.sla < 0
+    ? `<div class="sla-timer sla-breach"><i class="bi bi-clock-fill"></i> SLA overdue ${Math.abs(job.sla)} min</div>`
+    : job.sla < 120
+    ? `<div class="sla-timer sla-warn"><i class="bi bi-clock"></i> ${job.sla} min left</div>`
+    : `<div class="sla-timer sla-ok"><i class="bi bi-clock"></i> ${Math.floor(job.sla/60)}h ${job.sla%60}m left</div>`;
+
   return `
     <div class="job-card ${s.border}" onclick="showJobDetail(${jobArg})">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
@@ -28,21 +29,20 @@ function renderJobCard(job) {
       ${job.status !== 'done' ? `<div style="margin-top:6px">${slaHtml}</div>` : ''}
       <div class="job-actions" onclick="event.stopPropagation()">
         ${job.status === 'new' ? `
-          <button class="job-act-btn btn-primary-sm" onclick="assignJob('${job.id}')"><i class="bi bi-person-check"></i> มอบหมายช่าง</button>
-          <button class="job-act-btn btn-gray-sm" onclick="showJobDetail('${job.id}')"><i class="bi bi-eye"></i> ดูรายละเอียด</button>
+          <button class="job-act-btn btn-primary-sm" onclick="assignJob(${jobArg})"><i class="bi bi-person-check"></i> Assign</button>
+          <button class="job-act-btn btn-gray-sm" onclick="showJobDetail(${jobArg})"><i class="bi bi-eye"></i> Detail</button>
         ` : job.status === 'done' ? `
-          <button class="job-act-btn btn-primary-sm" onclick="if(typeof openBillingModal==='function')openBillingModal('${job.id}');else showToast('กำลังออกใบเสร็จ...')"><i class="bi bi-file-earmark-pdf"></i> ออกใบเสร็จ</button>
-          <button class="job-act-btn btn-gray-sm" onclick="showJobDetail('${job.id}')"><i class="bi bi-eye"></i> ดู</button>
+          <button class="job-act-btn btn-primary-sm" onclick="if(typeof openBillingModal==='function')openBillingModal(${jobArg});else showToast('Opening receipt...')"><i class="bi bi-file-earmark-pdf"></i> Receipt</button>
+          <button class="job-act-btn btn-gray-sm" onclick="showJobDetail(${jobArg})"><i class="bi bi-eye"></i> Detail</button>
         ` : `
-          <button class="job-act-btn btn-primary-sm" onclick="openCameraForJob('${job.id}')"><i class="bi bi-camera"></i> รูปหน้างาน</button>
-          <button class="job-act-btn btn-success-sm" onclick="markJobDone('${job.id}')"><i class="bi bi-check2"></i> เสร็จแล้ว</button>
-          <button class="job-act-btn btn-gray-sm" onclick="showJobDetail('${job.id}')"><i class="bi bi-three-dots"></i></button>
+          <button class="job-act-btn btn-primary-sm" onclick="openCameraForJob(${jobArg})"><i class="bi bi-camera"></i> Photos</button>
+          <button class="job-act-btn btn-success-sm" onclick="markJobDone(${jobArg})"><i class="bi bi-check2"></i> Done</button>
+          <button class="job-act-btn btn-gray-sm" onclick="showJobDetail(${jobArg})"><i class="bi bi-three-dots"></i></button>
         `}
       </div>
     </div>
   `;
 }
-
 // ===== JOBS PAGE =====
 function renderJobsPage(filter = 'all') {
   const list = document.getElementById('jobs-list');
@@ -195,13 +195,27 @@ function renderJobsBadge() {
 }
 
 // ===== JOB DETAIL MODAL =====
-function showJobDetail(jobId) {
-  const job = APP.jobs.find(j => j.id === jobId);
-  if (!job) return;
+async function showJobDetail(jobId) {
+  let job = APP.jobs.find(j => String(j.id || '') === String(jobId || ''));
+  if (!job && typeof callAPI === 'function') {
+    try {
+      const res = await callAPI('getJobDetail', { job_id: jobId });
+      if (res && res.success && res.job) {
+        job = normalizeJob(res.job);
+        APP.jobs.unshift(job);
+      }
+    } catch (_) {}
+  }
+  if (!job) {
+    showToast('ไม่พบรายละเอียดงาน ' + jobId);
+    return;
+  }
+  const jobArg = JSON.stringify(String(job.id || ''));
+  const phoneArg = JSON.stringify(String(job.phone || ''));
   APP.currentJobId = job.id;
   try { localStorage.setItem('comphone_current_job_id', job.id); } catch (_) {}
-  const s = { urgent:'badge-urgent', inprog:'badge-inprog', waiting:'badge-wait', done:'badge-done', new:'badge-new' };
-  const sl = { urgent:'ด่วนมาก', inprog:'กำลังซ่อม', waiting:'รอชิ้นส่วน', done:'เสร็จแล้ว', new:'รับเครื่องแล้ว' };
+  const s = { urgent:'badge-urgent', inprog:'badge-inprog', waiting:'badge-wait', done:'badge-done', cancel:'badge-done', new:'badge-new' };
+  const sl = { urgent:'Urgent', inprog:'In progress', waiting:'Waiting parts', done:'Done', cancel:'Cancelled', new:'New' };
 
   document.getElementById('modal-job-content').innerHTML = `
     <div style="padding:0 16px 16px">
@@ -210,55 +224,47 @@ function showJobDetail(jobId) {
           <div class="job-id">${job.id}</div>
           <div style="font-size:18px;font-weight:800;color:#111827;margin-top:2px">${job.title}</div>
         </div>
-        <span class="job-badge ${s[job.status]}">${sl[job.status]}</span>
+        <span class="job-badge ${s[job.status] || s.new}">${sl[job.status] || job.statusLabel || 'New'}</span>
       </div>
       <div style="background:#f9fafb;border-radius:14px;padding:14px;margin-bottom:12px">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px">
-          <div><div style="color:#9ca3af;font-weight:600">ลูกค้า</div><div style="font-weight:700;color:#111827">${job.customer}</div></div>
-          <div><div style="color:#9ca3af;font-weight:600">เบอร์โทร</div><div style="font-weight:700;color:#0d6efd">${job.phone}</div></div>
-          <div><div style="color:#9ca3af;font-weight:600">ราคาประเมิน</div><div style="font-weight:700;color:#10b981">฿${job.price.toLocaleString()}</div></div>
-          <div><div style="color:#9ca3af;font-weight:600">ช่าง</div><div style="font-weight:700;color:#111827">${job.tech || 'ยังไม่ได้มอบหมาย'}</div></div>
+          <div><div style="color:#9ca3af;font-weight:600">Customer</div><div style="font-weight:700;color:#111827">${job.customer}</div></div>
+          <div><div style="color:#9ca3af;font-weight:600">Phone</div><div style="font-weight:700;color:#0d6efd">${job.phone}</div></div>
+          <div><div style="color:#9ca3af;font-weight:600">Estimate</div><div style="font-weight:700;color:#10b981">${Number(job.price || 0).toLocaleString()}</div></div>
+          <div><div style="color:#9ca3af;font-weight:600">Technician</div><div style="font-weight:700;color:#111827">${job.tech || '-'}</div></div>
         </div>
       </div>
-      <div style="margin-bottom:12px">
-        <div class="section-label">รูปหน้างาน</div>
-        <div class="photo-row">
-          <div class="photo-thumb-sm"><i class="bi bi-image"></i></div>
-          <div class="photo-thumb-sm"><i class="bi bi-image"></i></div>
-          <div class="photo-add-sm" onclick="openCameraForJob('${job.id}')"><i class="bi bi-plus"></i></div>
-        </div>
+      <div style="font-size:13px;color:#374151;background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:12px;margin-bottom:12px">
+        <b>Note</b><br>${job.note || '-'}
       </div>
       <div style="display:flex;gap:8px">
-        <button class="job-act-btn btn-primary-sm" style="flex:1;padding:12px" onclick="openCameraForJob('${job.id}');closeModal('modal-job')">
-          <i class="bi bi-camera"></i> ถ่ายรูป
+        <button class="job-act-btn btn-primary-sm" style="flex:1;padding:12px" onclick="openCameraForJob(${jobArg});closeModal('modal-job')">
+          <i class="bi bi-camera"></i> Photos
         </button>
-        <button class="job-act-btn btn-success-sm" style="flex:1;padding:12px" onclick="markJobDone('${job.id}');closeModal('modal-job')">
-          <i class="bi bi-check2-circle"></i> เสร็จแล้ว
+        <button class="job-act-btn btn-success-sm" style="flex:1;padding:12px" onclick="markJobDone(${jobArg});closeModal('modal-job')">
+          <i class="bi bi-check2-circle"></i> Done
         </button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px">
-        <button class="job-act-btn btn-gray-sm" style="padding:11px" onclick="openMobileJobTimeline('${job.id}')">
-          <i class="bi bi-clock-history"></i> Timeline
-        </button>
-        <button class="job-act-btn btn-gray-sm" style="padding:11px" onclick="openMobileJobBilling('${job.id}')">
-          <i class="bi bi-receipt"></i> Billing
-        </button>
-        <button class="job-act-btn btn-gray-sm" style="padding:11px" onclick="openMobileJobVision('${job.id}')">
-          <i class="bi bi-stars"></i> Vision
-        </button>
+        <button class="job-act-btn btn-gray-sm" style="padding:11px" onclick="openMobileJobTimeline(${jobArg})"><i class="bi bi-clock-history"></i> Timeline</button>
+        <button class="job-act-btn btn-gray-sm" style="padding:11px" onclick="openMobileJobBilling(${jobArg})"><i class="bi bi-receipt"></i> Billing</button>
+        <button class="job-act-btn btn-gray-sm" style="padding:11px" onclick="openMobileJobVision(${jobArg})"><i class="bi bi-stars"></i> Vision</button>
       </div>
-      <button class="job-act-btn btn-gray-sm" style="width:100%;margin-top:8px;padding:12px" onclick="callCustomer('${job.phone}')">
-        <i class="bi bi-telephone-fill"></i> โทร ${job.customer}
+      <button class="job-act-btn btn-gray-sm" style="width:100%;margin-top:8px;padding:12px" onclick="callCustomer(${phoneArg})">
+        <i class="bi bi-telephone-fill"></i> Call ${job.customer}
       </button>
+      ${(APP.role === 'admin' || APP.role === 'owner') ? `
+      <button class="job-act-btn" style="width:100%;margin-top:8px;padding:12px;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;border-radius:12px;font-weight:800;cursor:pointer" onclick="deleteMobileJob(${jobArg})">
+        <i class="bi bi-trash3"></i> Delete job
+      </button>` : ''}
       ${job.status === 'done' ? `
       <button class="job-act-btn" style="width:100%;margin-top:8px;padding:12px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:12px;font-weight:700;cursor:pointer" id="btn-create-warranty-${job.id}">
-        <i class="bi bi-shield-check"></i> สร้างใบรับประกัน
+        <i class="bi bi-shield-check"></i> Warranty
       </button>` : ''}
     </div>
   `;
   const modalJob = document.getElementById('modal-job');
   if (modalJob) modalJob.classList.remove('hidden');
-  // เพิ่ม event listener ปุ่มรับประกัน (ถ้ามี)
   const warrantyBtn = document.getElementById('btn-create-warranty-' + jobId);
   if (warrantyBtn && typeof createWarrantyModal === 'function') {
     warrantyBtn.addEventListener('click', () => {
@@ -268,6 +274,23 @@ function showJobDetail(jobId) {
   }
 }
 
+async function deleteMobileJob(jobId) {
+  const reason = prompt('เหตุผลในการลบงาน ' + jobId + ' (ระบบจะ archive ก่อนลบ)', 'Deleted from Mobile Jobs');
+  if (reason === null) return;
+  if (!confirm('ยืนยันลบงาน ' + jobId + '?')) return;
+  try {
+    const res = await callAPI('deleteJob', { job_id: jobId, confirm: 'DELETE_JOB', reason: reason || 'Deleted from Mobile Jobs' });
+    if (!res || !res.success) throw new Error((res && (res.error || res.message)) || 'Delete failed');
+    APP.jobs = APP.jobs.filter(j => String(j.id || '') !== String(jobId));
+    closeModal('modal-job');
+    renderJobsPage();
+    renderJobsBadge();
+    if (typeof renderHome === 'function') renderHome();
+    showToast('ลบงานแล้ว และเก็บสำเนาไว้ใน archive');
+  } catch (e) {
+    showToast('ลบงานไม่สำเร็จ: ' + (e.message || e));
+  }
+}
 async function openMobileJobTimeline(jobId) {
   const target = document.getElementById('modal-job-content');
   if (target && !document.getElementById('mobile-job-timeline-inline')) {

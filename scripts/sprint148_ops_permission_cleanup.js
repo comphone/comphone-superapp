@@ -53,7 +53,7 @@ async function main() {
     { id: 'db-data-review-log-registry', ok: has(files.schema, 'DB_DATA_REVIEW_LOG') && has(files.schema, '"maintenance"'), type: 'static' },
     { id: 'fallback-visible-until-permission-fixed', ok: has(files.dataRepair, 'DATA_REVIEW_LOG_JSON') && has(files.dataRepair, 'script_properties_fallback'), type: 'static' },
     { id: 'permission-cleanup-runbook-documented', ok: has(files.blueprint, 'Sprint 148') || has(files.blueprint, 'review-log fallback'), type: 'static' },
-    { id: 'production-url-stable', ok: has(files.gas, 'AKfycbyrhcek5kfmG26fJfi3RAbKAKlZWXvWwEow9AdLNb4QAsqOf_tqEQEFs_a5avUokOVk'), type: 'static' },
+    { id: 'production-url-stable', ok: has(files.gas, 'AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ'), type: 'static' },
     { id: 'review-log-actions-in-contract', ok: has(files.contract, 'getDataReviewLog') && has(files.contract, 'saveDataReviewLog'), type: 'static' },
   ].concat(secretLeakChecks(repoSecretSurface));
 

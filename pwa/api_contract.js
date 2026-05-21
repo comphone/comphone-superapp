@@ -147,6 +147,7 @@
         readOnly: [
           { action: 'getDashboardData', required: true },
           { action: 'checkJobs', payload: { limit: 10 }, required: true },
+          { action: 'getJobDetail', payloadFrom: 'latestJob', required: true },
           { action: 'getJobStateConfig', required: true },
           { action: 'getJobTimeline', payloadFrom: 'latestJob', required: true },
         ],
@@ -154,6 +155,7 @@
           { action: 'openJob', destructive: true },
           { action: 'addQuickNote', destructive: true },
           { action: 'transitionJob', destructive: true },
+          { action: 'deleteJob', destructive: true, smoke: false, smokeReason: 'archives to DBJOBS_ARCHIVE before deleting from DBJOBS; requires admin/owner and DELETE_JOB confirmation' },
         ],
       },
       {
