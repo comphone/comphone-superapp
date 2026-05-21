@@ -76,7 +76,7 @@ function _jobRequestId(prefix) {
 }
 
 function _jobJsArg(value) {
-  return JSON.stringify(String(value == null ? '' : value));
+  return JSON.stringify(String(value == null ? '' : value)).replace(/"/g, '&quot;');
 }
 
 function _findPcJob(jobId) {

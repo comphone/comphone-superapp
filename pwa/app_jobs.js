@@ -9,7 +9,7 @@ function renderJobCard(job) {
     new: { badge: 'badge-new', label: 'New', border: '' }
   };
   const s = statusMap[job.status] || statusMap.new;
-  const jobArg = JSON.stringify(String(job.id || ''));
+  const jobArg = JSON.stringify(String(job.id || '')).replace(/"/g, '&quot;');
   const slaHtml = job.sla < 0
     ? `<div class="sla-timer sla-breach"><i class="bi bi-clock-fill"></i> SLA overdue ${Math.abs(job.sla)} min</div>`
     : job.sla < 120
@@ -210,8 +210,8 @@ async function showJobDetail(jobId) {
     showToast('ไม่พบรายละเอียดงาน ' + jobId);
     return;
   }
-  const jobArg = JSON.stringify(String(job.id || ''));
-  const phoneArg = JSON.stringify(String(job.phone || ''));
+  const jobArg = JSON.stringify(String(job.id || '')).replace(/"/g, '&quot;');
+  const phoneArg = JSON.stringify(String(job.phone || '')).replace(/"/g, '&quot;');
   APP.currentJobId = job.id;
   try { localStorage.setItem('comphone_current_job_id', job.id); } catch (_) {}
   const s = { urgent:'badge-urgent', inprog:'badge-inprog', waiting:'badge-wait', done:'badge-done', cancel:'badge-done', new:'badge-new' };
