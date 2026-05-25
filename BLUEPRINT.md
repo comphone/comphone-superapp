@@ -113,6 +113,7 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 - Sprint 185 Sales room live proof on 2026-05-25: `/groupid` in the Sales LINE room replied successfully with `Cb7cc146227212f70e4f171ef3f2bce15`, matching `LINE_GROUP_SALES` and the `SALES_ANALYST` role mapping. This proves LINE platform -> Worker -> active GAS -> LINE reply path is live for the Sales room.
 - Sprint 185 Sales room config hardening on 2026-05-25: `LINE_GROUP_SALES` is now also present as a code fallback in `Config.gs`/`clasp-ready/Config.gs`, and billing Flex notifications resolve room IDs through the shared LINE room resolver before falling back to Script Properties. This prevents modules that read `LINE_GROUP_SALES` directly from treating the verified Sales room as unconfigured.
 - Sprint 186 Technician room AI routing hardening on 2026-05-25: Technician/Dispatcher rooms no longer send every work-related message through Gemini. Deterministic commands, status updates, photo reports, and work notes run first; AI Agent is invoked only when the operator explicitly asks for AI/analysis. This prevents generic AI failure replies from blocking normal technician-room workflows.
+- Sprint 186 private LINE chat hardening on 2026-05-25: private one-to-one bot greetings such as `สวัสดี` are handled by deterministic help text and never routed into Gemini/AI Agent. AI in private chat is invoked only by explicit AI intent keywords.
 
 ### Required Verification Commands
 Run these before claiming the system is stable after any code change:
@@ -295,6 +296,7 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN,Env:\COMPHONE_LINE_TOGGLE_CONFIRM,Env:\COMP
 - Sales room `/groupid` live proof passed with group ID `Cb7cc146227212f70e4f171ef3f2bce15`. Next live proof is one JobID-tagged image in the same room, then rerun Sprint 185 to confirm `DB_PHOTO_QUEUE`/Drive evidence growth.
 - Sales room config is hardened in both root GAS source and `clasp-ready`: `LINE_GROUP_SALES` fallback is `Cb7cc146227212f70e4f171ef3f2bce15`, and Flex billing-to-sales notifications use the shared LINE room resolver.
 - Technician room AI routing is hardened: normal work messages no longer enter AI automatically, and AI fallback text is readable Thai. If a technician still sees the old generic AI failure reply, the live GAS deployment is still running stale source and must be redeployed from `clasp-ready`.
+- Private LINE chat is hardened: `สวัสดี` now returns a COMPHONE Bot help reply without touching AI. If the old AI error still appears in private chat, the live Apps Script deployment is stale.
 - Added GAS-side JobID context helpers in `LineBot.gs` / `clasp-ready/LineBot.gs` so operators can send `J0020` then a photo. This source change is not live until clasp/GAS API credentials are refreshed and the Apps Script project is pushed/deployed.
 - No real LINE send, destructive data repair, smoke cleanup delete, or job delete was executed by this sprint.
 

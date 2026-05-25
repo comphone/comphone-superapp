@@ -12,7 +12,7 @@ var LINE_WORK_KEYWORDS_V55 = [
 ];
 
 var LINE_CASUAL_KEYWORDS_V55 = [
-  '555', 'ok', 'โอเค', 'รับทราบ', 'ครับ', 'ค่ะ', 'เดี๋ยว', 'ขอบคุณ', 'ฝนตก', 'รถติด'
+  '555', 'ok', 'โอเค', 'รับทราบ', 'ครับ', 'ค่ะ', 'เดี๋ยว', 'ขอบคุณ', 'ฝนตก', 'รถติด', 'สวัสดี', 'hello', 'hi'
 ];
 
 function handleLineWebhook(e) {
@@ -70,6 +70,7 @@ function processLineMessage(message, userId, userName, groupId) {
   var text = message.text || '';
   var hasImage = message.type === 'image';
   var hasLocation = message.type === 'location';
+  var isPrivateChat = !groupId;
   rememberLineJobContextV55_(text, userId, groupId);
 
   var classification = classifyMessage(text, hasImage, hasLocation);
@@ -84,7 +85,9 @@ function processLineMessage(message, userId, userName, groupId) {
       return handleStatus(classification, text, userId, userName);
   }
   
-  if (classification.type === 'casual') return null;
+  if (classification.type === 'casual') {
+    return isPrivateChat ? formatPrivateLineHelpV55_() : null;
+  }
   if (classification.type === 'work_note' && classification.jobId) {
     var noteResult = handleWorkNote(classification, text, userId, userName);
     if (noteResult) return noteResult;
@@ -112,6 +115,18 @@ function processLineMessage(message, userId, userName, groupId) {
 
   if (classification.type === 'work_note') return handleWorkNote(classification, text, userId, userName);
   return null;
+}
+
+function formatPrivateLineHelpV55_() {
+  return createTextMessage([
+    'สวัสดีครับ COMPHONE Bot พร้อมใช้งาน',
+    'คำสั่งที่ใช้ได้:',
+    '- /groupid ใช้ในกลุ่มเพื่อดู Group ID',
+    '- เช็คงาน J0020',
+    '- สรุป',
+    '- ส่งรูปงานในกลุ่มพร้อม JobID เพื่อเข้า AI Vision',
+    'ถ้าต้องการถาม AI ให้ขึ้นต้นด้วย "ai" หรือ "วิเคราะห์"'
+  ].join('\n'));
 }
 
 function classifyMessage(text, hasImage, hasLocation) {
