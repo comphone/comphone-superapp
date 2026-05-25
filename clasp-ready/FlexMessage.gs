@@ -671,7 +671,7 @@ function notifyDailySummaryToExecutive() {
  * ส่งแจ้งเตือนสต็อกต่ำไปยังกลุ่มจัดซื้อ
  */
 function notifyLowStockToProcurement(items) {
-  var groupId = getConfig('LINE_GROUP_PROCUREMENT') || '';
+  var groupId = (typeof _getRoomGroupId === 'function' ? _getRoomGroupId('PROCUREMENT') : '') || getConfig('LINE_GROUP_PROCUREMENT') || '';
   if (!groupId) return { success: false, error: 'LINE_GROUP_PROCUREMENT not configured' };
   if (!items || items.length === 0) return { success: false, error: 'No low stock items' };
   var flexMsg = createLowStockFlexMessage_(items);
@@ -682,7 +682,7 @@ function notifyLowStockToProcurement(items) {
  * ส่งแจ้งใบเสร็จไปยังกลุ่มบัญชี
  */
 function notifyBillingToAccounting(billing) {
-  var groupId = getConfig('LINE_GROUP_ACCOUNTING') || '';
+  var groupId = (typeof _getRoomGroupId === 'function' ? _getRoomGroupId('ACCOUNTING') : '') || getConfig('LINE_GROUP_ACCOUNTING') || '';
   if (!groupId) return { success: false, error: 'LINE_GROUP_ACCOUNTING not configured' };
   var flexMsg = createBillingFlexMessage_(billing);
   return pushLineMessage(groupId, [flexMsg]);
@@ -692,7 +692,7 @@ function notifyBillingToAccounting(billing) {
  * ส่งแจ้งใบเสร็จไปยังกลุ่มเซลส์
  */
 function notifyBillingToSales(billing) {
-  var groupId = getConfig('LINE_GROUP_SALES') || '';
+  var groupId = (typeof _getRoomGroupId === 'function' ? _getRoomGroupId('SALES') : '') || getConfig('LINE_GROUP_SALES') || '';
   if (!groupId) return { success: false, error: 'LINE_GROUP_SALES not configured' };
   var flexMsg = createBillingFlexMessage_(billing);
   return pushLineMessage(groupId, [flexMsg]);
