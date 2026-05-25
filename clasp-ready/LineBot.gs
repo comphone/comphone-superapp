@@ -314,7 +314,11 @@ function handleWorkNote(classification, text, userId, userName) {
 
 function handlePhotoReport(message, classification, userId, userName, groupId) {
   var jobId = classification.jobId || getLineJobContextV55_(userId, groupId);
+  var room = detectLineRoomNameV55_(groupId);
   if (!jobId) {
+    if (room === 'ACCOUNTING') {
+      return queueAccountingPhotoV55_(message, userId, userName);
+    }
     return createTextMessage('รับรูปแล้ว แต่ยังไม่พบ JobID\nวิธีใช้: พิมพ์ JobID เช่น J0020 แล้วส่งรูปอีกครั้ง หรือส่งข้อความ "J0020 รูปหน้างาน" ก่อนส่งรูป');
   }
 
@@ -327,6 +331,37 @@ function handlePhotoReport(message, classification, userId, userName, groupId) {
   }
 
   return createTextMessage('รับรูปเรียบร้อย\nJobID: ' + jobId + '\nหมายเหตุ: ยังไม่เปิดใช้งานคิวรูปภาพอัตโนมัติในสคริปต์นี้');
+}
+
+function queueAccountingPhotoV55_(message, userId, userName) {
+  var placeholderJobId = 'ACCOUNTING_PENDING';
+  if (typeof queuePhotoFromLINE === 'function') {
+    var queueResult = queuePhotoFromLINE(message.id || '', placeholderJobId, userName || userId || 'LINE_ACCOUNTING');
+    if (queueResult && !queueResult.error) {
+      return createTextMessage([
+        'รับรูปบัญชี/สลิปเข้าคิวเรียบร้อย',
+        'QueueID: ' + (queueResult.queueId || '-'),
+        'สถานะ: รอผูกกับ JobID หรือบิลที่เกี่ยวข้อง',
+        'ถ้าต้องการผูกงานทันที ให้พิมพ์ JobID เช่น J0020 แล้วส่งรูปอีกครั้ง'
+      ].join('\n'));
+    }
+    return createTextMessage('รับรูปบัญชีแล้ว แต่เข้าคิวไม่สำเร็จ: ' + (queueResult && queueResult.error || 'unknown'));
+  }
+
+  return createTextMessage('รับรูปบัญชีแล้ว\nหมายเหตุ: ยังไม่เปิดใช้งานคิวรูปภาพอัตโนมัติในสคริปต์นี้');
+}
+
+function detectLineRoomNameV55_(groupId) {
+  groupId = String(groupId || '').trim();
+  if (!groupId) return 'PRIVATE';
+  var rooms = {
+    'C8ad22a115f38c9ad3cb5ea5c2ff4863b': 'TECHNICIAN',
+    'C7b939d1d367e6b854690e58b392e88cc': 'ACCOUNTING',
+    'Cfd103d59e77acf00e2f2f801d391c566': 'PROCUREMENT',
+    'Cb7cc146227212f70e4f171ef3f2bce15': 'SALES',
+    'Cb85204740fa90e38de63c727554e551a': 'EXECUTIVE'
+  };
+  return rooms[groupId] || 'UNKNOWN';
 }
 
 function rememberLineJobContextV55_(text, userId, groupId) {
