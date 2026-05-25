@@ -105,6 +105,7 @@ async function main() {
     { id: 'worker-forwards-line-signature', ok: worker.includes("'X-Line-Signature': signature") || worker.includes('"X-Line-Signature": signature') },
     { id: 'worker-passes-signature-as-gas-query-param', ok: worker.includes("searchParams.set('X-Line-Signature', signature)") || worker.includes('searchParams.set("X-Line-Signature", signature)') },
     { id: 'worker-forwards-raw-line-payload', ok: worker.includes('const bodyText = await request.text()') && worker.includes('forwardToGAS(env.GAS_URL, bodyText, signature)') },
+    { id: 'worker-gas-diagnostic-endpoint', ok: worker.includes('/diag/gas') && worker.includes('runGasDiagnostic') },
     { id: 'notification-toggle-does-not-stop-backend', ok: photoQueue.includes('LINE notification toggles affect outbound push only') },
     { id: 'no-real-line-send-env', ok: !process.env.COMPHONE_LINE_REAL_SEND && !process.env.COMPHONE_LINE_SEND_CONFIRM },
     { id: 'operator-checklist-present', ok: setupDoc.includes('Webhook URL') || setupDoc.includes('line/webhook') },
