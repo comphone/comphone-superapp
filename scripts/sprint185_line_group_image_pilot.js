@@ -89,6 +89,7 @@ async function main() {
   const router = read('clasp-ready/Router.gs');
   const routerSplit = read('clasp-ready/RouterSplit.gs');
   const apiContract = read('pwa/api_contract.js');
+  const worker = read('workers/line-webhook/src/index.js');
   const setupDoc = fs.existsSync(path.join(ROOT, 'delivery', 'docs', 'LINE_WEBHOOK_CHECKLIST.md'))
     ? read('delivery/docs/LINE_WEBHOOK_CHECKLIST.md')
     : '';
@@ -97,9 +98,12 @@ async function main() {
     { id: 'gas-url-present', ok: /^https:\/\/script\.google\.com\/macros\/s\//.test(GAS_URL) },
     { id: 'line-webhook-signature-guard', ok: lineBot.includes('handleLineWebhook') && router.includes('verifyLineSignature_') },
     { id: 'line-image-event-handler', ok: lineBot.includes('handlePhotoReport') && lineBot.includes('queuePhotoFromLINE') },
+    { id: 'line-image-job-context-memory', ok: lineBot.includes('rememberLineJobContextV55_') && lineBot.includes('getLineJobContextV55_') },
     { id: 'photo-queue-drive-sheet-path', ok: photoQueue.includes('saveToPhotoQueue') && photoQueue.includes('DriveApp') && photoQueue.includes('DB_PHOTO_QUEUE') },
     { id: 'queued-gemini-processing', ok: photoQueue.includes('processImageSorting') && photoQueue.includes('_analyzeQueuedPhoto') && photoQueue.includes('analyzeWorkImageFromBase64') },
     { id: 'protected-status-action-routed', ok: photoQueue.includes('getVisionLineIngressStatus') && routerSplit.includes('getVisionLineIngressStatus') && apiContract.includes('getVisionLineIngressStatus') },
+    { id: 'worker-forwards-line-signature', ok: worker.includes("'X-Line-Signature': signature") || worker.includes('"X-Line-Signature": signature') },
+    { id: 'worker-forwards-raw-line-payload', ok: worker.includes('const bodyText = await request.text()') && worker.includes('forwardToGAS(env.GAS_URL, bodyText, signature)') },
     { id: 'notification-toggle-does-not-stop-backend', ok: photoQueue.includes('LINE notification toggles affect outbound push only') },
     { id: 'no-real-line-send-env', ok: !process.env.COMPHONE_LINE_REAL_SEND && !process.env.COMPHONE_LINE_SEND_CONFIRM },
     { id: 'operator-checklist-present', ok: setupDoc.includes('Webhook URL') || setupDoc.includes('line/webhook') },

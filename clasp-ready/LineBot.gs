@@ -70,6 +70,7 @@ function processLineMessage(message, userId, userName, groupId) {
   var text = message.text || '';
   var hasImage = message.type === 'image';
   var hasLocation = message.type === 'location';
+  rememberLineJobContextV55_(text, userId, groupId);
   
   // ── AI LINE Agent: ตรวจสอบว่า Group นี้เปิดใช้ AI Agent หรือไม่ ──
   var aiRole = detectRoleFromGroupId_(groupId);
@@ -101,7 +102,7 @@ function processLineMessage(message, userId, userName, groupId) {
     case 'location_share':
       return handleLocation(message, classification, userId, userName);
     case 'work_report':
-      return handlePhotoReport(message, classification, userId, userName);
+      return handlePhotoReport(message, classification, userId, userName, groupId);
     case 'status_update':
       return handleStatus(classification, text, userId, userName);
     case 'work_note':
@@ -294,10 +295,10 @@ function handleWorkNote(classification, text, userId, userName) {
   return createTextMessage('บันทึกหมายเหตุแล้ว\nJobID: ' + jobId);
 }
 
-function handlePhotoReport(message, classification, userId, userName) {
-  var jobId = classification.jobId || '';
+function handlePhotoReport(message, classification, userId, userName, groupId) {
+  var jobId = classification.jobId || getLineJobContextV55_(userId, groupId);
   if (!jobId) {
-    return createTextMessage('รับรูปแล้ว แต่ยังไม่พบ JobID กรุณาส่งรูปพร้อมข้อความ เช่น J0001 ถึงหน้างาน');
+    return createTextMessage('รับรูปแล้ว แต่ยังไม่พบ JobID\nวิธีใช้: พิมพ์ JobID เช่น J0020 แล้วส่งรูปอีกครั้ง หรือส่งข้อความ "J0020 รูปหน้างาน" ก่อนส่งรูป');
   }
 
   if (typeof queuePhotoFromLINE === 'function') {
@@ -309,6 +310,40 @@ function handlePhotoReport(message, classification, userId, userName) {
   }
 
   return createTextMessage('รับรูปเรียบร้อย\nJobID: ' + jobId + '\nหมายเหตุ: ยังไม่เปิดใช้งานคิวรูปภาพอัตโนมัติในสคริปต์นี้');
+}
+
+function rememberLineJobContextV55_(text, userId, groupId) {
+  var jobId = extractJobIdV55_(text);
+  if (!jobId) return;
+  try {
+    var cache = CacheService.getScriptCache();
+    var keys = getLineJobContextKeysV55_(userId, groupId);
+    for (var i = 0; i < keys.length; i++) cache.put(keys[i], jobId, 60 * 60 * 6);
+  } catch (err) {
+    Logger.log('rememberLineJobContextV55_ error: ' + err);
+  }
+}
+
+function getLineJobContextV55_(userId, groupId) {
+  try {
+    var cache = CacheService.getScriptCache();
+    var keys = getLineJobContextKeysV55_(userId, groupId);
+    for (var i = 0; i < keys.length; i++) {
+      var jobId = cache.get(keys[i]);
+      if (jobId) return jobId;
+    }
+  } catch (err) {
+    Logger.log('getLineJobContextV55_ error: ' + err);
+  }
+  return '';
+}
+
+function getLineJobContextKeysV55_(userId, groupId) {
+  var keys = [];
+  if (groupId && userId) keys.push('LINE_JOB_CTX_' + groupId + '_' + userId);
+  if (groupId) keys.push('LINE_JOB_CTX_GROUP_' + groupId);
+  if (userId) keys.push('LINE_JOB_CTX_USER_' + userId);
+  return keys;
 }
 
 // ── GROUP ID HELPERS ──
