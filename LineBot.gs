@@ -84,12 +84,17 @@ function processLineMessage(message, userId, userName, groupId) {
       return handleStatus(classification, text, userId, userName);
   }
   
-  // ── AI LINE Agent: ตรวจสอบว่า Group นี้เปิดใช้ AI Agent หรือไม่ ──
+  if (classification.type === 'casual') return null;
+  switch (classification.type) {
+    case 'work_note':
+      return handleWorkNote(classification, text, userId, userName);
+  }
+
+  // ── AI LINE Agent: ใช้เฉพาะข้อความที่ตั้งใจถาม/วิเคราะห์ ไม่ดักทุกข้อความในห้องช่าง ──
   var aiRole = detectRoleFromGroupId_(groupId);
   if (aiRole && text) {
-    // ตรวจสอบว่าข้อความนี้ควรให้ AI ประมวลผลหรือไม่
     var lowerText = text.toLowerCase();
-    var aiKeywords = ['สรุป', 'summary', 'รายงาน', 'report', 'วิเคราะห์', 'analyze', 'เช็ค', 'check', 'งานใหม่', 'แจ้งเตือน'];
+    var aiKeywords = ['ai', '@ai', 'ผู้ช่วย', 'วิเคราะห์', 'analyze', 'insight', 'แนะนำ', 'ช่วยวิเคราะห์', 'ถามระบบ'];
     var shouldUseAI = false;
     
     for (var k = 0; k < aiKeywords.length; k++) {
@@ -99,20 +104,13 @@ function processLineMessage(message, userId, userName, groupId) {
       }
     }
     
-    // ถ้าเป็น Dispatcher group และมีคำสั่งที่เกี่ยวข้องกับงาน
-    if (shouldUseAI || aiRole === 'DISPATCHER') {
+    if (shouldUseAI) {
       var aiResult = processWithAILineAgent(groupId, text, userName);
       if (aiResult) return aiResult;
     }
   }
-  
-  if (classification.type === 'casual') return null;
-  switch (classification.type) {
-    case 'work_note':
-      return handleWorkNote(classification, text, userId, userName);
-    default:
-      return null;
-  }
+
+  return null;
 }
 
 function classifyMessage(text, hasImage, hasLocation) {
