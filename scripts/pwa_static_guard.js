@@ -822,6 +822,7 @@ for (const [fileName, marker, tokenAware] of [
   ['sprint181_ai_vision_owner_sample_run.js', 'AI Vision Owner Sample Run', true],
   ['sprint182_smoke_cleanup_execution.js', 'Sprint 182 Smoke Cleanup Execution', true],
   ['sprint183_line_ai_vision_ingress_guard.js', 'Sprint 183 LINE AI Vision Ingress Guard', true],
+  ['sprint185_line_group_image_pilot.js', 'Sprint 185 LINE Group Image Pilot', true],
 ]) {
   const body = readUtf8(path.join(ROOT, 'scripts', fileName));
   if (!body.includes(marker) || (tokenAware && !body.includes('COMPHONE_AUTH_TOKEN'))) {
