@@ -116,6 +116,7 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 - Sprint 186 private LINE chat hardening on 2026-05-25: private one-to-one bot greetings such as `สวัสดี` are handled by deterministic help text and never routed into Gemini/AI Agent. AI in private chat is invoked only by explicit AI intent keywords.
 - Sprint 186 Worker private-greeting safety on 2026-05-25: Worker `1.0.4-sprint186` intercepts one-to-one LINE greetings (`สวัสดี`, `hello`, `hi`, `หวัดดี`) before forwarding to GAS. If a Worker LINE token binding exists it replies with COMPHONE help text; otherwise it still suppresses forwarding so stale GAS AI code cannot return the generic AI failure for private greetings.
 - Sprint 186 Accounting LINE image hardening on 2026-05-25: images sent in the Accounting LINE room without a prior JobID are now accepted into the photo queue as `ACCOUNTING_PENDING` instead of being rejected. This matches LINE behavior where image messages do not reliably carry caption text; operators can still type a JobID before a photo when they want immediate job/billing linkage.
+- Sprint 187 Room-aware LINE AI/Vision hardening on 2026-05-25: LINE replies and image intake now use a room policy layer before AI. Technician keeps strict JobID for work photos; Accounting accepts slip/evidence images as `ACCOUNTING_PENDING`; Sales, Procurement, and Executive receive their own pending contexts. AI roles are split into `DISPATCHER`, `ACCOUNTING_ANALYST`, `SALES_ANALYST`, `PROCUREMENT_ASSISTANT`, `BI`, and `PRIVATE_ASSISTANT` with an explicit no-guessing rule. Guard: `scripts/sprint187_line_room_intelligence_guard.js`.
 
 ### Required Verification Commands
 Run these before claiming the system is stable after any code change:
@@ -301,6 +302,7 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN,Env:\COMPHONE_LINE_TOGGLE_CONFIRM,Env:\COMP
 - Private LINE chat is hardened: `สวัสดี` now returns a COMPHONE Bot help reply without touching AI. If the old AI error still appears in private chat, the live Apps Script deployment is stale.
 - Worker private-greeting guard is available as an edge safety net while Apps Script deploy credentials are being refreshed.
 - Accounting LINE room images no longer require an immediate JobID. No-JobID accounting images are queued under `ACCOUNTING_PENDING` for later owner/admin review and linking.
+- Room-aware LINE AI/Vision is now guarded: responses must match the current room, ask for missing JobID/bill/customer context when needed, and must not invent numbers or status.
 - Added GAS-side JobID context helpers in `LineBot.gs` / `clasp-ready/LineBot.gs` so operators can send `J0020` then a photo. This source change is not live until clasp/GAS API credentials are refreshed and the Apps Script project is pushed/deployed.
 - No real LINE send, destructive data repair, smoke cleanup delete, or job delete was executed by this sprint.
 

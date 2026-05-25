@@ -247,7 +247,7 @@ function detectRoleFromGroupId_(groupId) {
     'C8ad22a115f38c9ad3cb5ea5c2ff4863b': 'DISPATCHER',     // TECHNICIAN group
     'Cb7cc146227212f70e4f171ef3f2bce15': 'SALES_ANALYST',  // SALES group
     'Cb85204740fa90e38de63c727554e551a': 'BI',             // EXECUTIVE group
-    'C7b939d1d367e6b854690e58b392e88cc': 'SALES_ANALYST', // ACCOUNTING -> Sales
+    'C7b939d1d367e6b854690e58b392e88cc': 'ACCOUNTING_ANALYST',
     'Cfd103d59e77acf00e2f2f801d391c566': 'DISPATCHER'    // PROCUREMENT -> Dispatcher
   };
   
@@ -273,6 +273,78 @@ function getPromptByRole_(role) {
 /**
  * ฟังก์ชันทดสอบ: สรุปงานใหม่สำหรับ Dispatcher
  */
+// Sprint 187 room-intelligence overrides.
+function detectRoleFromGroupId_(groupId) {
+  if (typeof detectLineRoomNameV55_ === 'function') {
+    var room = detectLineRoomNameV55_(groupId);
+    if (room === 'TECHNICIAN') return 'DISPATCHER';
+    if (room === 'ACCOUNTING') return 'ACCOUNTING_ANALYST';
+    if (room === 'SALES') return 'SALES_ANALYST';
+    if (room === 'PROCUREMENT') return 'PROCUREMENT_ASSISTANT';
+    if (room === 'EXECUTIVE') return 'BI';
+  }
+  if (!groupId) return 'PRIVATE_ASSISTANT';
+  var groupRoles = {
+    'C8ad22a115f38c9ad3cb5ea5c2ff4863b': 'DISPATCHER',
+    'C7b939d1d367e6b854690e58b392e88cc': 'ACCOUNTING_ANALYST',
+    'Cb7cc146227212f70e4f171ef3f2bce15': 'SALES_ANALYST',
+    'Cfd103d59e77acf00e2f2f801d391c566': 'PROCUREMENT_ASSISTANT',
+    'Cb85204740fa90e38de63c727554e551a': 'BI'
+  };
+  return groupRoles[groupId] || 'PRIVATE_ASSISTANT';
+}
+
+function getPromptByRole_(role) {
+  var sharedRules = [
+    'ตอบเป็นภาษาไทย กระชับ ไม่เกิน 6 บรรทัด เว้นแต่ผู้ใช้ขอรายละเอียด',
+    'ห้ามเดาตัวเลข รายชื่อลูกค้า ยอดเงิน หรือสถานะงานที่ไม่มีในบริบท',
+    'ถ้าข้อมูลไม่พอ ให้บอกข้อมูลที่ต้องการเพิ่ม เช่น JobID, เลขบิล, ชื่อลูกค้า, หรือรูปหลักฐาน',
+    'ใช้คำตอบให้สัมพันธ์กับห้อง LINE ปัจจุบันเท่านั้น และอย่าโยนงานข้ามแผนกโดยไม่มีเหตุผล'
+  ].join('\n- ');
+
+  var prompts = {
+    DISPATCHER: 'คุณคือ COMPHONE Dispatcher สำหรับห้องช่าง\nโฟกัส: สถานะงาน, JobID, รูปหน้างาน, ความคืบหน้า, อุปกรณ์ที่ต้องใช้, ปัญหาหน้างาน\nอย่าตอบเรื่องยอดขายหรือบัญชี เว้นแต่ผู้ใช้ถามเพื่อประสานงานและมี JobID ชัดเจน',
+    ACCOUNTING_ANALYST: 'คุณคือ COMPHONE Accounting Assistant สำหรับห้องบัญชี\nโฟกัส: สลิป, ยอดชำระ, บิล, ใบเสร็จ, คงค้าง, การผูกหลักฐานกับ JobID\nถ้าได้รับรูปหรือข้อความที่ไม่มี JobID ให้แนะนำให้ผูกกับ JobID/บิล แต่ไม่ปฏิเสธหลักฐาน',
+    SALES_ANALYST: 'คุณคือ COMPHONE Sales Assistant สำหรับห้องขาย\nโฟกัส: ลูกค้าใหม่, โอกาสขาย, ใบเสนอราคา, ติดตามลูกค้า, สรุปงานขาย\nอย่าตอบยืนยันชำระเงินแทนบัญชี และอย่าเปลี่ยนสถานะงานแทนช่าง',
+    PROCUREMENT_ASSISTANT: 'คุณคือ COMPHONE Procurement Assistant สำหรับห้องจัดซื้อ\nโฟกัส: อะไหล่, สต็อก, ของขาด, รูปสินค้า, การสั่งซื้อ, การรับของ\nถ้าข้อมูลสินค้าไม่ครบ ให้ถามรหัสสินค้า จำนวน หรือรูปเพิ่ม',
+    BI: 'คุณคือ COMPHONE Business Intelligence สำหรับห้องผู้บริหาร\nโฟกัส: ภาพรวมงาน รายได้ ความเสี่ยง คิวค้าง จุดติดขัด และ next action\nสรุปเป็น insight พร้อมข้อเสนอแนะ ไม่ใช่แค่รายการดิบ',
+    PRIVATE_ASSISTANT: 'คุณคือ COMPHONE Bot Assistant ในแชทส่วนตัว\nโฟกัส: อธิบายคำสั่งที่ใช้ได้ และขอให้ผู้ใช้ทำงานหลักในห้องที่ถูกต้อง'
+  };
+
+  return (prompts[role] || prompts.PRIVATE_ASSISTANT) + '\n\nกฎร่วม:\n- ' + sharedRules;
+}
+
+function buildAILineFallbackReply_(role, text, reason) {
+  var roomLabel = {
+    DISPATCHER: 'ห้องช่าง',
+    ACCOUNTING_ANALYST: 'ห้องบัญชี',
+    SALES_ANALYST: 'ห้องขาย',
+    PROCUREMENT_ASSISTANT: 'ห้องจัดซื้อ',
+    BI: 'ห้องผู้บริหาร',
+    PRIVATE_ASSISTANT: 'แชทส่วนตัว'
+  }[role] || 'ห้องทั่วไป';
+
+  var lines = ['COMPHONE AI พร้อมช่วย (' + roomLabel + ')'];
+  if (reason) lines.push('หมายเหตุ: โหมดวิเคราะห์สดยังไม่สมบูรณ์ - ' + String(reason).substring(0, 100));
+
+  if (role === 'ACCOUNTING_ANALYST') {
+    lines.push('ใช้ได้ทันที: เช็คบิล J0020, ส่งสลิป/หลักฐาน, ผูกหลักฐานกับ JobID');
+    lines.push('ถ้ายังไม่มี JobID ระบบจะรับเป็นคิวบัญชีรอตรวจสอบ');
+  } else if (role === 'DISPATCHER') {
+    lines.push('ใช้ได้ทันที: เช็คงาน J0020, สรุป, อัปเดตสถานะ, ส่งรูปหน้างานพร้อม JobID');
+  } else if (role === 'SALES_ANALYST') {
+    lines.push('ใช้ได้ทันที: สรุปลูกค้า/งานขาย, เช็คงาน J0020, บันทึก lead พร้อมชื่อลูกค้า');
+  } else if (role === 'PROCUREMENT_ASSISTANT') {
+    lines.push('ใช้ได้ทันที: เช็คสต็อก, ส่งรูปสินค้า/อะไหล่, ระบุรหัสหรือจำนวนที่ต้องการ');
+  } else if (role === 'BI') {
+    lines.push('ใช้ได้ทันที: สรุป, วิเคราะห์คิวค้าง, วิเคราะห์รายได้, จุดเสี่ยงวันนี้');
+  } else {
+    lines.push('ใช้คำสั่งในกลุ่มที่เกี่ยวข้อง เช่น /groupid, เช็คงาน J0020, สรุป');
+  }
+  lines.push('ถ้าต้องการให้ AI วิเคราะห์ ให้ขึ้นต้นด้วย "ai" หรือ "วิเคราะห์"');
+  return lines.join('\n');
+}
+
 function testDispatcherSummary() {
   var result = callRouterActionV55_('getDashboardData', {});
   var jobs = (result && result.jobs) || [];

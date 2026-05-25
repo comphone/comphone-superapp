@@ -15,6 +15,45 @@ var LINE_CASUAL_KEYWORDS_V55 = [
   '555', 'ok', 'โอเค', 'รับทราบ', 'ครับ', 'ค่ะ', 'เดี๋ยว', 'ขอบคุณ', 'ฝนตก', 'รถติด', 'สวัสดี', 'hello', 'hi'
 ];
 
+var LINE_ROOM_POLICIES_V55 = {
+  TECHNICIAN: {
+    label: 'ห้องช่าง',
+    pendingJobId: '',
+    noJobImage: 'รูปหน้างานต้องมี JobID เพื่อกันรูปหลุดงาน\nวิธีใช้: พิมพ์ JobID เช่น J0020 แล้วส่งรูปอีกครั้ง',
+    queuedPrefix: 'รับรูปหน้างานเข้าคิวเรียบร้อย'
+  },
+  ACCOUNTING: {
+    label: 'ห้องบัญชี',
+    pendingJobId: 'ACCOUNTING_PENDING',
+    noJobImage: 'รับรูปบัญชี/สลิปเข้าคิวเรียบร้อย',
+    queuedPrefix: 'รับรูปบัญชี/สลิปเข้าคิวเรียบร้อย'
+  },
+  SALES: {
+    label: 'ห้องขาย',
+    pendingJobId: 'SALES_PENDING',
+    noJobImage: 'รับรูปลูกค้า/ฝ่ายขายเข้าคิวเรียบร้อย',
+    queuedPrefix: 'รับรูปลูกค้า/ฝ่ายขายเข้าคิวเรียบร้อย'
+  },
+  PROCUREMENT: {
+    label: 'ห้องจัดซื้อ',
+    pendingJobId: 'PROCUREMENT_PENDING',
+    noJobImage: 'รับรูปสินค้า/อะไหล่เข้าคิวเรียบร้อย',
+    queuedPrefix: 'รับรูปสินค้า/อะไหล่เข้าคิวเรียบร้อย'
+  },
+  EXECUTIVE: {
+    label: 'ห้องผู้บริหาร',
+    pendingJobId: 'EXECUTIVE_REVIEW',
+    noJobImage: 'รับรูปสำหรับตรวจสอบภาพรวมเข้าคิวเรียบร้อย',
+    queuedPrefix: 'รับรูปสำหรับผู้บริหารเข้าคิวเรียบร้อย'
+  },
+  UNKNOWN: {
+    label: 'ห้องทั่วไป',
+    pendingJobId: '',
+    noJobImage: 'รับรูปแล้ว แต่ยังไม่รู้ว่าควรผูกกับงานใด\nกรุณาพิมพ์ JobID เช่น J0020 แล้วส่งรูปอีกครั้ง',
+    queuedPrefix: 'รับรูปเข้าคิวเรียบร้อย'
+  }
+};
+
 function handleLineWebhook(e) {
   try {
     var body = parseLineWebhookBodyV55_(e);
@@ -316,16 +355,18 @@ function handlePhotoReport(message, classification, userId, userName, groupId) {
   var jobId = classification.jobId || getLineJobContextV55_(userId, groupId);
   var room = detectLineRoomNameV55_(groupId);
   if (!jobId) {
-    if (room === 'ACCOUNTING') {
-      return queueAccountingPhotoV55_(message, userId, userName);
+    var policy = getLineRoomPolicyV55_(room);
+    if (policy.pendingJobId) {
+      return queueRoomPendingPhotoV55_(message, userId, userName, room, policy);
     }
-    return createTextMessage('รับรูปแล้ว แต่ยังไม่พบ JobID\nวิธีใช้: พิมพ์ JobID เช่น J0020 แล้วส่งรูปอีกครั้ง หรือส่งข้อความ "J0020 รูปหน้างาน" ก่อนส่งรูป');
+    return createTextMessage(policy.noJobImage);
   }
 
   if (typeof queuePhotoFromLINE === 'function') {
     var queueResult = queuePhotoFromLINE(message.id || '', jobId, userName || userId || 'LINE');
     if (queueResult && !queueResult.error) {
-      return createTextMessage('รับรูปเข้าคิวเรียบร้อย\nJobID: ' + jobId + '\nQueueID: ' + (queueResult.queueId || '-') + '\n' + (queueResult.message || 'รอประมวลผลอัตโนมัติ'));
+      var roomPolicy = getLineRoomPolicyV55_(room);
+      return createTextMessage(roomPolicy.queuedPrefix + '\nJobID: ' + jobId + '\nQueueID: ' + (queueResult.queueId || '-') + '\n' + (queueResult.message || 'รอประมวลผลอัตโนมัติ'));
     }
     return createTextMessage('รับรูปแล้ว แต่เข้าคิวไม่สำเร็จ: ' + (queueResult && queueResult.error || 'unknown'));
   }
@@ -334,21 +375,34 @@ function handlePhotoReport(message, classification, userId, userName, groupId) {
 }
 
 function queueAccountingPhotoV55_(message, userId, userName) {
-  var placeholderJobId = 'ACCOUNTING_PENDING';
+  return queueRoomPendingPhotoV55_(message, userId, userName, 'ACCOUNTING', getLineRoomPolicyV55_('ACCOUNTING'));
+}
+
+function queueRoomPendingPhotoV55_(message, userId, userName, room, policy) {
+  policy = policy || getLineRoomPolicyV55_(room);
+  var placeholderJobId = policy.pendingJobId || '';
+  if (!placeholderJobId) return createTextMessage(policy.noJobImage);
+
   if (typeof queuePhotoFromLINE === 'function') {
     var queueResult = queuePhotoFromLINE(message.id || '', placeholderJobId, userName || userId || 'LINE_ACCOUNTING');
     if (queueResult && !queueResult.error) {
       return createTextMessage([
-        'รับรูปบัญชี/สลิปเข้าคิวเรียบร้อย',
+        policy.noJobImage,
         'QueueID: ' + (queueResult.queueId || '-'),
-        'สถานะ: รอผูกกับ JobID หรือบิลที่เกี่ยวข้อง',
-        'ถ้าต้องการผูกงานทันที ให้พิมพ์ JobID เช่น J0020 แล้วส่งรูปอีกครั้ง'
+        'ห้อง: ' + policy.label,
+        'สถานะ: รอผูกกับ JobID/บิล/รายการที่เกี่ยวข้อง',
+        'ถ้าต้องการผูกทันที ให้พิมพ์ JobID เช่น J0020 แล้วส่งรูปอีกครั้ง'
       ].join('\n'));
     }
-    return createTextMessage('รับรูปบัญชีแล้ว แต่เข้าคิวไม่สำเร็จ: ' + (queueResult && queueResult.error || 'unknown'));
+    return createTextMessage('รับรูปแล้ว แต่เข้าคิวไม่สำเร็จ: ' + (queueResult && queueResult.error || 'unknown'));
   }
 
-  return createTextMessage('รับรูปบัญชีแล้ว\nหมายเหตุ: ยังไม่เปิดใช้งานคิวรูปภาพอัตโนมัติในสคริปต์นี้');
+  return createTextMessage('รับรูปแล้ว\nหมายเหตุ: ยังไม่เปิดใช้งานคิวรูปภาพอัตโนมัติในสคริปต์นี้');
+}
+
+function getLineRoomPolicyV55_(room) {
+  room = String(room || 'UNKNOWN').toUpperCase();
+  return LINE_ROOM_POLICIES_V55[room] || LINE_ROOM_POLICIES_V55.UNKNOWN;
 }
 
 function detectLineRoomNameV55_(groupId) {
