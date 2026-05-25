@@ -15,7 +15,7 @@ export default {
       return json({
         status: 'ok',
         service: 'COMPHONE LINE Webhook Worker',
-        version: '1.0.1-sprint185',
+        version: '1.0.2-sprint185',
         gas_url: activeGasUrl ? activeGasUrl.substring(0, 72) + '...' : '',
         timestamp: new Date().toISOString()
       });
@@ -33,7 +33,7 @@ export default {
     const signature = request.headers.get('X-Line-Signature') || '';
     ctx.waitUntil(forwardToGAS(env.GAS_URL, bodyText, signature));
 
-    return json({ success: true, source: 'comphone-worker', version: '1.0.1-sprint185' });
+    return json({ success: true, source: 'comphone-worker', version: '1.0.2-sprint185' });
   }
 };
 
@@ -44,12 +44,15 @@ async function forwardToGAS(gasUrl, bodyText, signature) {
   }
 
   try {
-    const response = await fetch(gasUrl, {
+    const targetUrl = new URL(gasUrl);
+    if (signature) targetUrl.searchParams.set('X-Line-Signature', signature);
+
+    const response = await fetch(targetUrl.toString(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-Line-Signature': signature,
-        'X-Forwarded-By': 'comphone-worker/1.0.1-sprint185'
+        'X-Forwarded-By': 'comphone-worker/1.0.2-sprint185'
       },
       body: bodyText,
       redirect: 'follow'
