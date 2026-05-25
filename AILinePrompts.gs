@@ -121,13 +121,13 @@ function processWithAILineAgent(groupId, text, userName) {
     
     var fullPrompt = prompt + '\n\nข้อความจาก ' + (userName || 'ผู้ใช้งาน') + ': ' + text + '\n\nตอบกลับ:';
     
-    var apiKey = getConfig('GEMINI_API_KEY') || '';
+    var apiKey = getConfig('GEMINI_API_KEY') || getConfig('GOOGLE_AI_API_KEY') || getConfig('GOOGLE_GEMINI_API_KEY') || getConfig('GEMINI_KEY') || '';
     if (!apiKey) {
-      return createTextMessage('❌ ยังไม่ได้ตั้งค่า GEMINI_API_KEY สำหรับ AI Agent');
+      return createTextMessage(buildAILineFallbackReply_(role, text, 'ยังไม่ได้ตั้งค่า Gemini สำหรับ AI Agent'));
     }
     
     var response = UrlFetchApp.fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + apiKey,
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey,
       {
         method: 'POST',
         contentType: 'application/json',
@@ -145,17 +145,58 @@ function processWithAILineAgent(groupId, text, userName) {
     );
     
     var result = JSON.parse(response.getContentText() || '{}');
+    if (response.getResponseCode() < 200 || response.getResponseCode() >= 300 || result.error) {
+      return createTextMessage(buildAILineFallbackReply_(role, text, result.error && result.error.message || 'Gemini API error'));
+    }
     var reply = result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0] && result.candidates[0].content.parts[0].text;
     
     if (!reply) {
-      return createTextMessage('❌ AI Agent ประมวลผลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+      return createTextMessage(buildAILineFallbackReply_(role, text, 'Gemini returned empty content'));
     }
     
     return createTextMessage(reply.substring(0, 5000));
     
   } catch (error) {
     Logger.log('processWithAILineAgent error: ' + error);
-    return createTextMessage('❌ เกิดข้อผิดพลาดใน AI Agent: ' + error.toString());
+    return createTextMessage(buildAILineFallbackReply_('', text, error.toString()));
+  }
+}
+
+function buildAILineFallbackReply_(role, text, reason) {
+  var normalized = String(text || '').toLowerCase();
+  var lines = ['COMPHONE AI พร้อมใช้งาน แต่โหมดวิเคราะห์อัตโนมัติสะดุดชั่วคราว'];
+  if (reason) lines.push('สาเหตุ: ' + String(reason).substring(0, 120));
+
+  try {
+    if (role === 'SALES_ANALYST' || normalized.indexOf('ขาย') > -1 || normalized.indexOf('sales') > -1) {
+      var dashboard = typeof getDashboardData === 'function' ? getDashboardData() : {};
+      var summary = dashboard.summary || dashboard.kpi || dashboard.stats || {};
+      lines.push('สรุปฝ่ายขายเบื้องต้น:');
+      lines.push('- งานในระบบ: ' + (summary.total_jobs || summary.totalJobs || (dashboard.jobs && dashboard.jobs.length) || 0));
+      lines.push('- ลูกค้า: ' + (summary.total_customers || summary.totalCustomers || (dashboard.customers && dashboard.customers.length) || 0));
+      lines.push('- บิล/รายได้ให้ดูใน Dashboard > Reports เพื่อยืนยันตัวเลขล่าสุด');
+      lines.push('คำสั่งที่ใช้ได้ทันที: สรุป, เช็คงาน, เช็คบิล J0020, /groupid');
+      return lines.join('\n');
+    }
+
+    var jobs = [];
+    if (typeof getDashboardData === 'function') {
+      var data = getDashboardData();
+      jobs = data && data.jobs || [];
+    }
+    lines.push('สรุปงานเบื้องต้น: ' + jobs.length + ' รายการ');
+    if (jobs.length) {
+      for (var i = 0; i < Math.min(jobs.length, 3); i++) {
+        lines.push('- ' + (jobs[i].id || jobs[i].job_id || '-') + ' ' + (jobs[i].customer || jobs[i].customer_name || ''));
+      }
+    }
+    lines.push('คำสั่งที่ใช้ได้ทันที: เช็คงาน, สรุป, /groupid');
+    return lines.join('\n');
+  } catch (fallbackError) {
+    return lines.concat([
+      'ยังตอบด้วยข้อมูลสดไม่ได้ในตอนนี้',
+      'คำสั่งที่ใช้ได้ทันที: /groupid, เช็คงาน, สรุป'
+    ]).join('\n');
   }
 }
 

@@ -71,6 +71,18 @@ function processLineMessage(message, userId, userName, groupId) {
   var hasImage = message.type === 'image';
   var hasLocation = message.type === 'location';
   rememberLineJobContextV55_(text, userId, groupId);
+
+  var classification = classifyMessage(text, hasImage, hasLocation);
+  switch (classification.type) {
+    case 'command':
+      return handleCommand(classification, text, userId, userName, groupId);
+    case 'location_share':
+      return handleLocation(message, classification, userId, userName);
+    case 'work_report':
+      return handlePhotoReport(message, classification, userId, userName, groupId);
+    case 'status_update':
+      return handleStatus(classification, text, userId, userName);
+  }
   
   // ── AI LINE Agent: ตรวจสอบว่า Group นี้เปิดใช้ AI Agent หรือไม่ ──
   var aiRole = detectRoleFromGroupId_(groupId);
@@ -94,17 +106,8 @@ function processLineMessage(message, userId, userName, groupId) {
     }
   }
   
-  var classification = classifyMessage(text, hasImage, hasLocation);
   if (classification.type === 'casual') return null;
   switch (classification.type) {
-    case 'command':
-      return handleCommand(classification, text, userId, userName, groupId);
-    case 'location_share':
-      return handleLocation(message, classification, userId, userName);
-    case 'work_report':
-      return handlePhotoReport(message, classification, userId, userName, groupId);
-    case 'status_update':
-      return handleStatus(classification, text, userId, userName);
     case 'work_note':
       return handleWorkNote(classification, text, userId, userName);
     default:
