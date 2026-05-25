@@ -85,9 +85,9 @@ function processLineMessage(message, userId, userName, groupId) {
   }
   
   if (classification.type === 'casual') return null;
-  switch (classification.type) {
-    case 'work_note':
-      return handleWorkNote(classification, text, userId, userName);
+  if (classification.type === 'work_note' && classification.jobId) {
+    var noteResult = handleWorkNote(classification, text, userId, userName);
+    if (noteResult) return noteResult;
   }
 
   // ── AI LINE Agent: ใช้เฉพาะข้อความที่ตั้งใจถาม/วิเคราะห์ ไม่ดักทุกข้อความในห้องช่าง ──
@@ -110,6 +110,7 @@ function processLineMessage(message, userId, userName, groupId) {
     }
   }
 
+  if (classification.type === 'work_note') return handleWorkNote(classification, text, userId, userName);
   return null;
 }
 

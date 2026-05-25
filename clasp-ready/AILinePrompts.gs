@@ -203,6 +203,43 @@ function buildAILineFallbackReply_(role, text, reason) {
 /**
  * ตรวจสอบ Role จาก Group ID
  */
+// Sprint 186 override: keep LINE replies readable even when Gemini is unavailable.
+function buildAILineFallbackReply_(role, text, reason) {
+  var normalized = String(text || '').toLowerCase();
+  var lines = ['COMPHONE AI พร้อมใช้งาน แต่โหมดวิเคราะห์อัตโนมัติสะดุดชั่วคราว'];
+  if (reason) lines.push('สาเหตุ: ' + String(reason).substring(0, 120));
+
+  try {
+    if (role === 'SALES_ANALYST' || normalized.indexOf('ขาย') > -1 || normalized.indexOf('sales') > -1) {
+      var dashboard = typeof getDashboardData === 'function' ? getDashboardData() : {};
+      var summary = dashboard.summary || dashboard.kpi || dashboard.stats || {};
+      lines.push('สรุปฝ่ายขายเบื้องต้น:');
+      lines.push('- งานในระบบ: ' + (summary.total_jobs || summary.totalJobs || (dashboard.jobs && dashboard.jobs.length) || 0));
+      lines.push('- ลูกค้า: ' + (summary.total_customers || summary.totalCustomers || (dashboard.customers && dashboard.customers.length) || 0));
+      lines.push('- ตรวจตัวเลขล่าสุดได้ที่ Dashboard > Reports');
+      lines.push('คำสั่งที่ใช้ได้ทันที: สรุป, เช็คงาน, เช็คบิล J0020, /groupid');
+      return lines.join('\n');
+    }
+
+    var jobs = [];
+    if (typeof getDashboardData === 'function') {
+      var data = getDashboardData();
+      jobs = data && data.jobs || [];
+    }
+    lines.push('สรุปงานเบื้องต้น: ' + jobs.length + ' รายการ');
+    for (var i = 0; i < Math.min(jobs.length, 3); i++) {
+      lines.push('- ' + (jobs[i].id || jobs[i].job_id || '-') + ' ' + (jobs[i].customer || jobs[i].customer_name || ''));
+    }
+    lines.push('คำสั่งที่ใช้ได้ทันที: เช็คงาน, สรุป, /groupid');
+    return lines.join('\n');
+  } catch (fallbackError) {
+    return lines.concat([
+      'ยังตอบด้วยข้อมูลสดไม่ได้ในตอนนี้',
+      'คำสั่งที่ใช้ได้ทันที: /groupid, เช็คงาน, สรุป'
+    ]).join('\n');
+  }
+}
+
 function detectRoleFromGroupId_(groupId) {
   if (!groupId) return 'DISPATCHER'; // Default
   
