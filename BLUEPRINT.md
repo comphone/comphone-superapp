@@ -2,7 +2,7 @@
 
 > **Version:** v5.18.47-sprint184 (PWA) / GAS Backend v5.18.16-write-flow-validation @620
 
-> **Date:** 2026-05-25 | **Phase:** 185 (LINE Group Image Pilot Readiness)
+> **Date:** 2026-05-26 | **Phase:** 188 (LINE Bot Reply Toggle Controls)
 
 > **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + CORE-AUDITED + FOCUS-AUDITED + JOBS-E2E-HARDENED + BILLING-E2E-HARDENED + REPORTS-E2E-HARDENED + VISION-LINE-FLOW-HARDENED + PRODUCTION-JOURNEY-HARDENED + BACKUP-WORKFLOW-HARDENED + MOBILE-QUICK-ACTIONS-HARDENED + MOBILE-CORE-WORKFLOWS-HARDENED + MOBILE-SECONDARY-WORKFLOWS-HARDENED + LIVE-MOBILE-MENU-SMOKE-HARDENED + OPERATOR-UX-QA-HARDENED + PROTECTED-LIVE-QA-RUNBOOK-HARDENED + PROTECTED-LIVE-QA-VERIFIED + DASHBOARD-PERFORMANCE-HARDENED + DEPLOY-GAS-CI-GATE-HARDENED + WRITE-SMOKE-LIFECYCLE-HARDENED + BLUEPRINT-RECONCILED + PO-READ-CACHE-HARDENED + JOBS-READ-CACHE-HARDENED + READ-DASHBOARD-CACHE-HARDENED + PRODUCTION-SAFETY-HARNESS-HARDENED + OPERATOR-WORKFLOW-POLISHED + LIVE-CACHE-FRESHNESS-HARDENED + OPERATOR-MENU-CLICKTHROUGH-HARDENED + CONTROLLED-WRITE-LIFECYCLE-HARDENED + LIVE-UX-MENU-RUNTIME-HARDENED + VISUAL-RUNTIME-WALKTHROUGH-HARDENED + PROTECTED-BROWSER-JOURNEY-HARDENED + RECORD-DETAIL-COMPLETENESS-HARDENED + PRODUCTION-DATA-QUALITY-GUARDED + CONTROLLED-DATA-CLEANUP-PLANNED + DATABASE-SCHEMA-REGISTRY-GUARDED + SHEET-CONTEXT-NORMALIZED + DATA-REPAIR-CONSOLE-PLANNED + DATA-REPAIR-EXECUTION-HARDENED + GAS-618-LIVE-VERIFIED + FULL-QA-SWEEP + GEMINI-READY + VISION-LINE-PROTECTED-LIVE-VERIFIED + LINE-REAL-SEND-READINESS-GUARDED + CORE-WORKFLOW-LIVE-VERIFIED + SUPPORT-ADMIN-LIVE-VERIFIED + DATA-COMPLETENESS-REVIEWED + DATA-COMPLETENESS-PANEL-HARDENED + DATA-REVIEW-WORKFLOW-HARDENED + BACKEND-REVIEW-LOG-HARDENED + BACKEND-REVIEW-LOG-LIVE-QA-VERIFIED + DATA-CLEANUP-TRIAGE-GUARDED + JBR-LIVE-POLISH-GUARDED + MOBILE-MENU-DEEP-QA-GUARDED + AI-VISION-REAL-USE-GUARDED + PERMISSION-OPS-HARDENED + OWNER-DATA-RESOLUTION-GUARDED + MOBILE-UX-WALKTHROUGH-GUARDED + AI-VISION-PILOT-GUARDED + DASHBOARD-DECISION-LAYER-GUARDED + OPS-PERMISSION-CLEANUP-GUARDED + LIVE-BROWSER-VISUAL-QA-GUARDED + DATA-CLEANUP-OWNER-WORKFLOW-GUARDED + MOBILE-DASHBOARD-DECISION-LAYER-GUARDED + AI-VISION-REAL-PILOT-GUARDED + PERMISSION-FALLBACK-CLOSURE-GUARDED + POST-DEPLOY-PAGES-CONFIRMATION-GUARDED + OWNER-DATA-BACKFILL-READINESS-GUARDED + MOBILE-MENU-E2E-GUARDED + PC-DASHBOARD-WORKFLOW-GUARDED + AI-VISION-LINE-ROOM-CONTROL-GUARDED + POST-DEPLOY-PUBLISH-GUARDED + REAL-BROWSER-CLICKTHROUGH-CONTRACT-GUARDED + PROTECTED-LIVE-TOKEN-SWEEP-GUARDED + OWNER-DATA-CLEANUP-DECISION-GUARDED + AI-VISION-REAL-SAMPLE-PILOT-GUARDED + PAGES-PUBLISH-LOCK-GUARDED + BROWSER-PROFILE-CLICKTHROUGH-PACK-GUARDED + PROTECTED-TOKEN-FULL-SWEEP-PACK-GUARDED + OWNER-CLEANUP-EXECUTION-READINESS-GUARDED + AI-VISION-REAL-SAMPLE-RUNBOOK-GUARDED + PAGES-FRESH-RELEASE-GATE-GUARDED + PROTECTED-BROWSER-ACCEPTANCE-GUARDED + AI-VISION-SAMPLE-EVIDENCE-GUARDED + LINE-ROOM-NOTIFICATION-MATRIX-GUARDED + RELEASE-READINESS-MASTER-GUARDED + STRICT-PROTECTED-BROWSER-RUNBOOK-GUARDED + AI-VISION-SAMPLE-PILOT-GATE-GUARDED + PUBLISHED-PROTECTED-ACCEPTANCE-GUARDED + AI-VISION-REAL-SAMPLE-EVIDENCE-GUARDED + STRICT-LIVE-ACCEPTANCE-GUARDED + AI-VISION-REAL-SAMPLE-EXECUTION-GUARDED + STRICT-PROTECTED-LIVE-PROOF-GUARDED + AI-VISION-OWNER-SAMPLE-RUN-GUARDED + SMOKE-CLEANUP-EXECUTION-GUARDED + LINE-AI-VISION-INGRESS-GUARDED + JOBS-DETAIL-DELETE-REPAIRED + LINE-GROUP-IMAGE-PILOT-READY - latest production GAS deployment is @620 on the active Web App URL; Sprint 185 proves protected live LINE group image ingress readiness without sending LINE messages.
 
@@ -13,7 +13,7 @@
 This section is the latest handoff for any human or AI agent continuing COMPHONE work.
 
 ### Current Production State
-- **Current phase:** Sprint / Phase 185.
+- **Current phase:** Sprint / Phase 188.
 - **Latest stable verification commit before this handoff:** `249ff86 Document Sprint 110 GAS live verification`. Run `git log -1 --oneline` for the exact current repository HEAD.
 - **PWA version:** `v5.18.47-sprint184`.
 - **GAS backend version:** `v5.18.16-write-flow-validation`.
@@ -21,7 +21,7 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 - **Production GAS URL:** `https://script.google.com/macros/s/AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ/exec`.
 - **Production Spreadsheet ID:** `19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA`.
 - **Schema registry:** `docs/database_schema_registry.json`.
-- **Current status:** main foundation is recovered, hardened, deployed, and protected-live verified. PC/mobile login, dashboard shell, menus, Jobs, Billing, Reports, Vision, LINE read paths, Admin reads, LINE room notification toggles, Vision muted-room suppression, Vision runtime reads, and LINE group image ingress readiness have passed the latest protected suites when a fresh session token is supplied.
+- **Current status:** main foundation is recovered, hardened, deployed, and protected-live verified. PC/mobile login, dashboard shell, menus, Jobs, Billing, Reports, Vision, LINE read paths, Admin reads, LINE room notification toggles, LINE bot reply toggles, Vision muted-room suppression, Vision runtime reads, and LINE group image ingress readiness have passed the latest protected suites when a fresh session token is supplied.
 
 ### What Is Already Complete
 - PWA loads the central API client and uses the unified API/session pattern.
@@ -49,6 +49,7 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 - Sprint 125 adds role-based PC/Mobile dashboard focus widgets for tech/admin/accounting/executive operators, keeps existing Operator Insight/Pulse surfaces intact, and wires a dedicated audit into static guard, regression guard, and GitHub Actions.
 - Sprint 126 formalizes the AI Vision operating boundary: read-runtime is ready with a valid session token, real image analysis remains confirmation-gated, Gemini secret values stay outside the repo, and role-dashboard readiness is guarded together with Vision readiness.
 - Sprint 127 adds per-room LINE notification controls. Muting a LINE room suppresses only outbound pushes; AI Vision analysis, backend queues, suppressed-notification audit records, and internal logs continue normally.
+- Sprint 188 adds per-room LINE bot reply controls. `LINE_BOT_REPLY_<ROOM>_ENABLED` is separate from `LINE_NOTIFY_<ROOM>_ENABLED`: notification toggles suppress outbound LINE pushes only, while Bot reply toggles suppress webhook replies only. Backend processing, AI Vision logs, photo queues, and audit records continue even when bot replies are off. The LINE Center UI now shows Notify and Bot On/Off controls per room for PC and mobile, including configured rooms plus `PRIVATE` and `UNKNOWN` reply scopes.
 - Sprint 128 adds token-aware live QA for LINE notification toggles. Default mode is read-only/skip-safe; real toggle validation requires `COMPHONE_LINE_TOGGLE_CONFIRM=RUN_NOTIFICATION_TOGGLE_ROLLBACK` and rolls the room setting back immediately.
 - Sprint 129 adds token-aware AI Vision LINE suppression QA. Default mode is skip-safe; real proof requires `COMPHONE_VISION_LINE_SUPPRESSION_CONFIRM=RUN_MUTED_VISION_NOTIFICATION`, mutes one configured room, executes a muted Vision notification suggestion, verifies `skipped=true`, then rolls the room setting back.
 - Sprint 130 deploys GAS @616 on the existing production Web App URL, opens the Router dynamic whitelist for Vision/LINE protected actions, hardens LINE room payload normalization, and verifies the full protected Vision + LINE live suite with a fresh login token kept only in process memory.
@@ -201,6 +202,7 @@ node scripts/sprint181_ai_vision_owner_sample_run.js
 node scripts/sprint182_smoke_cleanup_execution.js
 node scripts/sprint183_line_ai_vision_ingress_guard.js
 node scripts/sprint185_line_group_image_pilot.js
+node scripts/sprint188_line_bot_reply_toggle_guard.js
 bash scripts/regression-guard.sh
 bash scripts/guard-self-test.sh
 node scripts/pages_deploy_verify.js

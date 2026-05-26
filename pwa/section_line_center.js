@@ -47,6 +47,11 @@
     return lineApi('updateLineNotificationSettings', payload || {});
   }
 
+  function updateLineBotReplySettingsAction(payload) {
+    if (typeof global.callApi === 'function') return global.callApi('updateLineBotReplySettings', payload || {});
+    return lineApi('updateLineBotReplySettings', payload || {});
+  }
+
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) {
       return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
@@ -154,11 +159,14 @@
             <strong>${esc(room.label || room.id)}</strong>
             <div class="line-muted">${esc(room.key)} ${room.groupTail ? '...' + esc(room.groupTail) : ''}</div>
             <div class="line-muted">Notify: ${room.notificationEnabled === false ? 'off (backend still logs)' : 'on'}</div>
+            <div class="line-muted">Bot reply: ${room.botReplyEnabled === false ? 'off (backend still processes)' : 'on'}</div>
           </div>
           <div class="line-actions">
             ${statusBadge(room.configured)}
             <span class="line-badge ${room.notificationEnabled === false ? 'muted' : 'ok'}">${room.notificationEnabled === false ? 'muted' : 'notify on'}</span>
             <button class="line-toggle ${room.notificationEnabled === false ? 'off' : ''}" onclick="toggleLineRoomNotification('${esc(room.id)}', ${room.notificationEnabled === false ? 'true' : 'false'})">${room.notificationEnabled === false ? 'Enable' : 'Mute'}</button>
+            <span class="line-badge ${room.botReplyEnabled === false ? 'muted' : 'ok'}">${room.botReplyEnabled === false ? 'bot off' : 'bot on'}</span>
+            <button class="line-toggle ${room.botReplyEnabled === false ? 'off' : ''}" onclick="toggleLineBotReply('${esc(room.id)}', ${room.botReplyEnabled === false ? 'true' : 'false'})">${room.botReplyEnabled === false ? 'Bot On' : 'Bot Off'}</button>
           </div>
         </div>`).join('') || '<div class="line-muted">No rooms found.</div>';
     }
@@ -170,6 +178,7 @@
           <div class="line-muted">${esc(room.label || room.id)}</div>
           ${statusBadge(room.configured)}
           <div style="margin-top:6px">${room.notificationEnabled === false ? '<span class="line-badge muted">notifications off</span>' : '<span class="line-badge ok">notifications on</span>'}</div>
+          <div style="margin-top:6px">${room.botReplyEnabled === false ? '<span class="line-badge muted">bot replies off</span>' : '<span class="line-badge ok">bot replies on</span>'}</div>
         </div>`).join('') || '<div class="line-muted">No routing matrix available.</div>';
     }
     const checks = document.getElementById('line-center-room-checks');
@@ -274,6 +283,13 @@
     refreshLineCommandCenter();
   }
 
+  async function toggleLineBotReply(room, enabled) {
+    const verb = enabled ? 'enable bot replies in' : 'disable bot replies in';
+    if (!confirm(`${verb} ${room}? Backend processing, Vision logs, queues, and audit records will continue.`)) return;
+    await updateLineBotReplySettingsAction({ rooms: [room], enabled });
+    refreshLineCommandCenter();
+  }
+
   function renderLineCenterSection() {
     return renderShell(false);
   }
@@ -299,4 +315,5 @@
   global.ackAllLineAlerts = ackAllLineAlerts;
   global.queueLineTestAlert = queueLineTestAlert;
   global.toggleLineRoomNotification = toggleLineRoomNotification;
+  global.toggleLineBotReply = toggleLineBotReply;
 })(typeof window !== 'undefined' ? window : globalThis);

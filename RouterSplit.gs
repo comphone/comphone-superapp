@@ -293,6 +293,7 @@ var MODULE_ROUTER = {
   'getLineRoomStatus': function(p) { return getLineRoomStatus(p); },
   'getLineNotificationSettings': function(p) { return getLineNotificationSettings(p); },
   'updateLineNotificationSettings': function(p) { return updateLineNotificationSettings(p); },
+  'updateLineBotReplySettings': function(p) { return updateLineBotReplySettings(p); },
   'getLearningDashboard': function(p) { return getLearningDashboard(p); },
   'getLearningIntegrationVersion': function(p) { return getLearningIntegrationVersion(p); },
   'getLearningMemoryBridge': function(p) { return getLearningMemoryBridge(p); },

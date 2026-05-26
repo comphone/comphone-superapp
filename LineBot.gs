@@ -91,7 +91,8 @@ function processLineEventV55_(event) {
   }
 
   var responseMessage = processLineMessage(message, userId, userName, groupId);
-  if (responseMessage && replyToken) {
+  var replyEnabled = isLineBotReplyEnabledV55_(groupId);
+  if (responseMessage && replyToken && replyEnabled) {
     replyLineMessage(replyToken, normalizeLineMessagesV55_(responseMessage));
   }
 
@@ -99,7 +100,9 @@ function processLineEventV55_(event) {
     success: true,
     user_id: userId,
     message_type: message.type || '',
-    replied: !!(responseMessage && replyToken)
+    replied: !!(responseMessage && replyToken && replyEnabled),
+    reply_suppressed: !!(responseMessage && replyToken && !replyEnabled),
+    bot_reply_enabled: replyEnabled
   };
 }
 
@@ -416,6 +419,22 @@ function detectLineRoomNameV55_(groupId) {
     'Cb85204740fa90e38de63c727554e551a': 'EXECUTIVE'
   };
   return rooms[groupId] || 'UNKNOWN';
+}
+
+function isLineBotReplyEnabledV55_(groupId) {
+  var room = detectLineRoomNameV55_(groupId);
+  if (room === 'PRIVATE') return getLineBotReplySettingV55_('PRIVATE');
+  if (room === 'UNKNOWN') return getLineBotReplySettingV55_('UNKNOWN');
+  return getLineBotReplySettingV55_(room);
+}
+
+function getLineBotReplySettingV55_(room) {
+  room = String(room || '').trim().toUpperCase();
+  if (!room) return true;
+  var key = 'LINE_BOT_REPLY_' + room + '_ENABLED';
+  if (typeof getConfig !== 'function') return true;
+  var value = String(getConfig(key, 'true') || 'true').toLowerCase();
+  return value !== 'false' && value !== '0' && value !== 'off' && value !== 'disabled';
 }
 
 function rememberLineJobContextV55_(text, userId, groupId) {

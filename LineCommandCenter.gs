@@ -1,6 +1,6 @@
 // ============================================================
 // COMPHONE SUPER APP — LINE Command Center
-// Phase 127: Room status, alert queue controls, safe room push, and notification-only room toggles
+// Phase 188: Room status, alert queue controls, safe room push, notification toggles, and bot reply toggles
 // ============================================================
 
 var LINE_CENTER_ROOMS = [
@@ -10,7 +10,9 @@ var LINE_CENTER_ROOMS = [
   { id: 'PROCUREMENT', label: 'Procurement', role: 'manager' },
   { id: 'SALES', label: 'Sales', role: 'manager' },
   { id: 'OWNER', label: 'Owner', role: 'admin' },
-  { id: 'ADMIN', label: 'Admin', role: 'admin' }
+  { id: 'ADMIN', label: 'Admin', role: 'admin' },
+  { id: 'PRIVATE', label: 'Private Chat', role: 'support' },
+  { id: 'UNKNOWN', label: 'Unknown Rooms', role: 'ops' }
 ];
 
 function getLineNotificationSettings(params) {
@@ -19,7 +21,7 @@ function getLineNotificationSettings(params) {
     success: true,
     status: 'ok',
     mode: 'notification-only-toggle',
-    note: 'Disabled rooms suppress outbound LINE pushes only; backend processing, Vision logs, queues, and audit logs continue.',
+    note: 'Notification toggles suppress outbound LINE pushes only. Bot reply toggles suppress webhook replies only. Backend processing, Vision logs, queues, and audit logs continue.',
     rooms: LINE_CENTER_ROOMS.map(function(room) {
       return _lineCenterRoomStatus_(room);
     })
@@ -206,6 +208,41 @@ function updateLineNotificationSettings(params) {
   };
 }
 
+function updateLineBotReplySettings(params) {
+  params = params || {};
+  var rooms = _lineCenterNormalizeRooms_(params.rooms || params.room || params.targetRooms);
+  var enabled = params.enabled;
+  if (typeof enabled === 'string') enabled = enabled.toLowerCase() !== 'false' && enabled !== '0' && enabled.toLowerCase() !== 'off';
+  enabled = enabled !== false;
+  var changed = [];
+  for (var i = 0; i < rooms.length; i++) {
+    var room = rooms[i];
+    var key = _lineCenterBotReplyKey_(room);
+    if (!key) continue;
+    if (typeof setConfig === 'function') setConfig(key, enabled ? 'true' : 'false');
+    else PropertiesService.getScriptProperties().setProperty(key, enabled ? 'true' : 'false');
+    changed.push({ room: room, key: key, botReplyEnabled: enabled });
+  }
+  if (typeof writeAuditLog === 'function') {
+    try {
+      writeAuditLog('LINE_BOT_REPLY_SETTINGS_UPDATE', 'SYSTEM', {
+        rooms: rooms,
+        enabled: enabled,
+        note: 'Bot reply toggle only; backend processing remains active.'
+      });
+    } catch (_) {}
+  }
+  try {
+    CacheService.getScriptCache().removeAll(['line:center::7:false', 'line:center::7:true']);
+  } catch (_cacheErr) {}
+  return {
+    success: true,
+    status: 'ok',
+    changed: changed,
+    settings: getLineNotificationSettings({}).rooms
+  };
+}
+
 function queueLineCommandAlert(params) {
   params = params || {};
   var alertType = params.alertType || params.type || 'MANUAL_ALERT';
@@ -257,6 +294,11 @@ function _lineCenterNotificationKey_(room) {
   return room ? 'LINE_NOTIFY_' + room + '_ENABLED' : '';
 }
 
+function _lineCenterBotReplyKey_(room) {
+  room = String(room || '').trim().toUpperCase();
+  return room ? 'LINE_BOT_REPLY_' + room + '_ENABLED' : '';
+}
+
 function _lineCenterIsRoomNotificationEnabled_(room) {
   var key = _lineCenterNotificationKey_(room);
   if (!key || typeof getConfig !== 'function') return true;
@@ -267,16 +309,26 @@ function _lineCenterIsRoomNotificationEnabled_(room) {
 function _lineCenterRoomStatus_(room) {
   var groupId = _lineCenterResolveRoomId_(room.id);
   var enabled = _lineCenterIsRoomNotificationEnabled_(room.id);
+  var botReplyEnabled = _lineCenterIsBotReplyEnabled_(room.id);
   return {
     id: room.id,
     label: room.label,
     role: room.role,
     configured: !!groupId,
     notificationEnabled: enabled,
+    botReplyEnabled: botReplyEnabled,
     notificationKey: _lineCenterNotificationKey_(room.id),
+    botReplyKey: _lineCenterBotReplyKey_(room.id),
     key: 'LINE_GROUP_' + room.id,
     groupTail: groupId ? String(groupId).slice(-6) : ''
   };
+}
+
+function _lineCenterIsBotReplyEnabled_(room) {
+  var key = _lineCenterBotReplyKey_(room);
+  if (!key || typeof getConfig !== 'function') return true;
+  var value = String(getConfig(key, 'true') || 'true').toLowerCase();
+  return value !== 'false' && value !== '0' && value !== 'off' && value !== 'disabled';
 }
 
 function _lineCenterRecordSuppressedNotification_(room, message, source) {

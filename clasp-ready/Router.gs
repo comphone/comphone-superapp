@@ -545,7 +545,7 @@ function invokeFunctionByNameV55_(functionName, args) {
     // Added from frontend actions (2026-05-02)
     'createPurchaseOrder': 1, 'logAfterSalesFollowUp': 1, 'receivePurchaseOrder': 1,
     'cleanupSmokeTestRecords': 1,
-    'updateLineNotificationSettings': 1, 'sendLineRoomMessage': 1,
+    'updateLineNotificationSettings': 1, 'updateLineBotReplySettings': 1, 'sendLineRoomMessage': 1,
     'executeVisionSuggestion': 1,
     'saveDataReviewLog': 1,
   };
