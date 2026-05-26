@@ -44,6 +44,7 @@ function main() {
     check('router-root-allows-action', has(router, "'updateLineBotReplySettings': 1") && has(split, "'updateLineBotReplySettings': function")),
     check('router-clasp-allows-action', has(routerReady, "'updateLineBotReplySettings': 1") && has(splitReady, "'updateLineBotReplySettings': function")),
     check('ui-exposes-bot-toggle', has(ui, 'toggleLineBotReply') && has(ui, 'updateLineBotReplySettings') && has(ui, 'Bot Off') && has(ui, 'botReplyEnabled')),
+    check('ui-confirms-toggle-state', has(ui, 'line-center-status') && has(ui, 'setLineCenterStatus') && has(ui, 'bot replies are now') && has(ui, 'Could not save bot reply setting')),
     check('ui-explains-processing-continues', has(ui, 'Backend processing, Vision logs, queues, and audit records will continue.')),
     check('blueprint-documents-contract', has(blueprint, 'LINE_BOT_REPLY_') && has(blueprint, 'Bot reply toggles suppress webhook replies only')),
   ];

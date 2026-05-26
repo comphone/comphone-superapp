@@ -62,6 +62,20 @@
     return `<span class="line-badge ${ok ? 'ok' : 'warn'}">${ok ? 'พร้อม' : 'ยังไม่ตั้งค่า'}</span>`;
   }
 
+  function setLineCenterStatus(message, tone) {
+    const el = document.getElementById('line-center-status');
+    if (!el) return;
+    el.className = `line-status ${tone || 'info'}`;
+    el.textContent = message || '';
+    el.style.display = message ? 'block' : 'none';
+    if (message && typeof global.showToast === 'function') global.showToast(message);
+  }
+
+  function getLineToggleButton(kind, room) {
+    return Array.from(document.querySelectorAll(`[data-line-toggle="${kind}"]`))
+      .find(button => button.getAttribute('data-room') === String(room));
+  }
+
   function renderShell(isMobile) {
     return `
       <style>
@@ -86,8 +100,14 @@
         .line-route-cell{border:1px solid #e5e7eb;border-radius:10px;padding:10px;background:#f8fafc}
         .line-toggle{border:0;border-radius:999px;padding:6px 9px;font-size:11px;font-weight:800;cursor:pointer;background:#dcfce7;color:#166534}
         .line-toggle.off{background:#e2e8f0;color:#475569}
+        .line-toggle:disabled{opacity:.6;cursor:wait}
+        .line-status{display:none;border-radius:10px;padding:10px 12px;font-size:13px;font-weight:700;border:1px solid #cbd5e1;background:#f8fafc;color:#334155}
+        .line-status.ok{display:block;border-color:#86efac;background:#f0fdf4;color:#166534}
+        .line-status.warn{display:block;border-color:#fde68a;background:#fffbeb;color:#92400e}
+        .line-status.error{display:block;border-color:#fecaca;background:#fef2f2;color:#991b1b}
       </style>
       <div class="line-center-wrap">
+        <div id="line-center-status" class="line-status" role="status" aria-live="polite"></div>
         <div class="line-center-grid" id="line-center-kpis">
           <div class="line-card"><h4><i class="bi bi-hourglass-split"></i> Pending</h4><div class="line-metric">-</div><div class="line-muted">alerts waiting for ack</div></div>
           <div class="line-card"><h4><i class="bi bi-check2-circle"></i> Ack Rate</h4><div class="line-metric">-</div><div class="line-muted">last 7 days</div></div>
@@ -164,9 +184,9 @@
           <div class="line-actions">
             ${statusBadge(room.configured)}
             <span class="line-badge ${room.notificationEnabled === false ? 'muted' : 'ok'}">${room.notificationEnabled === false ? 'muted' : 'notify on'}</span>
-            <button class="line-toggle ${room.notificationEnabled === false ? 'off' : ''}" onclick="toggleLineRoomNotification('${esc(room.id)}', ${room.notificationEnabled === false ? 'true' : 'false'})">${room.notificationEnabled === false ? 'Enable' : 'Mute'}</button>
+            <button class="line-toggle ${room.notificationEnabled === false ? 'off' : ''}" data-line-toggle="notify" data-room="${esc(room.id)}" onclick="toggleLineRoomNotification('${esc(room.id)}', ${room.notificationEnabled === false ? 'true' : 'false'})">${room.notificationEnabled === false ? 'Enable' : 'Mute'}</button>
             <span class="line-badge ${room.botReplyEnabled === false ? 'muted' : 'ok'}">${room.botReplyEnabled === false ? 'bot off' : 'bot on'}</span>
-            <button class="line-toggle ${room.botReplyEnabled === false ? 'off' : ''}" onclick="toggleLineBotReply('${esc(room.id)}', ${room.botReplyEnabled === false ? 'true' : 'false'})">${room.botReplyEnabled === false ? 'Bot On' : 'Bot Off'}</button>
+            <button class="line-toggle ${room.botReplyEnabled === false ? 'off' : ''}" data-line-toggle="bot" data-room="${esc(room.id)}" onclick="toggleLineBotReply('${esc(room.id)}', ${room.botReplyEnabled === false ? 'true' : 'false'})">${room.botReplyEnabled === false ? 'Bot On' : 'Bot Off'}</button>
           </div>
         </div>`).join('') || '<div class="line-muted">No rooms found.</div>';
     }
@@ -206,7 +226,8 @@
     }
   }
 
-  async function refreshLineCommandCenter() {
+  async function refreshLineCommandCenter(options) {
+    options = options || {};
     const mounts = ['line-center-rooms', 'line-center-alerts'];
     mounts.forEach(id => {
       const el = document.getElementById(id);
@@ -219,6 +240,7 @@
     } catch (error) {
       const el = document.getElementById('line-center-alerts');
       if (el) el.innerHTML = `<div class="line-muted">Error: ${esc(error.message)}</div>`;
+      if (!options.keepStatus) setLineCenterStatus(`LINE Center refresh failed: ${error.message}`, 'error');
     }
   }
 
@@ -279,15 +301,35 @@
   async function toggleLineRoomNotification(room, enabled) {
     const verb = enabled ? 'enable' : 'mute';
     if (!confirm(`${verb} LINE notifications for ${room}? Backend processing, Vision logs, and audit records will continue.`)) return;
-    await updateLineNotificationSettingsAction({ rooms: [room], enabled });
-    refreshLineCommandCenter();
+    const button = getLineToggleButton('notify', room);
+    if (button) button.disabled = true;
+    setLineCenterStatus(`Saving notification setting for ${room}...`, 'warn');
+    try {
+      await updateLineNotificationSettingsAction({ rooms: [room], enabled });
+      setLineCenterStatus(`${room} notifications are now ${enabled ? 'ON' : 'OFF'}. Backend processing continues.`, 'ok');
+      await refreshLineCommandCenter({ keepStatus: true });
+    } catch (error) {
+      setLineCenterStatus(`Could not save notification setting for ${room}: ${error.message}`, 'error');
+    } finally {
+      if (button) button.disabled = false;
+    }
   }
 
   async function toggleLineBotReply(room, enabled) {
     const verb = enabled ? 'enable bot replies in' : 'disable bot replies in';
     if (!confirm(`${verb} ${room}? Backend processing, Vision logs, queues, and audit records will continue.`)) return;
-    await updateLineBotReplySettingsAction({ rooms: [room], enabled });
-    refreshLineCommandCenter();
+    const button = getLineToggleButton('bot', room);
+    if (button) button.disabled = true;
+    setLineCenterStatus(`Saving bot reply setting for ${room}...`, 'warn');
+    try {
+      await updateLineBotReplySettingsAction({ rooms: [room], enabled });
+      setLineCenterStatus(`${room} bot replies are now ${enabled ? 'ON' : 'OFF'}. Backend processing, Vision, queues, and audit logs continue.`, 'ok');
+      await refreshLineCommandCenter({ keepStatus: true });
+    } catch (error) {
+      setLineCenterStatus(`Could not save bot reply setting for ${room}: ${error.message}`, 'error');
+    } finally {
+      if (button) button.disabled = false;
+    }
   }
 
   function renderLineCenterSection() {
