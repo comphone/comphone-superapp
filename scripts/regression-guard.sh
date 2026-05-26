@@ -1002,7 +1002,8 @@ for sprint_script in \
   sprint181_ai_vision_owner_sample_run \
   sprint182_smoke_cleanup_execution \
   sprint183_line_ai_vision_ingress_guard \
-  sprint185_line_group_image_pilot
+  sprint185_line_group_image_pilot \
+  sprint188_line_bot_reply_toggle_guard
 do
   script_path="scripts/${sprint_script}.js"
   if command -v node &>/dev/null && [ -f "$script_path" ]; then
