@@ -6,6 +6,9 @@
  * Google Apps Script backend for final signature validation and processing.
  * A tiny deterministic private-chat greeting guard lives here to avoid routing
  * simple one-to-one greetings into stale GAS AI code during deployments.
+ * Group-room noise is also guarded here: non-command text and all image
+ * messages are forwarded to GAS without a replyToken, so backend processing
+ * continues while LINE rooms stay quiet.
  */
 
 export default {
@@ -17,7 +20,7 @@ export default {
       return json({
         status: 'ok',
         service: 'COMPHONE LINE Webhook Worker',
-        version: '1.0.4-sprint186',
+        version: '1.0.5-sprint189',
         gas_url: activeGasUrl ? activeGasUrl.substring(0, 72) + '...' : '',
         timestamp: new Date().toISOString()
       });
@@ -38,11 +41,12 @@ export default {
     const bodyText = await request.text();
     const signature = request.headers.get('X-Line-Signature') || '';
     if (await handlePrivateGreeting(bodyText, env)) {
-      return json({ success: true, source: 'comphone-worker', version: '1.0.4-sprint186', handled: 'private-greeting' });
+      return json({ success: true, source: 'comphone-worker', version: '1.0.5-sprint189', handled: 'private-greeting' });
     }
-    ctx.waitUntil(forwardToGAS(env.GAS_URL, bodyText, signature));
+    const forwardPayload = prepareForwardPayload(bodyText);
+    ctx.waitUntil(forwardToGAS(env.GAS_URL, forwardPayload.bodyText, signature, forwardPayload.summary));
 
-    return json({ success: true, source: 'comphone-worker', version: '1.0.4-sprint186' });
+    return json({ success: true, source: 'comphone-worker', version: '1.0.5-sprint189', reply_policy: forwardPayload.summary });
   }
 };
 
@@ -58,7 +62,7 @@ async function runGasDiagnostic(gasUrl) {
     try { body = JSON.parse(responseText); } catch (_) {}
     return json({
       success: response.ok && body.success !== false,
-      worker_version: '1.0.4-sprint186',
+      worker_version: '1.0.5-sprint189',
       gas_status: response.status,
       gas_ok: response.ok,
       gas_health_status: body.status || '',
@@ -67,8 +71,59 @@ async function runGasDiagnostic(gasUrl) {
       gas_url_prefix: gasUrl.substring(0, 72) + '...'
     }, response.ok ? 200 : 502);
   } catch (error) {
-    return json({ success: false, worker_version: '1.0.4-sprint186', error: error && error.message || String(error) }, 502);
+    return json({ success: false, worker_version: '1.0.5-sprint189', error: error && error.message || String(error) }, 502);
   }
+}
+
+function prepareForwardPayload(bodyText) {
+  let payload;
+  try { payload = JSON.parse(bodyText || '{}'); } catch (_) {
+    return { bodyText, summary: { mode: 'raw-forward', stripped: 0, kept: 0 } };
+  }
+
+  const events = Array.isArray(payload.events) ? payload.events : [];
+  let stripped = 0;
+  let kept = 0;
+  let imagesSilenced = 0;
+  let textSilenced = 0;
+
+  payload.events = events.map(event => {
+    const next = { ...event };
+    const source = next.source || {};
+    const message = next.message || {};
+    const isGroupLike = !!(source.groupId || source.roomId || source.type === 'group' || source.type === 'room');
+    const shouldKeepReply = !isGroupLike || isExplicitLineCommand(message);
+
+    if (isGroupLike && next.replyToken && !shouldKeepReply) {
+      delete next.replyToken;
+      stripped += 1;
+      if (message.type === 'image') imagesSilenced += 1;
+      else textSilenced += 1;
+    } else if (next.replyToken) {
+      kept += 1;
+    }
+    return next;
+  });
+
+  return {
+    bodyText: JSON.stringify(payload),
+    summary: {
+      mode: 'quiet-group-forward',
+      stripped,
+      kept,
+      images_silenced: imagesSilenced,
+      text_silenced: textSilenced
+    }
+  };
+}
+
+function isExplicitLineCommand(message) {
+  if (!message || message.type !== 'text') return false;
+  const text = String(message.text || '').trim();
+  if (!text) return false;
+  return /^\/groupid/i.test(text) ||
+    /^(#?เปิดงาน|#?ปิดงาน|#?เช็คงาน|#?เช็คสต็อก|#?เช็คบิล|#?เช็คยอด|#?สรุป|check job|check bill|summary)/i.test(text) ||
+    /(^|\s)(ai|@ai|วิเคราะห์|ช่วยวิเคราะห์|ถามระบบ)(\s|$)/i.test(text);
 }
 
 async function handlePrivateGreeting(bodyText, env) {
@@ -113,7 +168,7 @@ async function handlePrivateGreeting(bodyText, env) {
   return true;
 }
 
-async function forwardToGAS(gasUrl, bodyText, signature) {
+async function forwardToGAS(gasUrl, bodyText, signature, replyPolicy) {
   if (!gasUrl) {
     console.error('[GAS Forward Error] GAS_URL binding is missing');
     return;
@@ -128,13 +183,14 @@ async function forwardToGAS(gasUrl, bodyText, signature) {
       headers: {
         'Content-Type': 'application/json',
         'X-Line-Signature': signature,
-        'X-Forwarded-By': 'comphone-worker/1.0.4-sprint186'
+        'X-Forwarded-By': 'comphone-worker/1.0.5-sprint189',
+        'X-Comphone-Reply-Policy': JSON.stringify(replyPolicy || {})
       },
       body: bodyText,
       redirect: 'follow'
     });
     const responseText = await response.text();
-    console.log('[GAS Forward] Status:', response.status, 'Body:', responseText.substring(0, 200));
+    console.log('[GAS Forward] Status:', response.status, 'ReplyPolicy:', JSON.stringify(replyPolicy || {}), 'Body:', responseText.substring(0, 200));
   } catch (error) {
     console.error('[GAS Forward Error]', error && error.message || String(error));
   }

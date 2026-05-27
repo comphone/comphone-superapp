@@ -360,14 +360,16 @@ function handlePhotoReport(message, classification, userId, userName, groupId) {
   if (!jobId) {
     var policy = getLineRoomPolicyV55_(room);
     if (policy.pendingJobId) {
-      return queueRoomPendingPhotoV55_(message, userId, userName, room, policy);
+      return queueRoomPendingPhotoV55_(message, userId, userName, room, policy, { silentAck: true });
     }
-    return createTextMessage(policy.noJobImage);
+    if (shouldReplyLineNoJobHintV55_(room, groupId, userId)) return createTextMessage(policy.noJobImage);
+    return null;
   }
 
   if (typeof queuePhotoFromLINE === 'function') {
     var queueResult = queuePhotoFromLINE(message.id || '', jobId, userName || userId || 'LINE');
     if (queueResult && !queueResult.error) {
+      if (!shouldReplyLinePhotoAckV55_(room, groupId, userId, jobId)) return null;
       var roomPolicy = getLineRoomPolicyV55_(room);
       return createTextMessage(roomPolicy.queuedPrefix + '\nJobID: ' + jobId + '\nQueueID: ' + (queueResult.queueId || '-') + '\n' + (queueResult.message || 'รอประมวลผลอัตโนมัติ'));
     }
@@ -381,7 +383,8 @@ function queueAccountingPhotoV55_(message, userId, userName) {
   return queueRoomPendingPhotoV55_(message, userId, userName, 'ACCOUNTING', getLineRoomPolicyV55_('ACCOUNTING'));
 }
 
-function queueRoomPendingPhotoV55_(message, userId, userName, room, policy) {
+function queueRoomPendingPhotoV55_(message, userId, userName, room, policy, options) {
+  options = options || {};
   policy = policy || getLineRoomPolicyV55_(room);
   var placeholderJobId = policy.pendingJobId || '';
   if (!placeholderJobId) return createTextMessage(policy.noJobImage);
@@ -389,6 +392,7 @@ function queueRoomPendingPhotoV55_(message, userId, userName, room, policy) {
   if (typeof queuePhotoFromLINE === 'function') {
     var queueResult = queuePhotoFromLINE(message.id || '', placeholderJobId, userName || userId || 'LINE_ACCOUNTING');
     if (queueResult && !queueResult.error) {
+      if (options.silentAck) return null;
       return createTextMessage([
         policy.noJobImage,
         'QueueID: ' + (queueResult.queueId || '-'),
@@ -401,6 +405,42 @@ function queueRoomPendingPhotoV55_(message, userId, userName, room, policy) {
   }
 
   return createTextMessage('รับรูปแล้ว\nหมายเหตุ: ยังไม่เปิดใช้งานคิวรูปภาพอัตโนมัติในสคริปต์นี้');
+}
+
+function shouldReplyLinePhotoAckV55_(room, groupId, userId, jobId) {
+  var mode = getLineReplyModeV55_('LINE_PHOTO_ACK_MODE', 'quiet');
+  if (mode === 'off' || mode === 'quiet') return false;
+  if (mode === 'always') return true;
+  return acquireLineReplySlotV55_(['PHOTO_ACK', room, groupId || 'PRIVATE', jobId || userId || 'anon'].join(':'), 15 * 60);
+}
+
+function shouldReplyLineNoJobHintV55_(room, groupId, userId) {
+  var mode = getLineReplyModeV55_('LINE_NO_JOB_IMAGE_HINT_MODE', 'digest');
+  if (mode === 'off' || mode === 'quiet') return false;
+  if (mode === 'always') return true;
+  return acquireLineReplySlotV55_(['NO_JOB_HINT', room, groupId || 'PRIVATE', userId || 'anon'].join(':'), 30 * 60);
+}
+
+function getLineReplyModeV55_(key, fallback) {
+  var value = '';
+  try {
+    if (typeof getConfig === 'function') value = getConfig(key, fallback);
+  } catch (_) {}
+  value = String(value || fallback || '').toLowerCase();
+  if (['always', 'digest', 'quiet', 'off'].indexOf(value) === -1) return fallback || 'quiet';
+  return value;
+}
+
+function acquireLineReplySlotV55_(key, ttlSeconds) {
+  try {
+    var cache = CacheService.getScriptCache();
+    key = 'LINE_REPLY_SLOT_' + Utilities.base64EncodeWebSafe(String(key)).slice(0, 120);
+    if (cache.get(key)) return false;
+    cache.put(key, '1', ttlSeconds || 900);
+    return true;
+  } catch (_) {
+    return false;
+  }
 }
 
 function getLineRoomPolicyV55_(room) {

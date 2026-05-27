@@ -51,6 +51,8 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 - Sprint 127 adds per-room LINE notification controls. Muting a LINE room suppresses only outbound pushes; AI Vision analysis, backend queues, suppressed-notification audit records, and internal logs continue normally.
 - Sprint 188 adds per-room LINE bot reply controls. `LINE_BOT_REPLY_<ROOM>_ENABLED` is separate from `LINE_NOTIFY_<ROOM>_ENABLED`: notification toggles suppress outbound LINE pushes only, while Bot reply toggles suppress webhook replies only. Backend processing, AI Vision logs, photo queues, and audit records continue even when bot replies are off. The LINE Center UI now shows Notify and Bot On/Off controls per room for PC and mobile, including configured rooms plus `PRIVATE` and `UNKNOWN` reply scopes.
 - Sprint 188 follow-up adds explicit LINE Center save feedback for both notification toggles and Bot On/Off toggles: the UI now shows saving, success, and failure states so operators can see immediately when bot replies are off while backend processing continues.
+- Sprint 189 adds LINE room noise suppression after real-room feedback showed repeated replies for images and AI failure messages. Cloudflare Worker `1.0.5-sprint189` uses `quiet-group-forward`: group/room images and non-command text are still forwarded to GAS for backend processing, AI Vision queues, and audit logs, but their `replyToken` is stripped so LINE does not receive a reply. Explicit commands such as `/groupid`, `เช็คงาน`, `เช็คบิล`, `สรุป`, and intentional AI prompts keep reply capability. GAS now also defaults image acknowledgements to quiet mode with throttled/digest hints as a backend safety net.
+- Added `.github/workflows/deploy-line-worker.yml` so changes under `workers/line-webhook/**` deploy the Cloudflare Worker automatically when `CLOUDFLARE_API_TOKEN` is configured in GitHub Secrets. Local `wrangler whoami` is still unauthenticated on this workstation.
 - Sprint 128 adds token-aware live QA for LINE notification toggles. Default mode is read-only/skip-safe; real toggle validation requires `COMPHONE_LINE_TOGGLE_CONFIRM=RUN_NOTIFICATION_TOGGLE_ROLLBACK` and rolls the room setting back immediately.
 - Sprint 129 adds token-aware AI Vision LINE suppression QA. Default mode is skip-safe; real proof requires `COMPHONE_VISION_LINE_SUPPRESSION_CONFIRM=RUN_MUTED_VISION_NOTIFICATION`, mutes one configured room, executes a muted Vision notification suggestion, verifies `skipped=true`, then rolls the room setting back.
 - Sprint 130 deploys GAS @616 on the existing production Web App URL, opens the Router dynamic whitelist for Vision/LINE protected actions, hardens LINE room payload normalization, and verifies the full protected Vision + LINE live suite with a fresh login token kept only in process memory.
@@ -204,6 +206,7 @@ node scripts/sprint182_smoke_cleanup_execution.js
 node scripts/sprint183_line_ai_vision_ingress_guard.js
 node scripts/sprint185_line_group_image_pilot.js
 node scripts/sprint188_line_bot_reply_toggle_guard.js
+node scripts/sprint189_line_reply_noise_guard.js
 bash scripts/regression-guard.sh
 bash scripts/guard-self-test.sh
 node scripts/pages_deploy_verify.js
