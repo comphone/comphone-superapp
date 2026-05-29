@@ -12,6 +12,9 @@
     lastResult: null,
     currentFieldContext: null,
     suggestions: [],
+    reviewQueue: [],
+    reviewFilter: 'all',
+    lineIngress: null,
   };
 
   function esc(value) {
@@ -128,6 +131,110 @@
     `).join('');
   }
 
+  function normalizeVisionQueue(items) {
+    return (items || []).map(item => {
+      const decision = item.decision || item.decisionCode || item.status || item.result || '';
+      const jobId = item.jobId || item.job_id || item.jobID || '';
+      const visionLogId = item.visionLogId || item.logId || item.id || item.vision_log_id || '';
+      const source = item.source || item.roomName || item.room || item.lineRoom || item.line_room || item.groupName || '';
+      const confidence = Number(item.confidence || item.score || 0);
+      const createdAt = item.createdAt || item.timestamp || item.ts || item.created_at || '';
+      return Object.assign({}, item, {
+        decision,
+        jobId,
+        visionLogId,
+        source,
+        confidence: Number.isFinite(confidence) ? confidence : 0,
+        createdAt,
+        queueStatus: getVisionQueueStatus({ decision, jobId, error: item.error || item._error }),
+      });
+    });
+  }
+
+  function getVisionQueueStatus(item) {
+    const decision = String(item.decision || '').toUpperCase();
+    if (decision === 'APPROVED') return 'approved';
+    if (decision === 'REJECTED') return 'rejected';
+    if (decision === 'QC_FAIL' || decision === 'PAYMENT_ERROR' || decision === 'FAILED' || item.error) return 'failed';
+    if (!item.jobId) return 'needs-job';
+    if (decision === 'NEED_REVIEW' || decision === 'REVIEW' || !decision) return 'review';
+    return 'linked';
+  }
+
+  function visionStatusLabel(status) {
+    return {
+      all: 'All',
+      'needs-job': 'Need JobID',
+      review: 'Review',
+      failed: 'Failed',
+      linked: 'Linked',
+      approved: 'Approved',
+      rejected: 'Rejected',
+    }[status] || status;
+  }
+
+  function getFilteredVisionQueue(items) {
+    const filter = VISION_STATE.reviewFilter || 'all';
+    return filter === 'all' ? items : items.filter(item => item.queueStatus === filter);
+  }
+
+  function buildReviewInboxSummary(items) {
+    const counts = items.reduce((acc, item) => {
+      acc[item.queueStatus] = (acc[item.queueStatus] || 0) + 1;
+      return acc;
+    }, { all: items.length });
+    return `<div class="vision-inbox-summary">${['all', 'needs-job', 'review', 'failed', 'linked', 'approved'].map(key => `
+      <button class="vision-inbox-filter ${VISION_STATE.reviewFilter === key ? 'active' : ''}" onclick="setVisionQueueFilter('${key}')">
+        <span>${visionStatusLabel(key)}</span><strong>${esc(counts[key] || 0)}</strong>
+      </button>
+    `).join('')}</div>`;
+  }
+
+  function buildLineIngressStatus(status) {
+    if (!status) return '<div class="vision-muted">LINE ingress status will load with the review inbox.</div>';
+    if (status.success === false) return `<div class="vision-muted">LINE ingress unavailable: ${esc(status.error || 'unknown error')}</div>`;
+    const queued = status.queued != null ? status.queued : status.queue_count;
+    const processed = status.processed != null ? status.processed : status.processed_count;
+    const failed = status.failed != null ? status.failed : status.failed_count;
+    return `
+      <div class="vision-ingress-status">
+        <span><i class="bi bi-chat-dots"></i> LINE ingress</span>
+        <strong>Queued ${esc(queued || 0)}</strong>
+        <strong>Processed ${esc(processed || 0)}</strong>
+        <strong>Failed ${esc(failed || 0)}</strong>
+      </div>`;
+  }
+
+  function buildReviewQueue(items) {
+    const normalized = normalizeVisionQueue(items);
+    const filtered = getFilteredVisionQueue(normalized);
+    if (!normalized.length) return '<div class="vision-empty">No Vision items in the review inbox.</div>';
+    if (!filtered.length) return '<div class="vision-empty">No items match this review filter.</div>';
+    return filtered.map(item => {
+      const confidence = Math.round(Number(item.confidence || 0) * 100);
+      const jobLabel = item.jobId ? `Job ${esc(item.jobId)}` : 'Need JobID';
+      const linkDisabled = item.jobId ? '' : 'disabled title="Enter or attach JobID before linking"';
+      return `
+        <div class="vision-review-item vision-review-card" onclick="selectQueuedVisionItem('${esc(item.visionLogId)}')">
+          <div class="vision-review-main">
+            <div class="vision-review-title">
+              <span class="vision-status-badge ${esc(item.queueStatus)}">${esc(visionStatusLabel(item.queueStatus))}</span>
+              <strong>${esc(item.type || item.category || '-')}</strong>
+              <em>${esc(item.decision || 'PENDING')}</em>
+            </div>
+            <span>${esc(item.visionLogId || '-')} | ${jobLabel} | ${confidence}% confidence</span>
+            <span>${esc(item.source || 'PWA / LINE')} ${item.createdAt ? '| ' + esc(item.createdAt) : ''}</span>
+          </div>
+          <div class="vision-actions" onclick="event.stopPropagation()">
+            <button class="vision-btn secondary" title="Load context" onclick="loadVisionFieldContext('${esc(item.jobId || '')}','${esc(item.visionLogId)}')"><i class="bi bi-clock-history"></i></button>
+            <button class="vision-btn secondary" title="Link timeline" ${linkDisabled} onclick="queueLinkVisionToTimeline('${esc(item.visionLogId)}','${esc(item.jobId || '')}')"><i class="bi bi-diagram-3"></i></button>
+            <button class="vision-btn secondary" title="Approve" onclick="submitQueuedVisionReview('${esc(item.visionLogId)}','APPROVED')"><i class="bi bi-check2"></i></button>
+            <button class="vision-btn secondary" title="Reject" onclick="submitQueuedVisionReview('${esc(item.visionLogId)}','REJECTED')"><i class="bi bi-x"></i></button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
   function buildFieldContext(ctx) {
     if (!ctx) return '<div class="vision-empty">Enter a Job ID or select a Vision item to load field context.</div>';
     if (ctx.success === false) return `<div class="vision-empty">Field context unavailable: ${esc(ctx.error || 'unknown error')}</div>`;
@@ -209,6 +316,23 @@
         .vision-issues span{background:#fff7ed;color:#c2410c;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:700}
         .vision-review-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #eef2f7}
         .vision-review-item span{display:block;color:#64748b;font-size:12px;margin-top:3px}
+        .vision-review-card{align-items:flex-start;border:1px solid #e2e8f0;border-radius:12px;padding:10px;margin:8px 0;background:#fff;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease}
+        .vision-review-card:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(15,23,42,.08)}
+        .vision-review-main{min-width:0;flex:1}
+        .vision-review-title{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+        .vision-review-title em{font-style:normal;color:#64748b;font-size:12px}
+        .vision-status-badge{border-radius:999px;padding:4px 8px;font-size:11px;font-weight:800;background:#e2e8f0;color:#334155}
+        .vision-status-badge.needs-job{background:#fff7ed;color:#c2410c}
+        .vision-status-badge.review{background:#fef3c7;color:#92400e}
+        .vision-status-badge.failed,.vision-status-badge.rejected{background:#fee2e2;color:#b91c1c}
+        .vision-status-badge.linked{background:#dbeafe;color:#1d4ed8}
+        .vision-status-badge.approved{background:#dcfce7;color:#047857}
+        .vision-inbox-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0}
+        .vision-inbox-filter{border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;color:#334155;padding:8px;display:flex;justify-content:space-between;align-items:center;font-weight:700;cursor:pointer}
+        .vision-inbox-filter.active{background:#2563eb;color:#fff;border-color:#2563eb}
+        .vision-ingress-status{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:9px;margin-top:8px;color:#334155;font-size:12px}
+        .vision-ingress-status span{font-weight:800;color:#0f172a}
+        .vision-ingress-status strong{background:#fff;border:1px solid #e2e8f0;border-radius:999px;padding:4px 8px}
         .vision-suggestion-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #eef2f7}
         .vision-suggestion-item span{display:block;color:#64748b;font-size:12px;margin-top:3px}
         .vision-preview-box{background:#0f172a;color:#dbeafe;border-radius:10px;padding:10px;margin-top:8px;font-size:12px;white-space:pre-wrap}
@@ -219,7 +343,7 @@
         .vision-ops-step{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px}
         .vision-ops-step strong{display:block;color:#0f172a;font-size:13px}.vision-ops-step span{font-size:11px;color:#64748b}
         @media(max-width:760px){.vision-hero{align-items:flex-start;flex-direction:column}.vision-grid,.vision-kpi-grid{grid-template-columns:1fr}.vision-card{border-radius:10px}.vision-btn{width:100%;justify-content:center}}
-        @media(max-width:760px){.vision-field-grid{grid-template-columns:1fr}}
+        @media(max-width:760px){.vision-field-grid{grid-template-columns:1fr}.vision-inbox-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.vision-review-item{flex-direction:column}.vision-review-item .vision-actions{width:100%}}
       </style>
       <div class="vision-panel ${isMobile ? 'vision-mobile' : 'vision-pc'}">
         <div class="vision-hero">
@@ -276,9 +400,11 @@
             <div id="vision-type-list">${buildTypeList({})}</div>
             <div style="margin-top:14px">
               <div class="vision-actions" style="justify-content:space-between">
-                <h6 style="margin:0">Human Review Queue</h6>
+                <h6 style="margin:0">Vision Review Inbox</h6>
                 <button class="vision-btn secondary" onclick="loadVisionReviewQueue()"><i class="bi bi-arrow-clockwise"></i></button>
               </div>
+              <div id="vision-line-ingress-status" style="margin-top:8px">${buildLineIngressStatus(null)}</div>
+              <div id="vision-review-summary" style="margin-top:8px">${buildReviewInboxSummary([])}</div>
               <div id="vision-review-queue" style="margin-top:8px">${buildReviewQueue([])}</div>
             </div>
             <div style="margin-top:14px">
@@ -392,10 +518,59 @@
     try {
       const res = await visionApi('getVisionReviewQueue', { limit: 10, days: 30 });
       if (res && res.success === false) throw new Error(res.error || 'Review queue failed');
-      el.innerHTML = buildReviewQueue(res.queue || []);
+      VISION_STATE.reviewQueue = normalizeVisionQueue(res.queue || []);
+      renderVisionReviewInbox();
+      loadVisionLineIngressStatus();
     } catch (error) {
       el.innerHTML = `<div class="vision-empty">Review queue unavailable: ${esc(error.message)}</div>`;
     }
+  }
+
+  async function loadVisionLineIngressStatus() {
+    const el = document.getElementById('vision-line-ingress-status');
+    if (!el) return null;
+    try {
+      const status = await visionApi('getVisionLineIngressStatus', {});
+      VISION_STATE.lineIngress = status;
+      el.innerHTML = buildLineIngressStatus(status);
+      return status;
+    } catch (error) {
+      el.innerHTML = `<div class="vision-muted">LINE ingress unavailable: ${esc(error.message)}</div>`;
+      return null;
+    }
+  }
+
+  function renderVisionReviewInbox() {
+    const summary = document.getElementById('vision-review-summary');
+    const queue = document.getElementById('vision-review-queue');
+    if (summary) summary.innerHTML = buildReviewInboxSummary(VISION_STATE.reviewQueue || []);
+    if (queue) queue.innerHTML = buildReviewQueue(VISION_STATE.reviewQueue || []);
+  }
+
+  function setVisionQueueFilter(filter) {
+    VISION_STATE.reviewFilter = filter || 'all';
+    renderVisionReviewInbox();
+  }
+
+  function selectQueuedVisionItem(visionLogId) {
+    const item = (VISION_STATE.reviewQueue || []).find(row => row.visionLogId === visionLogId);
+    if (!item) return;
+    VISION_STATE.lastResult = Object.assign({}, item, {
+      data: Object.assign({}, item.data || {}, item.jobId ? { job_id: item.jobId } : {}),
+      decision: { code: item.decision || 'PENDING', reason: item.reason || 'Loaded from Vision Review Inbox' },
+    });
+    const result = document.getElementById('vision-result');
+    const input = document.getElementById('vision-job-id');
+    if (input && item.jobId) input.value = item.jobId;
+    if (result) result.innerHTML = buildResultCards(VISION_STATE.lastResult);
+    if (item.jobId || item.visionLogId) loadVisionFieldContext(item.jobId || '', item.visionLogId || '');
+  }
+
+  function queueLinkVisionToTimeline(visionLogId, jobId) {
+    selectQueuedVisionItem(visionLogId);
+    const input = document.getElementById('vision-job-id');
+    if (input && jobId && !input.value) input.value = jobId;
+    linkLastVisionToJobTimeline();
   }
 
   function openVisionCamera(type) {
@@ -675,6 +850,10 @@
   global.checkVisionVersions = checkVisionVersions;
   global.checkVisionReadiness = checkVisionReadiness;
   global.loadVisionReviewQueue = loadVisionReviewQueue;
+  global.loadVisionLineIngressStatus = loadVisionLineIngressStatus;
+  global.setVisionQueueFilter = setVisionQueueFilter;
+  global.selectQueuedVisionItem = selectQueuedVisionItem;
+  global.queueLinkVisionToTimeline = queueLinkVisionToTimeline;
   global.loadVisionFieldContext = loadVisionFieldContext;
   global.loadVisionActionSuggestions = loadVisionActionSuggestions;
   global.runVisionSuggestion = runVisionSuggestion;
