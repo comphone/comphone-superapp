@@ -56,8 +56,10 @@ function main() {
     'P0');
 
   check('mobile_field', 'quick-actions-field-default',
-    has(files.app, "const DEFAULT_QUICK_ACTION_IDS = ['openNewJob', 'addCustomer', 'jobs', 'billing', 'vision', 'line-center']"),
-    'Mobile default quick actions should prioritize field operations: open job, add customer, jobs, billing, vision, LINE.',
+    has(files.app, "const DEFAULT_QUICK_ACTION_IDS = ['openNewJob', 'jobs', 'billing', 'reports']") &&
+      has(files.app, 'MOBILE_QUICK_ACTION_LIMIT = 4') &&
+      has(files.app, "'vision', 'line-center'"),
+    'Mobile default quick actions should prioritize a lean 4-button field dashboard while keeping Vision/LINE available in More.',
     'P1');
 
   check('mobile_field', 'more-nav-nested-ai-line',

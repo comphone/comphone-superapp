@@ -80,7 +80,9 @@ check(
 
 check(
   'quick-actions-backed-by-real-surfaces',
-  appJs.includes("DEFAULT_QUICK_ACTION_IDS = ['openNewJob', 'addCustomer', 'jobs', 'billing', 'vision', 'line-center']") &&
+  appJs.includes("DEFAULT_QUICK_ACTION_IDS = ['openNewJob', 'jobs', 'billing', 'reports']") &&
+    appJs.includes('MOBILE_QUICK_ACTION_LIMIT = 4') &&
+    appJs.includes("'vision', 'line-center'") &&
     appHomeJs.includes('data-quick-action="${qa.id || qa.action || \'\'}"') &&
     appActionsJs.includes("ensureActionModal('modal-new-job'") &&
     appActionsJs.includes("ensureActionModal('modal-add-customer'") &&

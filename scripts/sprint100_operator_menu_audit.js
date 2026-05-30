@@ -103,7 +103,9 @@ async function main() {
       has(files.appJobs, 'openMobileJobBilling') &&
       has(files.appJobs, 'openMobileJobVision') &&
       has(files.appJobs, 'comphone_current_job_id') &&
-      has(files.app, "jobs', 'billing', 'vision', 'line-center"),
+      has(files.app, "DEFAULT_QUICK_ACTION_IDS = ['openNewJob', 'jobs', 'billing', 'reports']") &&
+      has(files.app, "'vision', 'line-center'") &&
+      has(files.app, 'more-menu-advanced'),
     'Mobile Jobs must keep current job context and expose Timeline, Billing, Vision, and operator quick actions.',
     'P0');
 

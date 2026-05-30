@@ -52,8 +52,10 @@ check(
   'mobile-role-widget-renderer',
   appHomeJs.includes('function renderMobileRoleFocus') &&
     appHomeJs.includes('data-mobile-role-widget="${role}"') &&
-    appHomeJs.includes('renderOperatorPulse() + renderMobileRoleFocus()'),
-  'Mobile home must render the role-aware focus widget next to Operator Pulse.'
+    appHomeJs.includes('function renderMobileCommandCenter') &&
+    appHomeJs.includes('renderOperatorPulse()') &&
+    appHomeJs.includes('renderMobileRoleFocus()'),
+  'Mobile home must render the role-aware focus widget inside the compact command center next to Operator Pulse context.'
 );
 
 check(

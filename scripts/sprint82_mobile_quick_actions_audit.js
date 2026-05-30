@@ -43,7 +43,7 @@ const files = {
 };
 
 const text = Object.fromEntries(Object.entries(files).map(([key, file]) => [key, read(file)]));
-const defaultQuickActions = ['openNewJob', 'addCustomer', 'jobs', 'crm'];
+const defaultQuickActions = ['openNewJob', 'jobs', 'billing', 'reports'];
 const catalogActions = ['openNewJob', 'addCustomer', 'jobs', 'crm', 'billing', 'inventory', 'po', 'reports'];
 const requiredEntryFields = [
   'nj-customer', 'nj-phone', 'nj-symptom', 'nj-device', 'nj-submit-btn',
@@ -82,9 +82,10 @@ const checks = [
       has(text.app, 'showQuickActionSettings') &&
       has(text.app, 'saveQuickActions') &&
       has(text.app, 'resetQuickActions') &&
-      has(text.app, 'slice(0, 6)'),
+      has(text.app, 'MOBILE_QUICK_ACTION_LIMIT = 4') &&
+      has(text.app, 'slice(0, MOBILE_QUICK_ACTION_LIMIT)'),
     'P0',
-    'The dispatcher must support openNewJob/addCustomer functions, page routes, and configurable max-6 dashboard shortcuts.',
+    'The dispatcher must support openNewJob/addCustomer functions, page routes, and configurable max-4 dashboard shortcuts.',
     [files.app]
   ),
   check(
