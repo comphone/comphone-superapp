@@ -6,6 +6,9 @@
 const DEFAULT_SCRIPT_URL = window.COMPHONE_GAS_URL || (window.GAS_CONFIG && window.GAS_CONFIG.url) || '';
 const LAST_PAGE_KEY = 'comphone_last_mobile_page';
 const QUICK_ACTIONS_KEY = 'comphone_mobile_quick_actions';
+const DASHBOARD_CACHE_KEY = 'comphone_mobile_dashboard_cache_v2';
+const DASHBOARD_CACHE_TTL_MS = 5 * 60 * 1000;
+const MOBILE_QUICK_ACTION_LIMIT = 4;
 const RESTORABLE_PAGES = new Set([
   'home', 'jobs', 'camera', 'crm', 'po', 'attendance', 'profile',
   'reports', 'inventory', 'billing', 'warranty', 'dashboard',
@@ -94,7 +97,7 @@ const QUICK_ACTION_CATALOG = MENU_GROUPS.flatMap(group => group.items)
     }[item.id] || '#0f172a'
   }));
 
-const DEFAULT_QUICK_ACTION_IDS = ['openNewJob', 'addCustomer', 'jobs', 'billing', 'vision', 'line-center'];
+const DEFAULT_QUICK_ACTION_IDS = ['openNewJob', 'jobs', 'billing', 'reports'];
 const LEGACY_QUICK_ACTION_DEFAULTS = [
   ['openNewJob', 'addCustomer', 'jobs', 'crm']
 ];
@@ -108,7 +111,9 @@ const APP = {
   notifEnabled: false,
   offlineQueue: [],
   jobs: [],
-  photos: []
+  photos: [],
+  dashboardLoading: false,
+  dashboardCacheAge: 0
 };
 
 // ===== ROLE CONFIG =====
@@ -354,6 +359,7 @@ function startMainApp() {
   }
 
   // Render home ด้วย loading state ก่อน
+  hydrateMobileDashboardCache();
   renderHome();
   renderProfile();
 
@@ -367,9 +373,11 @@ function startMainApp() {
 
 async function loadLiveData() {
   try {
+    APP.dashboardLoading = true;
     const data = await callApi('getDashboardData');
     if (!data || !data.success) {
       APP.dashboardError = data || { error: 'Dashboard API returned an unsuccessful response' };
+      APP.dashboardLoading = false;
       renderHome();
       if (APP.currentPage === 'dashboard' && typeof loadDashboardPage === 'function') loadDashboardPage();
       return;
@@ -379,6 +387,10 @@ async function loadLiveData() {
     const rawJobs = data.jobs || data.summary && data.summary.recentJobs || [];
     APP.jobs = rawJobs.map(normalizeJob).filter(Boolean);
     APP.dashboardData = data;
+    APP.dashboardLoading = false;
+    APP.dashboardCacheAge = 0;
+    APP.dashboardFromCache = '';
+    persistMobileDashboardCache(data, APP.jobs);
 
     // อัปเดต UI
     renderHome();
@@ -388,8 +400,36 @@ async function loadLiveData() {
     if (APP.currentPage === 'jobs') renderJobsPage();
   } catch(e) {
     // Keep the shell usable; page modules show their own retry states.
+    APP.dashboardLoading = false;
     console.warn('[App] loadLiveData failed:', e && e.message ? e.message : e);
   }
+}
+
+function hydrateMobileDashboardCache() {
+  try {
+    const raw = localStorage.getItem(DASHBOARD_CACHE_KEY);
+    if (!raw) return false;
+    const cached = JSON.parse(raw);
+    const ts = Number(cached.ts || 0);
+    if (!cached.data || !ts) return false;
+    APP.dashboardData = cached.data;
+    APP.jobs = Array.isArray(cached.jobs) ? cached.jobs.map(normalizeJob).filter(Boolean) : APP.jobs;
+    APP.dashboardCacheAge = Date.now() - ts;
+    APP.dashboardFromCache = APP.dashboardCacheAge <= DASHBOARD_CACHE_TTL_MS ? 'fresh' : 'stale';
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function persistMobileDashboardCache(data, jobs) {
+  try {
+    localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify({
+      ts: Date.now(),
+      data,
+      jobs: (jobs || []).slice(0, 30)
+    }));
+  } catch (e) {}
 }
 
 function handleDeepLink() {
@@ -654,7 +694,7 @@ function getQuickActions() {
       const isLegacyDefault = LEGACY_QUICK_ACTION_DEFAULTS.some(legacy =>
         legacy.length === saved.length && legacy.every((id, index) => saved[index] === id)
       );
-      ids = isLegacyDefault ? DEFAULT_QUICK_ACTION_IDS : saved.slice(0, 6);
+      ids = isLegacyDefault ? DEFAULT_QUICK_ACTION_IDS : saved.slice(0, MOBILE_QUICK_ACTION_LIMIT);
       if (isLegacyDefault) {
         localStorage.setItem(QUICK_ACTIONS_KEY, JSON.stringify(ids));
       }
@@ -718,6 +758,7 @@ function showQuickActionSettings() {
           <button onclick="closeModal('modal-quick-actions')"><i class="bi bi-x-lg"></i></button>
         </div>
         <p class="quick-settings-help">เลือกได้สูงสุด 6 ปุ่ม ระบบจะจำไว้ในเครื่องนี้และแสดงบนหน้าแรก</p>
+        <p class="quick-settings-help">เลือกได้สูงสุด 4 ปุ่ม เพื่อให้หน้าแรกโหลดเร็วและใช้งานง่าย ระบบจะจำไว้ในเครื่องนี้</p>
         <div class="quick-settings-list">${rows}</div>
         <div class="quick-settings-actions">
           <button class="btn-gray-sm" onclick="resetQuickActions()">ค่าเริ่มต้น</button>
@@ -726,10 +767,13 @@ function showQuickActionSettings() {
       </div>
     </div>`;
   document.body.insertAdjacentHTML('beforeend', html);
+  document.querySelectorAll('#modal-quick-actions .quick-settings-help').forEach(el => {
+    el.textContent = 'เลือกได้สูงสุด 4 ปุ่ม เพื่อให้หน้าแรกโหลดเร็วและใช้งานง่าย ระบบจะจำไว้ในเครื่องนี้';
+  });
 }
 function saveQuickActions() {
   const modal = document.getElementById('modal-quick-actions');
-  const checked = Array.from(modal.querySelectorAll('input[type="checkbox"]:checked')).map(el => el.value).slice(0, 6);
+  const checked = Array.from(modal.querySelectorAll('input[type="checkbox"]:checked')).map(el => el.value).slice(0, MOBILE_QUICK_ACTION_LIMIT);
   if (!checked.length) return showToast('เลือกอย่างน้อย 1 ปุ่ม');
   localStorage.setItem(QUICK_ACTIONS_KEY, JSON.stringify(checked));
   closeModal('modal-quick-actions');
@@ -995,10 +1039,53 @@ function navigateFromMore(page) {
   const moreBtn = document.getElementById('nav-more');
   goPage(page, moreBtn);
 }
+function bindMoreMenuActions(content) {
+  content.querySelectorAll('[data-quick-action]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      closeMoreMenu();
+      runQuickAction(btn.getAttribute('data-quick-action'));
+    });
+  });
+  content.querySelectorAll('[data-menu-page]').forEach(btn => {
+    btn.addEventListener('click', () => navigateFromMore(btn.getAttribute('data-menu-page')));
+  });
+}
 function renderMoreMenu() {
   const content = document.getElementById('more-menu-content');
   if (!content) return;
   const role = APP.user && APP.user.role;
+  const primaryIds = new Set(['jobs', 'openNewJob', 'crm', 'billing', 'reports', 'inventory', 'vision', 'line-center']);
+  const renderMenuGrid = list => `
+    <div class="more-menu-grid">
+      ${list.map(item => `
+        <button class="more-menu-item" ${item.fn ? `data-quick-action="${item.id}"` : `data-menu-page="${item.page}"`}>
+          <div class="more-menu-icon"><i class="bi ${item.icon}"></i></div>
+          <span>${item.label}</span>
+        </button>
+      `).join('')}
+    </div>`;
+  content.innerHTML = `
+    <div class="cp-sheet-handle"></div>
+    <div class="more-menu-title" data-i18n="More">เมนูเพิ่มเติม</div>
+    <div class="more-menu-subtitle">เมนูหลักอยู่ด้านบน เมนูรองกดขยายเมื่อต้องใช้</div>
+    ${MENU_GROUPS.map((group, groupIndex) => {
+      const items = group.items.filter(item => !item.roles || item.roles.includes(role));
+      if (!items.length) return '';
+      const primary = items.filter(item => primaryIds.has(item.id));
+      const secondary = items.filter(item => !primaryIds.has(item.id));
+      const visible = (primary.length ? primary : items.slice(0, 2)).concat(groupIndex === 0 ? secondary.slice(0, 2) : []);
+      const hidden = items.filter(item => !visible.includes(item));
+      return `
+        <div class="more-menu-group-label">${group.label}</div>
+        ${renderMenuGrid(visible)}
+        ${hidden.length ? `
+          <details class="more-menu-advanced">
+            <summary><i class="bi bi-grid-3x3-gap"></i> เมนูอื่นในหมวดนี้ (${hidden.length})</summary>
+            ${renderMenuGrid(hidden)}
+          </details>` : ''}`;
+    }).join('')}`;
+  bindMoreMenuActions(content);
+  return;
   content.innerHTML = `
     <div class="cp-sheet-handle"></div>
     <div class="more-menu-title" data-i18n="More">เพิ่มเติม</div>

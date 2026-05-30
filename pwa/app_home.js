@@ -1,7 +1,7 @@
 // ===== HOME RENDER =====
 function renderHome() {
   const roleConf = ROLES[APP.role] || ROLES.tech;
-  const quickActions = typeof getQuickActions === 'function' ? getQuickActions() : roleConf.quickActions;
+  const quickActions = (typeof getQuickActions === 'function' ? getQuickActions() : roleConf.quickActions).slice(0, 4);
 
   // Quick Actions
   const qaGrid = document.getElementById('quick-actions-grid');
@@ -197,7 +197,7 @@ function renderMobileDecisionLayer() {
 function renderMainContent() {
   const area = document.getElementById('main-content-area');
   const role = APP.role;
-  const pulse = renderOperatorPulse() + renderMobileRoleFocus() + renderMobileDecisionLayer();
+  const pulse = renderMobileCommandCenter();
 
   if (role === 'tech') {
     area.innerHTML = pulse + renderTechHome();
@@ -208,6 +208,19 @@ function renderMainContent() {
   } else if (role === 'exec') {
     area.innerHTML = pulse + renderExecHome();
   }
+}
+
+function renderMobileCommandCenter() {
+  return `
+    <section class="mobile-command-center" data-mobile-command-center="true">
+      ${renderOperatorPulse()}
+      <div class="mobile-command-row">
+        ${renderMobileRoleFocus()}
+        ${renderMobileDecisionLayer()}
+      </div>
+      ${APP.dashboardLoading ? '<div class="mobile-cache-note"><i class="bi bi-cloud-arrow-down"></i> Updating latest data...</div>' : ''}
+      ${APP.dashboardFromCache ? `<div class="mobile-cache-note"><i class="bi bi-lightning-charge"></i> Showing ${APP.dashboardFromCache} cached dashboard while syncing</div>` : ''}
+    </section>`;
 }
 
 function renderTechHome() {
