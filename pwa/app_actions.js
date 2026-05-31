@@ -528,8 +528,18 @@ function openTOR() {
   goPage('reports', document.getElementById('nav-more'));
 }
 
+function openCleanupTools() {
+  if (typeof closeMoreMenu === 'function') closeMoreMenu();
+  goPage('admin', document.getElementById('nav-more'));
+  setTimeout(() => {
+    const target = document.getElementById('admin-smoke-cleanup') || document.getElementById('admin-smoke-cleanup-body');
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (typeof hydrateAdminSmokeCleanup_ === 'function') hydrateAdminSmokeCleanup_();
+  }, 350);
+}
+
 function fabAction() {
-  const actions = { tech: openCameraQuick, admin: openNewJob, acct: scanSlip, exec: viewDashboard };
+  const actions = { tech: openNewJob, admin: openNewJob, acct: createReceipt, exec: viewDashboard };
   (actions[APP.role] || openNewJob)();
 }
 

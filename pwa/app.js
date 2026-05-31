@@ -10,7 +10,7 @@ const DASHBOARD_CACHE_KEY = 'comphone_mobile_dashboard_cache_v2';
 const DASHBOARD_CACHE_TTL_MS = 5 * 60 * 1000;
 const MOBILE_QUICK_ACTION_LIMIT = 4;
 const RESTORABLE_PAGES = new Set([
-  'home', 'jobs', 'camera', 'crm', 'po', 'attendance', 'profile',
+  'home', 'jobs', 'crm', 'po', 'attendance', 'profile',
   'reports', 'inventory', 'billing', 'warranty', 'dashboard',
   'analytics', 'revenue', 'tax', 'performance', 'vision', 'line-center', 'admin'
 ]);
@@ -54,13 +54,14 @@ const MENU_GROUPS = [
       { id: 'notifications', page: 'notifications', icon: 'bi-bell-fill', label: 'แจ้งเตือน' },
       { id: 'customer-portal', page: 'customer-portal', icon: 'bi-person-badge', label: 'Portal' },
       { id: 'profile', page: 'profile', icon: 'bi-gear-fill', label: 'ตั้งค่า' },
+      { id: 'cleanup-tools', fn: 'openCleanupTools', icon: 'bi-trash3-fill', label: 'ลบข้อมูลทดสอบ', roles: ['admin', 'owner'] },
       { id: 'admin', page: 'admin', icon: 'bi-shield-lock-fill', label: 'Admin', roles: ['admin', 'owner'] }
     ]
   }
 ];
 
 const QUICK_ACTION_CATALOG = MENU_GROUPS.flatMap(group => group.items)
-  .filter(item => ['openNewJob', 'addCustomer', 'jobs', 'crm', 'billing', 'inventory', 'po', 'reports', 'dashboard', 'vision', 'line-center', 'notifications'].includes(item.id))
+  .filter(item => ['openNewJob', 'addCustomer', 'jobs', 'crm', 'billing', 'inventory', 'po', 'reports', 'dashboard', 'vision', 'line-center', 'notifications', 'cleanup-tools'].includes(item.id))
   .map(item => ({
     id: item.id,
     icon: item.icon,
@@ -79,7 +80,8 @@ const QUICK_ACTION_CATALOG = MENU_GROUPS.flatMap(group => group.items)
       dashboard: '#fef9c3',
       vision: '#ccfbf1',
       'line-center': '#e0e7ff',
-      notifications: '#fee2e2'
+      notifications: '#fee2e2',
+      'cleanup-tools': '#fee2e2'
     }[item.id] || '#f8fafc',
     textColor: {
       openNewJob: '#5b21b6',
@@ -93,7 +95,8 @@ const QUICK_ACTION_CATALOG = MENU_GROUPS.flatMap(group => group.items)
       dashboard: '#713f12',
       vision: '#0f766e',
       'line-center': '#3730a3',
-      notifications: '#991b1b'
+      notifications: '#991b1b',
+      'cleanup-tools': '#991b1b'
     }[item.id] || '#0f172a'
   }));
 
@@ -269,6 +272,11 @@ window.addEventListener('beforeunload', (event) => {
 });
 
 function initApp() {
+  const primaryNavLabel = document.querySelector('.nav-camera-btn span');
+  if (primaryNavLabel) {
+    primaryNavLabel.setAttribute('data-i18n', 'Open Job');
+    primaryNavLabel.textContent = 'เปิดงาน';
+  }
   const splash = document.getElementById('splash-screen');
   splash.style.opacity = '0';
   splash.style.transition = 'opacity 0.4s';
@@ -706,6 +714,8 @@ function getQuickActions() {
 
 function runQuickAction(id) {
   const action = QUICK_ACTION_CATALOG.find(item => item.id === id);
+  const role = (APP.user && APP.user.role) || APP.role;
+  if (action && action.roles && !action.roles.includes(role)) return showToast('This action requires admin permission');
   if (!action) return showToast('ไม่พบปุ่มด่วน');
   if (action.fn && typeof window[action.fn] === 'function') return window[action.fn]();
   if (action.page) return goPage(action.page, action.page === 'jobs' ? document.getElementById('nav-jobs') : document.getElementById('nav-more'));

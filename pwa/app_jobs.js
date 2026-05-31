@@ -195,11 +195,17 @@ function renderJobsBadge() {
 }
 
 // ===== JOB DETAIL MODAL =====
+function mobileJobApi(action, payload) {
+  if (typeof callAPI === 'function') return callAPI(action, payload);
+  if (typeof callApi === 'function') return callApi(action, payload);
+  return Promise.reject(new Error('API client not loaded'));
+}
+
 async function showJobDetail(jobId) {
   let job = APP.jobs.find(j => String(j.id || '') === String(jobId || ''));
-  if (!job && typeof callAPI === 'function') {
+  if (!job && (typeof callAPI === 'function' || typeof callApi === 'function')) {
     try {
-      const res = await callAPI('getJobDetail', { job_id: jobId });
+      const res = await mobileJobApi('getJobDetail', { job_id: jobId });
       if (res && res.success && res.job) {
         job = normalizeJob(res.job);
         APP.jobs.unshift(job);
@@ -254,6 +260,9 @@ async function showJobDetail(jobId) {
         <i class="bi bi-telephone-fill"></i> Call ${job.customer}
       </button>
       ${(APP.role === 'admin' || APP.role === 'owner') ? `
+      <div style="margin-top:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:12px;color:#9a3412;font-size:12px;line-height:1.45">
+        <b>Admin delete</b><br>Deletes only after backend confirmation and archive-before-delete protection.
+      </div>
       <button class="job-act-btn" style="width:100%;margin-top:8px;padding:12px;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;border-radius:12px;font-weight:800;cursor:pointer" onclick="deleteMobileJob(${jobArg})">
         <i class="bi bi-trash3"></i> Delete job
       </button>` : ''}
@@ -279,7 +288,7 @@ async function deleteMobileJob(jobId) {
   if (reason === null) return;
   if (!confirm('ยืนยันลบงาน ' + jobId + '?')) return;
   try {
-    const res = await callAPI('deleteJob', { job_id: jobId, confirm: 'DELETE_JOB', reason: reason || 'Deleted from Mobile Jobs' });
+    const res = await mobileJobApi('deleteJob', { job_id: jobId, confirm: 'DELETE_JOB', reason: reason || 'Deleted from Mobile Jobs' });
     if (!res || !res.success) throw new Error((res && (res.error || res.message)) || 'Delete failed');
     APP.jobs = APP.jobs.filter(j => String(j.id || '') !== String(jobId));
     closeModal('modal-job');
@@ -297,7 +306,7 @@ async function openMobileJobTimeline(jobId) {
     target.insertAdjacentHTML('beforeend', '<div id="mobile-job-timeline-inline" style="margin:12px 16px;padding:12px;border-radius:12px;background:#f8fafc;color:#64748b;font-size:12px">Loading timeline...</div>');
   }
   try {
-    const res = await callAPI('getJobTimeline', { job_id: jobId });
+    const res = await mobileJobApi('getJobTimeline', { job_id: jobId });
     const events = (res && (res.timeline || res.events || res.logs || res.items)) || [];
     const el = document.getElementById('mobile-job-timeline-inline');
     if (!el) return;

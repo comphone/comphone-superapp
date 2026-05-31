@@ -63,6 +63,12 @@ jobs:
               FAILED=1
             fi
           done
+          if node --check scripts/sprint193_delete_camera_dashboard_guard.js; then
+            echo "✅ scripts/sprint193_delete_camera_dashboard_guard.js"
+          else
+            echo "❌ scripts/sprint193_delete_camera_dashboard_guard.js"
+            FAILED=1
+          fi
           if [ "$FAILED" -ne 0 ]; then exit 1; fi
 
       - name: PWA Static Guard
