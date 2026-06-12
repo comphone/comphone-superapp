@@ -12,6 +12,11 @@
 
 This section is the latest handoff for any human or AI agent continuing COMPHONE work.
 
+> Cowork review on or after 2026-06-12 should begin with
+> `COWORK_SYSTEM_HANDOFF.md`. It separates current verified state, live-proof
+> gaps, safety gates, and the recommended review order from the historical
+> detail retained in this BLUEPRINT.
+
 ### Current Production State
 - **Current phase:** Sprint / Phase 193.
 - **Latest stable verification commit before this handoff:** `249ff86 Document Sprint 110 GAS live verification`. Run `git log -1 --oneline` for the exact current repository HEAD.

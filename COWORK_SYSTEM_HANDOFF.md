@@ -1,0 +1,317 @@
+# COMPHONE SUPER APP - Cowork System Handoff
+
+Updated: 2026-06-12 (Asia/Bangkok)
+
+This document is the concise operational handoff for Cowork or another engineering
+agent. Read `BLUEPRINT.md` for history, but use this file for the current review
+order and safety boundaries.
+
+## 1. Current Repository State
+
+- Repository: `https://github.com/comphone/comphone-superapp`
+- Branch: `main`
+- Baseline HEAD inspected before this handoff commit: `19b0447`
+  (`Scheduled backup 2026-06-11 18:38`). Run `git log -1 --oneline` for the
+  current HEAD after the handoff is committed.
+- Last functional implementation commits:
+  - `67a522b` - Sprint 193 implementation / auto deploy
+  - `c34ae6b` - Mobile primary action label polish
+- Commits after `c34ae6b` contain session backup files only. No application source
+  changed between `c34ae6b` and the current HEAD.
+- Local working copy was missing on 2026-06-12 and was restored by cloning the
+  GitHub repository into `C:\Users\Server\comphone-superapp`.
+- Working tree was clean immediately after restoration.
+
+## 2. Production Identity
+
+| Component | Current recorded value |
+|---|---|
+| PWA version | `v5.18.47-sprint184` |
+| Blueprint phase | Phase 193 |
+| GAS backend version | `v5.18.16-write-flow-validation` |
+| GAS deployment | `@620` |
+| Production spreadsheet | `19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA` |
+| LINE Worker source version | `1.0.5-sprint189` |
+| Mobile URL | `https://comphone.github.io/comphone-superapp/pwa/` |
+| PC URL | `https://comphone.github.io/comphone-superapp/pwa/dashboard_pc.html` |
+| LINE webhook | `https://comphone-line-webhook.narinoutagit.workers.dev/line/webhook` |
+
+Production GAS URL is defined only by `pwa/gas_config.js`. Do not copy it into
+additional frontend files.
+
+## 3. Architecture
+
+```text
+PC Dashboard / Mobile PWA
+          |
+          v
+api_client.js + api_contract.js + session token
+          |
+          v
+Google Apps Script Web App
+Router.gs / RouterSplit.gs
+          |
+          +--> Jobs / CRM / Billing / Reports / Inventory / PO / Warranty
+          +--> Admin / Data Repair / Smoke Cleanup / Audit
+          +--> AI Vision / Photo Queue / LINE Command Center
+          |
+          v
+Single production Google Spreadsheet
+
+LINE Platform
+     |
+     v
+Cloudflare Worker (signature forwarding + quiet group policy)
+     |
+     v
+GAS LINE handlers -> Photo Queue -> Gemini/Vision -> Sheet/Drive evidence
+```
+
+### Source ownership
+
+- `pwa/`: GitHub Pages frontend for PC and mobile.
+- Root `*.gs`: readable GAS source and alignment baseline.
+- `clasp-ready/`: GAS deployment source. Keep it aligned with root GAS files.
+- `workers/line-webhook/`: Cloudflare Worker for LINE ingress.
+- `scripts/`: static guards, live smoke tests, release gates, and cleanup gates.
+- `docs/database_schema_registry.json`: allowed production Sheet schema.
+- `BLUEPRINT.md`: historical single source of truth and agent handoff history.
+
+## 4. Main Product Areas
+
+### PC
+
+- Login/session restore.
+- Dashboard command center and role-aware decision widgets.
+- Jobs, Billing, Reports, CRM, Inventory, Purchase Orders, Warranty.
+- AI Vision review inbox and LINE Command Center.
+- Settings/Admin health, data completeness, repair preview, and smoke cleanup.
+
+### Mobile
+
+- Four default dashboard actions: Open Job, Jobs, Billing, Reports.
+- Grouped More menu with progressive disclosure.
+- Last-page restore and accidental-exit protection.
+- Camera is not a main navigation destination. It is opened from Job Detail.
+- Job Detail supports photos, completion, timeline, billing, Vision, calling the
+  customer, and admin/owner archive-before-delete.
+- Admin/owner More menu includes `cleanup-tools` for Smoke/Test Data Cleanup.
+
+## 5. Authentication and API Rules
+
+- `pwa/api_client.js` is the central frontend API client.
+- Protected calls require a valid session token.
+- `verifySession()` contract and Router auth checks have already been aligned.
+- Public actions must remain limited to login, health, version, and genuinely
+  public system operations.
+- Business data reads and all writes must remain protected.
+- Admin actions such as `deleteJob` and `cleanupSmokeTestRecords` require
+  admin/owner authorization.
+- Never commit a session token or credentials. Use `COMPHONE_AUTH_TOKEN` only as
+  a process environment variable for protected smoke tests.
+
+## 6. Database Rules
+
+Google Sheets remains the source of record. Cloudflare D1 is not yet the primary
+database and should only be considered later as an operational cache/read model.
+
+Critical tables:
+
+- `DBJOBS`
+- `DB_CUSTOMERS`
+- `DB_BILLING`
+- `DB_INVENTORY`
+- `DB_STOCK_MOVEMENTS`
+- `DB_JOB_ITEMS`
+- `DB_JOB_LOGS`
+- `DB_PURCHASE_ORDERS`
+- `DB_PHOTO_QUEUE`
+- `DB_USERS`
+- `DB_ACTIVITY_LOG`
+
+Maintenance and safety tables:
+
+- `DBJOBS_ARCHIVE`
+- `DB_SMOKE_CLEANUP_ARCHIVE`
+- `DB_DATA_REPAIR_ARCHIVE`
+- `DB_DATA_REPAIR_AUDIT`
+- `DB_DATA_REVIEW_LOG`
+
+Rules:
+
+1. Do not create a new `DB_*` Sheet without updating the schema registry.
+2. Use `getComphoneSheet()` / `findSheetByName()`, not active-spreadsheet state.
+3. Archive before destructive change.
+4. Require explicit confirmation and audit logging.
+5. Do not delete production data merely because it looks like test data.
+
+## 7. AI Vision and LINE State
+
+Implemented:
+
+- LINE signature forwarding through the Worker.
+- Room-aware deterministic routing before optional AI.
+- Quiet group forwarding: normal group images/text continue backend processing
+  without noisy LINE replies.
+- Separate per-room Notify and Bot Reply toggles.
+- Accounting images without JobID can enter `ACCOUNTING_PENDING`.
+- Technician work photos expect JobID context.
+- AI Vision Review Inbox exists on PC and mobile.
+- Gemini analysis is confirmation-gated and real LINE sends are separately gated.
+
+Still requiring live proof:
+
+- Send one real JobID-tagged image in the configured LINE room.
+- Verify growth in `DB_PHOTO_QUEUE`, Drive evidence, Vision log, and Review Inbox.
+- Verify the current production GAS source contains the latest JobID-context and
+  room-aware routing code.
+- Confirm Worker `/health` reports `1.0.5-sprint189`.
+
+Do not make group replies noisy again. Muting replies must not stop backend
+processing, queueing, logs, or audit evidence.
+
+## 8. Destructive Operations
+
+### Job deletion
+
+- UI action: Mobile Job Detail, admin/owner only.
+- Backend action: `deleteJob`.
+- Required confirmation: `DELETE_JOB`.
+- Backend archives the row into `DBJOBS_ARCHIVE` before deleting from `DBJOBS`.
+- A restore-from-archive workflow is not yet complete.
+
+### Smoke/test cleanup
+
+- UI locations: PC Settings and Mobile Admin/Cleanup Tools.
+- Backend action: `cleanupSmokeTestRecords`.
+- Preview is the default.
+- Execution requires the exact phrase `DELETE_REVIEWED_SMOKE_RECORDS`.
+- Backend deletes only rows that still contain recognized smoke/test markers.
+- Every deleted row must first be archived to `DB_SMOKE_CLEANUP_ARCHIVE`.
+
+### Data repair
+
+- `previewDataRepair` is read-only.
+- `executeDataRepair` requires owner review and
+  `EXECUTE_REVIEWED_DATA_REPAIR`.
+- Never execute repair or deletion from CI.
+
+## 9. Verification Completed on 2026-06-12
+
+The following checks passed against the restored GitHub working copy:
+
+```text
+PWA Static Guard: OK
+CI Readiness: OK, 0 issues
+GAS Source Alignment: OK, 14 files checked
+GAS Syntax Guard: OK, 91 files
+Sprint 193 Delete/Camera/Dashboard Guard: OK, 100/100
+```
+
+This does not prove current protected production behavior because no fresh
+`COMPHONE_AUTH_TOKEN` was available during this handoff.
+
+## 10. Priority Findings for Cowork
+
+### P0 - Re-establish live acceptance evidence
+
+1. Obtain a fresh session token through normal login.
+2. Run the protected API smoke and token sweep.
+3. Perform PC and mobile browser click-through using the published Pages URLs.
+4. Verify Jobs Detail, delete visibility by role, Billing Detail, Reports
+   drilldown, Admin Cleanup, Vision Inbox, and LINE Center.
+5. Record exact failures before editing code.
+
+### P1 - Reconcile version and documentation drift
+
+- Blueprint phase is 193 while `version_config.js` remains
+  `v5.18.47-sprint184`.
+- `version_config.js` build timestamp is `20260521_1200`, while an older
+  Blueprint runtime table still says `20260521_0800`.
+- Worker `package.json` says `1.0.0`, while runtime source says
+  `1.0.5-sprint189`.
+- BLUEPRINT contains historical, duplicated, and mojibake sections. Keep its
+  current top handoff but move old history into an archive document.
+
+### P1 - Validate production write workflows safely
+
+- Jobs/customer/billing create paths have guarded smoke coverage.
+- Payment, inventory transfer, LINE send, and offline replay still need
+  staging-only validation.
+- Never validate destructive writes against production without preview and
+  owner confirmation.
+
+### P1 - Resolve known business-data gaps
+
+- One incomplete `DB_BILLING` source row was previously reported.
+- Job `J0020` previously had no readable Billing detail.
+- Current-month daily revenue could be legitimately empty; verify period/data.
+- Warranty list was healthy but empty.
+- Re-run the data-completeness suite before assuming these findings still exist.
+
+### P1 - Add archive restore
+
+Implement an admin/owner preview-and-restore flow for `DBJOBS_ARCHIVE`.
+Restoration must detect duplicate JobID, log audit evidence, and never overwrite
+an existing live Job silently.
+
+### P2 - Frontend and repository cleanup
+
+- Align or archive auxiliary HTML pages that still carry old fallback versions.
+- Add a visible service-worker update/reload prompt.
+- Reduce historical backup/document noise without deleting audit history.
+- Fix Code Intelligence false positives for template expressions such as
+  `${card.page}` and `${item.page}`.
+
+## 11. Required Commands
+
+Run local non-destructive checks first:
+
+```powershell
+node scripts\pwa_static_guard.js
+node scripts\ci_readiness_check.js
+node scripts\gas_source_alignment.js
+node scripts\gas_syntax_guard.js
+node scripts\build_code_index.js
+node scripts\system_integrity_audit.js
+node scripts\sprint193_delete_camera_dashboard_guard.js
+bash scripts/guard-self-test.sh
+bash scripts/regression-guard.sh
+```
+
+Protected read-only verification:
+
+```powershell
+$env:COMPHONE_AUTH_TOKEN='FRESH_SESSION_TOKEN'
+node scripts\pwa_api_smoke.js
+node scripts\sprint161_protected_live_token_sweep.js
+node scripts\sprint166_protected_token_full_sweep_pack.js
+Remove-Item Env:\COMPHONE_AUTH_TOKEN -ErrorAction SilentlyContinue
+```
+
+Do not place the real token in files, command history screenshots, reports, or
+chat messages.
+
+## 12. Cowork Review Order
+
+1. Confirm repo/branch/clean worktree.
+2. Run local guards without modifying code.
+3. Run protected read-only smoke with a fresh token.
+4. Browser-test PC and mobile menus.
+5. Inspect production Sheet data gaps.
+6. Verify LINE Worker and one real image ingress sample.
+7. Fix one failing workflow at a time.
+8. Update tests and this handoff with evidence.
+9. Update `BLUEPRINT.md` only after verification.
+10. Commit narrowly scoped changes; do not mix cleanup with behavior changes.
+
+## 13. Non-Negotiable Safety Rules
+
+- Do not change the production GAS URL casually.
+- Do not expose or commit secrets.
+- Do not weaken Router authorization to make a menu work.
+- Do not bypass archive/confirmation gates.
+- Do not create duplicate spreadsheets or unregistered Sheets.
+- Do not overwrite unrelated user/agent changes.
+- Preserve Thai UTF-8 text.
+- Do not claim production is fixed from static checks alone.
