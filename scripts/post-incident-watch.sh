@@ -34,14 +34,24 @@ echo ""
 
 # --- CHECK 1: Browser Smoke Test ---
 echo "🔗 [1/6] Browser Smoke Test..."
-if command -v python3 &>/dev/null && [ -f "scripts/browser-smoke-test.py" ]; then
-  if python3 scripts/browser-smoke-test.py; then
+# Windows ships a python3 alias stub that exists but cannot run scripts,
+# so candidates must prove they can execute before being selected.
+PYTHON_BIN=""
+for PY_CANDIDATE in python3 python py; do
+  if command -v "$PY_CANDIDATE" &>/dev/null && "$PY_CANDIDATE" -c "import sys" &>/dev/null; then
+    PYTHON_BIN="$PY_CANDIDATE"
+    break
+  fi
+done
+
+if [ -n "$PYTHON_BIN" ] && [ -f "scripts/browser-smoke-test.py" ]; then
+  if "$PYTHON_BIN" scripts/browser-smoke-test.py; then
     echo "   ✅ Browser smoke test passed"
   else
     fail "Browser smoke test FAILED — dashboard has recurrence patterns"
   fi
 else
-  warn "Python3 not available — skipping browser smoke test"
+  warn "Python not available — skipping browser smoke test"
 fi
 
 # --- CHECK 2: Source Code Recurrence Patterns ---

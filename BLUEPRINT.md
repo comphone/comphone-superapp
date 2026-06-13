@@ -17,6 +17,15 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > gaps, safety gates, and the recommended review order from the historical
 > detail retained in this BLUEPRINT.
 
+> 2026-06-13 guard-environment hardening: regression-guard, guard-self-test,
+> drift-guard, and post-incident-watch now work correctly on Windows Git Bash
+> (real-Python interpreter probing instead of the `python3` Store stub, pinned
+> `LC_ALL=C.UTF-8` for `grep -P`, LF-normalized `scripts/.guard-checksums.md5`
+> with a `*.md5` rule in `.gitattributes`). `scripts/build_code_index.js` no
+> longer flags template-literal routes like `${card.page}` as missing mobile
+> pages. Full guard suite re-verified green; Worker `/health` live-confirmed
+> `1.0.5-sprint189`. Details in `COWORK_SYSTEM_HANDOFF.md` section 9a.
+
 ### Current Production State
 - **Current phase:** Sprint / Phase 193.
 - **Latest stable verification commit before this handoff:** `249ff86 Document Sprint 110 GAS live verification`. Run `git log -1 --oneline` for the exact current repository HEAD.

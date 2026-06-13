@@ -8,6 +8,10 @@
 
 set -euo pipefail
 
+# grep -P aborts under non-UTF-8 multibyte locales (Windows Git Bash callers),
+# so pin a UTF-8 locale before any pattern checks run.
+export LC_ALL=C.UTF-8
+
 ERRORS=()
 WARNINGS=()
 
@@ -181,14 +185,24 @@ fi
 echo ""
 echo "💻 [SUITE E] Browser-Level Smoke Tests..."
 
-if command -v python3 &>/dev/null && [ -f "scripts/browser-smoke-test.py" ]; then
-  if python3 scripts/browser-smoke-test.py; then
+# Windows ships a python3 alias stub that exists but cannot run scripts,
+# so candidates must prove they can execute before being selected.
+PYTHON_BIN=""
+for PY_CANDIDATE in python3 python py; do
+  if command -v "$PY_CANDIDATE" &>/dev/null && "$PY_CANDIDATE" -c "import sys" &>/dev/null; then
+    PYTHON_BIN="$PY_CANDIDATE"
+    break
+  fi
+done
+
+if [ -n "$PYTHON_BIN" ] && [ -f "scripts/browser-smoke-test.py" ]; then
+  if "$PYTHON_BIN" scripts/browser-smoke-test.py; then
     echo "   ✅ Browser-level smoke test passed"
   else
     fail "Browser-level smoke test FAILED — recurrence patterns detected"
   fi
 else
-  warn "Python3 or browser-smoke-test.py unavailable — skipping browser tests"
+  warn "Python or browser-smoke-test.py unavailable — skipping browser tests"
 fi
 
 if command -v node &>/dev/null && [ -f "scripts/build_code_index.js" ]; then

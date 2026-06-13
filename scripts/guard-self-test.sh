@@ -7,6 +7,10 @@
 
 set -euo pipefail
 
+# grep -P aborts under non-UTF-8 multibyte locales (Windows Git Bash callers),
+# so pin a UTF-8 locale before any pattern checks run.
+export LC_ALL=C.UTF-8
+
 PASS=0
 FAIL=0
 

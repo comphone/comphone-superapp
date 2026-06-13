@@ -1,6 +1,6 @@
 # COMPHONE SUPER APP - Cowork System Handoff
 
-Updated: 2026-06-12 (Asia/Bangkok)
+Updated: 2026-06-13 (Asia/Bangkok)
 
 This document is the concise operational handoff for Cowork or another engineering
 agent. Read `BLUEPRINT.md` for history, but use this file for the current review
@@ -211,6 +211,55 @@ Sprint 193 Delete/Camera/Dashboard Guard: OK, 100/100
 This does not prove current protected production behavior because no fresh
 `COMPHONE_AUTH_TOKEN` was available during this handoff.
 
+## 9a. Verification and Tooling Fixes Completed on 2026-06-13
+
+Windows guard-environment failures were diagnosed as false alarms and fixed at
+the root cause. No application or GAS source behavior changed.
+
+Fixes applied:
+
+1. `scripts/regression-guard.sh` and `scripts/post-incident-watch.sh` resolved
+   `python3` to the Microsoft Store alias stub, which exists but cannot run
+   scripts, so Suite E reported "Browser-level smoke test FAILED" without
+   running anything. Both scripts now probe `python3` / `python` / `py` with an
+   executability check before selecting an interpreter.
+2. `scripts/.guard-checksums.md5` was committed with CRLF endings, so
+   `md5sum -c` could not read two of its entries ("FAILED open or read"). The
+   file is regenerated with LF endings and `.gitattributes` now pins `*.md5`
+   to LF. The underlying script hashes had never actually drifted.
+3. `scripts/regression-guard.sh`, `scripts/guard-self-test.sh`, and
+   `scripts/drift-guard.sh` now `export LC_ALL=C.UTF-8` because `grep -P`
+   aborts under non-UTF-8 multibyte locales on Windows Git Bash, which killed
+   guard-self-test at the cache-bust step under `set -euo pipefail`.
+4. Git hooks were installed via `bash scripts/install-hooks.sh` (the restored
+   clone had none), so pre-commit guard checks are active again.
+5. P2 item resolved: `scripts/build_code_index.js` no longer reports
+   `missing-mobile-page` for template expressions such as `${card.page}` and
+   `${item.page}`; dynamic template routes are excluded from the route index.
+   Code Index now reports `risks: none` (routes 20 -> 18).
+
+Evidence after fixes (all local, read-only):
+
+```text
+PWA Static Guard: OK
+CI Readiness: OK, 0 issues
+GAS Source Alignment: OK, 14 files
+GAS Syntax Guard: OK, 91 files
+Guard Self-Test: 8/8 PASSED (no caller-side LC_ALL needed)
+Drift Guard: NO DRIFT DETECTED
+Regression Guard: ALL CHECKS PASSED (59 sprint guards passed or skipped safely)
+Browser Smoke Test: PASS 14 checks (real Python via py launcher)
+System Integrity Audit: 100/100, menus 37/37 OK
+Code Index: risks none
+Pages Deploy Verify: OK (v5.18.47-sprint184, build 20260521_1200)
+LINE Worker /health: 1.0.5-sprint189 with correct GAS URL (closes the
+  Worker-version live-proof item in section 7)
+```
+
+Still unproven (requires a fresh `COMPHONE_AUTH_TOKEN` from a real login,
+which was not available): protected API smoke, token sweep, and the real
+JobID-tagged LINE image ingress sample.
+
 ## 10. Priority Findings for Cowork
 
 ### P0 - Re-establish live acceptance evidence
@@ -260,8 +309,9 @@ an existing live Job silently.
 - Align or archive auxiliary HTML pages that still carry old fallback versions.
 - Add a visible service-worker update/reload prompt.
 - Reduce historical backup/document noise without deleting audit history.
-- Fix Code Intelligence false positives for template expressions such as
-  `${card.page}` and `${item.page}`.
+- Done 2026-06-13: Code Intelligence false positives for template expressions
+  such as `${card.page}` and `${item.page}` are fixed in
+  `scripts/build_code_index.js` (see section 9a).
 
 ## 11. Required Commands
 

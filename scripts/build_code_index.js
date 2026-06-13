@@ -87,7 +87,8 @@ function parseHtmlAssets(htmlFile) {
   const styles = extractAll(html, /<link\b[^>]+rel="stylesheet"[^>]+href="([^"]+)"/g)
     .filter(src => !src.startsWith('http') && !src.startsWith('//'))
     .map(src => src.split('?')[0].replace(/^\/comphone-superapp\/pwa\//, ''));
-  const routes = extractAll(html, /(?:onclick|href)="[^"]*(?:goPage|navigateFromMore)\('([^']+)'/g);
+  const routes = extractAll(html, /(?:onclick|href)="[^"]*(?:goPage|navigateFromMore)\('([^']+)'/g)
+    .filter(route => !route.includes('${'));
   return { file: rel(htmlFile), scripts: uniq(scripts), styles: uniq(styles), routes: uniq(routes) };
 }
 
@@ -112,7 +113,7 @@ function scanPwaFile(file) {
     pageRoutes: uniq([
       ...extractAll(text, /\bgoPage\s*\(\s*['"]([^'"]+)['"]/g),
       ...extractAll(text, /\bnavigateFromMore\s*\(\s*['"]([^'"]+)['"]/g),
-    ]),
+    ]).filter(route => !route.includes('${')),
     imports,
     quickActions: uniq(extractAll(text, /\baction:\s*['"]([^'"]+)['"]/g)),
     onclickFunctions: uniq(extractAll(text, /onclick="([A-Za-z_$][\w$]*)\s*\(/g)),
