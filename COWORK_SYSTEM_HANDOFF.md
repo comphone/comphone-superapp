@@ -237,6 +237,14 @@ Fixes applied:
    `missing-mobile-page` for template expressions such as `${card.page}` and
    `${item.page}`; dynamic template routes are excluded from the route index.
    Code Index now reports `risks: none` (routes 20 -> 18).
+6. P1 version drift (section 10) partially reconciled:
+   - `workers/line-webhook/package.json` bumped `1.0.0` -> `1.0.5-sprint189`
+     to match the deployed Worker runtime version (metadata only; no deploy).
+   - BLUEPRINT runtime table Build Timestamp corrected `20260521_0800` ->
+     `20260521_1200` to match its own stated source `pwa/version_config.js`.
+   - Remaining intentional: Blueprint phase 193 vs PWA tag `sprint184` track
+     different counters (phase = blueprint history, tag = PWA release) and are
+     not force-aligned.
 
 Evidence after fixes (all local, read-only):
 
@@ -254,7 +262,20 @@ Code Index: risks none
 Pages Deploy Verify: OK (v5.18.47-sprint184, build 20260521_1200)
 LINE Worker /health: 1.0.5-sprint189 with correct GAS URL (closes the
   Worker-version live-proof item in section 7)
+Mobile Menu Deep QA (Sprint 141): 16/16
+Mobile UX Walkthrough (Sprint 145): 17/17
+Mobile Menu E2E (Sprint 156): 11/11
+PC Dashboard Workflow (Sprint 157): 11/11
+Browser Clickthrough Contract (Sprint 160): 47/47
+AI Vision Inbox Render Smoke (Sprint 191): 100/100
 ```
+
+PC/Mobile menu and route mounts were re-verified via the static route/render
+contract guards above (the achievable substitute for a live click-through
+while no session token is available). Note: the `preview_*` tooling in this
+environment is rooted in a different working directory and cannot serve this
+repo's `pwa/`, so interactive in-browser clicking was not possible here;
+section 12 step 4 (real browser walkthrough) still belongs to the operator.
 
 Still unproven (requires a fresh `COMPHONE_AUTH_TOKEN` from a real login,
 which was not available): protected API smoke, token sweep, and the real
