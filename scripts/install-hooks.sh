@@ -32,6 +32,8 @@ if echo "$COMMIT_MSG" | grep -qE '\[skip push\]|\[skip ci\]|\[no push\]'; then
 fi
 if [ "${AUTO_PUSH}" = "false" ]; then exit 0; fi
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
+# Detached HEAD (rebase/cherry-pick replay) — pushing "HEAD" is invalid; skip.
+if [ "$BRANCH" = "HEAD" ]; then exit 0; fi
 HTTPS_REMOTE="https://github.com/comphone/comphone-superapp.git"
 
 echo "Auto-pushing to origin/$BRANCH..."
