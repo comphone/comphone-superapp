@@ -57,11 +57,13 @@ function makeEl(id) {
     addEventListener(){}, removeEventListener(){}, querySelector(){ return makeEl('q'); },
     querySelectorAll(){ return []; }, focus(){}, click(){}, closest(){ return null; },
     insertAdjacentHTML(){}, scrollIntoView(){},
+    // canvas stub so chart-drawing renderers don't throw under the VM
+    getContext(){ return { fillRect(){}, clearRect(){}, beginPath(){}, arc(){}, fill(){}, stroke(){}, measureText(){ return { width:0 }; }, fillText(){}, save(){}, restore(){}, translate(){}, scale(){}, moveTo(){}, lineTo(){} }; },
   };
   return el;
 }
 
-function createSandbox() {
+function createSandbox(apiResp) {
   const els = new Map();
   const doc = {
     getElementById(id){ if(!els.has(id)) els.set(id, makeEl(id)); return els.get(id); },
@@ -88,11 +90,11 @@ function createSandbox() {
     innerWidth: 390, innerHeight: 800, devicePixelRatio: 2,
     addEventListener(){}, removeEventListener(){}, dispatchEvent(){},
     APP: { user: { username: 'smoke', name: 'Smoke User', role: 'owner', full_name: 'Smoke User' }, role: 'owner', currentPage: 'home' },
-    fetch: async () => ({ ok:true, json: async()=>({success:true}), text: async()=>'' }),
-    callApi: async () => ({ success:true, ...MOCK }),
-    callAPI: async () => ({ success:true, ...MOCK }),
-    callGas: async () => ({ success:true, ...MOCK }),
-    cachedCallApi: async () => ({ success:true, ...MOCK }),
+    fetch: async () => ({ ok:true, json: async()=>apiResp, text: async()=>'' }),
+    callApi: async () => apiResp,
+    callAPI: async () => apiResp,
+    callGas: async () => apiResp,
+    cachedCallApi: async () => apiResp,
     Chart: function(){ return { destroy(){}, update(){} }; },
     AbortController: function(){ this.signal={}; this.abort=()=>{}; },
     CustomEvent: function(){}, Event: function(){},
@@ -101,7 +103,7 @@ function createSandbox() {
     matchMedia: () => ({ matches:false, addEventListener(){}, addListener(){} }),
     btoa: s => Buffer.from(String(s)).toString('base64'),
     atob: s => Buffer.from(String(s),'base64').toString(),
-    DASHBOARD_DATA: MOCK,
+    DASHBOARD_DATA: apiResp,
   };
   sandbox.window = sandbox;
   sandbox.globalThis = sandbox;
@@ -109,21 +111,7 @@ function createSandbox() {
   return { sandbox, els };
 }
 
-const { sandbox } = createSandbox();
-vm.createContext(sandbox);
-
-const loadErrors = [];
-for (const f of LOAD_ORDER) {
-  const p = path.join(PWA, f);
-  if (!fs.existsSync(p)) { loadErrors.push(`${f}: file missing`); continue; }
-  try {
-    vm.runInContext(fs.readFileSync(p, 'utf8'), sandbox, { filename: f });
-  } catch (e) {
-    loadErrors.push(`${f}: LOAD ERROR ${e.message}`);
-  }
-}
-
-// Menu loaders goPage dispatches (mobile), plus a few render fns.
+// Menu loaders goPage() dispatches (mobile), plus a few render fns.
 const TARGETS = [
   'renderJobsPage','renderProfile','loadCRMPage','loadAttendancePage','loadPurchaseOrderPage',
   'loadDashboardPage','loadInventoryPage','loadReportsPage','openAnalyticsSection',
@@ -131,25 +119,60 @@ const TARGETS = [
   'renderMobileVisionPage','renderMobileLineCenterPage',
 ];
 
-const runErrors = [];
-let okCount = 0;
-(async () => {
-  for (const fn of TARGETS) {
-    const f = sandbox[fn];
-    if (typeof f !== 'function') { runErrors.push(`${fn}: NOT a function (undefined)`); continue; }
+// Production hands renderers populated data AND, for known gaps (empty reports,
+// empty warranty list, jobs with no billing), empty / error responses. Each
+// scenario must render without throwing — a crash here is a blank/broken menu.
+const SCENARIOS = [
+  { label: 'populated', resp: { success: true, ...MOCK } },
+  { label: 'empty object', resp: {} },
+  { label: 'success-no-data', resp: { success: true } },
+  { label: 'error response', resp: { success: false, error: 'no data' } },
+];
+
+function runScenario(resp) {
+  const { sandbox } = createSandbox(resp);
+  vm.createContext(sandbox);
+  const loadErrors = [];
+  for (const f of LOAD_ORDER) {
+    const p = path.join(PWA, f);
+    if (!fs.existsSync(p)) { loadErrors.push(`${f}: file missing`); continue; }
     try {
-      const r = f(MOCK);
-      if (r && typeof r.then === 'function') await r;
-      okCount++;
+      vm.runInContext(fs.readFileSync(p, 'utf8'), sandbox, { filename: f });
     } catch (e) {
-      runErrors.push(`${fn}: RENDER THREW ${e.message}`);
+      loadErrors.push(`${f}: LOAD ERROR ${e.message}`);
+    }
+  }
+  return { sandbox, loadErrors };
+}
+
+(async () => {
+  const allErrors = [];
+  let totalOk = 0, totalRun = 0;
+  for (const scenario of SCENARIOS) {
+    const { sandbox, loadErrors } = runScenario(scenario.resp);
+    for (const e of loadErrors) allErrors.push(`[load] ${e}`);
+    for (const fn of TARGETS) {
+      const f = sandbox[fn];
+      if (typeof f !== 'function') { allErrors.push(`[${scenario.label}] ${fn}: NOT a function (undefined)`); continue; }
+      totalRun++;
+      try {
+        const r = f(scenario.resp);
+        if (r && typeof r.then === 'function') await r;
+        totalOk++;
+      } catch (e) {
+        allErrors.push(`[${scenario.label}] ${fn}: RENDER THREW ${e.message}`);
+      }
     }
   }
 
-  console.log('=== LOAD ERRORS ===');
-  console.log(loadErrors.length ? loadErrors.join('\n') : '  none');
-  console.log('=== RENDER RESULTS ===');
-  console.log(`  ok: ${okCount}/${TARGETS.length}`);
-  console.log(runErrors.length ? runErrors.join('\n') : '  no render exceptions');
-  process.exit(loadErrors.length || runErrors.length ? 1 : 0);
+  console.log('=== MOBILE SECTION RENDER SMOKE ===');
+  console.log(`  scenarios: ${SCENARIOS.map(s => s.label).join(', ')}`);
+  console.log(`  render calls ok: ${totalOk}/${totalRun}`);
+  if (allErrors.length) {
+    console.error('  FAILURES:');
+    for (const e of allErrors) console.error(`    ${e}`);
+    process.exit(1);
+  }
+  console.log('  no render exceptions across all data scenarios');
+  process.exit(0);
 })();
