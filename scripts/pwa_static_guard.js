@@ -83,6 +83,35 @@ for (const file of mustExist) readUtf8(file);
 
 const indexHtml = readUtf8(INDEX);
 const dashboardPcHtml = readUtf8(DASHBOARD_PC);
+
+// Thai encoding guard: block corrupted (mojibake) Thai in loaded PWA scripts.
+// Commit 9749fef once double-encoded all Thai in section_revenue.js /
+// dashboard_pc_core.js, so menus rendered garbled text while every other
+// guard passed. "เธ" is the hallmark bigram of UTF-8-misread-as-Windows-874;
+// C1 control chars (U+0080–U+009F) are never valid source text.
+{
+  const loadedJs = new Set();
+  for (const html of [indexHtml, dashboardPcHtml]) {
+    const re = /src="([^"?]+\.js)/g;
+    let m;
+    while ((m = re.exec(html))) {
+      const fileName = m[1].replace(/^\.?\//, '').split('/').pop();
+      if (fileName) loadedJs.add(fileName);
+    }
+  }
+  for (const fileName of loadedJs) {
+    const p = path.join(PWA, fileName);
+    if (!fs.existsSync(p)) continue;
+    const text = fs.readFileSync(p, 'utf8');
+    const bigrams = (text.match(/เธ/g) || []).length;
+    if (bigrams >= 3) {
+      fail(`${fileName}: ${bigrams} "เธ" mojibake bigrams — corrupted Thai (run scripts/thai_encoding_guard.js).`);
+    }
+    if (/[\u0080-\u009F]/.test(text)) {
+      fail(`${fileName}: contains C1 control characters — corrupted Thai encoding.`);
+    }
+  }
+}
 const versionJs = readUtf8(VERSION);
 const swJs = readUtf8(SW);
 const assetManifestJs = readUtf8(ASSET_MANIFEST);

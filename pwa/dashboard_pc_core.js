@@ -318,7 +318,7 @@
   }
 
   function _doLogout() {
-    if (!confirm('เธญเธญเธเธเธฒเธเธฃเธฐเธเธ COMPHONE Dashboard?\n\nเธเธฒเธเธ—เธตเนเธขเธฑเธเนเธกเนเนเธ”เนเธเธฑเธเธ—เธถเธเธญเธฒเธเธซเธฒเธขเนเธ')) return;
+    if (!confirm('ออกจากระบบ COMPHONE Dashboard?\n\nงานที่ยังไม่ได้บันทึกอาจหายไป')) return;
     localStorage.removeItem(AUTH_SESSION_KEY);
     localStorage.removeItem(LAST_SECTION_KEY);
     showLoginOverlay();

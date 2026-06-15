@@ -17,6 +17,18 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > gaps, safety gates, and the recommended review order from the historical
 > detail retained in this BLUEPRINT.
 
+> 2026-06-15 runtime root-cause fix: owner reported menus felt
+> "incomplete/inconsistent" despite a healthy backend. Live checks confirmed
+> GAS health/login/Pages/Worker all OK; the real defect was **corrupted Thai
+> (mojibake)** introduced by commit `9749fef` in two loaded PWA scripts
+> (`section_revenue.js` = Revenue menu on mobile+PC, `dashboard_pc_core.js` =
+> PC logout dialog). Correct Thai was reconstructed from clean `0b2856f` while
+> keeping current logic; orphan `advanced_reports.js` (not loaded) was left and
+> flagged. New `scripts/thai_encoding_guard.js` (in pre-commit + regression
+> guard) blocks the `เธ` bigram and C1 control bytes from regressing. Deeper
+> per-menu data/workflow completeness still needs a live `COMPHONE_AUTH_TOKEN`
+> sweep. Details in `COWORK_SYSTEM_HANDOFF.md` section 9b.
+
 > 2026-06-13 guard-environment hardening: regression-guard, guard-self-test,
 > drift-guard, and post-incident-watch now work correctly on Windows Git Bash
 > (real-Python interpreter probing instead of the `python3` Store stub, pinned

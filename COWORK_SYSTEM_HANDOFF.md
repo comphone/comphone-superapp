@@ -281,6 +281,48 @@ Still unproven (requires a fresh `COMPHONE_AUTH_TOKEN` from a real login,
 which was not available): protected API smoke, token sweep, and the real
 JobID-tagged LINE image ingress sample.
 
+## 9b. Runtime Root-Cause Found on 2026-06-15: Corrupted Thai (Mojibake)
+
+Owner reported the app loads and login works, but menus felt "incomplete /
+inconsistent." Live runtime checks proved the stack is healthy (GAS
+`health` ok with spreadsheet/config/triggers, `getVersion` ok, `loginUser`
+and `verifySession` return correct responses, Pages HTTP 200, Worker
+`/health` 1.0.5-sprint189). The visible problem was **garbled Thai text**, not
+a server outage.
+
+Root cause: commit `9749fef "Harden Sprint 78 reports E2E workflow"`
+double-encoded the Thai in two **loaded** PWA scripts (UTF-8 misread as
+Windows-874, leaving the `เธ` hallmark bigram plus lone C1 control bytes where
+characters like `น`/`้` belonged). The prior version was clean, so this was an
+encoding regression, not a content change. Structural guards never caught it
+because they check load order/routes/handlers, not text legibility.
+
+| File | Loaded by | Damage | Fix |
+|---|---|---|---|
+| `pwa/section_revenue.js` | Mobile + PC (Revenue menu) | ~259 corrupted sequences (35 lines): KPI labels, table headers, errors | Reconstructed correct Thai from clean `0b2856f`, kept current `getReportData` normalization logic |
+| `pwa/dashboard_pc_core.js` | PC | logout confirm dialog | Restored correct Thai |
+| `pwa/advanced_reports.js` | **not loaded** (orphan) | ~753 sequences | Left as-is; flagged for archive (does not reach users) |
+
+Verification of the fix:
+- `scripts/thai_encoding_guard.js` (new): OK, 48 loaded PWA scripts clean.
+- VM render of `renderRevenueSection` with mock data: KPI/headers/`฿`/customer
+  all render as correct Thai, zero `เธ`.
+- `node --check` clean on both files; PWA Static Guard OK.
+
+Regression prevention (new guard, wired into pre-commit and CI):
+- `scripts/thai_encoding_guard.js` scans every JS the two HTML shells load and
+  fails on the `เธ` mojibake bigram (threshold 3) or any C1 control char.
+- The same check is embedded in `scripts/pwa_static_guard.js` (runs in the
+  pre-commit hook) and added as a Suite step in `scripts/regression-guard.sh`.
+- Negative-tested: restoring the corrupted `section_revenue.js` makes the guard
+  fail with the exact file/line list; the clean tree passes.
+
+Caveat: this fixes the *legibility* of these menus. Deeper "incompleteness"
+(empty data, missing detail rows, workflow gaps) can only be confirmed by
+exercising the protected read endpoints per menu with a fresh
+`COMPHONE_AUTH_TOKEN`, which was not available this session. Recommend the owner
+supply a token so each menu's live data can be swept (handoff section 12 step 3-4).
+
 ## 10. Priority Findings for Cowork
 
 ### P0 - Re-establish live acceptance evidence

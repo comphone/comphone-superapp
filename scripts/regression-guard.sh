@@ -225,6 +225,16 @@ else
   warn "Node or system_integrity_audit.js unavailable - skipping system integrity audit"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/thai_encoding_guard.js" ]; then
+  if node scripts/thai_encoding_guard.js; then
+    echo "   ✅ Thai encoding guard passed"
+  else
+    fail "Thai encoding guard FAILED — corrupted Thai in loaded PWA files"
+  fi
+else
+  warn "Node or thai_encoding_guard.js unavailable - skipping Thai encoding guard"
+fi
+
 if command -v node &>/dev/null && [ -f "scripts/pwa_functional_menu_audit.js" ]; then
   if node scripts/pwa_functional_menu_audit.js; then
     echo "   ✅ Functional menu audit passed"
