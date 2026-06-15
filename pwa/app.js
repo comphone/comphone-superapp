@@ -341,8 +341,11 @@ function startMainApp() {
   const roleConf = ROLES[APP.role] || ROLES.tech;
   app.className = 'screen ' + roleConf.theme;
 
-  // Set user info
-  const initial = APP.user.name.charAt(0).toUpperCase();
+  // Set user info — guard against a null/partial session so a corrupted
+  // restore cannot crash the whole app boot (blank screen) here.
+  const sessionUser = APP.user || {};
+  const sessionName = sessionUser.name || sessionUser.full_name || sessionUser.username || 'ผู้ใช้';
+  const initial = sessionName.charAt(0).toUpperCase();
   document.getElementById('user-avatar').textContent = initial;
   document.getElementById('user-avatar').style.background = 'rgba(255,255,255,0.25)';
   document.getElementById('user-avatar').style.color = '#fff';
@@ -350,7 +353,7 @@ function startMainApp() {
   const hour = new Date().getHours();
   const greet = hour < 12 ? 'อรุณสวัสดิ์' : hour < 17 ? 'สวัสดีตอนบ่าย' : 'สวัสดีตอนเย็น';
   document.getElementById('greeting-text').textContent = greet + ' 👋';
-  document.getElementById('user-name-display').textContent = APP.user.name;
+  document.getElementById('user-name-display').textContent = sessionName;
 
   // แสดง/ซ่อน admin ตาม role (now in More menu)
   const moreAdmin = document.getElementById('more-admin-btn');
@@ -485,7 +488,12 @@ function restoreLastPage() {
 // ===== PROFILE PAGE =====
 function renderProfile() {
   const roleConf = ROLES[APP.role] || ROLES.tech;
-  const initial = APP.user.name.charAt(0).toUpperCase();
+  // APP.user defaults to null until login resolves; guard like the rest of the
+  // codebase (e.g. APP.user && ...) so a session-restore race or deep-link to
+  // the profile page does not crash the render.
+  const user = APP.user || {};
+  const displayName = user.name || user.full_name || user.username || 'ผู้ใช้';
+  const initial = displayName.charAt(0).toUpperCase();
   const version = (window.VERSION_CONFIG && window.VERSION_CONFIG.version) || window.COMPHONE_VERSION || '';
   const versionLabel = document.querySelector('.app-version [data-i18n="Version"]');
   if (versionLabel && version) versionLabel.textContent = version;
@@ -497,7 +505,7 @@ function renderProfile() {
     avatarLg.style.color = '#fff';
   }
   const nameLg = document.getElementById('profile-name-large');
-  if (nameLg) nameLg.textContent = APP.user.name;
+  if (nameLg) nameLg.textContent = displayName;
 
   const roleBadge = document.getElementById('profile-role-badge');
   if (roleBadge) roleBadge.textContent = roleConf.label;

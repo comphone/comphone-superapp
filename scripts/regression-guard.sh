@@ -235,6 +235,16 @@ else
   warn "Node or thai_encoding_guard.js unavailable - skipping Thai encoding guard"
 fi
 
+if command -v node &>/dev/null && [ -f "scripts/section_render_smoke.js" ]; then
+  if node scripts/section_render_smoke.js; then
+    echo "   ✅ Mobile section render smoke passed"
+  else
+    fail "Mobile section render smoke FAILED — a menu loader threw at render time"
+  fi
+else
+  warn "Node or section_render_smoke.js unavailable - skipping section render smoke"
+fi
+
 if command -v node &>/dev/null && [ -f "scripts/pwa_functional_menu_audit.js" ]; then
   if node scripts/pwa_functional_menu_audit.js; then
     echo "   ✅ Functional menu audit passed"
