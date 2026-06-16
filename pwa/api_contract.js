@@ -156,7 +156,18 @@
           { action: 'addQuickNote', destructive: true },
           { action: 'transitionJob', destructive: true },
           { action: 'deleteJob', destructive: true, smoke: false, smokeReason: 'archives to DBJOBS_ARCHIVE before deleting from DBJOBS; requires admin/owner and DELETE_JOB confirmation' },
+          { action: 'restoreJob', destructive: true, smoke: false, smokeReason: 'restores from DBJOBS_ARCHIVE to DBJOBS; requires admin/owner and RESTORE_JOB confirmation; blocked if JobID already exists live' },
         ],
+      },
+      {
+        id: 'job_archive',
+        label: 'Job Archive',
+        description: 'Read and restore archived jobs from DBJOBS_ARCHIVE',
+        readOnly: [
+          { action: 'listJobArchive', payload: { limit: 20 }, required: true },
+          { action: 'previewJobRestore', required: false, smoke: false, smokeReason: 'requires a real archived job_id' },
+        ],
+        writeActions: [],
       },
       {
         id: 'billing_payment',

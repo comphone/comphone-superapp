@@ -8,6 +8,7 @@
   },
   "canonical_tables": {
     "DBJOBS": { "domain": "jobs", "critical": true },
+    "DBJOBS_ARCHIVE": { "domain": "jobs", "critical": false, "note": "Archive of deleted jobs; restored via restoreJob (Sprint 194)" },
     "DB_INVENTORY": { "domain": "inventory", "critical": true },
     "DB_CUSTOMERS": { "domain": "crm", "critical": true },
     "DB_CUSTOMER_LOGS": { "domain": "crm", "critical": false },

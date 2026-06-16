@@ -1,6 +1,6 @@
 # COMPHONE SUPER APP - Cowork System Handoff
 
-Updated: 2026-06-13 (Asia/Bangkok)
+Updated: 2026-06-16 (Asia/Bangkok)
 
 This document is the concise operational handoff for Cowork or another engineering
 agent. Read `BLUEPRINT.md` for history, but use this file for the current review
@@ -281,6 +281,17 @@ Still unproven (requires a fresh `COMPHONE_AUTH_TOKEN` from a real login,
 which was not available): protected API smoke, token sweep, and the real
 JobID-tagged LINE image ingress sample.
 
+## 9c. Sprint 194 — Job Archive Restore (2026-06-16)
+
+Closes the P1 gap: admin/owner can now preview and restore archived jobs from `DBJOBS_ARCHIVE`.
+
+- **GAS backend**: `listJobArchive`, `previewJobRestore`, `restoreJob` added to `JobsHandler.gs` and registered in `RouterSplit.gs`. `restoreJob` requires `RESTORE_JOB` confirmation, checks for duplicate JobID in live DBJOBS, uses LockService, and writes `RESTORE_JOB` to the audit log.
+- **Frontend**: Admin panel gains an "Archive" tab (both PC and mobile shell). Shows archived job list, per-job preview cards with field table, duplicate-block warning, and confirmation-gated restore button.
+- **Schema**: `DBJOBS_ARCHIVE` registered in `docs/database_schema_registry.json`.
+- **Guard**: `scripts/sprint194_job_archive_restore_guard.js` — 23/23 checks — wired into `pwa_static_guard.js`, `regression-guard.sh`, and GitHub Actions.
+
+Still requires live proof: a fresh `COMPHONE_AUTH_TOKEN` is needed to run the protected read path (`listJobArchive`) and confirm the restore flow end-to-end.
+
 ## 9b. Runtime Root-Cause Found on 2026-06-15: Corrupted Thai (Mojibake)
 
 Owner reported the app loads and login works, but menus felt "incomplete /
@@ -361,11 +372,12 @@ supply a token so each menu's live data can be swept (handoff section 12 step 3-
 - Warranty list was healthy but empty.
 - Re-run the data-completeness suite before assuming these findings still exist.
 
-### P1 - Add archive restore
+### ✅ P1 - Add archive restore (DONE — Sprint 194)
 
-Implement an admin/owner preview-and-restore flow for `DBJOBS_ARCHIVE`.
-Restoration must detect duplicate JobID, log audit evidence, and never overwrite
-an existing live Job silently.
+Preview-and-restore for `DBJOBS_ARCHIVE` is implemented. `listJobArchive`,
+`previewJobRestore`, and `restoreJob` are live in GAS and the Admin panel
+Archive tab. Duplicate detection, RESTORE_JOB confirmation gate, LockService,
+and audit logging are all in place. Guard: `sprint194_job_archive_restore_guard.js` 23/23.
 
 ### P2 - Frontend and repository cleanup
 

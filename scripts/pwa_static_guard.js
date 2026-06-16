@@ -856,6 +856,7 @@ for (const [fileName, marker, tokenAware] of [
   ['sprint191_ai_vision_inbox_render_smoke.js', 'AI Vision Inbox Render Smoke', false],
   ['sprint192_mobile_dashboard_simplification_guard.js', 'Mobile Dashboard Simplification', false],
   ['sprint193_delete_camera_dashboard_guard.js', 'Delete/Camera/Dashboard Guard', false],
+  ['sprint194_job_archive_restore_guard.js', 'Job Archive Restore', false],
 ]) {
   const body = readUtf8(path.join(ROOT, 'scripts', fileName));
   if (!body.includes(marker) || (tokenAware && !body.includes('COMPHONE_AUTH_TOKEN'))) {

@@ -62,6 +62,7 @@ function buildAdminPanelShell_(container) {
       <button class="admin-tab" data-tab="users"><i class="bi bi-people-fill"></i> Users</button>
       <button class="admin-tab" data-tab="config"><i class="bi bi-gear-fill"></i> Config</button>
       <button class="admin-tab" data-tab="repair"><i class="bi bi-tools"></i> Repair</button>
+      <button class="admin-tab" data-tab="archive"><i class="bi bi-archive-fill"></i> Archive</button>
       <button class="admin-tab" data-tab="audit"><i class="bi bi-journal-text"></i> Audit Log</button>
     </div>
     <div id="admin-tab-content" style="padding:0 0 80px 0"></div>`;
@@ -89,6 +90,7 @@ function switchAdminTab_(tab) {
     case 'users':    renderUserManagement_(content);    break;
     case 'config':   renderConfigPanel_(content);       break;
     case 'repair':   renderDataRepairConsole_(content); break;
+    case 'archive':  renderJobArchivePanel_(content);   break;
     case 'audit':    renderAuditLogViewer_(content);    break;
   }
 }
@@ -834,6 +836,134 @@ async function executeAdminDataRepair_(repairId) {
   });
   showToast(res && res.success ? 'Data repair executed and archived.' : 'Repair blocked: ' + ((res && res.error) || 'unknown error'));
   if (res && res.success) renderDataRepairConsole_(document.getElementById('admin-tab-content'));
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Job Archive Restore (Sprint 194)
+══════════════════════════════════════════════════════════════ */
+
+async function renderJobArchivePanel_(container) {
+  container.innerHTML = '<div class="loading-spinner-sm" style="margin:24px auto"></div>';
+  try {
+    const res = await callAPI('listJobArchive', { limit: 50 });
+    if (!res.success) throw new Error(res.error || 'Failed to load archive');
+    const jobs = res.archived_jobs || [];
+
+    container.innerHTML = `
+      <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-weight:700"><i class="bi bi-archive-fill" style="color:#7c3aed"></i> งานที่เก็บถาวร (${jobs.length})</div>
+        <button id="btn-archive-refresh" class="btn-secondary" style="font-size:12px"><i class="bi bi-arrow-clockwise"></i> รีเฟรช</button>
+      </div>
+      <div style="padding:0 16px 8px;font-size:12px;color:#64748b">
+        ดูตัวอย่างก่อนกู้คืน ระบบจะบล็อกถ้า JobID ยังมีอยู่ใน DBJOBS
+      </div>
+      <div id="archive-job-list">
+        ${jobs.length === 0
+          ? '<p style="color:#9ca3af;text-align:center;padding:32px">ไม่มีงานที่เก็บถาวร</p>'
+          : jobs.map(buildArchiveJobRow_).join('')}
+      </div>
+      <div id="archive-preview-area"></div>`;
+
+    document.getElementById('btn-archive-refresh').addEventListener('click', () => renderJobArchivePanel_(container));
+
+    document.getElementById('archive-job-list').addEventListener('click', e => {
+      const btn = e.target.closest('[data-preview-job]');
+      if (btn) showJobRestorePreview_(btn.dataset.previewJob, container);
+    });
+  } catch (e) {
+    container.innerHTML = `<div style="padding:24px;text-align:center;color:#ef4444">${e.message}</div>`;
+  }
+}
+
+function buildArchiveJobRow_(job) {
+  const dateStr = job.archived_at ? new Date(job.archived_at).toLocaleString('th-TH') : '-';
+  return `
+    <div class="audit-row" style="align-items:flex-start">
+      <div class="audit-dot" style="background:#7c3aed;margin-top:4px"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:#1e293b">${escapeAdminHtml_(job.job_id || '-')}</div>
+        <div style="font-size:12px;color:#6b7280">${escapeAdminHtml_(job.customer || '')} · ${escapeAdminHtml_(dateStr)}</div>
+        <div style="font-size:11px;color:#94a3b8">${escapeAdminHtml_(job.archive_reason || '')}</div>
+      </div>
+      <button class="btn-secondary" data-preview-job="${escapeAdminHtml_(job.job_id)}" style="font-size:11px;padding:4px 8px;flex-shrink:0;margin-left:8px">
+        <i class="bi bi-eye-fill"></i> ดูตัวอย่าง
+      </button>
+    </div>`;
+}
+
+async function showJobRestorePreview_(jobId, container) {
+  const previewArea = document.getElementById('archive-preview-area');
+  if (!previewArea) return;
+  previewArea.innerHTML = '<div class="loading-spinner-sm" style="margin:16px auto"></div>';
+  previewArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  try {
+    const res = await callAPI('previewJobRestore', { job_id: jobId });
+    if (!res.success) throw new Error(res.error);
+
+    const previewRows = Object.entries(res.preview || {})
+      .filter(([, v]) => v !== '' && v !== null && v !== undefined)
+      .slice(0, 12)
+      .map(([k, v]) => `<tr><td style="padding:4px 8px;color:#64748b;font-size:11px">${escapeAdminHtml_(k)}</td><td style="padding:4px 8px;font-size:11px;font-weight:600">${escapeAdminHtml_(String(v))}</td></tr>`)
+      .join('');
+
+    const blocked = res.duplicate_exists;
+    previewArea.innerHTML = `
+      <div style="margin:12px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px">
+        <div style="font-weight:700;font-size:14px;margin-bottom:8px">
+          <i class="bi bi-archive-fill" style="color:#7c3aed"></i> ตัวอย่างการกู้คืน: ${escapeAdminHtml_(jobId)}
+        </div>
+        ${blocked
+          ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px;margin-bottom:10px;color:#dc2626;font-size:12px;font-weight:700">
+              <i class="bi bi-exclamation-triangle-fill"></i> JobID นี้ยังมีอยู่ใน DBJOBS — กู้คืนถูกบล็อกเพื่อป้องกันทับข้อมูล
+             </div>`
+          : `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;margin-bottom:10px;color:#16a34a;font-size:12px;font-weight:700">
+              <i class="bi bi-check-circle-fill"></i> JobID ว่างใน DBJOBS — สามารถกู้คืนได้
+             </div>`}
+        <div style="font-size:12px;color:#64748b;margin-bottom:8px">เก็บถาวรเมื่อ ${escapeAdminHtml_(res.archived_at || '-')} โดย ${escapeAdminHtml_(res.archived_by || '-')}</div>
+        <table style="width:100%;background:#fff;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;margin-bottom:12px">${previewRows || '<tr><td style="padding:8px;color:#94a3b8">ไม่มีข้อมูล</td></tr>'}</table>
+        ${!blocked ? `
+          <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px">
+            <label style="font-size:12px;color:#9a3412;font-weight:700">พิมพ์ RESTORE_JOB เพื่อยืนยันการกู้คืน</label>
+            <input id="restore-confirm-input-${escapeAdminHtml_(jobId)}" style="width:100%;margin-top:6px;padding:8px;border:1px solid #fdba74;border-radius:8px;font-size:12px" autocomplete="off" placeholder="RESTORE_JOB">
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button id="btn-restore-execute-${escapeAdminHtml_(jobId)}" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer;flex:1">
+                <i class="bi bi-arrow-counterclockwise"></i> กู้คืน Job นี้
+              </button>
+              <button id="btn-restore-cancel" class="btn-secondary" style="font-size:12px">ยกเลิก</button>
+            </div>
+          </div>` : `
+          <button id="btn-restore-cancel" class="btn-secondary" style="font-size:12px">ปิด</button>`}
+      </div>`;
+
+    document.getElementById('btn-restore-cancel').addEventListener('click', () => { previewArea.innerHTML = ''; });
+    if (!blocked) {
+      document.getElementById('btn-restore-execute-' + jobId).addEventListener('click', () => executeJobRestore_(jobId, container));
+    }
+  } catch (e) {
+    previewArea.innerHTML = `<div style="padding:12px 16px;color:#ef4444">เกิดข้อผิดพลาด: ${escapeAdminHtml_(e.message)}</div>`;
+  }
+}
+
+async function executeJobRestore_(jobId, container) {
+  const input = document.getElementById('restore-confirm-input-' + jobId);
+  const confirmText = input ? input.value.trim() : '';
+  if (confirmText !== 'RESTORE_JOB') {
+    showToast('พิมพ์ RESTORE_JOB ให้ถูกต้องก่อนกู้คืน');
+    return;
+  }
+  if (!confirm('กู้คืน Job ' + jobId + ' จาก Archive กลับสู่ DBJOBS?')) return;
+
+  const res = await callAPI('restoreJob', {
+    job_id: jobId,
+    confirm: 'RESTORE_JOB',
+    reason: 'Admin panel restore (Sprint 194)',
+    user: (APP.user && (APP.user.username || APP.user.name)) || 'admin-ui'
+  });
+  showToast(res && res.success
+    ? 'กู้คืน Job ' + jobId + ' สำเร็จแล้ว'
+    : 'กู้คืนไม่สำเร็จ: ' + ((res && res.error) || 'unknown error'));
+  if (res && res.success) renderJobArchivePanel_(container);
 }
 
 function escapeAdminHtml_(value) {

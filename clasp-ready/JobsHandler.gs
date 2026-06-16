@@ -155,6 +155,201 @@ function getOrCreateJobArchiveSheet_(ss, sourceHeaders) {
   return sh;
 }
 
+// ────────────────────────────────────────────────────────────
+// Sprint 194 — Job Archive Restore
+// ────────────────────────────────────────────────────────────
+
+function listJobArchive(data) {
+  data = data || {};
+  var role = String(data._auth_role || data.role || '').toLowerCase();
+  if (role && role !== 'admin' && role !== 'owner') {
+    return { success: false, error: 'Admin access required' };
+  }
+  try {
+    var ss = getComphoneSheet();
+    var sh = findSheetByName(ss, 'DBJOBS_ARCHIVE');
+    if (!sh || sh.getLastRow() < 2) return { success: true, count: 0, archived_jobs: [] };
+    var values = sh.getDataRange().getValues();
+    var headers = values[0];
+    var jobIdOffset = headers.indexOf('JobID');
+    if (jobIdOffset < 0) jobIdOffset = headers.indexOf('Job_ID');
+    var customerOffset = headers.indexOf('Customer_Name');
+    if (customerOffset < 0) customerOffset = headers.indexOf('customer_name');
+    var limit = Math.min(100, Math.max(1, parseInt(data.limit || 50, 10) || 50));
+    var results = [];
+    for (var i = values.length - 1; i >= 1 && results.length < limit; i--) {
+      var row = values[i];
+      var archivedAt = row[0] ? String(row[0]) : '';
+      var archivedBy = row[1] ? String(row[1]) : '';
+      var archiveReason = row[3] ? String(row[3]) : '';
+      var jobId = jobIdOffset >= 0 ? String(row[jobIdOffset] || '') : '';
+      var customer = customerOffset >= 0 ? String(row[customerOffset] || '') : '';
+      results.push({
+        row_index: i + 1,
+        archived_at: archivedAt,
+        archived_by: archivedBy,
+        archive_reason: archiveReason,
+        job_id: jobId,
+        customer: customer
+      });
+    }
+    return { success: true, count: results.length, archived_jobs: results };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+function previewJobRestore(data) {
+  data = data || {};
+  var jobId = String(data.job_id || data.jobId || '').trim();
+  var role = String(data._auth_role || data.role || '').toLowerCase();
+  if (!jobId) return { success: false, error: 'job_id is required' };
+  if (role && role !== 'admin' && role !== 'owner') {
+    return { success: false, error: 'Admin access required' };
+  }
+  try {
+    var ss = getComphoneSheet();
+    var archiveSh = findSheetByName(ss, 'DBJOBS_ARCHIVE');
+    if (!archiveSh || archiveSh.getLastRow() < 2) {
+      return { success: false, error: 'No archived jobs found' };
+    }
+    var archiveValues = archiveSh.getDataRange().getValues();
+    var archiveHeaders = archiveValues[0];
+    var jobIdOffset = archiveHeaders.indexOf('JobID');
+    if (jobIdOffset < 0) jobIdOffset = archiveHeaders.indexOf('Job_ID');
+    if (jobIdOffset < 0) jobIdOffset = 5;
+
+    var candidateRow = null;
+    var candidateRowIndex = -1;
+    for (var i = archiveValues.length - 1; i >= 1; i--) {
+      if (String(archiveValues[i][jobIdOffset] || '').trim() === jobId) {
+        candidateRow = archiveValues[i];
+        candidateRowIndex = i + 1;
+        break;
+      }
+    }
+    if (!candidateRow) {
+      return { success: false, error: 'Archived job not found: ' + jobId };
+    }
+
+    var liveSh = findSheetByName(ss, 'DBJOBS');
+    var duplicateExists = false;
+    if (liveSh && liveSh.getLastRow() >= 2) {
+      var liveValues = liveSh.getDataRange().getValues();
+      var liveHeaders = liveValues[0];
+      var liveJobIdCol = findHeaderIndex_(liveHeaders, ['JobID', 'Job_ID', 'jobid', 'job_id']);
+      if (liveJobIdCol < 0) liveJobIdCol = 0;
+      for (var j = 1; j < liveValues.length; j++) {
+        if (String(liveValues[j][liveJobIdCol] || '').trim() === jobId) {
+          duplicateExists = true;
+          break;
+        }
+      }
+    }
+
+    var previewFields = {};
+    for (var k = 5; k < archiveHeaders.length; k++) {
+      if (archiveHeaders[k]) previewFields[archiveHeaders[k]] = candidateRow[k];
+    }
+
+    return {
+      success: true,
+      job_id: jobId,
+      archive_row_index: candidateRowIndex,
+      archived_at: String(candidateRow[0] || ''),
+      archived_by: String(candidateRow[1] || ''),
+      archive_reason: String(candidateRow[3] || ''),
+      duplicate_exists: duplicateExists,
+      can_restore: !duplicateExists,
+      preview: previewFields
+    };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+function restoreJob(data) {
+  data = data || {};
+  var jobId = String(data.job_id || data.jobId || '').trim();
+  var confirmText = String(data.confirm || data.confirmation || '').trim();
+  var reason = String(data.reason || '').trim();
+  var user = String(data._auth_user || data.user || 'SYSTEM').trim();
+  var role = String(data._auth_role || data.role || '').toLowerCase();
+
+  if (!jobId) return { success: false, error: 'job_id is required' };
+  if (confirmText !== 'RESTORE_JOB') {
+    return { success: false, error: 'RESTORE_JOB confirmation is required' };
+  }
+  if (role && role !== 'admin' && role !== 'owner') {
+    return { success: false, error: 'Admin access required' };
+  }
+
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch (e) { return { success: false, error: 'Lock timeout' }; }
+  try {
+    var ss = getComphoneSheet();
+
+    var liveSh = findSheetByName(ss, 'DBJOBS');
+    if (!liveSh) return { success: false, error: 'DBJOBS not found' };
+    var liveAll = liveSh.getDataRange().getValues();
+    var liveHeaders = liveAll[0];
+    var liveJobIdCol = findHeaderIndex_(liveHeaders, ['JobID', 'Job_ID', 'jobid', 'job_id']);
+    if (liveJobIdCol < 0) liveJobIdCol = 0;
+    for (var j = 1; j < liveAll.length; j++) {
+      if (String(liveAll[j][liveJobIdCol] || '').trim() === jobId) {
+        return { success: false, error: 'Job ' + jobId + ' already exists in DBJOBS — restore blocked to prevent overwrite' };
+      }
+    }
+
+    var archiveSh = findSheetByName(ss, 'DBJOBS_ARCHIVE');
+    if (!archiveSh || archiveSh.getLastRow() < 2) {
+      return { success: false, error: 'No archived jobs found' };
+    }
+    var archiveValues = archiveSh.getDataRange().getValues();
+    var archiveHeaders = archiveValues[0];
+    var jobIdOffset = archiveHeaders.indexOf('JobID');
+    if (jobIdOffset < 0) jobIdOffset = archiveHeaders.indexOf('Job_ID');
+    if (jobIdOffset < 0) jobIdOffset = 5;
+
+    var candidateRow = null;
+    var candidateRowIndex = -1;
+    for (var i = archiveValues.length - 1; i >= 1; i--) {
+      if (String(archiveValues[i][jobIdOffset] || '').trim() === jobId) {
+        candidateRow = archiveValues[i];
+        candidateRowIndex = i + 1;
+        break;
+      }
+    }
+    if (!candidateRow) {
+      return { success: false, error: 'Archived job not found: ' + jobId };
+    }
+
+    var jobRow = candidateRow.slice(5);
+    liveSh.appendRow(jobRow);
+
+    try {
+      writeAuditLog('RESTORE_JOB', user || 'SYSTEM', 'Restored job ' + jobId + ' from DBJOBS_ARCHIVE' + (reason ? ': ' + reason : ''), {
+        role: role,
+        job_id: jobId,
+        archive_row_index: candidateRowIndex,
+        result: 'ok'
+      });
+    } catch (_auditErr) {}
+
+    return {
+      success: true,
+      job_id: jobId,
+      restored: true,
+      restored_to: 'DBJOBS',
+      message: 'Job restored from archive'
+    };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  } finally {
+    try { lock.releaseLock(); } catch (_unlockErr) {}
+  }
+}
+
 function completeJob(data) {
   var lock = LockService.getScriptLock();
   try { lock.waitLock(10000); } catch(e) { return { error: 'Lock timeout' }; }
