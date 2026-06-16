@@ -80,22 +80,28 @@ else
 
 // ── version_config.js ────────────────────────────────────────
 const versionCfg = read('version_config.js');
-if (/sprint195/.test(versionCfg))
-  ok('version_config - sprint195 version');
+if (/sprint19[5-9]/.test(versionCfg))
+  ok('version_config - sprint195+ version');
 else
-  ko('version_config - sprint195 version', 'version not bumped to sprint195');
+  ko('version_config - sprint195+ version', 'version not at sprint195 or higher');
 
-if (/20260616_1600/.test(versionCfg))
-  ok('version_config - build timestamp 20260616_1600');
+if (/2026061[67]_/.test(versionCfg))
+  ok('version_config - build timestamp 20260616+ / 20260617+');
 else
-  ko('version_config - build timestamp', 'build timestamp not updated to 20260616_1600');
+  ko('version_config - build timestamp', 'build timestamp not updated past 20260616_1500');
 
 // ── sw.js ─────────────────────────────────────────────────────
 const swJs = read('sw.js');
-if (/sprint195/.test(swJs))
-  ok('sw.js - sprint195 CACHE_V');
+if (/sprint19[5-9]/.test(swJs))
+  ok('sw.js - sprint195+ CACHE_V');
 else
-  ko('sw.js - sprint195 CACHE_V', 'sw.js CACHE_V not bumped to sprint195');
+  ko('sw.js - sprint195+ CACHE_V', 'sw.js CACHE_V not at sprint195 or higher');
+
+// SW activate message must send activatedByUser=true to force client reload
+if (/activatedByUser:\s*true/.test(swJs))
+  ok('sw.js - activatedByUser:true in SW_ACTIVATED message');
+else
+  ko('sw.js - activatedByUser:true', 'SW_ACTIVATED message missing activatedByUser:true — old clients will not auto-reload');
 
 // ── Summary ──────────────────────────────────────────────────
 console.log(`\n[Sprint 195] ${pass + fail > 0 ? (fail === 0 ? 'OK' : 'FAIL') : 'NO TESTS'} ${pass}/${pass + fail} - Mobile tap reliability guard ${fail === 0 ? 'passed' : 'FAILED'}`);

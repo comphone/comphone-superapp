@@ -5,10 +5,10 @@
 // ===========================================================
 
 const VERSION_CONFIG = {
-  version: 'v5.18.47-sprint195',
+  version: 'v5.18.47-sprint196',
   buildDate: '2026-06-16',
-  buildTimestamp: '20260616_1600',
-  cacheVersion: 'comphone-v5.18.47-sprint195-20260616_1600',
+  buildTimestamp: '20260617_0900',
+  cacheVersion: 'comphone-v5.18.47-sprint196-20260617_0900',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -83,7 +83,8 @@ const VERSION_CONFIG = {
     'Sprint 192 Mobile dashboard simplification: 4 quick actions, fast-boot cache, progressive More menu',
     'Sprint 193 Delete/Camera hardening: camera stays in job detail, cleanup-tools shortcut for admin/owner',
     'Sprint 194 Job Archive Restore: preview + duplicate-block + RESTORE_JOB confirm gate in admin Archive tab',
-    'Sprint 195 Mobile tap reliability: explicit display:flex on job detail modal, renderTechHome null guard, SW update banner on SW_ACTIVATED, dead code cleanup'
+    'Sprint 195 Mobile tap reliability: explicit display:flex on job detail modal, renderTechHome null guard, SW update banner on SW_ACTIVATED, dead code cleanup',
+    'Sprint 196 SW auto-reload: SW_ACTIVATED now sends activatedByUser=true so old clients auto-reload on new SW activation without waiting for user action'
   ]
 };
 
@@ -93,9 +94,9 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 
 // Backward-compatible exports for legacy modules and guards
-const APP_VERSION = 'v5.18.47-sprint195';
-const BUILD_TIMESTAMP = '20260616_1600';
-const CACHE_VERSION = 'comphone-v5.18.47-sprint195-20260616_1600';
+const APP_VERSION = 'v5.18.47-sprint196';
+const BUILD_TIMESTAMP = '20260617_0900';
+const CACHE_VERSION = 'comphone-v5.18.47-sprint196-20260617_0900';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;

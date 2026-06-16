@@ -1,6 +1,6 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.18.47-sprint195 (PWA) / GAS Backend v5.18.16-write-flow-validation @620
+> **Version:** v5.18.47-sprint196 (PWA) / GAS Backend v5.18.16-write-flow-validation @620
 
 > **Date:** 2026-06-16 | **Phase:** 194 (Job Archive Restore)
 
@@ -41,7 +41,7 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 ### Current Production State
 - **Current phase:** Sprint / Phase 193.
 - **Latest stable verification commit before this handoff:** `249ff86 Document Sprint 110 GAS live verification`. Run `git log -1 --oneline` for the exact current repository HEAD.
-- **PWA version:** `v5.18.47-sprint195`.
+- **PWA version:** `v5.18.47-sprint196`.
 - **GAS backend version:** `v5.18.16-write-flow-validation`.
 - **Production GAS deployment:** `AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ @620`.
 - **Production GAS URL:** `https://script.google.com/macros/s/AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ/exec`.
@@ -321,9 +321,9 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN,Env:\COMPHONE_LINE_TOGGLE_CONFIRM,Env:\COMP
 
 | Item | Current Value | Source of Truth |
 |---|---|---|
-| App Version | `v5.18.47-sprint195` | `pwa/version_config.js` |
-| Cache Version | `comphone-v5.18.47-sprint195-20260616_1600` | `pwa/version_config.js`, `pwa/sw.js` |
-| Build Timestamp | `20260616_1600` | `pwa/version_config.js` |
+| App Version | `v5.18.47-sprint196` | `pwa/version_config.js` |
+| Cache Version | `comphone-v5.18.47-sprint196-20260617_0900` | `pwa/version_config.js`, `pwa/sw.js` |
+| Build Timestamp | `20260617_0900` | `pwa/version_config.js` |
 | GAS Backend Deploy | `AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ @620` / production URL in `pwa/gas_config.js` | `Config.gs`, `Dashboard.gs`, `DashboardBundle.gs`, `Router.gs`, `RouterSplit.gs`, `JobStateMachine.gs`, `LineCommandCenter.gs`, `SmokeCleanup.gs`, `DataRepairConsole.gs`, `VisionPipeline.gs`, `PhotoQueue.gs`, `clasp-ready/Config.gs`, `clasp-ready/Dashboard.gs`, `clasp-ready/DashboardBundle.gs`, `clasp-ready/Router.gs`, `clasp-ready/RouterSplit.gs`, `clasp-ready/JobStateMachine.gs`, `clasp-ready/LineCommandCenter.gs`, `clasp-ready/SmokeCleanup.gs`, `clasp-ready/DataRepairConsole.gs`, `clasp-ready/VisionPipeline.gs`, `clasp-ready/PhotoQueue.gs` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-07.phase65-line-command-center` | `pwa/api_contract.js` |
@@ -440,7 +440,7 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN,Env:\COMPHONE_LINE_TOGGLE_CONFIRM,Env:\COMP
 - Added admin/owner-only backend action `deleteJob`. It requires `confirm: DELETE_JOB`, archives the DBJOBS row into `DBJOBS_ARCHIVE`, writes `DELETE_JOB` audit context, then deletes the row from `DBJOBS`.
 - PC Jobs now exposes Detail and Delete actions in the jobs table/detail modal. Mobile Jobs now opens details reliably and shows Delete Job for admin/owner users.
 - `deleteJob` is intentionally destructive but archive-first. Future Sprint 186 should add a restore-from-archive UI before making bulk deletion workflows.
-- PWA cache was bumped to `v5.18.47-sprint195` / `20260521_1200`.
+- PWA cache was bumped to `v5.18.47-sprint196` / `20260521_1200`.
 
 ### Phase 148 Ops Permission + Decision Layer Pack (2026-05-20)
 - Sprint 144: added owner data resolution planning for the Sprint 139 data findings. It creates `test_reports/sprint144_owner_data_resolution_latest.json` and `.md`, requires owner approval, and never invokes `executeDataRepair`.
