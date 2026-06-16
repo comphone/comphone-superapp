@@ -223,7 +223,10 @@ async function showJobDetail(jobId) {
   const s = { urgent:'badge-urgent', inprog:'badge-inprog', waiting:'badge-wait', done:'badge-done', cancel:'badge-done', new:'badge-new' };
   const sl = { urgent:'Urgent', inprog:'In progress', waiting:'Waiting parts', done:'Done', cancel:'Cancelled', new:'New' };
 
-  document.getElementById('modal-job-content').innerHTML = `
+  const jobModalContent = document.getElementById('modal-job-content');
+  if (!jobModalContent) { showToast('เกิดข้อผิดพลาด ไม่พบ modal-job-content'); return; }
+  document.body.style.overflow = 'hidden';
+  jobModalContent.innerHTML = `
     <div style="padding:0 16px 16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div>
@@ -348,4 +351,8 @@ function openMobileJobVision(jobId) {
 function closeModal(id) {
   const modal = document.getElementById(id);
   if (modal) modal.classList.add('hidden');
+  // Restore scroll if no other modal/sheet is still open
+  if (!document.querySelector('.modal-overlay:not(.hidden), .cp-sheet-overlay:not(.hidden)')) {
+    document.body.style.overflow = '';
+  }
 }

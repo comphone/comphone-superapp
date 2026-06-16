@@ -322,8 +322,8 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN,Env:\COMPHONE_LINE_TOGGLE_CONFIRM,Env:\COMP
 | Item | Current Value | Source of Truth |
 |---|---|---|
 | App Version | `v5.18.47-sprint194` | `pwa/version_config.js` |
-| Cache Version | `comphone-v5.18.47-sprint194-20260616_1300` | `pwa/version_config.js`, `pwa/sw.js` |
-| Build Timestamp | `20260616_1300` | `pwa/version_config.js` |
+| Cache Version | `comphone-v5.18.47-sprint194-20260616_1500` | `pwa/version_config.js`, `pwa/sw.js` |
+| Build Timestamp | `20260616_1500` | `pwa/version_config.js` |
 | GAS Backend Deploy | `AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ @620` / production URL in `pwa/gas_config.js` | `Config.gs`, `Dashboard.gs`, `DashboardBundle.gs`, `Router.gs`, `RouterSplit.gs`, `JobStateMachine.gs`, `LineCommandCenter.gs`, `SmokeCleanup.gs`, `DataRepairConsole.gs`, `VisionPipeline.gs`, `PhotoQueue.gs`, `clasp-ready/Config.gs`, `clasp-ready/Dashboard.gs`, `clasp-ready/DashboardBundle.gs`, `clasp-ready/Router.gs`, `clasp-ready/RouterSplit.gs`, `clasp-ready/JobStateMachine.gs`, `clasp-ready/LineCommandCenter.gs`, `clasp-ready/SmokeCleanup.gs`, `clasp-ready/DataRepairConsole.gs`, `clasp-ready/VisionPipeline.gs`, `clasp-ready/PhotoQueue.gs` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-07.phase65-line-command-center` | `pwa/api_contract.js` |
