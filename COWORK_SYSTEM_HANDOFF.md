@@ -196,6 +196,35 @@ processing, queueing, logs, or audit evidence.
   `EXECUTE_REVIEWED_DATA_REPAIR`.
 - Never execute repair or deletion from CI.
 
+## 9d. Full Protected Live Verification — 2026-06-16
+
+Fresh session token (OWNER role) supplied by operator. All protected read
+suites passed against production GAS @620.
+
+```
+PWA API Smoke (13 endpoints):      OK 13/13
+Sprint 85 Live Mobile Menu Smoke:  OK 13/13
+Sprint 87 Protected Live QA:       OK 13/13
+Sprint 99 Live Readiness Audit:    OK 6/6
+Sprint 124 Protected Visual/Menu:  OK 21/21 (static+public+protected)
+Sprint 132 Core Workflow Live QA:  OK (J0020 billing miss = optional, expected)
+Sprint 133 Support/Admin Live QA:  OK (warranty detail = optional, no Job_ID)
+Sprint 134 Data Completeness:      WARNING — 4 known findings (unchanged from prior sweep):
+  1. One incomplete DB_BILLING source row
+  2. Job J0020 has no readable Billing detail
+  3. Current-month daily revenue rows empty (monthly total is healthy)
+  4. Warranty list is live but returns no rows
+Sprint 138 Review Log Live QA:     OK 4/4
+Sprint 139 Data Cleanup Triage:    OK 4 findings (same as Sprint 134 above)
+Sprint 161 Protected Live Sweep:   OK 16/16 protected_run=true
+Sprint 166 Token Full Sweep Pack:  OK 3/3
+```
+
+Sprint 194 Router.gs whitelist fix also discovered via live test and patched
+(`listJobArchive`, `previewJobRestore`, `restoreJob` were missing from
+`ALLOWED_FUNCTIONS` in Router.gs — now fixed and committed `37910c0`).
+Sprint 194 endpoints will be live after the next clasp push + GAS redeploy.
+
 ## 9. Verification Completed on 2026-06-12
 
 The following checks passed against the restored GitHub working copy:
@@ -336,14 +365,14 @@ supply a token so each menu's live data can be swept (handoff section 12 step 3-
 
 ## 10. Priority Findings for Cowork
 
-### P0 - Re-establish live acceptance evidence
+### ✅ P0 - Live acceptance evidence (DONE — 2026-06-16)
 
-1. Obtain a fresh session token through normal login.
-2. Run the protected API smoke and token sweep.
-3. Perform PC and mobile browser click-through using the published Pages URLs.
-4. Verify Jobs Detail, delete visibility by role, Billing Detail, Reports
-   drilldown, Admin Cleanup, Vision Inbox, and LINE Center.
-5. Record exact failures before editing code.
+Protected live sweep completed with fresh OWNER session token. All read
+endpoints confirmed healthy. See section 9d for full results.
+
+Remaining operator action: browser click-through on published Pages URLs
+(PC + mobile) to confirm visual rendering with real data. Cannot be done
+by a code agent without a controlled browser session.
 
 ### P1 - Reconcile version and documentation drift
 
