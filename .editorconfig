@@ -1,0 +1,28 @@
+# COMPHONE SUPER APP — EditorConfig
+# Mirrors .gitattributes so editors enforce the same encoding/EOL the repo
+# expects. The mojibake (corrupted Thai) and CRLF-in-.md5 incidents both came
+# from inconsistent encoding/line endings; these rules prevent a recurrence at
+# type/save time, before any guard runs.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# Windows batch files keep CRLF (matches .gitattributes)
+[*.{bat,cmd}]
+end_of_line = crlf
+
+# Checksum manifests must be LF or `md5sum -c` cannot read the filenames
+[*.md5]
+end_of_line = lf
+trim_trailing_whitespace = false
+
+# Markdown: keep trailing whitespace (hard line breaks)
+[*.md]
+trim_trailing_whitespace = false
