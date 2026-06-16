@@ -1,0 +1,50 @@
+{
+  "version": "2.0.0",
+  "// COMPHONE": "One-click access to the existing guard suite from inside VSCode (Terminal > Run Task). These call the same scripts as CI/pre-commit — no new logic.",
+  "tasks": [
+    {
+      "label": "Guard: PWA Static",
+      "type": "shell",
+      "command": "node scripts/pwa_static_guard.js",
+      "problemMatcher": [],
+      "presentation": { "clear": true }
+    },
+    {
+      "label": "Guard: Thai Encoding",
+      "type": "shell",
+      "command": "node scripts/thai_encoding_guard.js",
+      "problemMatcher": [],
+      "presentation": { "clear": true }
+    },
+    {
+      "label": "Guard: Section Render Smoke",
+      "type": "shell",
+      "command": "node scripts/section_render_smoke.js",
+      "problemMatcher": [],
+      "presentation": { "clear": true }
+    },
+    {
+      "label": "Guard: Self-Test",
+      "type": "shell",
+      "command": "bash scripts/guard-self-test.sh",
+      "problemMatcher": [],
+      "presentation": { "clear": true }
+    },
+    {
+      "label": "Guard: Full Regression",
+      "type": "shell",
+      "command": "bash scripts/regression-guard.sh",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": [],
+      "presentation": { "clear": true }
+    },
+    {
+      "label": "Serve PWA (python http.server)",
+      "type": "shell",
+      "command": "py -m http.server 8099 --directory pwa",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "clear": true }
+    }
+  ]
+}

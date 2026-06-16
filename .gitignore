@@ -32,7 +32,12 @@ Thumbs.db
 desktop.ini
 
 # Editor
-.vscode/
+# Ignore user-specific VSCode state but keep the shared workspace config that
+# enforces encoding/EOL and wires the guard tasks (committed for the whole team).
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/tasks.json
 .idea/
 *.swp
 *.swo

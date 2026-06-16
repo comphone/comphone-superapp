@@ -1,0 +1,45 @@
+{
+  "// COMPHONE": "Workspace settings tuned to the bug classes this project has actually hit (corrupted Thai encoding, CRLF-in-manifests). Editor-only — does not change code or guards.",
+
+  "files.encoding": "utf8",
+  "files.autoGuessEncoding": false,
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "files.trimFinalNewlines": true,
+
+  "[markdown]": {
+    "files.trimTrailingWhitespace": false
+  },
+  "[bat]": {
+    "files.eol": "\r\n"
+  },
+
+  "editor.renderWhitespace": "boundary",
+  "editor.renderControlCharacters": true,
+  "editor.unicodeHighlight.invisibleCharacters": true,
+  "editor.unicodeHighlight.nonBasicASCII": false,
+
+  "search.exclude": {
+    "**/backups/**": true,
+    "**/test_reports/**": true,
+    "**/clasp-accumulated/**": true,
+    "**/clasp-batch1/**": true,
+    "**/ARCHIVED_Shop_vnext/**": true,
+    "**/archive/**": true,
+    "**/node_modules/**": true
+  },
+  "files.watcherExclude": {
+    "**/backups/**": true,
+    "**/test_reports/**": true,
+    "**/clasp-accumulated/**": true,
+    "**/clasp-batch1/**": true
+  },
+
+  "[javascript]": {
+    "editor.formatOnSave": false
+  },
+  "files.associations": {
+    "*.gs": "javascript"
+  }
+}

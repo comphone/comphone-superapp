@@ -1,0 +1,10 @@
+{
+  "// COMPHONE": "Recommended extensions. VSCode prompts to install these on open; nothing is installed automatically.",
+  "recommendations": [
+    "anthropic.claude-code",
+    "dbaeumer.vscode-eslint",
+    "EditorConfig.EditorConfig",
+    "ritwickdey.LiveServer",
+    "streetsidesoftware.code-spell-checker"
+  ]
+}

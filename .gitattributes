@@ -21,6 +21,10 @@ scripts/hooks/* text eol=lf
 # Checksum manifests — md5sum -c อ่านไม่ได้ถ้าชื่อไฟล์ติด \r (CRLF)
 *.md5   text eol=lf
 
+# Editor config / VSCode workspace — keep LF (EditorConfig parsers expect it)
+.editorconfig text eol=lf
+.vscode/*.json text eol=lf
+
 # Docs
 *.md    text eol=lf
 *.txt   text eol=lf
