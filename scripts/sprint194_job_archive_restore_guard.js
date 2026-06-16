@@ -89,6 +89,25 @@ if (/'restoreJob'\s*:/.test(router))
 else
   ko('router-restoreJob', 'restoreJob not registered in RouterSplit');
 
+// ── Router.gs ALLOWED_FUNCTIONS whitelist ────────────────────
+
+const routerGs = read('Router.gs');
+
+if (/'listJobArchive'\s*:\s*1/.test(routerGs))
+  ok('router-whitelist-listJobArchive', 'listJobArchive in Router.gs ALLOWED_FUNCTIONS whitelist');
+else
+  ko('router-whitelist-listJobArchive', 'listJobArchive missing from Router.gs ALLOWED_FUNCTIONS — endpoint returns 403 in production');
+
+if (/'previewJobRestore'\s*:\s*1/.test(routerGs))
+  ok('router-whitelist-previewJobRestore', 'previewJobRestore in Router.gs ALLOWED_FUNCTIONS whitelist');
+else
+  ko('router-whitelist-previewJobRestore', 'previewJobRestore missing from Router.gs ALLOWED_FUNCTIONS — endpoint returns 403 in production');
+
+if (/'restoreJob'\s*:\s*1/.test(routerGs))
+  ok('router-whitelist-restoreJob', 'restoreJob in Router.gs ALLOWED_FUNCTIONS whitelist');
+else
+  ko('router-whitelist-restoreJob', 'restoreJob missing from Router.gs ALLOWED_FUNCTIONS — endpoint returns 403 in production');
+
 // ── clasp-ready alignment ────────────────────────────────────
 
 const claspJobs = read('clasp-ready/JobsHandler.gs');
@@ -103,6 +122,12 @@ if (/'restoreJob'\s*:/.test(claspRouter))
   ok('clasp-ready-router', 'clasp-ready/RouterSplit.gs contains restoreJob route');
 else
   ko('clasp-ready-router', 'clasp-ready/RouterSplit.gs out of sync — missing restoreJob');
+
+const claspRouter2 = read('clasp-ready/Router.gs');
+if (/'restoreJob'\s*:\s*1/.test(claspRouter2))
+  ok('clasp-ready-router-whitelist', 'clasp-ready/Router.gs ALLOWED_FUNCTIONS contains restoreJob');
+else
+  ko('clasp-ready-router-whitelist', 'clasp-ready/Router.gs whitelist out of sync — missing restoreJob');
 
 // ── schema registry ──────────────────────────────────────────
 

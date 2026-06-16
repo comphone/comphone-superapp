@@ -548,6 +548,8 @@ function invokeFunctionByNameV55_(functionName, args) {
     'updateLineNotificationSettings': 1, 'updateLineBotReplySettings': 1, 'sendLineRoomMessage': 1,
     'executeVisionSuggestion': 1,
     'saveDataReviewLog': 1,
+    // Sprint 194 — Job Archive Restore
+    'listJobArchive': 1, 'previewJobRestore': 1, 'restoreJob': 1,
   };
 
   if (!ALLOWED_FUNCTIONS[functionName]) {
