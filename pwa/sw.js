@@ -3,7 +3,7 @@
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ===========================================================
-const CACHE_V = 'comphone-v5.18.47-sprint184-20260615_1000';
+const CACHE_V = 'comphone-v5.18.47-sprint194-20260616_1300';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
 const NAVIGATION_FALLBACK = BASE + '/index.html';

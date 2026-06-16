@@ -1,14 +1,14 @@
 // ===========================================================
 // COMPHONE SUPER APP - Centralized Version Config
 // Single Source of Truth for all version numbers
-// Phase 44 - Dashboard Modernization + Setup Fix
+// Phase 194 - Job Archive Restore
 // ===========================================================
 
 const VERSION_CONFIG = {
-  version: 'v5.18.47-sprint184',
-  buildDate: '2026-05-07',
-  buildTimestamp: '20260615_1000',
-  cacheVersion: 'comphone-v5.18.47-sprint184-20260615_1000',
+  version: 'v5.18.47-sprint194',
+  buildDate: '2026-06-16',
+  buildTimestamp: '20260616_1300',
+  cacheVersion: 'comphone-v5.18.47-sprint194-20260616_1300',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -75,7 +75,14 @@ const VERSION_CONFIG = {
     'Sprint 182 smoke/test data cleanup execution controls',
     'Sprint 183 LINE AI Vision ingress readiness guard',
     'Sprint 184 Jobs detail and archive-delete repair',
-    'Sprint 184 inline job action syntax repair'
+    'Sprint 185 LINE group image pilot readiness guard',
+    'Sprint 188 per-room LINE bot reply toggle controls (separate from notification)',
+    'Sprint 189 LINE reply noise suppression (Worker quiet-group-forward v1.0.5)',
+    'Sprint 190 AI Vision Review Inbox (PC + mobile) with approve/reject workflow',
+    'Sprint 191 AI Vision inbox render smoke — syntax/render regression guard',
+    'Sprint 192 Mobile dashboard simplification: 4 quick actions, fast-boot cache, progressive More menu',
+    'Sprint 193 Delete/Camera hardening: camera stays in job detail, cleanup-tools shortcut for admin/owner',
+    'Sprint 194 Job Archive Restore: preview + duplicate-block + RESTORE_JOB confirm gate in admin Archive tab'
   ]
 };
 
@@ -85,9 +92,9 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 
 // Backward-compatible exports for legacy modules and guards
-const APP_VERSION = 'v5.18.47-sprint184';
-const BUILD_TIMESTAMP = '20260615_1000';
-const CACHE_VERSION = 'comphone-v5.18.47-sprint184-20260615_1000';
+const APP_VERSION = 'v5.18.47-sprint194';
+const BUILD_TIMESTAMP = '20260616_1300';
+const CACHE_VERSION = 'comphone-v5.18.47-sprint194-20260616_1300';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;
