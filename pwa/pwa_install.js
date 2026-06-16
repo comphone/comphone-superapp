@@ -80,9 +80,15 @@ function registerServiceWorker() {
       console.log('[PWA] Sync complete from SW');
     }
     if (event.data.type === 'SW_ACTIVATED') {
-      console.log('[PWA] SW activated:', event.data.version);
+      const newVer = event.data.version || '';
+      const curVer = window.COMPHONE_CACHE || window.COMPHONE_BUILD || '';
+      console.log('[PWA] SW activated:', newVer, '(running:', curVer + ')');
       if (_reloadAfterSwUpdate || event.data.activatedByUser) {
         _reloadForSwUpdate_();
+      } else if (newVer && curVer && newVer !== curVer) {
+        // New SW version differs from running code — show update banner so user
+        // can reload to pick up new assets (skipWaiting bypasses statechange path).
+        _showUpdateBanner_();
       }
     }
   });

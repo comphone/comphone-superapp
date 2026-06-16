@@ -30,7 +30,8 @@ function renderStats() {
   const overdueJobs = Number(summary.overdueJobs || 0);
   const doneJobs = APP.jobs.filter(j => j.status === 'done').length;
   const pendingJobs = APP.jobs.filter(j => j.status !== 'done' && j.status !== 'cancel').length;
-  const myJobs = APP.jobs.filter(j => j.tech && APP.user && j.tech.includes(APP.user.name.split(' ')[0])).length;
+  const _myName = APP.user ? ((APP.user.name || APP.user.full_name || APP.user.username || '').split(' ')[0]) : '';
+  const myJobs = APP.jobs.filter(j => j.tech && _myName && j.tech.includes(_myName)).length;
   const topTech = summary.topTechnician;
 
   const statsMap = {
@@ -54,7 +55,7 @@ function renderStats() {
       { label: 'รายรับวันนี้', value: '฿' + Number(revenue.today || 0).toLocaleString(), sub: 'เดือน: ฿' + Number(revenue.month || 0).toLocaleString(), trend: revenue.today > 0 ? 'up' : '', color: '#d97706' },
       { label: 'งานค้าง', value: pendingJobs, sub: overdueJobs > 0 ? `เกิน SLA ${overdueJobs} งาน` : 'ปกติ', trend: overdueJobs > 0 ? 'down' : '', color: '#ef4444' },
       { label: 'งานเสร็จ', value: doneJobs, sub: `จาก ${totalJobs} งาน`, trend: doneJobs > 0 ? 'up' : '', color: '#0d6efd' },
-      { label: 'ช่างยอดเยี่ยม', value: topTech ? topTech.name.split(' ')[0] : '-', sub: topTech ? `${topTech.jobs_completed || 0} งาน` : '', trend: '', color: '#7c3aed' }
+      { label: 'ช่างยอดเยี่ยม', value: topTech ? ((topTech.name || '').split(' ')[0] || '-') : '-', sub: topTech ? `${topTech.jobs_completed || 0} งาน` : '', trend: '', color: '#7c3aed' }
     ]
   };
 
@@ -224,7 +225,9 @@ function renderMobileCommandCenter() {
 }
 
 function renderTechHome() {
-  const myName = APP.user ? APP.user.name.split(' ')[0] : '';
+  const _u = APP.user || {};
+  const _displayName = _u.name || _u.full_name || _u.username || '';
+  const myName = _displayName.split(' ')[0];
   const myJobs = APP.jobs.filter(j => !myName || (j.tech && j.tech.includes(myName)) || j.status !== 'done');
   const d = APP.dashboardData;
   const topTech = d && d.summary && d.summary.topTechnician;

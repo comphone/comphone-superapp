@@ -1043,7 +1043,8 @@ for sprint_script in \
   sprint191_ai_vision_inbox_render_smoke \
   sprint192_mobile_dashboard_simplification_guard \
   sprint193_delete_camera_dashboard_guard \
-  sprint194_job_archive_restore_guard
+  sprint194_job_archive_restore_guard \
+  sprint195_mobile_tap_guard
 do
   script_path="scripts/${sprint_script}.js"
   if command -v node &>/dev/null && [ -f "$script_path" ]; then

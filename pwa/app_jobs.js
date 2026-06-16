@@ -276,7 +276,10 @@ async function showJobDetail(jobId) {
     </div>
   `;
   const modalJob = document.getElementById('modal-job');
-  if (modalJob) modalJob.classList.remove('hidden');
+  if (modalJob) {
+    modalJob.style.display = 'flex';
+    modalJob.classList.remove('hidden');
+  }
   const warrantyBtn = document.getElementById('btn-create-warranty-' + jobId);
   if (warrantyBtn && typeof createWarrantyModal === 'function') {
     warrantyBtn.addEventListener('click', () => {
@@ -350,8 +353,10 @@ function openMobileJobVision(jobId) {
 
 function closeModal(id) {
   const modal = document.getElementById(id);
-  if (modal) modal.classList.add('hidden');
-  // Restore scroll if no other modal/sheet is still open
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = '';
+  }
   if (!document.querySelector('.modal-overlay:not(.hidden), .cp-sheet-overlay:not(.hidden)')) {
     document.body.style.overflow = '';
   }
