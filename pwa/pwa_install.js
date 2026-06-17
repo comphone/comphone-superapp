@@ -128,8 +128,22 @@ function _scheduleVersionCheck_() {
   setInterval(_checkVersion_, 5 * 60 * 1000);
   // Re-check when the user returns to the tab / re-opens the PWA
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') _checkVersion_();
+    if (document.visibilityState === 'visible') {
+      _checkVersion_();
+      // Also kick a SW update check so the SW itself is re-evaluated.
+      // Important for long-lived PWA sessions where registration.update()
+      // was never called again after the initial page load.
+      navigator.serviceWorker.getRegistration()
+        .then(reg => { if (reg) reg.update(); })
+        .catch(() => {});
+    }
   });
+  // Periodic SW update check every 10 minutes (catches long-running sessions)
+  setInterval(() => {
+    navigator.serviceWorker.getRegistration()
+      .then(reg => { if (reg) reg.update(); })
+      .catch(() => {});
+  }, 10 * 60 * 1000);
 }
 
 function _repairServiceWorker_(err) {

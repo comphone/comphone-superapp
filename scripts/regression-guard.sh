@@ -1045,7 +1045,8 @@ for sprint_script in \
   sprint193_delete_camera_dashboard_guard \
   sprint194_job_archive_restore_guard \
   sprint195_mobile_tap_guard \
-  sprint197_sw_update_reliability_guard
+  sprint197_sw_update_reliability_guard \
+  sprint198_guaranteed_update_guard
 do
   script_path="scripts/${sprint_script}.js"
   if command -v node &>/dev/null && [ -f "$script_path" ]; then

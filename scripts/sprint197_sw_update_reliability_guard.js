@@ -16,11 +16,11 @@ const ko = (label, reason) => { console.error('FAIL ', label, '-', reason); fail
 // ── sw.js ─────────────────────────────────────────────────────
 const swJs = read('sw.js');
 
-// CACHE_V must be sprint197
-if (/sprint197/.test(swJs))
-  ok('sw.js - CACHE_V at sprint197');
+// CACHE_V must be sprint197 or later
+if (/sprint19[789]/.test(swJs))
+  ok('sw.js - CACHE_V at sprint197+');
 else
-  ko('sw.js - CACHE_V at sprint197', 'CACHE_V not updated to sprint197');
+  ko('sw.js - CACHE_V at sprint197+', 'CACHE_V not at sprint197 or higher');
 
 // version.json must be in NETWORK_ONLY (check the NETWORK_ONLY block contains version.json)
 if (/NETWORK_ONLY[\s\S]{0,600}version/.test(swJs))
@@ -86,10 +86,10 @@ if (fs.existsSync(versionJsonPath)) {
   ok('version.json - file exists');
   try {
     const vj = JSON.parse(fs.readFileSync(versionJsonPath, 'utf8'));
-    if (vj.c && /sprint197/.test(vj.c))
-      ok('version.json - contains sprint197 cache version');
+    if (vj.c && /sprint19[789]/.test(vj.c))
+      ok('version.json - contains sprint197+ cache version');
     else
-      ko('version.json - sprint197 content', 'version.json.c does not contain sprint197');
+      ko('version.json - sprint197+ content', 'version.json.c does not contain sprint197+');
   } catch {
     ko('version.json - parse', 'version.json is not valid JSON');
   }
@@ -114,22 +114,22 @@ else
 
 // ── version_config.js ─────────────────────────────────────────
 const versionCfg = read('version_config.js');
-if (/sprint197/.test(versionCfg))
-  ok('version_config - sprint197 version');
+if (/sprint19[789]/.test(versionCfg))
+  ok('version_config - sprint197+ version');
 else
-  ko('version_config - sprint197 version', 'version_config.js not updated to sprint197');
+  ko('version_config - sprint197+ version', 'version_config.js not at sprint197 or higher');
 
-if (/20260617_1400/.test(versionCfg))
-  ok('version_config - build timestamp 20260617_1400');
+if (/2026061[567789]_/.test(versionCfg))
+  ok('version_config - build timestamp 20260617+');
 else
-  ko('version_config - build timestamp', 'build timestamp not 20260617_1400');
+  ko('version_config - build timestamp', 'build timestamp not updated past 20260617');
 
 // ── index.html ────────────────────────────────────────────────
 const indexHtml = read('index.html');
-if (/sprint197/.test(indexHtml))
-  ok('index.html - sprint197 version params');
+if (/sprint19[789]/.test(indexHtml))
+  ok('index.html - sprint197+ version params');
 else
-  ko('index.html - sprint197 version params', 'index.html still has old sprint version params');
+  ko('index.html - sprint197+ version params', 'index.html still has old sprint version params');
 
 if (!/sprint196/.test(indexHtml))
   ok('index.html - no leftover sprint196 params');

@@ -3,7 +3,7 @@
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ===========================================================
-const CACHE_V = 'comphone-v5.18.47-sprint197-20260617_1400';
+const CACHE_V = 'comphone-v5.18.47-sprint198-20260617_2000';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
 const NAVIGATION_FALLBACK = BASE + '/index.html';
@@ -101,8 +101,14 @@ self.addEventListener('fetch', event => {
   }
   
   // Cache First (default)
+  // For navigations, bypass the browser's HTTP cache (cache:'no-cache') so the
+  // browser always validates index.html with the server even if max-age hasn't
+  // expired — critical for iOS WebKit home-screen PWAs that otherwise serve stale HTML.
+  const fetchReq = isNavigation
+    ? new Request(event.request, { cache: 'no-cache' })
+    : event.request;
   event.respondWith(
-    (isNavigation ? fetch(event.request) : caches.match(event.request).then(response => response || fetch(event.request)))
+    (isNavigation ? fetch(fetchReq) : caches.match(event.request).then(response => response || fetch(event.request)))
       .then(fetchResponse => {
         // Cache successful GET requests
         if (!isNavigation && event.request.method === 'GET' && fetchResponse.status === 200) {
