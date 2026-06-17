@@ -29,10 +29,10 @@ if (/NETWORK_ONLY[\s\S]{0,800}version_config/.test(swJs))
 else
   ko('sw.js - version_config.js NETWORK_ONLY', 'version_config.js not listed in NETWORK_ONLY — clients may get stale version info');
 
-if (/CACHE_V[\s\S]{0,80}sprint199/.test(swJs))
-  ok('sw.js - CACHE_V at sprint199');
+if (/CACHE_V[\s\S]{0,80}sprint(199|200)/.test(swJs))
+  ok('sw.js - CACHE_V at sprint199+');
 else
-  ko('sw.js - CACHE_V at sprint199', 'CACHE_V not updated to sprint199');
+  ko('sw.js - CACHE_V at sprint199+', 'CACHE_V not at sprint199 or higher');
 
 // ── Extract current version from version_config.js ───────────
 const vcSrc = read('version_config.js');
@@ -49,10 +49,10 @@ const timestamp = timestampM[1];                 // 20260617_2100
 const cache     = cacheM[1];                     // comphone-v5.18.47-sprint199-...
 const vParam    = `v=${semver}&t=${timestamp}`;
 
-if (/sprint199/.test(semver))
-  ok(`version_config.js - at sprint199 (${semver})`);
+if (/sprint(199|200)/.test(semver))
+  ok(`version_config.js - at sprint199+ (${semver})`);
 else
-  ko('version_config.js - sprint199', `version_config.js is at ${semver}, not sprint199`);
+  ko('version_config.js - sprint199+', `version_config.js is at ${semver}, expected sprint199 or higher`);
 
 // ── index.html — all ?v= params match version_config ─────────
 {

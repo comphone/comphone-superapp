@@ -3,7 +3,7 @@
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ===========================================================
-const CACHE_V = 'comphone-v5.18.47-sprint199-20260617_2100';
+const CACHE_V = 'comphone-v5.18.47-sprint200-20260617_2200';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
 const NAVIGATION_FALLBACK = BASE + '/index.html';
@@ -38,6 +38,11 @@ const API_PATTERNS = [
 
 // ===== INSTALL =====
 self.addEventListener('install', event => {
+  // Intentionally no auto-activation here — the new SW stays in the 'installed'
+  // (waiting) state so the update banner remains visible until the user confirms.
+  // Auto-activating during install fires controllerchange before the user taps,
+  // making the banner tap a no-op (sprint197-199 bug). Activation happens only via
+  // the SKIP_WAITING message handler below (sent when user confirms the update).
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       console.log('[SW] Precaching assets:', ASSETS.length);
@@ -45,12 +50,7 @@ self.addEventListener('install', event => {
         const failed = results.filter(result => result.status === 'rejected');
         if (failed.length) console.warn('[SW] Some assets were not precached:', failed.length);
       });
-    }).then(() =>
-      // Delay 4 s before skipWaiting so statechange==='installed' fires in old
-      // clients even when they don't have the SW_ACTIVATED handler (sprint194).
-      // This lets the updatefound → statechange path show the update banner.
-      new Promise(resolve => setTimeout(() => { self.skipWaiting(); resolve(); }, 4000))
-    )
+    })
   );
 });
 

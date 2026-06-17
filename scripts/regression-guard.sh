@@ -1047,7 +1047,8 @@ for sprint_script in \
   sprint195_mobile_tap_guard \
   sprint197_sw_update_reliability_guard \
   sprint198_guaranteed_update_guard \
-  sprint199_auto_version_bump_guard
+  sprint199_auto_version_bump_guard \
+  sprint200_sw_update_banner_fix_guard
 do
   script_path="scripts/${sprint_script}.js"
   if command -v node &>/dev/null && [ -f "$script_path" ]; then

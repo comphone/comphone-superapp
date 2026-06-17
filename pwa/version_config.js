@@ -5,10 +5,10 @@
 // ===========================================================
 
 const VERSION_CONFIG = {
-  version: 'v5.18.47-sprint199',
+  version: 'v5.18.47-sprint200',
   buildDate: '2026-06-17',
-  buildTimestamp: '20260617_2100',
-  cacheVersion: 'comphone-v5.18.47-sprint199-20260617_2100',
+  buildTimestamp: '20260617_2200',
+  cacheVersion: 'comphone-v5.18.47-sprint200-20260617_2200',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -87,7 +87,8 @@ const VERSION_CONFIG = {
     'Sprint 196 SW auto-reload: SW_ACTIVATED now sends activatedByUser=true so old clients auto-reload on new SW activation without waiting for user action',
     'Sprint 197 SW update reliability: 4s skipWaiting delay ensures statechange=installed fires in sprint194 clients; controllerchange always reloads; startup+focus version.json check; graceful Archive tab error when GAS @621 not yet deployed',
     'Sprint 198 Guaranteed update delivery: inline version guard in index.html (detects stale cached scripts on fresh page load and force-reloads); SW navigation uses cache:no-cache to bypass iOS WebKit HTTP cache; periodic registration.update() every 10 min + on visibilitychange',
-    'Sprint 199 Auto version-bump tooling: bump-version.js auto-updates all ?v= params in index.html/dashboard_pc.html/sw.js/version.json from single source of truth; version_config.js added to SW NETWORK_ONLY so clients always receive the latest build version even before SW updates'
+    'Sprint 199 Auto version-bump tooling: bump-version.js auto-updates all ?v= params in index.html/dashboard_pc.html/sw.js/version.json from single source of truth; version_config.js added to SW NETWORK_ONLY so clients always receive the latest build version even before SW updates',
+    'Sprint 200 Fix SW update banner deadlock: remove skipWaiting() from install event so new SW stays in installed (waiting) state until user taps banner; add controllerchange+SW_ACTIVATED auto-reload in version_config.js as emergency fallback for all client versions'
   ]
 };
 
@@ -97,9 +98,32 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 
 // Backward-compatible exports for legacy modules and guards
-const APP_VERSION = 'v5.18.47-sprint199';
-const BUILD_TIMESTAMP = '20260617_2100';
-const CACHE_VERSION = 'comphone-v5.18.47-sprint199-20260617_2100';
+const APP_VERSION = 'v5.18.47-sprint200';
+const BUILD_TIMESTAMP = '20260617_2200';
+const CACHE_VERSION = 'comphone-v5.18.47-sprint200-20260617_2200';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;
+
+// Emergency auto-reload — attached before pwa_install.js loads.
+// version_config.js is NETWORK_ONLY so this code is always fresh.
+// Handles the case where old pwa_install.js has _reloadAfterSwUpdate gate
+// or no SW_ACTIVATED handler (sprint194 clients).
+(function () {
+  if (!('serviceWorker' in navigator)) return;
+  var _vcReloaded_ = false;
+  function _vcAutoReload_() {
+    if (_vcReloaded_) return;
+    _vcReloaded_ = true;
+    console.log('[VER] Auto-reload triggered from version_config.js');
+    setTimeout(function () { window.location.reload(); }, 300);
+  }
+  // controllerchange: new SW took control → reload immediately
+  navigator.serviceWorker.addEventListener('controllerchange', _vcAutoReload_);
+  // SW_ACTIVATED with activatedByUser=true: new SW notified us directly
+  navigator.serviceWorker.addEventListener('message', function (evt) {
+    if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.activatedByUser) {
+      _vcAutoReload_();
+    }
+  });
+}());
