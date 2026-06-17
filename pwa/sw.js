@@ -3,7 +3,7 @@
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ===========================================================
-const CACHE_V = 'comphone-v5.18.47-sprint196-20260617_0900';
+const CACHE_V = 'comphone-v5.18.47-sprint197-20260617_1400';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = '/comphone-superapp/pwa';
 const NAVIGATION_FALLBACK = BASE + '/index.html';
@@ -27,6 +27,7 @@ const NETWORK_ONLY = [
   /action=ping/,
   /script\.google\.com/,
   /macros\/s\//,
+  /\/version\.json/,   // always fetch fresh for version checks
 ];
 
 // API patterns (Network First)
@@ -43,7 +44,12 @@ self.addEventListener('install', event => {
         const failed = results.filter(result => result.status === 'rejected');
         if (failed.length) console.warn('[SW] Some assets were not precached:', failed.length);
       });
-    }).then(() => self.skipWaiting())
+    }).then(() =>
+      // Delay 4 s before skipWaiting so statechange==='installed' fires in old
+      // clients even when they don't have the SW_ACTIVATED handler (sprint194).
+      // This lets the updatefound → statechange path show the update banner.
+      new Promise(resolve => setTimeout(() => { self.skipWaiting(); resolve(); }, 4000))
+    )
   );
 });
 

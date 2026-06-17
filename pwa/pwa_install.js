@@ -94,9 +94,41 @@ function registerServiceWorker() {
   });
 
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (_reloadAfterSwUpdate) {
-      _reloadForSwUpdate_();
-    }
+    // New SW took control — always reload so new assets are used immediately.
+    // (sprint194 clients kept this gated on _reloadAfterSwUpdate; sprint197+
+    // removes the gate so any new controller triggers a refresh automatically.)
+    _reloadForSwUpdate_();
+  });
+
+  _scheduleVersionCheck_();
+}
+
+// ============================================================
+// VERSION CHECK (out-of-band: works even with a stale cached page)
+// ============================================================
+function _checkVersion_() {
+  const myCache = window.COMPHONE_CACHE || window.COMPHONE_BUILD || '';
+  if (!myCache) return;
+  fetch('./version.json?_t=' + Date.now(), { cache: 'no-store' })
+    .then(r => r.json())
+    .then(data => {
+      const serverCache = data && data.c;
+      if (serverCache && serverCache !== myCache) {
+        console.log('[PWA] Version mismatch detected:', myCache, '->', serverCache);
+        _showUpdateBanner_();
+      }
+    })
+    .catch(() => {});
+}
+
+function _scheduleVersionCheck_() {
+  // First check 5 s after startup (covers slow-connection scenarios)
+  setTimeout(_checkVersion_, 5000);
+  // Re-check every 5 minutes
+  setInterval(_checkVersion_, 5 * 60 * 1000);
+  // Re-check when the user returns to the tab / re-opens the PWA
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') _checkVersion_();
   });
 }
 

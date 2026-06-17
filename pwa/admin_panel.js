@@ -871,7 +871,14 @@ async function renderJobArchivePanel_(container) {
       if (btn) showJobRestorePreview_(btn.dataset.previewJob, container);
     });
   } catch (e) {
-    container.innerHTML = `<div style="padding:24px;text-align:center;color:#ef4444">${e.message}</div>`;
+    const notDeployed = /not allowed|not found|whitelist|ALLOWED_FUNCTIONS/i.test(e.message);
+    container.innerHTML = notDeployed
+      ? `<div style="padding:24px;text-align:center;color:#92400e;background:#fef3c7;border-radius:8px;margin:16px">
+           <i class="bi bi-cloud-slash" style="font-size:24px"></i>
+           <div style="margin-top:8px;font-weight:600">ฟีเจอร์นี้รอการ Deploy GAS Backend</div>
+           <div style="font-size:12px;margin-top:4px;color:#78350f">ระบบ Archive ต้องการ GAS Deploy (@621) ก่อนใช้งาน ติดต่อแอดมินเพื่ออัปเดต Backend</div>
+         </div>`
+      : `<div style="padding:24px;text-align:center;color:#ef4444">${e.message}</div>`;
   }
 }
 
@@ -941,7 +948,12 @@ async function showJobRestorePreview_(jobId, container) {
       document.getElementById('btn-restore-execute-' + jobId).addEventListener('click', () => executeJobRestore_(jobId, container));
     }
   } catch (e) {
-    previewArea.innerHTML = `<div style="padding:12px 16px;color:#ef4444">เกิดข้อผิดพลาด: ${escapeAdminHtml_(e.message)}</div>`;
+    const notDeployed = /not allowed|not found|whitelist|ALLOWED_FUNCTIONS/i.test(e.message);
+    previewArea.innerHTML = notDeployed
+      ? `<div style="padding:12px 16px;color:#92400e;background:#fef3c7;border-radius:8px">
+           <i class="bi bi-cloud-slash"></i> ฟีเจอร์ Preview ต้องการ GAS Deploy (@621)
+         </div>`
+      : `<div style="padding:12px 16px;color:#ef4444">เกิดข้อผิดพลาด: ${escapeAdminHtml_(e.message)}</div>`;
   }
 }
 
@@ -954,16 +966,23 @@ async function executeJobRestore_(jobId, container) {
   }
   if (!confirm('กู้คืน Job ' + jobId + ' จาก Archive กลับสู่ DBJOBS?')) return;
 
-  const res = await callAPI('restoreJob', {
-    job_id: jobId,
-    confirm: 'RESTORE_JOB',
-    reason: 'Admin panel restore (Sprint 194)',
-    user: (APP.user && (APP.user.username || APP.user.name)) || 'admin-ui'
-  });
-  showToast(res && res.success
-    ? 'กู้คืน Job ' + jobId + ' สำเร็จแล้ว'
-    : 'กู้คืนไม่สำเร็จ: ' + ((res && res.error) || 'unknown error'));
-  if (res && res.success) renderJobArchivePanel_(container);
+  try {
+    const res = await callAPI('restoreJob', {
+      job_id: jobId,
+      confirm: 'RESTORE_JOB',
+      reason: 'Admin panel restore (Sprint 194)',
+      user: (APP.user && (APP.user.username || APP.user.name)) || 'admin-ui'
+    });
+    showToast(res && res.success
+      ? 'กู้คืน Job ' + jobId + ' สำเร็จแล้ว'
+      : 'กู้คืนไม่สำเร็จ: ' + ((res && res.error) || 'unknown error'));
+    if (res && res.success) renderJobArchivePanel_(container);
+  } catch (e) {
+    const notDeployed = /not allowed|not found|whitelist|ALLOWED_FUNCTIONS/i.test(e.message);
+    showToast(notDeployed
+      ? 'ฟีเจอร์ Restore ต้องการ GAS Deploy (@621) ก่อน'
+      : 'เกิดข้อผิดพลาด: ' + e.message);
+  }
 }
 
 function escapeAdminHtml_(value) {
