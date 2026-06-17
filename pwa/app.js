@@ -814,13 +814,37 @@ function toggleNotifications() {
     showToast('ปิดการแจ้งเตือนแล้ว');
   }
 }
-function clearCache() {
-  if (confirm('ล้างข้อมูลแคช?')) {
-    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => showToast('ล้างแคชแล้ว'));
+async function clearCache() {
+  if (!confirm('ล้างข้อมูลแคชและ Service Worker?\n\nแอปจะโหลดใหม่และอัปเดตเป็นเวอร์ชันล่าสุด')) return;
+  try {
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+    showToast('ล้างแคชแล้ว กำลังโหลดใหม่…');
+    setTimeout(() => window.location.replace('./index.html?_nocache=' + Date.now()), 800);
+  } catch (err) {
+    showToast('❌ ล้างแคชไม่สำเร็จ: ' + (err && err.message ? err.message : err));
   }
 }
-function resetApp() {
-  if (confirm('รีเซ็ตแอปและลบข้อมูลทั้งหมด?\n\nข้อมูล session, หน้าล่าสุด และคิว offline ในเครื่องนี้จะถูกล้าง')) {
+async function resetApp() {
+  if (!confirm('รีเซ็ตแอปและลบข้อมูลทั้งหมด?\n\nข้อมูล session, cache และ Service Worker จะถูกล้างทั้งหมด')) return;
+  try {
+    localStorage.clear();
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+    window.location.replace('./index.html?_nocache=' + Date.now());
+  } catch (err) {
     localStorage.clear();
     location.reload();
   }

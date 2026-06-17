@@ -17,10 +17,10 @@ const ko = (label, reason) => { console.error('FAIL ', label, '-', reason); fail
 // ── sw.js — skipWaiting NOT in install ───────────────────────
 const swJs = read('sw.js');
 
-if (/CACHE_V[\s\S]{0,80}sprint200/.test(swJs))
-  ok('sw.js - CACHE_V at sprint200');
+if (/CACHE_V[\s\S]{0,80}sprint2\d\d/.test(swJs))
+  ok('sw.js - CACHE_V at sprint200+');
 else
-  ko('sw.js - CACHE_V at sprint200', 'CACHE_V not updated to sprint200');
+  ko('sw.js - CACHE_V at sprint200+', 'CACHE_V not at sprint200 or higher');
 
 // skipWaiting must NOT be in the install handler
 // Check that there's no setTimeout(skipWaiting) pattern inside install
@@ -38,10 +38,10 @@ else
 // ── version_config.js — emergency auto-reload ────────────────
 const vcSrc = read('version_config.js');
 
-if (/sprint200/.test(vcSrc))
-  ok('version_config.js - at sprint200');
+if (/sprint2\d\d/.test(vcSrc))
+  ok('version_config.js - at sprint200+');
 else
-  ko('version_config.js - sprint200', 'version_config.js not updated to sprint200');
+  ko('version_config.js - sprint200+', 'version_config.js not at sprint200 or higher');
 
 if (/_vcAutoReload_/.test(vcSrc))
   ok('version_config.js - _vcAutoReload_ emergency function present');

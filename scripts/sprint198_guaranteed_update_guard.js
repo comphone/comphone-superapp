@@ -30,7 +30,7 @@ else
 // ── sw.js — navigation uses cache:no-cache ────────────────────
 const swJs = read('sw.js');
 
-if (/CACHE_V[\s\S]{0,80}sprint(19[89]|200)/.test(swJs))
+if (/CACHE_V[\s\S]{0,80}sprint(19[89]|2\d\d)/.test(swJs))
   ok('sw.js - CACHE_V at sprint198+');
 else
   ko('sw.js - CACHE_V at sprint198+', 'CACHE_V not at sprint198 or higher');
@@ -68,7 +68,7 @@ if (fs.existsSync(versionJsonPath)) {
       ok(`version.json - v field set (${vj.v})`);
     else
       ko('version.json - v field', 'version.json.v missing or unexpected format');
-    if (vj.c && /sprint(19[89]|200)/.test(vj.c))
+    if (vj.c && /sprint(19[89]|2\d\d)/.test(vj.c))
       ok('version.json - c field at sprint198+');
     else
       ko('version.json - c field', 'version.json.c does not contain sprint198+');
@@ -82,7 +82,7 @@ if (fs.existsSync(versionJsonPath)) {
 // ── version_config.js ─────────────────────────────────────────
 const versionCfg = read('version_config.js');
 
-if (/sprint(19[89]|200)/.test(versionCfg))
+if (/sprint(19[89]|2\d\d)/.test(versionCfg))
   ok('version_config - sprint198+ version');
 else
   ko('version_config - sprint198+', 'version_config.js not at sprint198 or higher');
