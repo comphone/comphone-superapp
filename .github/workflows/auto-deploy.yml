@@ -152,6 +152,8 @@ jobs:
           rm -rf site
           mkdir -p site/pwa
           cp -R pwa/. site/pwa/
+          # Disable Jekyll processing so GitHub Pages serves files as-is
+          touch site/.nojekyll
           printf '%s\n' \
             '<!doctype html>' \
             '<html><head>' \

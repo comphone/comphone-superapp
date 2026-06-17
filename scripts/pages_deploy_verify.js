@@ -53,9 +53,10 @@ async function main() {
   };
 
   const cacheBust = `codex=${Date.now()}`;
-  const [remoteVersion, remoteGas] = await Promise.all([
+  const [remoteVersion, remoteGas, remoteVersionJson] = await Promise.all([
     fetchText(`${BASE_URL}/version_config.js?${cacheBust}`),
     fetchText(`${BASE_URL}/gas_config.js?${cacheBust}`),
+    fetchText(`${BASE_URL}/version.json?${cacheBust}`),
   ]);
 
   const checks = [];
@@ -65,6 +66,8 @@ async function main() {
 
   check('version_config_http', remoteVersion.status === 200, `HTTP ${remoteVersion.status}`);
   check('gas_config_http', remoteGas.status === 200, `HTTP ${remoteGas.status}`);
+  // version.json must exist — 404 means deploy did not update Pages (blocking)
+  check('version_json_http', remoteVersionJson.status === 200, `HTTP ${remoteVersionJson.status}`);
   check('app_version', remoteVersion.body.includes(expected.appVersion), expected.appVersion, true);
   check('build_timestamp', remoteVersion.body.includes(expected.buildTimestamp), expected.buildTimestamp, true);
   check('cache_version', remoteVersion.body.includes(expected.cacheVersion), expected.cacheVersion, true);
