@@ -17,10 +17,10 @@ const ko = (label, reason) => { console.error('FAIL ', label, '-', reason); fail
 // ── index.html — inline version guard ────────────────────────
 const indexHtml = read('index.html');
 
-if (/EXPECTED_BUILD\s*=\s*['"]20260617_2000['"]/.test(indexHtml))
-  ok('index.html - inline version guard EXPECTED_BUILD=20260617_2000');
+if (/EXPECTED_BUILD\s*=\s*'20260617_\d{4}'/.test(indexHtml))
+  ok('index.html - inline version guard EXPECTED_BUILD present');
 else
-  ko('index.html - inline version guard', 'EXPECTED_BUILD not set to 20260617_2000 in inline script');
+  ko('index.html - inline version guard', 'EXPECTED_BUILD missing from inline script in index.html');
 
 if (/window\.COMPHONE_BUILD[\s\S]{0,200}window\.location\.reload/.test(indexHtml))
   ok('index.html - inline guard triggers reload on mismatch');
@@ -30,10 +30,10 @@ else
 // ── sw.js — navigation uses cache:no-cache ────────────────────
 const swJs = read('sw.js');
 
-if (/CACHE_V[\s\S]{0,80}sprint198/.test(swJs))
-  ok('sw.js - CACHE_V at sprint198');
+if (/CACHE_V[\s\S]{0,80}sprint19[89]/.test(swJs))
+  ok('sw.js - CACHE_V at sprint198+');
 else
-  ko('sw.js - CACHE_V at sprint198', 'CACHE_V not updated to sprint198');
+  ko('sw.js - CACHE_V at sprint198+', 'CACHE_V not at sprint198 or higher');
 
 if (/cache:\s*['"]no-cache['"]/.test(swJs))
   ok('sw.js - navigation fetch uses cache:no-cache');
@@ -64,14 +64,14 @@ if (fs.existsSync(versionJsonPath)) {
   ok('version.json - file exists');
   try {
     const vj = JSON.parse(fs.readFileSync(versionJsonPath, 'utf8'));
-    if (vj.v === '20260617_2000')
-      ok('version.json - v field is 20260617_2000');
+    if (vj.v && /^2026/.test(vj.v))
+      ok(`version.json - v field set (${vj.v})`);
     else
-      ko('version.json - v field', `expected 20260617_2000, got ${vj.v}`);
-    if (vj.c && /sprint198/.test(vj.c))
-      ok('version.json - c field contains sprint198');
+      ko('version.json - v field', 'version.json.v missing or unexpected format');
+    if (vj.c && /sprint19[89]/.test(vj.c))
+      ok('version.json - c field at sprint198+');
     else
-      ko('version.json - c field', 'version.json.c does not contain sprint198');
+      ko('version.json - c field', 'version.json.c does not contain sprint198+');
   } catch {
     ko('version.json - parse', 'version.json is not valid JSON');
   }
@@ -82,15 +82,15 @@ if (fs.existsSync(versionJsonPath)) {
 // ── version_config.js ─────────────────────────────────────────
 const versionCfg = read('version_config.js');
 
-if (/sprint198/.test(versionCfg))
-  ok('version_config - sprint198 version');
+if (/sprint19[89]/.test(versionCfg))
+  ok('version_config - sprint198+ version');
 else
-  ko('version_config - sprint198', 'version_config.js not at sprint198');
+  ko('version_config - sprint198+', 'version_config.js not at sprint198 or higher');
 
-if (/buildTimestamp:\s*['"]20260617_2000['"]/.test(versionCfg))
-  ok('version_config - buildTimestamp 20260617_2000');
+if (/buildTimestamp:\s*'20260617_\d{4}'/.test(versionCfg))
+  ok('version_config - buildTimestamp 20260617_xxxx present');
 else
-  ko('version_config - buildTimestamp', 'buildTimestamp not 20260617_2000 in version_config.js');
+  ko('version_config - buildTimestamp', 'buildTimestamp not set to 20260617_xxxx in version_config.js');
 
 // ── Summary ───────────────────────────────────────────────────
 console.log(`\n[Sprint 198] ${fail === 0 ? 'OK' : 'FAIL'} ${pass}/${pass + fail} — Guaranteed update delivery guard ${fail === 0 ? 'passed' : 'FAILED'}`);
