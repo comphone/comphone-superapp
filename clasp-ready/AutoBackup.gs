@@ -131,6 +131,7 @@ function setupAllTriggers() {
      * handler: HealthMonitor.gs → cronHealthCheck()
      */
     { fn: 'cronHealthCheck',        type: 'minutes', everyMinutes: 30, schedule: 'ทุก 30 นาที' },
+    { fn: 'keepWarmGAS',            type: 'minutes', everyMinutes: 5,  schedule: 'ทุก 5 นาที (keep-warm + pre-cache)' },
   ];
 
   // ── ดึง triggers ที่มีอยู่แล้ว (duplicate prevention) ──

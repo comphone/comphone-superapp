@@ -111,6 +111,22 @@ function invalidateBundleCache() {
 }
 
 // ============================================================
+// Keep-Warm: เรียกโดย Time Trigger ทุก 5 นาที
+// ============================================================
+/**
+ * keepWarmGAS — ฟังก์ชันสำหรับ keep-warm trigger
+ * เรียก getDashboardBundle เพื่อ warm up GAS runtime + refresh CacheService
+ * ตั้ง trigger: setupAllTriggers() หรือ setupKeepWarmTrigger()
+ */
+function keepWarmGAS() {
+  try {
+    getDashboardBundle({ source: 'keepWarm' });
+  } catch(e) {
+    Logger.log('[keepWarmGAS] error: ' + e.message);
+  }
+}
+
+// ============================================================
 // PRIVATE: Read all sheets once
 // ============================================================
 function _bundleReadAllSheets_(ss) {
