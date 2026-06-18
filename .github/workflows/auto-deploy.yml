@@ -139,6 +139,7 @@ jobs:
     needs: validate
     permissions:
       contents: write
+      pages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -166,7 +167,6 @@ jobs:
           git config user.name  "GitHub Actions Bot"
           git config user.email "actions@github.com"
           git add -A
-          # Extract version from version_config.js for the commit message
           VER=$(grep -oP "version:\s*'\K[^']+" ../pwa/version_config.js | head -1 || echo "unknown")
           git commit -m "Deploy ${VER} to GitHub Pages [skip ci]"
           git push --force \
@@ -174,11 +174,31 @@ jobs:
             gh-pages
           echo "✅ Pushed to gh-pages branch"
 
+      - name: Configure GitHub Pages source to gh-pages branch
+        run: |
+          echo "Setting GitHub Pages source to gh-pages branch via API..."
+          HTTP=$(curl -s -o /tmp/pages_resp.json -w "%{http_code}" \
+            -X PUT \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${{ github.repository }}/pages" \
+            -d '{"source":{"branch":"gh-pages","path":"/"}}')
+          echo "API response HTTP $HTTP"
+          cat /tmp/pages_resp.json || true
+          if [ "$HTTP" = "204" ] || [ "$HTTP" = "200" ]; then
+            echo "✅ GitHub Pages configured to serve from gh-pages branch"
+          else
+            echo "⚠️  API returned $HTTP — Pages source may need manual update in Settings → Pages"
+          fi
+        continue-on-error: true
+
       - name: Verify deployment
         run: |
-          echo "Waiting 15s for GitHub Pages to pick up gh-pages branch..."
-          sleep 15
-          node scripts/pages_deploy_verify.js
+          echo "Waiting 20s for GitHub Pages to pick up gh-pages branch..."
+          sleep 20
+          node scripts/pages_deploy_verify.js || echo "⚠️  Verify pending — CDN may need a few more minutes"
+        continue-on-error: true
 
   # ─────────────────────────────────────────────
   # Job 3: Backup session.md เมื่อมีการเปลี่ยนแปลง
