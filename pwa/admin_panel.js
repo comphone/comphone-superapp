@@ -495,6 +495,17 @@ async function renderDataRepairConsole_(container) {
         </div>
         <div id="admin-smoke-cleanup-body" style="margin-top:10px;color:#64748b;font-size:13px">Loading smoke cleanup preview...</div>
       </div>
+      <!-- ล้างงานทดสอบ -->
+      <div id="admin-test-jobs-cleanup" style="background:#fff;border:1px solid #fde68a;border-left:4px solid #d97706;border-radius:12px;padding:14px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+          <div>
+            <div style="font-size:15px;font-weight:800;color:#111827"><i class="bi bi-eraser-fill" style="color:#d97706"></i> ล้างงานทดสอบ</div>
+            <div style="font-size:12px;color:#64748b;margin-top:4px">สแกนหางานที่มีคำว่า "ทดสอบ", "test", "demo" ฯลฯ แล้วลบออกจาก DBJOBS ถาวร</div>
+          </div>
+          <button id="btn-test-jobs-preview" class="btn-primary-sm" style="background:#d97706"><i class="bi bi-search"></i> ดูตัวอย่าง</button>
+        </div>
+        <div id="admin-test-jobs-body" style="margin-top:10px;color:#64748b;font-size:13px">กด "ดูตัวอย่าง" เพื่อสแกนหาข้อมูลทดสอบ</div>
+      </div>
       <div id="admin-repair-status" style="font-size:13px;color:#64748b;margin-bottom:10px">Loading repair status...</div>
       <div id="admin-repair-candidates"></div>
     </div>`;
@@ -503,6 +514,7 @@ async function renderDataRepairConsole_(container) {
   document.getElementById('btn-data-completeness-refresh').addEventListener('click', hydrateAdminDataCompleteness_);
   document.getElementById('btn-data-completeness-export').addEventListener('click', exportAdminDataCompletenessReview_);
   document.getElementById('btn-smoke-cleanup-refresh').addEventListener('click', hydrateAdminSmokeCleanup_);
+  document.getElementById('btn-test-jobs-preview').addEventListener('click', hydrateAdminTestJobsCleanup_);
   hydrateAdminDataCompleteness_();
   hydrateAdminSmokeCleanup_();
   await hydrateAdminDataRepair_(container);
@@ -537,6 +549,70 @@ async function hydrateAdminSmokeCleanup_() {
     if (btn) btn.addEventListener('click', executeAdminSmokeCleanup_);
   } catch (e) {
     el.innerHTML = `<div style="background:#fef2f2;color:#b91c1c;border-radius:10px;padding:12px;font-size:13px">Smoke cleanup preview failed: ${escapeAdminHtml_(e.message || e)}</div>`;
+  }
+}
+
+// ─── ล้างงานทดสอบ ────────────────────────────────────────────
+async function hydrateAdminTestJobsCleanup_() {
+  const el = document.getElementById('admin-test-jobs-body');
+  if (!el) return;
+  el.innerHTML = '<span style="color:#d97706">กำลังสแกนหาข้อมูลทดสอบ...</span>';
+  try {
+    const res = await callAPI('clearTestJobsPreview', {});
+    if (!res || !res.success) throw new Error((res && res.error) || 'preview failed');
+    const candidates = res.candidates || [];
+    if (!candidates.length) {
+      el.innerHTML = '<div style="background:#ecfdf5;color:#047857;border-radius:10px;padding:12px">ไม่พบงานทดสอบในระบบ ✅</div>';
+      return;
+    }
+    el.innerHTML = `
+      <div style="margin-bottom:10px;font-size:13px;font-weight:700;color:#92400e">พบ ${candidates.length} งานที่ตรงคำค้น:</div>
+      ${candidates.map(c => `
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px;margin-bottom:8px;font-size:13px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <strong style="color:#92400e">${escapeAdminHtml_(c.id)}</strong>
+            <span style="font-size:11px;color:#6b7280">แถว ${c.row}</span>
+          </div>
+          <div style="color:#374151;margin-top:4px">${escapeAdminHtml_(c.customer || '-')}</div>
+          <div style="color:#6b7280;font-size:12px">${escapeAdminHtml_(c.symptom || '-')}${c.phone ? ' · ' + escapeAdminHtml_(c.phone) : ''}</div>
+        </div>
+      `).join('')}
+      <div style="margin-top:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px">
+        <div style="font-size:12px;color:#9a3412;font-weight:800;margin-bottom:6px">พิมพ์ CLEAR_TEST_JOBS เพื่อยืนยันการลบถาวร</div>
+        <input id="admin-test-jobs-confirm" style="width:100%;padding:8px;border:1px solid #fdba74;border-radius:8px;font-size:13px;margin-bottom:8px" autocomplete="off" placeholder="CLEAR_TEST_JOBS">
+        <button id="btn-test-jobs-execute" style="width:100%;background:#d97706;color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:800;cursor:pointer">
+          <i class="bi bi-trash3-fill"></i> ลบงานทดสอบทั้งหมด (${candidates.length} งาน)
+        </button>
+      </div>`;
+    document.getElementById('btn-test-jobs-execute').addEventListener('click', executeAdminTestJobsCleanup_);
+  } catch (e) {
+    el.innerHTML = `<div style="background:#fef2f2;color:#b91c1c;border-radius:10px;padding:12px">เกิดข้อผิดพลาด: ${escapeAdminHtml_(e.message || e)}</div>`;
+  }
+}
+
+async function executeAdminTestJobsCleanup_() {
+  const input = document.getElementById('admin-test-jobs-confirm');
+  const confirmText = input ? input.value.trim() : '';
+  if (confirmText !== 'CLEAR_TEST_JOBS') {
+    showToast('⚠️ พิมพ์ CLEAR_TEST_JOBS ให้ตรงก่อน');
+    return;
+  }
+  if (!confirm('ลบงานทดสอบทั้งหมดออกจาก DBJOBS?\n\nการลบนี้ไม่สามารถกู้คืนได้')) return;
+  const btn = document.getElementById('btn-test-jobs-execute');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> กำลังลบ...'; }
+  try {
+    const res = await callAPI('clearTestJobsExecute', { confirm: 'CLEAR_TEST_JOBS' });
+    if (res && res.success) {
+      showToast(`✅ ลบสำเร็จ ${res.deleted} งาน`);
+      const el = document.getElementById('admin-test-jobs-body');
+      if (el) el.innerHTML = `<div style="background:#ecfdf5;color:#047857;border-radius:10px;padding:12px">✅ ลบงานทดสอบสำเร็จ ${res.deleted} งาน</div>`;
+    } else {
+      showToast('❌ ' + ((res && res.error) || 'ลบไม่สำเร็จ'));
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-trash3-fill"></i> ลองใหม่'; }
+    }
+  } catch (e) {
+    showToast('❌ ' + (e.message || e));
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-trash3-fill"></i> ลองใหม่'; }
   }
 }
 
