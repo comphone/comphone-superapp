@@ -3,7 +3,6 @@ function renderHome() {
   const roleConf = ROLES[APP.role] || ROLES.tech;
   const quickActions = (typeof getQuickActions === 'function' ? getQuickActions() : roleConf.quickActions).slice(0, 4);
 
-  // Quick Actions
   const qaGrid = document.getElementById('quick-actions-grid');
   qaGrid.className = quickActions.length > 4 ? 'qa-grid-8' : 'qa-grid-4';
   qaGrid.innerHTML = quickActions.map(qa => `
@@ -13,10 +12,7 @@ function renderHome() {
     </button>
   `).join('');
 
-  // Stats
   renderStats();
-
-  // Main content
   renderMainContent();
 }
 
@@ -36,41 +32,49 @@ function renderStats() {
 
   const statsMap = {
     tech: [
-      { label: 'งานของฉัน', value: myJobs || pendingJobs, sub: 'งานทั้งหมด', trend: '', color: '#0d6efd' },
-      { label: 'งานรอดำเนินการ', value: pendingJobs, sub: 'ยังไม่เสร็จ', trend: pendingJobs > 5 ? 'down' : '', color: '#f59e0b' }
+      { label: 'งานของฉัน', value: myJobs || pendingJobs, sub: 'งานทั้งหมด', icon: 'bi-person-check-fill', color: '#2563eb', bg: '#eff6ff' },
+      { label: 'รอดำเนินการ', value: pendingJobs, sub: 'ยังไม่เสร็จ', icon: 'bi-hourglass-split', color: '#d97706', bg: '#fffbeb',
+        alert: pendingJobs > 5 }
     ],
     admin: [
-      { label: 'งานทั้งหมด', value: totalJobs, sub: 'ในระบบ', trend: '', color: '#7c3aed' },
-      { label: 'รอดำเนินการ', value: pendingJobs, sub: overdueJobs > 0 ? `เกิน SLA ${overdueJobs} งาน` : 'ปกติ', trend: overdueJobs > 0 ? 'down' : '', color: '#ef4444' },
-      { label: 'เสร็จแล้ว', value: doneJobs, sub: 'งาน', trend: doneJobs > 0 ? 'up' : '', color: '#10b981' },
-      { label: 'เกิน SLA', value: overdueJobs, sub: 'ต้องดำเนินการ', trend: overdueJobs > 0 ? 'down' : '', color: '#f97316' }
+      { label: 'งานทั้งหมด', value: totalJobs, sub: 'ในระบบ', icon: 'bi-clipboard2-data-fill', color: '#7c3aed', bg: '#f5f3ff' },
+      { label: 'รอดำเนินการ', value: pendingJobs, sub: overdueJobs > 0 ? `เกิน SLA ${overdueJobs} งาน` : 'ปกติ', icon: 'bi-clock-fill', color: '#dc2626', bg: '#fef2f2',
+        alert: overdueJobs > 0 },
+      { label: 'เสร็จแล้ว', value: doneJobs, sub: 'งาน', icon: 'bi-check-circle-fill', color: '#059669', bg: '#ecfdf5' },
+      { label: 'เกิน SLA', value: overdueJobs, sub: 'ต้องดำเนินการ', icon: 'bi-exclamation-triangle-fill', color: '#ea580c', bg: '#fff7ed',
+        alert: overdueJobs > 0 }
     ],
     acct: [
-      { label: 'รายรับวันนี้', value: '฿' + Number(revenue.today || 0).toLocaleString(), sub: 'บาท', trend: revenue.today > 0 ? 'up' : '', color: '#10b981' },
-      { label: 'รายรับเดือนนี้', value: '฿' + Number(revenue.month || 0).toLocaleString(), sub: 'บาท', trend: '', color: '#0891b2' },
-      { label: 'งานทั้งหมด', value: totalJobs, sub: 'ในระบบ', trend: '', color: '#7c3aed' },
-      { label: 'เสร็จแล้ว', value: doneJobs, sub: 'งาน', trend: '', color: '#f59e0b' }
+      { label: 'รายรับวันนี้', value: '฿' + Number(revenue.today || 0).toLocaleString(), sub: 'บาท', icon: 'bi-cash-coin', color: '#059669', bg: '#ecfdf5' },
+      { label: 'รายรับเดือนนี้', value: '฿' + Number(revenue.month || 0).toLocaleString(), sub: 'บาท', icon: 'bi-graph-up-arrow', color: '#0891b2', bg: '#ecfeff' },
+      { label: 'งานทั้งหมด', value: totalJobs, sub: 'ในระบบ', icon: 'bi-clipboard2-data-fill', color: '#7c3aed', bg: '#f5f3ff' },
+      { label: 'เสร็จแล้ว', value: doneJobs, sub: 'งาน', icon: 'bi-check-circle-fill', color: '#d97706', bg: '#fffbeb' }
     ],
     exec: [
-      { label: 'รายรับวันนี้', value: '฿' + Number(revenue.today || 0).toLocaleString(), sub: 'เดือน: ฿' + Number(revenue.month || 0).toLocaleString(), trend: revenue.today > 0 ? 'up' : '', color: '#d97706' },
-      { label: 'งานค้าง', value: pendingJobs, sub: overdueJobs > 0 ? `เกิน SLA ${overdueJobs} งาน` : 'ปกติ', trend: overdueJobs > 0 ? 'down' : '', color: '#ef4444' },
-      { label: 'งานเสร็จ', value: doneJobs, sub: `จาก ${totalJobs} งาน`, trend: doneJobs > 0 ? 'up' : '', color: '#0d6efd' },
-      { label: 'ช่างยอดเยี่ยม', value: topTech ? ((topTech.name || '').split(' ')[0] || '-') : '-', sub: topTech ? `${topTech.jobs_completed || 0} งาน` : '', trend: '', color: '#7c3aed' }
+      { label: 'รายรับวันนี้', value: '฿' + Number(revenue.today || 0).toLocaleString(), sub: 'เดือน: ฿' + Number(revenue.month || 0).toLocaleString(), icon: 'bi-currency-dollar', color: '#d97706', bg: '#fffbeb' },
+      { label: 'งานค้าง', value: pendingJobs, sub: overdueJobs > 0 ? `เกิน SLA ${overdueJobs} งาน` : 'ปกติ', icon: 'bi-clock-fill', color: '#dc2626', bg: '#fef2f2',
+        alert: overdueJobs > 0 },
+      { label: 'งานเสร็จ', value: doneJobs, sub: `จาก ${totalJobs} งาน`, icon: 'bi-check-circle-fill', color: '#2563eb', bg: '#eff6ff' },
+      { label: 'ช่างยอดเยี่ยม', value: topTech ? ((topTech.name || '').split(' ')[0] || '-') : '-', sub: topTech ? `${topTech.jobs_completed || 0} งาน` : '', icon: 'bi-trophy-fill', color: '#7c3aed', bg: '#f5f3ff' }
     ]
   };
 
   const stats = statsMap[role] || statsMap.tech;
   row.innerHTML = stats.map(s => `
-    <div class="stat-card" style="border-top-color:${s.color}">
-      <div class="stat-label">${s.label}</div>
-      <div class="stat-value" style="color:${s.color}">${s.value}</div>
-      ${s.trend === 'up' ? `<div class="stat-trend up"><i class="bi bi-arrow-up-short"></i>${s.sub}</div>` :
-        s.trend === 'down' ? `<div class="stat-trend down"><i class="bi bi-arrow-down-short"></i>${s.sub}</div>` :
-        `<div class="stat-sub">${s.sub}</div>`}
+    <div class="stat-card-v2 ${s.alert ? 'stat-alert' : ''}">
+      <div class="stat-icon-wrap" style="background:${s.bg};color:${s.color}">
+        <i class="bi ${s.icon}"></i>
+      </div>
+      <div class="stat-body">
+        <div class="stat-v2-label">${s.label}</div>
+        <div class="stat-v2-value" style="color:${s.color}">${s.value}</div>
+        <div class="stat-v2-sub">${s.sub}</div>
+      </div>
     </div>
   `).join('');
 }
 
+// ─── ภาพรวมระบบ (Operator Pulse) ───────────────────────────────
 function renderOperatorPulse() {
   const d = APP.dashboardData || {};
   const summary = d.summary || d || {};
@@ -85,32 +89,33 @@ function renderOperatorPulse() {
   const visionReview = Number(summary.visionReview || summary.visionReviewQueue || summary.pendingVisionReviews || 0);
   const linePending = alerts.length;
   const riskCount = overdueJobs + lowStock + visionReview + linePending;
-  const statusText = riskCount > 0 ? 'Action needed' : 'Stable';
+  const statusText = riskCount > 0 ? 'มีเรื่องต้องดูแล' : 'ปกติดี';
   const tone = riskCount > 0 ? 'watch' : 'ok';
 
   return `
-    <section class="operator-pulse-card ${tone}" data-mobile-operator-pulse="true" aria-label="Operator pulse">
+    <section class="operator-pulse-card ${tone}" data-mobile-operator-pulse="true" aria-label="ภาพรวมระบบ">
       <div class="operator-pulse-head">
         <div>
-          <div class="operator-pulse-kicker">Operator Pulse</div>
+          <div class="operator-pulse-kicker">ภาพรวมระบบ</div>
           <strong>${statusText}</strong>
         </div>
-        <button type="button" class="operator-pulse-action" aria-label="Open dashboard" onclick="goPage('dashboard', document.getElementById('nav-home'))">
+        <button type="button" class="operator-pulse-action" aria-label="ดูแดชบอร์ด" onclick="goPage('dashboard', document.getElementById('nav-home'))">
           <i class="bi bi-speedometer2"></i>
         </button>
       </div>
       <div class="operator-pulse-row">
-        <div class="operator-pulse-metric"><span>${totalJobs.toLocaleString()}</span><small>Jobs</small></div>
-        <div class="operator-pulse-metric"><span>THB ${Number(revenue.today || 0).toLocaleString()}</span><small>Cash</small></div>
-        <div class="operator-pulse-metric ${overdueJobs > 0 ? 'hot' : ''}"><span>${overdueJobs}</span><small>SLA</small></div>
-        <div class="operator-pulse-metric ${riskCount > 0 ? 'hot' : ''}"><span>${riskCount}</span><small>Risk</small></div>
+        <div class="operator-pulse-metric"><span>${totalJobs.toLocaleString()}</span><small>งาน</small></div>
+        <div class="operator-pulse-metric"><span>฿${Number(revenue.today || 0).toLocaleString()}</span><small>รายรับวันนี้</small></div>
+        <div class="operator-pulse-metric ${overdueJobs > 0 ? 'hot' : ''}"><span>${overdueJobs}</span><small>เกิน SLA</small></div>
+        <div class="operator-pulse-metric ${riskCount > 0 ? 'hot' : ''}"><span>${riskCount}</span><small>ความเสี่ยง</small></div>
       </div>
       <div class="operator-pulse-foot">
-        Billing ${billingOpen} | Stock ${lowStock} | Vision ${visionReview} | LINE ${linePending}
+        บิลค้าง ${billingOpen} · สินค้าต่ำ ${lowStock} · AI Vision ${visionReview} · LINE ${linePending}
       </div>
     </section>`;
 }
 
+// ─── โฟกัสตามบทบาท (Role Focus) ─────────────────────────────────
 function renderMobileRoleFocus() {
   const role = APP.role || 'tech';
   const d = APP.dashboardData || {};
@@ -126,27 +131,28 @@ function renderMobileRoleFocus() {
   const visionReview = Number(summary.visionReview || summary.visionReviewQueue || summary.pendingVisionReviews || 0);
   const linePending = alerts.length;
   const roleMap = {
-    tech: { title: 'Field Focus', icon: 'bi-tools', page: 'jobs', value: `${overdueJobs} SLA`, note: `${totalJobs} jobs in queue` },
-    admin: { title: 'Dispatch Focus', icon: 'bi-headset', page: 'jobs', value: `${totalJobs} jobs`, note: `${linePending} LINE alerts` },
-    acct: { title: 'Cash Focus', icon: 'bi-receipt', page: 'billing', value: `THB ${Number(revenue.today || 0).toLocaleString()}`, note: `${billingOpen} billing follow-up` },
-    exec: { title: 'Executive Focus', icon: 'bi-graph-up-arrow', page: 'reports', value: `THB ${Number(revenue.month || 0).toLocaleString()}`, note: `${lowStock + visionReview + linePending} active risks` }
+    tech: { title: 'งานช่าง', icon: 'bi-tools', page: 'jobs', value: overdueJobs > 0 ? `${overdueJobs} งานเกิน SLA` : `${totalJobs} งาน`, note: 'คิวงานของฉัน' },
+    admin: { title: 'จัดการงาน', icon: 'bi-headset', page: 'jobs', value: `${totalJobs} งาน`, note: `LINE แจ้งเตือน ${linePending} รายการ` },
+    acct: { title: 'การเงิน', icon: 'bi-receipt', page: 'billing', value: `฿${Number(revenue.today || 0).toLocaleString()}`, note: `บิลค้างชำระ ${billingOpen} รายการ` },
+    exec: { title: 'ภาพรวมธุรกิจ', icon: 'bi-graph-up-arrow', page: 'reports', value: `฿${Number(revenue.month || 0).toLocaleString()}`, note: `ความเสี่ยง ${lowStock + visionReview + linePending} รายการ` }
   };
   const card = roleMap[role] || roleMap.admin;
   return `
     <section class="mobile-role-focus-card" data-mobile-role-widget="${role}" aria-label="${card.title}">
       <div class="mobile-role-focus-icon"><i class="bi ${card.icon}"></i></div>
       <div class="mobile-role-focus-copy">
-        <small>Role Focus</small>
+        <small>โฟกัสของคุณ</small>
         <strong>${card.title}</strong>
         <span>${card.value}</span>
         <em>${card.note}</em>
       </div>
-      <button type="button" class="mobile-role-focus-action" aria-label="Open ${card.title}" onclick="goPage('${card.page}', document.getElementById('${card.page === 'jobs' ? 'nav-jobs' : 'nav-more'}'))">
+      <button type="button" class="mobile-role-focus-action" aria-label="ไปที่ ${card.title}" onclick="goPage('${card.page}', document.getElementById('${card.page === 'jobs' ? 'nav-jobs' : 'nav-more'}'))">
         <i class="bi bi-arrow-right-short"></i>
       </button>
     </section>`;
 }
 
+// ─── งานสำคัญ (Decision Layer) ──────────────────────────────────
 function buildMobileDecisionItems() {
   const d = APP.dashboardData || {};
   const summary = d.summary || d || {};
@@ -160,12 +166,12 @@ function buildMobileDecisionItems() {
   const visionReview = Number(summary.visionReview || summary.visionReviewQueue || summary.pendingVisionReviews || 0);
   const linePending = alerts.length;
   const items = [
-    { id: 'jobs', page: 'jobs', icon: 'bi-tools', title: 'Service', note: overdueJobs > 0 ? `${overdueJobs} SLA risk` : `${totalJobs} jobs`, value: overdueJobs || totalJobs, priority: overdueJobs > 0 ? 'high' : 'normal' },
-    { id: 'billing', page: 'billing', icon: 'bi-receipt', title: 'Billing', note: billingOpen > 0 ? `${billingOpen} follow-up` : 'cash clear', value: billingOpen, priority: billingOpen > 0 ? 'high' : 'normal' },
-    { id: 'reports', page: 'reports', icon: 'bi-graph-up-arrow', title: 'Reports', note: Number(revenue.month || 0) > 0 ? `THB ${Number(revenue.month || 0).toLocaleString()}` : 'review period', value: Number(revenue.month || 0), priority: Number(revenue.today || 0) <= 0 && Number(revenue.month || 0) <= 0 ? 'watch' : 'normal' },
-    { id: 'inventory', page: 'inventory', icon: 'bi-boxes', title: 'Stock', note: lowStock > 0 ? `${lowStock} low-stock` : 'healthy', value: lowStock, priority: lowStock > 0 ? 'watch' : 'normal' },
-    { id: 'vision', page: 'vision', icon: 'bi-stars', title: 'Vision', note: visionReview > 0 ? `${visionReview} reviews` : 'pilot ready', value: visionReview, priority: visionReview > 0 ? 'watch' : 'normal' },
-    { id: 'line-center', page: 'line-center', icon: 'bi-broadcast-pin', title: 'LINE', note: linePending > 0 ? `${linePending} alerts` : 'rooms healthy', value: linePending, priority: linePending > 0 ? 'watch' : 'normal' }
+    { id: 'jobs', page: 'jobs', icon: 'bi-tools', title: 'งานบริการ', note: overdueJobs > 0 ? `${overdueJobs} เกิน SLA` : `${totalJobs} งาน`, value: overdueJobs || totalJobs, priority: overdueJobs > 0 ? 'high' : 'normal' },
+    { id: 'billing', page: 'billing', icon: 'bi-receipt', title: 'ออกบิล', note: billingOpen > 0 ? `ค้าง ${billingOpen} รายการ` : 'ไม่มีค้าง', value: billingOpen, priority: billingOpen > 0 ? 'high' : 'normal' },
+    { id: 'reports', page: 'reports', icon: 'bi-graph-up-arrow', title: 'รายงาน', note: Number(revenue.month || 0) > 0 ? `฿${Number(revenue.month || 0).toLocaleString()}` : 'ดูสรุป', value: Number(revenue.month || 0), priority: Number(revenue.today || 0) <= 0 && Number(revenue.month || 0) <= 0 ? 'watch' : 'normal' },
+    { id: 'inventory', page: 'inventory', icon: 'bi-boxes', title: 'คลังสินค้า', note: lowStock > 0 ? `สินค้าต่ำ ${lowStock} รายการ` : 'ปกติ', value: lowStock, priority: lowStock > 0 ? 'watch' : 'normal' },
+    { id: 'vision', page: 'vision', icon: 'bi-stars', title: 'AI Vision', note: visionReview > 0 ? `รอรีวิว ${visionReview}` : 'พร้อมใช้งาน', value: visionReview, priority: visionReview > 0 ? 'watch' : 'normal' },
+    { id: 'line-center', page: 'line-center', icon: 'bi-broadcast-pin', title: 'LINE', note: linePending > 0 ? `แจ้งเตือน ${linePending}` : 'ปกติ', value: linePending, priority: linePending > 0 ? 'watch' : 'normal' }
   ];
   const order = { high: 0, watch: 1, normal: 2 };
   return items.sort((a, b) => (order[a.priority] - order[b.priority]) || (b.value - a.value)).slice(0, 4);
@@ -174,13 +180,13 @@ function buildMobileDecisionItems() {
 function renderMobileDecisionLayer() {
   const items = buildMobileDecisionItems();
   return `
-    <section class="mobile-decision-layer" data-mobile-decision-layer="true" aria-label="Mobile decision layer">
+    <section class="mobile-decision-layer" data-mobile-decision-layer="true" aria-label="งานสำคัญ">
       <div class="mobile-decision-head">
         <div>
-          <small>Decision Layer</small>
-          <strong>Next best actions</strong>
+          <small>การดำเนินงาน</small>
+          <strong>สิ่งที่ต้องทำตอนนี้</strong>
         </div>
-        <button type="button" class="mobile-decision-settings" aria-label="Edit quick actions" onclick="showQuickActionSettings()">
+        <button type="button" class="mobile-decision-settings" aria-label="ปรับแต่ง" onclick="showQuickActionSettings()">
           <i class="bi bi-sliders"></i>
         </button>
       </div>
@@ -219,11 +225,12 @@ function renderMobileCommandCenter() {
         ${renderMobileRoleFocus()}
         ${renderMobileDecisionLayer()}
       </div>
-      ${APP.dashboardLoading ? '<div class="mobile-cache-note"><i class="bi bi-cloud-arrow-down"></i> Updating latest data...</div>' : ''}
-      ${APP.dashboardFromCache ? `<div class="mobile-cache-note"><i class="bi bi-lightning-charge"></i> Showing ${APP.dashboardFromCache} cached dashboard while syncing</div>` : ''}
+      ${APP.dashboardLoading ? '<div class="mobile-cache-note"><i class="bi bi-cloud-arrow-down"></i> กำลังอัปเดตข้อมูลล่าสุด...</div>' : ''}
+      ${APP.dashboardFromCache ? `<div class="mobile-cache-note"><i class="bi bi-lightning-charge"></i> แสดงข้อมูลจาก cache ขณะ sync ใหม่</div>` : ''}
     </section>`;
 }
 
+// ─── หน้าหลักตามบทบาท ────────────────────────────────────────────
 function renderTechHome() {
   const _u = APP.user || {};
   const _displayName = _u.name || _u.full_name || _u.username || '';
@@ -232,16 +239,22 @@ function renderTechHome() {
   const d = APP.dashboardData;
   const topTech = d && d.summary && d.summary.topTechnician;
   return `
-    <div class="checkin-banner" style="background:linear-gradient(135deg,#0d6efd,#0a58ca)">
+    <div class="checkin-banner" style="background:linear-gradient(135deg,#2563eb,#1d4ed8)">
       <div class="checkin-icon-wrap"><i class="bi bi-geo-alt-fill"></i></div>
       <div class="checkin-info">
         <h6>ยังไม่ได้เช็คอิน</h6>
         <p>${formatDate()}</p>
       </div>
-      <button class="checkin-action-btn" style="color:#0d6efd" onclick="doCheckin()">เช็คอิน</button>
+      <button class="checkin-action-btn" style="color:#2563eb" onclick="doCheckin()">เช็คอิน</button>
     </div>
-    <div style="padding:0 12px 4px"><div class="section-label">งานในระบบ (${myJobs.length} งาน)</div></div>
-    ${myJobs.length === 0 ? `<div style="text-align:center;padding:30px;color:#9ca3af"><i class="bi bi-clipboard2-check" style="font-size:36px;display:block;margin-bottom:8px"></i>ไม่มีงานค้าง</div>` : myJobs.slice(0,3).map(j => renderJobCard(j)).join('')}
+    <div class="home-section-header">
+      <span>งานในคิว</span>
+      <span class="home-section-count">${myJobs.length} งาน</span>
+    </div>
+    ${myJobs.length === 0
+      ? `<div class="home-empty-state"><i class="bi bi-clipboard2-check"></i><p>ไม่มีงานค้าง</p></div>`
+      : myJobs.slice(0, 3).map(j => renderJobCard(j)).join('')}
+    ${myJobs.length > 3 ? `<button class="home-see-all-btn" onclick="goPage('jobs',document.getElementById('nav-jobs'))"><i class="bi bi-list-ul"></i> ดูงานทั้งหมด (${myJobs.length} งาน)</button>` : ''}
     ${topTech ? `
     <div class="kudos-banner">
       <div style="font-size:36px">⭐</div>
@@ -255,30 +268,34 @@ function renderTechHome() {
 }
 
 function renderAdminHome() {
-  const pending = APP.jobs.filter(j => j.status === 'new' || j.status === 'urgent');
   const overdue = APP.jobs.filter(j => j.sla < 0 && j.status !== 'done' && j.status !== 'cancel');
-  const d = APP.dashboardData;
-  const alertsRaw = d && d.alerts ? d.alerts : {};
-  const alerts = Array.isArray(alertsRaw) ? alertsRaw : (alertsRaw.items || []);
+  const allJobs = APP.jobs;
   return `
     ${overdue.length > 0 ? `
-    <div style="padding:0 12px 4px"><div class="section-label" style="color:#ef4444">⚠️ งานเกิน SLA (${overdue.length} งาน)</div></div>
-    ${overdue.slice(0,2).map(j => renderJobCard(j)).join('')}` : ''}
-    <div style="padding:0 12px 4px;margin-top:4px"><div class="section-label">งานทั้งหมด (${APP.jobs.length} งาน)</div></div>
-    ${APP.jobs.length === 0 ? `<div style="text-align:center;padding:30px;color:#9ca3af"><div style="font-size:32px;margin-bottom:8px">⏳</div>กำลังโหลดข้อมูล...</div>` :
-      APP.jobs.slice(0,5).map(j => renderJobCard(j)).join('')}
+    <div class="home-section-header alert">
+      <span><i class="bi bi-exclamation-triangle-fill" style="margin-right:4px"></i>เกิน SLA</span>
+      <span class="home-section-count alert">${overdue.length} งาน</span>
+    </div>
+    ${overdue.slice(0, 2).map(j => renderJobCard(j)).join('')}` : ''}
+    <div class="home-section-header" style="margin-top:${overdue.length > 0 ? '4px' : '0'}">
+      <span>งานทั้งหมด</span>
+      <span class="home-section-count">${allJobs.length} งาน</span>
+    </div>
+    ${allJobs.length === 0
+      ? `<div class="home-empty-state"><div style="font-size:32px">⏳</div><p>กำลังโหลดข้อมูล...</p></div>`
+      : allJobs.slice(0, 5).map(j => renderJobCard(j)).join('')}
+    ${allJobs.length > 5 ? `<button class="home-see-all-btn" onclick="goPage('jobs',document.getElementById('nav-jobs'))"><i class="bi bi-list-ul"></i> ดูงานทั้งหมด (${allJobs.length} งาน)</button>` : ''}
   `;
 }
 
 function renderAcctHome() {
-  const pending = APP.jobs.filter(j => j.status === 'done');
+  const donedJobs = APP.jobs.filter(j => j.status === 'done');
   const d = APP.dashboardData;
   const summary = d && d.summary ? d.summary : {};
   const revenue = summary.revenue || {};
   const todayRevenue = Number(revenue.today || 0);
   const vat = Math.round(todayRevenue * 0.07 * 100) / 100;
   const wht = Math.round(todayRevenue * 0.03 * 100) / 100;
-  const net = todayRevenue - vat;
   return `
     <div class="slip-scan-card">
       <i class="bi bi-camera-fill"></i>
@@ -286,23 +303,39 @@ function renderAcctHome() {
       <p>AI จะตรวจยอดและจับคู่บิลอัตโนมัติ</p>
       <button class="slip-scan-btn" onclick="scanSlip()"><i class="bi bi-camera"></i> เปิดกล้อง</button>
     </div>
-    <div style="padding:0 12px 4px"><div class="section-label">งานเสร็จแล้ว (${pending.length} งาน)</div></div>
-    ${pending.length === 0 ? `<div style="text-align:center;padding:20px;color:#9ca3af">ยังไม่มีงานเสร็จ</div>` :
-      pending.map(j => `
+    <div class="mini-chart-card">
+      <div class="chart-title">สรุปภาษีวันนี้</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+        <div class="tax-chip" style="color:#0891b2">
+          <div class="tax-chip-label">VAT 7%</div>
+          <div class="tax-chip-value">฿${vat.toLocaleString()}</div>
+        </div>
+        <div class="tax-chip" style="color:#7c3aed">
+          <div class="tax-chip-label">WHT 3%</div>
+          <div class="tax-chip-value">฿${wht.toLocaleString()}</div>
+        </div>
+        <div class="tax-chip" style="color:#059669">
+          <div class="tax-chip-label">รายรับวันนี้</div>
+          <div class="tax-chip-value">฿${todayRevenue.toLocaleString()}</div>
+        </div>
+      </div>
+    </div>
+    <div class="home-section-header">
+      <span>งานเสร็จแล้ว</span>
+      <span class="home-section-count">${donedJobs.length} งาน</span>
+    </div>
+    ${donedJobs.length === 0
+      ? `<div class="home-empty-state"><i class="bi bi-receipt"></i><p>ยังไม่มีงานเสร็จ</p></div>`
+      : donedJobs.slice(0, 5).map(j => `
         <div class="bill-row">
-          <div class="avatar-sm" style="background:#fee2e2;color:#dc2626">${(j.customer||'-').charAt(0)}</div>
-          <div><div class="bill-amount">฿${Number(j.price||0).toLocaleString()}</div><div class="bill-sub">${j.id} · ${j.customer}</div></div>
+          <div class="avatar-sm" style="background:#fee2e2;color:#dc2626">${(j.customer || '-').charAt(0)}</div>
+          <div style="flex:1;min-width:0">
+            <div class="bill-amount">฿${Number(j.price || 0).toLocaleString()}</div>
+            <div class="bill-sub">${j.id} · ${j.customer}</div>
+          </div>
           <span class="bill-status-badge" style="background:#d1fae5;color:#065f46">เสร็จ</span>
         </div>
       `).join('')}
-    <div class="mini-chart-card">
-      <div class="chart-title">สรุปภาษีวันนี้ (อัตโนมัติ)</div>
-      <div style="display:flex;justify-content:space-between;font-size:12px;color:#374151">
-        <div><span style="font-weight:700">VAT 7%</span><br><span style="font-size:18px;font-weight:900;color:#0891b2">฿${vat.toLocaleString()}</span></div>
-        <div><span style="font-weight:700">WHT 3%</span><br><span style="font-size:18px;font-weight:900;color:#7c3aed">฿${wht.toLocaleString()}</span></div>
-        <div><span style="font-weight:700">รายรับวันนี้</span><br><span style="font-size:18px;font-weight:900;color:#10b981">฿${todayRevenue.toLocaleString()}</span></div>
-      </div>
-    </div>
   `;
 }
 
@@ -313,34 +346,47 @@ function renderExecHome() {
   const alerts = Array.isArray(alertsRaw) ? alertsRaw : (alertsRaw.items || []);
   const topTech = summary.topTechnician;
   const revenue = summary.revenue || {};
-  const overdueJobs = APP.jobs.filter(j => j.sla < 0 && j.status !== 'done' && j.status !== 'cancel');
 
   return `
     ${alerts.length > 0 ? `
-    <div style="padding:0 12px 4px"><div class="section-label" style="color:#ef4444">⚠️ แจ้งเตือนด่วน (${alerts.length})</div></div>
-    ${alerts.slice(0,3).map(a => {
-      const isOverdue = (a.type||'').includes('OVERDUE');
-      const isStock = (a.type||'').includes('STOCK');
+    <div class="home-section-header alert">
+      <span><i class="bi bi-bell-fill" style="margin-right:4px"></i>แจ้งเตือนด่วน</span>
+      <span class="home-section-count alert">${alerts.length} รายการ</span>
+    </div>
+    ${alerts.slice(0, 3).map(a => {
+      const isOverdue = (a.type || '').includes('OVERDUE');
+      const isStock = (a.type || '').includes('STOCK');
       const cls = isOverdue ? 'danger' : isStock ? 'warning' : 'success';
       const icon = isOverdue ? 'bi-clock-fill' : isStock ? 'bi-box-seam-fill' : 'bi-info-circle-fill';
       const msg = a.message || (a.data && a.data.customer_name ? `${a.id} — ${a.data.customer_name}` : '-');
       return `<div class="alert-card ${cls}">
         <i class="bi ${icon}"></i>
-        <div style="flex:1"><div style="font-weight:700">${msg}</div>${a.data && a.data.status_label ? `<div style="font-size:11px;font-weight:400">สถานะ: ${a.data.status_label}</div>` : ''}</div>
+        <div style="flex:1"><div style="font-weight:700">${msg}</div>${a.data && a.data.status_label ? `<div style="font-size:11px;color:#6b7280">สถานะ: ${a.data.status_label}</div>` : ''}</div>
       </div>`;
     }).join('')}` : ''}
-
-    <div style="padding:0 12px 4px;margin-top:4px"><div class="section-label">งานล่าสุด</div></div>
-    ${APP.jobs.length === 0 ? `<div style="text-align:center;padding:30px;color:#9ca3af"><div style="font-size:32px;margin-bottom:8px">⏳</div>กำลังโหลดข้อมูล...</div>` :
-      APP.jobs.slice(0,4).map(j => renderJobCard(j)).join('')}
-
+    <div class="home-section-header" style="margin-top:${alerts.length > 0 ? '4px' : '0'}">
+      <span>งานล่าสุด</span>
+      <span class="home-section-count">${APP.jobs.length} งาน</span>
+    </div>
+    ${APP.jobs.length === 0
+      ? `<div class="home-empty-state"><div style="font-size:32px">⏳</div><p>กำลังโหลดข้อมูล...</p></div>`
+      : APP.jobs.slice(0, 4).map(j => renderJobCard(j)).join('')}
+    ${APP.jobs.length > 4 ? `<button class="home-see-all-btn" onclick="goPage('jobs',document.getElementById('nav-jobs'))"><i class="bi bi-list-ul"></i> ดูงานทั้งหมด</button>` : ''}
     ${topTech ? `
-    <div style="padding:0 12px 4px;margin-top:4px"><div class="section-label">ช่างยอดเยี่ยมสัปดาห์นี้</div></div>
+    <div class="home-section-header" style="margin-top:4px">
+      <span>ช่างยอดเยี่ยมสัปดาห์นี้</span>
+    </div>
     <div class="rank-card">
       <div class="rank-num">1</div>
-      <div class="avatar-sm" style="background:#fef9c3;color:#d97706">${(topTech.name||'?')[0]}</div>
-      <div style="flex:1"><div style="font-size:13px;font-weight:700">${topTech.name}</div><div class="stars-row">${'★'.repeat(Math.min(5,Math.round(topTech.rating||5)))} <span style="color:#9ca3af;font-size:11px">${topTech.kudos||0} Kudos</span></div></div>
-      <div style="text-align:right"><div style="font-size:12px;font-weight:700;color:#10b981">${topTech.jobs_completed||0} งาน</div><div style="font-size:10px;color:#9ca3af">สัปดาห์นี้</div></div>
+      <div class="avatar-sm" style="background:#fef9c3;color:#d97706">${(topTech.name || '?')[0]}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700">${topTech.name}</div>
+        <div class="stars-row">${'★'.repeat(Math.min(5, Math.round(topTech.rating || 5)))} <span style="color:#9ca3af;font-size:11px">${topTech.kudos || 0} คะแนน</span></div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:12px;font-weight:700;color:#059669">${topTech.jobs_completed || 0} งาน</div>
+        <div style="font-size:10px;color:#9ca3af">สัปดาห์นี้</div>
+      </div>
     </div>` : ''}
   `;
 }

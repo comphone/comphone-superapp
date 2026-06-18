@@ -1602,3 +1602,147 @@ html, body {
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   SPRINT 204 — DASHBOARD REDESIGN
+   New stat cards, section headers, home components
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Stat Card v2 (with icon) ─── */
+.stat-card-v2 {
+  background: #fff;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
+  border: 1px solid #f1f5f9;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  flex: 1;
+  min-width: 0;
+}
+.stat-card-v2.stat-alert {
+  border-color: #fecaca;
+  background: #fff5f5;
+}
+.stat-card-v2:active { transform: scale(0.97); }
+
+.stat-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.stat-body { min-width: 0; flex: 1; }
+.stat-v2-label {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 600;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stat-v2-value {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 1px;
+}
+.stat-v2-sub {
+  font-size: 10px;
+  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* stats-row override for new cards */
+#stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 12px 12px;
+}
+#stats-row .stat-card-v2 {
+  flex: 1 1 calc(50% - 4px);
+  min-width: 0;
+  max-width: calc(50% - 4px);
+}
+
+/* ─── Home Section Header ─── */
+.home-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+}
+.home-section-header.alert { color: #dc2626; }
+.home-section-header span:first-child { display: flex; align-items: center; }
+.home-section-count {
+  font-size: 11px;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #6b7280;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.home-section-count.alert {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* ─── Empty State ─── */
+.home-empty-state {
+  text-align: center;
+  padding: 28px 20px;
+  color: #9ca3af;
+}
+.home-empty-state i { font-size: 36px; display: block; margin-bottom: 8px; }
+.home-empty-state p { font-size: 13px; margin: 0; }
+
+/* ─── See-All Button ─── */
+.home-see-all-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: calc(100% - 24px);
+  margin: 4px 12px 8px;
+  padding: 11px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.home-see-all-btn:active { background: #eff6ff; }
+
+/* ─── Tax chips in acct home ─── */
+.tax-chip {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 8px 4px;
+}
+.tax-chip-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+.tax-chip-value {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.1;
+}
