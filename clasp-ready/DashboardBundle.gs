@@ -6,7 +6,7 @@
 // ============================================================
 
 var BUNDLE_CACHE_KEY = 'dashboard_bundle_v61';
-var BUNDLE_CACHE_TTL = 90; // seconds — longer TTL for bundle
+var BUNDLE_CACHE_TTL = 300; // seconds — 5 min TTL (keep-warm trigger refreshes every 5 min)
 
 /**
  * getDashboardBundle — Aggregated API endpoint

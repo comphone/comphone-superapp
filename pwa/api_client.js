@@ -18,8 +18,8 @@ const COMPHONE_DEFAULT_GAS_URL = (window.GAS_CONFIG && window.GAS_CONFIG.url) ||
 const COMPHONE_SESSION_KEY = 'comphone_auth_session';
 const COMPHONE_GAS_URL_KEY = 'comphone_gas_url';
 const COMPHONE_API_TIMEOUT = 30000; // 30s
-const COMPHONE_CACHE_TTL = 15000; // 15s frontend cache (real-time)
-const COMPHONE_CACHE_TTL_SLOW = 60000; // 60s for slow-changing data
+const COMPHONE_CACHE_TTL = 30000; // 30s frontend cache
+const COMPHONE_CACHE_TTL_SLOW = 300000; // 5 min for slow-changing data (matches GAS cache TTL)
 
 /**
  * getGasUrl() — ดึง GAS URL จาก localStorage หรือ default
