@@ -495,8 +495,11 @@ async function advanceJobStatus(jobId, targetStatus) {
 // 1.7 SHOW JOB DETAIL V2 — แสดงข้อมูลครบ
 // ============================================================
 function showJobDetailV2(jobId) {
-  const job = APP.jobs.find(j => j.id === jobId);
-  if (!job) return;
+  const job = APP.jobs.find(j => String(j.id || '') === String(jobId || ''));
+  if (!job) {
+    showToast('ไม่พบรายละเอียดงาน ' + jobId);
+    return;
+  }
 
   // ใช้ statusLabel จาก normalizeJob ก่อน ถ้าไม่มีใช้ status
   const statusLabel = job.statusLabel || job.status || '-';
@@ -620,7 +623,11 @@ function showJobDetailV2(jobId) {
       </div>
     </div>
   `;
-  document.getElementById('modal-job').classList.remove('hidden');
+  const modalJob = document.getElementById('modal-job');
+  if (modalJob) {
+    modalJob.style.display = 'flex';
+    modalJob.classList.remove('hidden');
+  }
 }
 
 // Override showJobDetail ด้วย V2
