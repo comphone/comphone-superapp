@@ -57,13 +57,13 @@ async function loadAdminPanel() {
 function buildAdminPanelShell_(container) {
   container.innerHTML = `
     <div class="admin-tab-bar" id="admin-tab-bar">
-      <button class="admin-tab active" data-tab="security"><i class="bi bi-shield-check"></i> Security</button>
-      <button class="admin-tab" data-tab="health"><i class="bi bi-activity"></i> Health</button>
-      <button class="admin-tab" data-tab="users"><i class="bi bi-people-fill"></i> Users</button>
-      <button class="admin-tab" data-tab="config"><i class="bi bi-gear-fill"></i> Config</button>
-      <button class="admin-tab" data-tab="repair"><i class="bi bi-tools"></i> Repair</button>
+      <button class="admin-tab active" data-tab="security"><i class="bi bi-shield-check"></i> ความปลอดภัย</button>
+      <button class="admin-tab" data-tab="health"><i class="bi bi-activity"></i> สุขภาพ</button>
+      <button class="admin-tab" data-tab="users"><i class="bi bi-people-fill"></i> ผู้ใช้</button>
+      <button class="admin-tab" data-tab="config"><i class="bi bi-gear-fill"></i> ตั้งค่า</button>
+      <button class="admin-tab" data-tab="repair"><i class="bi bi-tools"></i> ซ่อมข้อมูล</button>
       <button class="admin-tab" data-tab="archive"><i class="bi bi-archive-fill"></i> Archive</button>
-      <button class="admin-tab" data-tab="audit"><i class="bi bi-journal-text"></i> Audit Log</button>
+      <button class="admin-tab" data-tab="audit"><i class="bi bi-journal-text"></i> Log</button>
     </div>
     <div id="admin-tab-content" style="padding:0 0 80px 0"></div>`;
 

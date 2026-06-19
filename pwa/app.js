@@ -775,7 +775,6 @@ function showQuickActionSettings() {
           <h5><i class="bi bi-sliders"></i> จัดปุ่มด่วนหน้า Dashboard</h5>
           <button onclick="closeModal('modal-quick-actions')"><i class="bi bi-x-lg"></i></button>
         </div>
-        <p class="quick-settings-help">เลือกได้สูงสุด 6 ปุ่ม ระบบจะจำไว้ในเครื่องนี้และแสดงบนหน้าแรก</p>
         <p class="quick-settings-help">เลือกได้สูงสุด 4 ปุ่ม เพื่อให้หน้าแรกโหลดเร็วและใช้งานง่าย ระบบจะจำไว้ในเครื่องนี้</p>
         <div class="quick-settings-list">${rows}</div>
         <div class="quick-settings-actions">
@@ -785,9 +784,6 @@ function showQuickActionSettings() {
       </div>
     </div>`;
   document.body.insertAdjacentHTML('beforeend', html);
-  document.querySelectorAll('#modal-quick-actions .quick-settings-help').forEach(el => {
-    el.textContent = 'เลือกได้สูงสุด 4 ปุ่ม เพื่อให้หน้าแรกโหลดเร็วและใช้งานง่าย ระบบจะจำไว้ในเครื่องนี้';
-  });
 }
 function saveQuickActions() {
   const modal = document.getElementById('modal-quick-actions');
