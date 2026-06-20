@@ -528,7 +528,7 @@ function showJobDetailV2(jobId) {
     </div>
   ` : '';
 
-  const isAdmin = APP.role === 'admin' || APP.role === 'exec';
+  const isAdmin = APP.role === 'admin' || APP.role === 'owner';
   const isTech = APP.role === 'tech';
 
   // แยก device จาก symptom ถ้ามี [device] format
@@ -621,12 +621,32 @@ function showJobDetailV2(jobId) {
           </button>
         ` : ''}
       </div>
+      ${isAdmin ? `
+        <div style="margin-top:8px;padding:10px 12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;color:#9a3412;font-size:12px;line-height:1.45">
+          <b>ลบงาน</b> — ระบบจะ archive ก่อนลบเสมอ
+        </div>
+        <button class="job-act-btn" style="width:100%;margin-top:6px;padding:12px;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;border-radius:12px;font-size:13px;font-weight:800;cursor:pointer" onclick="deleteMobileJob('${job.id}')">
+          <i class="bi bi-trash3"></i> ลบงาน
+        </button>
+      ` : ''}
+      ${job.status === 'done' ? `
+        <button class="job-act-btn" id="btn-warranty-v2-${job.id}" style="width:100%;margin-top:8px;padding:12px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer">
+          <i class="bi bi-shield-check"></i> ออกใบรับประกัน
+        </button>
+      ` : ''}
     </div>
   `;
   const modalJob = document.getElementById('modal-job');
   if (modalJob) {
     modalJob.style.display = 'flex';
     modalJob.classList.remove('hidden');
+  }
+  const warrantyBtnV2 = document.getElementById('btn-warranty-v2-' + jobId);
+  if (warrantyBtnV2 && typeof createWarrantyModal === 'function') {
+    warrantyBtnV2.addEventListener('click', function () {
+      closeModal('modal-job');
+      createWarrantyModal(job.id, { customer_name: job.customer, description: job.title });
+    });
   }
 }
 

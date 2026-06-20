@@ -1,12 +1,12 @@
 // ===== JOB CARD RENDER =====
 function renderJobCard(job) {
   const statusMap = {
-    urgent: { badge: 'badge-urgent', label: 'Urgent', border: 'urgent' },
-    inprog: { badge: 'badge-inprog', label: 'In progress', border: 'inprog' },
-    waiting: { badge: 'badge-wait', label: 'Waiting parts', border: 'waiting' },
-    done: { badge: 'badge-done', label: 'Done', border: 'done' },
-    cancel: { badge: 'badge-done', label: 'Cancelled', border: 'done' },
-    new: { badge: 'badge-new', label: 'New', border: '' }
+    urgent: { badge: 'badge-urgent', label: 'ด่วน', border: 'urgent' },
+    inprog: { badge: 'badge-inprog', label: 'กำลังซ่อม', border: 'inprog' },
+    waiting: { badge: 'badge-wait', label: 'รอชิ้นส่วน', border: 'waiting' },
+    done: { badge: 'badge-done', label: 'เสร็จแล้ว', border: 'done' },
+    cancel: { badge: 'badge-done', label: 'ยกเลิก', border: 'done' },
+    new: { badge: 'badge-new', label: 'งานใหม่', border: '' }
   };
   const s = statusMap[job.status] || statusMap.new;
   const jobArg = JSON.stringify(String(job.id || '')).replace(/"/g, '&quot;');
@@ -29,14 +29,14 @@ function renderJobCard(job) {
       ${job.status !== 'done' ? `<div style="margin-top:6px">${slaHtml}</div>` : ''}
       <div class="job-actions" onclick="event.stopPropagation()">
         ${job.status === 'new' ? `
-          <button class="job-act-btn btn-primary-sm" onclick="assignJob(${jobArg})"><i class="bi bi-person-check"></i> Assign</button>
-          <button class="job-act-btn btn-gray-sm" onclick="showJobDetail(${jobArg})"><i class="bi bi-eye"></i> Detail</button>
+          <button class="job-act-btn btn-primary-sm" onclick="assignJob(${jobArg})"><i class="bi bi-person-check"></i> มอบหมาย</button>
+          <button class="job-act-btn btn-gray-sm" onclick="showJobDetail(${jobArg})"><i class="bi bi-eye"></i> รายละเอียด</button>
         ` : job.status === 'done' ? `
-          <button class="job-act-btn btn-primary-sm" onclick="if(typeof openBillingModal==='function')openBillingModal(${jobArg});else showToast('Opening receipt...')"><i class="bi bi-file-earmark-pdf"></i> Receipt</button>
-          <button class="job-act-btn btn-gray-sm" onclick="showJobDetail(${jobArg})"><i class="bi bi-eye"></i> Detail</button>
+          <button class="job-act-btn btn-primary-sm" onclick="if(typeof openBillingModal==='function')openBillingModal(${jobArg});else showToast('กำลังเปิดบิล...')"><i class="bi bi-file-earmark-pdf"></i> ออกบิล</button>
+          <button class="job-act-btn btn-gray-sm" onclick="showJobDetail(${jobArg})"><i class="bi bi-eye"></i> รายละเอียด</button>
         ` : `
-          <button class="job-act-btn btn-primary-sm" onclick="openCameraForJob(${jobArg})"><i class="bi bi-camera"></i> Photos</button>
-          <button class="job-act-btn btn-success-sm" onclick="markJobDone(${jobArg})"><i class="bi bi-check2"></i> Done</button>
+          <button class="job-act-btn btn-primary-sm" onclick="openCameraForJob(${jobArg})"><i class="bi bi-camera"></i> ถ่ายรูป</button>
+          <button class="job-act-btn btn-success-sm" onclick="markJobDone(${jobArg})"><i class="bi bi-check2"></i> เสร็จ</button>
           <button class="job-act-btn btn-gray-sm" onclick="showJobDetail(${jobArg})"><i class="bi bi-three-dots"></i></button>
         `}
       </div>
@@ -221,7 +221,7 @@ async function showJobDetail(jobId) {
   APP.currentJobId = job.id;
   try { localStorage.setItem('comphone_current_job_id', job.id); } catch (_) {}
   const s = { urgent:'badge-urgent', inprog:'badge-inprog', waiting:'badge-wait', done:'badge-done', cancel:'badge-done', new:'badge-new' };
-  const sl = { urgent:'Urgent', inprog:'In progress', waiting:'Waiting parts', done:'Done', cancel:'Cancelled', new:'New' };
+  const sl = { urgent:'ด่วน', inprog:'กำลังซ่อม', waiting:'รอชิ้นส่วน', done:'เสร็จแล้ว', cancel:'ยกเลิก', new:'งานใหม่' };
 
   const jobModalContent = document.getElementById('modal-job-content');
   if (!jobModalContent) { showToast('เกิดข้อผิดพลาด ไม่พบ modal-job-content'); return; }

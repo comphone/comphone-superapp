@@ -276,32 +276,31 @@ async function submitAppointment() {
 
   if (!date) { showToast('กรุณาเลือกวันและเวลา'); return; }
 
+  if (!jobId) {
+    showToast('กรุณาเลือกงานก่อนบันทึกนัดหมาย');
+    return;
+  }
+
   _setButtonLoading('btn-appt', true);
 
   try {
-    const payload = {
-      appointment_at: date,
-      note: note,
-      user: APP.user?.name || APP.user?.username || 'PWA'
-    };
-    if (jobId) payload.job_id = jobId;
-
-    const res = await callAPI('addAppointment', payload);
+    const user = APP.user?.name || APP.user?.username || 'PWA';
+    const noteText = `[นัดหมาย] ${date}` + (note ? ` — ${note}` : '');
+    const res = await callAPI('addQuickNote', {
+      job_id: jobId,
+      note: noteText,
+      user: user
+    });
 
     if (res && res.success) {
-      showToast('📅 บันทึกนัดหมายแล้ว');
+      showToast('บันทึกนัดหมายแล้ว');
       closeModal('modal-appointment');
-      // Reload jobs data
       if (typeof loadLiveData === 'function') loadLiveData();
-    } else if (res && res.error) {
-      showToast('❌ ' + res.error);
     } else {
-      // Backend ตอบ success: false เพราะไม่มี job_id — ยังบันทึกได้
-      showToast('📅 บันทึกนัดหมายแล้ว (ไม่ระบุงาน)');
-      closeModal('modal-appointment');
+      showToast('เกิดข้อผิดพลาด: ' + ((res && res.error) || 'ไม่สำเร็จ'));
     }
   } catch (e) {
-    showToast('❌ เกิดข้อผิดพลาด: ' + e.message);
+    showToast('เกิดข้อผิดพลาด: ' + e.message);
   } finally {
     _setButtonLoading('btn-appt', false);
   }
