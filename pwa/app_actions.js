@@ -475,8 +475,7 @@ function createReceipt() {
   else showToast('กำลังโหลด Billing module...');
 }
 function showQR() {
-  // เปิด QR PromptPay modal
-  if (typeof openQRPaymentModal === 'function') openQRPaymentModal(null);
+  if (typeof openQRPayment === 'function') openQRPayment(null);
   else showToast('กำลังโหลด QR module...');
 }
 function createBill() {
