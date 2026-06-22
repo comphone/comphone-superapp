@@ -49,7 +49,7 @@ function renderBillingSection(data) {
   setActiveNav('billing');
   const titleEl = document.getElementById('topbar-title') || document.querySelector('#page-billing .page-header h5');
   if (titleEl) titleEl.innerHTML = '💰 ใบแจ้งหนี้ / Billing';
-  const mount = document.getElementById('main-content') || document.getElementById('billing-content');
+  const mount = document.getElementById('billing-content') || document.getElementById('main-content');
   if (!mount) return;
 
   mount.innerHTML = `

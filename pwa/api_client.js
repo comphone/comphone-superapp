@@ -82,6 +82,9 @@ function classifyApiError(error) {
   if (/TIMEOUT|ABORT/.test(normalized)) {
     return { kind: 'timeout', code: 'TIMEOUT', title: 'เซิร์ฟเวอร์ตอบช้า', message: 'คำขอนี้ใช้เวลานานเกินกำหนด' };
   }
+  if (/QUOTA|OVERLOAD|RATE.LIMIT|429|503|529/.test(normalized)) {
+    return { kind: 'quota', code: 'QUOTA_EXCEEDED', title: 'GAS ล้น / quota หมด', message: 'รอสักครู่แล้วลองใหม่ (GAS overloaded หรือ quota รายวันหมด)' };
+  }
   return { kind: 'backend', code: 'BACKEND_ERROR', title: 'Backend error', message: raw || 'เกิดข้อผิดพลาดจาก backend' };
 }
 
@@ -93,6 +96,7 @@ function apiErrorInfo(error, context) {
     permission: 'bi-shield-lock',
     contract: 'bi-diagram-3',
     timeout: 'bi-hourglass-split',
+    quota: 'bi-speedometer2',
     backend: 'bi-exclamation-triangle',
   }[info.kind] || 'bi-exclamation-triangle';
   return Object.assign({}, info, {
@@ -102,6 +106,7 @@ function apiErrorInfo(error, context) {
       info.kind === 'permission' ? 'ติดต่อผู้ดูแลเพื่อเพิ่มสิทธิ์' :
       info.kind === 'contract' ? 'ตรวจ API contract หรือ deploy backend ให้ตรงเวอร์ชัน' :
       info.kind === 'timeout' ? 'ลองใหม่อีกครั้ง หรือเช็ค GAS execution time' :
+      info.kind === 'quota' ? 'รอ 1-2 นาทีแล้วลองใหม่ หรือเปลี่ยนเป็น GAS paid tier' :
       info.kind === 'offline' ? 'ตรวจอินเทอร์เน็ตและลองใหม่' : 'ตรวจ log backend และ request context',
   });
 }
@@ -241,6 +246,17 @@ async function callApi(action, payload = {}, options = {}) {
       redirect: 'follow',
       signal: controller.signal
     });
+    if (!res.ok) {
+      const status = res.status;
+      if (status === 429 || status === 503 || status === 529) {
+        console.warn('[callApi] ⚠️ ' + action + ' | HTTP ' + status + ' (GAS overloaded/quota)');
+        return { success: false, error: 'GAS quota/overload (HTTP ' + status + ') — ลองใหม่อีกครั้ง', _errorKind: 'quota' };
+      }
+      if (status >= 400) {
+        console.warn('[callApi] ⚠️ ' + action + ' | HTTP ' + status);
+        return { success: false, error: 'HTTP ' + status, _errorKind: status >= 500 ? 'backend' : 'auth' };
+      }
+    }
     const data = await res.json();
     const _elapsed = Date.now() - _t0;
     // API Logging: action, elapsed time, success/fail
