@@ -1,0 +1,727 @@
+{
+  "timestamp": "2026-06-25T12:56:44.154Z",
+  "passed": 167,
+  "failed": 0,
+  "warned": 0,
+  "results": [
+    {
+      "status": "PASS",
+      "label": "pwa/index.html"
+    },
+    {
+      "status": "PASS",
+      "label": "pwa/app.js"
+    },
+    {
+      "status": "PASS",
+      "label": "pwa/api_client.js"
+    },
+    {
+      "status": "PASS",
+      "label": "pwa/version_config.js"
+    },
+    {
+      "status": "PASS",
+      "label": "pwa/sw.js"
+    },
+    {
+      "status": "PASS",
+      "label": "pwa/version.json"
+    },
+    {
+      "status": "PASS",
+      "label": "pwa/warranty_ui.js"
+    },
+    {
+      "status": "PASS",
+      "label": "pwa/section_warranty.js"
+    },
+    {
+      "status": "PASS",
+      "label": "pwa/billing_section.js"
+    },
+    {
+      "status": "PASS",
+      "label": "pwa/reports.js"
+    },
+    {
+      "status": "PASS",
+      "label": "pwa/crm_attendance.js"
+    },
+    {
+      "status": "PASS",
+      "label": "pwa/section_inventory.js"
+    },
+    {
+      "status": "PASS",
+      "label": "pwa/inventory_ui.js"
+    },
+    {
+      "status": "PASS",
+      "label": "pwa/analytics_section.js"
+    },
+    {
+      "status": "PASS",
+      "label": "pwa/admin_panel.js"
+    },
+    {
+      "status": "PASS",
+      "label": "pwa/job_workflow.js"
+    },
+    {
+      "status": "PASS",
+      "label": "pwa/quick_actions.js"
+    },
+    {
+      "status": "PASS",
+      "label": "pwa/billing_slip_verify.js"
+    },
+    {
+      "status": "PASS",
+      "label": "clasp-ready/RouterSplit.gs"
+    },
+    {
+      "status": "PASS",
+      "label": "clasp-ready/WarrantyManager.gs"
+    },
+    {
+      "status": "PASS",
+      "label": "clasp-ready/BillingCore.gs"
+    },
+    {
+      "status": "PASS",
+      "label": "clasp-ready/Reports.gs"
+    },
+    {
+      "status": "PASS",
+      "label": "clasp-ready/Attendance.gs"
+    },
+    {
+      "status": "PASS",
+      "label": "clasp-ready/Inventory.gs"
+    },
+    {
+      "status": "PASS",
+      "label": "Build timestamp consistent",
+      "detail": "20260625_1100"
+    },
+    {
+      "status": "PASS",
+      "label": "SW cache version matches version_config",
+      "detail": "v5.18.47-sprint210"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit handler count",
+      "detail": "339 actions registered"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: getJobDetail",
+      "detail": "→ getJobDetail"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: createJob",
+      "detail": "→ openJob"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: markJobStatus",
+      "detail": "→ transitionJob"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: addQuickNote",
+      "detail": "→ addQuickNote"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: getJobTimeline",
+      "detail": "→ getJobTimelineV55_"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: listCustomers",
+      "detail": "→ listCustomers"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: createCustomer",
+      "detail": "→ createCustomer"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: clockIn",
+      "detail": "→ clockIn"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: clockOut",
+      "detail": "→ clockOut"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: getAttendanceMonthlySummary",
+      "detail": "→ getAttendanceMonthlySummary"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: getAttendanceReport",
+      "detail": "→ getAttendanceReport"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: listWarranties",
+      "detail": "→ listWarranties"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: createWarranty",
+      "detail": "→ createWarranty"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: getWarrantyByJobId",
+      "detail": "→ getWarrantyByJobId"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: updateWarrantyStatus",
+      "detail": "→ updateWarrantyStatus"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: getWarrantyDue",
+      "detail": "→ getWarrantyDue"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: listBillings",
+      "detail": "→ listAllBillings_"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: createBilling",
+      "detail": "→ createBilling"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: getBilling",
+      "detail": "→ getBilling"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: markBillingPaid",
+      "detail": "→ markBillingPaid"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: generatePromptPayQR",
+      "detail": "→ generatePromptPayQR"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: listPurchaseOrders",
+      "detail": "→ listPurchaseOrders"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: createPurchaseOrder",
+      "detail": "→ createPurchaseOrder"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: inventoryOverview",
+      "detail": "→ getInventoryOverview"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: addInventoryItem",
+      "detail": "→ addInventoryItem"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: transferStock",
+      "detail": "→ transferStock"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: barcodeLookup",
+      "detail": "→ barcodeLookup"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: getReportData",
+      "detail": "→ __complex__"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: getDashboardBundle",
+      "detail": "→ getDashboardBundle"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit: getVersion",
+      "detail": "→ __complex__"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: createJob"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: getJobDetail"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: transitionJob"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: clockIn"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: clockOut"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: getAttendanceReport"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: getAttendanceMonthlySummary"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: listWarranties"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: createWarranty"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: getWarrantyByJobId"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: updateWarrantyStatus"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: getWarrantyDue"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: listAllBillings_"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: createBilling"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: getBilling"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: markBillingPaid"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: generatePromptPayQR"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: listPurchaseOrders"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: createPurchaseOrder"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: getInventoryOverview"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: addInventoryItem"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: transferStock"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: barcodeLookup"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: listCustomers"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: createCustomer"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: getCustomerHistory"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: getCustomerReceipts"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: addQuickNote"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: getJobTimelineV55_"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: getDashboardBundle"
+    },
+    {
+      "status": "PASS",
+      "label": "GAS fn: getReportData"
+    },
+    {
+      "status": "PASS",
+      "label": "All PWA API calls covered by RouterSplit",
+      "detail": "108 unique actions"
+    },
+    {
+      "status": "PASS",
+      "label": "HTML id: #page-jobs"
+    },
+    {
+      "status": "PASS",
+      "label": "HTML id: #page-crm"
+    },
+    {
+      "status": "PASS",
+      "label": "HTML id: #page-warranty"
+    },
+    {
+      "status": "PASS",
+      "label": "HTML id: #page-billing"
+    },
+    {
+      "status": "PASS",
+      "label": "HTML id: #page-reports"
+    },
+    {
+      "status": "PASS",
+      "label": "HTML id: #page-inventory"
+    },
+    {
+      "status": "PASS",
+      "label": "HTML id: #page-admin"
+    },
+    {
+      "status": "PASS",
+      "label": "HTML id: #page-analytics"
+    },
+    {
+      "status": "PASS",
+      "label": "HTML id: #billing-content"
+    },
+    {
+      "status": "PASS",
+      "label": "HTML id: #warranty-content"
+    },
+    {
+      "status": "PASS",
+      "label": "HTML id: #warranty-alert-banner"
+    },
+    {
+      "status": "PASS",
+      "label": "HTML id: #reports-content"
+    },
+    {
+      "status": "PASS",
+      "label": "HTML id: #admin-content"
+    },
+    {
+      "status": "PASS",
+      "label": "HTML id: #attendance-content"
+    },
+    {
+      "status": "PASS",
+      "label": "HTML id: #crm-list"
+    },
+    {
+      "status": "PASS",
+      "label": "HTML id: #revenue-content"
+    },
+    {
+      "status": "PASS",
+      "label": "HTML id: #tax-content"
+    },
+    {
+      "status": "PASS",
+      "label": "HTML id: #performance-content"
+    },
+    {
+      "status": "PASS",
+      "label": "HTML id: #section-content"
+    },
+    {
+      "status": "PASS",
+      "label": "HTML id: #modal-add-inventory"
+    },
+    {
+      "status": "PASS",
+      "label": "HTML id: #modal-clockin"
+    },
+    {
+      "status": "PASS",
+      "label": "Script loaded: api_client.js",
+      "detail": "position 9"
+    },
+    {
+      "status": "PASS",
+      "label": "Script loaded: app.js",
+      "detail": "position 11"
+    },
+    {
+      "status": "PASS",
+      "label": "Script loaded: job_workflow.js",
+      "detail": "position 15"
+    },
+    {
+      "status": "PASS",
+      "label": "Script loaded: crm_attendance.js",
+      "detail": "position 22"
+    },
+    {
+      "status": "PASS",
+      "label": "Script loaded: section_inventory.js",
+      "detail": "position 24"
+    },
+    {
+      "status": "PASS",
+      "label": "Script loaded: inventory_ui.js",
+      "detail": "position 25"
+    },
+    {
+      "status": "PASS",
+      "label": "Script loaded: billing_section.js",
+      "detail": "position 26"
+    },
+    {
+      "status": "PASS",
+      "label": "Script loaded: reports.js",
+      "detail": "position 28"
+    },
+    {
+      "status": "PASS",
+      "label": "Script loaded: analytics_section.js",
+      "detail": "position 30"
+    },
+    {
+      "status": "PASS",
+      "label": "Script loaded: admin_panel.js",
+      "detail": "position 31"
+    },
+    {
+      "status": "PASS",
+      "label": "Script loaded: section_warranty.js",
+      "detail": "position 39"
+    },
+    {
+      "status": "PASS",
+      "label": "Script loaded: warranty_ui.js",
+      "detail": "position 40"
+    },
+    {
+      "status": "PASS",
+      "label": "Script loaded: billing_slip_verify.js",
+      "detail": "position 41"
+    },
+    {
+      "status": "PASS",
+      "label": "Script loaded: section_revenue.js",
+      "detail": "position 42"
+    },
+    {
+      "status": "PASS",
+      "label": "Script loaded: section_tax.js",
+      "detail": "position 43"
+    },
+    {
+      "status": "PASS",
+      "label": "Script loaded: section_performance.js",
+      "detail": "position 44"
+    },
+    {
+      "status": "PASS",
+      "label": "Load order: inventory_ui.js after section_inventory.js"
+    },
+    {
+      "status": "PASS",
+      "label": "Load order: warranty_ui.js after section_warranty.js"
+    },
+    {
+      "status": "PASS",
+      "label": "Manifest has: api_client.js"
+    },
+    {
+      "status": "PASS",
+      "label": "Manifest has: app.js"
+    },
+    {
+      "status": "PASS",
+      "label": "Manifest has: job_workflow.js"
+    },
+    {
+      "status": "PASS",
+      "label": "Manifest has: crm_attendance.js"
+    },
+    {
+      "status": "PASS",
+      "label": "Manifest has: section_inventory.js"
+    },
+    {
+      "status": "PASS",
+      "label": "Manifest has: inventory_ui.js"
+    },
+    {
+      "status": "PASS",
+      "label": "Manifest has: billing_section.js"
+    },
+    {
+      "status": "PASS",
+      "label": "Manifest has: reports.js"
+    },
+    {
+      "status": "PASS",
+      "label": "Manifest has: analytics_section.js"
+    },
+    {
+      "status": "PASS",
+      "label": "Manifest has: admin_panel.js"
+    },
+    {
+      "status": "PASS",
+      "label": "Manifest has: section_warranty.js"
+    },
+    {
+      "status": "PASS",
+      "label": "Manifest has: warranty_ui.js"
+    },
+    {
+      "status": "PASS",
+      "label": "Manifest has: billing_slip_verify.js"
+    },
+    {
+      "status": "PASS",
+      "label": "Manifest has: section_revenue.js"
+    },
+    {
+      "status": "PASS",
+      "label": "Manifest has: section_tax.js"
+    },
+    {
+      "status": "PASS",
+      "label": "Manifest has: section_performance.js"
+    },
+    {
+      "status": "PASS",
+      "label": "warranty_ui.js showWarrantyList targets warranty-content"
+    },
+    {
+      "status": "PASS",
+      "label": "job_workflow.js: 'exec' role bug is fixed"
+    },
+    {
+      "status": "PASS",
+      "label": "job_workflow.js: owner/admin check present"
+    },
+    {
+      "status": "PASS",
+      "label": "modal-clockin exists in index.html"
+    },
+    {
+      "status": "PASS",
+      "label": "clockin-confirm-btn exists in index.html"
+    },
+    {
+      "status": "PASS",
+      "label": "clockin-note input exists in index.html"
+    },
+    {
+      "status": "PASS",
+      "label": "api_client.js handles 529/quota errors"
+    },
+    {
+      "status": "PASS",
+      "label": "api_client.js checks res.status before res.json()"
+    },
+    {
+      "status": "PASS",
+      "label": "quick_actions.js uses addQuickNote for appointments"
+    },
+    {
+      "status": "PASS",
+      "label": "quick_actions.js: broken addAppointment removed"
+    },
+    {
+      "status": "PASS",
+      "label": "RouterSplit.gs brace balance OK",
+      "detail": "{ 374  } 374"
+    },
+    {
+      "status": "PASS",
+      "label": "Router.gs has doGet/doPost entry points"
+    },
+    {
+      "status": "PASS",
+      "label": "section_warranty.js: loadWarrantyPage() defined"
+    },
+    {
+      "status": "PASS",
+      "label": "billing_section.js: loadBillingPage() defined"
+    },
+    {
+      "status": "PASS",
+      "label": "reports.js: loadReportsPage() defined"
+    },
+    {
+      "status": "PASS",
+      "label": "section_inventory.js: loadInventoryPage() defined"
+    },
+    {
+      "status": "PASS",
+      "label": "crm_attendance.js: loadCRMPage() defined"
+    },
+    {
+      "status": "PASS",
+      "label": "analytics_section.js: openAnalyticsSection() defined"
+    },
+    {
+      "status": "PASS",
+      "label": "admin_panel.js: loadAdminPanel() defined"
+    },
+    {
+      "status": "PASS",
+      "label": "section_revenue.js: renderRevenueSection() defined"
+    },
+    {
+      "status": "PASS",
+      "label": "section_tax.js: renderTaxSection() defined"
+    },
+    {
+      "status": "PASS",
+      "label": "section_performance.js: renderPerformanceSection() defined"
+    },
+    {
+      "status": "PASS",
+      "label": "purchase_order.js: loadPurchaseOrderPage() defined"
+    }
+  ]
+}
