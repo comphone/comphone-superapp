@@ -43,7 +43,7 @@ const WARRANTY_DURATIONS = [
  * @param {string} [filterStatus] — กรองตาม status (optional)
  */
 async function showWarrantyList(filterStatus = '') {
-  const container = document.getElementById('main-content');
+  const container = document.getElementById('warranty-content') || document.getElementById('main-content');
   if (!container) return;
 
   container.innerHTML = `
