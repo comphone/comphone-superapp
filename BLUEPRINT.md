@@ -84,10 +84,13 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > and uses a COMPHONE-specific prompt for phone/computer/CCTV/network/field work.
 > The real-sample acceptance gate requires semantic evidence rather than HTTP 200.
 > Production fixture `test_fixtures/vision/cracked_phone_workbench_640.jpg` passed
-> at `VISION_LOG row-11`: provider `google-gemini`, model `gemini-3.5-flash`,
+> most recently at `VISION_LOG row-12`: provider `google-gemini`, model `gemini-3.5-flash`,
 > confidence 0.95, asset `phone`, category `Before`, decision `QC_FAIL`.
 > No real LINE message was sent by this controlled pilot. The equivalent parser
 > syntax was made CI-validator-safe and GAS is live at @630.
+> CI consumes only the secret-free release evidence in
+> `test_reports/sprint216_ai_vision_production_evidence.json`; detailed live
+> reports remain ignored local artifacts and cannot leak session material.
 
 > Cowork review on or after 2026-06-12 should begin with
 > `COWORK_SYSTEM_HANDOFF.md`. It separates current verified state, live-proof

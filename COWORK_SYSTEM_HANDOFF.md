@@ -64,9 +64,12 @@ order and safety boundaries.
   URL would exceed 7,000 characters. Small read requests remain GET.
 - Vision Pipeline v1.1.2 exposes provider/model/AI status, preserves safe failure
   reasons, skips error caching, and has a COMPHONE repair/CCTV/network prompt.
-- Real fixture analysis passed in production at `VISION_LOG row-11`: confidence
+- Real fixture analysis passed most recently at `VISION_LOG row-12`: confidence
   0.95, asset `phone`, category `Before`, decision `QC_FAIL`, model
   `gemini-3.5-flash`. The pilot sent no LINE message.
+- CI verifies the tracked secret-free evidence file
+  `test_reports/sprint216_ai_vision_production_evidence.json`; detailed live
+  reports remain local ignored artifacts.
 - GAS `v5.18.18-ai-vision-current` is live at deployment @630.
 
 ## 1. Current Repository State

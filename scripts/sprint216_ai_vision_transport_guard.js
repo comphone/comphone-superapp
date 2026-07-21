@@ -33,7 +33,7 @@ function main() {
   const workflow = read('.github/workflows/auto-deploy.yml');
   const blueprint = read('BLUEPRINT.md');
   const fixture = path.join(ROOT, 'test_fixtures', 'vision', 'cracked_phone_workbench_640.jpg');
-  const realReportPath = path.join(ROOT, 'test_reports', 'sprint163_ai_vision_real_sample_evidence_latest.json');
+  const realReportPath = path.join(ROOT, 'test_reports', 'sprint216_ai_vision_production_evidence.json');
   const realReport = fs.existsSync(realReportPath) ? JSON.parse(fs.readFileSync(realReportPath, 'utf8')) : {};
   const realCheck = (realReport.checks || []).find(check => check.id === 'live-real-sample-analysis') || {};
 

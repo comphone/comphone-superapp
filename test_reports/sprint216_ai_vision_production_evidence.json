@@ -1,0 +1,26 @@
+{
+  "sprint": 216,
+  "generated_at": "2026-07-21T07:11:42.985Z",
+  "environment": "production",
+  "gas_deployment_tested": "@629",
+  "gas_deployment_current": "@630",
+  "fixture": "test_fixtures/vision/cracked_phone_workbench_640.jpg",
+  "line_message_sent": false,
+  "status": "ok",
+  "checks": [
+    {
+      "id": "live-real-sample-analysis",
+      "ok": true,
+      "visionLogId": "row-12",
+      "ai_status": "analyzed",
+      "provider": "google-gemini",
+      "model": "gemini-3.5-flash",
+      "confidence": 0.95,
+      "decision": "QC_FAIL",
+      "photo_category": "Before",
+      "asset_type": "phone",
+      "issue_count": 1,
+      "equipment_count": 3
+    }
+  ]
+}
