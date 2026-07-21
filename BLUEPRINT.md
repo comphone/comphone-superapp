@@ -143,6 +143,12 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > shows progress, and retains repair/reload fallbacks. A dedicated recurrence
 > guard is wired into local regression and CI.
 
+> Sprint 218 legacy-client bridge: `version_config.js` is network-only even for
+> supported older workers, so it now captures the update-button action before a
+> cached legacy `pwa_install.js` can reload too early. It requests the worker
+> update, waits for `waiting`/`installed`, sends `SKIP_WAITING`, and reloads on
+> controller change. Current `pwa_install.js` delegates to the same bridge.
+
 > Cowork review on or after 2026-06-12 should begin with
 > `COWORK_SYSTEM_HANDOFF.md`. It separates current verified state, live-proof
 > gaps, safety gates, and the recommended review order from the historical
@@ -172,7 +178,7 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 ### Current Production State
 - **Current phase:** Sprint / Phase 218 (reliable installed-PWA update activation after Sprint 217 LINE quiet-mode closure).
 - **Latest verified runtime source:** Sprint 217 source deployed to GAS @631; run `git log -1 --oneline` for the exact repository commit after release publication.
-- **PWA release target:** `v5.18.47-sprint218` (build token `20260721_1515`).
+- **PWA release target:** `v5.18.47-sprint218` (build token `20260721_1524`).
 - **GAS backend:** `v5.18.19-line-quiet-center`, deployed at @631.
 - **Current production GAS deployment:** `AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ @631`.
 - **Production GAS URL:** `https://script.google.com/macros/s/AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ/exec`.

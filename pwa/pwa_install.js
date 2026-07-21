@@ -397,6 +397,9 @@ function _showUpdateBanner_() {
 
 async function _requestServiceWorkerUpdate_() {
   const button = document.getElementById('pwa-update-btn');
+  if (typeof window.COMPHONE_FORCE_PWA_UPDATE === 'function') {
+    return window.COMPHONE_FORCE_PWA_UPDATE(button);
+  }
   if (button) {
     button.disabled = true;
     button.textContent = 'กำลังอัปเดต...';

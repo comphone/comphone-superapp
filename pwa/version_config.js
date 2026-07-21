@@ -7,8 +7,8 @@
 const VERSION_CONFIG = {
   version: 'v5.18.47-sprint218',
   buildDate: '2026-07-21',
-  buildTimestamp: '20260721_1515',
-  cacheVersion: 'comphone-v5.18.47-sprint218-20260721_1515',
+  buildTimestamp: '20260721_1524',
+  cacheVersion: 'comphone-v5.18.47-sprint218-20260721_1524',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -102,8 +102,8 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 // Backward-compatible exports for legacy modules and guards
 const APP_VERSION = 'v5.18.47-sprint218';
-const BUILD_TIMESTAMP = '20260721_1515';
-const CACHE_VERSION = 'comphone-v5.18.47-sprint218-20260721_1515';
+const BUILD_TIMESTAMP = '20260721_1524';
+const CACHE_VERSION = 'comphone-v5.18.47-sprint218-20260721_1524';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;
@@ -129,4 +129,51 @@ window.COMPHONE_CACHE = CACHE_VERSION;
       _vcAutoReload_();
     }
   });
+
+  // This file is NETWORK_ONLY in every supported service worker. Keep the
+  // update-button bridge here so clients with an older cached pwa_install.js
+  // can still request, activate, and reload into the current build.
+  window.COMPHONE_FORCE_PWA_UPDATE = async function (button) {
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'กำลังอัปเดต...';
+    }
+    try {
+      var reg = await navigator.serviceWorker.getRegistration();
+      if (!reg) return _vcAutoReload_();
+      await reg.update();
+      if (reg.waiting) {
+        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        return;
+      }
+      if (reg.installing) {
+        var worker = reg.installing;
+        var activate = function () {
+          if (worker.state === 'installed' && reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
+        };
+        worker.addEventListener('statechange', activate);
+        activate();
+        setTimeout(function () {
+          if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          else _vcAutoReload_();
+        }, 10000);
+        return;
+      }
+      _vcAutoReload_();
+    } catch (error) {
+      console.warn('[VER] Service worker update bridge failed:', error && error.message ? error.message : error);
+      _vcAutoReload_();
+    }
+  };
+
+  document.addEventListener('click', function (event) {
+    var target = event.target;
+    var button = target && target.closest ? target.closest('#pwa-update-btn') : null;
+    if (!button) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    window.COMPHONE_FORCE_PWA_UPDATE(button);
+  }, true);
 }());
