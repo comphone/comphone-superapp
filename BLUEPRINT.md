@@ -91,6 +91,10 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > CI consumes only the secret-free release evidence in
 > `test_reports/sprint216_ai_vision_production_evidence.json`; detailed live
 > reports remain ignored local artifacts and cannot leak session material.
+> Tokenless CI also keeps Sprint 170 deterministic: its nested protected sweep
+> records live reads as SKIP, while the primary smoke suite remains responsible
+> for public health/version probes. This removes duplicate production network
+> calls without weakening the release contract.
 
 > Cowork review on or after 2026-06-12 should begin with
 > `COWORK_SYSTEM_HANDOFF.md`. It separates current verified state, live-proof

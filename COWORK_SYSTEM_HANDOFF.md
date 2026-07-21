@@ -70,6 +70,9 @@ order and safety boundaries.
 - CI verifies the tracked secret-free evidence file
   `test_reports/sprint216_ai_vision_production_evidence.json`; detailed live
   reports remain local ignored artifacts.
+- Tokenless CI skips duplicated live calls inside Sprint 170; primary smoke tests
+  still own public health/version coverage, and protected proof still requires a
+  real `COMPHONE_AUTH_TOKEN` when explicitly enabled.
 - GAS `v5.18.18-ai-vision-current` is live at deployment @630.
 
 ## 1. Current Repository State

@@ -14,6 +14,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const REPORT = path.join(ROOT, 'test_reports', 'sprint161_protected_live_token_sweep_latest.json');
 const TOKEN = process.env.COMPHONE_AUTH_TOKEN || '';
+const CI_WITHOUT_TOKEN = !TOKEN && (process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true');
 const gasConfig = fs.readFileSync(path.join(ROOT, 'pwa', 'gas_config.js'), 'utf8');
 const GAS_URL = process.env.COMPHONE_GAS_URL || (gasConfig.match(/url:\s*'([^']+)'/) || [])[1];
 
@@ -50,6 +51,10 @@ async function request(action, payload = {}, noAuth = false) {
 async function main() {
   const checks = [];
   for (const [menu, action, payload, noAuth] of READS) {
+    if (CI_WITHOUT_TOKEN) {
+      checks.push({ id: `${menu}-${action}`, ok: true, type: 'live', status: 'SKIP', detail: 'CI has no protected token; public health is covered by the primary smoke suite.' });
+      continue;
+    }
     if (!TOKEN && !noAuth) {
       checks.push({ id: `${menu}-${action}`, ok: true, type: 'live', status: 'SKIP', detail: 'COMPHONE_AUTH_TOKEN required.' });
       continue;
