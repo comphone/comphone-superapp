@@ -221,7 +221,7 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > history even though current source no longer contains them.
 
 > 2026-07-21 Sprint 222 LINE Worker Deployment Closure Gate: GitHub run
-> `29818379851` proved the Worker workflow failed because repository secret
+> `29845282367` proved the new credential preflight stops before deploy because repository secret
 > `CLOUDFLARE_API_TOKEN` is empty; checkout, dependency install, and syntax
 > checks all passed. Local Wrangler OAuth expired and Cloudflare rejected its
 > refresh token. Worker dependencies are now locked to Wrangler 4.112.0 with a

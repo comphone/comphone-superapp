@@ -10,9 +10,9 @@
   "deployment": {
     "live_worker_version": "1.0.5-sprint189",
     "target_worker_version": "1.0.6-sprint221",
-    "github_run_id": 29818379851,
+    "github_run_id": 29845282367,
     "github_run_conclusion": "failure",
-    "root_cause": "CLOUDFLARE_API_TOKEN repository secret is missing",
+    "root_cause": "CLOUDFLARE_API_TOKEN repository secret is missing; Sprint 222 preflight confirmed and stopped before deploy",
     "local_oauth": "expired; reauthorization required",
     "production_verifier": "4/9 passed; correctly blocked by old live version"
   },
