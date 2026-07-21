@@ -15,11 +15,25 @@ export LC_ALL=C.UTF-8
 ERRORS=()
 WARNINGS=()
 
+function github_annotation_escape() {
+  local value="$1"
+  value="${value//'%'/'%25'}"
+  value="${value//$'\r'/'%0D'}"
+  value="${value//$'\n'/'%0A'}"
+  printf '%s' "$value"
+}
+
 function fail() {
+  if [ "${GITHUB_ACTIONS:-false}" = "true" ]; then
+    printf '::error title=Regression Guard::%s\n' "$(github_annotation_escape "$1")"
+  fi
   ERRORS+=("❌ $1")
 }
 
 function warn() {
+  if [ "${GITHUB_ACTIONS:-false}" = "true" ]; then
+    printf '::warning title=Regression Guard::%s\n' "$(github_annotation_escape "$1")"
+  fi
   WARNINGS+=("⚠️  $1")
 }
 
