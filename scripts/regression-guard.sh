@@ -1068,7 +1068,8 @@ for sprint_script in \
   sprint213_protected_menu_collision_guard \
   sprint215_data_identity_integrity_guard \
   sprint216_ai_vision_transport_guard \
-  sprint217_line_center_quiet_guard
+  sprint217_line_center_quiet_guard \
+  sprint218_sw_update_click_guard
 do
   script_path="scripts/${sprint_script}.js"
   if command -v node &>/dev/null && [ -f "$script_path" ]; then

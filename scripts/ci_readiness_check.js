@@ -49,6 +49,7 @@ function main() {
     'scripts/ci_readiness_check.js',
     'scripts/gas_source_alignment.js',
     'scripts/sprint217_line_center_quiet_guard.js',
+    'scripts/sprint218_sw_update_click_guard.js',
   ];
 
   const issues = [];

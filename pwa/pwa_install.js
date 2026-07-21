@@ -392,17 +392,48 @@ function _showUpdateBanner_() {
   document.body.insertBefore(banner, document.body.firstChild);
 
   document.getElementById('pwa-update-btn')
-    .addEventListener('click', () => {
-      _reloadAfterSwUpdate = true;
-      navigator.serviceWorker.getRegistration()
-        .then(reg => {
-          if (reg && reg.waiting) {
-            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-          } else {
-            _reloadForSwUpdate_();
-          }
-        });
-    });
+    .addEventListener('click', _requestServiceWorkerUpdate_);
+}
+
+async function _requestServiceWorkerUpdate_() {
+  const button = document.getElementById('pwa-update-btn');
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'กำลังอัปเดต...';
+  }
+  _reloadAfterSwUpdate = true;
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (!reg) {
+      _reloadForSwUpdate_();
+      return;
+    }
+    await reg.update();
+    if (reg.waiting) {
+      reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      return;
+    }
+    if (reg.installing) {
+      const worker = reg.installing;
+      const activateWhenReady = () => {
+        if (worker.state === 'installed' && reg.waiting) {
+          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+      };
+      worker.addEventListener('statechange', activateWhenReady);
+      activateWhenReady();
+      setTimeout(() => {
+        if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        else _reloadForSwUpdate_();
+      }, 10000);
+      return;
+    }
+    _reloadForSwUpdate_();
+  } catch (error) {
+    console.warn('[PWA] User-requested update failed:', error && error.message ? error.message : error);
+    _repairServiceWorker_(error);
+    _reloadForSwUpdate_();
+  }
 }
 
 // ============================================================
