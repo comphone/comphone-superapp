@@ -1,95 +1,72 @@
-# Comphone SuperApp AI — LINE Webhook Cloudflare Worker
+# COMPHONE LINE Webhook Worker
 
-Worker นี้ทำหน้าที่เป็น **Async Proxy** ระหว่าง LINE Platform กับ GAS WebApp
-เพื่อให้ตอบกลับ LINE ได้ภายใน **< 50ms** โดยไม่ต้องรอ GAS ประมวลผล
+Cloudflare Worker รับ webhook จาก LINE แล้วตอบรับทันที ก่อนส่ง **raw request body เดิมทุก byte** พร้อม `X-Line-Signature` ไปยัง GAS ด้วย `ctx.waitUntil()`
 
-## Architecture
+## สถาปัตยกรรมปัจจุบัน
 
-```
+```text
 LINE Platform
-    │
-    │ POST (HTTPS)
-    ▼
-Cloudflare Worker  ← ตอบ 200 OK ทันที (< 50ms)
-    │
-    │ async (ctx.waitUntil)
-    ▼
-Cloudflare Queue
-    │
-    │ batch forward
-    ▼
-GAS WebApp (doPost)
+  -> POST /line/webhook + X-Line-Signature
+Cloudflare Worker
+  -> ตรวจว่ามี signature
+  -> ตรวจ HMAC เพิ่มที่ edge เมื่อมี LINE_CHANNEL_SECRET
+  -> ตอบรับทันที
+  -> ส่ง raw body และ signature เดิมด้วย ctx.waitUntil()
+GAS Web App
+  -> ตรวจ LINE signature แบบ fail-closed
+  -> ประมวลผล AI Vision, queue, audit และ room notification/reply toggles
 ```
 
-## การ Deploy
+Worker รุ่นนี้ **ไม่ใช้ Cloudflare Queue** และห้าม parse/เขียน payload ใหม่ก่อนส่ง GAS เพราะ LINE signature ผูกกับ body เดิม
 
-### 1. ติดตั้ง Dependencies
+## ติดตั้งและตรวจโค้ด
 
-```bash
-cd workers/line-webhook
-npm install
+```powershell
+cd C:\Users\Server\comphone-superapp\workers\line-webhook
+npm ci
+node --check src/index.js
+node --check scripts/verify-production.mjs
 ```
 
-### 2. ตั้งค่า Secrets
+## Secret และค่าคอนฟิก
 
-```bash
-# LINE Channel Secret (จาก LINE Developers Console)
-npm run secret:line
-# พิมพ์ค่า LINE_CHANNEL_SECRET แล้วกด Enter
-
-# GAS WebApp URL (จาก GAS Deploy)
-npm run secret:gas
-# พิมพ์ค่า GAS_WEBHOOK_URL แล้วกด Enter
-```
-
-### 3. สร้าง Cloudflare Queue
-
-เข้า Cloudflare Dashboard → Workers & Pages → Queues → Create Queue
-
-สร้าง 2 queues:
-- `line-events` — queue หลัก
-- `line-events-dlq` — dead letter queue
-
-### 4. Deploy Worker
-
-```bash
-npm run deploy
-```
-
-ระบบจะแสดง Worker URL เช่น:
-`https://comphone-line-webhook.YOUR_SUBDOMAIN.workers.dev`
-
-### 5. ตั้งค่า LINE Webhook URL
-
-เข้า [LINE Developers Console](https://developers.line.biz/) → Channel → Messaging API
-
-ตั้ง **Webhook URL** เป็น Worker URL ที่ได้จากขั้นตอนที่ 4
-
-### 6. ทดสอบ
-
-```bash
-# ดู real-time logs
-npm run tail
-
-# ทดสอบ local
-npm run dev
-```
-
-## Environment Variables
-
-| Variable | วิธีตั้งค่า | คำอธิบาย |
+| ชื่อ | ที่จัดเก็บ | หน้าที่ |
 |---|---|---|
-| `LINE_CHANNEL_SECRET` | `wrangler secret put` | ใช้ verify HMAC-SHA256 signature |
-| `GAS_WEBHOOK_URL` | `wrangler secret put` | URL ของ GAS Web App |
+| `GAS_URL` | `wrangler.toml` | URL production GAS; ไม่ใช่ secret |
+| `LINE_CHANNEL_SECRET` | Cloudflare Worker Secret | ตรวจ HMAC ที่ edge เพิ่มเติม; GAS ยังตรวจซ้ำเสมอ |
+| `CLOUDFLARE_API_TOKEN` | Local environment / GitHub Actions Secret | ใช้ deploy เท่านั้น ห้าม commit |
 
-**ห้าม hardcode ค่าเหล่านี้ในโค้ดโดยเด็ดขาด**
+ตั้งค่า edge secret แบบไม่พิมพ์ค่าลงไฟล์:
 
-## Security
+```powershell
+npx wrangler secret put LINE_CHANNEL_SECRET
+```
 
-Worker ตรวจสอบ `X-Line-Signature` header ด้วย HMAC-SHA256 ก่อนประมวลผลทุก request
-หาก signature ไม่ถูกต้อง จะตอบกลับ `401 Unauthorized` ทันที
+## Deploy จากเครื่อง
 
-## Fallback
+```powershell
+npx wrangler login
+npm run deploy
+npm run verify:production
+```
 
-หาก Cloudflare Queue ไม่พร้อมใช้งาน Worker จะ forward ตรงไปยัง GAS WebApp แบบ synchronous
-เพื่อให้ระบบทำงานต่อเนื่องได้แม้ Queue มีปัญหา
+`verify:production` จะยืนยันว่า:
+
+- `/health` ตอบรุ่นตรงกับ `package.json`
+- Worker รายงาน signed-raw mode
+- webhook ที่ไม่มี `X-Line-Signature` ถูกปฏิเสธด้วย HTTP 401
+- `/diag/gas` ติดต่อ GAS production ได้
+
+## Deploy ผ่าน GitHub Actions
+
+เพิ่ม Repository Actions Secret ชื่อ `CLOUDFLARE_API_TOKEN` ที่มีสิทธิ์แก้ Workers Scripts แล้ว workflow `Deploy LINE Webhook Worker` จะทำ `npm ci`, syntax check, deploy และ production verification ตามลำดับ
+
+ห้ามเก็บ LINE token, channel secret หรือ Cloudflare token ใน README, BLUEPRINT, source code หรือ Git history
+
+## LINE Webhook URL
+
+```text
+https://comphone-line-webhook.narinoutagit.workers.dev/line/webhook
+```
+
+หลัง deploy และ verifier ผ่าน ให้ส่งภาพจริงหนึ่งภาพในห้องทดสอบที่ตั้ง Bot reply เป็น Off จากนั้นตรวจ `getVisionLineIngressStatus` ว่า `line_source_photos` เพิ่มขึ้น โดยระบบต้องบันทึกเบื้องหลังแต่ไม่รบกวนห้อง

@@ -2,9 +2,9 @@
 
 > **Version:** v5.18.47-sprint221 (PWA) / GAS Backend v5.18.23-line-signed-raw (@636)
 
-> **Date:** 2026-07-21 | **Phase:** 221 (PO Acceptance + Signed LINE Raw Forwarding)
+> **Date:** 2026-07-21 | **Phase:** 222 (LINE Worker Deployment Closure Gate)
 
-> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + PROTECTED-LIVE-VERIFIED + DATA-IDENTITY-HARDENED + REAL-AI-VISION-VERIFIED - Sprint 220 completed controlled PO production write acceptance and cleanup. Sprint 221 fixes the LINE signature-breaking Worker payload rewrite, makes GAS signature validation fail closed, and removes active-source LINE credentials/room identifiers. GAS `v5.18.23-line-signed-raw` is live at @636; Worker `1.0.6-sprint221` is the release candidate pending GitHub deployment verification. Historical detail remains below.
+> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + PROTECTED-LIVE-VERIFIED + DATA-IDENTITY-HARDENED + REAL-AI-VISION-VERIFIED - Sprint 220 completed controlled PO production write acceptance and cleanup. Sprint 221 fixes signed LINE raw forwarding and GAS fail-closed validation. Sprint 222 adds deterministic Worker dependencies, credential preflight, and mandatory post-deploy production verification. GAS `v5.18.23-line-signed-raw` is live at @636; Worker `1.0.6-sprint221` remains blocked from publication only by Cloudflare authorization. Historical detail remains below.
 
 ---
 
@@ -220,6 +220,19 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > from Script Properties only. Rotate credentials that ever appeared in Git
 > history even though current source no longer contains them.
 
+> 2026-07-21 Sprint 222 LINE Worker Deployment Closure Gate: GitHub run
+> `29818379851` proved the Worker workflow failed because repository secret
+> `CLOUDFLARE_API_TOKEN` is empty; checkout, dependency install, and syntax
+> checks all passed. Local Wrangler OAuth expired and Cloudflare rejected its
+> refresh token. Worker dependencies are now locked to Wrangler 4.112.0 with a
+> committed lockfile, CI fails early with an explicit credential annotation,
+> and every deploy must run `verify:production`. That verifier requires the live
+> version to match `package.json`, signed-raw mode to be reported, unsigned
+> webhooks to return 401, and GAS diagnostics to pass. The current live Worker
+> remains `1.0.5-sprint189`; verifier result `4/9` is an intentional release
+> block, not a false success. Full repository regression remains green and
+> Sprint 221's strengthened source/security guard passes `23/23`.
+
 > Cowork review on or after 2026-06-12 should begin with
 > `COWORK_SYSTEM_HANDOFF.md`. It separates current verified state, live-proof
 > gaps, safety gates, and the recommended review order from the historical
@@ -247,8 +260,8 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > `1.0.5-sprint189`. Details in `COWORK_SYSTEM_HANDOFF.md` section 9a.
 
 ### Current Production State
-- **Current phase:** Sprint / Phase 221 (PO acceptance complete; signed LINE raw forwarding release).
-- **Latest verified runtime source:** Sprint 221 GAS source deployed to @636; run `git log -1 --oneline` after repository publication for the release commit.
+- **Current phase:** Sprint / Phase 222 (LINE Worker deployment closure gate; Cloudflare authorization pending).
+- **Latest verified runtime source:** Sprint 221 GAS source deployed to @636. Worker source is release-ready at `1.0.6-sprint221`, while production remains `1.0.5-sprint189` until Cloudflare authorization is restored.
 - **PWA release target:** `v5.18.47-sprint221` (build token `20260721_1622`).
 - **GAS backend:** `v5.18.23-line-signed-raw`, deployed at @636.
 - **Current production GAS deployment:** `AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ @636`.
@@ -286,7 +299,7 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 - Sprint 188 adds per-room LINE bot reply controls. `LINE_BOT_REPLY_<ROOM>_ENABLED` is separate from `LINE_NOTIFY_<ROOM>_ENABLED`: notification toggles suppress outbound LINE pushes only, while Bot reply toggles suppress webhook replies only. Backend processing, AI Vision logs, photo queues, and audit records continue even when bot replies are off. The LINE Center UI now shows Notify and Bot On/Off controls per room for PC and mobile, including configured rooms plus `PRIVATE` and `UNKNOWN` reply scopes.
 - Sprint 188 follow-up adds explicit LINE Center save feedback for both notification toggles and Bot On/Off toggles: the UI now shows saving, success, and failure states so operators can see immediately when bot replies are off while backend processing continues.
 - Sprint 189 adds LINE room noise suppression after real-room feedback showed repeated replies for images and AI failure messages. Cloudflare Worker `1.0.5-sprint189` uses `quiet-group-forward`: group/room images and non-command text are still forwarded to GAS for backend processing, AI Vision queues, and audit logs, but their `replyToken` is stripped so LINE does not receive a reply. Explicit commands such as `/groupid`, `เช็คงาน`, `เช็คบิล`, `สรุป`, and intentional AI prompts keep reply capability. GAS now also defaults image acknowledgements to quiet mode with throttled/digest hints as a backend safety net.
-- Added `.github/workflows/deploy-line-worker.yml` so changes under `workers/line-webhook/**` deploy the Cloudflare Worker automatically when `CLOUDFLARE_API_TOKEN` is configured in GitHub Secrets. Local `wrangler whoami` is still unauthenticated on this workstation.
+- Added `.github/workflows/deploy-line-worker.yml` so changes under `workers/line-webhook/**` deploy the Cloudflare Worker automatically when `CLOUDFLARE_API_TOKEN` is configured in GitHub Secrets. Sprint 222 pins dependencies, uses `npm ci`, fails early with a clear missing-secret annotation, and blocks release unless `npm run verify:production` proves the live version, signed-raw mode, unsigned-request rejection, and GAS diagnostic. Local OAuth needs reauthorization and the GitHub secret is currently absent.
 - 2026-05-28 live deploy note: `wrangler login` and `wrangler deploy` were completed from `workers/line-webhook`. The obsolete `line-events` queue bindings were removed from `wrangler.toml` because Worker `1.0.5-sprint189` direct-forwards with `ctx.waitUntil()` and does not use `LINE_QUEUE`. `GAS_URL` is now an explicit non-secret Worker var in `wrangler.toml`; `/health` reports `1.0.5-sprint189`, `/diag/gas` returns healthy, and a synthetic group image webhook returns `reply_policy.stripped=1`.
 - Sprint 190 adds the AI Vision Review Inbox to `pwa/section_vision.js` for both PC and mobile. Operators can now see LINE/PWA image ingress as actionable review cards with status filters (`Need JobID`, `Review`, `Failed`, `Linked`, `Approved`), source/room context, confidence, timestamps, safe approve/reject actions, timeline linking, and `getVisionLineIngressStatus` visibility. The guard `scripts/sprint190_ai_vision_review_inbox_guard.js` is wired into static guard, regression guard, and GitHub Actions so this operator-facing Vision inbox cannot silently regress.
 - Sprint 191 adds `scripts/sprint191_ai_vision_inbox_render_smoke.js`, a browser-like VM render smoke that executes `section_vision.js` without auth and verifies both PC and mobile Vision surfaces render the Review Inbox, status filters, queue badges, LINE ingress summary, and filter behavior using representative Vision queue records. This catches syntax/render regressions before a protected live token is available.

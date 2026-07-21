@@ -54,6 +54,8 @@ function main() {
     'scripts/sprint220_po_write_safety_guard.js',
     'scripts/sprint220_po_write_acceptance.js',
     'scripts/sprint221_line_signed_raw_guard.js',
+    'workers/line-webhook/package-lock.json',
+    'workers/line-webhook/scripts/verify-production.mjs',
   ];
 
   const issues = [];
@@ -75,12 +77,16 @@ function main() {
   const autoDeploy = read('.github/workflows/auto-deploy.yml');
   const deployGas = read('.github/workflows/deploy-gas.yml');
   const sessionBackup = read('.github/workflows/session-backup.yml');
+  const deployLineWorker = read('.github/workflows/deploy-line-worker.yml');
   const gitignore = read('.gitignore');
   check('workflow:auto-deploy-name', exists('.github/workflows/auto-deploy.yml'), 'auto-deploy.yml exists', 'P0');
   check('workflow:auto-deploy-pages-verify', autoDeploy.includes('pages_deploy_verify.js'), 'Pages verification runs after deploy', 'P1');
   check('workflow:auto-deploy-ci-readiness', autoDeploy.includes('ci_readiness_check.js'), 'CI readiness check runs in validate', 'P1');
   check('workflow:deploy-gas-source-alignment', deployGas.includes('gas_source_alignment.js'), 'GAS source alignment runs before deploy', 'P1');
   check('workflow:deploy-gas-secret', deployGas.includes('CLASPRC_JSON'), 'CLASPRC_JSON documented/validated', 'P0');
+  check('workflow:line-worker-clean-install', deployLineWorker.includes('run: npm ci'), 'LINE Worker uses its committed lockfile', 'P1');
+  check('workflow:line-worker-secret-preflight', deployLineWorker.includes('Verify Cloudflare deploy credential'), 'LINE Worker fails early when deploy credential is missing', 'P0');
+  check('workflow:line-worker-production-verify', deployLineWorker.includes('npm run verify:production'), 'LINE Worker release is verified after deploy', 'P0');
   check('workflow:session-backup-force-add', sessionBackup.includes('git add -f backups/session/session_*.md backups/session/session_latest.md'), 'Scheduled session backup force-adds the allowed backup files', 'P1');
   check('gitignore:session-backup-allowed', gitignore.includes('!backups/session/*.md'), 'session backup markdown files are exempted from backups/ ignore', 'P1');
   check('clasp-ready-config', exists('clasp-ready/.clasp.json'), 'clasp-ready/.clasp.json exists for CI deploy', 'P0');

@@ -24,9 +24,17 @@ async function main() {
     read('clasp-ready/DeployGuide.gs')
   ].join('\n');
   const packageJson = JSON.parse(read('workers/line-webhook/package.json'));
+  const packageLock = JSON.parse(read('workers/line-webhook/package-lock.json'));
+  const deployWorkflow = read('.github/workflows/deploy-line-worker.yml');
+  const productionVerifier = read('workers/line-webhook/scripts/verify-production.mjs');
 
   const checks = [
     ['worker-version', packageJson.version === '1.0.6-sprint221' && workerSource.includes("WORKER_VERSION = '1.0.6-sprint221'")],
+    ['wrangler-version-locked', packageJson.devDependencies.wrangler === '4.112.0' && packageLock.lockfileVersion === 3],
+    ['deploy-uses-clean-install', deployWorkflow.includes('run: npm ci') && deployWorkflow.includes('cache-dependency-path: workers/line-webhook/package-lock.json')],
+    ['deploy-secret-preflight', deployWorkflow.includes('Verify Cloudflare deploy credential') && deployWorkflow.includes('Missing Cloudflare credential')],
+    ['deploy-production-verification', deployWorkflow.includes('npm run verify:production') && productionVerifier.includes('deployed-version-current')],
+    ['production-verifier-rejects-unsigned', productionVerifier.includes('unsigned-webhook-rejected') && productionVerifier.includes('status === 401')],
     ['gas-signature-fail-closed', lineBot.includes('LINE_CHANNEL_SECRET is not configured') && !lineBot.includes('if (!secret) return true')],
     ['legacy-signature-fail-closed', lineBotV2.includes("getConfig('LINE_CHANNEL_SECRET') || ''") && !lineBotV2.includes('Signature mismatch. Expected:')],
     ['legacy-credential-setup-removed', !/setConfig\('LINE_CHANNEL_(?:ACCESS_TOKEN|SECRET)'/.test(lineBotV2)],

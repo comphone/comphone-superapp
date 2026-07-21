@@ -1,12 +1,21 @@
 {
   "sprint": 221,
-  "generated_at": "2026-07-21T09:22:00.000Z",
+  "generated_at": "2026-07-21T15:40:12.000Z",
   "environment": "production",
   "gas_deployment_tested": "@636",
   "backend_version": "5.18.23-line-signed-raw",
   "worker_release_candidate": "1.0.6-sprint221",
   "worker_deployed": false,
   "status": "release-candidate",
+  "deployment": {
+    "live_worker_version": "1.0.5-sprint189",
+    "target_worker_version": "1.0.6-sprint221",
+    "github_run_id": 29818379851,
+    "github_run_conclusion": "failure",
+    "root_cause": "CLOUDFLARE_API_TOKEN repository secret is missing",
+    "local_oauth": "expired; reauthorization required",
+    "production_verifier": "4/9 passed; correctly blocked by old live version"
+  },
   "checks": {
     "forged_signature_rejected_by_gas": true,
     "line_channel_secret_configured": true,
