@@ -1,8 +1,9 @@
 {
   "name": "comphone-line-webhook",
-  "version": "1.0.5-sprint189",
+  "version": "1.0.6-sprint221",
   "description": "Cloudflare Worker — LINE Webhook Async Proxy for Comphone SuperApp AI",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",

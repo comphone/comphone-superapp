@@ -5,10 +5,10 @@
 // ===========================================================
 
 const VERSION_CONFIG = {
-  version: 'v5.18.47-sprint219',
+  version: 'v5.18.47-sprint221',
   buildDate: '2026-07-21',
-  buildTimestamp: '20260721_1541',
-  cacheVersion: 'comphone-v5.18.47-sprint219-20260721_1541',
+  buildTimestamp: '20260721_1622',
+  cacheVersion: 'comphone-v5.18.47-sprint221-20260721_1622',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -101,9 +101,9 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 
 // Backward-compatible exports for legacy modules and guards
-const APP_VERSION = 'v5.18.47-sprint219';
-const BUILD_TIMESTAMP = '20260721_1541';
-const CACHE_VERSION = 'comphone-v5.18.47-sprint219-20260721_1541';
+const APP_VERSION = 'v5.18.47-sprint221';
+const BUILD_TIMESTAMP = '20260721_1622';
+const CACHE_VERSION = 'comphone-v5.18.47-sprint221-20260721_1622';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;

@@ -264,6 +264,7 @@ async function run() {
       smoke_id: smokeId,
       supplier: `COMPHONE WRITE SMOKE SUPPLIER ${smokeId}`,
       notes: `AUTO TEST ONLY ${smokeId}`,
+      suppress_notifications: true,
       items: [
         {
           item_code: `SMOKE-${smokeId}`,
@@ -275,7 +276,8 @@ async function run() {
     };
     const po = await runAction(report, 'po', 'createPurchaseOrder', poPayload, body => !!body.po_id);
     const poId = po.body && po.body.po_id;
-    await verifyReadBack(report, 'po', 'listPurchaseOrders', { limit: 25 }, body => containsBy(body.items, item => String(item.po_id || '') === String(poId)));
+    await runAction(report, 'po', 'createPurchaseOrder', poPayload, body => body.idempotent_replay === true && String(body.po_id || '') === String(poId));
+    await verifyReadBack(report, 'po', 'listPurchaseOrders', { limit: 100 }, body => containsBy(body.items, item => String(item.po_id || '') === String(poId)));
   } else {
     record(report, {
       phase: 'po',

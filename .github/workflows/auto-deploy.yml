@@ -123,6 +123,18 @@ jobs:
             echo "FAIL scripts/sprint219_controlled_write_cleanup_guard.js"
             FAILED=1
           fi
+          if node --check scripts/sprint220_po_write_safety_guard.js && node --check scripts/sprint220_po_write_acceptance.js; then
+            echo "OK Sprint 220 PO write safety scripts"
+          else
+            echo "FAIL Sprint 220 PO write safety scripts"
+            FAILED=1
+          fi
+          if node --check scripts/sprint221_line_signed_raw_guard.js; then
+            echo "OK scripts/sprint221_line_signed_raw_guard.js"
+          else
+            echo "FAIL scripts/sprint221_line_signed_raw_guard.js"
+            FAILED=1
+          fi
           if [ "$FAILED" -ne 0 ]; then exit 1; fi
 
       - name: PWA Static Guard

@@ -241,17 +241,13 @@ function buildAILineFallbackReply_(role, text, reason) {
 }
 
 function detectRoleFromGroupId_(groupId) {
-  if (!groupId) return 'DISPATCHER'; // Default
-  
-  var groupRoles = {
-    'C8ad22a115f38c9ad3cb5ea5c2ff4863b': 'DISPATCHER',     // TECHNICIAN group
-    'Cb7cc146227212f70e4f171ef3f2bce15': 'SALES_ANALYST',  // SALES group
-    'Cb85204740fa90e38de63c727554e551a': 'BI',             // EXECUTIVE group
-    'C7b939d1d367e6b854690e58b392e88cc': 'ACCOUNTING_ANALYST',
-    'Cfd103d59e77acf00e2f2f801d391c566': 'DISPATCHER'    // PROCUREMENT -> Dispatcher
-  };
-  
-  return groupRoles[groupId] || 'DISPATCHER';
+  if (typeof detectLineRoomNameV55_ !== 'function') return groupId ? 'DISPATCHER' : 'PRIVATE_ASSISTANT';
+  var room = detectLineRoomNameV55_(groupId);
+  if (room === 'ACCOUNTING') return 'ACCOUNTING_ANALYST';
+  if (room === 'SALES') return 'SALES_ANALYST';
+  if (room === 'PROCUREMENT') return 'PROCUREMENT_ASSISTANT';
+  if (room === 'EXECUTIVE') return 'BI';
+  return room === 'TECHNICIAN' ? 'DISPATCHER' : 'PRIVATE_ASSISTANT';
 }
 
 /**
@@ -283,15 +279,7 @@ function detectRoleFromGroupId_(groupId) {
     if (room === 'PROCUREMENT') return 'PROCUREMENT_ASSISTANT';
     if (room === 'EXECUTIVE') return 'BI';
   }
-  if (!groupId) return 'PRIVATE_ASSISTANT';
-  var groupRoles = {
-    'C8ad22a115f38c9ad3cb5ea5c2ff4863b': 'DISPATCHER',
-    'C7b939d1d367e6b854690e58b392e88cc': 'ACCOUNTING_ANALYST',
-    'Cb7cc146227212f70e4f171ef3f2bce15': 'SALES_ANALYST',
-    'Cfd103d59e77acf00e2f2f801d391c566': 'PROCUREMENT_ASSISTANT',
-    'Cb85204740fa90e38de63c727554e551a': 'BI'
-  };
-  return groupRoles[groupId] || 'PRIVATE_ASSISTANT';
+  return 'PRIVATE_ASSISTANT';
 }
 
 function getPromptByRole_(role) {

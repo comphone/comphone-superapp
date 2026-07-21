@@ -88,16 +88,7 @@ function _getRoomGroupId(room) {
   var groupId = getConfig(key);
   if (groupId) return groupId;
 
-  // 2. Hardcoded defaults (จาก MEMORY.md)
-  var defaults = {
-    'TECHNICIAN':  'C8ad22a115f38c9ad3cb5ea5c2ff4863b',
-    'ACCOUNTING':  'C7b939d1d367e6b854690e58b392e88cc',
-    'PROCUREMENT': 'Cfd103d59e77acf00e2f2f801d391c566',
-    'SALES':       'Cb7cc146227212f70e4f171ef3f2bce15',
-    'EXECUTIVE':   'C8ad22a115f38c9ad3cb5ea5c2ff4863b'  // fallback to TECHNICIAN
-  };
-
-  return defaults[room] || null;
+  return null;
 }
 
 // ============================================================

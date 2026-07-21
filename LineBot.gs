@@ -451,14 +451,12 @@ function getLineRoomPolicyV55_(room) {
 function detectLineRoomNameV55_(groupId) {
   groupId = String(groupId || '').trim();
   if (!groupId) return 'PRIVATE';
-  var rooms = {
-    'C8ad22a115f38c9ad3cb5ea5c2ff4863b': 'TECHNICIAN',
-    'C7b939d1d367e6b854690e58b392e88cc': 'ACCOUNTING',
-    'Cfd103d59e77acf00e2f2f801d391c566': 'PROCUREMENT',
-    'Cb7cc146227212f70e4f171ef3f2bce15': 'SALES',
-    'Cb85204740fa90e38de63c727554e551a': 'EXECUTIVE'
-  };
-  return rooms[groupId] || 'UNKNOWN';
+  var roomNames = ['TECHNICIAN', 'ACCOUNTING', 'PROCUREMENT', 'SALES', 'EXECUTIVE'];
+  for (var i = 0; i < roomNames.length; i++) {
+    var configuredId = String(getConfig('LINE_GROUP_' + roomNames[i], '') || '').trim();
+    if (configuredId && configuredId === groupId) return roomNames[i];
+  }
+  return 'UNKNOWN';
 }
 
 function isLineBotReplyEnabledV55_(groupId) {
@@ -664,7 +662,10 @@ function parseLineWebhookBodyV55_(e) {
 function verifyLineSignature_(e) {
   try {
     var secret = getConfig('LINE_CHANNEL_SECRET') || '';
-    if (!secret) return true; // ถ้ายังไม่ตั้งค่า ให้ผ่าน (dev mode)
+    if (!secret) {
+      Logger.log('verifyLineSignature_: LINE_CHANNEL_SECRET is not configured');
+      return false;
+    }
     var signature = (e.parameter && e.parameter['X-Line-Signature']) ||
                     (e.headers && e.headers['X-Line-Signature']) || '';
     if (!signature) return false;

@@ -233,7 +233,7 @@ function smartPushAlert(alertType, data, options) {
   }
 
   // Push!
-  var toId    = options.toId || getConfig('LINE_ADMIN_USER_ID') || 'U33d684ffb92560e0eafb0ce8fdf6d4b0';
+  var toId    = options.toId || getConfig('LINE_ADMIN_USER_ID') || '';
   var token   = getConfig('LINE_CHANNEL_ACCESS_TOKEN') || '';
   var flexMsg = _buildAlertFlexV2_(alertType, data);
   var result  = _linePush_(toId, [flexMsg], token);
@@ -336,7 +336,7 @@ function sendDailyDigest() {
   var queue   = getAlertQueue();
   var summary = _getCachedSummary_() || _fetchSummaryData_();
   var token   = getConfig('LINE_CHANNEL_ACCESS_TOKEN') || '';
-  var toId    = getConfig('LINE_ADMIN_USER_ID') || 'U33d684ffb92560e0eafb0ce8fdf6d4b0';
+  var toId    = getConfig('LINE_ADMIN_USER_ID') || '';
 
   // Build digest flex message
   var digestFlex = _buildDailyDigestFlex_(summary, queue);

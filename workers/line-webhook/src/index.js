@@ -1,15 +1,11 @@
 /**
  * COMPHONE LINE Webhook Worker
  *
- * Fast proxy for LINE Messaging API webhooks. LINE receives an immediate 200,
- * while the raw webhook body and X-Line-Signature are forwarded to the active
- * Google Apps Script backend for final signature validation and processing.
- * A tiny deterministic private-chat greeting guard lives here to avoid routing
- * simple one-to-one greetings into stale GAS AI code during deployments.
- * Group-room noise is also guarded here: non-command text and all image
- * messages are forwarded to GAS without a replyToken, so backend processing
- * continues while LINE rooms stay quiet.
+ * Returns quickly to LINE and forwards the exact signed request body to GAS.
+ * The body must never be rewritten before GAS verifies X-Line-Signature.
  */
+
+const WORKER_VERSION = '1.0.6-sprint221';
 
 export default {
   async fetch(request, env, ctx) {
@@ -20,37 +16,37 @@ export default {
       return json({
         status: 'ok',
         service: 'COMPHONE LINE Webhook Worker',
-        version: '1.0.5-sprint189',
+        version: WORKER_VERSION,
+        signature_mode: env.LINE_CHANNEL_SECRET ? 'worker-and-gas' : 'gas-final-validation',
         gas_url: activeGasUrl ? activeGasUrl.substring(0, 72) + '...' : '',
         timestamp: new Date().toISOString()
       });
     }
 
-    if (url.pathname === '/diag/gas') {
-      return runGasDiagnostic(env.GAS_URL);
-    }
-
+    if (url.pathname === '/diag/gas') return runGasDiagnostic(env.GAS_URL, env);
     if (url.pathname !== '/line/webhook' && url.pathname !== '/webhook') {
       return json({ error: 'Not Found', available_paths: ['/health', '/line/webhook'] }, 404);
     }
-
-    if (request.method !== 'POST') {
-      return new Response('Method Not Allowed', { status: 405 });
-    }
+    if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
 
     const bodyText = await request.text();
     const signature = request.headers.get('X-Line-Signature') || '';
-    if (await handlePrivateGreeting(bodyText, env)) {
-      return json({ success: true, source: 'comphone-worker', version: '1.0.5-sprint189', handled: 'private-greeting' });
+    if (!signature) return json({ success: false, error: 'Missing LINE signature' }, 401);
+    if (env.LINE_CHANNEL_SECRET && !(await verifyLineSignature(bodyText, signature, env.LINE_CHANNEL_SECRET))) {
+      return json({ success: false, error: 'Invalid LINE signature' }, 401);
     }
-    const forwardPayload = prepareForwardPayload(bodyText);
-    ctx.waitUntil(forwardToGAS(env.GAS_URL, forwardPayload.bodyText, signature, forwardPayload.summary));
 
-    return json({ success: true, source: 'comphone-worker', version: '1.0.5-sprint189', reply_policy: forwardPayload.summary });
+    if (await handlePrivateGreeting(bodyText, env)) {
+      return json({ success: true, source: 'comphone-worker', version: WORKER_VERSION, handled: 'private-greeting' });
+    }
+
+    const summary = summarizeForwardPolicy(bodyText);
+    ctx.waitUntil(forwardToGAS(env.GAS_URL, bodyText, signature, summary));
+    return json({ success: true, source: 'comphone-worker', version: WORKER_VERSION, reply_policy: summary });
   }
 };
 
-async function runGasDiagnostic(gasUrl) {
+async function runGasDiagnostic(gasUrl, env) {
   if (!gasUrl) return json({ success: false, error: 'GAS_URL binding is missing' }, 500);
   try {
     const targetUrl = new URL(gasUrl);
@@ -62,7 +58,8 @@ async function runGasDiagnostic(gasUrl) {
     try { body = JSON.parse(responseText); } catch (_) {}
     return json({
       success: response.ok && body.success !== false,
-      worker_version: '1.0.5-sprint189',
+      worker_version: WORKER_VERSION,
+      signature_mode: env.LINE_CHANNEL_SECRET ? 'worker-and-gas' : 'gas-final-validation',
       gas_status: response.status,
       gas_ok: response.ok,
       gas_health_status: body.status || '',
@@ -71,59 +68,31 @@ async function runGasDiagnostic(gasUrl) {
       gas_url_prefix: gasUrl.substring(0, 72) + '...'
     }, response.ok ? 200 : 502);
   } catch (error) {
-    return json({ success: false, worker_version: '1.0.5-sprint189', error: error && error.message || String(error) }, 502);
+    return json({ success: false, worker_version: WORKER_VERSION, error: error && error.message || String(error) }, 502);
   }
 }
 
-function prepareForwardPayload(bodyText) {
+function summarizeForwardPolicy(bodyText) {
   let payload;
-  try { payload = JSON.parse(bodyText || '{}'); } catch (_) {
-    return { bodyText, summary: { mode: 'raw-forward', stripped: 0, kept: 0 } };
-  }
+  try { payload = JSON.parse(bodyText || '{}'); }
+  catch (_) { return { mode: 'signed-raw-forward', group_events: 0, image_events: 0, reply_control: 'gas-room-toggle' }; }
 
   const events = Array.isArray(payload.events) ? payload.events : [];
-  let stripped = 0;
-  let kept = 0;
-  let imagesSilenced = 0;
-  let textSilenced = 0;
-
-  payload.events = events.map(event => {
-    const next = { ...event };
-    const source = next.source || {};
-    const message = next.message || {};
-    const isGroupLike = !!(source.groupId || source.roomId || source.type === 'group' || source.type === 'room');
-    const shouldKeepReply = !isGroupLike || isExplicitLineCommand(message);
-
-    if (isGroupLike && next.replyToken && !shouldKeepReply) {
-      delete next.replyToken;
-      stripped += 1;
-      if (message.type === 'image') imagesSilenced += 1;
-      else textSilenced += 1;
-    } else if (next.replyToken) {
-      kept += 1;
-    }
-    return next;
+  let groupEvents = 0;
+  let imageEvents = 0;
+  events.forEach(event => {
+    const source = event && event.source || {};
+    const message = event && event.message || {};
+    const isGroup = !!(source.groupId || source.roomId || source.type === 'group' || source.type === 'room');
+    if (isGroup) groupEvents++;
+    if (message.type === 'image') imageEvents++;
   });
-
   return {
-    bodyText: JSON.stringify(payload),
-    summary: {
-      mode: 'quiet-group-forward',
-      stripped,
-      kept,
-      images_silenced: imagesSilenced,
-      text_silenced: textSilenced
-    }
+    mode: 'signed-raw-forward',
+    group_events: groupEvents,
+    image_events: imageEvents,
+    reply_control: 'gas-room-toggle'
   };
-}
-
-function isExplicitLineCommand(message) {
-  if (!message || message.type !== 'text') return false;
-  const text = String(message.text || '').trim();
-  if (!text) return false;
-  return /^\/groupid/i.test(text) ||
-    /^(#?เปิดงาน|#?ปิดงาน|#?เช็คงาน|#?เช็คสต็อก|#?เช็คบิล|#?เช็คยอด|#?สรุป|check job|check bill|summary)/i.test(text) ||
-    /(^|\s)(ai|@ai|วิเคราะห์|ช่วยวิเคราะห์|ถามระบบ)(\s|$)/i.test(text);
 }
 
 async function handlePrivateGreeting(bodyText, env) {
@@ -142,13 +111,9 @@ async function handlePrivateGreeting(bodyText, env) {
 
   const token = env.LINE_CHANNEL_ACCESS_TOKEN || env.LINE_ACCESS_TOKEN || '';
   if (!token || !event.replyToken) return true;
-
   await fetch('https://api.line.me/v2/bot/message/reply', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
     body: JSON.stringify({
       replyToken: event.replyToken,
       messages: [{
@@ -160,7 +125,7 @@ async function handlePrivateGreeting(bodyText, env) {
           '- เช็คงาน J0020',
           '- สรุป',
           '- ส่งรูปงานในกลุ่มพร้อม JobID เพื่อเข้า AI Vision',
-          'ถ้าต้องการถาม AI ให้ขึ้นต้นด้วย "ai" หรือ "วิเคราะห์"'
+          'หากต้องการถาม AI ให้ขึ้นต้นด้วย "ai" หรือ "วิเคราะห์"'
         ].join('\n')
       }]
     })
@@ -173,17 +138,15 @@ async function forwardToGAS(gasUrl, bodyText, signature, replyPolicy) {
     console.error('[GAS Forward Error] GAS_URL binding is missing');
     return;
   }
-
   try {
     const targetUrl = new URL(gasUrl);
-    if (signature) targetUrl.searchParams.set('X-Line-Signature', signature);
-
+    targetUrl.searchParams.set('X-Line-Signature', signature);
     const response = await fetch(targetUrl.toString(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-Line-Signature': signature,
-        'X-Forwarded-By': 'comphone-worker/1.0.5-sprint189',
+        'X-Forwarded-By': `comphone-worker/${WORKER_VERSION}`,
         'X-Comphone-Reply-Policy': JSON.stringify(replyPolicy || {})
       },
       body: bodyText,
@@ -196,9 +159,17 @@ async function forwardToGAS(gasUrl, bodyText, signature, replyPolicy) {
   }
 }
 
+async function verifyLineSignature(bodyText, signature, secret) {
+  try {
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey('raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
+    const signatureBytes = Uint8Array.from(atob(signature), char => char.charCodeAt(0));
+    return await crypto.subtle.verify('HMAC', key, signatureBytes, encoder.encode(bodyText));
+  } catch (_) {
+    return false;
+  }
+}
+
 function json(payload, status = 200) {
-  return new Response(JSON.stringify(payload), {
-    status,
-    headers: { 'Content-Type': 'application/json' }
-  });
+  return new Response(JSON.stringify(payload), { status, headers: { 'Content-Type': 'application/json' } });
 }

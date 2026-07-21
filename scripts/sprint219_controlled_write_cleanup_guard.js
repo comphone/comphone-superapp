@@ -12,6 +12,7 @@ const rootCleanup = read('SmokeCleanup.gs');
 const config = read('clasp-ready/Config.gs');
 const evidence = JSON.parse(read('test_reports/sprint219_controlled_write_production_evidence.json'));
 const blueprint = read('BLUEPRINT.md');
+const backendPatch = Number((config.match(/VERSION:\s*'5\.18\.(\d+)/) || [])[1] || 0);
 
 const checks = [
   ['archive-before-parent-delete', cleanup.includes('archiveSmokeCleanupRow_') && cleanup.includes('sheet.deleteRow(rowNumber)')],
@@ -20,7 +21,7 @@ const checks = [
   ['customer-log-cascade', cleanup.includes("sheetName: 'DB_CUSTOMER_LOGS'") && cleanup.includes("scope: 'customer_logs'")],
   ['child-archive-before-delete', cleanup.includes("archiveSmokeCleanupRow_(archive, options.scope") && cleanup.includes('report.child_deleted.push')],
   ['audit-log-preserved', !cleanup.includes("sheetName: 'DB_ACTIVITY_LOG'")],
-  ['backend-version-current', config.includes("VERSION: '5.18.20-write-cleanup-cascade'")],
+  ['backend-version-current', backendPatch >= 20],
   ['root-deploy-source-aligned', digest(cleanup) === digest(rootCleanup)],
   ['production-evidence-ok', evidence.status === 'ok' && evidence.gas_deployment_tested === '@632'],
   ['write-lifecycle-complete', evidence.checks.write_read_idempotency.passed === 14 && evidence.checks.write_read_idempotency.failed === 0],

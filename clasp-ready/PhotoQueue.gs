@@ -10,7 +10,7 @@ var PHOTO_QUEUE_HEADERS = [
   'QueueID', 'FileID', 'FileName', 'FileURL', 'ThumbnailURL',
   'JobID', 'TechName', 'Status', 'Timestamp',
   'AILabel', 'AIPhase', 'AIIssues', 'JobPhotoURL', 'ProcessedTimestamp',
-  'AISummary', 'GeoStatus', 'GeoDistanceM', 'GeoNote', 'CollageURL'
+  'AISummary', 'GeoStatus', 'GeoDistanceM', 'GeoNote', 'CollageURL', 'Source'
 ];
 var PHOTO_CATEGORY_FOLDER_MAP = {
   'Before': '01_Before',
@@ -63,7 +63,8 @@ function queuePhotoFromLINE(imageId, jobId, techName) {
       geoStatus: '',
       geoDistanceM: '',
       geoNote: '',
-      collageUrl: ''
+      collageUrl: '',
+      source: 'LINE'
     });
 
     Logger.log('Photo queued: ' + queueId + ' -> ' + file.getName());
@@ -190,7 +191,8 @@ function getPhotoQueueContext_() {
       geoStatus: findHeaderIndex_(headers, ['GeoStatus']),
       geoDistanceM: findHeaderIndex_(headers, ['GeoDistanceM']),
       geoNote: findHeaderIndex_(headers, ['GeoNote']),
-      collageUrl: findHeaderIndex_(headers, ['CollageURL'])
+      collageUrl: findHeaderIndex_(headers, ['CollageURL']),
+      source: findHeaderIndex_(headers, ['Source'])
     }
   };
 }
@@ -225,6 +227,7 @@ function saveToPhotoQueue(data) {
   _setQueueCell_(row, ctx.idx.geoDistanceM, data.geoDistanceM || '');
   _setQueueCell_(row, ctx.idx.geoNote, data.geoNote || '');
   _setQueueCell_(row, ctx.idx.collageUrl, data.collageUrl || '');
+  _setQueueCell_(row, ctx.idx.source, data.source || '');
 
   ctx.sheet.appendRow(row);
   return qid;
@@ -811,6 +814,7 @@ function getVisionLineIngressStatus(params) {
   try {
     var queue = getPhotoQueueCount();
     var lineTokenConfigured = !!(getConfig('LINE_CHANNEL_ACCESS_TOKEN') || '');
+    var lineSecretConfigured = !!(getConfig('LINE_CHANNEL_SECRET') || '');
     var geminiConfigured = !!(getConfig('GEMINI_API_KEY') || getConfig('GOOGLE_AI_API_KEY') || '');
     var checks = {
       line_webhook_handler: typeof handleLineWebhook === 'function',
@@ -821,6 +825,7 @@ function getVisionLineIngressStatus(params) {
       dashboard_process_action: typeof handleProcessPhotos === 'function',
       gemini_secret: geminiConfigured,
       line_channel_token: lineTokenConfigured,
+      line_channel_secret: lineSecretConfigured,
       notification_toggles: typeof _lineCenterIsRoomNotificationEnabled_ === 'function'
     };
     var ready = checks.line_webhook_handler &&
@@ -829,7 +834,9 @@ function getVisionLineIngressStatus(params) {
       checks.photo_queue_sheet &&
       checks.queued_processing &&
       checks.gemini_secret &&
-      checks.line_channel_token;
+      checks.line_channel_token &&
+      checks.line_channel_secret;
+    var sourceSummary = getPhotoQueueSourceSummary_();
     return {
       success: true,
       status: ready ? 'ready' : 'attention',
@@ -837,6 +844,10 @@ function getVisionLineIngressStatus(params) {
       ready: ready,
       pending_photos: queue && queue.pending || 0,
       total_photos: queue && (queue.totalRows || queue.total) || 0,
+      line_photos: sourceSummary.line,
+      pc_photos: sourceSummary.pc,
+      unknown_source_photos: sourceSummary.unknown,
+      latest_line_photo_at: sourceSummary.latestLineAt,
       checks: checks,
       workflow: [
         'LINE group sends image with JobID in caption/text context',
@@ -850,6 +861,27 @@ function getVisionLineIngressStatus(params) {
   } catch (e) {
     return { success: false, status: 'error', error: e.toString() };
   }
+}
+
+function getPhotoQueueSourceSummary_() {
+  var summary = { line: 0, pc: 0, unknown: 0, latestLineAt: '' };
+  try {
+    var ctx = getPhotoQueueContext_();
+    var rows = ctx.sheet.getDataRange().getValues();
+    for (var i = 1; i < rows.length; i++) {
+      var source = ctx.idx.source > -1 ? String(rows[i][ctx.idx.source] || '').toUpperCase() : '';
+      if (source === 'LINE') {
+        summary.line++;
+        var timestamp = ctx.idx.timestamp > -1 ? rows[i][ctx.idx.timestamp] : '';
+        if (timestamp) summary.latestLineAt = timestamp;
+      } else if (source === 'PC') {
+        summary.pc++;
+      } else {
+        summary.unknown++;
+      }
+    }
+  } catch (_summaryError) {}
+  return summary;
 }
 
 // ============================================================
@@ -898,8 +930,8 @@ function uploadPhoto_(params) {
     var queueId = saveToPhotoQueue({
       fileId: file.getId(),
       fileName: finalName,
-      fileURL: file.getUrl(),
-      thumbnailURL: file.getUrl(), // Could generate thumbnail later
+      fileUrl: file.getUrl(),
+      thumbnailUrl: file.getUrl(), // Could generate thumbnail later
       jobId: jobId,
       techName: 'PC-User',
       status: 'Pending',
@@ -907,13 +939,14 @@ function uploadPhoto_(params) {
       aiLabel: '',
       aiPhase: '',
       aiIssues: '',
-      jobPhotoURL: '',
+      jobPhotoUrl: '',
       processedTimestamp: '',
       aiSummary: '',
       geoStatus: 'NoCheck',
       geoDistanceM: '',
       geoNote: '',
-      collageURL: ''
+      collageUrl: '',
+      source: 'PC'
     });
 
     return {

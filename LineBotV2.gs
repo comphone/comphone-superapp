@@ -68,8 +68,7 @@ function sendLineAlert(alertType, data, options) {
   data    = data    || {};
 
   var toId = options.toId ||
-             getConfig('LINE_ADMIN_USER_ID') ||
-             'U33d684ffb92560e0eafb0ce8fdf6d4b0';
+             getConfig('LINE_ADMIN_USER_ID') || '';
 
   var flexMsg = _buildAlertFlexV2_(alertType, data);
   return sendLineMessage(toId, flexMsg, options);
@@ -395,8 +394,8 @@ function handleLineBotCommandV2(text, userId, replyToken) {
  */
 function verifyLineSignatureV2_(e) {
   try {
-    var secret = getConfig('LINE_CHANNEL_SECRET') || '45b888aeb54588d185bd906ff5b869b5';
-    if (!secret) return true; // dev mode: ไม่มี secret = ผ่าน
+    var secret = getConfig('LINE_CHANNEL_SECRET') || '';
+    if (!secret) return false;
 
     // ดึง signature จาก header (GAS ส่งมาใน e.parameter หรือ e.headers)
     var signature = '';
@@ -420,7 +419,7 @@ function verifyLineSignatureV2_(e) {
     var computed  = Utilities.base64Encode(hmac);
 
     if (computed !== signature) {
-      Logger.log('verifyLineSignatureV2_: Signature mismatch. Expected: ' + computed + ' Got: ' + signature);
+      Logger.log('verifyLineSignatureV2_: Signature mismatch');
       return false;
     }
     return true;
@@ -700,16 +699,11 @@ function _fmtNum_(n) {
  * เรียกจาก GAS Script Editor ครั้งเดียวเพื่อบันทึก credentials
  */
 function setupLineBotV2() {
-  setConfig('LINE_CHANNEL_ACCESS_TOKEN',
-    '8VnOeGjnvGgt0MEHcEAfJNq3ZP51mGd4FjbwhPyqXk3AKujyGj5OXFU/hFHDeX77R3Whc5poaURaTRty806fqs3uat6cL1IS1fX7freWr8zYvG9mN3EHLO+av6V07yg8id/Bb33EYMM5XMhY7HjR0gdB04t89/1O/w1cDnyilFU=');
-  setConfig('LINE_CHANNEL_SECRET', '45b888aeb54588d185bd906ff5b869b5');
-  setConfig('LINE_ADMIN_USER_ID',  'U33d684ffb92560e0eafb0ce8fdf6d4b0');
-
-  // Map admin LINE user → system user
-  mapLineUserToSystem('U33d684ffb92560e0eafb0ce8fdf6d4b0', 'admin');
-
-  Logger.log('✅ LINE Bot V2 setup complete');
-  return { success: true, message: 'LINE Bot V2 configured' };
+  var missing = [];
+  if (!getConfig('LINE_CHANNEL_ACCESS_TOKEN')) missing.push('LINE_CHANNEL_ACCESS_TOKEN');
+  if (!getConfig('LINE_CHANNEL_SECRET')) missing.push('LINE_CHANNEL_SECRET');
+  if (missing.length) return { success: false, error: 'Set credentials in Apps Script Properties first', missing: missing };
+  return { success: true, message: 'LINE Bot V2 credentials are configured in Script Properties' };
 }
 
 /**

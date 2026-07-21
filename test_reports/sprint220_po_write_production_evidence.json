@@ -1,0 +1,20 @@
+{
+  "sprint": 220,
+  "generated_at": "2026-07-21T09:07:20.000Z",
+  "environment": "production",
+  "gas_deployment_tested": "@634",
+  "gas_deployment_current": "@636",
+  "status": "ok",
+  "notification_sent": false,
+  "checks": {
+    "passed": 6,
+    "failed": 0,
+    "create": true,
+    "idempotent_replay": true,
+    "immediate_readback": true,
+    "cleanup_marker_gate": true,
+    "archive_first_cleanup": true,
+    "deleted_rows": 1,
+    "remaining_live_rows": 0
+  }
+}

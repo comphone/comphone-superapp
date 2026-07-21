@@ -127,6 +127,12 @@ function invalidateSmokeCleanupCaches_(requested) {
     keys.forEach(function(key) { cache.remove(key); });
   } catch (_cacheError) {}
   try {
+    var hasPurchaseOrder = (requested || []).some(function(item) {
+      return item.scope === 'purchase_orders' || item.scope === 'purchase_order' || item.scope === 'po';
+    });
+    if (hasPurchaseOrder && typeof invalidatePurchaseOrderCache_ === 'function') invalidatePurchaseOrderCache_();
+  } catch (_poCacheError) {}
+  try {
     if (typeof invalidateBundleCache === 'function') invalidateBundleCache();
   } catch (_bundleCacheError) {}
 }

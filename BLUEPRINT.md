@@ -1,10 +1,10 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.18.47-sprint219 (PWA) / GAS Backend v5.18.20-write-cleanup-cascade (@632)
+> **Version:** v5.18.47-sprint221 (PWA) / GAS Backend v5.18.23-line-signed-raw (@636)
 
-> **Date:** 2026-07-21 | **Phase:** 219 (Controlled Production Write + Complete Cleanup)
+> **Date:** 2026-07-21 | **Phase:** 221 (PO Acceptance + Signed LINE Raw Forwarding)
 
-> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + PROTECTED-LIVE-VERIFIED + DATA-IDENTITY-HARDENED + REAL-AI-VISION-VERIFIED - Sprint 219 adds archive-first child cleanup and has passed a controlled Customer -> Job -> Billing production write lifecycle. GAS `v5.18.20-write-cleanup-cascade` is live at @632; Worker `1.0.5-sprint189` remains live with quiet group-image forwarding. Historical status detail remains below.
+> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + PROTECTED-LIVE-VERIFIED + DATA-IDENTITY-HARDENED + REAL-AI-VISION-VERIFIED - Sprint 220 completed controlled PO production write acceptance and cleanup. Sprint 221 fixes the LINE signature-breaking Worker payload rewrite, makes GAS signature validation fail closed, and removes active-source LINE credentials/room identifiers. GAS `v5.18.23-line-signed-raw` is live at @636; Worker `1.0.6-sprint221` is the release candidate pending GitHub deployment verification. Historical detail remains below.
 
 ---
 
@@ -188,6 +188,38 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > LINE Center/room status, and Admin Security. Sprint 185 also passed 17/17 with
 > live ingress status. The repository was clean after these checks.
 
+> 2026-07-21 Sprint 220 Purchase Order Write Safety: production review found
+> `createPurchaseOrder` lacked idempotency and used a random ID while list reads
+> could return stale cache. The backend now serializes writes with ScriptLock,
+> stores `Client_Request_ID` for durable replay, allocates collision-safe daily
+> high-water IDs while honoring the cleanup archive, revisions PO list caches on
+> every mutation, records create audit metadata, and lets acceptance suppress
+> outbound LINE notification. The gated production lifecycle on GAS @634 passed
+> 6/6: create, same-request replay, immediate readback, cleanup marker preview,
+> archive-first delete, and post-cleanup absence. No test PO remains live.
+> Secret-free evidence is in
+> `test_reports/sprint220_po_write_production_evidence.json`.
+
+> 2026-07-21 Sprint 221 Signed LINE Raw Forwarding: the Worker previously removed
+> group `replyToken` values before forwarding while retaining LINE's signature
+> from the original body. Because LINE HMAC covers the exact request bytes, GAS
+> could reject genuine group events. Worker 1.0.6 forwards the byte-equivalent
+> raw body and delegates reply suppression to per-room GAS toggles. It rejects a
+> missing signature, optionally validates HMAC at the edge when its secret is
+> configured, and GAS always performs final fail-closed validation. A synthetic
+> local signature test proves missing/invalid rejection and exact-body forwarding.
+> Production GAS @636 rejects a forged signature; Script Properties report LINE
+> token and secret configured and five rooms remain configured.
+
+> Photo queue schema now records `Source` (`LINE` or `PC`) and ingress diagnostics
+> report source counts and latest LINE timestamp. The historical single queue row
+> predates this field and is therefore `unknown`; it is not accepted as real LINE
+> evidence. A new real room image after Worker publication remains the final
+> external acceptance event. Active GAS sources no longer contain LINE access
+> tokens, channel secrets, admin user IDs, or room-ID fallbacks; values are read
+> from Script Properties only. Rotate credentials that ever appeared in Git
+> history even though current source no longer contains them.
+
 > Cowork review on or after 2026-06-12 should begin with
 > `COWORK_SYSTEM_HANDOFF.md`. It separates current verified state, live-proof
 > gaps, safety gates, and the recommended review order from the historical
@@ -215,11 +247,11 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > `1.0.5-sprint189`. Details in `COWORK_SYSTEM_HANDOFF.md` section 9a.
 
 ### Current Production State
-- **Current phase:** Sprint / Phase 219 (controlled production write acceptance with archive-first complete cleanup).
-- **Latest verified runtime source:** Sprint 219 source deployed to GAS @632; run `git log -1 --oneline` for the exact repository commit after release publication.
-- **PWA release target:** `v5.18.47-sprint219` (build token `20260721_1541`).
-- **GAS backend:** `v5.18.20-write-cleanup-cascade`, deployed at @632.
-- **Current production GAS deployment:** `AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ @632`.
+- **Current phase:** Sprint / Phase 221 (PO acceptance complete; signed LINE raw forwarding release).
+- **Latest verified runtime source:** Sprint 221 GAS source deployed to @636; run `git log -1 --oneline` after repository publication for the release commit.
+- **PWA release target:** `v5.18.47-sprint221` (build token `20260721_1622`).
+- **GAS backend:** `v5.18.23-line-signed-raw`, deployed at @636.
+- **Current production GAS deployment:** `AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ @636`.
 - **Production GAS URL:** `https://script.google.com/macros/s/AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ/exec`.
 - **Production Spreadsheet ID:** `19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA`.
 - **Schema registry:** `docs/database_schema_registry.json`.

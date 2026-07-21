@@ -51,6 +51,9 @@ function main() {
     'scripts/sprint217_line_center_quiet_guard.js',
     'scripts/sprint218_sw_update_click_guard.js',
     'scripts/sprint219_controlled_write_cleanup_guard.js',
+    'scripts/sprint220_po_write_safety_guard.js',
+    'scripts/sprint220_po_write_acceptance.js',
+    'scripts/sprint221_line_signed_raw_guard.js',
   ];
 
   const issues = [];

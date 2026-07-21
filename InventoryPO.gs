@@ -5,63 +5,154 @@
 // ============================================================
 
 function createPurchaseOrder(data) {
+  data = data || {};
+  if (typeof data.items === 'string') {
+    try { data.items = JSON.parse(data.items); } catch (_itemsParseErr) {}
+  }
+  var items = Array.isArray(data.items) ? data.items : [];
+  if (!items.length) return { success: false, error: '\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32' };
+
+  var requestId = String(data.client_request_id || '').trim();
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch (_lockError) { return { success: false, error: 'Lock timeout' }; }
+
+  var result;
   try {
-    data = data || {};
-    if (typeof data.items === 'string') {
-      try { data.items = JSON.parse(data.items); } catch (_itemsParseErr) {}
-    }
-    var items = data.items || [];
-    if (!items.length) return { success: false, error: '\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32' };
+    var replay = (typeof getIdempotentReplay_ === 'function') ? getIdempotentReplay_('createPurchaseOrder', requestId) : null;
+    if (replay) return replay;
 
     var ss = getComphoneSheet();
     var poSheet = findSheetByName(ss, 'DB_PURCHASE_ORDERS');
     if (!poSheet) {
       poSheet = ss.insertSheet('DB_PURCHASE_ORDERS');
-      poSheet.getRange(1, 1, 1, 10).setValues([[
+      poSheet.getRange(1, 1, 1, 11).setValues([[
         'PO_ID','Created_At','Supplier','Status',
-        'Item_Code','Item_Name','Qty','Unit_Cost','Total_Cost','Notes'
+        'Item_Code','Item_Name','Qty','Unit_Cost','Total_Cost','Notes','Client_Request_ID'
       ]]);
     }
 
-    var poId = 'PO-' + Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyyMMdd') + '-' + Math.floor(Math.random() * 9000 + 1000);
+    var requestColumn = ensurePurchaseOrderRequestColumn_(poSheet);
+    var all = poSheet.getDataRange().getValues();
+    var durableReplay = findPurchaseOrderReplay_(all, requestColumn, requestId);
+    if (durableReplay) {
+      if (typeof rememberIdempotentResult_ === 'function') rememberIdempotentResult_('createPurchaseOrder', requestId, durableReplay);
+      return durableReplay;
+    }
+
+    var poId = generatePurchaseOrderId_(ss, all);
     var totalCost = 0;
     var now = new Date();
+    var width = Math.max(poSheet.getLastColumn(), requestColumn + 1, 11);
 
     for (var i = 0; i < items.length; i++) {
-      var item = items[i];
-      var qty = Math.max(1, parseInt(item.qty) || 1);
+      var item = items[i] || {};
+      var qty = Math.max(1, parseInt(item.qty, 10) || 1);
       var unitCost = Math.max(0, parseFloat(item.unit_cost) || 0);
       var lineCost = qty * unitCost;
       totalCost += lineCost;
-      poSheet.appendRow([
-        poId, now,
-        String(data.supplier || '\u0e44\u0e21\u0e48\u0e23\u0e30\u0e1a\u0e38'),
-        'PENDING',
-        String(item.item_code || ''),
-        String(item.item_name || ''),
-        qty, unitCost, lineCost,
-        String(data.notes || '')
-      ]);
+      var row = new Array(width).fill('');
+      row[0] = poId;
+      row[1] = now;
+      row[2] = String(data.supplier || '\u0e44\u0e21\u0e48\u0e23\u0e30\u0e1a\u0e38');
+      row[3] = 'PENDING';
+      row[4] = String(item.item_code || '');
+      row[5] = String(item.item_name || '');
+      row[6] = qty;
+      row[7] = unitCost;
+      row[8] = lineCost;
+      row[9] = String(data.notes || '');
+      row[requestColumn] = requestId;
+      poSheet.appendRow(row);
     }
 
-    try {
-      var msg = '\ud83d\udecd\ufe0f \u0e43\u0e1a\u0e2a\u0e31\u0e48\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e43\u0e2b\u0e21\u0e48: ' + poId + '\n';
-      msg += '\ud83d\udce6 ' + items.length + ' \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23 | \u0e23\u0e27\u0e21 ' + totalCost.toLocaleString() + ' \u0e1a\u0e32\u0e17\n';
-      msg += '\ud83c\udf2d \u0e1c\u0e39\u0e49\u0e08\u0e33\u0e2b\u0e19\u0e48\u0e32\u0e22: ' + (data.supplier || '\u0e44\u0e21\u0e48\u0e23\u0e30\u0e1a\u0e38') + '\n';
-      msg += '\ud83d\udccb ' + (data.notes || '');
-      sendLineNotify({ message: msg, room: 'PROCUREMENT' });
-    } catch(ne) {}
-
-    return {
+    invalidatePurchaseOrderCache_();
+    result = {
       success: true,
       po_id: poId,
       total_items: items.length,
       total_cost: totalCost,
       message: '\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e43\u0e1a\u0e2a\u0e31\u0e48\u0e07\u0e0b\u0e37\u0e49\u0e2d ' + poId + ' \u0e40\u0e23\u0e35\u0e22\u0e1a\u0e23\u0e49\u0e2d\u0e22\u0e41\u0e25\u0e49\u0e27'
     };
+    try { writeAuditLog('createPurchaseOrder', 'PURCHASE_ORDER', poId, { item_count: items.length, total_cost: totalCost }); } catch (_auditError) {}
+    if (typeof rememberIdempotentResult_ === 'function') rememberIdempotentResult_('createPurchaseOrder', requestId, result);
   } catch(e) {
-    return { success: false, error: e.toString() };
+    result = { success: false, error: e.toString() };
+  } finally {
+    try { lock.releaseLock(); } catch (_releaseError) {}
   }
+
+  if (result && result.success && !data.suppress_notifications) {
+    try {
+      var msg = '\ud83d\udecd\ufe0f \u0e43\u0e1a\u0e2a\u0e31\u0e48\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e43\u0e2b\u0e21\u0e48: ' + result.po_id + '\n';
+      msg += '\ud83d\udce6 ' + result.total_items + ' \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23 | \u0e23\u0e27\u0e21 ' + result.total_cost.toLocaleString() + ' \u0e1a\u0e32\u0e17\n';
+      msg += '\ud83c\udf2d \u0e1c\u0e39\u0e49\u0e08\u0e33\u0e2b\u0e19\u0e48\u0e32\u0e22: ' + (data.supplier || '\u0e44\u0e21\u0e48\u0e23\u0e30\u0e1a\u0e38') + '\n';
+      msg += '\ud83d\udccb ' + (data.notes || '');
+      sendLineNotify({ message: msg, room: 'PROCUREMENT' });
+    } catch (_notifyError) {}
+  }
+  return result;
+}
+
+function ensurePurchaseOrderRequestColumn_(sheet) {
+  var lastColumn = Math.max(sheet.getLastColumn(), 10);
+  var headers = sheet.getRange(1, 1, 1, lastColumn).getValues()[0];
+  for (var i = 0; i < headers.length; i++) {
+    var normalized = String(headers[i] || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (normalized === 'clientrequestid' || normalized === 'requestid') return i;
+  }
+  sheet.getRange(1, lastColumn + 1).setValue('Client_Request_ID');
+  return lastColumn;
+}
+
+function findPurchaseOrderReplay_(rows, requestColumn, requestId) {
+  if (!requestId || !rows || rows.length < 2) return null;
+  var poId = '';
+  var totalItems = 0;
+  var totalCost = 0;
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][requestColumn] || '').trim() !== requestId) continue;
+    poId = poId || String(rows[i][0] || '');
+    totalItems++;
+    totalCost += Number(rows[i][8] || 0);
+  }
+  if (!poId) return null;
+  return { success: true, po_id: poId, total_items: totalItems, total_cost: totalCost, idempotent_replay: true };
+}
+
+function generatePurchaseOrderId_(ss, liveRows) {
+  var dateKey = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyyMMdd');
+  var pattern = new RegExp('^PO-' + dateKey + '-(\\d+)$', 'i');
+  var maxSequence = 0;
+  function inspect(value) {
+    var match = String(value || '').trim().match(pattern);
+    if (match) maxSequence = Math.max(maxSequence, parseInt(match[1], 10) || 0);
+  }
+  for (var i = 1; liveRows && i < liveRows.length; i++) inspect(liveRows[i][0]);
+  var archive = findSheetByName(ss, 'DB_SMOKE_CLEANUP_ARCHIVE');
+  if (archive && archive.getLastRow() > 1) {
+    var archivedIds = archive.getRange(2, 4, archive.getLastRow() - 1, 1).getValues();
+    for (var j = 0; j < archivedIds.length; j++) inspect(archivedIds[j][0]);
+  }
+  try {
+    var properties = PropertiesService.getScriptProperties();
+    var key = 'COMPHONE_PO_HIGH_WATER_' + dateKey;
+    maxSequence = Math.max(maxSequence, parseInt(properties.getProperty(key) || '0', 10) || 0);
+    properties.setProperty(key, String(maxSequence + 1));
+  } catch (_propertyError) {}
+  return 'PO-' + dateKey + '-' + String(maxSequence + 1).padStart(4, '0');
+}
+
+function getPurchaseOrderCacheRevision_() {
+  try { return PropertiesService.getScriptProperties().getProperty('COMPHONE_PO_CACHE_REV') || '0'; }
+  catch (_propertyError) { return '0'; }
+}
+
+function invalidatePurchaseOrderCache_() {
+  try {
+    var properties = PropertiesService.getScriptProperties();
+    var next = (parseInt(properties.getProperty('COMPHONE_PO_CACHE_REV') || '0', 10) || 0) + 1;
+    properties.setProperty('COMPHONE_PO_CACHE_REV', String(next));
+  } catch (_propertyError) {}
 }
 
 function listPurchaseOrders(data) {
@@ -69,7 +160,7 @@ function listPurchaseOrders(data) {
     data = data || {};
     var statusFilter = String(data.status || '').toUpperCase();
     var limit = parseInt(data.limit) || 100;
-    var cacheKey = 'po:list:' + statusFilter + ':' + limit;
+    var cacheKey = 'po:list:' + getPurchaseOrderCacheRevision_() + ':' + statusFilter + ':' + limit;
     var cache = CacheService.getScriptCache();
     var cached = cache.get(cacheKey);
     if (cached) {
@@ -197,6 +288,7 @@ function receivePurchaseOrder(data) {
 
     poSheet.getDataRange().setValues(all);
     invSheet.getDataRange().setValues(invAll);
+    invalidatePurchaseOrderCache_();
 
     try { logActivity('RECEIVE_PO', data.received_by || 'ADMIN', poId + ' | ' + received.length + ' \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23'); } catch(le) {}
 
@@ -241,6 +333,7 @@ function cancelPurchaseOrder_(data) {
 
     if (updated === 0) return { success: false, error: '\u0e44\u0e21\u0e48\u0e1e\u0e1a PO: ' + poId };
 
+    invalidatePurchaseOrderCache_();
     writeAuditLog('cancelPurchaseOrder', 'PURCHASE_ORDER', poId, { po_id: poId, status: 'CANCELLED' });
     return { success: true, po_id: poId };
 

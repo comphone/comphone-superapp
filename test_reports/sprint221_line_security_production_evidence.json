@@ -1,0 +1,21 @@
+{
+  "sprint": 221,
+  "generated_at": "2026-07-21T09:22:00.000Z",
+  "environment": "production",
+  "gas_deployment_tested": "@636",
+  "backend_version": "5.18.23-line-signed-raw",
+  "worker_release_candidate": "1.0.6-sprint221",
+  "worker_deployed": false,
+  "status": "release-candidate",
+  "checks": {
+    "forged_signature_rejected_by_gas": true,
+    "line_channel_secret_configured": true,
+    "line_channel_token_configured": true,
+    "configured_rooms": 5,
+    "ingress_ready": true,
+    "pending_photos": 0,
+    "line_source_photos": 0,
+    "unknown_legacy_photos": 1,
+    "real_line_image_sent_this_release": false
+  }
+}

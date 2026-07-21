@@ -4,8 +4,8 @@
 // ============================================================
 
 var CONFIG = {
-  APP_NAME: 'COMPHONE SUPER APP v5.18.20-write-cleanup-cascade',
-  VERSION: '5.18.20-write-cleanup-cascade',
+  APP_NAME: 'COMPHONE SUPER APP v5.18.23-line-signed-raw',
+  VERSION: '5.18.23-line-signed-raw',
   TIMEZONE: 'Asia/Bangkok',
 
   // ── ชื่อ Sheet ทั้งหมดในระบบ ──
@@ -81,6 +81,7 @@ var CONFIG = {
     'WEB_APP_URL',
     'GEMINI_API_KEY',
     'LINE_CHANNEL_ACCESS_TOKEN',
+    'LINE_CHANNEL_SECRET',
     'LINE_GROUP_TECHNICIAN',
     'LINE_GROUP_ACCOUNTING',
     'LINE_GROUP_PROCUREMENT',
@@ -235,11 +236,11 @@ var DB_SS_ID       = getSpreadsheetId_()  || _FALLBACK_SS_ID;
 var ROOT_FOLDER_ID = getRootFolderId_()   || _FALLBACK_FOLDER_ID;
 var WEB_APP_URL    = getWebAppBaseUrl_()  || '';
 
-// ── LINE Group IDs (Hardcoded Fallbacks) ──
-var LINE_GROUP_TECHNICIAN  = getConfig('LINE_GROUP_TECHNICIAN',  'C8ad22a115f38c9ad3cb5ea5c2ff4863b');
-var LINE_GROUP_ACCOUNTING  = getConfig('LINE_GROUP_ACCOUNTING',  'C7b939d1d367e6b854690e58b392e88cc');
-var LINE_GROUP_PROCUREMENT = getConfig('LINE_GROUP_PROCUREMENT', 'Cfd103d59e77acf00e2f2f801d391c566');
-var LINE_GROUP_SALES       = getConfig('LINE_GROUP_SALES',       'Cb7cc146227212f70e4f171ef3f2bce15');
+// LINE room identifiers must come from Script Properties.
+var LINE_GROUP_TECHNICIAN  = getConfig('LINE_GROUP_TECHNICIAN',  '');
+var LINE_GROUP_ACCOUNTING  = getConfig('LINE_GROUP_ACCOUNTING',  '');
+var LINE_GROUP_PROCUREMENT = getConfig('LINE_GROUP_PROCUREMENT', '');
+var LINE_GROUP_SALES       = getConfig('LINE_GROUP_SALES',       '');
 var LINE_GROUP_EXECUTIVE   = getConfig('LINE_GROUP_EXECUTIVE',   '');
 
 // ── ฟังก์ชัน Helper เพิ่มเติม ──
