@@ -61,7 +61,7 @@ check(
 check(
   'mobile-role-widget-roles',
   ['tech:', 'admin:', 'acct:', 'exec:'].every(role => appHomeJs.includes(role)) &&
-    ['Field Focus', 'Dispatch Focus', 'Cash Focus', 'Executive Focus'].every(label => appHomeJs.includes(label)),
+    ['งานช่าง', 'จัดการงาน', 'การเงิน', 'ภาพรวมธุรกิจ'].every(label => appHomeJs.includes(label)),
   'Mobile role widget must cover all operator roles.'
 );
 

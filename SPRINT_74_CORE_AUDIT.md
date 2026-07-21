@@ -1,17 +1,17 @@
 # Sprint 74 Core System Audit
 
-Generated: 2026-06-17T02:27:16.025Z
+Generated: 2026-07-21T04:49:05.843Z
 
-Score: **97/100**
+Score: **100/100**
 Status: **OK**
-App: `v5.18.47-sprint198` / build `20260617_2000`
+App: `v5.18.47-sprint212` / build `20260721_1200`
 GAS: `v5.18.16-write-flow-validation` / https://script.google.com/macros/s/AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ/exec
 
 ## Area Summary
 
 | Area | Passed | Issues | Total |
 |---|---:|---:|---:|
-| source-of-truth | 5 | 1 | 6 |
+| source-of-truth | 6 | 0 | 6 |
 | backend-contract | 5 | 0 | 5 |
 | frontend-runtime | 6 | 0 | 6 |
 | menu-data-reality | 5 | 0 | 5 |
@@ -23,19 +23,18 @@ GAS: `v5.18.16-write-flow-validation` / https://script.google.com/macros/s/AKfyc
 
 ## Findings
 
-| Severity | Area | Finding | Detail | Remediation |
-|---|---|---|---|---|
-| P2 | source-of-truth | blueprint-runtime-snapshot-current | BLUEPRINT should mention the current app version and GAS URL. | Update BLUEPRINT after each production deployment or audit sprint. |
+No P0/P1/P2 findings. Core system contracts are aligned.
 
 ## Passed Checks
 
 | Area | Check | Detail |
 |---|---|---|
-| source-of-truth | frontend-version-present | version=v5.18.47-sprint198 build=20260617_2000 cache=comphone-v5.18.47-sprint198-20260617_2000 |
-| source-of-truth | service-worker-cache-matches-version-config | sw=comphone-v5.18.47-sprint198-20260617_2000 version_config=comphone-v5.18.47-sprint198-20260617_2000 |
+| source-of-truth | frontend-version-present | version=v5.18.47-sprint212 build=20260721_1200 cache=comphone-v5.18.47-sprint212-20260721_1200 |
+| source-of-truth | service-worker-cache-matches-version-config | sw=comphone-v5.18.47-sprint212-20260721_1200 version_config=comphone-v5.18.47-sprint212-20260721_1200 |
 | source-of-truth | mobile-cache-bust-build-timestamp | Mobile shell should include the current build timestamp on local assets. |
 | source-of-truth | pc-cache-bust-build-timestamp | PC shell should include the current build timestamp on local assets. |
 | source-of-truth | gas-url-single-production-value | production GAS URL=https://script.google.com/macros/s/AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ/exec |
+| source-of-truth | blueprint-runtime-snapshot-current | BLUEPRINT should mention the current app version and GAS URL. |
 | backend-contract | api-contract-public-actions-minimal | publicActions=getVersion, health |
 | backend-contract | router-auth-contract-accepts-valid-or-success | Router auth gate must accept the Auth.gs { valid, session } contract and legacy { success } contract. |
 | backend-contract | router-public-whitelist-not-sensitive | PUBLIC_ACTIONS must not expose customer, billing, inventory, reports, or security data. |

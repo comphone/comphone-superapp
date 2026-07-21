@@ -1,14 +1,14 @@
 // ===========================================================
 // COMPHONE SUPER APP - Centralized Version Config
 // Single Source of Truth for all version numbers
-// Phase 194 - Job Archive Restore
+// Phase 212 - Auth-Aware Startup + Completion Guard
 // ===========================================================
 
 const VERSION_CONFIG = {
-  version: 'v5.18.47-sprint210',
-  buildDate: '2026-06-20',
-  buildTimestamp: '20260625_1100',
-  cacheVersion: 'comphone-v5.18.47-sprint210-20260625_1100',
+  version: 'v5.18.47-sprint212',
+  buildDate: '2026-07-21',
+  buildTimestamp: '20260721_1200',
+  cacheVersion: 'comphone-v5.18.47-sprint212-20260721_1200',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -85,10 +85,12 @@ const VERSION_CONFIG = {
     'Sprint 194 Job Archive Restore: preview + duplicate-block + RESTORE_JOB confirm gate in admin Archive tab',
     'Sprint 195 Mobile tap reliability: explicit display:flex on job detail modal, renderTechHome null guard, SW update banner on SW_ACTIVATED, dead code cleanup',
     'Sprint 196 SW auto-reload: SW_ACTIVATED now sends activatedByUser=true so old clients auto-reload on new SW activation without waiting for user action',
-    'Sprint 197 SW update reliability: 4s skipWaiting delay ensures statechange=installed fires in sprint194 clients; controllerchange always reloads; startup+focus version.json check; graceful Archive tab error when GAS @621 not yet deployed',
+    'Sprint 197-200 SW update reliability: user-confirmed SKIP_WAITING activation, controllerchange auto-reload, startup/focus version checks, and graceful Archive deployment errors',
     'Sprint 198 Guaranteed update delivery: inline version guard in index.html (detects stale cached scripts on fresh page load and force-reloads); SW navigation uses cache:no-cache to bypass iOS WebKit HTTP cache; periodic registration.update() every 10 min + on visibilitychange',
     'Sprint 199 Auto version-bump tooling: bump-version.js auto-updates all ?v= params in index.html/dashboard_pc.html/sw.js/version.json from single source of truth; version_config.js added to SW NETWORK_ONLY so clients always receive the latest build version even before SW updates',
-    'Sprint 200 Fix SW update banner deadlock: remove skipWaiting() from install event so new SW stays in installed (waiting) state until user taps banner; add controllerchange+SW_ACTIVATED auto-reload in version_config.js as emergency fallback for all client versions'
+    'Sprint 200 Fix SW update banner deadlock: remove skipWaiting() from install event so new SW stays in installed (waiting) state until user taps banner; add controllerchange+SW_ACTIVATED auto-reload in version_config.js as emergency fallback for all client versions',
+    'Sprint 211 15-step system test with 167 deterministic checks',
+    'Sprint 212 auth-aware warranty startup, demand-driven Background Sync, and CI completion guard'
   ]
 };
 
@@ -98,9 +100,9 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 
 // Backward-compatible exports for legacy modules and guards
-const APP_VERSION = 'v5.18.47-sprint210';
-const BUILD_TIMESTAMP = '20260625_1100';
-const CACHE_VERSION = 'comphone-v5.18.47-sprint210-20260625_1100';
+const APP_VERSION = 'v5.18.47-sprint212';
+const BUILD_TIMESTAMP = '20260721_1200';
+const CACHE_VERSION = 'comphone-v5.18.47-sprint212-20260721_1200';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;

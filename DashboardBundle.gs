@@ -6,7 +6,7 @@
 // ============================================================
 
 var BUNDLE_CACHE_KEY = 'dashboard_bundle_v61';
-var BUNDLE_CACHE_TTL = 90; // seconds — longer TTL for bundle
+var BUNDLE_CACHE_TTL = 300; // seconds — 5 min TTL (keep-warm trigger refreshes every 5 min)
 
 /**
  * getDashboardBundle — Aggregated API endpoint
@@ -107,6 +107,22 @@ function invalidateBundleCache() {
     return { success: true, message: 'Bundle cache cleared' };
   } catch(e) {
     return { success: false, error: e.message };
+  }
+}
+
+// ============================================================
+// Keep-Warm: เรียกโดย Time Trigger ทุก 5 นาที
+// ============================================================
+/**
+ * keepWarmGAS — ฟังก์ชันสำหรับ keep-warm trigger
+ * เรียก getDashboardBundle เพื่อ warm up GAS runtime + refresh CacheService
+ * ตั้ง trigger: setupAllTriggers() หรือ setupKeepWarmTrigger()
+ */
+function keepWarmGAS() {
+  try {
+    getDashboardBundle({ source: 'keepWarm' });
+  } catch(e) {
+    Logger.log('[keepWarmGAS] error: ' + e.message);
   }
 }
 

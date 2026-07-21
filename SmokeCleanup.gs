@@ -183,3 +183,96 @@ function findHeaderIndex_(headers, candidates) {
   }
   return -1;
 }
+
+// ============================================================
+// ล้างข้อมูลงานทดสอบ (Keyword-based test job cleanup)
+// ============================================================
+
+var TEST_JOB_KEYWORDS = ['ทดสอบ', 'test', 'demo', 'ตัวอย่าง', 'sample', 'dummy', 'testing', 'ทดลอง'];
+var CLEAR_TEST_JOBS_CONFIRM = 'CLEAR_TEST_JOBS';
+
+function clearTestJobsPreview() {
+  var ss = getComphoneSheet();
+  if (!ss) return { success: false, error: 'Spreadsheet not found' };
+
+  var sheetName = (typeof CONFIG !== 'undefined' && CONFIG.SHEETS && CONFIG.SHEETS.JOBS) ? CONFIG.SHEETS.JOBS : 'DBJOBS';
+  var sheet = findSheetByName(ss, sheetName);
+  if (!sheet) return { success: false, error: 'ไม่พบ sheet DBJOBS' };
+
+  var values = sheet.getDataRange().getValues();
+  if (values.length < 2) return { success: true, candidates: [], total: 0 };
+
+  var headers = values[0].map(function(h) { return String(h || '').toLowerCase(); });
+  var idCol      = findHeaderIndex_(headers, ['job_id', 'jobid', 'เลขงาน', 'id']) || 0;
+  var custCol    = findHeaderIndex_(headers, ['customer_name', 'customer', 'ชื่อลูกค้า', 'ลูกค้า']);
+  var symptomCol = findHeaderIndex_(headers, ['symptom', 'อาการ', 'title', 'หัวข้อ']);
+  var phoneCol   = findHeaderIndex_(headers, ['phone', 'เบอร์โทร', 'tel', 'mobile']);
+  if (custCol < 0) custCol = 1;
+
+  var candidates = [];
+  for (var i = 1; i < values.length; i++) {
+    var row = values[i];
+    var id       = String(row[idCol]   || '').trim();
+    var customer = String(row[custCol] || '').trim();
+    var symptom  = symptomCol >= 0 ? String(row[symptomCol] || '').trim() : '';
+    var phone    = phoneCol >= 0 ? String(row[phoneCol] || '').trim() : '';
+
+    if (!id) continue;
+
+    var haystack = (customer + ' ' + symptom + ' ' + phone).toLowerCase();
+    var matched = false;
+    for (var k = 0; k < TEST_JOB_KEYWORDS.length; k++) {
+      if (haystack.indexOf(TEST_JOB_KEYWORDS[k].toLowerCase()) > -1) {
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) continue;
+
+    candidates.push({
+      id: id,
+      row: i + 1,
+      customer: customer,
+      symptom: symptom,
+      phone: phone
+    });
+  }
+
+  return { success: true, candidates: candidates, total: candidates.length };
+}
+
+function clearTestJobsExecute(params) {
+  params = params || {};
+  var confirm = String(params.confirm || '');
+  if (confirm !== CLEAR_TEST_JOBS_CONFIRM) {
+    return { success: false, error: 'confirm ต้องเป็น ' + CLEAR_TEST_JOBS_CONFIRM };
+  }
+
+  var preview = clearTestJobsPreview();
+  if (!preview.success) return preview;
+  if (!preview.candidates.length) {
+    return { success: true, deleted: 0, message: 'ไม่พบข้อมูลทดสอบในระบบ' };
+  }
+
+  var ss = getComphoneSheet();
+  var sheetName = (typeof CONFIG !== 'undefined' && CONFIG.SHEETS && CONFIG.SHEETS.JOBS) ? CONFIG.SHEETS.JOBS : 'DBJOBS';
+  var sheet = findSheetByName(ss, sheetName);
+  if (!sheet) return { success: false, error: 'ไม่พบ sheet DBJOBS' };
+
+  var rowNumbers = preview.candidates.map(function(c) { return c.row; });
+  rowNumbers.sort(function(a, b) { return b - a; });
+  rowNumbers.forEach(function(rowNum) { sheet.deleteRow(rowNum); });
+
+  try {
+    var cache = CacheService.getScriptCache();
+    cache.remove('dashboard_bundle_v61');
+  } catch(e) {}
+
+  try { logActivity('CLEAR_TEST_JOBS', 'ADMIN', 'Deleted ' + rowNumbers.length + ' test job rows'); } catch(e) {}
+
+  return {
+    success: true,
+    deleted: rowNumbers.length,
+    ids: preview.candidates.map(function(c) { return c.id; })
+  };
+}

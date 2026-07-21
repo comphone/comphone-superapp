@@ -1,10 +1,20 @@
 # COMPHONE SUPER APP - Cowork System Handoff
 
-Updated: 2026-06-16 (Asia/Bangkok)
+Updated: 2026-07-21 (Asia/Bangkok)
 
 This document is the concise operational handoff for Cowork or another engineering
 agent. Read `BLUEPRINT.md` for history, but use this file for the current review
 order and safety boundaries.
+
+## 0. Latest Baseline (Sprint 212)
+
+- Current PWA target: `v5.18.47-sprint212`.
+- Sprint 211 system test: 167/167 checks pass.
+- Sprint 212 blocks pre-login warranty API traffic and requests Background Sync
+  only after offline work is queued.
+- Sprint 211 and Sprint 212 are mandatory in local regression and GitHub Actions.
+- Remaining live proof: protected PC/mobile browser workflows and a real LINE image
+  through Worker -> GAS -> Gemini -> review/storage with room replies suppressed.
 
 ## 1. Current Repository State
 

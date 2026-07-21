@@ -550,10 +550,32 @@ function escapeHtml(str) {
 // Init — โหลด Alert Banner เมื่อ DOM พร้อม
 // ══════════════════════════════════════════════════════════════
 
+function hasWarrantyAuthSession_() {
+  try {
+    if (typeof getAuthToken === 'function' && getAuthToken()) return true;
+    const session = JSON.parse(localStorage.getItem('comphone_auth_session') || '{}');
+    return !!(session && session.token);
+  } catch (_) {
+    return false;
+  }
+}
+
+let warrantyAlertLoading_ = false;
+async function loadWarrantyAlertWhenAuthenticated_() {
+  if (!hasWarrantyAuthSession_() || warrantyAlertLoading_) return;
+  warrantyAlertLoading_ = true;
+  try {
+    await loadWarrantyAlertBanner();
+  } finally {
+    warrantyAlertLoading_ = false;
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   // โหลด warranty alert banner บน dashboard
-  loadWarrantyAlertBanner();
+  loadWarrantyAlertWhenAuthenticated_();
 });
+window.addEventListener('comphone:authenticated', loadWarrantyAlertWhenAuthenticated_);
 
 // Export สำหรับใช้จาก module อื่น
 if (typeof window !== 'undefined') {

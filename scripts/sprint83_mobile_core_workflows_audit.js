@@ -118,7 +118,8 @@ const checks = [
     'Mobile Billing page uses the shared renderer with list/create/pay/QR contracts.',
     has(text.mobileHtml, 'id="billing-content"') &&
       has(text.billing, 'function loadBillingPage') &&
-      has(text.billing, "document.getElementById('main-content') || document.getElementById('billing-content')") &&
+      has(text.billing, "document.getElementById('billing-content')") &&
+      has(text.billing, "document.getElementById('main-content')") &&
       has(text.billing, 'function _listBillings') &&
       has(text.billing, 'function _showCreateBilling') &&
       has(text.billing, 'function _doCreateBilling') &&

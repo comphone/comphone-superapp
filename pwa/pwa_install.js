@@ -22,10 +22,40 @@ let _deferredPrompt = null;
 let _reloadAfterSwUpdate = false;
 let _didReloadForSwUpdate = false;
 let _didRepairServiceWorker = false;
+let _backgroundSyncRequest = null;
 
 function _serviceWorkerUrl_() {
   const build = window.COMPHONE_CACHE || window.COMPHONE_BUILD || Date.now();
   return `./sw.js?v=${encodeURIComponent(build)}`;
+}
+
+function _hasPendingOfflineQueue_() {
+  try {
+    const queue = JSON.parse(localStorage.getItem('comphone_offline_queue') || '[]');
+    return Array.isArray(queue) && queue.length > 0;
+  } catch (_) {
+    return false;
+  }
+}
+
+function requestOfflineBackgroundSync() {
+  if (!('serviceWorker' in navigator) || _backgroundSyncRequest) {
+    return _backgroundSyncRequest || Promise.resolve(false);
+  }
+  _backgroundSyncRequest = navigator.serviceWorker.ready
+    .then(registration => {
+      if (!registration.sync) return false;
+      return registration.sync.register('comphone-offline-queue').then(() => true);
+    })
+    .catch(err => {
+      // Optional capability: embedded/private browsers commonly deny it.
+      console.debug('[PWA] BG Sync unavailable:', err && err.message ? err.message : err);
+      return false;
+    })
+    .finally(() => {
+      _backgroundSyncRequest = null;
+    });
+  return _backgroundSyncRequest;
 }
 
 // ============================================================
@@ -57,13 +87,8 @@ function registerServiceWorker() {
         });
       });
 
-      // Background Sync registration
-      if ('sync' in registration) {
-        navigator.serviceWorker.ready.then(reg => {
-          reg.sync.register('comphone-offline-queue')
-            .catch(err => console.warn('[PWA] BG Sync registration failed:', err.message));
-        });
-      }
+      // Request optional Background Sync only when there is actual queued work.
+      if (_hasPendingOfflineQueue_()) requestOfflineBackgroundSync();
     })
     .catch(err => _repairServiceWorker_(err));
 
@@ -398,3 +423,4 @@ if (document.readyState === 'loading') {
 // ============================================================
 window.registerServiceWorker = registerServiceWorker;
 window.initInstallBanner     = initInstallBanner;
+window.requestOfflineBackgroundSync = requestOfflineBackgroundSync;

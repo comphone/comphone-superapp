@@ -75,6 +75,18 @@ jobs:
             echo "❌ scripts/sprint194_job_archive_restore_guard.js"
             FAILED=1
           fi
+          if node --check scripts/sprint211_system_step_test.js; then
+            echo "OK scripts/sprint211_system_step_test.js"
+          else
+            echo "FAIL scripts/sprint211_system_step_test.js"
+            FAILED=1
+          fi
+          if node --check scripts/sprint212_auth_aware_startup_guard.js; then
+            echo "OK scripts/sprint212_auth_aware_startup_guard.js"
+          else
+            echo "FAIL scripts/sprint212_auth_aware_startup_guard.js"
+            FAILED=1
+          fi
           if [ "$FAILED" -ne 0 ]; then exit 1; fi
 
       - name: PWA Static Guard

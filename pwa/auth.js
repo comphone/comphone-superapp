@@ -495,6 +495,9 @@ function startMainApp() {
 
   // โหลดข้อมูลจาก GAS
   loadLiveData();
+  window.dispatchEvent(new CustomEvent('comphone:authenticated', {
+    detail: { role: APP.role || '', username: AUTH.username || '' }
+  }));
 }
 
 // ============================================================

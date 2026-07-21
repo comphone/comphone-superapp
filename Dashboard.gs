@@ -52,7 +52,7 @@ function getDashboardData() {
         bundle._compat = 'getDashboardData';
         bundle._elapsed_ms = Date.now() - start;
         try {
-          CacheService.getScriptCache().put(cacheKey, JSON.stringify(bundle), 60);
+          CacheService.getScriptCache().put(cacheKey, JSON.stringify(bundle), 300);
         } catch (cacheWriteErr) {}
         return bundle;
       }
@@ -72,7 +72,7 @@ function getDashboardData() {
     _elapsed_ms: Date.now() - start
   };
   try {
-    CacheService.getScriptCache().put(cacheKey, JSON.stringify(result), 60);
+    CacheService.getScriptCache().put(cacheKey, JSON.stringify(result), 300);
   } catch (legacyCacheErr) {}
   return result;
 }

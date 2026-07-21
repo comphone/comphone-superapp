@@ -80,19 +80,20 @@ else
 
 // ── version_config.js ────────────────────────────────────────
 const versionCfg = read('version_config.js');
-if (/sprint19[5-9]/.test(versionCfg))
+if (/sprint(?:19[5-9]|[2-9]\d\d)/.test(versionCfg))
   ok('version_config - sprint195+ version');
 else
   ko('version_config - sprint195+ version', 'version not at sprint195 or higher');
 
-if (/2026061[67]_/.test(versionCfg))
+const buildMatch = versionCfg.match(/buildTimestamp:\s*'(\d{8})_(\d{4})'/);
+if (buildMatch && Number(buildMatch[1] + buildMatch[2]) >= 202606161500)
   ok('version_config - build timestamp 20260616+ / 20260617+');
 else
   ko('version_config - build timestamp', 'build timestamp not updated past 20260616_1500');
 
 // ── sw.js ─────────────────────────────────────────────────────
 const swJs = read('sw.js');
-if (/sprint19[5-9]/.test(swJs))
+if (/sprint(?:19[5-9]|[2-9]\d\d)/.test(swJs))
   ok('sw.js - sprint195+ CACHE_V');
 else
   ko('sw.js - sprint195+ CACHE_V', 'sw.js CACHE_V not at sprint195 or higher');

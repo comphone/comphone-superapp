@@ -17,7 +17,7 @@ const ko = (label, reason) => { console.error('FAIL ', label, '-', reason); fail
 const swJs = read('sw.js');
 
 // CACHE_V must be sprint197 or later
-if (/sprint19[789]/.test(swJs))
+if (/sprint(?:19[7-9]|[2-9]\d\d)/.test(swJs))
   ok('sw.js - CACHE_V at sprint197+');
 else
   ko('sw.js - CACHE_V at sprint197+', 'CACHE_V not at sprint197 or higher');
@@ -28,11 +28,15 @@ if (/NETWORK_ONLY[\s\S]{0,600}version/.test(swJs))
 else
   ko('sw.js - version.json NETWORK_ONLY', 'version.json not listed in NETWORK_ONLY — old SWs will cache it');
 
-// skipWaiting must be delayed (not called immediately after precache)
-if (/setTimeout[\s\S]{0,120}skipWaiting/.test(swJs))
-  ok('sw.js - skipWaiting delayed with setTimeout');
+// Sprint 200 superseded the delay: activation now happens only after the
+// user-confirmed SKIP_WAITING message, never from the install handler.
+const installStart = swJs.indexOf("addEventListener('install'");
+const installEnd = swJs.indexOf('// ===== ACTIVATE =====', installStart);
+const installBlock = swJs.slice(installStart, installEnd > installStart ? installEnd : undefined);
+if (installStart >= 0 && !/self\.skipWaiting\(\)/.test(installBlock))
+  ok('sw.js - install does not auto-activate');
 else
-  ko('sw.js - skipWaiting delay', 'skipWaiting not delayed — statechange=installed may never fire in sprint194 clients');
+  ko('sw.js - install activation', 'install handler must not call skipWaiting; update confirmation owns activation');
 
 // activatedByUser still present in SW_ACTIVATED message
 if (/activatedByUser:\s*true/.test(swJs))
@@ -86,7 +90,7 @@ if (fs.existsSync(versionJsonPath)) {
   ok('version.json - file exists');
   try {
     const vj = JSON.parse(fs.readFileSync(versionJsonPath, 'utf8'));
-    if (vj.c && /sprint19[789]/.test(vj.c))
+    if (vj.c && /sprint(?:19[7-9]|[2-9]\d\d)/.test(vj.c))
       ok('version.json - contains sprint197+ cache version');
     else
       ko('version.json - sprint197+ content', 'version.json.c does not contain sprint197+');
@@ -114,19 +118,20 @@ else
 
 // ── version_config.js ─────────────────────────────────────────
 const versionCfg = read('version_config.js');
-if (/sprint19[789]/.test(versionCfg))
+if (/sprint(?:19[7-9]|[2-9]\d\d)/.test(versionCfg))
   ok('version_config - sprint197+ version');
 else
   ko('version_config - sprint197+ version', 'version_config.js not at sprint197 or higher');
 
-if (/2026061[567789]_/.test(versionCfg))
+const buildMatch = versionCfg.match(/buildTimestamp:\s*'(\d{8})_(\d{4})'/);
+if (buildMatch && Number(buildMatch[1] + buildMatch[2]) >= 202606170000)
   ok('version_config - build timestamp 20260617+');
 else
   ko('version_config - build timestamp', 'build timestamp not updated past 20260617');
 
 // ── index.html ────────────────────────────────────────────────
 const indexHtml = read('index.html');
-if (/sprint19[789]/.test(indexHtml))
+if (/sprint(?:19[7-9]|[2-9]\d\d)/.test(indexHtml))
   ok('index.html - sprint197+ version params');
 else
   ko('index.html - sprint197+ version params', 'index.html still has old sprint version params');

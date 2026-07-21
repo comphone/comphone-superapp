@@ -22,7 +22,9 @@ if hasattr(sys.stdout, "reconfigure"):
 if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-PORT = 8765
+# Use an OS-assigned port by default so local services cannot make regression
+# checks fail. CI/operators may still pin a port through COMPHONE_SMOKE_PORT.
+PORT = int(os.environ.get("COMPHONE_SMOKE_PORT", "0"))
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PWA_DIR = os.path.join(BASE_DIR, "pwa")
 
@@ -33,9 +35,11 @@ def log(msg):
         print(msg)
 
 def start_server():
+    global PORT
     os.chdir(PWA_DIR)
     handler = http.server.SimpleHTTPRequestHandler
-    httpd = socketserver.TCPServer(("", PORT), handler)
+    httpd = socketserver.TCPServer(("127.0.0.1", PORT), handler)
+    PORT = httpd.server_address[1]
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)
     thread.start()
     time.sleep(0.5)  # Let server start
@@ -189,8 +193,8 @@ def main():
 
     server = None
     try:
-        log(f"Starting HTTP server on port {PORT} from {PWA_DIR}...")
         server = start_server()
+        log(f"Started HTTP server on port {PORT} from {PWA_DIR}...")
         log(f"Server started. Fetching dashboard...")
 
         url = f"http://localhost:{PORT}/dashboard_pc.html"

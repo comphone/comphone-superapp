@@ -971,6 +971,9 @@ if (typeof window.saveOfflineAction !== 'function') {
     const queue = JSON.parse(localStorage.getItem('comphone_offline_queue') || '[]');
     queue.push(action);
     localStorage.setItem('comphone_offline_queue', JSON.stringify(queue.slice(-50)));
+    if (typeof window.requestOfflineBackgroundSync === 'function') {
+      window.requestOfflineBackgroundSync();
+    }
   };
 }
 

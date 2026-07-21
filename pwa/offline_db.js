@@ -81,6 +81,9 @@ async function saveOfflineAction(actionData) {
 
     // อัปเดต badge count
     updateOfflineBadge_();
+    if (typeof window.requestOfflineBackgroundSync === 'function') {
+      window.requestOfflineBackgroundSync();
+    }
 
     // พยายาม sync ทันทีถ้าออนไลน์
     if (navigator.onLine) {
@@ -93,6 +96,9 @@ async function saveOfflineAction(actionData) {
     const queue = JSON.parse(localStorage.getItem('comphone_offline_queue') || '[]');
     queue.push({ ...actionData, time: Date.now() });
     localStorage.setItem('comphone_offline_queue', JSON.stringify(queue));
+    if (typeof window.requestOfflineBackgroundSync === 'function') {
+      window.requestOfflineBackgroundSync();
+    }
   }
 }
 

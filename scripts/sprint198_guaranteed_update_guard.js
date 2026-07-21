@@ -17,7 +17,7 @@ const ko = (label, reason) => { console.error('FAIL ', label, '-', reason); fail
 // ── index.html — inline version guard ────────────────────────
 const indexHtml = read('index.html');
 
-if (/EXPECTED_BUILD\s*=\s*'20260617_\d{4}'/.test(indexHtml))
+if (/EXPECTED_BUILD\s*=\s*'\d{8}_\d{4}'/.test(indexHtml))
   ok('index.html - inline version guard EXPECTED_BUILD present');
 else
   ko('index.html - inline version guard', 'EXPECTED_BUILD missing from inline script in index.html');
@@ -87,7 +87,8 @@ if (/sprint(19[89]|2\d\d)/.test(versionCfg))
 else
   ko('version_config - sprint198+', 'version_config.js not at sprint198 or higher');
 
-if (/buildTimestamp:\s*'20260617_\d{4}'/.test(versionCfg))
+const buildMatch = versionCfg.match(/buildTimestamp:\s*'(\d{8})_(\d{4})'/);
+if (buildMatch && Number(buildMatch[1] + buildMatch[2]) >= 202606170000)
   ok('version_config - buildTimestamp 20260617_xxxx present');
 else
   ko('version_config - buildTimestamp', 'buildTimestamp not set to 20260617_xxxx in version_config.js');

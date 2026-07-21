@@ -141,6 +141,9 @@ async function createOfflineJob(jobData) {
 
     showToast('💾 บันทึกงาน offline แล้ว (จะ sync เมื่อออนไลน์)');
     updateOfflineBadgeV2();
+    if (typeof window.requestOfflineBackgroundSync === 'function') {
+      window.requestOfflineBackgroundSync();
+    }
     
     return { success: true, jobId: tempId, offline: true };
   } catch (err) {
