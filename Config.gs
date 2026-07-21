@@ -4,8 +4,8 @@
 // ============================================================
 
 var CONFIG = {
-  APP_NAME: 'COMPHONE SUPER APP v5.18.16-write-flow-validation',
-  VERSION: '5.18.16-write-flow-validation',
+  APP_NAME: 'COMPHONE SUPER APP v5.18.17-id-integrity',
+  VERSION: '5.18.17-id-integrity',
   TIMEZONE: 'Asia/Bangkok',
 
   // ── ชื่อ Sheet ทั้งหมดในระบบ ──

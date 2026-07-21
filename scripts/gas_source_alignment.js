@@ -21,6 +21,8 @@ const BLOCKING = [
   'CustomerManager.gs',
   'InventoryPO.gs',
   'JobsHandler.gs',
+  'JobStateMachine.gs',
+  'BillingCore.gs',
   'Dashboard.gs',
   'DashboardBundle.gs',
   'SmokeCleanup.gs',

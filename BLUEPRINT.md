@@ -1,8 +1,8 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.18.47-sprint213 (PWA) / GAS Backend v5.18.16-write-flow-validation @620
+> **Version:** v5.18.47-sprint213 (PWA) / GAS Backend v5.18.17-id-integrity (deployment pending)
 
-> **Date:** 2026-07-21 | **Phase:** 214 (CI Observability and Release Gate Closure)
+> **Date:** 2026-07-21 | **Phase:** 215 (Data Identity Integrity)
 
 > **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + CORE-AUDITED + FOCUS-AUDITED + JOBS-E2E-HARDENED + BILLING-E2E-HARDENED + REPORTS-E2E-HARDENED + VISION-LINE-FLOW-HARDENED + PRODUCTION-JOURNEY-HARDENED + BACKUP-WORKFLOW-HARDENED + MOBILE-QUICK-ACTIONS-HARDENED + MOBILE-CORE-WORKFLOWS-HARDENED + MOBILE-SECONDARY-WORKFLOWS-HARDENED + LIVE-MOBILE-MENU-SMOKE-HARDENED + OPERATOR-UX-QA-HARDENED + PROTECTED-LIVE-QA-RUNBOOK-HARDENED + PROTECTED-LIVE-QA-VERIFIED + DASHBOARD-PERFORMANCE-HARDENED + DEPLOY-GAS-CI-GATE-HARDENED + WRITE-SMOKE-LIFECYCLE-HARDENED + BLUEPRINT-RECONCILED + PO-READ-CACHE-HARDENED + JOBS-READ-CACHE-HARDENED + READ-DASHBOARD-CACHE-HARDENED + PRODUCTION-SAFETY-HARNESS-HARDENED + OPERATOR-WORKFLOW-POLISHED + LIVE-CACHE-FRESHNESS-HARDENED + OPERATOR-MENU-CLICKTHROUGH-HARDENED + CONTROLLED-WRITE-LIFECYCLE-HARDENED + LIVE-UX-MENU-RUNTIME-HARDENED + VISUAL-RUNTIME-WALKTHROUGH-HARDENED + PROTECTED-BROWSER-JOURNEY-HARDENED + RECORD-DETAIL-COMPLETENESS-HARDENED + PRODUCTION-DATA-QUALITY-GUARDED + CONTROLLED-DATA-CLEANUP-PLANNED + DATABASE-SCHEMA-REGISTRY-GUARDED + SHEET-CONTEXT-NORMALIZED + DATA-REPAIR-CONSOLE-PLANNED + DATA-REPAIR-EXECUTION-HARDENED + GAS-618-LIVE-VERIFIED + FULL-QA-SWEEP + GEMINI-READY + VISION-LINE-PROTECTED-LIVE-VERIFIED + LINE-REAL-SEND-READINESS-GUARDED + CORE-WORKFLOW-LIVE-VERIFIED + SUPPORT-ADMIN-LIVE-VERIFIED + DATA-COMPLETENESS-REVIEWED + DATA-COMPLETENESS-PANEL-HARDENED + DATA-REVIEW-WORKFLOW-HARDENED + BACKEND-REVIEW-LOG-HARDENED + BACKEND-REVIEW-LOG-LIVE-QA-VERIFIED + DATA-CLEANUP-TRIAGE-GUARDED + JBR-LIVE-POLISH-GUARDED + MOBILE-MENU-DEEP-QA-GUARDED + AI-VISION-REAL-USE-GUARDED + PERMISSION-OPS-HARDENED + OWNER-DATA-RESOLUTION-GUARDED + MOBILE-UX-WALKTHROUGH-GUARDED + AI-VISION-PILOT-GUARDED + DASHBOARD-DECISION-LAYER-GUARDED + OPS-PERMISSION-CLEANUP-GUARDED + LIVE-BROWSER-VISUAL-QA-GUARDED + DATA-CLEANUP-OWNER-WORKFLOW-GUARDED + MOBILE-DASHBOARD-DECISION-LAYER-GUARDED + AI-VISION-REAL-PILOT-GUARDED + PERMISSION-FALLBACK-CLOSURE-GUARDED + POST-DEPLOY-PAGES-CONFIRMATION-GUARDED + OWNER-DATA-BACKFILL-READINESS-GUARDED + MOBILE-MENU-E2E-GUARDED + PC-DASHBOARD-WORKFLOW-GUARDED + AI-VISION-LINE-ROOM-CONTROL-GUARDED + POST-DEPLOY-PUBLISH-GUARDED + REAL-BROWSER-CLICKTHROUGH-CONTRACT-GUARDED + PROTECTED-LIVE-TOKEN-SWEEP-GUARDED + OWNER-DATA-CLEANUP-DECISION-GUARDED + AI-VISION-REAL-SAMPLE-PILOT-GUARDED + PAGES-PUBLISH-LOCK-GUARDED + BROWSER-PROFILE-CLICKTHROUGH-PACK + PROTECTED-TOKEN-FULL-SWEEP-PACK + OWNER-CLEANUP-EXECUTION-READINESS + AI-VISION-REAL-SAMPLE-RUNBOOK + PAGES-FRESH-RELEASE-GATE + PROTECTED-BROWSER-ACCEPTANCE + AI-VISION-SAMPLE-EVIDENCE + LINE-ROOM-NOTIFICATION-MATRIX + RELEASE-READINESS-MASTER + STRICT-PROTECTED-BROWSER-RUNBOOK + AI-VISION-SAMPLE-PILOT-GATE + PUBLISHED-PROTECTED-ACCEPTANCE + AI-VISION-REAL-SAMPLE-EVIDENCE + STRICT-LIVE-ACCEPTANCE + AI-VISION-REAL-SAMPLE-EXECUTION + STRICT-PROTECTED-LIVE-PROOF + AI-VISION-OWNER-SAMPLE-RUN + SMOKE-CLEANUP-EXECUTION + LINE-AI-VISION-INGRESS + JOBS-DETAIL-DELETE-REPAIRED + LINE-GROUP-IMAGE-PILOT-READY + LINE-REPLY-NOISE-SUPPRESSED + AI-VISION-REVIEW-INBOX-GUARDED + AI-VISION-INBOX-RENDER-SMOKED + MOBILE-DASHBOARD-SIMPLIFIED + DELETE-CAMERA-DASHBOARD-GUARDED + JOB-ARCHIVE-RESTORE-GUARDED - latest production GAS deployment is @620 on the active Web App URL; Worker `1.0.5-sprint189` is live and quiet-forwards group images; Sprint 194 adds job archive restore (preview + duplicate-block + RESTORE_JOB confirmation + audit log) to admin panel Archive tab; DBJOBS_ARCHIVE now registered in schema.
 
@@ -36,6 +36,15 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > rules. This makes individual CI failures available through check-run
 > annotations even when raw workflow logs require GitHub authentication.
 
+> 2026-07-21 Sprint 215 Data Identity Integrity: a controlled production write
+> lifecycle exposed JobID reuse after deletion. Job ID generation now maintains
+> a Script Properties high-water mark and scans live, archive, billing, status,
+> warranty, and photo references before allocating the next ID. Billing lists no
+> longer assume Billing_ID is column zero, and smoke cleanup owns a namespaced
+> header matcher. The generated smoke customer/job were archived and deleted;
+> the legacy billing row updated by the reused JobID remains queued for cleanup
+> after the corrected GAS source is deployed.
+
 > Cowork review on or after 2026-06-12 should begin with
 > `COWORK_SYSTEM_HANDOFF.md`. It separates current verified state, live-proof
 > gaps, safety gates, and the recommended review order from the historical
@@ -63,11 +72,11 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > `1.0.5-sprint189`. Details in `COWORK_SYSTEM_HANDOFF.md` section 9a.
 
 ### Current Production State
-- **Current phase:** Sprint / Phase 214 (Sprint 213 runtime release plus CI observability hardening).
+- **Current phase:** Sprint / Phase 215 (data identity and controlled cleanup integrity).
 - **Latest verified runtime commit:** `4397889 Sprint 213: fix protected mobile job detail collisions`; repository HEAD may contain later CI-only commits, so run `git log -1 --oneline` for the exact current HEAD.
 - **PWA version:** `v5.18.47-sprint213` (build token `20260721_1330`).
-- **GAS backend version:** `v5.18.16-write-flow-validation`.
-- **Production GAS deployment:** `AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ @620`.
+- **GAS backend source version:** `v5.18.17-id-integrity` (deployment pending).
+- **Current production GAS deployment:** `AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ @620` until Sprint 215 deploy verification completes.
 - **Production GAS URL:** `https://script.google.com/macros/s/AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ/exec`.
 - **Production Spreadsheet ID:** `19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA`.
 - **Schema registry:** `docs/database_schema_registry.json`.

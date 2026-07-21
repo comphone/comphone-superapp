@@ -212,8 +212,9 @@ function listAllBillings_(options) {
     var billings = [];
     for (var i = 1; i < all.length; i++) {
       var row = all[i];
-      if (!row[0]) continue;
-      billings.push(buildBillingObjectFromRow_(row, ctx.indices));
+      var billing = buildBillingObjectFromRow_(row, ctx.indices);
+      if (!billing.billing_id && !billing.job_id) continue;
+      billings.push(billing);
     }
     if (options.status) {
       billings = billings.filter(function(b) { return b.payment_status === options.status; });

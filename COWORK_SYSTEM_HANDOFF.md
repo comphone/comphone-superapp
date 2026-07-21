@@ -6,7 +6,7 @@ This document is the concise operational handoff for Cowork or another engineeri
 agent. Read `BLUEPRINT.md` for history, but use this file for the current review
 order and safety boundaries.
 
-## 0. Latest Baseline (Sprint 214)
+## 0. Latest Baseline (Sprint 215)
 
 - Current PWA target: `v5.18.47-sprint213`.
 - Sprint 211 system test: 167/167 checks pass.
@@ -38,6 +38,18 @@ order and safety boundaries.
 - This closes stale handoff identity drift: the current runtime is Sprint 213,
   while Phase 214 tracks CI/release-gate work only.
 
+### Sprint 215 data identity integrity
+
+- A controlled production write/read/idempotency test passed, then revealed that
+  deleting the highest live job allowed its JobID to be reused while billing
+  references still existed.
+- JobID allocation now uses a persistent high-water mark and historical/reference
+  sheets, so deletion cannot make an identifier reusable.
+- Billing list reads use schema headers rather than column zero, supporting the
+  existing legacy DB_BILLING layout.
+- The test customer and job were archived/deleted. One billing row touched through
+  the reused JobID must be cleaned after the Sprint 215 GAS deployment is live.
+
 ## 1. Current Repository State
 
 - Repository: `https://github.com/comphone/comphone-superapp`
@@ -54,9 +66,9 @@ order and safety boundaries.
 | Component | Current recorded value |
 |---|---|
 | PWA version | `v5.18.47-sprint213` (`20260721_1330`) |
-| Blueprint phase | Phase 214 |
-| GAS backend version | `v5.18.16-write-flow-validation` |
-| GAS deployment | `@620` |
+| Blueprint phase | Phase 215 |
+| GAS backend source | `v5.18.17-id-integrity` (deployment pending) |
+| Current GAS deployment | `@620` until Sprint 215 verification completes |
 | Production spreadsheet | `19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA` |
 | LINE Worker source version | `1.0.5-sprint189` |
 | Mobile URL | `https://comphone.github.io/comphone-superapp/pwa/` |

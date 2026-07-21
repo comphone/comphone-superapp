@@ -108,7 +108,7 @@ function scanSmokeCleanupSheet_(ss, archive, report, idMap, scope, sheetName, he
   var values = sheet.getDataRange().getValues();
   if (values.length < 2) return;
   var headers = values[0].map(function(h) { return String(h || ''); });
-  var idCol = findHeaderIndex_(headers, headerNames);
+  var idCol = findSmokeCleanupHeaderIndex_(headers, headerNames);
   if (idCol < 0) idCol = fallbackCol || 0;
 
   var rowsToDelete = [];
@@ -174,7 +174,7 @@ function archiveSmokeCleanupRow_(archive, scope, sheetName, id, rowNumber, heade
   ]);
 }
 
-function findHeaderIndex_(headers, candidates) {
+function findSmokeCleanupHeaderIndex_(headers, candidates) {
   for (var i = 0; i < headers.length; i++) {
     var h = String(headers[i] || '').toLowerCase();
     for (var j = 0; j < candidates.length; j++) {

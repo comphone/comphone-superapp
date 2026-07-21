@@ -114,6 +114,7 @@ function createJob(data) {
     setIfIndex_(row, ctx.indices.toolChecklistStatus, data.tool_checklist_status || '');
 
     sh.appendRow(row);
+    recordJobIdHighWater_(jobId);
 
     var reservationInfo = null;
     if (data.parts && Array.isArray(data.parts) && data.parts.length > 0 && typeof reserveItemsForJob === 'function') {
@@ -651,15 +652,66 @@ function normalizeStatusCode_(value) {
 }
 
 function generateNextJobId_(sheet, jobIdIndex) {
-  var lastRow = sheet.getLastRow();
-  if (lastRow < 2) return 'J0001';
-  var values = sheet.getRange(2, (jobIdIndex > -1 ? jobIdIndex : 0) + 1, lastRow - 1, 1).getValues();
+  var maxId = maxJobSequenceInColumn_(sheet, jobIdIndex > -1 ? jobIdIndex : 0);
+  var ss = sheet.getParent();
+  var references = [
+    { name: 'DBJOBS_ARCHIVE', headers: ['JobID', 'Job_ID', 'job_id'], fallback: 5 },
+    { name: 'DB_BILLING', headers: ['Job_ID', 'job_id', 'JobID'], fallback: 1 },
+    { name: 'DB_JOB_LOGS', headers: ['Job_ID', 'job_id', 'JobID'], fallback: 1 },
+    { name: 'DB_JOB_STATUS_LOG', headers: ['Job_ID', 'job_id', 'JobID'], fallback: 1 },
+    { name: 'DB_WARRANTIES', headers: ['Job_ID', 'job_id', 'JobID'], fallback: 1 },
+    { name: 'DB_PHOTO_QUEUE', headers: ['Job_ID', 'job_id', 'JobID'], fallback: 1 }
+  ];
+
+  for (var i = 0; i < references.length; i++) {
+    var ref = references[i];
+    var refSheet = findSheetByName(ss, ref.name);
+    if (!refSheet || refSheet.getLastRow() < 2) continue;
+    var headers = refSheet.getRange(1, 1, 1, refSheet.getLastColumn()).getValues()[0];
+    var index = findJobSequenceHeaderIndex_(headers, ref.headers);
+    if (index < 0) index = ref.fallback;
+    maxId = Math.max(maxId, maxJobSequenceInColumn_(refSheet, index));
+  }
+
+  try {
+    var properties = PropertiesService.getScriptProperties();
+    maxId = Math.max(maxId, parseInt(properties.getProperty('COMPHONE_JOB_ID_HIGH_WATER') || '0', 10) || 0);
+    properties.setProperty('COMPHONE_JOB_ID_HIGH_WATER', String(maxId + 1));
+  } catch (_propertyError) {}
+
+  return 'J' + String(maxId + 1).padStart(4, '0');
+}
+
+function maxJobSequenceInColumn_(sheet, columnIndex) {
+  if (!sheet || columnIndex < 0 || sheet.getLastRow() < 2) return 0;
+  var values = sheet.getRange(2, columnIndex + 1, sheet.getLastRow() - 1, 1).getValues();
   var maxId = 0;
   for (var i = 0; i < values.length; i++) {
-    var match = String(values[i][0] || '').match(/J(\d+)/i);
-    if (match) maxId = Math.max(maxId, parseInt(match[1], 10));
+    var match = String(values[i][0] || '').trim().match(/^J(\d+)$/i);
+    if (match) maxId = Math.max(maxId, parseInt(match[1], 10) || 0);
   }
-  return 'J' + String(maxId + 1).padStart(4, '0');
+  return maxId;
+}
+
+function findJobSequenceHeaderIndex_(headers, candidates) {
+  for (var i = 0; i < headers.length; i++) {
+    var header = String(headers[i] || '').trim().toLowerCase();
+    for (var j = 0; j < candidates.length; j++) {
+      if (header === String(candidates[j] || '').trim().toLowerCase()) return i;
+    }
+  }
+  return -1;
+}
+
+function recordJobIdHighWater_(jobId) {
+  var match = String(jobId || '').trim().match(/^J(\d+)$/i);
+  if (!match) return;
+  try {
+    var properties = PropertiesService.getScriptProperties();
+    var current = parseInt(properties.getProperty('COMPHONE_JOB_ID_HIGH_WATER') || '0', 10) || 0;
+    var value = parseInt(match[1], 10) || 0;
+    if (value > current) properties.setProperty('COMPHONE_JOB_ID_HIGH_WATER', String(value));
+  } catch (_propertyError) {}
 }
 
 function findJobRowIndexById_(sheet, ctx, jobId) {

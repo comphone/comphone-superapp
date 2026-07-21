@@ -212,8 +212,9 @@ function listAllBillings_(options) {
     var billings = [];
     for (var i = 1; i < all.length; i++) {
       var row = all[i];
-      if (!row[0]) continue;
-      billings.push(buildBillingObjectFromRow_(row, ctx.indices));
+      var billing = buildBillingObjectFromRow_(row, ctx.indices);
+      if (!billing.billing_id && !billing.job_id) continue;
+      billings.push(billing);
     }
     if (options.status) {
       billings = billings.filter(function(b) { return b.payment_status === options.status; });
@@ -372,5 +373,49 @@ function findBillingRowIndexByJobId_(sh, ctx, jobId) {
   for (var i = 0; i < values.length; i++) {
     if (String(values[i][0] || '').trim() === String(jobId)) return i + 2;
   }
-  return -1;
+    return -1;
+}
+
+function getCustomerReceipts(data) {
+  try {
+    var customerId = (data || {}).customer_id || '';
+    if (!customerId) {
+      return { success: false, error: 'customer_id is required' };
+    }
+    // ใช้ listAllBillings_ แลัว filter ด้วย job_id ที่ลูกค้าเคยใช้
+    // เนื่องจาก DB_BILLING ไม่มี customer_id โดยตรง ใช้วิธีดึงจาก job ที่ลูกค้าเป็นเจ้าของ
+    var ss = getComphoneSheet();
+    if (!ss) return { success: false, error: 'Spreadsheet not found' };
+    var jobSh = findSheetByName(ss, 'DB_JOBS');
+    if (!jobSh) return { success: false, error: 'Jobs sheet not found' };
+    var jobs = jobSh.getDataRange().getValues();
+    var jobIndices = getJobSheetContext_(jobSh).indices;
+    var customerJobs = [];
+    for (var i = 1; i < jobs.length; i++) {
+      if (String(jobs[i][jobIndices.customerId] || '') === customerId) {
+        customerJobs.push(String(jobs[i][jobIndices.jobId] || ''));
+      }
+    }
+    var billingResult = listAllBillings_({});
+    if (!billingResult.success) return billingResult;
+    var receipts = billingResult.billings.filter(function(b) {
+      return customerJobs.indexOf(b.job_id) !== -1;
+    }).map(function(b) {
+      return {
+        receipt_no: b.receipt_no || '',
+        billing_id: b.billing_id || '',
+        job_id: b.job_id || '',
+        total_amount: b.total_amount || 0,
+        amount_paid: b.amount_paid || 0,
+        balance_due: b.balance_due || 0,
+        payment_status: b.payment_status || '',
+        receipt_url: b.receipt_url || '',
+        invoice_date: b.invoice_date || '',
+        created_at: b.created_at || ''
+      };
+    });
+    return { success: true, receipts: receipts, count: receipts.length };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
 }
