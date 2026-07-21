@@ -179,6 +179,15 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > but no new real LINE image was sent during this controlled release, so a fresh
 > owner-room image remains an external operational acceptance step.
 
+> Sprint 219 release closure: commit `e9a8850` passed Auto Deploy workflow
+> #612, GAS Deploy workflow #159, and GitHub Pages deployment #786. Remote Pages
+> serves build `20260721_1541` / cache
+> `comphone-v5.18.47-sprint219-20260721_1541`; the legacy-client update bridge
+> remains present. A fresh production login then passed every required protected
+> read in the API smoke: Dashboard, CRM, Inventory, PO, Reports, Billing, Vision,
+> LINE Center/room status, and Admin Security. Sprint 185 also passed 17/17 with
+> live ingress status. The repository was clean after these checks.
+
 > Cowork review on or after 2026-06-12 should begin with
 > `COWORK_SYSTEM_HANDOFF.md`. It separates current verified state, live-proof
 > gaps, safety gates, and the recommended review order from the historical
