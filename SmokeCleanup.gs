@@ -48,12 +48,69 @@ function cleanupSmokeTestRecords(params) {
   }
 
   if (execute) {
+    cleanupSmokeChildRows_(ss, archive, report);
     invalidateSmokeCleanupCaches_(requested);
     report.executed = true;
     report.status = report.deleted.length ? 'deleted-reviewed-smoke-records' : 'nothing-deleted';
   }
 
   return report;
+}
+
+function cleanupSmokeChildRows_(ss, archive, report) {
+  var deletedJobs = {};
+  var deletedCustomers = {};
+  (report.deleted || []).forEach(function(item) {
+    if (item.scope === 'jobs') deletedJobs[item.id] = true;
+    if (item.scope === 'customers') deletedCustomers[item.id] = true;
+  });
+  report.child_deleted = report.child_deleted || [];
+  cleanupSmokeChildSheet_(ss, archive, report, {
+    sheetName: 'DB_JOB_LOGS',
+    scope: 'job_logs',
+    references: [
+      { ids: deletedJobs, headers: ['Job_ID', 'job_id', 'JobID'], fallback: 1 }
+    ]
+  });
+  cleanupSmokeChildSheet_(ss, archive, report, {
+    sheetName: 'DB_CUSTOMER_LOGS',
+    scope: 'customer_logs',
+    references: [
+      { ids: deletedCustomers, headers: ['Customer_ID', 'customer_id'], fallback: 1 },
+      { ids: deletedJobs, headers: ['Job_ID', 'job_id', 'JobID'], fallback: 3 }
+    ]
+  });
+}
+
+function cleanupSmokeChildSheet_(ss, archive, report, options) {
+  var hasReferences = (options.references || []).some(function(ref) {
+    return Object.keys(ref.ids || {}).length > 0;
+  });
+  if (!hasReferences) return;
+  var sheet = findSheetByName(ss, options.sheetName);
+  if (!sheet || sheet.getLastRow() < 2) return;
+  var values = sheet.getDataRange().getValues();
+  var headers = values[0].map(function(value) { return String(value || ''); });
+  var refs = (options.references || []).map(function(ref) {
+    var index = findSmokeCleanupHeaderIndex_(headers, ref.headers || []);
+    if (index < 0) index = Number(ref.fallback || 0);
+    return { ids: ref.ids || {}, index: index };
+  });
+  var rowsToDelete = [];
+  for (var rowIndex = 1; rowIndex < values.length; rowIndex++) {
+    var row = values[rowIndex];
+    var matched = refs.some(function(ref) {
+      return !!ref.ids[String(row[ref.index] || '').trim()];
+    });
+    if (!matched) continue;
+    var recordId = String(row[0] || ('row-' + (rowIndex + 1)));
+    archiveSmokeCleanupRow_(archive, options.scope, options.sheetName, recordId, rowIndex + 1, headers, row);
+    rowsToDelete.push(rowIndex + 1);
+    report.child_deleted.push({ scope: options.scope, sheet: options.sheetName, id: recordId, row: rowIndex + 1 });
+  }
+  rowsToDelete.sort(function(a, b) { return b - a; }).forEach(function(rowNumber) {
+    sheet.deleteRow(rowNumber);
+  });
 }
 
 function invalidateSmokeCleanupCaches_(requested) {

@@ -1,10 +1,10 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.18.47-sprint218 (PWA) / GAS Backend v5.18.19-line-quiet-center @631
+> **Version:** v5.18.47-sprint219 (PWA) / GAS Backend v5.18.20-write-cleanup-cascade (@632)
 
-> **Date:** 2026-07-21 | **Phase:** 218 (Reliable Installed-PWA Updates)
+> **Date:** 2026-07-21 | **Phase:** 219 (Controlled Production Write + Complete Cleanup)
 
-> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + PROTECTED-LIVE-VERIFIED + DATA-IDENTITY-HARDENED + REAL-AI-VISION-VERIFIED - Sprint 218 closes the installed-PWA update-button race after Sprint 217 completed LINE quiet mode. GAS `v5.18.19-line-quiet-center` is live at @631; Worker `1.0.5-sprint189` remains live with quiet group-image forwarding. Historical status detail remains below.
+> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + PROTECTED-LIVE-VERIFIED + DATA-IDENTITY-HARDENED + REAL-AI-VISION-VERIFIED - Sprint 219 adds archive-first child cleanup and has passed a controlled Customer -> Job -> Billing production write lifecycle. GAS `v5.18.20-write-cleanup-cascade` is live at @632; Worker `1.0.5-sprint189` remains live with quiet group-image forwarding. Historical status detail remains below.
 
 ---
 
@@ -17,7 +17,7 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > Sprint 212 prevents the warranty module from calling protected APIs before
 > authentication, makes Background Sync demand-driven only when an offline queue
 > contains work, and wires Sprint 211/212 into the static, regression, and CI gates.
-> Current frontend build token: `20260721_1410`.
+> Current frontend build token: `20260721_1541`.
 > Live protected browser acceptance and real LINE image evidence remain operational
 > verification items, not completed solely by static tests.
 
@@ -158,6 +158,27 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > refresh as an operational migration step for already-stuck clients. New/current
 > clients are protected by the Sprint 218 update flow and recurrence guard.
 
+> 2026-07-21 Sprint 219 Controlled Production Write + Complete Cleanup: the
+> existing write smoke creates Customer, Job, Billing, Job status timeline, and
+> Customer history evidence. Parent cleanup already archived Customer/Job/Billing
+> rows, but could leave `DB_JOB_LOGS` and `DB_CUSTOMER_LOGS` children. Cleanup now
+> derives child ownership only from parent rows that passed the smoke-marker gate
+> and were actually deleted, archives every matching child before deletion, and
+> preserves `DB_ACTIVITY_LOG` as immutable audit evidence. The real write lifecycle
+> ran against GAS @632: 14/14 write/read/idempotency checks passed for Customer,
+> Job, notes, status transition, timeline, and Billing. Cleanup archived and
+> removed all three generated parent rows plus 24 matching Job/Customer history
+> children; a second live scan found zero remaining smoke candidates. Purchase
+> Order writes remain excluded from this acceptance because they require a
+> separate high-risk owner gate. Secret-free evidence is recorded in
+> `test_reports/sprint219_controlled_write_production_evidence.json`.
+
+> Sprint 219 LINE/Vision readiness recheck passed 8/8 ingress checks and 17/17
+> quiet-routing checks. Worker `/diag/gas` reports GAS, Gemini, and LINE ready;
+> pending photo queue is zero. This proves the deployed processing path is ready,
+> but no new real LINE image was sent during this controlled release, so a fresh
+> owner-room image remains an external operational acceptance step.
+
 > Cowork review on or after 2026-06-12 should begin with
 > `COWORK_SYSTEM_HANDOFF.md`. It separates current verified state, live-proof
 > gaps, safety gates, and the recommended review order from the historical
@@ -185,11 +206,11 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > `1.0.5-sprint189`. Details in `COWORK_SYSTEM_HANDOFF.md` section 9a.
 
 ### Current Production State
-- **Current phase:** Sprint / Phase 218 (reliable installed-PWA update activation after Sprint 217 LINE quiet-mode closure).
-- **Latest verified runtime source:** Sprint 217 source deployed to GAS @631; run `git log -1 --oneline` for the exact repository commit after release publication.
-- **PWA release target:** `v5.18.47-sprint218` (build token `20260721_1524`).
-- **GAS backend:** `v5.18.19-line-quiet-center`, deployed at @631.
-- **Current production GAS deployment:** `AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ @631`.
+- **Current phase:** Sprint / Phase 219 (controlled production write acceptance with archive-first complete cleanup).
+- **Latest verified runtime source:** Sprint 219 source deployed to GAS @632; run `git log -1 --oneline` for the exact repository commit after release publication.
+- **PWA release target:** `v5.18.47-sprint219` (build token `20260721_1541`).
+- **GAS backend:** `v5.18.20-write-cleanup-cascade`, deployed at @632.
+- **Current production GAS deployment:** `AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ @632`.
 - **Production GAS URL:** `https://script.google.com/macros/s/AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ/exec`.
 - **Production Spreadsheet ID:** `19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA`.
 - **Schema registry:** `docs/database_schema_registry.json`.

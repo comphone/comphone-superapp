@@ -1,0 +1,35 @@
+{
+  "sprint": 219,
+  "generated_at": "2026-07-21T08:38:00.000Z",
+  "environment": "production",
+  "gas_deployment_tested": "@632",
+  "backend_version": "5.18.20-write-cleanup-cascade",
+  "status": "ok",
+  "purchase_order_write_executed": false,
+  "line_message_sent": false,
+  "checks": {
+    "write_read_idempotency": {
+      "passed": 14,
+      "failed": 0,
+      "scopes": ["customer", "job", "job_note", "job_status", "job_timeline", "billing"]
+    },
+    "cleanup": {
+      "parent_candidates": 3,
+      "parent_deleted": 3,
+      "child_deleted": 24,
+      "remaining_live_candidates": 0,
+      "archive_sheet": "DB_SMOKE_CLEANUP_ARCHIVE",
+      "activity_audit_preserved": true
+    },
+    "line_vision_readiness": {
+      "ingress_checks_passed": 8,
+      "ingress_checks_total": 8,
+      "quiet_routing_checks_passed": 17,
+      "quiet_routing_checks_total": 17,
+      "pending_photos": 0,
+      "worker_gas_ready": true,
+      "worker_gemini_ready": true,
+      "worker_line_ready": true
+    }
+  }
+}
