@@ -1,14 +1,14 @@
 // ===========================================================
 // COMPHONE SUPER APP - Centralized Version Config
 // Single Source of Truth for all version numbers
-// Phase 212 - Auth-Aware Startup + Completion Guard
+// Phase 213 - Protected Menu Collision Fix
 // ===========================================================
 
 const VERSION_CONFIG = {
-  version: 'v5.18.47-sprint212',
+  version: 'v5.18.47-sprint213',
   buildDate: '2026-07-21',
-  buildTimestamp: '20260721_1200',
-  cacheVersion: 'comphone-v5.18.47-sprint212-20260721_1200',
+  buildTimestamp: '20260721_1330',
+  cacheVersion: 'comphone-v5.18.47-sprint213-20260721_1330',
   theme: 'glassmorphism-2.0',
   author: 'Comphone Team',
   features: [
@@ -90,7 +90,8 @@ const VERSION_CONFIG = {
     'Sprint 199 Auto version-bump tooling: bump-version.js auto-updates all ?v= params in index.html/dashboard_pc.html/sw.js/version.json from single source of truth; version_config.js added to SW NETWORK_ONLY so clients always receive the latest build version even before SW updates',
     'Sprint 200 Fix SW update banner deadlock: remove skipWaiting() from install event so new SW stays in installed (waiting) state until user taps banner; add controllerchange+SW_ACTIVATED auto-reload in version_config.js as emergency fallback for all client versions',
     'Sprint 211 15-step system test with 167 deterministic checks',
-    'Sprint 212 auth-aware warranty startup, demand-driven Background Sync, and CI completion guard'
+    'Sprint 212 auth-aware warranty startup, demand-driven Background Sync, and CI completion guard',
+    'Sprint 213 protected PC/mobile acceptance and canonical Jobs detail ownership'
   ]
 };
 
@@ -100,9 +101,9 @@ window.__APP_VERSION = VERSION_CONFIG.version;
 
 
 // Backward-compatible exports for legacy modules and guards
-const APP_VERSION = 'v5.18.47-sprint212';
-const BUILD_TIMESTAMP = '20260721_1200';
-const CACHE_VERSION = 'comphone-v5.18.47-sprint212-20260721_1200';
+const APP_VERSION = 'v5.18.47-sprint213';
+const BUILD_TIMESTAMP = '20260721_1330';
+const CACHE_VERSION = 'comphone-v5.18.47-sprint213-20260721_1330';
 window.COMPHONE_VERSION = APP_VERSION;
 window.COMPHONE_BUILD = BUILD_TIMESTAMP;
 window.COMPHONE_CACHE = CACHE_VERSION;

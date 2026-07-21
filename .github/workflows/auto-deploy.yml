@@ -87,6 +87,12 @@ jobs:
             echo "FAIL scripts/sprint212_auth_aware_startup_guard.js"
             FAILED=1
           fi
+          if node --check scripts/sprint213_protected_menu_collision_guard.js; then
+            echo "OK scripts/sprint213_protected_menu_collision_guard.js"
+          else
+            echo "FAIL scripts/sprint213_protected_menu_collision_guard.js"
+            FAILED=1
+          fi
           if [ "$FAILED" -ne 0 ]; then exit 1; fi
 
       - name: PWA Static Guard

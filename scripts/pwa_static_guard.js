@@ -859,6 +859,7 @@ for (const [fileName, marker, tokenAware] of [
   ['sprint194_job_archive_restore_guard.js', 'Job Archive Restore', false],
   ['sprint211_system_step_test.js', 'System Step-by-Step Test', false],
   ['sprint212_auth_aware_startup_guard.js', 'Auth-Aware Startup Guard', false],
+  ['sprint213_protected_menu_collision_guard.js', 'Protected Menu Collision Guard', false],
 ]) {
   const body = readUtf8(path.join(ROOT, 'scripts', fileName));
   if (!body.includes(marker) || (tokenAware && !body.includes('COMPHONE_AUTH_TOKEN'))) {

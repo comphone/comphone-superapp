@@ -6,15 +6,27 @@ This document is the concise operational handoff for Cowork or another engineeri
 agent. Read `BLUEPRINT.md` for history, but use this file for the current review
 order and safety boundaries.
 
-## 0. Latest Baseline (Sprint 212)
+## 0. Latest Baseline (Sprint 213)
 
-- Current PWA target: `v5.18.47-sprint212`.
+- Current PWA target: `v5.18.47-sprint213`.
 - Sprint 211 system test: 167/167 checks pass.
 - Sprint 212 blocks pre-login warranty API traffic and requests Background Sync
   only after offline work is queued.
 - Sprint 211 and Sprint 212 are mandatory in local regression and GitHub Actions.
 - Remaining live proof: protected PC/mobile browser workflows and a real LINE image
   through Worker -> GAS -> Gemini -> review/storage with room replies suppressed.
+
+### Sprint 213 protected browser acceptance
+
+- PC protected menus loaded production data without console errors.
+- Mobile CRM, Inventory, Billing, Reports, AI Vision, and LINE Center loaded.
+- Fixed `showJobDetail` global collision from `crm_attendance.js`; CRM now delegates
+  to the canonical Jobs detail renderer through `showCrmJobDetail`.
+- PC-to-Mobile links now open a separate tab and preserve the active PC workflow.
+- Mobile navigation protection parses the offline queue and no longer blocks exit
+  when localStorage contains an empty `[]` queue.
+- Service Worker asset paths derive from registration scope instead of a hardcoded
+  GitHub Pages pathname, keeping local/staging verification representative.
 
 ## 1. Current Repository State
 

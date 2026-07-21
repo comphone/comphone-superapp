@@ -262,8 +262,20 @@ window.addEventListener('popstate', (event) => {
   }
 });
 
+function hasPendingOfflineActions_() {
+  const raw = localStorage.getItem('comphone_offline_queue');
+  if (!raw) return false;
+  try {
+    const queue = JSON.parse(raw);
+    return Array.isArray(queue) ? queue.length > 0 : !!queue;
+  } catch (_) {
+    // A corrupted non-empty queue may still contain unsynced user data.
+    return raw.trim() !== '' && raw.trim() !== '[]';
+  }
+}
+
 window.addEventListener('beforeunload', (event) => {
-  const hasOfflineQueue = !!localStorage.getItem('comphone_offline_queue');
+  const hasOfflineQueue = hasPendingOfflineActions_();
   const protectedPage = APP.currentPage && !['home', 'profile'].includes(APP.currentPage);
   if (hasOfflineQueue || protectedPage) {
     event.preventDefault();
