@@ -1,5 +1,5 @@
 ﻿// COMPHONE SUPER APP v5.9.0-phase31a
-// VisionAnalysis.gs - AI วิเคราะห์รูปงานด้วย Gemini 2.0 Flash (V5.5)
+// VisionAnalysis.gs - AI work-photo analysis through the configured Gemini model
 // Auto-Labeling, Photo Category, Quality Check, Job Completion QC
 // ============================================================
 
@@ -50,22 +50,23 @@ function analyzeWorkImageFromBase64(base64, context) {
   }
 }
 
-function _callGeminiVision_(apiKey, prompt, imageBase64) {
+function _callGeminiVision_(apiKey, prompt, imageBase64, mimeType) {
+  var model = getGeminiModel_();
   var bodyObj = {
     contents: [{
       parts: [
         { text: prompt },
-        { inline_data: { mime_type: 'image/jpeg', data: imageBase64 } }
+        { inlineData: { mimeType: mimeType || 'image/jpeg', data: imageBase64 } }
       ]
     }],
     generationConfig: {
       temperature: 0.2,
-      maxOutputTokens: 1024,
+      maxOutputTokens: 4096,
       responseMimeType: 'application/json'
     }
   };
 
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
+  var url = getGeminiApiUrl_(apiKey);
   var options = {
     method: 'post',
     contentType: 'application/json',
@@ -77,25 +78,36 @@ function _callGeminiVision_(apiKey, prompt, imageBase64) {
   var result = JSON.parse(response.getContentText());
 
   if (result.error) {
-    return { error: 'Gemini API Error: ' + JSON.stringify(result.error) };
+    return {
+      error: 'Gemini API Error: ' + String(result.error.message || result.error.status || 'request failed'),
+      provider: 'google-gemini',
+      model: model
+    };
   }
 
   var content = '';
   if (result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts) {
-    content = result.candidates[0].content.parts[0].text || '';
+    var parts = result.candidates[0].content.parts;
+    for (var i = 0; i < parts.length; i++) {
+      if (parts[i] && typeof parts[i].text === 'string') content += parts[i].text;
+    }
   }
 
   if (!content) {
     return { error: 'Gemini returned empty content' };
   }
 
-  var jsonMatch = content.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    return { error: 'Invalid response format', raw: content };
+  var cleaned = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+  var parsed;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch (directParseError) {
+    var jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return { error: 'Invalid response format' };
+    parsed = JSON.parse(jsonMatch[0]);
   }
-
-  var parsed = JSON.parse(jsonMatch[0]);
-  parsed.provider = 'gemini-2.0-flash';
+  parsed.provider = 'google-gemini';
+  parsed.model = model;
   parsed.raw = content;
   return parsed;
 }

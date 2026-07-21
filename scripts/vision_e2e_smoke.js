@@ -23,8 +23,15 @@ if (!GAS_URL) {
 }
 
 async function request(action, payload = {}) {
-  const qs = new URLSearchParams(Object.assign({ action, _t: Date.now() }, payload));
-  const res = await fetch(`${GAS_URL}?${qs.toString()}`, { redirect: 'follow' });
+  const data = Object.assign({ action, _t: Date.now() }, payload);
+  const getUrl = `${GAS_URL}?${new URLSearchParams(data).toString()}`;
+  const usePost = getUrl.length > 7000;
+  const res = await fetch(usePost ? GAS_URL : getUrl, usePost ? {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+    body: JSON.stringify(data),
+    redirect: 'follow'
+  } : { redirect: 'follow' });
   const text = await res.text();
   let body;
   try { body = JSON.parse(text); }

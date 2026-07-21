@@ -4,8 +4,8 @@
 // ============================================================
 
 var CONFIG = {
-  APP_NAME: 'COMPHONE SUPER APP v5.18.17-id-integrity',
-  VERSION: '5.18.17-id-integrity',
+  APP_NAME: 'COMPHONE SUPER APP v5.18.18-ai-vision-current',
+  VERSION: '5.18.18-ai-vision-current',
   TIMEZONE: 'Asia/Bangkok',
 
   // ── ชื่อ Sheet ทั้งหมดในระบบ ──
@@ -135,6 +135,18 @@ function getConfig(key, fallbackValue) {
   } catch (error) {
     return arguments.length > 1 ? fallbackValue : null;
   }
+}
+
+var GEMINI_DEFAULT_MODEL = 'gemini-3.5-flash';
+
+function getGeminiModel_() {
+  var configured = String(getConfig('GEMINI_MODEL', GEMINI_DEFAULT_MODEL) || '').trim();
+  return /^gemini-[a-z0-9._-]+$/i.test(configured) ? configured : GEMINI_DEFAULT_MODEL;
+}
+
+function getGeminiApiUrl_(apiKey) {
+  return 'https://generativelanguage.googleapis.com/v1beta/models/' +
+    encodeURIComponent(getGeminiModel_()) + ':generateContent?key=' + encodeURIComponent(apiKey || '');
 }
 
 function getRequiredConfig(key) {
@@ -279,7 +291,7 @@ function setScriptPropertiesFromPayload(payload) {
   payload = payload || {};
   var props = PropertiesService.getScriptProperties();
   var allowed = [
-    'DB_SS_ID', 'ROOT_FOLDER_ID', 'WEB_APP_URL', 'GEMINI_API_KEY', 'GOOGLE_AI_API_KEY', 'GOOGLE_GEMINI_API_KEY', 'GEMINI_KEY',
+    'DB_SS_ID', 'ROOT_FOLDER_ID', 'WEB_APP_URL', 'GEMINI_API_KEY', 'GOOGLE_AI_API_KEY', 'GOOGLE_GEMINI_API_KEY', 'GEMINI_KEY', 'GEMINI_MODEL',
     'LINE_CHANNEL_ACCESS_TOKEN', 'LINE_GROUP_TECHNICIAN', 'LINE_GROUP_ACCOUNTING',
     'LINE_GROUP_PROCUREMENT', 'LINE_GROUP_SALES', 'LINE_GROUP_EXECUTIVE',
     'LINE_OA_TOKEN', 'VAT_RATE', 'WHT_RATE', 'LOW_STOCK_ALERT',

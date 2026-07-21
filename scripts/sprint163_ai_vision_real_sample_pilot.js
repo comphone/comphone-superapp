@@ -18,6 +18,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const REPORT = path.join(ROOT, 'test_reports', 'sprint163_ai_vision_real_sample_pilot_latest.json');
+const REAL_EVIDENCE_REPORT = path.join(ROOT, 'test_reports', 'sprint163_ai_vision_real_sample_evidence_latest.json');
 const TOKEN = process.env.COMPHONE_AUTH_TOKEN || '';
 const ENABLED = process.env.COMPHONE_AI_VISION_SAMPLE_PILOT === '1';
 const CONFIRM = process.env.COMPHONE_AI_VISION_SAMPLE_CONFIRM === 'RUN_REAL_SAMPLE_ANALYSIS';
@@ -37,7 +38,14 @@ async function request(action, payload = {}) {
   const data = Object.assign({ action, _t: Date.now() }, payload);
   if (TOKEN) data.token = TOKEN;
   Object.keys(data).forEach(key => { if (data[key] && typeof data[key] === 'object') data[key] = JSON.stringify(data[key]); });
-  const res = await fetch(`${GAS_URL}?${new URLSearchParams(data).toString()}`, { redirect: 'follow' });
+  const getUrl = `${GAS_URL}?${new URLSearchParams(data).toString()}`;
+  const usePost = getUrl.length > 7000;
+  const res = await fetch(usePost ? GAS_URL : getUrl, usePost ? {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+    body: JSON.stringify(data),
+    redirect: 'follow'
+  } : { redirect: 'follow' });
   const text = await res.text();
   let body;
   try { body = JSON.parse(text); } catch (_) { throw new Error(`${action}: non-JSON ${res.status}`); }
@@ -80,16 +88,33 @@ async function main() {
     if (!imageBase64) {
       checks.push({ id: 'real-sample-input-present', ok: false, type: 'live-write-gated', detail: 'Set COMPHONE_AI_VISION_SAMPLE_BASE64 or COMPHONE_AI_VISION_SAMPLE_FILE.' });
     } else {
+      const sampleMime = process.env.COMPHONE_AI_VISION_SAMPLE_MIME || (/\.png$/i.test(SAMPLE_FILE) ? 'image/png' : 'image/jpeg');
       const result = await request('runVisionPipeline', {
         type: process.env.COMPHONE_AI_VISION_SAMPLE_TYPE || 'QC',
         imageBase64,
         base64: imageBase64,
-        mimeType: process.env.COMPHONE_AI_VISION_SAMPLE_MIME || 'image/png',
+        mimeType: sampleMime,
         fileName: process.env.COMPHONE_AI_VISION_SAMPLE_NAME || 'sprint163-real-sample.png',
         jobId: process.env.COMPHONE_AI_VISION_SAMPLE_JOB_ID || '',
         source: 'sprint163-real-sample-pilot',
       });
-      checks.push({ id: 'live-real-sample-analysis', ok: result.status === 200 && result.body && result.body.success !== false && !result.body.error, type: 'live-write-gated', http_status: result.status, visionLogId: result.body && result.body.visionLogId });
+      const body = result.body || {};
+      const semanticEvidence = {
+        visionLogId: body.visionLogId || '',
+        ai_status: body._aiStatus || '',
+        provider: body._provider || (body.data && body.data.provider) || '',
+        model: body._model || (body.data && body.data.model) || '',
+        confidence: Number(body.confidence || 0),
+        decision: body.decision && body.decision.code || '',
+        photo_category: body.data && body.data.photo_category || '',
+        asset_type: body.data && body.data.asset_type || '',
+        issue_count: Array.isArray(body.issues) ? body.issues.length : 0,
+        equipment_count: body.data && Array.isArray(body.data.detected_equipment) ? body.data.detected_equipment.length : 0,
+      };
+      const analyzed = result.status === 200 && body.success !== false && !body.error &&
+        semanticEvidence.ai_status === 'analyzed' && semanticEvidence.provider === 'google-gemini' &&
+        semanticEvidence.model && semanticEvidence.confidence > 0;
+      checks.push({ id: 'live-real-sample-analysis', ok: analyzed, type: 'live-write-gated', http_status: result.status, ...semanticEvidence });
     }
   } else {
     checks.push({ id: 'live-real-sample-analysis', ok: true, type: 'live-write-gated', status: 'SKIP', detail: 'Set token plus COMPHONE_AI_VISION_SAMPLE_PILOT=1 and COMPHONE_AI_VISION_SAMPLE_CONFIRM=RUN_REAL_SAMPLE_ANALYSIS to run real sample analysis.' });
@@ -99,6 +124,8 @@ async function main() {
   const report = { generated_at: new Date().toISOString(), mode: 'ai-vision-real-sample-pilot-no-real-line-send', token_present: !!TOKEN, real_sample_enabled: shouldRunReal, status: failures.length ? 'fail' : 'ok', score: Math.round((checks.length - failures.length) / checks.length * 100), checks };
   fs.mkdirSync(path.dirname(REPORT), { recursive: true });
   fs.writeFileSync(REPORT, JSON.stringify(report, null, 2) + '\n', 'utf8');
+  // A routine skip-safe regression must never erase the last controlled real run.
+  if (shouldRunReal) fs.writeFileSync(REAL_EVIDENCE_REPORT, JSON.stringify(report, null, 2) + '\n', 'utf8');
   console.log(`[Sprint 163 AI Vision Sample Pilot] status=${report.status} score=${report.score}/100 checks=${checks.length - failures.length}/${checks.length} real_sample=${shouldRunReal}`);
   console.log(`[Sprint 163 AI Vision Sample Pilot] report: ${path.relative(ROOT, REPORT).replace(/\\/g, '/')}`);
   if (failures.length) process.exit(1);

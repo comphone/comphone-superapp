@@ -861,6 +861,7 @@ for (const [fileName, marker, tokenAware] of [
   ['sprint212_auth_aware_startup_guard.js', 'Auth-Aware Startup Guard', false],
   ['sprint213_protected_menu_collision_guard.js', 'Protected Menu Collision Guard', false],
   ['sprint215_data_identity_integrity_guard.js', 'Data Identity Integrity Guard', false],
+  ['sprint216_ai_vision_transport_guard.js', 'Current Gemini Model & Large Payload Guard', false],
 ]) {
   const body = readUtf8(path.join(ROOT, 'scripts', fileName));
   if (!body.includes(marker) || (tokenAware && !body.includes('COMPHONE_AUTH_TOKEN'))) {

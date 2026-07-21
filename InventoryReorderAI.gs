@@ -84,7 +84,8 @@ function _geminiAnalyzeReorder(apiKey, lowItems) {
       generationConfig: { temperature: 0.3, maxOutputTokens: 1024 }
     };
 
-    var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
+    var model = getGeminiModel_();
+    var url = getGeminiApiUrl_(apiKey);
     var options = {
       method: 'post', contentType: 'application/json',
       payload: JSON.stringify(bodyObj), muteHttpExceptions: true
@@ -104,7 +105,8 @@ function _geminiAnalyzeReorder(apiKey, lowItems) {
     var jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       var parsed = JSON.parse(jsonMatch[0]);
-      parsed.provider = 'gemini-2.0-flash';
+      parsed.provider = 'google-gemini';
+      parsed.model = model;
       parsed.raw_items = lowItems;
 
       var msg = '\ud83d\udce6 ' + (parsed.summary || '\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e2a\u0e31\u0e48\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e41\u0e19\u0e30\u0e19\u0e33') + '\n\n';

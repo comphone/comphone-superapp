@@ -6,7 +6,7 @@
 //              LINE Bot Commands
 // ============================================================
 
-var VP_VERSION = '1.0.0';
+var VP_VERSION = '1.1.2';
 
 // ─── CONSTANTS ─────────────────────────────────────────────
 var VP_TYPES = { SLIP: 'SLIP', QC: 'QC', PRODUCT: 'PRODUCT' };
@@ -98,7 +98,7 @@ function runVisionPipeline(params) {
     _vpIncidentIntegration_(normalized, context);
 
     // Phase 15: Cache — Store result
-    _vpSetCache_(imageHash, type, normalized);
+    if (normalized._aiStatus !== 'error') _vpSetCache_(imageHash, type, normalized);
 
     return normalized;
 
@@ -124,8 +124,13 @@ function _vpTieredAI_(type, input) {
   // Layer 2: Gemini Vision (ใช้เมื่อ confidence ต่ำ หรือ error case)
   var geminiKey = getConfigSafe_('GEMINI_API_KEY') || getConfigSafe_('GOOGLE_AI_API_KEY') || '';
   if (!geminiKey) {
-    if (layer1) { layer1._tier = 1; layer1._note = 'No Gemini key, using Layer1 result'; return layer1; }
-    return { error: 'ไม่มี GEMINI_API_KEY', confidence: 0 };
+    if (layer1) {
+      layer1._tier = 1;
+      layer1._aiStatus = 'fallback';
+      layer1._fallbackReason = 'gemini-key-not-configured';
+      return layer1;
+    }
+    return { error: 'Gemini key is not configured', confidence: 0, _aiStatus: 'error', _fallbackReason: 'gemini-key-not-configured' };
   }
 
   var layer2 = _vpLayer2Gemini_(type, input, geminiKey);
@@ -190,17 +195,31 @@ function _vpLayer2Gemini_(type, input, geminiKey) {
 
   if (!base64) return { error: 'No image data', confidence: 0 };
 
+  var lastError = '';
   // Retry logic: max 2 attempts
   for (var attempt = 1; attempt <= 2; attempt++) {
     try {
-      var result = _callGeminiVision_(geminiKey, prompt, base64);
-      if (!result.error) return result;
+      var result = _callGeminiVision_(geminiKey, prompt, base64, input.mimeType || input.mime_type || 'image/jpeg');
+      if (!result.error) {
+        result._aiStatus = 'analyzed';
+        return result;
+      }
+      lastError = String(result.error || 'Gemini request failed').substring(0, 300);
+      if (result.provider) lastError += ' [' + result.provider + '/' + (result.model || 'unknown') + ']';
       if (attempt < 2) Utilities.sleep(1500);
     } catch (e) {
+      lastError = 'Gemini transport exception';
       if (attempt < 2) Utilities.sleep(1500);
     }
   }
-  return { error: 'Gemini API failed after 2 retries', confidence: 0 };
+  return {
+    error: lastError || 'Gemini API failed after 2 retries',
+    confidence: 0,
+    provider: 'google-gemini',
+    model: getGeminiModel_(),
+    _aiStatus: 'error',
+    _fallbackReason: 'gemini-analysis-failed'
+  };
 }
 
 /**
@@ -217,9 +236,13 @@ function _vpBuildPrompt_(type, input) {
   }
 
   if (type === VP_TYPES.QC) {
-    return 'คุณคือระบบ QC ตรวจสอบคุณภาพงานติดตั้ง\n' +
+    var jobContext = input.jobId || input.job_id || '';
+    return 'คุณคือระบบ AI Vision ของร้าน COMPHONE & Electronics สำหรับงานซ่อมโทรศัพท์ คอมพิวเตอร์ CCTV ระบบเครือข่าย และงานติดตั้งภาคสนาม\n' +
+      'จำแนกสิ่งที่เห็นตามภาพจริง ห้ามเดาหมายเลขเครื่อง ลูกค้า ราคา หรือสถานะงานที่มองไม่เห็น\n' +
+      (jobContext ? 'Job ID จากระบบ: ' + jobContext + '\n' : '') +
       'วิเคราะห์รูปและตอบ JSON:\n' +
-      '{"photo_category":"After","installation_quality":"Good","quality_issues":[],"suggestions":[],"is_ready_to_close":true,"confidence":0.9,"auto_label":"งานเสร็จสมบูรณ์","detected_equipment":[],"qc_score":90}\n' +
+      '{"photo_category":"Before|After|Survey|Equipment","asset_type":"phone|computer|cctv|network|site|other","installation_quality":"Good|Fair|NeedsWork|NotApplicable","observations":["สิ่งที่เห็นจริง"],"quality_issues":["ปัญหาหรือความเสียหายที่เห็น"],"suggestions":["ขั้นตอนตรวจสอบหรือแก้ไขถัดไป"],"repair_recommendation":"คำแนะนำสั้นๆ","is_ready_to_close":false,"confidence":0.9,"auto_label":"สรุปภาพภาษาไทยสั้นๆ","detected_equipment":[],"qc_score":0}\n' +
+      'ถ้าเป็นภาพอุปกรณ์เสียหรืออยู่ระหว่างซ่อม ให้ is_ready_to_close=false และ qc_score สะท้อนความพร้อมปิดงาน ไม่ใช่คุณภาพของภาพ\n' +
       'ตอบ JSON อย่างเดียว ไม่มี markdown:';
   }
 
@@ -241,7 +264,12 @@ function _vpBuildPrompt_(type, input) {
  */
 function _vpNormalize_(type, aiResult, input, startTs) {
   var latencyMs = Date.now() - startTs;
+  aiResult = aiResult || {};
   var issues = [];
+  var aiStatus = aiResult._aiStatus || (aiResult.error ? 'error' : (aiResult.provider ? 'analyzed' : 'rule'));
+  var provider = aiResult.provider || (aiStatus === 'rule' ? 'rule-engine' : 'google-gemini');
+  var model = aiResult.model || (provider === 'google-gemini' ? getGeminiModel_() : '');
+  var fallbackReason = aiResult._fallbackReason || (aiResult.error ? String(aiResult.error).substring(0, 300) : '');
 
   if (type === VP_TYPES.SLIP) {
     issues = aiResult.issues || [];
@@ -256,18 +284,24 @@ function _vpNormalize_(type, aiResult, input, startTs) {
         amount_match: _vpAmountMatch_(aiResult.amount, input.expectedAmount || input.expected_amount),
         receiver_name: aiResult.receiver_name || '',
         transaction_ref: aiResult.transaction_ref || '',
-        provider: aiResult.provider || ('gemini-tier' + (aiResult._tier || 2))
+        provider: provider,
+        model: model
       },
       issues: issues,
       ts: Date.now(),
       _tier: aiResult._tier || 2,
       _latencyMs: latencyMs,
-      _fromCache: false
+      _fromCache: false,
+      _aiStatus: aiStatus,
+      _provider: provider,
+      _model: model,
+      _fallbackReason: fallbackReason
     };
   }
 
   if (type === VP_TYPES.QC) {
     issues = aiResult.quality_issues || [];
+    if (aiResult.error) issues = issues.concat([String(aiResult.error).substring(0, 300)]);
     var qcScore = Number(aiResult.qc_score || (aiResult.confidence || 0) * 100);
     return {
       type: VP_TYPES.QC,
@@ -279,14 +313,23 @@ function _vpNormalize_(type, aiResult, input, startTs) {
         auto_label: aiResult.auto_label || '',
         detected_equipment: aiResult.detected_equipment || [],
         suggestions: aiResult.suggestions || [],
+        observations: aiResult.observations || [],
+        asset_type: aiResult.asset_type || 'other',
+        repair_recommendation: aiResult.repair_recommendation || '',
         qc_score: qcScore,
-        job_id: input.jobId || input.job_id || ''
+        job_id: input.jobId || input.job_id || '',
+        provider: provider,
+        model: model
       },
       issues: issues,
       ts: Date.now(),
       _tier: aiResult._tier || 2,
       _latencyMs: latencyMs,
-      _fromCache: false
+      _fromCache: false,
+      _aiStatus: aiStatus,
+      _provider: provider,
+      _model: model,
+      _fallbackReason: fallbackReason
     };
   }
 
@@ -305,7 +348,11 @@ function _vpNormalize_(type, aiResult, input, startTs) {
       ts: Date.now(),
       _tier: aiResult._tier || 2,
       _latencyMs: latencyMs,
-      _fromCache: false
+      _fromCache: false,
+      _aiStatus: aiStatus,
+      _provider: provider,
+      _model: model,
+      _fallbackReason: fallbackReason
     };
   }
 
@@ -318,7 +365,11 @@ function _vpNormalize_(type, aiResult, input, startTs) {
     ts: Date.now(),
     _tier: aiResult._tier || 2,
     _latencyMs: latencyMs,
-    _fromCache: false
+    _fromCache: false,
+    _aiStatus: aiStatus,
+    _provider: provider,
+    _model: model,
+    _fallbackReason: fallbackReason
   };
 }
 
@@ -469,7 +520,7 @@ function _vpHashImage_(imageData) {
 
 function _vpGetCache_(hash, type) {
   try {
-    var key = 'vp_cache_' + type + '_' + hash.substring(0, 20);
+    var key = 'vp_cache_' + VP_VERSION + '_' + type + '_' + hash.substring(0, 20);
     var cached = PropertiesService.getScriptProperties().getProperty(key);
     if (!cached) return null;
     var entry = JSON.parse(cached);
@@ -483,7 +534,7 @@ function _vpGetCache_(hash, type) {
 
 function _vpSetCache_(hash, type, result) {
   try {
-    var key = 'vp_cache_' + type + '_' + hash.substring(0, 20);
+    var key = 'vp_cache_' + VP_VERSION + '_' + type + '_' + hash.substring(0, 20);
     var entry = { savedAt: Date.now(), result: result };
     safeSetProperty(key, JSON.stringify(entry));  // Guard: dynamic cache key
   } catch (e) { Logger.log('VisionPipeline setCache error: ' + e.toString()); }

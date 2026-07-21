@@ -234,18 +234,27 @@ async function callApi(action, payload = {}, options = {}) {
   Object.entries(payload || {}).forEach(([key, value]) => {
     serializedPayload[key] = value && typeof value === 'object' ? JSON.stringify(value) : value;
   });
-  const qs = new URLSearchParams({ action, token, ...serializedPayload, _t: Date.now() }).toString();
+  const requestPayload = { action, token, ...serializedPayload, _t: Date.now() };
+  const qs = new URLSearchParams(requestPayload).toString();
   const getUrl = url + '?' + qs;
+  const shouldPost = options.method === 'POST' || options.forcePost === true || getUrl.length > 7000;
+  const requestUrl = shouldPost ? url : getUrl;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
   const _t0 = Date.now(); // เริ่ม timing
 
   try {
-    const res = await fetch(getUrl, {
+    const fetchOptions = {
       redirect: 'follow',
       signal: controller.signal
-    });
+    };
+    if (shouldPost) {
+      fetchOptions.method = 'POST';
+      fetchOptions.headers = { 'Content-Type': 'text/plain;charset=UTF-8' };
+      fetchOptions.body = JSON.stringify(requestPayload);
+    }
+    const res = await fetch(requestUrl, fetchOptions);
     if (!res.ok) {
       const status = res.status;
       if (status === 429 || status === 503 || status === 529) {

@@ -1066,7 +1066,8 @@ for sprint_script in \
   sprint211_system_step_test \
   sprint212_auth_aware_startup_guard \
   sprint213_protected_menu_collision_guard \
-  sprint215_data_identity_integrity_guard
+  sprint215_data_identity_integrity_guard \
+  sprint216_ai_vision_transport_guard
 do
   script_path="scripts/${sprint_script}.js"
   if command -v node &>/dev/null && [ -f "$script_path" ]; then

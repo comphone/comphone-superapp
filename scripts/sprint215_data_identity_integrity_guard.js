@@ -208,7 +208,7 @@ async function main() {
     },
     {
       id: 'backend-version-current',
-      ok: config.includes("VERSION: '5.18.17-id-integrity'")
+      ok: config.includes("VERSION: '5.18.18-ai-vision-current'")
     },
     {
       id: 'completion-gates-wired',

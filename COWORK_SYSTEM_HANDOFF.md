@@ -6,16 +6,17 @@ This document is the concise operational handoff for Cowork or another engineeri
 agent. Read `BLUEPRINT.md` for history, but use this file for the current review
 order and safety boundaries.
 
-## 0. Latest Baseline (Sprint 215)
+## 0. Latest Baseline (Sprint 216)
 
-- Current PWA target: `v5.18.47-sprint213`.
+- Current PWA target: `v5.18.47-sprint216` (`20260721_1410`).
 - Sprint 211 system test: 167/167 checks pass.
 - Sprint 212 blocks pre-login warranty API traffic and requests Background Sync
   only after offline work is queued.
 - Sprint 211 and Sprint 212 are mandatory in local regression and GitHub Actions.
-- Protected PC/mobile browser workflows are now verified on production. Remaining
-  live proof is a real LINE image through Worker -> GAS -> Gemini -> review/storage
-  with room replies suppressed, plus controlled production write/delete evidence.
+- Protected PC/mobile browser workflows and controlled production write/delete
+  evidence are verified. Direct GAS -> Gemini image analysis has real semantic
+  proof; the remaining external proof is an owner-controlled LINE image through
+  Worker -> GAS -> Gemini with room replies suppressed.
 
 ### Sprint 213 protected browser acceptance
 
@@ -52,13 +53,28 @@ order and safety boundaries.
   customer/job/billing, and archived/deleted all three scopes. Final live scan
   has zero smoke candidates; historical report IDs remain hints only.
 
+### Sprint 216 current Gemini Vision and large-image transport
+
+- Root cause confirmed: `gemini-2.0-flash` was shut down on 2026-06-01, while
+  COMPHONE still hardcoded it in Vision, LINE Agent, and Inventory Reorder.
+- `GEMINI_MODEL` is now the centralized optional override; the safe runtime
+  default is `gemini-3.5-flash`. Health exposes only model name/readiness, never
+  key material.
+- API clients automatically use JSON in a simple `text/plain` POST when the GET
+  URL would exceed 7,000 characters. Small read requests remain GET.
+- Vision Pipeline v1.1.2 exposes provider/model/AI status, preserves safe failure
+  reasons, skips error caching, and has a COMPHONE repair/CCTV/network prompt.
+- Real fixture analysis passed in production at `VISION_LOG row-11`: confidence
+  0.95, asset `phone`, category `Before`, decision `QC_FAIL`, model
+  `gemini-3.5-flash`. The pilot sent no LINE message.
+- GAS `v5.18.18-ai-vision-current` is live at deployment @629.
+
 ## 1. Current Repository State
 
 - Repository: `https://github.com/comphone/comphone-superapp`
 - Branch: `main`
-- Latest verified runtime commit: `4397889` (Sprint 213 protected menu collision
-  fixes). Run `git log -1 --oneline` for the exact current HEAD because later
-  commits may contain CI-only hardening.
+- Latest verified runtime source: Sprint 216 source deployed to GAS @629. Run
+  `git log -1 --oneline` for the exact repository commit after publication.
 - Local working copy was missing on 2026-06-12 and was restored by cloning the
   GitHub repository into `C:\Users\Server\comphone-superapp`.
 - Working tree was clean immediately after restoration.
@@ -67,10 +83,10 @@ order and safety boundaries.
 
 | Component | Current recorded value |
 |---|---|
-| PWA version | `v5.18.47-sprint213` (`20260721_1330`) |
-| Blueprint phase | Phase 215 |
-| GAS backend | `v5.18.17-id-integrity` |
-| Current GAS deployment | `@626` |
+| PWA version | `v5.18.47-sprint216` (`20260721_1410`) |
+| Blueprint phase | Phase 216 |
+| GAS backend | `v5.18.18-ai-vision-current` |
+| Current GAS deployment | `@629` |
 | Production spreadsheet | `19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA` |
 | LINE Worker source version | `1.0.5-sprint189` |
 | Mobile URL | `https://comphone.github.io/comphone-superapp/pwa/` |
@@ -417,8 +433,8 @@ confirmed no related console errors.
 
 ### P1 - Reconcile version and documentation drift (resolved 2026-07-21)
 
-- Current handoff identity now records PWA `v5.18.47-sprint213`, build
-  `20260721_1330`, and Blueprint Phase 214.
+- Current handoff identity records PWA `v5.18.47-sprint216`, build
+  `20260721_1410`, GAS @629, and Blueprint Phase 216.
 - Worker metadata and recorded runtime remain aligned at `1.0.5-sprint189`.
 - Historical Blueprint material remains for audit history; agents must treat the
   top handoff snapshot and this document's sections 0-2 as authoritative.

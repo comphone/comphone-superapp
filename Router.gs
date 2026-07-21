@@ -354,7 +354,7 @@ function _checkAuthGateV55_(action, payload, e) {
   if (PUBLIC_ACTIONS[action]) return null;
 
   // Extract token — รองรับทั้ง query parameter (GET) และ POST body
-  // Note: GAS redirect POST → GET ทำให้ body หาย ต้องใช้ query parameter เท่านั้น
+  // GET carries ordinary payloads; large payloads arrive as JSON through doPost.
   var token = '';
 
   // Method 1: จาก payload (ซึ่งคือ e.parameter สำหรับ GET)
@@ -657,7 +657,8 @@ function healthCheckV55_() {
         props['GOOGLE_AI_API_KEY'] ||
         props['GOOGLE_GEMINI_API_KEY'] ||
         props['GEMINI_KEY']
-      )
+      ),
+      gemini_model: (typeof getGeminiModel_ === 'function') ? getGeminiModel_() : 'unknown'
     };
     if (missingKeys.length > 0) overallOk = false;
   } catch (e) {

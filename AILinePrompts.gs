@@ -127,7 +127,7 @@ function processWithAILineAgent(groupId, text, userName) {
     }
     
     var response = UrlFetchApp.fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey,
+      getGeminiApiUrl_(apiKey),
       {
         method: 'POST',
         contentType: 'application/json',

@@ -98,7 +98,7 @@ const checks = [
     'Gemini work-photo analysis can classify job photos and produce QC hints.',
     has(text.visionAnalysis, 'function analyzeWorkImageFromBase64') &&
       has(text.visionAnalysis, '_callGeminiVision_') &&
-      has(text.visionAnalysis, 'gemini-2.0-flash') &&
+      has(text.visionAnalysis, 'getGeminiApiUrl_') &&
       has(text.visionAnalysis, 'function qualityCheck'),
     'VisionAnalysis.gs provides the low-level Gemini Vision adapter and image quality logic.',
     [files.visionAnalysis]
