@@ -20,18 +20,14 @@ function cleanupSmokeTestRecords(params) {
     candidates: [],
     deleted: [],
     skipped: [],
+    scans: [],
     notes: []
   };
 
   if (!requested.length) {
-    requested = [
-      { scope: 'jobs', id: 'J0022' },
-      { scope: 'jobs', id: 'J0021' },
-      { scope: 'customers', id: 'C0003' },
-      { scope: 'customers', id: 'C0002' }
-    ];
-    report.requested = requested;
-    report.notes.push('No records supplied; using known reviewed smoke candidates.');
+    report.status = 'no-records-selected';
+    report.notes.push('No records supplied; cleanup is a safe no-op.');
+    return report;
   }
 
   var ss = getComphoneSheet();
@@ -52,11 +48,30 @@ function cleanupSmokeTestRecords(params) {
   }
 
   if (execute) {
+    invalidateSmokeCleanupCaches_(requested);
     report.executed = true;
     report.status = report.deleted.length ? 'deleted-reviewed-smoke-records' : 'nothing-deleted';
   }
 
   return report;
+}
+
+function invalidateSmokeCleanupCaches_(requested) {
+  try {
+    var cache = CacheService.getScriptCache();
+    var keys = ['dashboard_bundle_v61', 'dashboard_data_v89', 'dashboard_data_v557'];
+    (requested || []).forEach(function(item) {
+      if (item.scope !== 'jobs' && item.scope !== 'job') return;
+      var search = String(item.id || '').trim().toLowerCase();
+      if (!search) return;
+      keys.push('jobs:check:' + search + ':50');
+      keys.push('jobs:check:' + search + ':100');
+    });
+    keys.forEach(function(key) { cache.remove(key); });
+  } catch (_cacheError) {}
+  try {
+    if (typeof invalidateBundleCache === 'function') invalidateBundleCache();
+  } catch (_bundleCacheError) {}
 }
 
 function normalizeSmokeCleanupRecords_(records) {
@@ -100,16 +115,29 @@ function scanSmokeCleanupSheet_(ss, archive, report, idMap, scope, sheetName, he
   if (!ids.length) return;
 
   var sheet = findSheetByName(ss, sheetName);
+  var scan = {
+    scope: scope,
+    requested_sheet: sheetName,
+    resolved_sheet: sheet ? sheet.getName() : '',
+    requested_ids: ids,
+    row_count: 0,
+    id_column: -1,
+    id_header: ''
+  };
+  report.scans.push(scan);
   if (!sheet) {
     report.skipped.push({ scope: scope, sheet: sheetName, reason: 'sheet-not-found' });
     return;
   }
 
   var values = sheet.getDataRange().getValues();
+  scan.row_count = Math.max(0, values.length - 1);
   if (values.length < 2) return;
   var headers = values[0].map(function(h) { return String(h || ''); });
   var idCol = findSmokeCleanupHeaderIndex_(headers, headerNames);
   if (idCol < 0) idCol = fallbackCol || 0;
+  scan.id_column = idCol;
+  scan.id_header = headers[idCol] || '';
 
   var rowsToDelete = [];
   for (var i = 1; i < values.length; i++) {
@@ -175,10 +203,10 @@ function archiveSmokeCleanupRow_(archive, scope, sheetName, id, rowNumber, heade
 }
 
 function findSmokeCleanupHeaderIndex_(headers, candidates) {
-  for (var i = 0; i < headers.length; i++) {
-    var h = String(headers[i] || '').toLowerCase();
-    for (var j = 0; j < candidates.length; j++) {
-      if (h === String(candidates[j]).toLowerCase()) return i;
+  for (var j = 0; j < candidates.length; j++) {
+    var candidate = String(candidates[j] || '').trim().toLowerCase();
+    for (var i = 0; i < headers.length; i++) {
+      if (String(headers[i] || '').trim().toLowerCase() === candidate) return i;
     }
   }
   return -1;

@@ -103,6 +103,7 @@ function invalidateBundleCache() {
   try {
     var cache = CacheService.getScriptCache();
     cache.remove(BUNDLE_CACHE_KEY);
+    cache.remove('dashboard_data_v89');
     cache.remove('dashboard_data_v557'); // invalidate old cache too
     return { success: true, message: 'Bundle cache cleared' };
   } catch(e) {

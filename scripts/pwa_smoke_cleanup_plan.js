@@ -38,8 +38,13 @@ function containsSmokeMarker(value) {
     text.includes('SOURCE=PWA_WRITE_SMOKE');
 }
 
-function idOf(row) {
-  return row && (row.id || row.job_id || row.customer_id || row.billing_id || row.po_id || row.ref || row.no || row.number || '');
+function idOf(row, scope) {
+  if (!row) return '';
+  if (scope === 'jobs') return row.job_id || row.Job_ID || row.id || '';
+  if (scope === 'customers') return row.customer_id || row.Customer_ID || row.id || '';
+  if (scope === 'billings') return row.billing_id || row.Billing_ID || row.id || '';
+  if (scope === 'purchase_orders') return row.po_id || row.PO_ID || row.id || '';
+  return row.id || row.ref || row.no || row.number || '';
 }
 
 function pushUniqueCandidate(report, candidate) {
@@ -107,6 +112,7 @@ async function main() {
     executed: false,
     status: 'ok',
     candidates: [],
+    hints: [],
     notes: [],
   };
 
@@ -141,7 +147,7 @@ async function main() {
         pushUniqueCandidate(report, {
           scope,
           action,
-          id: idOf(row),
+          id: idOf(row, scope),
           label: row.title || row.customer || row.customer_name || row.name || row.description || row.symptom || '',
           cleanup: 'manual-review-required',
           reason: 'Record contains AUTO WRITE SMOKE / WSMOKE marker',
@@ -152,14 +158,18 @@ async function main() {
     }
   }
 
-  loadLatestWriteSmokeCandidates()
-    .filter(item => item.id)
-    .forEach(item => pushUniqueCandidate(report, item));
+  report.hints = loadLatestWriteSmokeCandidates().filter(item => item.id);
+  if (report.hints.length) {
+    report.notes.push(`${report.hints.length} latest write-smoke IDs retained as hints only; live read scans decide cleanup candidates.`);
+  }
 
   if (EXECUTE) {
     if (CONFIRM !== 'REVIEWED_SMOKE_RECORDS') {
       report.status = 'blocked';
       report.notes.push('Execution blocked. Set COMPHONE_SMOKE_CLEANUP_CONFIRM=REVIEWED_SMOKE_RECORDS after reviewing the plan.');
+    } else if (!report.candidates.length) {
+      report.status = 'nothing-to-clean';
+      report.notes.push('No live smoke records were found; backend cleanup was not called.');
     } else {
       const cleanup = await request(url, 'cleanupSmokeTestRecords', {
         execute: 'true',
@@ -203,6 +213,7 @@ function writeReport(report) {
     `- Mode: ${report.mode}`,
     `- Token present: ${report.tokenPresent}`,
     `- Candidates: ${report.candidates.length}`,
+    `- Historical hints: ${(report.hints || []).length}`,
     '',
     '| Scope | ID | Label | Cleanup | Reason |',
     '|---|---|---|---|---|',

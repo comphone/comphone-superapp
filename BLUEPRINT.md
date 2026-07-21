@@ -1,10 +1,10 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.18.47-sprint213 (PWA) / GAS Backend v5.18.17-id-integrity (deployment pending)
+> **Version:** v5.18.47-sprint213 (PWA) / GAS Backend v5.18.17-id-integrity @626
 
 > **Date:** 2026-07-21 | **Phase:** 215 (Data Identity Integrity)
 
-> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + CORE-AUDITED + FOCUS-AUDITED + JOBS-E2E-HARDENED + BILLING-E2E-HARDENED + REPORTS-E2E-HARDENED + VISION-LINE-FLOW-HARDENED + PRODUCTION-JOURNEY-HARDENED + BACKUP-WORKFLOW-HARDENED + MOBILE-QUICK-ACTIONS-HARDENED + MOBILE-CORE-WORKFLOWS-HARDENED + MOBILE-SECONDARY-WORKFLOWS-HARDENED + LIVE-MOBILE-MENU-SMOKE-HARDENED + OPERATOR-UX-QA-HARDENED + PROTECTED-LIVE-QA-RUNBOOK-HARDENED + PROTECTED-LIVE-QA-VERIFIED + DASHBOARD-PERFORMANCE-HARDENED + DEPLOY-GAS-CI-GATE-HARDENED + WRITE-SMOKE-LIFECYCLE-HARDENED + BLUEPRINT-RECONCILED + PO-READ-CACHE-HARDENED + JOBS-READ-CACHE-HARDENED + READ-DASHBOARD-CACHE-HARDENED + PRODUCTION-SAFETY-HARNESS-HARDENED + OPERATOR-WORKFLOW-POLISHED + LIVE-CACHE-FRESHNESS-HARDENED + OPERATOR-MENU-CLICKTHROUGH-HARDENED + CONTROLLED-WRITE-LIFECYCLE-HARDENED + LIVE-UX-MENU-RUNTIME-HARDENED + VISUAL-RUNTIME-WALKTHROUGH-HARDENED + PROTECTED-BROWSER-JOURNEY-HARDENED + RECORD-DETAIL-COMPLETENESS-HARDENED + PRODUCTION-DATA-QUALITY-GUARDED + CONTROLLED-DATA-CLEANUP-PLANNED + DATABASE-SCHEMA-REGISTRY-GUARDED + SHEET-CONTEXT-NORMALIZED + DATA-REPAIR-CONSOLE-PLANNED + DATA-REPAIR-EXECUTION-HARDENED + GAS-618-LIVE-VERIFIED + FULL-QA-SWEEP + GEMINI-READY + VISION-LINE-PROTECTED-LIVE-VERIFIED + LINE-REAL-SEND-READINESS-GUARDED + CORE-WORKFLOW-LIVE-VERIFIED + SUPPORT-ADMIN-LIVE-VERIFIED + DATA-COMPLETENESS-REVIEWED + DATA-COMPLETENESS-PANEL-HARDENED + DATA-REVIEW-WORKFLOW-HARDENED + BACKEND-REVIEW-LOG-HARDENED + BACKEND-REVIEW-LOG-LIVE-QA-VERIFIED + DATA-CLEANUP-TRIAGE-GUARDED + JBR-LIVE-POLISH-GUARDED + MOBILE-MENU-DEEP-QA-GUARDED + AI-VISION-REAL-USE-GUARDED + PERMISSION-OPS-HARDENED + OWNER-DATA-RESOLUTION-GUARDED + MOBILE-UX-WALKTHROUGH-GUARDED + AI-VISION-PILOT-GUARDED + DASHBOARD-DECISION-LAYER-GUARDED + OPS-PERMISSION-CLEANUP-GUARDED + LIVE-BROWSER-VISUAL-QA-GUARDED + DATA-CLEANUP-OWNER-WORKFLOW-GUARDED + MOBILE-DASHBOARD-DECISION-LAYER-GUARDED + AI-VISION-REAL-PILOT-GUARDED + PERMISSION-FALLBACK-CLOSURE-GUARDED + POST-DEPLOY-PAGES-CONFIRMATION-GUARDED + OWNER-DATA-BACKFILL-READINESS-GUARDED + MOBILE-MENU-E2E-GUARDED + PC-DASHBOARD-WORKFLOW-GUARDED + AI-VISION-LINE-ROOM-CONTROL-GUARDED + POST-DEPLOY-PUBLISH-GUARDED + REAL-BROWSER-CLICKTHROUGH-CONTRACT-GUARDED + PROTECTED-LIVE-TOKEN-SWEEP-GUARDED + OWNER-DATA-CLEANUP-DECISION-GUARDED + AI-VISION-REAL-SAMPLE-PILOT-GUARDED + PAGES-PUBLISH-LOCK-GUARDED + BROWSER-PROFILE-CLICKTHROUGH-PACK + PROTECTED-TOKEN-FULL-SWEEP-PACK + OWNER-CLEANUP-EXECUTION-READINESS + AI-VISION-REAL-SAMPLE-RUNBOOK + PAGES-FRESH-RELEASE-GATE + PROTECTED-BROWSER-ACCEPTANCE + AI-VISION-SAMPLE-EVIDENCE + LINE-ROOM-NOTIFICATION-MATRIX + RELEASE-READINESS-MASTER + STRICT-PROTECTED-BROWSER-RUNBOOK + AI-VISION-SAMPLE-PILOT-GATE + PUBLISHED-PROTECTED-ACCEPTANCE + AI-VISION-REAL-SAMPLE-EVIDENCE + STRICT-LIVE-ACCEPTANCE + AI-VISION-REAL-SAMPLE-EXECUTION + STRICT-PROTECTED-LIVE-PROOF + AI-VISION-OWNER-SAMPLE-RUN + SMOKE-CLEANUP-EXECUTION + LINE-AI-VISION-INGRESS + JOBS-DETAIL-DELETE-REPAIRED + LINE-GROUP-IMAGE-PILOT-READY + LINE-REPLY-NOISE-SUPPRESSED + AI-VISION-REVIEW-INBOX-GUARDED + AI-VISION-INBOX-RENDER-SMOKED + MOBILE-DASHBOARD-SIMPLIFIED + DELETE-CAMERA-DASHBOARD-GUARDED + JOB-ARCHIVE-RESTORE-GUARDED - latest production GAS deployment is @620 on the active Web App URL; Worker `1.0.5-sprint189` is live and quiet-forwards group images; Sprint 194 adds job archive restore (preview + duplicate-block + RESTORE_JOB confirmation + audit log) to admin panel Archive tab; DBJOBS_ARCHIVE now registered in schema.
+> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + PROTECTED-LIVE-VERIFIED + DATA-IDENTITY-HARDENED - production PWA is Sprint 213, GAS `v5.18.17-id-integrity` is live at @626, and Worker `1.0.5-sprint189` is live with quiet group-image forwarding. Historical status detail remains below.
 
 ---
 
@@ -42,8 +42,33 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > warranty, and photo references before allocating the next ID. Billing lists no
 > longer assume Billing_ID is column zero, and smoke cleanup owns a namespaced
 > header matcher. The generated smoke customer/job were archived and deleted;
-> the legacy billing row updated by the reused JobID remains queued for cleanup
-> after the corrected GAS source is deployed.
+> all smoke-tagged customer, job, and billing rows are archived/deleted after
+> controlled verification.
+
+> Sprint 215 live follow-up: GAS `v5.18.17-id-integrity` is deployed at @626.
+> The repaired billing list exposed two smoke-tagged billing rows. Cleanup plan
+> primary-key selection is now scope-aware so billing cleanup sends Billing_ID,
+> never Job_ID, to the protected archive/delete action.
+
+> Cleanup diagnostics now report only resolved sheet identity, row count, and ID
+> header metadata so schema-routing failures can be diagnosed without exposing
+> business row values.
+
+> Live diagnostics found both legacy `Bill_ID` and canonical `Billing_ID` in
+> DB_BILLING. Cleanup header resolution now honors candidate priority and selects
+> canonical `Billing_ID` before legacy aliases regardless of physical column order.
+
+> JobID allocation also scans `DB_SMOKE_CLEANUP_ARCHIVE` and
+> `DB_DATA_REPAIR_ARCHIVE`; deleted identifiers remain permanently reserved even
+> after their live billing/reference rows have been cleaned.
+
+> Cleanup safety closure: prior write-smoke report IDs are historical hints only,
+> never live deletion candidates. Both planner and backend now no-op when no live
+> records are selected; the former hardcoded fallback deletion list is removed.
+
+> Cleanup now invalidates current dashboard cache keys (`dashboard_data_v89` and
+> `dashboard_bundle_v61`) plus targeted Jobs search caches. Deleted records no
+> longer remain visible as ghost candidates until cache expiry.
 
 > Cowork review on or after 2026-06-12 should begin with
 > `COWORK_SYSTEM_HANDOFF.md`. It separates current verified state, live-proof
@@ -75,8 +100,8 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 - **Current phase:** Sprint / Phase 215 (data identity and controlled cleanup integrity).
 - **Latest verified runtime commit:** `4397889 Sprint 213: fix protected mobile job detail collisions`; repository HEAD may contain later CI-only commits, so run `git log -1 --oneline` for the exact current HEAD.
 - **PWA version:** `v5.18.47-sprint213` (build token `20260721_1330`).
-- **GAS backend source version:** `v5.18.17-id-integrity` (deployment pending).
-- **Current production GAS deployment:** `AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ @620` until Sprint 215 deploy verification completes.
+- **GAS backend version:** `v5.18.17-id-integrity`.
+- **Current production GAS deployment:** `AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ @626`.
 - **Production GAS URL:** `https://script.google.com/macros/s/AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ/exec`.
 - **Production Spreadsheet ID:** `19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA`.
 - **Schema registry:** `docs/database_schema_registry.json`.
@@ -357,7 +382,7 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN,Env:\COMPHONE_LINE_TOGGLE_CONFIRM,Env:\COMP
 | App Version | `v5.18.47-sprint196` | `pwa/version_config.js` |
 | Cache Version | `comphone-v5.18.47-sprint196-20260617_0900` | `pwa/version_config.js`, `pwa/sw.js` |
 | Build Timestamp | `20260617_0900` | `pwa/version_config.js` |
-| GAS Backend Deploy | `AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ @620` / production URL in `pwa/gas_config.js` | `Config.gs`, `Dashboard.gs`, `DashboardBundle.gs`, `Router.gs`, `RouterSplit.gs`, `JobStateMachine.gs`, `LineCommandCenter.gs`, `SmokeCleanup.gs`, `DataRepairConsole.gs`, `VisionPipeline.gs`, `PhotoQueue.gs`, `clasp-ready/Config.gs`, `clasp-ready/Dashboard.gs`, `clasp-ready/DashboardBundle.gs`, `clasp-ready/Router.gs`, `clasp-ready/RouterSplit.gs`, `clasp-ready/JobStateMachine.gs`, `clasp-ready/LineCommandCenter.gs`, `clasp-ready/SmokeCleanup.gs`, `clasp-ready/DataRepairConsole.gs`, `clasp-ready/VisionPipeline.gs`, `clasp-ready/PhotoQueue.gs` |
+| GAS Backend Deploy | `AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ @626` / production URL in `pwa/gas_config.js` | `Config.gs`, `Dashboard.gs`, `DashboardBundle.gs`, `Router.gs`, `RouterSplit.gs`, `JobStateMachine.gs`, `BillingCore.gs`, `LineCommandCenter.gs`, `SmokeCleanup.gs`, `DataRepairConsole.gs`, `VisionPipeline.gs`, `PhotoQueue.gs`, `clasp-ready/Config.gs`, `clasp-ready/Dashboard.gs`, `clasp-ready/DashboardBundle.gs`, `clasp-ready/Router.gs`, `clasp-ready/RouterSplit.gs`, `clasp-ready/JobStateMachine.gs`, `clasp-ready/BillingCore.gs`, `clasp-ready/LineCommandCenter.gs`, `clasp-ready/SmokeCleanup.gs`, `clasp-ready/DataRepairConsole.gs`, `clasp-ready/VisionPipeline.gs`, `clasp-ready/PhotoQueue.gs` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-07.phase65-line-command-center` | `pwa/api_contract.js` |
 | Last Production Commit | GitHub `main` HEAD | Use `git log -1 --oneline` for the exact commit |

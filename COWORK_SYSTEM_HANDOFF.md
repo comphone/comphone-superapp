@@ -47,8 +47,10 @@ order and safety boundaries.
   sheets, so deletion cannot make an identifier reusable.
 - Billing list reads use schema headers rather than column zero, supporting the
   existing legacy DB_BILLING layout.
-- The test customer and job were archived/deleted. One billing row touched through
-  the reused JobID must be cleaned after the Sprint 215 GAS deployment is live.
+- GAS `v5.18.17-id-integrity` is live at deployment @626. Controlled lifecycle
+  verification allocated J0023 (no ID reuse), passed create/read/idempotency for
+  customer/job/billing, and archived/deleted all three scopes. Final live scan
+  has zero smoke candidates; historical report IDs remain hints only.
 
 ## 1. Current Repository State
 
@@ -67,8 +69,8 @@ order and safety boundaries.
 |---|---|
 | PWA version | `v5.18.47-sprint213` (`20260721_1330`) |
 | Blueprint phase | Phase 215 |
-| GAS backend source | `v5.18.17-id-integrity` (deployment pending) |
-| Current GAS deployment | `@620` until Sprint 215 verification completes |
+| GAS backend | `v5.18.17-id-integrity` |
+| Current GAS deployment | `@626` |
 | Production spreadsheet | `19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA` |
 | LINE Worker source version | `1.0.5-sprint189` |
 | Mobile URL | `https://comphone.github.io/comphone-superapp/pwa/` |

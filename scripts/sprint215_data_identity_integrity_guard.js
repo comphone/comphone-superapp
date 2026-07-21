@@ -50,7 +50,11 @@ function simulateJobIds(source) {
   const live = makeSheet('DBJOBS', [['JobID'], ['J0020']], spreadsheet);
   sheets.set('DBJOBS_ARCHIVE', makeSheet('DBJOBS_ARCHIVE', [
     ['archived_at', 'archived_by', 'archived_role', 'archive_reason', 'archive_meta', 'JobID'],
-    ['', '', '', '', '', 'J0022']
+    ['', '', '', '', '', 'J0019']
+  ], spreadsheet));
+  sheets.set('DB_SMOKE_CLEANUP_ARCHIVE', makeSheet('DB_SMOKE_CLEANUP_ARCHIVE', [
+    ['Archived_At', 'Scope', 'Source_Sheet', 'Record_ID'],
+    ['', 'jobs', 'DBJOBS', 'J0022']
   ], spreadsheet));
   sheets.set('DB_BILLING', makeSheet('DB_BILLING', [
     ['Billing_ID', 'Job_ID'],
@@ -92,10 +96,21 @@ async function simulateLegacyBillingList(source) {
   return context.listAllBillings_({});
 }
 
+function simulateCleanupHeaderPriority(source) {
+  const context = { console };
+  vm.createContext(context);
+  vm.runInContext(source, context);
+  return context.findSmokeCleanupHeaderIndex_(
+    ['Legacy_Total', 'Bill_ID', 'Billing_ID'],
+    ['Billing_ID', 'billing_id', 'Bill_ID', 'bill_id']
+  );
+}
+
 async function main() {
   const jobs = read('clasp-ready/JobStateMachine.gs');
   const billing = read('clasp-ready/BillingCore.gs');
   const cleanup = read('clasp-ready/SmokeCleanup.gs');
+  const dashboardBundle = read('clasp-ready/DashboardBundle.gs');
   const alignment = read('scripts/gas_source_alignment.js');
   const cleanupPlan = read('scripts/pwa_smoke_cleanup_plan.js');
   const regression = read('scripts/regression-guard.sh');
@@ -105,6 +120,7 @@ async function main() {
   const config = read('clasp-ready/Config.gs');
   const jobSimulation = simulateJobIds(jobs);
   const billingSimulation = await simulateLegacyBillingList(billing);
+  const cleanupHeaderIndex = simulateCleanupHeaderPriority(cleanup);
 
   const checks = [
     {
@@ -115,7 +131,7 @@ async function main() {
     },
     {
       id: 'job-id-scans-historical-references',
-      ok: ['DBJOBS_ARCHIVE', 'DB_BILLING', 'DB_JOB_LOGS', 'DB_WARRANTIES', 'DB_PHOTO_QUEUE']
+      ok: ['DBJOBS_ARCHIVE', 'DB_SMOKE_CLEANUP_ARCHIVE', 'DB_DATA_REPAIR_ARCHIVE', 'DB_BILLING', 'DB_JOB_LOGS', 'DB_WARRANTIES', 'DB_PHOTO_QUEUE']
         .every(name => jobs.includes(`name: '${name}'`))
     },
     {
@@ -145,12 +161,40 @@ async function main() {
     {
       id: 'cleanup-header-helper-is-namespaced',
       ok: cleanup.includes('function findSmokeCleanupHeaderIndex_(') &&
-        cleanup.includes('var idCol = findSmokeCleanupHeaderIndex_(headers, headerNames);')
+        cleanup.includes('var idCol = findSmokeCleanupHeaderIndex_(headers, headerNames);') &&
+        cleanup.includes('report.scans.push(scan)') &&
+        cleanup.includes('scan.id_header = headers[idCol]')
+    },
+    {
+      id: 'cleanup-prefers-canonical-billing-id',
+      ok: cleanupHeaderIndex === 2,
+      detail: { selected_index: cleanupHeaderIndex, expected_index: 2 }
     },
     {
       id: 'cleanup-plan-carries-billing-records',
       ok: cleanupPlan.includes("scope = 'billings'") &&
-        cleanupPlan.includes("['billings', 'listBillings'")
+        cleanupPlan.includes("['billings', 'listBillings'") &&
+        cleanupPlan.includes("if (scope === 'billings') return row.billing_id") &&
+        cleanupPlan.includes('id: idOf(row, scope)')
+    },
+    {
+      id: 'cleanup-historical-reports-are-hints-only',
+      ok: cleanupPlan.includes('report.hints = loadLatestWriteSmokeCandidates()') &&
+        cleanupPlan.includes("report.status = 'nothing-to-clean'") &&
+        cleanupPlan.includes('backend cleanup was not called')
+    },
+    {
+      id: 'backend-empty-cleanup-is-safe-noop',
+      ok: cleanup.includes("report.status = 'no-records-selected'") &&
+        cleanup.includes('cleanup is a safe no-op') &&
+        !cleanup.includes('using known reviewed smoke candidates')
+    },
+    {
+      id: 'cleanup-invalidates-current-read-caches',
+      ok: cleanup.includes('invalidateSmokeCleanupCaches_(requested)') &&
+        cleanup.includes("'dashboard_data_v89'") &&
+        cleanup.includes("'dashboard_bundle_v61'") &&
+        dashboardBundle.includes("cache.remove('dashboard_data_v89')")
     },
     {
       id: 'deploy-source-pairs-are-aligned',

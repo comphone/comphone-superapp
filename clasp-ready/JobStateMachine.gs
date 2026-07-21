@@ -656,6 +656,8 @@ function generateNextJobId_(sheet, jobIdIndex) {
   var ss = sheet.getParent();
   var references = [
     { name: 'DBJOBS_ARCHIVE', headers: ['JobID', 'Job_ID', 'job_id'], fallback: 5 },
+    { name: 'DB_SMOKE_CLEANUP_ARCHIVE', headers: ['Record_ID', 'record_id'], fallback: 3 },
+    { name: 'DB_DATA_REPAIR_ARCHIVE', headers: ['Record_ID', 'record_id', 'Job_ID', 'job_id'], fallback: 3 },
     { name: 'DB_BILLING', headers: ['Job_ID', 'job_id', 'JobID'], fallback: 1 },
     { name: 'DB_JOB_LOGS', headers: ['Job_ID', 'job_id', 'JobID'], fallback: 1 },
     { name: 'DB_JOB_STATUS_LOG', headers: ['Job_ID', 'job_id', 'JobID'], fallback: 1 },

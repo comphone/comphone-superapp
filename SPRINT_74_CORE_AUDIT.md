@@ -1,11 +1,11 @@
 # Sprint 74 Core System Audit
 
-Generated: 2026-07-21T05:30:30.665Z
+Generated: 2026-07-21T06:38:26.464Z
 
 Score: **100/100**
 Status: **OK**
 App: `v5.18.47-sprint213` / build `20260721_1330`
-GAS: `v5.18.16-write-flow-validation` / https://script.google.com/macros/s/AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ/exec
+GAS: `v5.18.17-id-integrity` / https://script.google.com/macros/s/AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ/exec
 
 ## Area Summary
 
