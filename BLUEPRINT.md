@@ -1,10 +1,10 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.18.47-sprint216 (PWA) / GAS Backend v5.18.18-ai-vision-current @629
+> **Version:** v5.18.47-sprint216 (PWA) / GAS Backend v5.18.18-ai-vision-current @630
 
 > **Date:** 2026-07-21 | **Phase:** 216 (Current Gemini Vision + Large Payload Transport)
 
-> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + PROTECTED-LIVE-VERIFIED + DATA-IDENTITY-HARDENED + REAL-AI-VISION-VERIFIED - PWA Sprint 216 is the release target, GAS `v5.18.18-ai-vision-current` is live at @629, and Worker `1.0.5-sprint189` remains live with quiet group-image forwarding. Historical status detail remains below.
+> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + PROTECTED-LIVE-VERIFIED + DATA-IDENTITY-HARDENED + REAL-AI-VISION-VERIFIED - PWA Sprint 216 is the release target, GAS `v5.18.18-ai-vision-current` is live at @630, and Worker `1.0.5-sprint189` remains live with quiet group-image forwarding. Historical status detail remains below.
 
 ---
 
@@ -86,7 +86,8 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > Production fixture `test_fixtures/vision/cracked_phone_workbench_640.jpg` passed
 > at `VISION_LOG row-11`: provider `google-gemini`, model `gemini-3.5-flash`,
 > confidence 0.95, asset `phone`, category `Before`, decision `QC_FAIL`.
-> No real LINE message was sent by this controlled pilot. GAS is live at @629.
+> No real LINE message was sent by this controlled pilot. The equivalent parser
+> syntax was made CI-validator-safe and GAS is live at @630.
 
 > Cowork review on or after 2026-06-12 should begin with
 > `COWORK_SYSTEM_HANDOFF.md`. It separates current verified state, live-proof
@@ -116,10 +117,10 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 
 ### Current Production State
 - **Current phase:** Sprint / Phase 216 (current Gemini model, large-image transport, and semantic Vision proof).
-- **Latest verified runtime source:** Sprint 216 source deployed to GAS @629; run `git log -1 --oneline` for the exact repository commit after release publication.
+- **Latest verified runtime source:** Sprint 216 source deployed to GAS @630; run `git log -1 --oneline` for the exact repository commit after release publication.
 - **PWA version:** `v5.18.47-sprint216` (build token `20260721_1410`).
 - **GAS backend version:** `v5.18.18-ai-vision-current`.
-- **Current production GAS deployment:** `AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ @629`.
+- **Current production GAS deployment:** `AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ @630`.
 - **Production GAS URL:** `https://script.google.com/macros/s/AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ/exec`.
 - **Production Spreadsheet ID:** `19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA`.
 - **Schema registry:** `docs/database_schema_registry.json`.
@@ -400,7 +401,7 @@ Remove-Item Env:\COMPHONE_AUTH_TOKEN,Env:\COMPHONE_LINE_TOGGLE_CONFIRM,Env:\COMP
 | App Version | `v5.18.47-sprint196` | `pwa/version_config.js` |
 | Cache Version | `comphone-v5.18.47-sprint196-20260617_0900` | `pwa/version_config.js`, `pwa/sw.js` |
 | Build Timestamp | `20260617_0900` | `pwa/version_config.js` |
-| GAS Backend Deploy | `AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ @629` / production URL in `pwa/gas_config.js` | `Config.gs`, `Dashboard.gs`, `DashboardBundle.gs`, `Router.gs`, `RouterSplit.gs`, `JobStateMachine.gs`, `BillingCore.gs`, `LineCommandCenter.gs`, `SmokeCleanup.gs`, `DataRepairConsole.gs`, `VisionAnalysis.gs`, `VisionPipeline.gs`, `PhotoQueue.gs`, `clasp-ready/Config.gs`, `clasp-ready/Dashboard.gs`, `clasp-ready/DashboardBundle.gs`, `clasp-ready/Router.gs`, `clasp-ready/RouterSplit.gs`, `clasp-ready/JobStateMachine.gs`, `clasp-ready/BillingCore.gs`, `clasp-ready/LineCommandCenter.gs`, `clasp-ready/SmokeCleanup.gs`, `clasp-ready/DataRepairConsole.gs`, `clasp-ready/VisionAnalysis.gs`, `clasp-ready/VisionPipeline.gs`, `clasp-ready/PhotoQueue.gs` |
+| GAS Backend Deploy | `AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ @630` / production URL in `pwa/gas_config.js` | `Config.gs`, `Dashboard.gs`, `DashboardBundle.gs`, `Router.gs`, `RouterSplit.gs`, `JobStateMachine.gs`, `BillingCore.gs`, `LineCommandCenter.gs`, `SmokeCleanup.gs`, `DataRepairConsole.gs`, `VisionAnalysis.gs`, `VisionPipeline.gs`, `PhotoQueue.gs`, `clasp-ready/Config.gs`, `clasp-ready/Dashboard.gs`, `clasp-ready/DashboardBundle.gs`, `clasp-ready/Router.gs`, `clasp-ready/RouterSplit.gs`, `clasp-ready/JobStateMachine.gs`, `clasp-ready/BillingCore.gs`, `clasp-ready/LineCommandCenter.gs`, `clasp-ready/SmokeCleanup.gs`, `clasp-ready/DataRepairConsole.gs`, `clasp-ready/VisionAnalysis.gs`, `clasp-ready/VisionPipeline.gs`, `clasp-ready/PhotoQueue.gs` |
 | GAS Production URL | `https://script.google.com/macros/s/AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ/exec` | `pwa/gas_config.js` |
 | API Contract Version | `2026-05-07.phase65-line-command-center` | `pwa/api_contract.js` |
 | Last Production Commit | GitHub `main` HEAD | Use `git log -1 --oneline` for the exact commit |

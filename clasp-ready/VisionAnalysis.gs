@@ -97,7 +97,7 @@ function _callGeminiVision_(apiKey, prompt, imageBase64, mimeType) {
     return { error: 'Gemini returned empty content' };
   }
 
-  var cleaned = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+  var cleaned = content.replace(/^```(?:json)?(?:\s+)?/i, '').replace(/\s*```$/i, '').trim();
   var parsed;
   try {
     parsed = JSON.parse(cleaned);

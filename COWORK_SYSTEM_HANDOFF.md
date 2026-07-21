@@ -67,13 +67,13 @@ order and safety boundaries.
 - Real fixture analysis passed in production at `VISION_LOG row-11`: confidence
   0.95, asset `phone`, category `Before`, decision `QC_FAIL`, model
   `gemini-3.5-flash`. The pilot sent no LINE message.
-- GAS `v5.18.18-ai-vision-current` is live at deployment @629.
+- GAS `v5.18.18-ai-vision-current` is live at deployment @630.
 
 ## 1. Current Repository State
 
 - Repository: `https://github.com/comphone/comphone-superapp`
 - Branch: `main`
-- Latest verified runtime source: Sprint 216 source deployed to GAS @629. Run
+- Latest verified runtime source: Sprint 216 source deployed to GAS @630. Run
   `git log -1 --oneline` for the exact repository commit after publication.
 - Local working copy was missing on 2026-06-12 and was restored by cloning the
   GitHub repository into `C:\Users\Server\comphone-superapp`.
@@ -86,7 +86,7 @@ order and safety boundaries.
 | PWA version | `v5.18.47-sprint216` (`20260721_1410`) |
 | Blueprint phase | Phase 216 |
 | GAS backend | `v5.18.18-ai-vision-current` |
-| Current GAS deployment | `@629` |
+| Current GAS deployment | `@630` |
 | Production spreadsheet | `19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA` |
 | LINE Worker source version | `1.0.5-sprint189` |
 | Mobile URL | `https://comphone.github.io/comphone-superapp/pwa/` |
@@ -434,7 +434,7 @@ confirmed no related console errors.
 ### P1 - Reconcile version and documentation drift (resolved 2026-07-21)
 
 - Current handoff identity records PWA `v5.18.47-sprint216`, build
-  `20260721_1410`, GAS @629, and Blueprint Phase 216.
+  `20260721_1410`, GAS @630, and Blueprint Phase 216.
 - Worker metadata and recorded runtime remain aligned at `1.0.5-sprint189`.
 - Historical Blueprint material remains for audit history; agents must treat the
   top handoff snapshot and this document's sections 0-2 as authoritative.

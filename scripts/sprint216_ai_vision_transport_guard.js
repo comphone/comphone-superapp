@@ -113,7 +113,7 @@ function main() {
     },
     {
       id: 'blueprint-current',
-      ok: blueprint.includes('Sprint 216') && blueprint.includes('gemini-3.5-flash') && blueprint.includes('@629')
+      ok: blueprint.includes('Sprint 216') && blueprint.includes('gemini-3.5-flash') && blueprint.includes('@630')
     }
   ];
 
