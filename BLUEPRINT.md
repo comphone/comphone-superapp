@@ -149,6 +149,15 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > update, waits for `waiting`/`installed`, sends `SKIP_WAITING`, and reloads on
 > controller change. Current `pwa_install.js` delegates to the same bridge.
 
+> Sprint 218 release closure: commit `03a4e68` passed Auto Deploy workflow #611
+> (Validate, Pages deploy, and Auto Tag all successful). Remote Pages verification
+> confirms build `20260721_1524` and the published network-only version asset
+> contains both the legacy-client bridge and capture handler. One browser-control
+> profile that had remained open since Sprint 216 stayed pinned to its old service
+> worker despite the published bridge; treat a one-time tab close/reopen or hard
+> refresh as an operational migration step for already-stuck clients. New/current
+> clients are protected by the Sprint 218 update flow and recurrence guard.
+
 > Cowork review on or after 2026-06-12 should begin with
 > `COWORK_SYSTEM_HANDOFF.md`. It separates current verified state, live-proof
 > gaps, safety gates, and the recommended review order from the historical
