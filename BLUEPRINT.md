@@ -120,6 +120,12 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > Worker `1.0.5-sprint189` health and `/diag/gas` both pass; the diagnostic
 > confirms GAS, Gemini, and LINE readiness without sending a real LINE message.
 
+> CI follow-up: the first Sprint 217 workflow run reached Guard Self-Test and
+> correctly rejected the intentionally changed regression guard because its
+> integrity checksum still described Sprint 216. The checksum is refreshed in
+> the patch release; this is integrity metadata only and does not weaken any
+> guard rule.
+
 > Cowork review on or after 2026-06-12 should begin with
 > `COWORK_SYSTEM_HANDOFF.md`. It separates current verified state, live-proof
 > gaps, safety gates, and the recommended review order from the historical
