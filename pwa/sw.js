@@ -3,7 +3,7 @@
 // 3 Cache Strategies: Cache First | Network First | Network Only
 // Background Sync: flush IndexedDB offline queue
 // ===========================================================
-const CACHE_V = 'comphone-v5.18.47-sprint216-20260721_1410';
+const CACHE_V = 'comphone-v5.18.47-sprint217-20260721_1449';
 const CACHE_NAME = CACHE_V; // alias for compat
 const BASE = new URL(self.registration.scope).pathname.replace(/\/+$/, '');
 const NAVIGATION_FALLBACK = BASE + '/index.html';

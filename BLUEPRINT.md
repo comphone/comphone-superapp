@@ -1,10 +1,10 @@
 # 📘 COMPHONE SUPER APP — BLUEPRINT (Single Source of Truth)
 
-> **Version:** v5.18.47-sprint216 (PWA) / GAS Backend v5.18.18-ai-vision-current @630
+> **Version:** v5.18.47-sprint217 (PWA) / GAS Backend v5.18.19-line-quiet-center @631
 
-> **Date:** 2026-07-21 | **Phase:** 216 (Current Gemini Vision + Large Payload Transport)
+> **Date:** 2026-07-21 | **Phase:** 217 (LINE Quiet Mode + Alert Rendering)
 
-> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + PROTECTED-LIVE-VERIFIED + DATA-IDENTITY-HARDENED + REAL-AI-VISION-VERIFIED - PWA Sprint 216 is the release target, GAS `v5.18.18-ai-vision-current` is live at @630, and Worker `1.0.5-sprint189` remains live with quiet group-image forwarding. Historical status detail remains below.
+> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + PROTECTED-LIVE-VERIFIED + DATA-IDENTITY-HARDENED + REAL-AI-VISION-VERIFIED - Sprint 217 closes LINE Center alert rendering and room quiet-mode controls. GAS `v5.18.19-line-quiet-center` is live at @631; Worker `1.0.5-sprint189` remains live with quiet group-image forwarding. Historical status detail remains below.
 
 ---
 
@@ -96,6 +96,30 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > for public health/version probes. This removes duplicate production network
 > calls without weakening the release contract.
 
+> 2026-07-21 Sprint 217 LINE Quiet Mode + Alert Rendering: production browser
+> inspection found configured rooms already had outbound notifications muted,
+> while bot replies were still enabled. LINE notification and bot-reply settings
+> remain independent: muting either output never disables webhook processing,
+> Vision logs, queues, or audit records. LINE Center now formats nested alert
+> payloads without rendering `[object Object]`, keeps Thai command/help text in
+> valid UTF-8, and has a dedicated recurrence guard wired into regression and CI.
+> GAS `v5.18.19-line-quiet-center` was deployed at @631. Protected production
+> verification set bot replies OFF for all nine room roles; all five configured
+> rooms report notifications OFF and bot replies OFF. Backend processing remains
+> active by contract. Production browser evidence follows after Pages publishes
+> build `20260721_1449`.
+
+> Sprint 217 release automation also moves every repository workflow from
+> `actions/checkout@v4` / `actions/setup-node@v4` to the current v6 action
+> runtime. This removes the Node 20 action-runtime deprecation warning while
+> preserving the application's explicit test matrix and Node version choices.
+
+> Sprint 217 validation: static guard, CI readiness, GAS alignment/syntax,
+> Sprint 217 quiet-mode guard, Sprint 215 identity guard, and the complete
+> regression pack pass. The system step test remains 167/167 with zero warnings.
+> Worker `1.0.5-sprint189` health and `/diag/gas` both pass; the diagnostic
+> confirms GAS, Gemini, and LINE readiness without sending a real LINE message.
+
 > Cowork review on or after 2026-06-12 should begin with
 > `COWORK_SYSTEM_HANDOFF.md`. It separates current verified state, live-proof
 > gaps, safety gates, and the recommended review order from the historical
@@ -123,11 +147,11 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > `1.0.5-sprint189`. Details in `COWORK_SYSTEM_HANDOFF.md` section 9a.
 
 ### Current Production State
-- **Current phase:** Sprint / Phase 216 (current Gemini model, large-image transport, and semantic Vision proof).
-- **Latest verified runtime source:** Sprint 216 source deployed to GAS @630; run `git log -1 --oneline` for the exact repository commit after release publication.
-- **PWA version:** `v5.18.47-sprint216` (build token `20260721_1410`).
-- **GAS backend version:** `v5.18.18-ai-vision-current`.
-- **Current production GAS deployment:** `AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ @630`.
+- **Current phase:** Sprint / Phase 217 (LINE quiet mode, useful alert details, and production browser acceptance).
+- **Latest verified runtime source:** Sprint 217 source deployed to GAS @631; run `git log -1 --oneline` for the exact repository commit after release publication.
+- **PWA release target:** `v5.18.47-sprint217` (build token `20260721_1449`).
+- **GAS backend:** `v5.18.19-line-quiet-center`, deployed at @631.
+- **Current production GAS deployment:** `AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ @631`.
 - **Production GAS URL:** `https://script.google.com/macros/s/AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ/exec`.
 - **Production Spreadsheet ID:** `19fkLbSbBdz0EjAV8nE9LLwBiHeIN50BTPptt_PJCRGA`.
 - **Schema registry:** `docs/database_schema_registry.json`.

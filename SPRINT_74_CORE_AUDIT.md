@@ -1,11 +1,11 @@
 # Sprint 74 Core System Audit
 
-Generated: 2026-07-21T07:12:04.686Z
+Generated: 2026-07-21T08:00:00.171Z
 
 Score: **100/100**
 Status: **OK**
-App: `v5.18.47-sprint216` / build `20260721_1410`
-GAS: `v5.18.18-ai-vision-current` / https://script.google.com/macros/s/AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ/exec
+App: `v5.18.47-sprint217` / build `20260721_1449`
+GAS: `v5.18.19-line-quiet-center` / https://script.google.com/macros/s/AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ/exec
 
 ## Area Summary
 
@@ -29,8 +29,8 @@ No P0/P1/P2 findings. Core system contracts are aligned.
 
 | Area | Check | Detail |
 |---|---|---|
-| source-of-truth | frontend-version-present | version=v5.18.47-sprint216 build=20260721_1410 cache=comphone-v5.18.47-sprint216-20260721_1410 |
-| source-of-truth | service-worker-cache-matches-version-config | sw=comphone-v5.18.47-sprint216-20260721_1410 version_config=comphone-v5.18.47-sprint216-20260721_1410 |
+| source-of-truth | frontend-version-present | version=v5.18.47-sprint217 build=20260721_1449 cache=comphone-v5.18.47-sprint217-20260721_1449 |
+| source-of-truth | service-worker-cache-matches-version-config | sw=comphone-v5.18.47-sprint217-20260721_1449 version_config=comphone-v5.18.47-sprint217-20260721_1449 |
 | source-of-truth | mobile-cache-bust-build-timestamp | Mobile shell should include the current build timestamp on local assets. |
 | source-of-truth | pc-cache-bust-build-timestamp | PC shell should include the current build timestamp on local assets. |
 | source-of-truth | gas-url-single-production-value | production GAS URL=https://script.google.com/macros/s/AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ/exec |

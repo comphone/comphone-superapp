@@ -1,5 +1,5 @@
 // ============================================================
-// COMPHONE SUPER APP — LINE Command Center
+// COMPHONE SUPER APP -- LINE Command Center
 // Phase 188: Room status, alert queue controls, safe room push, notification toggles, and bot reply toggles
 // ============================================================
 
@@ -60,10 +60,10 @@ function getLineCommandCenter(params) {
     grouped: grouped,
     analytics: analytics,
     commands: [
-      { command: '#แจ้งเตือน', detail: 'Pull pending alerts for current LINE user/role' },
-      { command: '#กลุ่มแจ้งเตือน', detail: 'Show grouped alert cards' },
-      { command: '#รับทราบทั้งหมด', detail: 'Acknowledge all pending alerts' },
-      { command: '#สถิติ', detail: 'Show 7-day alert analytics' }
+      { command: '#แจ้งเตือน', detail: 'ดูรายการแจ้งเตือนที่ยังไม่ได้รับทราบ' },
+      { command: '#กลุ่มแจ้งเตือน', detail: 'ดูการแจ้งเตือนแบบจัดกลุ่ม' },
+      { command: '#รับทราบทั้งหมด', detail: 'รับทราบรายการแจ้งเตือนทั้งหมด' },
+      { command: '#สถิติ', detail: 'ดูสถิติการแจ้งเตือน 7 วัน' }
     ]
   };
   try { cache.put(cacheKey, JSON.stringify(response), 60); } catch (_cacheErr) {}

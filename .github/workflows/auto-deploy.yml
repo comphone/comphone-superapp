@@ -36,10 +36,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
@@ -103,6 +103,12 @@ jobs:
             echo "OK scripts/sprint216_ai_vision_transport_guard.js"
           else
             echo "FAIL scripts/sprint216_ai_vision_transport_guard.js"
+            FAILED=1
+          fi
+          if node --check scripts/sprint217_line_center_quiet_guard.js; then
+            echo "OK scripts/sprint217_line_center_quiet_guard.js"
+          else
+            echo "FAIL scripts/sprint217_line_center_quiet_guard.js"
             FAILED=1
           fi
           if [ "$FAILED" -ne 0 ]; then exit 1; fi
@@ -172,7 +178,7 @@ jobs:
       pages: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Prepare site content
         run: |
@@ -240,7 +246,7 @@ jobs:
     if: contains(github.event.head_commit.modified, 'memory/session.md') || contains(github.event.head_commit.added, 'memory/session.md')
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Create timestamped backup
         run: |
@@ -268,7 +274,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 

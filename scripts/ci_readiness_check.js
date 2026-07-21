@@ -48,6 +48,7 @@ function main() {
     'scripts/pages_deploy_verify.js',
     'scripts/ci_readiness_check.js',
     'scripts/gas_source_alignment.js',
+    'scripts/sprint217_line_center_quiet_guard.js',
   ];
 
   const issues = [];

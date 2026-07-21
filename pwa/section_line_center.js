@@ -62,6 +62,31 @@
     return `<span class="line-badge ${ok ? 'ok' : 'warn'}">${ok ? 'พร้อม' : 'ยังไม่ตั้งค่า'}</span>`;
   }
 
+  function formatAlertDetail(alert) {
+    const data = alert && alert.data;
+    const candidates = [
+      data && data.detail,
+      data && data.message,
+      data && data.summary,
+      data && data.jobId,
+      alert && alert.message,
+      alert && alert.title,
+      alert && alert.id
+    ];
+    for (const candidate of candidates) {
+      if (candidate == null || candidate === '') continue;
+      if (typeof candidate === 'string' || typeof candidate === 'number' || typeof candidate === 'boolean') {
+        return String(candidate);
+      }
+      if (typeof candidate === 'object') {
+        const nested = candidate.text || candidate.message || candidate.detail || candidate.summary || candidate.jobId;
+        if (nested != null && typeof nested !== 'object') return String(nested);
+        try { return JSON.stringify(candidate); } catch (_) { return 'มีรายละเอียดแจ้งเตือน'; }
+      }
+    }
+    return '';
+  }
+
   function setLineCenterStatus(message, tone) {
     const el = document.getElementById('line-center-status');
     if (!el) return;
@@ -215,7 +240,7 @@
         <div class="line-alert-row">
           <div>
             <strong>${esc(alert.type || 'ALERT')}</strong>
-            <div class="line-muted">${esc((alert.data && (alert.data.detail || alert.data.jobId)) || alert.id || '')}</div>
+            <div class="line-muted">${esc(formatAlertDetail(alert))}</div>
           </div>
           <button class="line-btn secondary" onclick="ackLineAlert('${esc(alert.id)}')">Ack</button>
         </div>`).join('') || '<div class="line-muted">No pending alerts.</div>';

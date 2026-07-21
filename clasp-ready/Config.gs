@@ -4,8 +4,8 @@
 // ============================================================
 
 var CONFIG = {
-  APP_NAME: 'COMPHONE SUPER APP v5.18.18-ai-vision-current',
-  VERSION: '5.18.18-ai-vision-current',
+  APP_NAME: 'COMPHONE SUPER APP v5.18.19-line-quiet-center',
+  VERSION: '5.18.19-line-quiet-center',
   TIMEZONE: 'Asia/Bangkok',
 
   // ── ชื่อ Sheet ทั้งหมดในระบบ ──

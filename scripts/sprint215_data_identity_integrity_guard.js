@@ -118,6 +118,12 @@ async function main() {
   const workflow = read('.github/workflows/auto-deploy.yml');
   const blueprint = read('BLUEPRINT.md');
   const config = read('clasp-ready/Config.gs');
+  const backendVersionMatch = config.match(/VERSION:\s*'(\d+)\.(\d+)\.(\d+)[^']*'/);
+  const backendVersionCurrent = !!backendVersionMatch && (
+    Number(backendVersionMatch[1]) > 5 ||
+    (Number(backendVersionMatch[1]) === 5 && Number(backendVersionMatch[2]) > 18) ||
+    (Number(backendVersionMatch[1]) === 5 && Number(backendVersionMatch[2]) === 18 && Number(backendVersionMatch[3]) >= 18)
+  );
   const jobSimulation = simulateJobIds(jobs);
   const billingSimulation = await simulateLegacyBillingList(billing);
   const cleanupHeaderIndex = simulateCleanupHeaderPriority(cleanup);
@@ -208,7 +214,7 @@ async function main() {
     },
     {
       id: 'backend-version-current',
-      ok: config.includes("VERSION: '5.18.18-ai-vision-current'")
+      ok: backendVersionCurrent
     },
     {
       id: 'completion-gates-wired',
