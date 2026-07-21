@@ -1,6 +1,6 @@
 {
   "sprint": 221,
-  "generated_at": "2026-07-21T15:40:12.000Z",
+  "generated_at": "2026-07-21T15:48:00.000Z",
   "environment": "production",
   "gas_deployment_tested": "@636",
   "backend_version": "5.18.23-line-signed-raw",
@@ -15,6 +15,13 @@
     "root_cause": "CLOUDFLARE_API_TOKEN repository secret is missing; Sprint 222 preflight confirmed and stopped before deploy",
     "local_oauth": "expired; reauthorization required",
     "production_verifier": "4/9 passed; correctly blocked by old live version"
+  },
+  "protected_api_smoke": {
+    "generated_at": "2026-07-21T15:47:07.650Z",
+    "status": "ok",
+    "passed": 12,
+    "total": 12,
+    "areas": ["system", "dashboard", "crm", "inventory", "po", "reports", "billing", "vision", "line-center", "admin"]
   },
   "checks": {
     "forged_signature_rejected_by_gas": true,

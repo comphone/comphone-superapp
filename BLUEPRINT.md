@@ -232,6 +232,9 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > remains `1.0.5-sprint189`; verifier result `4/9` is an intentional release
 > block, not a false success. Full repository regression remains green and
 > Sprint 221's strengthened source/security guard passes `23/23`.
+> A fresh in-memory production login then passed the protected API smoke `12/12`
+> across System, Dashboard, CRM, Inventory, PO, Reports, Billing, AI Vision,
+> LINE Center, and Admin; no session token was written to source or evidence.
 
 > Cowork review on or after 2026-06-12 should begin with
 > `COWORK_SYSTEM_HANDOFF.md`. It separates current verified state, live-proof
