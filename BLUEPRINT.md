@@ -126,6 +126,15 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > the patch release; this is integrity metadata only and does not weaken any
 > guard rule.
 
+> Sprint 217 release closure: patch commit `5e7b808` passed Auto Deploy workflow
+> #609. Validate Code, Deploy PWA to GitHub Pages, and Auto Tag Release all
+> completed successfully. Remote Pages verification confirms Mobile and PC load
+> `v5.18.47-sprint217` build `20260721_1449`, and the published LINE Center asset
+> contains the nested-alert formatter. A fresh protected production smoke passed
+> all required reads: health, version, Dashboard, CRM, Inventory, PO, Reports,
+> Billing, Vision, LINE Center, room status, and Admin Security. No write-smoke
+> records and no real LINE messages were created during this closure.
+
 > Cowork review on or after 2026-06-12 should begin with
 > `COWORK_SYSTEM_HANDOFF.md`. It separates current verified state, live-proof
 > gaps, safety gates, and the recommended review order from the historical
