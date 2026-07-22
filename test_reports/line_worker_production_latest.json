@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-22T02:11:36.647Z",
+  "generated_at": "2026-07-22T03:47:19.240Z",
   "service": "COMPHONE LINE Webhook Worker",
   "endpoint": "https://comphone-line-webhook.narinoutagit.workers.dev",
   "expected_version": "1.0.6-sprint221",

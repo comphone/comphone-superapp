@@ -30,7 +30,9 @@ async function main() {
 
   const checks = [
     ['worker-version', packageJson.version === '1.0.6-sprint221' && workerSource.includes("WORKER_VERSION = '1.0.6-sprint221'")],
-    ['wrangler-version-locked', packageJson.devDependencies.wrangler === '4.112.0' && packageLock.lockfileVersion === 3],
+    ['wrangler-version-locked', packageJson.devDependencies.wrangler === '4.113.0' && packageLock.lockfileVersion === 3],
+    ['worker-node-runtime-current', packageJson.engines.node === '>=22.0.0' && deployWorkflow.includes("node-version: '22'")],
+    ['production-dependency-audit', deployWorkflow.includes('npm audit --omit=dev')],
     ['deploy-uses-clean-install', deployWorkflow.includes('run: npm ci') && deployWorkflow.includes('cache-dependency-path: workers/line-webhook/package-lock.json')],
     ['deploy-secret-preflight', deployWorkflow.includes('Verify Cloudflare deploy credential') && deployWorkflow.includes('Missing Cloudflare credential')],
     ['deploy-production-verification', deployWorkflow.includes('npm run verify:production') && productionVerifier.includes('deployed-version-current')],

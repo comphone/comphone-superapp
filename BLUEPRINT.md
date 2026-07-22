@@ -2,9 +2,9 @@
 
 > **Version:** v5.18.47-sprint221 (PWA) / GAS Backend v5.18.23-line-signed-raw (@636)
 
-> **Date:** 2026-07-22 | **Phase:** 223 (LINE Worker Production Release)
+> **Date:** 2026-07-22 | **Phase:** 224 (LINE Worker CI Runtime Closure)
 
-> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + PROTECTED-LIVE-VERIFIED + DATA-IDENTITY-HARDENED + REAL-AI-VISION-VERIFIED - Sprint 220 completed controlled PO production write acceptance and cleanup. Sprint 221 fixes signed LINE raw forwarding and GAS fail-closed validation. Sprint 222 adds deterministic Worker deployment gates. Sprint 223 publishes Worker `1.0.6-sprint221` and passes production verification `9/9`. A fresh real LINE image and a permanent GitHub Cloudflare API token remain the final external closure items. Historical detail remains below.
+> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + PROTECTED-LIVE-VERIFIED + DATA-IDENTITY-HARDENED + REAL-AI-VISION-VERIFIED - Sprint 220 completed controlled PO production write acceptance and cleanup. Sprint 221 fixes signed LINE raw forwarding and GAS fail-closed validation. Sprint 222 adds deterministic Worker deployment gates. Sprint 223 publishes Worker `1.0.6-sprint221` and passes production verification `9/9`. Sprint 224 aligns Worker CI with Node 22 and Wrangler 4.113.0 after the first secret-backed run exposed the stale Node 20 runner. A fresh real LINE image remains the final operational acceptance item. Historical detail remains below.
 
 ---
 
@@ -247,6 +247,16 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > unknown pre-schema legacy row. Do not place the short-lived OAuth token in
 > GitHub Secrets; create a least-privilege Account API token for CI instead.
 
+> 2026-07-22 Sprint 224 LINE Worker CI Runtime Closure: GitHub rerun attempt 2
+> passed the Cloudflare credential preflight, proving the repository secret is
+> present, then stopped before authentication because Wrangler 4.112.0 requires
+> Node 22 while the workflow still selected Node 20. CI now uses Node 22,
+> package metadata enforces `node >=22.0.0`, Wrangler is pinned to current
+> `4.113.0`, and CI audits the production dependency surface separately with
+> `npm audit --omit=dev`. That production audit reports zero vulnerabilities;
+> current upstream miniflare/sharp advisories remain confined to Wrangler's
+> development tooling and are not bundled into the deployed Worker.
+
 > Cowork review on or after 2026-06-12 should begin with
 > `COWORK_SYSTEM_HANDOFF.md`. It separates current verified state, live-proof
 > gaps, safety gates, and the recommended review order from the historical
@@ -274,7 +284,7 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > `1.0.5-sprint189`. Details in `COWORK_SYSTEM_HANDOFF.md` section 9a.
 
 ### Current Production State
-- **Current phase:** Sprint / Phase 223 (LINE Worker production verified; real LINE image and durable CI token pending).
+- **Current phase:** Sprint / Phase 224 (LINE Worker CI runtime closure; real LINE image pending).
 - **Latest verified runtime source:** Sprint 221 GAS source is deployed to @636 and Worker `1.0.6-sprint221` is live with production verifier `9/9`.
 - **PWA release target:** `v5.18.47-sprint221` (build token `20260721_1622`).
 - **GAS backend:** `v5.18.23-line-signed-raw`, deployed at @636.
