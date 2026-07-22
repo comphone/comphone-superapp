@@ -2,9 +2,9 @@
 
 > **Version:** v5.18.47-sprint221 (PWA) / GAS Backend v5.18.23-line-signed-raw (@636)
 
-> **Date:** 2026-07-21 | **Phase:** 222 (LINE Worker Deployment Closure Gate)
+> **Date:** 2026-07-22 | **Phase:** 223 (LINE Worker Production Release)
 
-> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + PROTECTED-LIVE-VERIFIED + DATA-IDENTITY-HARDENED + REAL-AI-VISION-VERIFIED - Sprint 220 completed controlled PO production write acceptance and cleanup. Sprint 221 fixes signed LINE raw forwarding and GAS fail-closed validation. Sprint 222 adds deterministic Worker dependencies, credential preflight, and mandatory post-deploy production verification. GAS `v5.18.23-line-signed-raw` is live at @636; Worker `1.0.6-sprint221` remains blocked from publication only by Cloudflare authorization. Historical detail remains below.
+> **Status:** RECOVERED + HARDENED + FUNCTIONALLY AUDITED + PROTECTED-LIVE-VERIFIED + DATA-IDENTITY-HARDENED + REAL-AI-VISION-VERIFIED - Sprint 220 completed controlled PO production write acceptance and cleanup. Sprint 221 fixes signed LINE raw forwarding and GAS fail-closed validation. Sprint 222 adds deterministic Worker deployment gates. Sprint 223 publishes Worker `1.0.6-sprint221` and passes production verification `9/9`. A fresh real LINE image and a permanent GitHub Cloudflare API token remain the final external closure items. Historical detail remains below.
 
 ---
 
@@ -236,6 +236,17 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > across System, Dashboard, CRM, Inventory, PO, Reports, Billing, AI Vision,
 > LINE Center, and Admin; no session token was written to source or evidence.
 
+> 2026-07-22 Sprint 223 LINE Worker Production Release: Cloudflare OAuth was
+> reauthorized and Worker `1.0.6-sprint221` was deployed to the existing service
+> URL with version ID `a0bb2fd7-727e-416c-a850-9d2dfdfd2181`. Production
+> verifier passed `9/9`: health/version match, `gas-final-validation` is active,
+> unsigned webhooks return 401 with an explicit error, and GAS diagnostics pass.
+> The verifier now writes secret-free JSON evidence and CI uploads it as a
+> 30-day artifact after every Worker deploy. Post-release ingress baseline is
+> ready with zero pending photos, zero confirmed LINE-source photos, and one
+> unknown pre-schema legacy row. Do not place the short-lived OAuth token in
+> GitHub Secrets; create a least-privilege Account API token for CI instead.
+
 > Cowork review on or after 2026-06-12 should begin with
 > `COWORK_SYSTEM_HANDOFF.md`. It separates current verified state, live-proof
 > gaps, safety gates, and the recommended review order from the historical
@@ -263,8 +274,8 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > `1.0.5-sprint189`. Details in `COWORK_SYSTEM_HANDOFF.md` section 9a.
 
 ### Current Production State
-- **Current phase:** Sprint / Phase 222 (LINE Worker deployment closure gate; Cloudflare authorization pending).
-- **Latest verified runtime source:** Sprint 221 GAS source deployed to @636. Worker source is release-ready at `1.0.6-sprint221`, while production remains `1.0.5-sprint189` until Cloudflare authorization is restored.
+- **Current phase:** Sprint / Phase 223 (LINE Worker production verified; real LINE image and durable CI token pending).
+- **Latest verified runtime source:** Sprint 221 GAS source is deployed to @636 and Worker `1.0.6-sprint221` is live with production verifier `9/9`.
 - **PWA release target:** `v5.18.47-sprint221` (build token `20260721_1622`).
 - **GAS backend:** `v5.18.23-line-signed-raw`, deployed at @636.
 - **Current production GAS deployment:** `AKfycbxAEizN9vW_TGX-PHwxzTW8TVDoGxGoXHTO7Za8WMoiVZsxLLW9wR5LwzLE432D18VdjQ @636`.

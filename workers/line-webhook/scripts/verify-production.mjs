@@ -1,4 +1,6 @@
 import fs from 'node:fs/promises';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const packageJson = JSON.parse(
   await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')
@@ -57,7 +59,8 @@ try {
 }
 
 const failed = checks.filter(item => !item.ok);
-console.log(JSON.stringify({
+const report = {
+  generated_at: new Date().toISOString(),
   service: 'COMPHONE LINE Webhook Worker',
   endpoint: baseUrl,
   expected_version: packageJson.version,
@@ -65,6 +68,13 @@ console.log(JSON.stringify({
   total: checks.length,
   status: failed.length ? 'FAILED' : 'OK',
   checks
-}, null, 2));
+};
+const reportUrl = process.env.LINE_WORKER_REPORT
+  ? pathToFileURL(path.resolve(process.cwd(), process.env.LINE_WORKER_REPORT))
+  : new URL('../../../test_reports/line_worker_production_latest.json', import.meta.url);
+await fs.mkdir(new URL('.', reportUrl), { recursive: true });
+await fs.writeFile(reportUrl, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+console.log(JSON.stringify(report, null, 2));
+console.log(`[LINE Worker Verify] report: ${reportUrl.pathname}`);
 
 if (failed.length) process.exitCode = 1;

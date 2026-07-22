@@ -1,20 +1,24 @@
 {
   "sprint": 221,
-  "generated_at": "2026-07-21T15:48:00.000Z",
+  "generated_at": "2026-07-22T02:11:36.647Z",
   "environment": "production",
   "gas_deployment_tested": "@636",
   "backend_version": "5.18.23-line-signed-raw",
   "worker_release_candidate": "1.0.6-sprint221",
-  "worker_deployed": false,
-  "status": "release-candidate",
+  "worker_deployed": true,
+  "status": "production-worker-verified-awaiting-real-line-image",
   "deployment": {
-    "live_worker_version": "1.0.5-sprint189",
+    "live_worker_version": "1.0.6-sprint221",
     "target_worker_version": "1.0.6-sprint221",
     "github_run_id": 29845282367,
     "github_run_conclusion": "failure",
     "root_cause": "CLOUDFLARE_API_TOKEN repository secret is missing; Sprint 222 preflight confirmed and stopped before deploy",
-    "local_oauth": "expired; reauthorization required",
-    "production_verifier": "4/9 passed; correctly blocked by old live version"
+    "local_oauth": "reauthorized and used for the controlled production deploy",
+    "cloudflare_version_id": "a0bb2fd7-727e-416c-a850-9d2dfdfd2181",
+    "signature_mode": "gas-final-validation",
+    "unsigned_request_status": 401,
+    "production_verifier": "9/9 passed",
+    "github_automation": "permanent CLOUDFLARE_API_TOKEN still required; do not use expiring OAuth token"
   },
   "protected_api_smoke": {
     "generated_at": "2026-07-21T15:47:07.650Z",

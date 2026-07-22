@@ -1,0 +1,56 @@
+{
+  "generated_at": "2026-07-22T02:11:36.647Z",
+  "service": "COMPHONE LINE Webhook Worker",
+  "endpoint": "https://comphone-line-webhook.narinoutagit.workers.dev",
+  "expected_version": "1.0.6-sprint221",
+  "passed": 9,
+  "total": 9,
+  "status": "OK",
+  "checks": [
+    {
+      "name": "health-http-200",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "health-status-ok",
+      "ok": true,
+      "detail": "ok"
+    },
+    {
+      "name": "deployed-version-current",
+      "ok": true,
+      "detail": "expected=1.0.6-sprint221 actual=1.0.6-sprint221"
+    },
+    {
+      "name": "signed-raw-mode-reported",
+      "ok": true,
+      "detail": "gas-final-validation"
+    },
+    {
+      "name": "unsigned-webhook-rejected",
+      "ok": true,
+      "detail": "401"
+    },
+    {
+      "name": "unsigned-error-is-explicit",
+      "ok": true,
+      "detail": "Missing LINE signature"
+    },
+    {
+      "name": "gas-diagnostic-http-200",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "gas-diagnostic-success",
+      "ok": true,
+      "detail": "{\"success\":true,\"gas_ok\":true}"
+    },
+    {
+      "name": "diagnostic-version-current",
+      "ok": true,
+      "detail": "expected=1.0.6-sprint221 actual=1.0.6-sprint221"
+    }
+  ]
+}

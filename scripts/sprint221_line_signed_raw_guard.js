@@ -34,6 +34,7 @@ async function main() {
     ['deploy-uses-clean-install', deployWorkflow.includes('run: npm ci') && deployWorkflow.includes('cache-dependency-path: workers/line-webhook/package-lock.json')],
     ['deploy-secret-preflight', deployWorkflow.includes('Verify Cloudflare deploy credential') && deployWorkflow.includes('Missing Cloudflare credential')],
     ['deploy-production-verification', deployWorkflow.includes('npm run verify:production') && productionVerifier.includes('deployed-version-current')],
+    ['deploy-evidence-artifact', deployWorkflow.includes('line-worker-production-evidence') && productionVerifier.includes('LINE_WORKER_REPORT')],
     ['production-verifier-rejects-unsigned', productionVerifier.includes('unsigned-webhook-rejected') && productionVerifier.includes('status === 401')],
     ['gas-signature-fail-closed', lineBot.includes('LINE_CHANNEL_SECRET is not configured') && !lineBot.includes('if (!secret) return true')],
     ['legacy-signature-fail-closed', lineBotV2.includes("getConfig('LINE_CHANNEL_SECRET') || ''") && !lineBotV2.includes('Signature mismatch. Expected:')],
