@@ -1,0 +1,516 @@
+/* ===== COMPHONE DEEPEST DARK THEME v6.1.0 ===== */
+/* Ultra Dark + Neon Blue-Purple + Smooth Transitions */
+
+:root {
+  /* Deepest Dark Palette - พื้นหลังดำสนิท */
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0f;
+  --bg-tertiary: #111118;
+  --bg-glass: rgba(10, 10, 15, 0.85);
+  
+  /* Text */
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0b8;
+  --text-muted: #606078;
+  
+  /* Neon Accents - สว่างขึ้นสำหรับตัดกับพื้นหลังดำ */
+  --accent-blue: #00d4ff;
+  --accent-purple: #b44dff;
+  --accent-cyan: #00ffcc;
+  --accent-pink: #ff3d7f;
+  
+  /* Status Colors - สว่างขึ้น */
+  --danger: #ff4757;
+  --success: #2ed573;
+  --warning: #ffa502;
+  --info: #00d4ff;
+  
+  /* Glass Effect - เข้มขึ้น */
+  --glass-bg: rgba(0, 0, 0, 0.9);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: blur(24px);
+  
+  /* Shadow Effects */
+  --shadow-glow-blue: 0 0 20px rgba(0, 212, 255, 0.3);
+  --shadow-glow-purple: 0 0 20px rgba(180, 77, 255, 0.3);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+/* ===== GLOBAL ===== */
+body {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  font-family: 'Segoe UI', sans-serif;
+  transition: background 0.3s ease;
+}
+
+/* ===== TOP BAR ===== */
+.top-bar {
+  background: linear-gradient(135deg, #000428 0%, #004e92 100%) !important;
+  backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-glow-blue);
+}
+
+/* ===== PAGES CONTAINER ===== */
+#pages-container {
+  width: 100%;
+  height: calc(100vh - 60px - 70px);
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+/* ===== JOB CARDS — Touch Friendly ===== */
+.job-card, .section-card, .page {
+  background: var(--bg-glass) !important;
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 20px !important;
+  color: var(--text-primary) !important;
+  margin-bottom: 20px;
+  padding: 24px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  min-height: 120px;
+  box-shadow: var(--shadow-card);
+}
+
+.job-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-glow-blue), var(--shadow-card);
+  border-color: rgba(0, 212, 255, 0.3) !important;
+}
+
+.job-card:active {
+  transform: scale(0.97);
+  transition: transform 0.1s;
+}
+
+/* ===== TYPOGRAPHY ===== */
+.job-title, h5, .page-header h5 {
+  color: var(--text-primary) !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  margin-bottom: 12px !important;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+.job-details, .section-label {
+  color: var(--text-secondary) !important;
+  font-size: 15px !important;
+  margin-bottom: 16px !important;
+  line-height: 1.6;
+}
+
+/* ===== BUTTONS — Large Touch Targets ===== */
+.btn-primary, .btn-setup, .btn-success, .btn-secondary, .btn-warning, .btn-danger {
+  padding: 16px 28px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  border-radius: 14px !important;
+  min-height: 52px !important;
+  min-width: 52px !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none !important;
+  cursor: pointer;
+  text-transform: none !important;
+  letter-spacing: 0.5px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)) !important;
+  color: #ffffff !important;
+  box-shadow: var(--shadow-glow-blue);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+}
+
+.btn-primary:active {
+  transform: scale(0.96);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, var(--success), #00b894) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 20px rgba(46, 213, 115, 0.3);
+}
+
+.btn-warning {
+  background: linear-gradient(135deg, var(--warning), #ff6348) !important;
+  color: #ffffff !important;
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, var(--danger), #c44569) !important;
+  color: #ffffff !important;
+}
+
+/* ===== QUICK ACTION BUTTONS ===== */
+.quick-actions .btn {
+  padding: 20px !important;
+  font-size: 18px !important;
+  border-radius: 16px !important;
+  min-height: 64px !important;
+  font-weight: 700 !important;
+}
+
+/* ===== SEARCH BAR — Improved ===== */
+.search-bar, input[type="text"], input[type="search"] {
+  background: var(--bg-tertiary) !important;
+  border: 2px solid var(--glass-border) !important;
+  border-radius: 16px !important;
+  color: var(--text-primary) !important;
+  padding: 16px 20px !important;
+  font-size: 16px !important;
+  transition: all 0.3s ease;
+  width: 100%;
+  min-height: 52px;
+}
+
+.search-bar:focus, input[type="text"]:focus, input[type="search"]:focus {
+  outline: none !important;
+  border-color: var(--accent-blue) !important;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  background: rgba(0, 212, 255, 0.05) !important;
+}
+
+.search-bar::placeholder, input::placeholder {
+  color: var(--text-muted) !important;
+  font-size: 15px;
+}
+
+/* ===== FILTER TABS ===== */
+.filter-tab, .tab-btn {
+  padding: 12px 24px !important;
+  border-radius: 12px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  min-height: 48px;
+  transition: all 0.3s ease;
+  background: var(--bg-tertiary) !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid transparent !important;
+}
+
+.filter-tab.active, .tab-btn.active {
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)) !important;
+  color: #ffffff !important;
+  box-shadow: var(--shadow-glow-blue);
+  border-color: transparent !important;
+}
+
+/* ===== STATS CARDS ===== */
+.stats-card, .dashboard-card {
+  background: var(--bg-glass) !important;
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 20px !important;
+  padding: 24px !important;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-card);
+}
+
+.stats-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-glow-purple);
+}
+
+.stats-number {
+  font-size: 36px !important;
+  font-weight: 800 !important;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: none !important;
+}
+
+/* ===== BOTTOM NAVIGATION ===== */
+.bottom-nav {
+  background: rgba(0, 0, 0, 0.95) !important;
+  backdrop-filter: var(--glass-blur);
+  border-top: 1px solid var(--glass-border) !important;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.8);
+}
+
+.bottom-nav .nav-item {
+  color: var(--text-muted) !important;
+  transition: all 0.3s ease;
+  padding: 12px !important;
+  min-height: 64px;
+}
+
+.bottom-nav .nav-item.active {
+  color: var(--accent-blue) !important;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+.bottom-nav .nav-item .nav-icon {
+  font-size: 24px !important;
+  margin-bottom: 6px;
+}
+
+/* ===== CAMERA FAB BUTTON ===== */
+.fab-camera {
+  background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink)) !important;
+  box-shadow: 0 0 30px rgba(180, 77, 255, 0.5);
+  border: 3px solid rgba(255, 255, 255, 0.2) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fab-camera:hover {
+  transform: scale(1.1) rotate(90deg);
+  box-shadow: 0 0 50px rgba(180, 77, 255, 0.8);
+}
+
+/* ===== SMOOTH PAGE TRANSITIONS ===== */
+.page-transition {
+  animation: fadeSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  border-radius: 4px;
+}
+
+/* ===== MODAL/POPUP ===== */
+.modal-content, .popup {
+  background: var(--bg-glass) !important;
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+}
+
+/* ===== PAGE TRANSITIONS — Smooth & Modern ===== */
+.page {
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page.hidden {
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+  position: absolute;
+  width: 100%;
+}
+
+.page.active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  position: relative;
+}
+
+/* Page Enter Animation */
+.page-enter {
+  animation: pageSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes pageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Page Exit Animation */
+.page-exit {
+  animation: pageSlideOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes pageSlideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+}
+
+/* ===== SEARCH BAR IMPROVEMENTS ===== */
+.search-container {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.search-bar {
+  width: 100%;
+  padding: 16px 50px 16px 50px !important;
+  background: var(--bg-tertiary) !important;
+  border: 2px solid var(--glass-border) !important;
+  border-radius: 16px !important;
+  color: var(--text-primary) !important;
+  font-size: 16px !important;
+  transition: all 0.3s ease;
+}
+
+.search-bar:focus {
+  border-color: var(--accent-blue) !important;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  background: rgba(0, 212, 255, 0.05) !important;
+  outline: none !important;
+}
+
+.search-icon {
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 18px;
+  pointer-events: none;
+}
+
+.search-clear {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  transition: color 0.3s ease;
+  background: none;
+  border: none;
+  padding: 4px;
+}
+
+.search-clear:hover {
+  color: var(--accent-blue);
+}
+
+/* Search Results Dropdown */
+.search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-glass);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  margin-top: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  display: none;
+}
+
+.search-results.active {
+  display: block;
+  animation: fadeSlideIn 0.3s ease;
+}
+
+.search-result-item {
+  padding: 14px 18px;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--glass-border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.search-result-item:hover {
+  background: rgba(0, 212, 255, 0.1);
+  padding-left: 24px;
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+/* ===== MISSING BUTTON INDICATOR ===== */
+.btn-missing {
+  opacity: 0.5;
+  position: relative;
+}
+
+.btn-missing::after {
+  content: '⚠️ ปุ่มนี้ยังไม่ทำงาน';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--danger);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.btn-missing:hover::after {
+  opacity: 1;
+}
+
+/* ===== BOTTOM NAV IMPROVEMENTS ===== */
+.bottom-nav .nav-item {
+  position: relative;
+  overflow: hidden;
+}
+
+.bottom-nav .nav-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 3px;
+  background: var(--accent-blue);
+  transition: width 0.3s ease;
+}
+
+.bottom-nav .nav-item.active::before {
+  width: 60%;
+}
+
+.bottom-nav .nav-item .badge {
+  animation: badgePulse 2s infinite;
+}
+
+@keyframes badgePulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}

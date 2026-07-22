@@ -1,0 +1,1124 @@
+﻿<!DOCTYPE html>
+<html lang="th" class="cp-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>COMPHONE System Monitor โ€” v5.9.0-phase2d</title>
+  <link rel="stylesheet" href="dashboard_shared.css">
+  <script src="version_config.js"></script>
+  <style>
+    /* Local tokens bridged to shared design system (dashboard_shared.css) */
+    :root {
+      --bg:       var(--cp-bg);
+      --surface:  var(--cp-bg2);
+      --border:   var(--cp-border);
+      --text:     var(--cp-text);
+      --muted:    var(--cp-text2);
+      --green:    var(--cp-green);
+      --yellow:   var(--cp-yellow);
+      --red:      var(--cp-red);
+      --blue:     var(--cp-blue);
+      --purple:   var(--cp-purple);
+      --orange:   var(--cp-orange);
+      --font:     var(--cp-font);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* โ”€โ”€โ”€ Header โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .logo { font-size: 18px; font-weight: 700; color: var(--blue); letter-spacing: 0.5px; }
+    .version-badge {
+      background: #1f2937;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2px 10px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    #status-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s infinite;
+    }
+    #status-dot.error { background: var(--red); box-shadow: 0 0 8px var(--red); }
+    #status-dot.loading { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    #last-update { font-size: 12px; color: var(--muted); }
+    #refresh-btn {
+      background: #21262d;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.15s;
+    }
+    #refresh-btn:hover { background: #30363d; }
+    #countdown {
+      font-size: 12px;
+      color: var(--muted);
+      min-width: 50px;
+      text-align: right;
+    }
+
+    /* โ”€โ”€โ”€ GAS URL Setup โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
+    #setup-bar {
+      background: #1c2128;
+      border-bottom: 1px solid var(--border);
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #setup-bar label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+    #gas-url-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: monospace;
+    }
+    #gas-url-input:focus { outline: none; border-color: var(--blue); }
+    #save-url-btn {
+      background: var(--blue);
+      border: none;
+      color: #000;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    #save-url-btn:hover { opacity: 0.85; }
+
+    /* โ”€โ”€โ”€ Main Layout โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
+    main { padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
+
+    /* โ”€โ”€โ”€ Metric Cards โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s;
+    }
+    .card.alert { border-color: var(--red); }
+    .card.warn  { border-color: var(--yellow); }
+    .card.ok    { border-color: var(--green); }
+    .card-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .card-value {
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .card-value.green  { color: var(--green); }
+    .card-value.yellow { color: var(--yellow); }
+    .card-value.red    { color: var(--red); }
+    .card-value.blue   { color: var(--blue); }
+    .card-value.purple { color: var(--purple); }
+    .card-sub {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .card-icon {
+      position: absolute;
+      right: 16px;
+      top: 16px;
+      font-size: 28px;
+      opacity: 0.15;
+    }
+
+    /* โ”€โ”€โ”€ Charts Row โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+    }
+    .chart-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    canvas { width: 100% !important; }
+
+    /* โ”€โ”€โ”€ Trigger Table โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
+    .section-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--muted);
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #21262d;
+      font-size: 13px;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #1c2128; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-green  { background: #0d2a1a; color: var(--green); border: 1px solid #1a4a2a; }
+    .badge-red    { background: #2a0d0d; color: var(--red);   border: 1px solid #4a1a1a; }
+    .badge-yellow { background: #2a200d; color: var(--yellow);border: 1px solid #4a3a1a; }
+    .badge-blue   { background: #0d1a2a; color: var(--blue);  border: 1px solid #1a2a4a; }
+
+    /* โ”€โ”€โ”€ Log Viewer โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
+    #log-container {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      height: 320px;
+      overflow-y: auto;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 12px;
+      padding: 12px;
+    }
+    .log-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid #1c2128;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .log-entry:last-child { border-bottom: none; }
+    .log-time { color: var(--muted); white-space: nowrap; min-width: 140px; }
+    .log-event { font-weight: 600; min-width: 200px; }
+    .log-event.rate  { color: var(--orange); }
+    .log-event.token { color: var(--red); }
+    .log-event.login { color: var(--green); }
+    .log-event.other { color: var(--blue); }
+    .log-detail { color: var(--muted); word-break: break-all; }
+    .log-filter {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      background: #21262d;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 4px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.15s;
+    }
+    .filter-btn.active { background: var(--blue); color: #000; border-color: var(--blue); font-weight: 600; }
+    .empty-log { color: var(--muted); text-align: center; padding: 40px; }
+
+    /* โ”€โ”€โ”€ Properties Section โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
+    .props-bar {
+      background: var(--bg);
+      border-radius: 6px;
+      height: 12px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+    .props-fill {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 0.5s, background 0.3s;
+    }
+
+    /* โ”€โ”€โ”€ Loading Skeleton โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
+    .skeleton {
+      background: linear-gradient(90deg, #21262d 25%, #30363d 50%, #21262d 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+      height: 32px;
+    }
+    @keyframes shimmer { 0%{background-position:200%} 100%{background-position:-200%} }
+
+    /* โ”€โ”€โ”€ Error Banner โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
+    #error-banner {
+      display: none;
+      background: #2a0d0d;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      color: var(--red);
+      font-size: 13px;
+    }
+    #error-banner.show { display: flex; align-items: center; gap: 10px; }
+
+    /* โ”€โ”€โ”€ Scrollbar โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+    /* โ”€โ”€โ”€ System Logs Viewer โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */
+    #sys-logs-section { margin-top: 4px; }
+    #sys-logs-filter {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    #sys-logs-filter .slog-btn {
+      background: #21262d;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 5px 14px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.15s;
+      letter-spacing: 0.3px;
+    }
+    #sys-logs-filter .slog-btn:hover { background: #30363d; color: var(--text); }
+    #sys-logs-filter .slog-btn.active { color: #fff; border-color: transparent; }
+    #sys-logs-filter .slog-btn[data-level="ALL"].active       { background: var(--blue); }
+    #sys-logs-filter .slog-btn[data-level="CRITICAL"].active  { background: #ff4444; }
+    #sys-logs-filter .slog-btn[data-level="ERROR"].active     { background: #ff8800; color: #000; }
+    #sys-logs-filter .slog-btn[data-level="WARNING"].active   { background: #ffbb33; color: #000; }
+    #sys-logs-filter .slog-btn[data-level="INFO"].active      { background: #33b5e5; color: #000; }
+    #sys-logs-count {
+      font-size: 11px;
+      color: var(--muted);
+      margin-left: auto;
+    }
+    #sys-logs-status {
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    #sys-logs-status .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      animation: pulse 2s infinite;
+    }
+    #sys-logs-table-wrap {
+      max-height: 420px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+    }
+    #sys-logs-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    #sys-logs-table thead th {
+      position: sticky;
+      top: 0;
+      background: #161b22;
+      z-index: 2;
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--muted);
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    #sys-logs-table tbody td {
+      padding: 8px 14px;
+      border-bottom: 1px solid #1c2128;
+      vertical-align: top;
+    }
+    #sys-logs-table tbody tr:last-child td { border-bottom: none; }
+    #sys-logs-table tbody tr:hover td { background: #1c2128; }
+    .slog-time {
+      color: var(--muted);
+      white-space: nowrap;
+      font-family: 'Consolas', monospace;
+      font-size: 12px;
+      min-width: 130px;
+    }
+    .slog-level {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      min-width: 80px;
+      text-align: center;
+    }
+    .slog-level.CRITICAL { background: rgba(255,68,68,0.15);   color: #ff4444; border: 1px solid rgba(255,68,68,0.3); }
+    .slog-level.ERROR    { background: rgba(255,136,0,0.15);   color: #ff8800; border: 1px solid rgba(255,136,0,0.3); }
+    .slog-level.WARNING  { background: rgba(255,187,51,0.15);  color: #ffbb33; border: 1px solid rgba(255,187,51,0.3); }
+    .slog-level.INFO     { background: rgba(51,181,229,0.15);  color: #33b5e5; border: 1px solid rgba(51,181,229,0.3); }
+    .slog-source {
+      color: var(--purple);
+      font-family: 'Consolas', monospace;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .slog-msg {
+      color: var(--text);
+      word-break: break-all;
+      font-size: 13px;
+    }
+    .slog-row-critical td { background: rgba(255,68,68,0.04); }
+    .slog-row-error td    { background: rgba(255,136,0,0.03); }
+    .slog-empty {
+      color: var(--muted);
+      text-align: center;
+      padding: 50px 20px;
+      font-size: 14px;
+    }
+    .slog-empty-icon { font-size: 28px; display: block; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="header-left">
+    <span class="logo">โก COMPHONE Monitor</span>
+    <span class="version-badge" id="sys-version">v5.9.0-phase2d</span>
+    <div id="status-dot" class="loading"></div>
+  </div>
+  <div class="header-right">
+    <span id="last-update">เธเธณเธฅเธฑเธเนเธซเธฅเธ”...</span>
+    <span id="countdown">5s</span>
+    <button id="refresh-btn" onclick="fetchAll()">โป Refresh</button>
+  </div>
+</header>
+
+<!-- GAS URL Setup -->
+<div id="setup-bar">
+  <label>GAS URL:</label>
+  <input type="text" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec" />
+  <button id="save-url-btn" onclick="saveGasUrl()">เธเธฑเธเธ—เธถเธ</button>
+</div>
+
+<main>
+  <!-- Error Banner -->
+  <div id="error-banner">
+    <span>โ ๏ธ</span>
+    <span id="error-msg">เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เน€เธเธทเนเธญเธกเธ•เนเธญ GAS API เนเธ”เน</span>
+  </div>
+
+  <!-- Metric Cards -->
+  <div class="cards-grid">
+    <div class="card" id="card-health">
+      <div class="card-icon">๐’</div>
+      <div class="card-label">System Health</div>
+      <div class="card-value green" id="val-health">โ€”</div>
+      <div class="card-sub" id="sub-health">เธเธณเธฅเธฑเธเธ•เธฃเธงเธเธชเธญเธ...</div>
+    </div>
+    <div class="card" id="card-latency">
+      <div class="card-icon">โก</div>
+      <div class="card-label">API Latency</div>
+      <div class="card-value blue" id="val-latency">โ€”</div>
+      <div class="card-sub" id="sub-latency">ms (health check)</div>
+    </div>
+    <div class="card" id="card-sessions">
+      <div class="card-icon">๐‘ค</div>
+      <div class="card-label">Active Sessions</div>
+      <div class="card-value purple" id="val-sessions">โ€”</div>
+      <div class="card-sub" id="sub-sessions">max 3 per user</div>
+    </div>
+    <div class="card" id="card-ratelimit">
+      <div class="card-icon">๐ซ</div>
+      <div class="card-label">Rate Limit Hits</div>
+      <div class="card-value orange" id="val-ratelimit" style="color:var(--orange)">โ€”</div>
+      <div class="card-sub" id="sub-ratelimit">เนเธ 100 events เธฅเนเธฒเธชเธธเธ”</div>
+    </div>
+    <div class="card" id="card-errors">
+      <div class="card-icon">โ</div>
+      <div class="card-label">Error Events</div>
+      <div class="card-value red" id="val-errors">โ€”</div>
+      <div class="card-sub" id="sub-errors">invalid token + errors</div>
+    </div>
+    <div class="card" id="card-triggers">
+      <div class="card-icon">โฐ</div>
+      <div class="card-label">Active Triggers</div>
+      <div class="card-value blue" id="val-triggers">โ€”</div>
+      <div class="card-sub" id="sub-triggers">GAS scheduled triggers</div>
+    </div>
+    <div class="card" id="card-props">
+      <div class="card-icon">๐—๏ธ</div>
+      <div class="card-label">Script Properties</div>
+      <div class="card-value" id="val-props">โ€”</div>
+      <div class="props-bar"><div class="props-fill" id="props-fill" style="width:0%;background:var(--green)"></div></div>
+      <div class="card-sub" id="sub-props">limit: 50</div>
+    </div>
+    <div class="card" id="card-version">
+      <div class="card-icon">๐”–</div>
+      <div class="card-label">Version</div>
+      <div class="card-value green" id="val-version">โ€”</div>
+      <div class="card-sub" id="sub-version">Backend version</div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title">๐“ API Latency History (ms)</div>
+      <canvas id="latency-chart" height="140"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">๐” Security Events (เธฅเนเธฒเธชเธธเธ” 20 เธฃเธญเธ)</div>
+      <canvas id="security-chart" height="140"></canvas>
+    </div>
+  </div>
+
+  <!-- Trigger Table -->
+  <div class="section-card">
+    <div class="section-title">โฐ Trigger Schedule</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Function</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="trigger-table-body">
+        <tr><td colspan="2" style="color:var(--muted);text-align:center;padding:20px">เธเธณเธฅเธฑเธเนเธซเธฅเธ”...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Security Log Viewer -->
+  <div class="section-card">
+    <div class="section-title">๐” Security Log Viewer</div>
+    <div class="log-filter">
+      <button class="filter-btn active" onclick="setFilter('ALL')">เธ—เธฑเนเธเธซเธกเธ”</button>
+      <button class="filter-btn" onclick="setFilter('RATE_LIMIT_EXCEEDED')">Rate Limit</button>
+      <button class="filter-btn" onclick="setFilter('INVALID')">Invalid Token</button>
+      <button class="filter-btn" onclick="setFilter('LOGIN')">Login</button>
+      <button class="filter-btn" onclick="setFilter('OTHER')">เธญเธทเนเธเน</button>
+    </div>
+    <div id="log-container">
+      <div class="empty-log">เธเธณเธฅเธฑเธเนเธซเธฅเธ” security log...</div>
+    </div>
+  </div>
+
+  <!-- โ•โ•โ• System Logs โ€” Real-time Log Viewer โ•โ•โ• -->
+  <div class="section-card" id="sys-logs-section">
+    <div class="section-title">๐“ System Logs <span style="font-weight:400;font-size:11px;color:var(--muted)">(Real-time โ€ข auto-refresh 10s)</span></div>
+    <div id="sys-logs-filter">
+      <button class="slog-btn active" data-level="ALL" onclick="setSysLogLevel('ALL')">ALL</button>
+      <button class="slog-btn" data-level="CRITICAL" onclick="setSysLogLevel('CRITICAL')">CRITICAL</button>
+      <button class="slog-btn" data-level="ERROR" onclick="setSysLogLevel('ERROR')">ERROR</button>
+      <button class="slog-btn" data-level="WARNING" onclick="setSysLogLevel('WARNING')">WARNING</button>
+      <button class="slog-btn" data-level="INFO" onclick="setSysLogLevel('INFO')">INFO</button>
+      <span id="sys-logs-count">0 logs</span>
+      <span id="sys-logs-status"><span class="dot"></span> Connected</span>
+    </div>
+    <div id="sys-logs-table-wrap">
+      <table id="sys-logs-table">
+        <thead>
+          <tr>
+            <th style="min-width:130px">Time</th>
+            <th style="min-width:90px">Level</th>
+            <th style="min-width:120px">Source</th>
+            <th>Message</th>
+          </tr>
+        </thead>
+        <tbody id="sys-logs-tbody">
+          <tr><td colspan="4" class="slog-empty"><span class="slog-empty-icon">๐“ก</span>Connecting to log stream...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script src="gas_config.js"></script>
+<script src="api_client.js"></script>
+<script>
+// โ”€โ”€โ”€ Config โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+// API URL managed by api_client.js โ€” use getGasUrl()/setGasUrl()
+const STORAGE_KEY = 'comphone_gas_url'; // Standard key (api_client.js compatible)
+let gasUrl        = getGasUrl(); // From api_client.js
+let logFilter    = 'ALL';
+let allLogs      = [];
+let latencyHistory   = [];
+let securityHistory  = [];
+let countdownVal = 5;
+let countdownTimer;
+let refreshTimer;
+
+// โ”€โ”€โ”€ Init โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('gas-url-input').value = gasUrl;
+  initCharts();
+  fetchAll();
+  startCountdown();
+});
+
+function saveGasUrl() {
+  const val = document.getElementById('gas-url-input').value.trim();
+  if (!val) return;
+  gasUrl = val;
+  localStorage.setItem(STORAGE_KEY, val); // api_client.js reads this key
+  fetchAll();
+}
+
+// โ”€โ”€โ”€ Fetch All โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+async function fetchAll() {
+  setStatusDot('loading');
+  clearTimeout(refreshTimer);
+  clearInterval(countdownTimer);
+
+  try {
+    const [metricsRes, secLogRes] = await Promise.allSettled([
+      fetchMetrics(),
+      fetchSecurityLog()
+    ]);
+
+    if (metricsRes.status === 'fulfilled') {
+      updateMetricCards(metricsRes.value);
+      hideError();
+    } else {
+      showError('getSystemMetrics: ' + metricsRes.reason);
+    }
+
+    if (secLogRes.status === 'fulfilled') {
+      allLogs = secLogRes.value;
+      renderLogs();
+    }
+
+    setStatusDot('ok');
+    document.getElementById('last-update').textContent = 'เธญเธฑเธเน€เธ”เธ•: ' + new Date().toLocaleTimeString('th-TH');
+  } catch(e) {
+    setStatusDot('error');
+    showError(e.message);
+  }
+
+  // restart countdown
+  countdownVal = 5;
+  startCountdown();
+}
+
+async function fetchMetrics() {
+  const t0  = Date.now();
+  const data = await callApi('getSystemMetrics', {}, { noAuth: true });
+  data._latency = Date.now() - t0;
+  return data;
+}
+
+async function fetchSecurityLog() {
+  const data = await callApi('getSecurityLog', {}, { noAuth: true });
+  // getSecurityLog เธชเนเธเธเธฅเธฑเธ array เนเธ”เธขเธ•เธฃเธ เธซเธฃเธทเธญ { success, data }
+  if (Array.isArray(data)) return data;
+  if (data.success && Array.isArray(data.data)) return data.data;
+  return [];
+}
+
+// โ”€โ”€โ”€ Update UI โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+function updateMetricCards(data) {
+  const m = data.metrics || {};
+  const latency = data._latency || 0;
+
+  // Version
+  const ver = m.version || data.version || window.COMPHONE_VERSION || '5.9.0-phase2d';
+  setText('val-version', ver);
+  setText('sys-version', ver);
+
+  // Health
+  const health = m.health || {};
+  const healthStatus = health.status || 'unknown';
+  const healthEl = document.getElementById('val-health');
+  healthEl.textContent = healthStatus === 'healthy' ? 'Healthy' : healthStatus === 'degraded' ? 'Degraded' : 'Error';
+  healthEl.className = 'card-value ' + (healthStatus === 'healthy' ? 'green' : healthStatus === 'degraded' ? 'yellow' : 'red');
+  setCardState('card-health', healthStatus === 'healthy' ? 'ok' : healthStatus === 'degraded' ? 'warn' : 'alert');
+  setText('sub-health', 'elapsed: ' + (health.elapsed_ms || latency) + 'ms');
+
+  // Latency
+  const latencyMs = health.elapsed_ms || latency;
+  const latencyEl = document.getElementById('val-latency');
+  latencyEl.textContent = latencyMs;
+  latencyEl.className = 'card-value ' + (latencyMs < 1000 ? 'green' : latencyMs < 3000 ? 'yellow' : 'red');
+  setCardState('card-latency', latencyMs < 1000 ? 'ok' : latencyMs < 3000 ? 'warn' : 'alert');
+  setText('sub-latency', 'ms (health check round-trip)');
+
+  // Track latency history
+  latencyHistory.push(latencyMs);
+  if (latencyHistory.length > 20) latencyHistory.shift();
+  updateLatencyChart();
+
+  // Sessions
+  const sess = m.sessions || {};
+  const sessActive = sess.active !== undefined ? sess.active : 'N/A';
+  setText('val-sessions', sessActive);
+  setText('sub-sessions', 'max ' + (sess.max_per_user || 3) + ' per user');
+
+  // Security
+  const sec = m.security || {};
+  const rateLimitHits = sec.rate_limit_exceeded || 0;
+  const invalidToken  = sec.invalid_token || 0;
+  const errTotal      = rateLimitHits + invalidToken;
+
+  setText('val-ratelimit', rateLimitHits);
+  setCardState('card-ratelimit', rateLimitHits > 5 ? 'alert' : rateLimitHits > 0 ? 'warn' : 'ok');
+  setText('sub-ratelimit', 'เนเธ ' + (sec.recent_events || 0) + ' events เธฅเนเธฒเธชเธธเธ”');
+
+  setText('val-errors', errTotal);
+  const errEl = document.getElementById('val-errors');
+  errEl.className = 'card-value ' + (errTotal > 5 ? 'red' : errTotal > 0 ? 'yellow' : 'green');
+  setCardState('card-errors', errTotal > 5 ? 'alert' : errTotal > 0 ? 'warn' : 'ok');
+  setText('sub-errors', 'rate_limit:' + rateLimitHits + ' + invalid:' + invalidToken);
+
+  // Track security history
+  securityHistory.push({ rate: rateLimitHits, invalid: invalidToken });
+  if (securityHistory.length > 20) securityHistory.shift();
+  updateSecurityChart();
+
+  // Triggers
+  const trig = m.triggers || {};
+  const trigCount = trig.count || 0;
+  setText('val-triggers', trigCount);
+  setCardState('card-triggers', trigCount >= 8 ? 'ok' : trigCount >= 4 ? 'warn' : 'alert');
+  renderTriggerTable(trig.functions || []);
+
+  // Properties
+  const props = m.properties || {};
+  const propsTotal = props.total || 0;
+  const propsEl = document.getElementById('val-props');
+  propsEl.textContent = propsTotal + ' / 50';
+  propsEl.className = 'card-value ' + (propsTotal > 45 ? 'red' : propsTotal > 35 ? 'yellow' : 'green');
+  setCardState('card-props', propsTotal > 45 ? 'alert' : propsTotal > 35 ? 'warn' : 'ok');
+  const pct = Math.min(100, Math.round(propsTotal / 50 * 100));
+  const fill = document.getElementById('props-fill');
+  fill.style.width = pct + '%';
+  fill.style.background = propsTotal > 45 ? 'var(--red)' : propsTotal > 35 ? 'var(--yellow)' : 'var(--green)';
+  const sessKeys = props.session_keys || 0;
+  setText('sub-props', 'SESSION_* keys: ' + sessKeys + (props.warning ? ' โ ๏ธ ' + props.warning : ''));
+}
+
+function renderTriggerTable(functions) {
+  const tbody = document.getElementById('trigger-table-body');
+  if (!functions || functions.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="2" style="color:var(--muted);text-align:center;padding:20px">เนเธกเนเธเธ trigger</td></tr>';
+    return;
+  }
+  const known = {
+    'autoBackup':              { schedule: 'เธ—เธธเธเธงเธฑเธ 00:00', badge: 'badge-green' },
+    'autoSyncToDrive':         { schedule: 'เธ—เธธเธเธงเธฑเธ 02:00', badge: 'badge-green' },
+    'auditSessionLeak_':       { schedule: 'เธ—เธธเธเธงเธฑเธ 03:00', badge: 'badge-green' },
+    'cronMorningAlert':        { schedule: 'เธ—เธธเธเธงเธฑเธ 06:00', badge: 'badge-green' },
+    'sendAfterSalesAlerts':    { schedule: 'เธ—เธธเธเธงเธฑเธ 08:00', badge: 'badge-green' },
+    'geminiReorderSuggestion': { schedule: 'เธ—เธธเธเธงเธฑเธ 09:00', badge: 'badge-green' },
+    'cleanupSessions':         { schedule: 'เธ—เธธเธ 6 เธเธฑเนเธงเนเธกเธ', badge: 'badge-blue'  },
+    'cronHealthCheck':         { schedule: 'เธ—เธธเธ 30 เธเธฒเธ—เธต',  badge: 'badge-blue'  },
+  };
+  tbody.innerHTML = functions.map(fn => {
+    const info = known[fn] || { schedule: 'Custom', badge: 'badge-yellow' };
+    return `<tr>
+      <td><code style="color:var(--blue);font-size:12px">${fn}()</code></td>
+      <td><span class="badge ${info.badge}">${info.schedule}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// โ”€โ”€โ”€ Log Viewer โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+function setFilter(f) {
+  logFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.trim() === f ||
+      (f === 'ALL' && b.textContent.trim() === 'เธ—เธฑเนเธเธซเธกเธ”') ||
+      (f === 'RATE_LIMIT_EXCEEDED' && b.textContent.trim() === 'Rate Limit') ||
+      (f === 'INVALID' && b.textContent.trim() === 'Invalid Token') ||
+      (f === 'LOGIN' && b.textContent.trim() === 'Login') ||
+      (f === 'OTHER' && b.textContent.trim() === 'เธญเธทเนเธเน')
+    );
+  });
+  renderLogs();
+}
+
+function renderLogs() {
+  const container = document.getElementById('log-container');
+  let filtered = allLogs;
+  if (logFilter !== 'ALL') {
+    filtered = allLogs.filter(e => {
+      const ev = (e.event || '').toUpperCase();
+      if (logFilter === 'RATE_LIMIT_EXCEEDED') return ev.includes('RATE_LIMIT');
+      if (logFilter === 'INVALID') return ev.includes('INVALID');
+      if (logFilter === 'LOGIN') return ev.includes('LOGIN');
+      if (logFilter === 'OTHER') return !ev.includes('RATE_LIMIT') && !ev.includes('INVALID') && !ev.includes('LOGIN');
+      return true;
+    });
+  }
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty-log">เนเธกเนเธกเธต security events เนเธเธเนเธงเธเธเธตเน โ…</div>';
+    return;
+  }
+  container.innerHTML = filtered.slice(0, 100).map(e => {
+    const ev = (e.event || 'UNKNOWN').toUpperCase();
+    let evClass = 'other';
+    if (ev.includes('RATE_LIMIT')) evClass = 'rate';
+    else if (ev.includes('INVALID') || ev.includes('ERROR')) evClass = 'token';
+    else if (ev.includes('LOGIN')) evClass = 'login';
+    const ts = e.timestamp ? new Date(e.timestamp).toLocaleString('th-TH') : 'โ€”';
+    const detail = e.endpoint ? `[${e.endpoint}]` + (e.details ? ' ' + JSON.stringify(e.details) : '') : (e.details ? JSON.stringify(e.details) : '');
+    return `<div class="log-entry">
+      <span class="log-time">${ts}</span>
+      <span class="log-event ${evClass}">${ev}</span>
+      <span class="log-detail">${detail}</span>
+    </div>`;
+  }).join('');
+}
+
+// โ”€โ”€โ”€ Charts (Mini Canvas) โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+let latencyCtx, securityCtx;
+let latencyChart, securityChart;
+
+function initCharts() {
+  latencyCtx  = document.getElementById('latency-chart').getContext('2d');
+  securityCtx = document.getElementById('security-chart').getContext('2d');
+}
+
+function updateLatencyChart() {
+  const canvas = document.getElementById('latency-chart');
+  const ctx = latencyCtx;
+  const data = latencyHistory;
+  const W = canvas.offsetWidth || 400;
+  const H = 140;
+  canvas.width  = W;
+  canvas.height = H;
+  ctx.clearRect(0, 0, W, H);
+
+  if (data.length < 2) return;
+  const max = Math.max(...data, 500);
+  const step = W / (data.length - 1);
+
+  // Grid lines
+  ctx.strokeStyle = '#21262d';
+  ctx.lineWidth = 1;
+  [0.25, 0.5, 0.75].forEach(r => {
+    ctx.beginPath();
+    ctx.moveTo(0, H * r);
+    ctx.lineTo(W, H * r);
+    ctx.stroke();
+  });
+
+  // Fill gradient
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, 'rgba(88,166,255,0.3)');
+  grad.addColorStop(1, 'rgba(88,166,255,0)');
+  ctx.beginPath();
+  data.forEach((v, i) => {
+    const x = i * step;
+    const y = H - (v / max) * (H - 10) - 5;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.lineTo((data.length - 1) * step, H);
+  ctx.lineTo(0, H);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = '#58a6ff';
+  ctx.lineWidth = 2;
+  data.forEach((v, i) => {
+    const x = i * step;
+    const y = H - (v / max) * (H - 10) - 5;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Last value label
+  const last = data[data.length - 1];
+  ctx.fillStyle = '#58a6ff';
+  ctx.font = 'bold 12px monospace';
+  ctx.fillText(last + 'ms', W - 60, 16);
+}
+
+function updateSecurityChart() {
+  const canvas = document.getElementById('security-chart');
+  const ctx = securityCtx;
+  const data = securityHistory;
+  const W = canvas.offsetWidth || 400;
+  const H = 140;
+  canvas.width  = W;
+  canvas.height = H;
+  ctx.clearRect(0, 0, W, H);
+
+  if (data.length < 1) return;
+  const maxVal = Math.max(...data.map(d => d.rate + d.invalid), 1);
+  const barW   = Math.max(4, (W / data.length) - 2);
+
+  data.forEach((d, i) => {
+    const x = i * (W / data.length);
+    // Rate limit (orange)
+    if (d.rate > 0) {
+      const h = (d.rate / maxVal) * (H - 20);
+      ctx.fillStyle = 'rgba(255,166,87,0.8)';
+      ctx.fillRect(x, H - h - 10, barW, h);
+    }
+    // Invalid token (red)
+    if (d.invalid > 0) {
+      const h = (d.invalid / maxVal) * (H - 20);
+      ctx.fillStyle = 'rgba(248,81,73,0.8)';
+      ctx.fillRect(x + barW * 0.5, H - h - 10, barW * 0.5, h);
+    }
+  });
+
+  // Legend
+  ctx.fillStyle = 'rgba(255,166,87,0.8)';
+  ctx.fillRect(8, 8, 12, 12);
+  ctx.fillStyle = '#e6edf3';
+  ctx.font = '11px sans-serif';
+  ctx.fillText('Rate Limit', 24, 18);
+  ctx.fillStyle = 'rgba(248,81,73,0.8)';
+  ctx.fillRect(100, 8, 12, 12);
+  ctx.fillStyle = '#e6edf3';
+  ctx.fillText('Invalid Token', 116, 18);
+}
+
+// โ”€โ”€โ”€ Countdown โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+function startCountdown() {
+  countdownVal = 5;
+  document.getElementById('countdown').textContent = countdownVal + 's';
+  countdownTimer = setInterval(() => {
+    countdownVal--;
+    document.getElementById('countdown').textContent = countdownVal + 's';
+    if (countdownVal <= 0) {
+      clearInterval(countdownTimer);
+      fetchAll();
+    }
+  }, 1000);
+}
+
+// โ”€โ”€โ”€ Helpers โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+function setCardState(id, state) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('ok', 'warn', 'alert');
+  el.classList.add(state);
+}
+function setStatusDot(state) {
+  const dot = document.getElementById('status-dot');
+  dot.className = state === 'error' ? 'error' : state === 'loading' ? 'loading' : '';
+}
+function showError(msg) {
+  const banner = document.getElementById('error-banner');
+  document.getElementById('error-msg').textContent = msg;
+  banner.classList.add('show');
+  setStatusDot('error');
+}
+function hideError() {
+  document.getElementById('error-banner').classList.remove('show');
+}
+
+// โ”€โ”€โ”€ System Logs โ€” Real-time Log Viewer โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+let sysLogLevelFilter = 'ALL';
+let allSysLogs = [];
+let sysLogsPollTimer = null;
+const SYS_LOGS_POLL_INTERVAL = 10000; // 10 seconds
+
+// Migrated: uses api_client.js callApi() with noAuth (system monitor doesn't need auth)
+// Backwards-compatible alias for existing callApi() references
+async function callApi(action, params) {
+  return callApi(action, params, { noAuth: true });
+}
+
+// Set log level filter
+function setSysLogLevel(level) {
+  sysLogLevelFilter = level;
+  document.querySelectorAll('#sys-logs-filter .slog-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-level') === level);
+  });
+  renderSysLogsTable();
+}
+
+// Fetch system logs from GAS
+async function fetchSystemLogs() {
+  try {
+    const data = await callApi('getSystemLogs', { limit: 50 });
+    let logs = [];
+    if (Array.isArray(data)) {
+      logs = data;
+    } else if (data.success && Array.isArray(data.data)) {
+      logs = data.data;
+    } else if (data.logs && Array.isArray(data.logs)) {
+      logs = data.logs;
+    }
+    allSysLogs = logs;
+    renderSysLogsTable();
+    // Update status indicator
+    const statusEl = document.getElementById('sys-logs-status');
+    statusEl.innerHTML = '<span class="dot"></span> Connected';
+    statusEl.style.color = 'var(--muted)';
+  } catch (err) {
+    console.error('fetchSystemLogs error:', err);
+    const statusEl = document.getElementById('sys-logs-status');
+    statusEl.innerHTML = 'โ ๏ธ Fetch error โ€” retrying...';
+    statusEl.style.color = 'var(--orange)';
+  }
+}
+
+// Render the log table with filtering and color coding
+function renderSysLogsTable() {
+  const tbody = document.getElementById('sys-logs-tbody');
+  const countEl = document.getElementById('sys-logs-count');
+
+  // Filter logs by level
+  let filtered = allSysLogs;
+  if (sysLogLevelFilter !== 'ALL') {
+    filtered = allSysLogs.filter(log => {
+      const lv = (log.level || log.severity || '').toUpperCase();
+      return lv === sysLogLevelFilter;
+    });
+  }
+
+  // Update count
+  const shown = filtered.length;
+  const total = allSysLogs.length;
+  countEl.textContent = sysLogLevelFilter === 'ALL'
+    ? total + ' logs'
+    : shown + ' / ' + total + ' logs';
+
+  // Empty state
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="slog-empty">' +
+      '<span class="slog-empty-icon">โ…</span>' +
+      (total === 0 ? 'No logs available' : 'No ' + sysLogLevelFilter + ' logs') +
+      '</td></tr>';
+    return;
+  }
+
+  // Build rows (newest first โ€” reverse if needed)
+  const sorted = [...filtered].sort((a, b) => {
+    const ta = new Date(a.timestamp || a.time || 0).getTime();
+    const tb = new Date(b.timestamp || b.time || 0).getTime();
+    return tb - ta; // newest first
+  });
+
+  tbody.innerHTML = sorted.slice(0, 50).map(log => {
+    const level = (log.level || log.severity || 'INFO').toUpperCase();
+    const source = log.source || log.module || log.component || 'โ€”';
+    const msg = log.message || log.detail || log.msg || 'โ€”';
+    const ts = log.timestamp || log.time;
+    const timeStr = ts ? new Date(ts).toLocaleString('th-TH', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      day: '2-digit', month: '2-digit'
+    }) : 'โ€”';
+
+    // Row class for critical/error highlighting
+    let rowClass = '';
+    if (level === 'CRITICAL') rowClass = 'slog-row-critical';
+    else if (level === 'ERROR') rowClass = 'slog-row-error';
+
+    // Escape HTML in message
+    const safeMsg = msg.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const safeSource = source.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+    return '<tr class="' + rowClass + '">' +
+      '<td class="slog-time">' + timeStr + '</td>' +
+      '<td><span class="slog-level ' + level + '">' + level + '</span></td>' +
+      '<td class="slog-source">' + safeSource + '</td>' +
+      '<td class="slog-msg">' + safeMsg + '</td>' +
+      '</tr>';
+  }).join('');
+
+  // Auto-scroll to top to show newest
+  const wrap = document.getElementById('sys-logs-table-wrap');
+  wrap.scrollTop = 0;
+}
+
+// Start polling for system logs
+function startSysLogsPolling() {
+  // Initial fetch
+  fetchSystemLogs();
+  // Poll every 10 seconds
+  if (sysLogsPollTimer) clearInterval(sysLogsPollTimer);
+  sysLogsPollTimer = setInterval(fetchSystemLogs, SYS_LOGS_POLL_INTERVAL);
+}
+
+// Init on DOM ready (add to existing init)
+document.addEventListener('DOMContentLoaded', () => {
+  // Small delay so main fetchAll runs first
+  setTimeout(startSysLogsPolling, 2000);
+});
+</script>
+</body>
+</html>

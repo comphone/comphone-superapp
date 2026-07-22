@@ -1,0 +1,506 @@
+/* ===== COMPHONE METRO DARK THEME v7.0 ===== */
+/* Windows Phone 8.1 Inspired - Flat, Bold, Grid-based */
+
+@import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;600;700;800&display=swap');
+
+:root {
+  /* Metro Color Palette - Bold & Vibrant */
+  --metro-black: #000000;
+  --metro-white: #ffffff;
+  --metro-blue: #2d89ef;
+  --metro-green: #00a300;
+  --metro-orange: #da532c;
+  --metro-red: #e51400;
+  --metro-purple: #7e3878;
+  --metro-teal: #00aba9;
+  --metro-lime: #8cbe23;
+  --metro-yellow: #ffc40d;
+  --metro-magenta: #ff0097;
+  --metro-brown: #9f8771;
+  --metro-gray: #555555;
+  --metro-light-gray: #2d2d2d;
+  
+  /* Text */
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  --text-muted: #6a6a6a;
+  
+  /* Tiles */
+  --tile-border: none;
+  --tile-shadow: none; /* Flat design - no shadow */
+}
+
+/* ===== GLOBAL ===== */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--metro-black) !important;
+  color: var(--text-primary) !important;
+  font-family: 'Segoe UI', sans-serif !important;
+  font-weight: 400;
+  line-height: 1.4;
+  margin: 0;
+  padding: 0;
+}
+
+/* ===== TOP BAR (Header) ===== */
+.top-bar {
+  background: var(--metro-black) !important;
+  border-bottom: 2px solid var(--metro-blue) !important;
+  padding: 12px 16px !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.top-bar h1, .top-bar .app-title {
+  font-size: 24px !important;
+  font-weight: 800 !important;
+  color: var(--metro-white) !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ===== PAGES CONTAINER ===== */
+#pages-container {
+  width: 100%;
+  height: calc(100vh - 60px - 70px);
+  overflow: hidden;
+  background: var(--metro-black);
+}
+
+.page {
+  background: var(--metro-black) !important;
+  padding: 16px;
+  min-height: 100%;
+}
+
+.page.active {
+  display: block !important;
+}
+
+.page.hidden {
+  display: none !important;
+}
+
+/* ===== METRO TILES (Job Cards) ===== */
+.job-card, .section-card, .tile {
+  background: var(--metro-blue) !important;
+  border: var(--tile-border) !important;
+  border-radius: 0 !important; /* Sharp corners - Metro style */
+  color: var(--metro-white) !important;
+  margin-bottom: 12px;
+  padding: 16px !important;
+  min-height: 120px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.1s ease;
+  cursor: pointer;
+  box-shadow: var(--tile-shadow) !important;
+}
+
+.job-card:active {
+  transform: scale(0.98);
+}
+
+/* Tile Colors by Status */
+.job-card.urgent, .tile-red {
+  background: var(--metro-red) !important;
+}
+
+.job-card.inprog, .tile-blue {
+  background: var(--metro-blue) !important;
+}
+
+.job-card.waiting, .tile-orange {
+  background: var(--metro-orange) !important;
+}
+
+.job-card.done, .tile-green {
+  background: var(--metro-green) !important;
+}
+
+.job-card.new, .tile-teal {
+  background: var(--metro-teal) !important;
+}
+
+/* ===== TYPOGRAPHY (Bold & Big) ===== */
+.job-id {
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0.8;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.job-title {
+  font-size: 22px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  margin-bottom: 12px !important;
+  color: var(--metro-white) !important;
+}
+
+.job-meta {
+  font-size: 14px;
+  font-weight: 400;
+  opacity: 0.9;
+  margin-bottom: 8px;
+}
+
+.job-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.3) !important;
+  color: var(--metro-white) !important;
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  border-radius: 0 !important; /* Sharp */
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ===== BUTTONS (Metro Style) ===== */
+.btn, .job-act-btn, button {
+  background: var(--metro-blue) !important;
+  color: var(--metro-white) !important;
+  border: none !important;
+  border-radius: 0 !important; /* Sharp corners */
+  padding: 14px 24px !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-height: 48px;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.btn:hover {
+  background: var(--metro-purple) !important;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-success {
+  background: var(--metro-green) !important;
+}
+
+.btn-danger {
+  background: var(--metro-red) !important;
+}
+
+.btn-warning {
+  background: var(--metro-orange) !important;
+}
+
+.btn-secondary {
+  background: var(--metro-gray) !important;
+}
+
+/* ===== QUICK ACTIONS (Grid Layout) ===== */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.quick-actions .btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+  font-size: 14px;
+  padding: 16px !important;
+  text-align: center;
+}
+
+.quick-actions .btn i {
+  font-size: 32px !important;
+  margin-bottom: 8px;
+}
+
+/* ===== STATS GRID (Dashboard) ===== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.stats-card {
+  background: var(--metro-blue) !important;
+  padding: 20px !important;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-radius: 0 !important;
+}
+
+.stats-number {
+  font-size: 48px !important;
+  font-weight: 800 !important;
+  color: var(--metro-white) !important;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.stats-label {
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ===== SEARCH BAR ===== */
+.search-container {
+  margin-bottom: 20px;
+}
+
+.search-bar {
+  width: 100%;
+  padding: 16px 20px !important;
+  background: var(--metro-light-gray) !important;
+  border: 2px solid var(--metro-gray) !important;
+  border-radius: 0 !important;
+  color: var(--metro-white) !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+.search-bar:focus {
+  outline: none !important;
+  border-color: var(--metro-blue) !important;
+  background: var(--metro-black) !important;
+}
+
+.search-bar::placeholder {
+  color: var(--text-muted) !important;
+  font-weight: 400;
+}
+
+/* ===== FILTER TABS ===== */
+.filter-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.filter-tab {
+  background: var(--metro-light-gray) !important;
+  color: var(--text-secondary) !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 12px 20px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+}
+
+.filter-tab.active {
+  background: var(--metro-blue) !important;
+  color: var(--metro-white) !important;
+}
+
+/* ===== BOTTOM NAVIGATION ===== */
+.bottom-nav {
+  background: var(--metro-black) !important;
+  border-top: 2px solid var(--metro-blue) !important;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.nav-btn {
+  background: transparent !important;
+  border: none !important;
+  color: var(--text-muted) !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 16px;
+  min-width: 64px;
+  cursor: pointer;
+}
+
+.nav-btn.active {
+  color: var(--metro-blue) !important;
+}
+
+.nav-btn .nav-icon {
+  font-size: 24px !important;
+  margin-bottom: 4px;
+}
+
+.nav-btn .nav-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Camera FAB - Metro Style */
+.fab-camera {
+  background: var(--metro-magenta) !important;
+  border: none !important;
+  border-radius: 0 !important; /* Sharp */
+  width: 64px !important;
+  height: 64px !important;
+  box-shadow: none !important;
+}
+
+.fab-camera i {
+  font-size: 28px !important;
+}
+
+/* ===== MODAL/POPUP ===== */
+.modal-content {
+  background: var(--metro-black) !important;
+  border: 2px solid var(--metro-blue) !important;
+  border-radius: 0 !important;
+  color: var(--metro-white) !important;
+}
+
+.modal-header {
+  background: var(--metro-blue) !important;
+  color: var(--metro-white) !important;
+  padding: 16px 20px !important;
+  border-bottom: none !important;
+}
+
+.modal-body {
+  padding: 20px !important;
+}
+
+.modal-footer {
+  padding: 16px 20px !important;
+  border-top: 2px solid var(--metro-light-gray) !important;
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--metro-black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--metro-blue);
+}
+
+/* ===== PAGE TRANSITIONS (Simple & Fast) ===== */
+.page-enter {
+  animation: fadeIn 0.2s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+  color: var(--text-muted) !important;
+  text-align: center;
+  padding: 60px 20px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.empty-state i {
+  font-size: 64px !important;
+  margin-bottom: 20px;
+  opacity: 0.5;
+}
+
+/* ===== PROFILE PAGE ===== */
+.profile-header {
+  background: var(--metro-blue) !important;
+  padding: 24px !important;
+  margin: -16px -16px 24px -16px;
+  color: var(--metro-white);
+}
+
+.profile-item {
+  background: var(--metro-light-gray) !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 16px 20px !important;
+  margin-bottom: 2px;
+  color: var(--metro-white) !important;
+  font-weight: 600;
+}
+
+.profile-item:hover {
+  background: var(--metro-gray) !important;
+}
+
+/* ===== BADGE ===== */
+.badge, .nav-badge {
+  background: var(--metro-red) !important;
+  color: var(--metro-white) !important;
+  border-radius: 0 !important;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 24px;
+  text-align: center;
+}
+
+/* ===== TOAST NOTIFICATION ===== */
+.toast {
+  background: var(--metro-blue) !important;
+  color: var(--metro-white) !important;
+  border: none !important;
+  border-radius: 0 !important;
+  font-weight: 600;
+}
+
+/* ===== VERSION TEXT ===== */
+.app-version {
+  color: var(--text-muted) !important;
+  font-size: 11px;
+  text-align: center;
+  padding: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ===== SLA TIMER ===== */
+.sla-timer {
+  background: rgba(0, 0, 0, 0.3) !important;
+  padding: 8px 12px !important;
+  font-size: 13px;
+  font-weight: 700;
+  border-left: 4px solid var(--metro-red);
+}
+
+.sla-ok {
+  border-left-color: var(--metro-green);
+}
+
+.sla-warn {
+  border-left-color: var(--metro-orange);
+}
+
+.sla-breach {
+  border-left-color: var(--metro-red);
+}

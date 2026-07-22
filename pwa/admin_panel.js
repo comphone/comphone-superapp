@@ -1,0 +1,1245 @@
+/**
+ * admin_panel.js — Admin Panel (Sprint 3 — TASK 3)
+ * COMPHONE SUPER APP V5.5
+ *
+ * Components:
+ *   3a. Security Dashboard (metric cards + locked accounts + force-change list)
+ *   3b. User Management (list + create + edit + toggle active + unlock)
+ *   3c. Config Panel (Script URL + LINE Token + PromptPay + System Actions)
+ *   3d. Audit Log Viewer (paginated table)
+ *
+ * กฎ: ห้าม onclick inline — ใช้ addEventListener เท่านั้น
+ *     เฉพาะ role owner/admin เท่านั้น
+ */
+
+'use strict';
+
+/* ─── State ────────────────────────────────────────────────── */
+const ADMIN_PANEL = {
+  users:       [],
+  secStatus:   null,
+  auditLogs:   [],
+  auditPage:   0,
+  auditPerPage: 20,
+  repair:      null,
+  tab:         'security'   /* 'security' | 'health' | 'users' | 'config' | 'repair' | 'audit' */
+};
+
+/* ══════════════════════════════════════════════════════════════
+   ENTRY POINT
+══════════════════════════════════════════════════════════════ */
+
+/**
+ * โหลด Admin Panel — เรียกเมื่อ goPage('admin')
+ */
+async function loadAdminPanel() {
+  const container = document.getElementById('admin-panel-content') || document.getElementById('admin-content');
+  if (!container) return;
+
+  /* ตรวจสิทธิ์ */
+  if (!APP.user || !['owner', 'admin'].includes(APP.user.role)) {
+    container.innerHTML = `
+      <div style="padding:40px;text-align:center">
+        <i class="bi bi-shield-lock-fill" style="font-size:48px;color:#dc2626"></i>
+        <p style="color:#dc2626;font-weight:700;margin-top:12px">เฉพาะ Owner / Admin เท่านั้น</p>
+      </div>`;
+    return;
+  }
+
+  buildAdminPanelShell_(container);
+  switchAdminTab_('security');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SHELL + TABS
+══════════════════════════════════════════════════════════════ */
+
+function buildAdminPanelShell_(container) {
+  container.innerHTML = `
+    <div class="admin-tab-bar" id="admin-tab-bar">
+      <button class="admin-tab active" data-tab="security"><i class="bi bi-shield-check"></i> ความปลอดภัย</button>
+      <button class="admin-tab" data-tab="health"><i class="bi bi-activity"></i> สุขภาพ</button>
+      <button class="admin-tab" data-tab="users"><i class="bi bi-people-fill"></i> ผู้ใช้</button>
+      <button class="admin-tab" data-tab="config"><i class="bi bi-gear-fill"></i> ตั้งค่า</button>
+      <button class="admin-tab" data-tab="repair"><i class="bi bi-tools"></i> ซ่อมข้อมูล</button>
+      <button class="admin-tab" data-tab="archive"><i class="bi bi-archive-fill"></i> Archive</button>
+      <button class="admin-tab" data-tab="audit"><i class="bi bi-journal-text"></i> Log</button>
+    </div>
+    <div id="admin-tab-content" style="padding:0 0 80px 0"></div>`;
+
+  document.getElementById('admin-tab-bar').addEventListener('click', e => {
+    const btn = e.target.closest('.admin-tab');
+    if (btn) switchAdminTab_(btn.dataset.tab);
+  });
+}
+
+function switchAdminTab_(tab) {
+  ADMIN_PANEL.tab = tab;
+  document.querySelectorAll('#admin-tab-bar .admin-tab').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  const content = document.getElementById('admin-tab-content');
+  if (!content) return;
+
+  switch (tab) {
+    case 'security': renderSecurityDashboard_(content); break;
+    case 'health':
+      if (typeof renderMenuHealthPanel === 'function') renderMenuHealthPanel(content);
+      else content.innerHTML = '<div style="padding:24px;text-align:center;color:#64748b">Menu Health module is not loaded.</div>';
+      break;
+    case 'users':    renderUserManagement_(content);    break;
+    case 'config':   renderConfigPanel_(content);       break;
+    case 'repair':   renderDataRepairConsole_(content); break;
+    case 'archive':  renderJobArchivePanel_(content);   break;
+    case 'audit':    renderAuditLogViewer_(content);    break;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   3a. Security Dashboard
+══════════════════════════════════════════════════════════════ */
+
+async function renderSecurityDashboard_(container) {
+  container.innerHTML = '<div class="loading-spinner-sm" style="margin:24px auto"></div>';
+  try {
+    const [secRes, auditRes] = await Promise.all([
+      callAPI('getSecurityStatus', {}),
+      callAPI('getAuditLog', { limit: 5 })
+    ]);
+
+    if (!secRes.success) throw new Error(secRes.error);
+    ADMIN_PANEL.secStatus = secRes;
+
+    const s = secRes;
+    const recentLogs = (auditRes.success ? auditRes.logs : []).slice(0, 5);
+
+    container.innerHTML = `
+      <!-- Metric Cards -->
+      <div class="sec-metrics">
+        <div class="sec-metric-card">
+          <div class="sec-metric-icon" style="background:#dbeafe;color:#1e40af"><i class="bi bi-people-fill"></i></div>
+          <div class="sec-metric-num">${s.users_count || 0}</div>
+          <div class="sec-metric-label">ผู้ใช้ทั้งหมด</div>
+        </div>
+        <div class="sec-metric-card">
+          <div class="sec-metric-icon" style="background:#dcfce7;color:#16a34a"><i class="bi bi-person-check-fill"></i></div>
+          <div class="sec-metric-num">${s.active_count || 0}</div>
+          <div class="sec-metric-label">ใช้งานอยู่</div>
+        </div>
+        <div class="sec-metric-card ${s.locked_count > 0 ? 'sec-metric-warn' : ''}">
+          <div class="sec-metric-icon" style="background:#fee2e2;color:#dc2626"><i class="bi bi-person-lock-fill"></i></div>
+          <div class="sec-metric-num">${s.locked_count || 0}</div>
+          <div class="sec-metric-label">ถูกล็อค</div>
+        </div>
+        <div class="sec-metric-card ${s.force_change_count > 0 ? 'sec-metric-warn' : ''}">
+          <div class="sec-metric-icon" style="background:#fef9c3;color:#ca8a04"><i class="bi bi-key-fill"></i></div>
+          <div class="sec-metric-num">${s.force_change_count || 0}</div>
+          <div class="sec-metric-label">ต้องเปลี่ยน PW</div>
+        </div>
+      </div>
+
+      <!-- Policy Info -->
+      <div class="sec-policy-card">
+        <div class="sec-policy-title"><i class="bi bi-shield-fill-check"></i> นโยบายความปลอดภัย</div>
+        <div class="sec-policy-row">
+          <span>ล็อคหลังใส่ผิด</span>
+          <strong>${s.max_failed_attempts || 5} ครั้ง</strong>
+        </div>
+        <div class="sec-policy-row">
+          <span>ระยะเวลาล็อค</span>
+          <strong>${s.lockout_minutes || 30} นาที</strong>
+        </div>
+        <div class="sec-policy-row">
+          <span>ความยาวรหัสผ่านขั้นต่ำ</span>
+          <strong>${s.password_min_length || 8} ตัวอักษร</strong>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="sec-actions">
+        <button id="btn-sec-unlock-all" class="btn-secondary" ${s.locked_count === 0 ? 'disabled' : ''}>
+          <i class="bi bi-unlock-fill"></i> ปลดล็อคทั้งหมด (${s.locked_count || 0})
+        </button>
+        <button id="btn-sec-health" class="btn-secondary">
+          <i class="bi bi-activity"></i> Health Check
+        </button>
+      </div>
+
+      <!-- Recent Audit -->
+      <div class="sec-audit-preview">
+        <div class="section-label">กิจกรรมล่าสุด</div>
+        ${recentLogs.length ? recentLogs.map(buildAuditRow_).join('') : '<p style="color:#9ca3af;text-align:center;padding:16px">ไม่มีข้อมูล</p>'}
+        <button id="btn-view-all-audit" class="btn-link" style="width:100%;margin-top:8px">ดูทั้งหมด →</button>
+      </div>`;
+
+    /* bind buttons */
+    document.getElementById('btn-sec-unlock-all').addEventListener('click', unlockAllAccounts_);
+    document.getElementById('btn-sec-health').addEventListener('click', runHealthCheck_);
+    document.getElementById('btn-view-all-audit').addEventListener('click', () => switchAdminTab_('audit'));
+
+  } catch (e) {
+    container.innerHTML = `<div style="padding:24px;text-align:center;color:#ef4444">${e.message}</div>`;
+  }
+}
+
+async function unlockAllAccounts_() {
+  if (!confirm('ปลดล็อคบัญชีที่ถูกล็อคทั้งหมด?')) return;
+  const res = await callAPI('unlockAccount', { all: true });
+  showToast(res.success ? '✅ ปลดล็อคสำเร็จ' : '❌ ' + (res.error || 'ไม่สำเร็จ'));
+  if (res.success) renderSecurityDashboard_(document.getElementById('admin-tab-content'));
+}
+
+async function runHealthCheck_() {
+  showToast('⏳ กำลังตรวจสอบระบบ...');
+  const res = await callAPI('healthCheck', {});
+  if (res && res.status === 'ok') {
+    showToast(`✅ ระบบปกติ | DB: ${res.db_sheets || '?'} sheets | Uptime: ${res.uptime_days || '?'} วัน`);
+  } else {
+    showToast('⚠️ ' + JSON.stringify(res));
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   3b. User Management
+══════════════════════════════════════════════════════════════ */
+
+async function renderUserManagement_(container) {
+  container.innerHTML = '<div class="loading-spinner-sm" style="margin:24px auto"></div>';
+  try {
+    const res = await callAPI('listUsers', {});
+    if (!res.success) throw new Error(res.error || 'โหลดไม่สำเร็จ');
+    ADMIN_PANEL.users = res.data || [];
+    renderUserList_(container);
+  } catch (e) {
+    container.innerHTML = `<div style="padding:24px;text-align:center;color:#ef4444">${e.message}</div>`;
+  }
+}
+
+function renderUserList_(container) {
+  const ROLE_COLOR = { owner: '#7c3aed', admin: '#1d4ed8', tech: '#059669', acct: '#d97706', sales: '#0891b2', manager: '#9333ea' };
+  const ROLE_LABEL = { owner: 'Owner', admin: 'Admin', tech: 'ช่าง', acct: 'บัญชี', sales: 'Sales', manager: 'Manager' };
+
+  container.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px">
+      <div style="font-weight:700">${ADMIN_PANEL.users.length} บัญชี</div>
+      <button id="btn-add-user" class="btn-primary-sm"><i class="bi bi-person-plus-fill"></i> เพิ่มผู้ใช้</button>
+    </div>
+    <div id="user-list-body">
+      ${ADMIN_PANEL.users.map((u, idx) => {
+        const isLocked = String(u.active || 'TRUE').toUpperCase() === 'FALSE';
+        const color = ROLE_COLOR[u.role] || '#6b7280';
+        return `
+          <div class="user-row ${isLocked ? 'user-row-locked' : ''}">
+            <div class="user-avatar-sm" style="background:${color}22;color:${color}">
+              ${(u.full_name || u.username || '?').charAt(0).toUpperCase()}
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                ${u.full_name || u.username}
+              </div>
+              <div style="font-size:12px;color:#6b7280">
+                @${u.username} · <span style="color:${color}">${ROLE_LABEL[u.role] || u.role}</span>
+                ${isLocked ? ' · <span style="color:#ef4444">ถูกล็อค</span>' : ''}
+                ${String(u.force_change_pw || '').toUpperCase() === 'TRUE' ? ' · <span style="color:#f59e0b">ต้องเปลี่ยน PW</span>' : ''}
+              </div>
+            </div>
+            <div style="display:flex;gap:6px">
+              <button class="btn-icon-sm btn-edit-user" data-idx="${idx}" title="แก้ไข"><i class="bi bi-pencil-fill"></i></button>
+              <button class="btn-icon-sm ${isLocked ? 'btn-success-sm' : 'btn-danger-sm'} btn-toggle-user"
+                data-idx="${idx}" data-locked="${isLocked}" title="${isLocked ? 'ปลดล็อค' : 'ล็อค'}">
+                <i class="bi bi-${isLocked ? 'unlock-fill' : 'lock-fill'}"></i>
+              </button>
+            </div>
+          </div>`;
+      }).join('')}
+    </div>`;
+
+  document.getElementById('btn-add-user').addEventListener('click', openCreateUserModal_);
+
+  container.querySelectorAll('.btn-edit-user').forEach(btn => {
+    btn.addEventListener('click', () => openEditUserModal_(ADMIN_PANEL.users[parseInt(btn.dataset.idx, 10)]));
+  });
+
+  container.querySelectorAll('.btn-toggle-user').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const u = ADMIN_PANEL.users[parseInt(btn.dataset.idx, 10)];
+      const isLocked = btn.dataset.locked === 'true';
+      toggleUserActive_(u.username, isLocked);
+    });
+  });
+}
+
+async function toggleUserActive_(username, isLocked) {
+  const newActive = isLocked; /* ถ้าล็อคอยู่ → set active=true */
+  const res = await callAPI('setUserActive', { username, active: newActive });
+  showToast(res.success ? `✅ ${newActive ? 'เปิด' : 'ปิด'}ใช้งาน @${username}` : '❌ ' + (res.error || ''));
+  if (res.success) renderUserManagement_(document.getElementById('admin-tab-content'));
+}
+
+/* ── Create User Modal ─────────────────────────────────────── */
+function openCreateUserModal_() {
+  const modal = document.getElementById('modal-admin-create-user');
+  modal.querySelector('#new-username').value  = '';
+  modal.querySelector('#new-fullname').value  = '';
+  modal.querySelector('#new-role').value      = 'tech';
+  modal.querySelector('#new-password').value  = '';
+  modal.classList.remove('hidden');
+}
+
+async function submitCreateUser_() {
+  const username = document.getElementById('new-username').value.trim();
+  const fullName = document.getElementById('new-fullname').value.trim();
+  const role     = document.getElementById('new-role').value;
+  const password = document.getElementById('new-password').value;
+
+  if (!username || !password) { showToast('⚠️ กรุณากรอก Username และรหัสผ่าน'); return; }
+
+  const btn = document.getElementById('btn-submit-create-user');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass-split"></i> กำลังสร้าง...';
+
+  try {
+    const res = await callAPI('createUser', { username, full_name: fullName, role, password });
+    if (!res.success) throw new Error(res.error);
+    showToast(`✅ สร้างผู้ใช้ @${username} สำเร็จ`);
+    document.getElementById('modal-admin-create-user').classList.add('hidden');
+    renderUserManagement_(document.getElementById('admin-tab-content'));
+  } catch (e) {
+    showToast('❌ ' + e.message);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-person-plus-fill"></i> สร้างผู้ใช้';
+  }
+}
+
+/* ── Edit User Modal ───────────────────────────────────────── */
+function openEditUserModal_(user) {
+  const modal = document.getElementById('modal-admin-edit-user');
+  modal.querySelector('#edit-user-title').textContent = '@' + user.username;
+  modal.querySelector('#edit-role').value = user.role;
+  modal.querySelector('#edit-fullname').value = user.full_name || '';
+  modal.querySelector('#edit-new-password').value = '';
+  modal.dataset.username = user.username;
+  modal.classList.remove('hidden');
+}
+
+async function submitEditUser_() {
+  const modal    = document.getElementById('modal-admin-edit-user');
+  const username = modal.dataset.username;
+  const role     = modal.querySelector('#edit-role').value;
+  const fullName = modal.querySelector('#edit-fullname').value.trim();
+  const newPw    = modal.querySelector('#edit-new-password').value;
+
+  const btn = document.getElementById('btn-submit-edit-user');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass-split"></i> กำลังบันทึก...';
+
+  try {
+    const res = await callAPI('updateUserRole', { username, newRole: role, full_name: fullName });
+    if (!res.success) throw new Error(res.error);
+
+    if (newPw) {
+      const pwRes = await callAPI('forcePasswordChange', { username, new_password: newPw, changed_by: APP.user?.username });
+      if (!pwRes.success) throw new Error(pwRes.error);
+    }
+
+    showToast(`✅ อัปเดต @${username} สำเร็จ`);
+    modal.classList.add('hidden');
+    renderUserManagement_(document.getElementById('admin-tab-content'));
+  } catch (e) {
+    showToast('❌ ' + e.message);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-save-fill"></i> บันทึก';
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   3c. Config Panel
+══════════════════════════════════════════════════════════════ */
+
+function renderConfigPanel_(container) {
+  const currentUrl = APP.scriptUrl || localStorage.getItem('comphone_gas_url') || '';
+  const lineToken  = localStorage.getItem('comphone_line_token') || '';
+  const promptPay  = localStorage.getItem('comphone_promptpay') || '';
+
+  container.innerHTML = `
+    <div style="padding:16px">
+      <!-- GAS URL -->
+      <div class="config-section">
+        <div class="config-section-title"><i class="bi bi-link-45deg"></i> Google Apps Script URL</div>
+        <input type="url" id="cfg-script-url" class="form-control" value="${currentUrl}"
+          placeholder="https://script.google.com/macros/s/...">
+        <button id="btn-save-script-url" class="btn-primary-sm" style="margin-top:8px">
+          <i class="bi bi-save-fill"></i> บันทึก URL
+        </button>
+      </div>
+
+      <!-- LINE Token -->
+      <div class="config-section">
+        <div class="config-section-title"><i class="bi bi-chat-dots-fill" style="color:#06b6d4"></i> LINE Channel Access Token</div>
+        <input type="password" id="cfg-line-token" class="form-control" value="${lineToken}"
+          placeholder="LINE Channel Access Token...">
+        <small style="color:#9ca3af;font-size:11px">เก็บเฉพาะในเครื่อง (localStorage) — ต้องตั้งใน GAS Properties ด้วย</small>
+        <button id="btn-save-line-token" class="btn-primary-sm" style="margin-top:8px">
+          <i class="bi bi-save-fill"></i> บันทึก Token
+        </button>
+      </div>
+
+      <!-- PromptPay -->
+      <div class="config-section">
+        <div class="config-section-title"><i class="bi bi-qr-code" style="color:#10b981"></i> PromptPay ID</div>
+        <input type="text" id="cfg-promptpay" class="form-control" value="${promptPay}"
+          placeholder="เบอร์โทร หรือ เลขประจำตัวประชาชน">
+        <button id="btn-save-promptpay" class="btn-primary-sm" style="margin-top:8px">
+          <i class="bi bi-save-fill"></i> บันทึก PromptPay
+        </button>
+      </div>
+
+      <!-- System Actions -->
+      <div class="config-section">
+        <div class="config-section-title"><i class="bi bi-tools"></i> System Actions</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button id="btn-cfg-seed" class="btn-secondary">
+            <i class="bi bi-database-fill-add"></i> Seed ข้อมูล
+          </button>
+          <button id="btn-cfg-triggers" class="btn-secondary">
+            <i class="bi bi-clock-history"></i> Setup Triggers
+          </button>
+          <button id="btn-cfg-health" class="btn-secondary">
+            <i class="bi bi-activity"></i> Health Check
+          </button>
+          <button id="btn-cfg-backup" class="btn-secondary">
+            <i class="bi bi-cloud-arrow-up-fill"></i> Backup Now
+          </button>
+        </div>
+      </div>
+    </div>`;
+
+  /* bind */
+  document.getElementById('btn-save-script-url').addEventListener('click', () => {
+    const url = document.getElementById('cfg-script-url').value.trim();
+    if (!url.startsWith('https://')) { showToast('⚠️ URL ไม่ถูกต้อง'); return; }
+    APP.scriptUrl = url;
+    localStorage.setItem('comphone_gas_url', url);
+    showToast('✅ บันทึก Script URL แล้ว');
+  });
+
+  document.getElementById('btn-save-line-token').addEventListener('click', () => {
+    const token = document.getElementById('cfg-line-token').value.trim();
+    localStorage.setItem('comphone_line_token', token);
+    showToast('✅ บันทึก LINE Token แล้ว (เฉพาะในเครื่องนี้)');
+  });
+
+  document.getElementById('btn-save-promptpay').addEventListener('click', () => {
+    const pp = document.getElementById('cfg-promptpay').value.trim();
+    localStorage.setItem('comphone_promptpay', pp);
+    showToast('✅ บันทึก PromptPay ID แล้ว');
+  });
+
+  document.getElementById('btn-cfg-seed').addEventListener('click', async () => {
+    if (!confirm('รัน Seed ข้อมูลเริ่มต้น?')) return;
+    showToast('⏳ กำลัง Seed...');
+    const res = await callAPI('seedAllData', {});
+    showToast(res.success ? '✅ Seed สำเร็จ' : '❌ ' + (res.error || ''));
+  });
+
+  document.getElementById('btn-cfg-triggers').addEventListener('click', async () => {
+    if (!confirm('ตั้ง Triggers ทั้งหมด?')) return;
+    showToast('⏳ กำลังตั้ง Triggers...');
+    const res = await callAPI('setupAllTriggers', {});
+    showToast(res.success ? '✅ ตั้ง Triggers สำเร็จ' : '❌ ' + (res.error || ''));
+  });
+
+  document.getElementById('btn-cfg-health').addEventListener('click', runHealthCheck_);
+
+  document.getElementById('btn-cfg-backup').addEventListener('click', async () => {
+    showToast('⏳ กำลัง Backup...');
+    const res = await callAPI('runBackup', {});
+    showToast(res.success ? '✅ Backup สำเร็จ' : '❌ ' + (res.error || ''));
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   3d. Audit Log Viewer
+══════════════════════════════════════════════════════════════ */
+
+async function renderDataRepairConsole_(container) {
+  container.innerHTML = `
+    <div style="padding:16px">
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+          <div>
+            <div style="font-size:15px;font-weight:800;color:#111827"><i class="bi bi-tools" style="color:#7c3aed"></i> Data Repair Console</div>
+            <div style="font-size:12px;color:#64748b;margin-top:4px">Preview production data issues before archive/delete. Execution requires owner confirmation.</div>
+          </div>
+          <button id="btn-repair-refresh" class="btn-primary-sm"><i class="bi bi-arrow-clockwise"></i> Refresh Preview</button>
+        </div>
+      </div>
+      <div id="admin-data-completeness" style="background:#fff;border:1px solid #bae6fd;border-left:4px solid #0ea5e9;border-radius:12px;padding:14px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+          <div>
+            <div style="font-size:15px;font-weight:800;color:#111827"><i class="bi bi-clipboard-data" style="color:#0ea5e9"></i> Data Completeness</div>
+            <div style="font-size:12px;color:#64748b;margin-top:4px">Read-only data state. Business-data warnings do not mean the system is down.</div>
+          </div>
+          <button id="btn-data-completeness-refresh" class="btn-primary-sm" style="background:#0ea5e9"><i class="bi bi-arrow-clockwise"></i> Refresh Data Review</button>
+          <button id="btn-data-completeness-export" class="btn-primary-sm" style="background:#0f766e"><i class="bi bi-download"></i> Export Review</button>
+        </div>
+        <div id="admin-data-completeness-body" style="margin-top:10px;color:#64748b;font-size:13px">Loading data completeness...</div>
+      </div>
+      <div id="admin-smoke-cleanup" style="background:#fff;border:1px solid #fecaca;border-left:4px solid #dc2626;border-radius:12px;padding:14px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+          <div>
+            <div style="font-size:15px;font-weight:800;color:#111827"><i class="bi bi-trash3" style="color:#dc2626"></i> Smoke/Test Data Cleanup</div>
+            <div style="font-size:12px;color:#64748b;margin-top:4px">Archive and delete only reviewed smoke rows such as J0022, J0021, C0003, and C0002. Rows without a smoke marker are skipped.</div>
+          </div>
+          <button id="btn-smoke-cleanup-refresh" class="btn-primary-sm" style="background:#dc2626"><i class="bi bi-arrow-clockwise"></i> Refresh Cleanup</button>
+        </div>
+        <div id="admin-smoke-cleanup-body" style="margin-top:10px;color:#64748b;font-size:13px">Loading smoke cleanup preview...</div>
+      </div>
+      <!-- ล้างงานทดสอบ -->
+      <div id="admin-test-jobs-cleanup" style="background:#fff;border:1px solid #fde68a;border-left:4px solid #d97706;border-radius:12px;padding:14px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+          <div>
+            <div style="font-size:15px;font-weight:800;color:#111827"><i class="bi bi-eraser-fill" style="color:#d97706"></i> ล้างงานทดสอบ</div>
+            <div style="font-size:12px;color:#64748b;margin-top:4px">สแกนหางานที่มีคำว่า "ทดสอบ", "test", "demo" ฯลฯ แล้วลบออกจาก DBJOBS ถาวร</div>
+          </div>
+          <button id="btn-test-jobs-preview" class="btn-primary-sm" style="background:#d97706"><i class="bi bi-search"></i> ดูตัวอย่าง</button>
+        </div>
+        <div id="admin-test-jobs-body" style="margin-top:10px;color:#64748b;font-size:13px">กด "ดูตัวอย่าง" เพื่อสแกนหาข้อมูลทดสอบ</div>
+      </div>
+      <div id="admin-repair-status" style="font-size:13px;color:#64748b;margin-bottom:10px">Loading repair status...</div>
+      <div id="admin-repair-candidates"></div>
+    </div>`;
+
+  document.getElementById('btn-repair-refresh').addEventListener('click', () => renderDataRepairConsole_(container));
+  document.getElementById('btn-data-completeness-refresh').addEventListener('click', hydrateAdminDataCompleteness_);
+  document.getElementById('btn-data-completeness-export').addEventListener('click', exportAdminDataCompletenessReview_);
+  document.getElementById('btn-smoke-cleanup-refresh').addEventListener('click', hydrateAdminSmokeCleanup_);
+  document.getElementById('btn-test-jobs-preview').addEventListener('click', hydrateAdminTestJobsCleanup_);
+  hydrateAdminDataCompleteness_();
+  hydrateAdminSmokeCleanup_();
+  await hydrateAdminDataRepair_(container);
+}
+
+async function hydrateAdminSmokeCleanup_() {
+  const el = document.getElementById('admin-smoke-cleanup-body');
+  if (!el) return;
+  el.innerHTML = '<span style="color:#dc2626">Loading protected smoke cleanup preview...</span>';
+  try {
+    const res = await callAPI('cleanupSmokeTestRecords', { execute: false });
+    if (!res || res.success === false) throw new Error((res && res.error) || 'cleanup preview failed');
+    const candidates = res.candidates || [];
+    const skipped = res.skipped || [];
+    const deleted = res.deleted || [];
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px;margin-bottom:10px">
+        ${buildRepairMetric_('Candidates', candidates.length, '#2563eb')}
+        ${buildRepairMetric_('Marker Skips', skipped.length, skipped.length ? '#d97706' : '#059669')}
+        ${buildRepairMetric_('Deleted', deleted.length, '#dc2626')}
+        ${buildRepairMetric_('Archive', 'DB_SMOKE_CLEANUP_ARCHIVE', '#0f766e')}
+      </div>
+      ${candidates.length ? candidates.map(buildAdminSmokeCandidate_).join('') : '<div style="background:#ecfdf5;color:#047857;border-radius:10px;padding:12px">No reviewed smoke/test rows found for cleanup.</div>'}
+      <div style="margin-top:10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px">
+        <label style="font-size:12px;color:#9a3412;font-weight:800">Type DELETE_REVIEWED_SMOKE_RECORDS to archive/delete smoke-marker rows only</label>
+        <input id="admin-smoke-cleanup-confirm" style="width:100%;margin-top:6px;padding:8px;border:1px solid #fdba74;border-radius:8px;font-size:12px" autocomplete="off">
+        <button id="btn-admin-smoke-cleanup-execute" style="margin-top:8px;background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer">
+          <i class="bi bi-archive-fill"></i> Archive + Delete Reviewed Smoke Rows
+        </button>
+      </div>`;
+    const btn = document.getElementById('btn-admin-smoke-cleanup-execute');
+    if (btn) btn.addEventListener('click', executeAdminSmokeCleanup_);
+  } catch (e) {
+    el.innerHTML = `<div style="background:#fef2f2;color:#b91c1c;border-radius:10px;padding:12px;font-size:13px">Smoke cleanup preview failed: ${escapeAdminHtml_(e.message || e)}</div>`;
+  }
+}
+
+// ─── ล้างงานทดสอบ ────────────────────────────────────────────
+async function hydrateAdminTestJobsCleanup_() {
+  const el = document.getElementById('admin-test-jobs-body');
+  if (!el) return;
+  el.innerHTML = '<span style="color:#d97706">กำลังสแกนหาข้อมูลทดสอบ...</span>';
+  try {
+    const res = await callAPI('clearTestJobsPreview', {});
+    if (!res || !res.success) throw new Error((res && res.error) || 'preview failed');
+    const candidates = res.candidates || [];
+    if (!candidates.length) {
+      el.innerHTML = '<div style="background:#ecfdf5;color:#047857;border-radius:10px;padding:12px">ไม่พบงานทดสอบในระบบ ✅</div>';
+      return;
+    }
+    el.innerHTML = `
+      <div style="margin-bottom:10px;font-size:13px;font-weight:700;color:#92400e">พบ ${candidates.length} งานที่ตรงคำค้น:</div>
+      ${candidates.map(c => `
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px;margin-bottom:8px;font-size:13px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <strong style="color:#92400e">${escapeAdminHtml_(c.id)}</strong>
+            <span style="font-size:11px;color:#6b7280">แถว ${c.row}</span>
+          </div>
+          <div style="color:#374151;margin-top:4px">${escapeAdminHtml_(c.customer || '-')}</div>
+          <div style="color:#6b7280;font-size:12px">${escapeAdminHtml_(c.symptom || '-')}${c.phone ? ' · ' + escapeAdminHtml_(c.phone) : ''}</div>
+        </div>
+      `).join('')}
+      <div style="margin-top:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px">
+        <div style="font-size:12px;color:#9a3412;font-weight:800;margin-bottom:6px">พิมพ์ CLEAR_TEST_JOBS เพื่อยืนยันการลบถาวร</div>
+        <input id="admin-test-jobs-confirm" style="width:100%;padding:8px;border:1px solid #fdba74;border-radius:8px;font-size:13px;margin-bottom:8px" autocomplete="off" placeholder="CLEAR_TEST_JOBS">
+        <button id="btn-test-jobs-execute" style="width:100%;background:#d97706;color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:800;cursor:pointer">
+          <i class="bi bi-trash3-fill"></i> ลบงานทดสอบทั้งหมด (${candidates.length} งาน)
+        </button>
+      </div>`;
+    document.getElementById('btn-test-jobs-execute').addEventListener('click', executeAdminTestJobsCleanup_);
+  } catch (e) {
+    el.innerHTML = `<div style="background:#fef2f2;color:#b91c1c;border-radius:10px;padding:12px">เกิดข้อผิดพลาด: ${escapeAdminHtml_(e.message || e)}</div>`;
+  }
+}
+
+async function executeAdminTestJobsCleanup_() {
+  const input = document.getElementById('admin-test-jobs-confirm');
+  const confirmText = input ? input.value.trim() : '';
+  if (confirmText !== 'CLEAR_TEST_JOBS') {
+    showToast('⚠️ พิมพ์ CLEAR_TEST_JOBS ให้ตรงก่อน');
+    return;
+  }
+  if (!confirm('ลบงานทดสอบทั้งหมดออกจาก DBJOBS?\n\nการลบนี้ไม่สามารถกู้คืนได้')) return;
+  const btn = document.getElementById('btn-test-jobs-execute');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> กำลังลบ...'; }
+  try {
+    const res = await callAPI('clearTestJobsExecute', { confirm: 'CLEAR_TEST_JOBS' });
+    if (res && res.success) {
+      showToast(`✅ ลบสำเร็จ ${res.deleted} งาน`);
+      const el = document.getElementById('admin-test-jobs-body');
+      if (el) el.innerHTML = `<div style="background:#ecfdf5;color:#047857;border-radius:10px;padding:12px">✅ ลบงานทดสอบสำเร็จ ${res.deleted} งาน</div>`;
+    } else {
+      showToast('❌ ' + ((res && res.error) || 'ลบไม่สำเร็จ'));
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-trash3-fill"></i> ลองใหม่'; }
+    }
+  } catch (e) {
+    showToast('❌ ' + (e.message || e));
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-trash3-fill"></i> ลองใหม่'; }
+  }
+}
+
+function buildAdminSmokeCandidate_(candidate) {
+  const markerOk = !!candidate.marker_ok;
+  return `<div style="background:#fff;border:1px solid #e5e7eb;border-left:4px solid ${markerOk ? '#dc2626' : '#d97706'};border-radius:10px;padding:10px;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <strong>${escapeAdminHtml_(candidate.scope || '-')} / ${escapeAdminHtml_(candidate.id || '-')}</strong>
+      <span style="font-size:11px;font-weight:800;color:${markerOk ? '#dc2626' : '#d97706'}">${markerOk ? 'DELETABLE' : 'SKIP: NO SMOKE MARKER'}</span>
+    </div>
+    <div style="font-size:12px;color:#64748b;margin-top:4px">${escapeAdminHtml_(candidate.sheet || '-')} row ${escapeAdminHtml_(candidate.row || '-')}</div>
+    <div style="font-size:11px;color:#94a3b8;margin-top:4px;word-break:break-word">${escapeAdminHtml_(candidate.preview || '')}</div>
+  </div>`;
+}
+
+async function executeAdminSmokeCleanup_() {
+  const input = document.getElementById('admin-smoke-cleanup-confirm');
+  const confirmText = input ? input.value.trim() : '';
+  if (confirmText !== 'DELETE_REVIEWED_SMOKE_RECORDS') {
+    showToast('Type the exact smoke cleanup confirmation phrase first.');
+    return;
+  }
+  if (!confirm('Archive then delete reviewed smoke/test rows with smoke markers only?')) return;
+  const res = await callAPI('cleanupSmokeTestRecords', {
+    execute: true,
+    confirm: confirmText,
+    operator: (APP.user && (APP.user.username || APP.user.name)) || 'admin-ui',
+    reason: 'Sprint 182 Admin Smoke Cleanup'
+  });
+  showToast(res && res.success ? `Smoke cleanup complete: ${(res.deleted || []).length} row(s) deleted.` : 'Smoke cleanup blocked: ' + ((res && res.error) || 'unknown error'));
+  hydrateAdminSmokeCleanup_();
+}
+
+async function hydrateAdminDataCompleteness_() {
+  const el = document.getElementById('admin-data-completeness-body');
+  if (!el) return;
+  el.innerHTML = '<span style="color:#2563eb">Reviewing live data...</span>';
+  try {
+    const [jobs, billings, reports, warranties, repair] = await Promise.all([
+      callAPI('checkJobs', { limit: 20 }),
+      callAPI('listBillings', { limit: 50 }),
+      callAPI('getReportData', { period: 'month' }),
+      callAPI('listWarranties', { limit: 50 }),
+      callAPI('previewDataRepair', { period: 'month' })
+    ]);
+    const jobRows = adminRowsFor_(jobs, ['jobs', 'items', 'data.jobs', 'data.items', 'data']);
+    const latestJobId = adminFirstValue_(jobRows[0] || {}, ['job_id', 'Job_ID', 'jobId', 'id', 'ID']);
+    const billingRows = adminRowsFor_(billings, ['billings', 'items', 'data.billings', 'data.items', 'data', 'rows']);
+    const billingSummary = adminSummarizeBillingRows_(billingRows);
+    let billingDetail = null;
+    if (latestJobId) {
+      try {
+        billingDetail = await callAPI('getBilling', { job_id: latestJobId });
+      } catch (err) {
+        billingDetail = { success: false, error: err.message || String(err) };
+      }
+    }
+    const revenueRows = adminRowsFor_(reports, ['dailyRevenue', 'data.dailyRevenue', 'report.dailyRevenue', 'records', 'data.records']);
+    const warrantyRows = adminRowsFor_(warranties, ['warranties', 'items', 'data.warranties', 'data.items', 'data', 'rows']);
+    const candidates = adminRowsFor_(repair, ['candidates', 'data.candidates', 'preview.candidates', 'tasks', 'data.tasks']);
+    const findings = [];
+    if (billingSummary.incomplete > 0) findings.push({ area: 'Billing rows', detail: `${billingSummary.incomplete}/${billingSummary.total} incomplete` });
+    if (latestJobId && (!billingDetail || billingDetail.success === false)) findings.push({ area: 'Latest job billing', detail: `${latestJobId} has no readable Billing detail` });
+    if (revenueRows.length === 0) findings.push({ area: 'Monthly revenue', detail: 'Daily revenue rows are empty' });
+    if (warrantyRows.length === 0) findings.push({ area: 'Warranty', detail: 'Warranty list is healthy but empty' });
+    await adminSyncReviewStateFromBackend_();
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px;margin-bottom:10px">
+        ${buildRepairMetric_('System State', 'OK', '#059669')}
+        ${buildRepairMetric_('Data Findings', findings.length, findings.length ? '#d97706' : '#059669')}
+        ${buildRepairMetric_('Repair Preview', candidates.length, '#7c3aed')}
+        ${buildRepairMetric_('Latest Job', latestJobId || '-', '#2563eb')}
+      </div>
+      ${findings.length ? findings.map(buildAdminDataFinding_).join('') : '<div style="background:#ecfdf5;color:#047857;border-radius:10px;padding:12px">No business-data warnings found.</div>'}`;
+    el.querySelectorAll('.admin-data-open').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-target') || 'admin';
+        if (typeof goPage === 'function') goPage(target, document.getElementById('nav-more'));
+      });
+    });
+    ADMIN_PANEL.dataCompleteness = { latestJobId, billingSummary, revenueRows: revenueRows.length, warrantyRows: warrantyRows.length, repairCandidates: candidates.length, findings };
+  } catch (err) {
+    el.innerHTML = `<span style="color:#dc2626">Data completeness review failed: ${escapeAdminHtml_(err.message || err)}</span>`;
+  }
+}
+
+function buildAdminDataFinding_(finding) {
+  const key = adminFindingKey_(finding);
+  const review = adminGetReviewState_()[key] || {};
+  const reviewed = !!review.reviewed_at;
+  const target = adminFindingTarget_(finding.area);
+  return `<div style="border:1px solid #fed7aa;background:#fffbeb;border-left:4px solid #d97706;border-radius:10px;padding:10px;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <div style="font-size:12px;font-weight:800;color:#92400e">${escapeAdminHtml_(finding.area)}</div>
+      <span style="font-size:11px;font-weight:800;color:${reviewed ? '#047857' : '#b45309'};background:${reviewed ? '#dcfce7' : '#fef3c7'};border-radius:999px;padding:4px 8px">${reviewed ? 'REVIEWED' : 'REVIEW'}</span>
+    </div>
+    <div style="font-size:12px;color:#475569;margin-top:4px">${escapeAdminHtml_(finding.detail)}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <button class="admin-data-open" data-target="${escapeAdminHtml_(target)}" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:7px 10px;font-size:12px">Open ${escapeAdminHtml_(target)}</button>
+      <button onclick="markAdminDataFindingReviewed_('${escapeAdminHtml_(key)}')" style="background:#0f766e;color:#fff;border:none;border-radius:8px;padding:7px 10px;font-size:12px">Mark Reviewed</button>
+    </div>
+    <textarea onchange="saveAdminDataFindingNote_('${escapeAdminHtml_(key)}', this.value)" placeholder="Owner review note" style="width:100%;margin-top:8px;min-height:54px;border:1px solid #fed7aa;border-radius:8px;padding:8px;font-size:12px">${escapeAdminHtml_(review.note || '')}</textarea>
+    ${review.reviewed_at ? `<div style="font-size:11px;color:#64748b;margin-top:6px">Reviewed: ${escapeAdminHtml_(review.reviewed_at)}</div>` : ''}
+  </div>`;
+}
+
+function adminFindingTarget_(area) {
+  const text = String(area || '').toLowerCase();
+  if (text.includes('billing')) return 'billing';
+  if (text.includes('revenue')) return 'reports';
+  if (text.includes('warranty')) return 'warranty';
+  return 'admin';
+}
+
+function adminFindingKey_(finding) {
+  return String((finding && finding.area) || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+}
+
+function adminGetReviewState_() {
+  try {
+    return JSON.parse(localStorage.getItem('comphone_data_completeness_reviews') || '{}') || {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function adminSetReviewState_(state) {
+  localStorage.setItem('comphone_data_completeness_reviews', JSON.stringify(state || {}));
+}
+
+async function adminSyncReviewStateFromBackend_() {
+  try {
+    const res = await callAPI('getDataReviewLog', {});
+    if (res && res.success && res.reviews) adminSetReviewState_(res.reviews);
+  } catch (_) {
+    // Backend review log may be unavailable before the latest GAS deploy; local review state remains usable.
+  }
+}
+
+async function markAdminDataFindingReviewed_(key) {
+  const state = adminGetReviewState_();
+  state[key] = Object.assign({}, state[key] || {}, { reviewed_at: new Date().toISOString() });
+  adminSetReviewState_(state);
+  try {
+    await callAPI('saveDataReviewLog', {
+      finding_key: key,
+      status: 'reviewed',
+      note: state[key].note || '',
+      source: 'mobile-admin-data-completeness'
+    });
+  } catch (_) {}
+  hydrateAdminDataCompleteness_();
+}
+
+async function saveAdminDataFindingNote_(key, note) {
+  const state = adminGetReviewState_();
+  state[key] = Object.assign({}, state[key] || {}, { note: String(note || ''), note_updated_at: new Date().toISOString() });
+  adminSetReviewState_(state);
+  try {
+    await callAPI('saveDataReviewLog', {
+      finding_key: key,
+      status: state[key].reviewed_at ? 'reviewed' : 'noted',
+      note: String(note || ''),
+      source: 'mobile-admin-data-completeness'
+    });
+  } catch (_) {}
+}
+
+function exportAdminDataCompletenessReview_() {
+  const data = Object.assign({}, ADMIN_PANEL.dataCompleteness || {}, {
+    review_state: adminGetReviewState_(),
+    exported_at: new Date().toISOString()
+  });
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'comphone-data-completeness-review-' + new Date().toISOString().slice(0, 10) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function adminRowsFor_(body, keys) {
+  for (const key of keys) {
+    const value = key.split('.').reduce((current, part) => current && current[part], body);
+    if (Array.isArray(value)) return value;
+  }
+  return [];
+}
+
+function adminFirstValue_(obj, keys) {
+  for (const key of keys) {
+    const value = key.split('.').reduce((current, part) => current && current[part], obj);
+    if (value !== undefined && value !== null && value !== '') return String(value);
+  }
+  return '';
+}
+
+function adminSummarizeBillingRows_(rows) {
+  let incomplete = 0;
+  rows.forEach(row => {
+    const billingId = adminFirstValue_(row, ['Billing_ID', 'billing_id', 'billingId', 'id', 'ID']);
+    const jobId = adminFirstValue_(row, ['Job_ID', 'job_id', 'jobId']);
+    const amount = adminFirstValue_(row, ['Total_Amount', 'total_amount', 'amount', 'total']);
+    const status = adminFirstValue_(row, ['Payment_Status', 'payment_status', 'status']);
+    if (!(billingId && jobId && amount !== '' && status)) incomplete += 1;
+  });
+  return { total: rows.length, incomplete };
+}
+
+async function hydrateAdminDataRepair_(container) {
+  const statusEl = document.getElementById('admin-repair-status');
+  const listEl = document.getElementById('admin-repair-candidates');
+  if (!statusEl || !listEl) return;
+  statusEl.innerHTML = '<span style="color:#2563eb">Loading protected preview...</span>';
+  listEl.innerHTML = '<div class="loading-spinner-sm" style="margin:24px auto"></div>';
+  try {
+    const status = await callAPI('getDataRepairStatus', {});
+    const preview = await callAPI('previewDataRepair', { period: 'month' });
+    if (!status || status.success === false) throw new Error((status && status.error) || 'getDataRepairStatus failed');
+    if (!preview || preview.success === false) throw new Error((preview && preview.error) || 'previewDataRepair failed');
+    ADMIN_PANEL.repair = { status, preview };
+    const candidates = preview.candidates || status.candidates || [];
+    statusEl.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+        ${buildRepairMetric_('Candidates', candidates.length, '#2563eb')}
+        ${buildRepairMetric_('Executable', candidates.filter(c => c.executable).length, '#dc2626')}
+        ${buildRepairMetric_('Archive Sheet', status.archive_sheet || 'DB_DATA_REPAIR_ARCHIVE', '#059669')}
+        ${buildRepairMetric_('Audit Sheet', status.audit_sheet || 'DB_DATA_REPAIR_AUDIT', '#7c3aed')}
+      </div>`;
+    listEl.innerHTML = candidates.length
+      ? candidates.map(buildRepairCandidateCard_).join('')
+      : '<div style="padding:24px;text-align:center;color:#059669;background:#ecfdf5;border-radius:12px">No repair candidates found.</div>';
+    listEl.querySelectorAll('.btn-repair-execute').forEach(btn => {
+      btn.addEventListener('click', () => executeAdminDataRepair_(btn.dataset.repairId));
+    });
+  } catch (e) {
+    statusEl.innerHTML = `<span style="color:#dc2626">Repair preview failed: ${escapeAdminHtml_(e.message || e)}</span>`;
+    listEl.innerHTML = '';
+  }
+}
+
+function buildRepairMetric_(label, value, color) {
+  return `<div style="background:#fff;border:1px solid ${color}22;border-radius:10px;padding:10px">
+    <div style="font-size:11px;color:#64748b">${label}</div>
+    <div style="font-size:15px;font-weight:800;color:${color};word-break:break-word">${escapeAdminHtml_(value)}</div>
+  </div>`;
+}
+
+function buildRepairCandidateCard_(candidate) {
+  const executable = !!candidate.executable;
+  const color = executable ? '#dc2626' : '#d97706';
+  const preview = candidate.preview || {};
+  const previewRows = Object.keys(preview).slice(0, 8).map(key =>
+    `<tr><td style="color:#64748b;padding:4px 8px;width:38%">${escapeAdminHtml_(key)}</td><td style="padding:4px 8px;word-break:break-word">${escapeAdminHtml_(preview[key])}</td></tr>`
+  ).join('');
+  return `
+    <div class="repair-candidate-card" style="background:#fff;border:1px solid #e5e7eb;border-left:4px solid ${color};border-radius:12px;padding:14px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+        <div>
+          <div style="font-weight:800;color:#111827">${escapeAdminHtml_(candidate.repair_id || '-')}</div>
+          <div style="font-size:12px;color:#64748b;margin-top:2px">${escapeAdminHtml_(candidate.scope || '-')} / ${escapeAdminHtml_(candidate.source_sheet || '-')} row ${escapeAdminHtml_(candidate.source_row || '-')}</div>
+        </div>
+        <span style="background:${executable ? '#fef2f2' : '#fffbeb'};color:${color};padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800">${executable ? 'EXECUTABLE' : 'REVIEW ONLY'}</span>
+      </div>
+      <div style="font-size:12px;color:#475569;margin-top:10px">${escapeAdminHtml_(candidate.recommendation || '')}</div>
+      <div style="margin-top:10px;font-size:12px;color:#64748b">Missing: ${(candidate.missing_fields || []).map(escapeAdminHtml_).join(', ') || '-'}</div>
+      <table style="width:100%;font-size:12px;margin-top:10px;background:#f8fafc;border-radius:8px;overflow:hidden">${previewRows || '<tr><td style="padding:8px;color:#64748b">No preview fields</td></tr>'}</table>
+      ${executable ? `
+        <div style="margin-top:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px">
+          <label style="font-size:12px;color:#9a3412;font-weight:700">Type EXECUTE_REVIEWED_DATA_REPAIR to enable archive/delete</label>
+          <input class="repair-confirm-input" id="repair-confirm-${escapeAdminHtml_(candidate.repair_id)}" style="width:100%;margin-top:6px;padding:8px;border:1px solid #fdba74;border-radius:8px;font-size:12px" autocomplete="off">
+          <button class="btn-repair-execute" data-repair-id="${escapeAdminHtml_(candidate.repair_id)}" style="margin-top:8px;background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer">
+            <i class="bi bi-archive-fill"></i> Archive + Delete Reviewed Row
+          </button>
+        </div>` : ''}
+    </div>`;
+}
+
+async function executeAdminDataRepair_(repairId) {
+  const input = document.getElementById('repair-confirm-' + repairId);
+  const confirmText = input ? input.value.trim() : '';
+  if (confirmText !== 'EXECUTE_REVIEWED_DATA_REPAIR') {
+    showToast('Type the exact confirmation phrase before executing.');
+    return;
+  }
+  if (!confirm('Archive the row first, then delete this reviewed orphan Billing row?')) return;
+  const res = await callAPI('executeDataRepair', {
+    execute: true,
+    repair_id: repairId,
+    repair_action: 'archive_delete_orphan_billing_row',
+    confirm: confirmText,
+    operator: (APP.user && (APP.user.username || APP.user.name)) || 'admin-ui',
+    reason: 'Sprint 112 Admin Repair Console'
+  });
+  showToast(res && res.success ? 'Data repair executed and archived.' : 'Repair blocked: ' + ((res && res.error) || 'unknown error'));
+  if (res && res.success) renderDataRepairConsole_(document.getElementById('admin-tab-content'));
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Job Archive Restore (Sprint 194)
+══════════════════════════════════════════════════════════════ */
+
+async function renderJobArchivePanel_(container) {
+  container.innerHTML = '<div class="loading-spinner-sm" style="margin:24px auto"></div>';
+  try {
+    const res = await callAPI('listJobArchive', { limit: 50 });
+    if (!res.success) throw new Error(res.error || 'Failed to load archive');
+    const jobs = res.archived_jobs || [];
+
+    container.innerHTML = `
+      <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-weight:700"><i class="bi bi-archive-fill" style="color:#7c3aed"></i> งานที่เก็บถาวร (${jobs.length})</div>
+        <button id="btn-archive-refresh" class="btn-secondary" style="font-size:12px"><i class="bi bi-arrow-clockwise"></i> รีเฟรช</button>
+      </div>
+      <div style="padding:0 16px 8px;font-size:12px;color:#64748b">
+        ดูตัวอย่างก่อนกู้คืน ระบบจะบล็อกถ้า JobID ยังมีอยู่ใน DBJOBS
+      </div>
+      <div id="archive-job-list">
+        ${jobs.length === 0
+          ? '<p style="color:#9ca3af;text-align:center;padding:32px">ไม่มีงานที่เก็บถาวร</p>'
+          : jobs.map(buildArchiveJobRow_).join('')}
+      </div>
+      <div id="archive-preview-area"></div>`;
+
+    document.getElementById('btn-archive-refresh').addEventListener('click', () => renderJobArchivePanel_(container));
+
+    document.getElementById('archive-job-list').addEventListener('click', e => {
+      const btn = e.target.closest('[data-preview-job]');
+      if (btn) showJobRestorePreview_(btn.dataset.previewJob, container);
+    });
+  } catch (e) {
+    const notDeployed = /not allowed|not found|whitelist|ALLOWED_FUNCTIONS/i.test(e.message);
+    container.innerHTML = notDeployed
+      ? `<div style="padding:24px;text-align:center;color:#92400e;background:#fef3c7;border-radius:8px;margin:16px">
+           <i class="bi bi-cloud-slash" style="font-size:24px"></i>
+           <div style="margin-top:8px;font-weight:600">ฟีเจอร์นี้รอการ Deploy GAS Backend</div>
+           <div style="font-size:12px;margin-top:4px;color:#78350f">ระบบ Archive ต้องการ GAS Deploy (@621) ก่อนใช้งาน ติดต่อแอดมินเพื่ออัปเดต Backend</div>
+         </div>`
+      : `<div style="padding:24px;text-align:center;color:#ef4444">${e.message}</div>`;
+  }
+}
+
+function buildArchiveJobRow_(job) {
+  const dateStr = job.archived_at ? new Date(job.archived_at).toLocaleString('th-TH') : '-';
+  return `
+    <div class="audit-row" style="align-items:flex-start">
+      <div class="audit-dot" style="background:#7c3aed;margin-top:4px"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:#1e293b">${escapeAdminHtml_(job.job_id || '-')}</div>
+        <div style="font-size:12px;color:#6b7280">${escapeAdminHtml_(job.customer || '')} · ${escapeAdminHtml_(dateStr)}</div>
+        <div style="font-size:11px;color:#94a3b8">${escapeAdminHtml_(job.archive_reason || '')}</div>
+      </div>
+      <button class="btn-secondary" data-preview-job="${escapeAdminHtml_(job.job_id)}" style="font-size:11px;padding:4px 8px;flex-shrink:0;margin-left:8px">
+        <i class="bi bi-eye-fill"></i> ดูตัวอย่าง
+      </button>
+    </div>`;
+}
+
+async function showJobRestorePreview_(jobId, container) {
+  const previewArea = document.getElementById('archive-preview-area');
+  if (!previewArea) return;
+  previewArea.innerHTML = '<div class="loading-spinner-sm" style="margin:16px auto"></div>';
+  previewArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  try {
+    const res = await callAPI('previewJobRestore', { job_id: jobId });
+    if (!res.success) throw new Error(res.error);
+
+    const previewRows = Object.entries(res.preview || {})
+      .filter(([, v]) => v !== '' && v !== null && v !== undefined)
+      .slice(0, 12)
+      .map(([k, v]) => `<tr><td style="padding:4px 8px;color:#64748b;font-size:11px">${escapeAdminHtml_(k)}</td><td style="padding:4px 8px;font-size:11px;font-weight:600">${escapeAdminHtml_(String(v))}</td></tr>`)
+      .join('');
+
+    const blocked = res.duplicate_exists;
+    previewArea.innerHTML = `
+      <div style="margin:12px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px">
+        <div style="font-weight:700;font-size:14px;margin-bottom:8px">
+          <i class="bi bi-archive-fill" style="color:#7c3aed"></i> ตัวอย่างการกู้คืน: ${escapeAdminHtml_(jobId)}
+        </div>
+        ${blocked
+          ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px;margin-bottom:10px;color:#dc2626;font-size:12px;font-weight:700">
+              <i class="bi bi-exclamation-triangle-fill"></i> JobID นี้ยังมีอยู่ใน DBJOBS — กู้คืนถูกบล็อกเพื่อป้องกันทับข้อมูล
+             </div>`
+          : `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;margin-bottom:10px;color:#16a34a;font-size:12px;font-weight:700">
+              <i class="bi bi-check-circle-fill"></i> JobID ว่างใน DBJOBS — สามารถกู้คืนได้
+             </div>`}
+        <div style="font-size:12px;color:#64748b;margin-bottom:8px">เก็บถาวรเมื่อ ${escapeAdminHtml_(res.archived_at || '-')} โดย ${escapeAdminHtml_(res.archived_by || '-')}</div>
+        <table style="width:100%;background:#fff;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;margin-bottom:12px">${previewRows || '<tr><td style="padding:8px;color:#94a3b8">ไม่มีข้อมูล</td></tr>'}</table>
+        ${!blocked ? `
+          <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px">
+            <label style="font-size:12px;color:#9a3412;font-weight:700">พิมพ์ RESTORE_JOB เพื่อยืนยันการกู้คืน</label>
+            <input id="restore-confirm-input-${escapeAdminHtml_(jobId)}" style="width:100%;margin-top:6px;padding:8px;border:1px solid #fdba74;border-radius:8px;font-size:12px" autocomplete="off" placeholder="RESTORE_JOB">
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button id="btn-restore-execute-${escapeAdminHtml_(jobId)}" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer;flex:1">
+                <i class="bi bi-arrow-counterclockwise"></i> กู้คืน Job นี้
+              </button>
+              <button id="btn-restore-cancel" class="btn-secondary" style="font-size:12px">ยกเลิก</button>
+            </div>
+          </div>` : `
+          <button id="btn-restore-cancel" class="btn-secondary" style="font-size:12px">ปิด</button>`}
+      </div>`;
+
+    document.getElementById('btn-restore-cancel').addEventListener('click', () => { previewArea.innerHTML = ''; });
+    if (!blocked) {
+      document.getElementById('btn-restore-execute-' + jobId).addEventListener('click', () => executeJobRestore_(jobId, container));
+    }
+  } catch (e) {
+    const notDeployed = /not allowed|not found|whitelist|ALLOWED_FUNCTIONS/i.test(e.message);
+    previewArea.innerHTML = notDeployed
+      ? `<div style="padding:12px 16px;color:#92400e;background:#fef3c7;border-radius:8px">
+           <i class="bi bi-cloud-slash"></i> ฟีเจอร์ Preview ต้องการ GAS Deploy (@621)
+         </div>`
+      : `<div style="padding:12px 16px;color:#ef4444">เกิดข้อผิดพลาด: ${escapeAdminHtml_(e.message)}</div>`;
+  }
+}
+
+async function executeJobRestore_(jobId, container) {
+  const input = document.getElementById('restore-confirm-input-' + jobId);
+  const confirmText = input ? input.value.trim() : '';
+  if (confirmText !== 'RESTORE_JOB') {
+    showToast('พิมพ์ RESTORE_JOB ให้ถูกต้องก่อนกู้คืน');
+    return;
+  }
+  if (!confirm('กู้คืน Job ' + jobId + ' จาก Archive กลับสู่ DBJOBS?')) return;
+
+  try {
+    const res = await callAPI('restoreJob', {
+      job_id: jobId,
+      confirm: 'RESTORE_JOB',
+      reason: 'Admin panel restore (Sprint 194)',
+      user: (APP.user && (APP.user.username || APP.user.name)) || 'admin-ui'
+    });
+    showToast(res && res.success
+      ? 'กู้คืน Job ' + jobId + ' สำเร็จแล้ว'
+      : 'กู้คืนไม่สำเร็จ: ' + ((res && res.error) || 'unknown error'));
+    if (res && res.success) renderJobArchivePanel_(container);
+  } catch (e) {
+    const notDeployed = /not allowed|not found|whitelist|ALLOWED_FUNCTIONS/i.test(e.message);
+    showToast(notDeployed
+      ? 'ฟีเจอร์ Restore ต้องการ GAS Deploy (@621) ก่อน'
+      : 'เกิดข้อผิดพลาด: ' + e.message);
+  }
+}
+
+function escapeAdminHtml_(value) {
+  return String(value === null || value === undefined ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+async function renderAuditLogViewer_(container) {
+  container.innerHTML = '<div class="loading-spinner-sm" style="margin:24px auto"></div>';
+  try {
+    const res = await callAPI('getAuditLog', {
+      limit: ADMIN_PANEL.auditPerPage,
+      offset: ADMIN_PANEL.auditPage * ADMIN_PANEL.auditPerPage
+    });
+    if (!res.success) throw new Error(res.error);
+    ADMIN_PANEL.auditLogs = res.logs || [];
+
+    container.innerHTML = `
+      <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-weight:700">Audit Log</div>
+        <div style="font-size:12px;color:#9ca3af">หน้า ${ADMIN_PANEL.auditPage + 1}</div>
+      </div>
+      <div id="audit-log-body">
+        ${ADMIN_PANEL.auditLogs.length
+          ? ADMIN_PANEL.auditLogs.map(buildAuditRow_).join('')
+          : '<p style="color:#9ca3af;text-align:center;padding:24px">ไม่มีข้อมูล</p>'}
+      </div>
+      <div style="display:flex;gap:8px;padding:12px 16px">
+        <button id="btn-audit-prev" class="btn-secondary" ${ADMIN_PANEL.auditPage === 0 ? 'disabled' : ''}>
+          <i class="bi bi-chevron-left"></i> ก่อนหน้า
+        </button>
+        <button id="btn-audit-next" class="btn-secondary" ${ADMIN_PANEL.auditLogs.length < ADMIN_PANEL.auditPerPage ? 'disabled' : ''}>
+          ถัดไป <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>`;
+
+    document.getElementById('btn-audit-prev').addEventListener('click', () => {
+      if (ADMIN_PANEL.auditPage > 0) { ADMIN_PANEL.auditPage--; renderAuditLogViewer_(container); }
+    });
+    document.getElementById('btn-audit-next').addEventListener('click', () => {
+      if (ADMIN_PANEL.auditLogs.length >= ADMIN_PANEL.auditPerPage) { ADMIN_PANEL.auditPage++; renderAuditLogViewer_(container); }
+    });
+  } catch (e) {
+    container.innerHTML = `<div style="padding:24px;text-align:center;color:#ef4444">${e.message}</div>`;
+  }
+}
+
+function buildAuditRow_(log) {
+  const actionColor = {
+    'LOGIN_SUCCESS': '#10b981', 'LOGIN_FAILED': '#ef4444',
+    'PASSWORD_CHANGED': '#3b82f6', 'ACCOUNT_LOCKED': '#f59e0b',
+    'USER_CREATED': '#8b5cf6', 'USER_UPDATED': '#6366f1'
+  };
+  const color = actionColor[log.action] || '#6b7280';
+  const timeStr = log.timestamp ? new Date(log.timestamp).toLocaleString('th-TH') : '';
+  return `
+    <div class="audit-row">
+      <div class="audit-dot" style="background:${color}"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:${color}">${log.action || '-'}</div>
+        <div style="font-size:12px;color:#6b7280">${log.username || '-'} · ${timeStr}</div>
+        ${log.detail ? `<div style="font-size:11px;color:#9ca3af;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${log.detail}</div>` : ''}
+      </div>
+    </div>`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Modal Builders
+══════════════════════════════════════════════════════════════ */
+
+function buildAdminModals_() {
+  /* Create User Modal */
+  if (!document.getElementById('modal-admin-create-user')) {
+    const div = document.createElement('div');
+    div.id = 'modal-admin-create-user';
+    div.className = 'modal-overlay hidden';
+    div.innerHTML = `
+      <div class="modal-box" role="dialog" aria-modal="true">
+        <div class="modal-header">
+          <h6>เพิ่มผู้ใช้ใหม่</h6>
+          <button class="modal-close" id="btn-close-create-user"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body" style="padding:16px">
+          <div class="form-group"><label>Username *</label>
+            <input type="text" id="new-username" class="form-control" placeholder="ตัวอักษรและตัวเลขเท่านั้น"></div>
+          <div class="form-group"><label>ชื่อ-นามสกุล</label>
+            <input type="text" id="new-fullname" class="form-control" placeholder="ชื่อ-นามสกุล"></div>
+          <div class="form-group"><label>Role</label>
+            <select id="new-role" class="form-control">
+              <option value="tech">ช่าง</option>
+              <option value="admin">Admin</option>
+              <option value="acct">บัญชี</option>
+              <option value="sales">Sales</option>
+              <option value="manager">Manager</option>
+              <option value="owner">Owner</option>
+            </select></div>
+          <div class="form-group"><label>รหัสผ่าน *</label>
+            <input type="password" id="new-password" class="form-control" placeholder="อย่างน้อย 8 ตัวอักษร"></div>
+          <button id="btn-submit-create-user" class="btn-primary" style="width:100%">
+            <i class="bi bi-person-plus-fill"></i> สร้างผู้ใช้
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(div);
+    div.addEventListener('click', e => { if (e.target === div) div.classList.add('hidden'); });
+    document.getElementById('btn-close-create-user').addEventListener('click', () => div.classList.add('hidden'));
+    document.getElementById('btn-submit-create-user').addEventListener('click', submitCreateUser_);
+  }
+
+  /* Edit User Modal */
+  if (!document.getElementById('modal-admin-edit-user')) {
+    const div = document.createElement('div');
+    div.id = 'modal-admin-edit-user';
+    div.className = 'modal-overlay hidden';
+    div.innerHTML = `
+      <div class="modal-box" role="dialog" aria-modal="true">
+        <div class="modal-header">
+          <h6>แก้ไขผู้ใช้ <span id="edit-user-title"></span></h6>
+          <button class="modal-close" id="btn-close-edit-user"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body" style="padding:16px">
+          <div class="form-group"><label>ชื่อ-นามสกุล</label>
+            <input type="text" id="edit-fullname" class="form-control"></div>
+          <div class="form-group"><label>Role</label>
+            <select id="edit-role" class="form-control">
+              <option value="tech">ช่าง</option>
+              <option value="admin">Admin</option>
+              <option value="acct">บัญชี</option>
+              <option value="sales">Sales</option>
+              <option value="manager">Manager</option>
+              <option value="owner">Owner</option>
+            </select></div>
+          <div class="form-group"><label>รหัสผ่านใหม่ (เว้นว่างถ้าไม่เปลี่ยน)</label>
+            <input type="password" id="edit-new-password" class="form-control" placeholder="อย่างน้อย 8 ตัวอักษร"></div>
+          <button id="btn-submit-edit-user" class="btn-primary" style="width:100%">
+            <i class="bi bi-save-fill"></i> บันทึก
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(div);
+    div.addEventListener('click', e => { if (e.target === div) div.classList.add('hidden'); });
+    document.getElementById('btn-close-edit-user').addEventListener('click', () => div.classList.add('hidden'));
+    document.getElementById('btn-submit-edit-user').addEventListener('click', submitEditUser_);
+  }
+}
+
+/* ─── page-admin shell ──────────────────────────────────────── */
+function buildAdminPageShell_() {
+  const page = document.getElementById('page-admin');
+  if (!page || document.getElementById('admin-panel-content')) return;
+  page.innerHTML = `
+    <div class="page-header"><h5><i class="bi bi-gear-fill" style="color:#7c3aed"></i> Admin Panel</h5></div>
+    <div id="admin-panel-content"></div>`;
+}
+
+/* ─── Keyboard: Escape ─────────────────────────────────────── */
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  ['modal-admin-create-user', 'modal-admin-edit-user'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !el.classList.contains('hidden')) el.classList.add('hidden');
+  });
+});
+
+/* ─── Init ──────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  buildAdminModals_();
+
+  /* สร้าง page-admin ถ้ายังไม่มี */
+  if (!document.getElementById('page-admin')) {
+    const pages = document.getElementById('pages-container');
+    if (pages) {
+      const div = document.createElement('div');
+      div.id = 'page-admin';
+      div.className = 'page hidden';
+      pages.appendChild(div);
+    }
+  }
+  buildAdminPageShell_();
+});

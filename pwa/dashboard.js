@@ -1,0 +1,750 @@
+/* ===== EXECUTIVE DASHBOARD MODULE — COMPHONE SUPER APP v5.5.4 ===== */
+'use strict';
+
+// ===== STATE =====
+let DASHBOARD_DATA = null;
+let DASHBOARD_CHART = null; // Chart.js instance
+
+// ===== LOAD DASHBOARD =====
+function loadDashboardPage() {
+  const container = document.getElementById('dashboard-content');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div style="text-align:center;padding:48px 16px;color:#9ca3af">
+      <div class="spinner" style="margin:0 auto 16px;width:36px;height:36px"></div>
+      <p style="font-size:14px">กำลังโหลด Dashboard...</p>
+    </div>`;
+
+  // Try new DashboardBundle API first (faster - single call with all data)
+  callApi({ action: 'getDashboardBundle' }).then(res => {
+    if (res && (res.success || res.totalJobs !== undefined)) {
+      DASHBOARD_DATA = res;
+      window.DASHBOARD_DATA = res;
+      renderDashboard(res);
+    } else {
+      // Fallback to legacy getDashboardData
+      return callApi({ action: 'getDashboardData' });
+    }
+  }).then(res => {
+    if (res && (res.success || res.totalJobs !== undefined)) {
+      DASHBOARD_DATA = res;
+      window.DASHBOARD_DATA = res;
+      renderDashboard(res);
+    }
+  }).catch(err => {
+    // Final fallback - try getDashboardData
+    callApi({ action: 'getDashboardData' }).then(res => {
+      if (res && (res.success || res.totalJobs !== undefined)) {
+        DASHBOARD_DATA = res;
+        window.DASHBOARD_DATA = res;
+        renderDashboard(res);
+      } else {
+        renderDashboardError(res || err);
+      }
+    }).catch(err2 => {
+      renderDashboardError(err2 || err);
+    });
+  });
+}
+
+function renderDashboardError(msg) {
+  const container = document.getElementById('dashboard-content');
+  if (!container) return;
+  const raw = msg && (msg.error || msg.message) ? (msg.error || msg.message) : String(msg || 'Dashboard error');
+  const state = typeof apiErrorInfo === 'function'
+    ? apiErrorInfo(raw, 'mobile dashboard')
+    : { icon: 'bi-exclamation-triangle', title: 'โหลด Dashboard ไม่สำเร็จ', message: raw, action: '' };
+  container.innerHTML = `
+    <div class="empty-state" style="padding:48px 16px">
+      <i class="bi ${state.icon}" style="font-size:40px;color:#d1d5db;display:block;margin-bottom:12px"></i>
+      <p style="color:#111827;font-size:15px;font-weight:800;margin-bottom:4px">${state.title}</p>
+      <p style="color:#6b7280;font-size:13px;margin-bottom:4px">${state.message || raw}</p>
+      ${state.action ? `<p style="color:#94a3b8;font-size:11px;margin-bottom:12px">${state.action}</p>` : ''}
+      <button class="btn-add-job" onclick="loadDashboardPage()" style="margin-top:12px">
+        <i class="bi bi-arrow-clockwise"></i> ลองใหม่
+      </button>
+    </div>`;
+}
+
+function renderCommandTile(page, icon, value, label, targetPage) {
+  const risk = Number(value || 0) > 0 && ['inventory', 'vision', 'line-center'].includes(page);
+  return `
+    <button type="button" class="executive-command-tile" aria-label="${label}" onclick="openDashboardCommand('${targetPage}')" style="text-align:left;border:1px solid ${risk ? '#fecaca' : '#e5e7eb'};background:${risk ? '#fff7ed' : '#fff'};border-radius:12px;padding:12px;min-height:86px;cursor:pointer;box-shadow:0 8px 20px rgba(15,23,42,.05)">
+      <i class="bi ${icon}" style="font-size:20px;color:${risk ? '#c2410c' : '#2563eb'}"></i>
+      <div style="font-size:22px;font-weight:900;color:#0f172a;margin-top:6px">${Number(value || 0).toLocaleString()}</div>
+      <div style="font-size:11px;color:#64748b;font-weight:700">${label}</div>
+    </button>`;
+}
+
+function openDashboardCommand(page) {
+  if (typeof goPage === 'function') return goPage(page, document.getElementById('nav-more'));
+  if (typeof loadSection === 'function') return loadSection(page);
+}
+
+function formatDashboardMoney(value) {
+  return 'THB ' + Number(value || 0).toLocaleString();
+}
+
+function renderOperatorInsightCard(card) {
+  const tone = card.tone || 'neutral';
+  return `
+    <button type="button" class="operator-insight-card ${tone}" data-insight-target="${card.target}" aria-label="${card.title}" onclick="openDashboardCommand('${card.target}')">
+      <div class="operator-insight-icon"><i class="bi ${card.icon}"></i></div>
+      <div class="operator-insight-copy">
+        <div class="operator-insight-title">${card.title}</div>
+        <div class="operator-insight-value">${card.value}</div>
+        <div class="operator-insight-note">${card.note}</div>
+      </div>
+    </button>`;
+}
+
+function buildOperatorInsightCards(metrics) {
+  const serviceLoad = Number(metrics.totalJobs || 0) + Number(metrics.overdueJobs || 0);
+  const riskQueue = Number(metrics.lowStock || 0) + Number(metrics.visionReview || 0) + Number(metrics.alerts || 0);
+  const automationQueue = Number(metrics.visionReview || 0) + Number(metrics.linePending || 0);
+  return [
+    {
+      title: 'Service Pulse',
+      value: `${serviceLoad.toLocaleString()} active`,
+      note: metrics.overdueJobs > 0 ? `${metrics.overdueJobs} SLA risk` : 'queue stable',
+      icon: 'bi-activity',
+      target: 'jobs',
+      tone: metrics.overdueJobs > 0 ? 'danger' : 'ok'
+    },
+    {
+      title: 'Cash Today',
+      value: formatDashboardMoney(metrics.revenueToday),
+      note: `${Number(metrics.billingOpen || 0).toLocaleString()} billing follow-up`,
+      icon: 'bi-cash-coin',
+      target: 'billing',
+      tone: metrics.billingOpen > 0 ? 'watch' : 'ok'
+    },
+    {
+      title: 'Risk Queue',
+      value: riskQueue.toLocaleString(),
+      note: `${metrics.lowStock} stock / ${metrics.alerts} alerts`,
+      icon: 'bi-shield-exclamation',
+      target: metrics.lowStock > 0 ? 'inventory' : 'reports',
+      tone: riskQueue > 0 ? 'danger' : 'ok'
+    },
+    {
+      title: 'AI + LINE Loop',
+      value: automationQueue.toLocaleString(),
+      note: `${metrics.visionReview} vision / ${metrics.linePending} LINE`,
+      icon: 'bi-stars',
+      target: metrics.visionReview > 0 ? 'vision' : 'line-center',
+      tone: automationQueue > 0 ? 'watch' : 'neutral'
+    }
+  ];
+}
+
+function getDashboardRole() {
+  const raw = (window.APP && APP.role) || (window.__USER_ROLE || '') || '';
+  const role = String(raw || '').toLowerCase();
+  if (role.includes('acct')) return 'acct';
+  if (role.includes('exec') || role.includes('owner')) return 'exec';
+  if (role.includes('tech')) return 'tech';
+  return 'admin';
+}
+
+function renderRoleFocusWidget(metrics) {
+  const role = getDashboardRole();
+  const cards = {
+    tech: {
+      title: 'Field Focus',
+      icon: 'bi-tools',
+      target: 'jobs',
+      primary: `${Number(metrics.overdueJobs || 0).toLocaleString()} SLA`,
+      secondary: `${Number(metrics.totalJobs || 0).toLocaleString()} service jobs`,
+      action: 'Open Jobs'
+    },
+    admin: {
+      title: 'Dispatch Focus',
+      icon: 'bi-headset',
+      target: 'jobs',
+      primary: `${Number(metrics.totalJobs || 0).toLocaleString()} jobs`,
+      secondary: `${Number(metrics.linePending || 0).toLocaleString()} LINE alerts`,
+      action: 'Review Queue'
+    },
+    acct: {
+      title: 'Cash Focus',
+      icon: 'bi-receipt-cutoff',
+      target: 'billing',
+      primary: formatDashboardMoney(metrics.revenueToday),
+      secondary: `${Number(metrics.billingOpen || 0).toLocaleString()} billing follow-up`,
+      action: 'Open Billing'
+    },
+    exec: {
+      title: 'Executive Focus',
+      icon: 'bi-graph-up-arrow',
+      target: 'reports',
+      primary: formatDashboardMoney(metrics.revenueMonth),
+      secondary: `${Number(metrics.riskQueue || 0).toLocaleString()} active risks`,
+      action: 'Open Reports'
+    }
+  };
+  const card = cards[role] || cards.admin;
+  return `
+    <section class="role-focus-widget" data-role-widget="${role}" aria-label="${card.title}">
+      <div class="role-focus-icon"><i class="bi ${card.icon}"></i></div>
+      <div class="role-focus-copy">
+        <div class="role-focus-kicker">Role Focus</div>
+        <strong>${card.title}</strong>
+        <span>${card.primary}</span>
+        <small>${card.secondary}</small>
+      </div>
+      <button type="button" class="role-focus-action" onclick="openDashboardCommand('${card.target}')">${card.action}</button>
+    </section>`;
+}
+
+function buildDashboardDecisionItems(metrics) {
+  const items = [
+    {
+      id: 'jobs',
+      title: 'Service Dispatch',
+      note: metrics.overdueJobs > 0 ? `${metrics.overdueJobs} SLA jobs need action` : `${metrics.totalJobs} active jobs`,
+      icon: 'bi-tools',
+      target: 'jobs',
+      value: Number(metrics.overdueJobs || metrics.totalJobs || 0),
+      priority: metrics.overdueJobs > 0 ? 'high' : 'normal'
+    },
+    {
+      id: 'billing',
+      title: 'Billing Follow-up',
+      note: metrics.billingOpen > 0 ? `${metrics.billingOpen} invoices/jobs to review` : 'cash workflow is clear',
+      icon: 'bi-receipt-cutoff',
+      target: 'billing',
+      value: Number(metrics.billingOpen || 0),
+      priority: metrics.billingOpen > 0 ? 'high' : 'normal'
+    },
+    {
+      id: 'reports',
+      title: 'Management Reports',
+      note: metrics.revenueMonth > 0 ? `${formatDashboardMoney(metrics.revenueMonth)} this month` : 'review monthly report health',
+      icon: 'bi-file-earmark-bar-graph',
+      target: 'reports',
+      value: Number(metrics.reportModules || 0),
+      priority: metrics.revenueToday <= 0 && metrics.revenueMonth <= 0 ? 'watch' : 'normal'
+    },
+    {
+      id: 'inventory',
+      title: 'Inventory Risk',
+      note: metrics.lowStock > 0 ? `${metrics.lowStock} low-stock items` : 'stock risk is clear',
+      icon: 'bi-box-seam',
+      target: 'inventory',
+      value: Number(metrics.lowStock || 0),
+      priority: metrics.lowStock > 0 ? 'watch' : 'normal'
+    },
+    {
+      id: 'vision',
+      title: 'AI Vision Review',
+      note: metrics.visionReview > 0 ? `${metrics.visionReview} cases waiting` : 'pilot queue ready',
+      icon: 'bi-stars',
+      target: 'vision',
+      value: Number(metrics.visionReview || 0),
+      priority: metrics.visionReview > 0 ? 'watch' : 'normal'
+    },
+    {
+      id: 'line-center',
+      title: 'LINE Rooms',
+      note: metrics.linePending > 0 ? `${metrics.linePending} alerts to inspect` : 'room notifications healthy',
+      icon: 'bi-broadcast-pin',
+      target: 'line-center',
+      value: Number(metrics.linePending || 0),
+      priority: metrics.linePending > 0 ? 'watch' : 'normal'
+    }
+  ];
+  const order = { high: 0, watch: 1, normal: 2 };
+  return items.sort((a, b) => (order[a.priority] - order[b.priority]) || (b.value - a.value));
+}
+
+function renderDashboardDecisionLayer(metrics) {
+  const items = buildDashboardDecisionItems(metrics).slice(0, 6);
+  return `
+    <section class="section-card dashboard-decision-layer" data-dashboard-polish="decision-layer" style="margin:0 12px 10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px">
+        <div>
+          <div class="section-label" style="margin-bottom:2px">Decision Layer</div>
+          <div style="font-size:11px;color:#64748b;font-weight:700">Next best actions from live dashboard signals</div>
+        </div>
+        <span style="font-size:10px;font-weight:900;color:#2563eb;background:#dbeafe;border-radius:999px;padding:5px 8px">Sprint 147</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+        ${items.map(item => `
+          <button type="button" class="dashboard-decision-item decision-priority-${item.priority}" onclick="openDashboardCommand('${item.target}')" style="border:1px solid ${item.priority === 'high' ? '#fecaca' : item.priority === 'watch' ? '#fde68a' : '#e5e7eb'};background:${item.priority === 'high' ? '#fff1f2' : item.priority === 'watch' ? '#fffbeb' : '#ffffff'};border-radius:14px;padding:10px;text-align:left;cursor:pointer;display:flex;gap:10px;align-items:flex-start;min-height:74px">
+            <span style="width:32px;height:32px;border-radius:11px;display:grid;place-items:center;background:${item.priority === 'high' ? '#fee2e2' : item.priority === 'watch' ? '#fef3c7' : '#eff6ff'};color:${item.priority === 'high' ? '#dc2626' : item.priority === 'watch' ? '#d97706' : '#2563eb'}"><i class="bi ${item.icon}"></i></span>
+            <span style="min-width:0">
+              <strong style="display:block;font-size:12px;color:#0f172a;line-height:1.25">${item.title}</strong>
+              <small style="display:block;margin-top:4px;font-size:11px;color:#64748b;line-height:1.35">${item.note}</small>
+            </span>
+          </button>
+        `).join('')}
+      </div>
+    </section>`;
+}
+
+// ===== RENDER DASHBOARD =====
+function renderDashboard(data) {
+  const container = document.getElementById('dashboard-content');
+  if (!container) return;
+
+  const summary = data.summary || data;
+  const revenue = summary.revenue || { today: 0, week: 0, month: 0 };
+  const totalJobs = Number(summary.totalJobs || summary.total_jobs || 0);
+  const overdueJobs = Number(summary.overdueJobs || summary.overdue_jobs || 0);
+  const lowStock = Number(summary.lowStock || summary.low_stock || 0);
+  const pmDue = Number(summary.pmDueCount || summary.pm_due_count || 0);
+  const topTech = summary.topTechnician || null;
+  // alerts อาจเป็น object { success, items } หรือ array
+  const alertsRaw = data.alerts || summary.alerts || {};
+  const alerts = Array.isArray(alertsRaw) ? alertsRaw : (alertsRaw.items || []);
+  const recentJobs = (data.jobs || summary.recentJobs || []).slice(0, 8);
+  // status_distribution อาจเป็น object { success, total_jobs, statuses } หรือ array
+  const sdRaw = data.status_distribution || summary.status_distribution || {};
+  const statusDist = Array.isArray(sdRaw) ? sdRaw :
+    (sdRaw.statuses || []).filter(s => s.job_count > 0);
+  const dateStr = summary.date || new Date().toLocaleDateString('th-TH');
+  const billingOpen = Number(summary.billingOpen || summary.openBillings || summary.pendingBillings || 0);
+  const poOpen = Number(summary.poOpen || summary.openPurchaseOrders || summary.pendingPO || 0);
+  const reportModules = Number(summary.reportModules || summary.report_modules || 4);
+  const visionReview = Number(summary.visionReview || summary.visionReviewQueue || summary.pendingVisionReviews || 0);
+  const linePending = alerts.length;
+  const operatorInsightCards = buildOperatorInsightCards({
+    revenueToday: revenue.today,
+    revenueMonth: revenue.month,
+    totalJobs,
+    overdueJobs,
+    lowStock,
+    billingOpen,
+    poOpen,
+    visionReview,
+    linePending,
+    alerts: alerts.length
+  });
+  const riskQueue = lowStock + visionReview + alerts.length;
+
+  container.innerHTML = `
+    <!-- HEADER ROW -->
+    <div style="padding:12px 16px 4px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:11px;color:#9ca3af">อัปเดตล่าสุด</div>
+        <div style="font-size:12px;font-weight:700;color:#374151">${dateStr}</div>
+      </div>
+      <button onclick="loadDashboardPage()" style="background:#f3f4f6;border:none;border-radius:20px;padding:6px 14px;font-size:12px;color:#374151;cursor:pointer;display:flex;align-items:center;gap:6px">
+        <i class="bi bi-arrow-clockwise"></i> รีเฟรช
+      </button>
+    </div>
+
+    <!-- KPI CARDS -->
+    <div id="kpi-cards-grid" style="padding:8px 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="kpi-card-glass">
+        <div class="kpi-icon"><i class="bi bi-clipboard2-check-fill"></i></div>
+        <div class="kpi-value">${totalJobs}</div>
+        <div class="kpi-label">งานทั้งหมด</div>
+      </div>
+      <div class="kpi-card-glass">
+        <div class="kpi-icon"><i class="bi bi-currency-exchange"></i></div>
+        <div class="kpi-value">฿${Number(revenue.today || 0).toLocaleString()}</div>
+        <div class="kpi-label">รายรับวันนี้</div>
+      </div>
+      <div class="kpi-card-glass ${overdueJobs > 0 ? 'kpi-alert' : ''}">
+        <div class="kpi-icon"><i class="bi bi-clock-history"></i></div>
+        <div class="kpi-value">${overdueJobs}</div>
+        <div class="kpi-label">งานเกิน SLA</div>
+      </div>
+      <div class="kpi-card-glass ${lowStock > 0 ? 'kpi-alert' : ''}">
+        <div class="kpi-icon"><i class="bi bi-box-seam-fill"></i></div>
+        <div class="kpi-value">${lowStock}</div>
+        <div class="kpi-label">สต็อกต่ำ</div>
+      </div>
+    </div>
+
+    <div class="operator-insight-strip" data-dashboard-polish="operator-insights" aria-label="Operator insight summary">
+      ${operatorInsightCards.map(renderOperatorInsightCard).join('')}
+    </div>
+
+    ${renderRoleFocusWidget({
+      revenueToday: revenue.today,
+      revenueMonth: revenue.month,
+      totalJobs,
+      overdueJobs,
+      lowStock,
+      billingOpen,
+      reportModules,
+      visionReview,
+      linePending,
+      riskQueue
+    })}
+
+    ${renderDashboardDecisionLayer({
+      revenueToday: Number(revenue.today || 0),
+      revenueMonth: Number(revenue.month || 0),
+      totalJobs,
+      overdueJobs,
+      lowStock,
+      billingOpen,
+      reportModules,
+      visionReview,
+      linePending
+    })}
+
+    <!-- EXECUTIVE COMMAND CENTER -->
+    <div class="section-card executive-command-center" style="margin:0 12px 10px">
+      <div class="section-label">Executive Command Center</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:8px">
+        ${renderCommandTile('jobs', 'bi-tools', totalJobs, overdueJobs > 0 ? `${overdueJobs} SLA risk` : 'service queue', 'jobs')}
+        ${renderCommandTile('billing', 'bi-receipt', billingOpen, 'billing follow-up', 'billing')}
+        ${renderCommandTile('reports', 'bi-file-earmark-bar-graph', reportModules, 'report center', 'reports')}
+        ${renderCommandTile('po', 'bi-cart-check', poOpen, 'purchase queue', 'po')}
+        ${renderCommandTile('inventory', 'bi-box-seam', lowStock, 'stock risk', 'inventory')}
+        ${renderCommandTile('vision', 'bi-stars', visionReview, 'human review', 'vision')}
+        ${renderCommandTile('line-center', 'bi-broadcast-pin', linePending, 'LINE alerts', 'line-center')}
+      </div>
+    </div>
+
+    <div id="business-ai-cards"></div>
+
+    <!-- REVENUE CHART -->
+    <div class="section-card" style="margin:0 12px 10px">
+      <div class="section-label">รายรับ (บาท)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+        <div style="text-align:center;background:#f0fdf4;border-radius:12px;padding:10px">
+          <div style="font-size:10px;color:#6b7280;font-weight:600">วันนี้</div>
+          <div style="font-size:16px;font-weight:900;color:#10b981">฿${Number(revenue.today || 0).toLocaleString()}</div>
+        </div>
+        <div style="text-align:center;background:#eff6ff;border-radius:12px;padding:10px">
+          <div style="font-size:10px;color:#6b7280;font-weight:600">สัปดาห์นี้</div>
+          <div style="font-size:16px;font-weight:900;color:#3b82f6">฿${Number(revenue.week || 0).toLocaleString()}</div>
+        </div>
+        <div style="text-align:center;background:#fef3c7;border-radius:12px;padding:10px">
+          <div style="font-size:10px;color:#6b7280;font-weight:600">เดือนนี้</div>
+          <div style="font-size:16px;font-weight:900;color:#d97706">฿${Number(revenue.month || 0).toLocaleString()}</div>
+        </div>
+      </div>
+      <div style="position:relative;height:140px">
+        <canvas id="revenue-chart" style="width:100%;height:140px"></canvas>
+      </div>
+    </div>
+
+    <!-- STATUS DISTRIBUTION -->
+    ${statusDist.length > 0 ? `
+    <div class="section-card" style="margin:0 12px 10px">
+      <div class="section-label">สถานะงาน</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${statusDist.map(s => `
+        <div style="flex:1;min-width:80px;background:#f9fafb;border-radius:12px;padding:10px;text-align:center">
+          <div style="font-size:18px;font-weight:900;color:#111827">${s.job_count || s.count || 0}</div>
+          <div style="font-size:10px;color:#6b7280;font-weight:600">${s.status_label || s.label || s.status || '-'}</div>
+        </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- ALERTS -->
+    ${alerts.length > 0 ? `
+    <div class="section-card" style="margin:0 12px 10px">
+      <div class="section-label" style="color:#ef4444">⚠️ แจ้งเตือนด่วน (${alerts.length})</div>
+      ${alerts.slice(0, 5).map(a => `
+      <div class="alert-card ${(a.type||'').toLowerCase().includes('overdue') ? 'danger' : (a.type||'').toLowerCase().includes('stock') ? 'warning' : 'success'}" style="margin-bottom:6px">
+        <i class="bi ${ (a.type||'').includes('OVERDUE') || (a.type||'').includes('overdue') ? 'bi-clock-fill' : (a.type||'').includes('STOCK') || (a.type||'').includes('stock') ? 'bi-box-seam-fill' : 'bi-info-circle-fill'}"></i>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:13px">${a.message || (a.data && a.data.customer_name ? a.id+' — '+a.data.customer_name : '-')}</div>
+          ${a.data && a.data.status_label ? `<div style="font-size:11px;font-weight:400">สถานะ: ${a.data.status_label}</div>` : ''}
+        </div>
+      </div>`).join('')}
+    </div>` : ''}
+
+    <!-- TOP TECHNICIAN -->
+    ${topTech ? `
+    <div class="section-card" style="margin:0 12px 10px">
+      <div class="section-label">🏆 ช่างยอดเยี่ยมสัปดาห์นี้</div>
+      <div style="display:flex;align-items:center;gap:14px;padding:8px 0">
+        <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#fbbf24,#d97706);display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:20px;flex-shrink:0">
+          ${(topTech.name || '?')[0]}
+        </div>
+        <div style="flex:1">
+          <div style="font-size:16px;font-weight:800;color:#111827">${topTech.name || '-'}</div>
+          <div style="font-size:12px;color:#6b7280">${topTech.jobs_completed || 0} งานเสร็จ · ${topTech.kudos || 0} Kudos</div>
+          <div style="color:#fbbf24;font-size:14px;margin-top:2px">${'★'.repeat(Math.min(5, Math.round(topTech.rating || 5)))}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:22px;font-weight:900;color:#10b981">${topTech.jobs_completed || 0}</div>
+          <div style="font-size:10px;color:#9ca3af">งาน</div>
+        </div>
+      </div>
+    </div>` : ''}
+
+    <!-- RECENT JOBS -->
+    ${recentJobs.length > 0 ? `
+    <div style="margin:0 12px 10px">
+      <div class="section-label" style="padding:0 4px 8px">งานล่าสุด</div>
+      ${recentJobs.map(job => renderDashboardJobRow(job)).join('')}
+    </div>` : ''}
+
+    <!-- PM DUE -->
+    ${pmDue > 0 ? `
+    <div class="section-card" style="margin:0 12px 10px;background:#fffbeb">
+      <div style="display:flex;align-items:center;gap:12px">
+        <i class="bi bi-calendar-check-fill" style="font-size:24px;color:#d97706"></i>
+        <div>
+          <div style="font-weight:700;color:#92400e">After-Sales ที่ต้องติดตาม</div>
+          <div style="font-size:13px;color:#b45309">${pmDue} ราย รอการติดตาม</div>
+        </div>
+        <button onclick=\"goPage('crm', document.getElementById('nav-more'))\" style=\"margin-left:auto;background:#d97706;color:white;border:none;border-radius:20px;padding:6px 14px;font-size:12px;cursor:pointer\">ดูเลย</button>
+      </div>
+    </div>` : ''}
+
+    <!-- TECHNICIAN PERFORMANCE (PHASE 30) -->
+    ${topTech ? `
+    <div class="section-card" style="margin:0 12px 10px">
+      <div class="section-label">🏆 ประสิทธิภาพช่าง (7 วันล่าสุด)</div>
+      <div id="tech-performance-content" style="text-align:center;padding:12px;color:#9ca3af">
+        <div class="spinner" style="margin:0 auto 8px"></div>
+        <div style="font-size:12px">กำลังโหลดข้อมูลช่าง...</div>
+      </div>
+    </div>
+    ` : ''}
+
+    <div style="height:16px"></div>
+    <!-- QUICK ACTIONS (PHASE 30) -->
+    <div class="section-card" style="margin:0 12px 10px">
+      <div class="section-label">⚡  Quick Actions</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+        <button class="btn-action" onclick="goPage('jobs',document.getElementById('nav-more'))" style="padding:12px 8px">
+          <i class="bi bi-clipboard2-plus-fill" style="font-size:20px;color:#3b82f6"></i>
+          <span style="font-size:11px;margin-top:4px">สร้างงาน</span>
+        </button>
+        <button class="btn-action" onclick="goPage('inventory',document.getElementById('nav-more'))" style="padding:12px 8px">
+          <i class="bi bi-box-seam-fill" style="font-size:20px;color:#10b981"></i>
+          <span style="font-size:11px;margin-top:4px">สต็อก</span>
+        </button>
+        <button class="btn-action" onclick="goPage('reports',document.getElementById('nav-more'))" style="padding:12px 8px">
+          <i class="bi bi-bar-chart-fill" style="font-size:20px;color:#8b5cf6"></i>
+          <span style="font-size:11px;margin-top:4px">รายงาน</span>
+        </button>
+        <button class="btn-action" onclick="goPage('crm',document.getElementById('nav-more'))" style="padding:12px 8px">
+          <i class="bi bi-people-fill" style="font-size:20px;color:#f59e0b"></i>
+          <span style="font-size:11px;margin-top:4px">ลูกค้า</span>
+        </button>
+      </div>
+    </div>
+    <!-- RETAIL SALES WIDGET (PHASE 30) -->
+    <div id="retail-sales-widget" class="section-card" style="margin:0 12px 10px">
+      <div class="section-label">🛒 ยอดขายปลีก 7 วันล่าสุด</div>
+      <div id="retail-sales-content" style="text-align:center;padding:12px;color:#9ca3af">
+        <div class="spinner" style="margin:0 auto 8px"></div>
+        <div style="font-size:12px">กำลังโหลดยอดขาย...</div>
+      </div>
+    </div>
+  `;
+
+  // Draw revenue chart
+  drawRevenueChart(revenue);
+
+  // PHASE 30: Load Retail Sales data
+  loadRetailSales();
+  
+  // PHASE 30: Adjust KPI grid for responsive
+  adjustKpiGrid();
+  
+  // PHASE 30: Load Technician Performance
+  loadTechPerformance();
+  
+  // PHASE 27: Render Business AI cards
+  if (typeof renderBusinessAICards === 'function') {
+    setTimeout(renderBusinessAICards, 100);
+  }
+}
+
+// ===== RENDER JOB ROW =====
+function renderDashboardJobRow(job) {
+  const statusMap = {
+    'รับเครื่องแล้ว': { bg: '#dbeafe', color: '#1e40af' },
+    'กำลังซ่อม':      { bg: '#fef3c7', color: '#92400e' },
+    'รอชิ้นส่วน':     { bg: '#ffedd5', color: '#9a3412' },
+    'เสร็จแล้ว':      { bg: '#d1fae5', color: '#065f46' },
+    'ด่วน':           { bg: '#fee2e2', color: '#991b1b' },
+    'PENDING':        { bg: '#dbeafe', color: '#1e40af' },
+    'IN_PROGRESS':    { bg: '#fef3c7', color: '#92400e' },
+    'WAITING_PARTS':  { bg: '#ffedd5', color: '#9a3412' },
+    'DONE':           { bg: '#d1fae5', color: '#065f46' },
+    'URGENT':         { bg: '#fee2e2', color: '#991b1b' }
+  };
+  const status = job.status || job.current_status || '-';
+  const sc = statusMap[status] || { bg: '#f3f4f6', color: '#6b7280' };
+  const jobId = job.job_id || job.id || '-';
+  const customer = job.customer_name || job.customer || '-';
+  const device = job.device || job.symptom || job.title || '-';
+
+  return `
+    <div class="job-card" style="margin-bottom:6px" onclick="showToast('${jobId}')">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:10px;color:#9ca3af;font-weight:600">${jobId}</div>
+          <div style="font-size:13px;font-weight:700;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${device}</div>
+          <div style="font-size:11px;color:#6b7280"><i class="bi bi-person-fill"></i> ${customer}</div>
+        </div>
+        <span style="background:${sc.bg};color:${sc.color};padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;flex-shrink:0;margin-left:8px">${status}</span>
+      </div>
+    </div>`;
+}
+
+// ===== REVENUE CHART (Chart.js) =====
+function drawRevenueChart(revenue) {
+  const canvas = document.getElementById('revenue-chart');
+  if (!canvas) return;
+
+  // Destroy previous chart
+  if (DASHBOARD_CHART) {
+    DASHBOARD_CHART.destroy();
+    DASHBOARD_CHART = null;
+  }
+
+  // Check if Chart.js loaded
+  if (typeof Chart === 'undefined') {
+    canvas.parentElement.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;height:140px">
+        ${[['วันนี้', revenue.today, '#10b981'], ['สัปดาห์', revenue.week, '#3b82f6'], ['เดือน', revenue.month, '#d97706']].map(([label, val, color]) => `
+        <div style="display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px">
+          <div style="font-size:11px;font-weight:700;color:${color}">฿${Number(val||0).toLocaleString()}</div>
+          <div style="width:100%;background:${color};border-radius:6px 6px 0 0;height:${Math.max(20, Math.min(100, (Number(val||0) / Math.max(1, Number(revenue.month||1))) * 100))}px"></div>
+          <div style="font-size:10px;color:#9ca3af">${label}</div>
+        </div>`).join('')}
+      </div>`;
+    return;
+  }
+
+  const ctx = canvas.getContext('2d');
+  DASHBOARD_CHART = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['วันนี้', 'สัปดาห์นี้', 'เดือนนี้'],
+      datasets: [{
+        data: [revenue.today || 0, revenue.week || 0, revenue.month || 0],
+        backgroundColor: ['#10b981', '#3b82f6', '#d97706'],
+        borderRadius: 8,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => '฿' + Number(ctx.raw || 0).toLocaleString()
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: {
+          grid: { color: '#f3f4f6' },
+          ticks: {
+            font: { size: 10 },
+            callback: val => val >= 1000 ? '฿' + (val/1000).toFixed(0) + 'K' : '฿' + val
+          }
+        }
+      }
+    }
+  });
+}
+
+// ===== RESPONSIVE KPI GRID (PHASE 30) =====
+function adjustKpiGrid() {
+  const grid = document.getElementById('kpi-cards-grid');
+  if (!grid) return;
+  const width = window.innerWidth;
+  if (width < 480) {
+    grid.style.gridTemplateColumns = '1fr'; // Mobile: 1 column
+  } else if (width < 768) {
+    grid.style.gridTemplateColumns = 'repeat(2, 1fr)'; // Tablet: 2 columns
+  } else if (width < 1024) {
+    grid.style.gridTemplateColumns = 'repeat(3, 1fr)'; // Small PC: 3 columns
+  } else {
+    grid.style.gridTemplateColumns = 'repeat(4, 1fr)'; // Large PC: 4 columns
+  }
+  // Adjust Quick Actions grid
+  const qaGrid = document.querySelector('#quick-actions-grid');
+  if (qaGrid) {
+    qaGrid.style.gridTemplateColumns = width < 480 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)';
+  }
+}
+
+// ===== TECHNICIAN PERFORMANCE (PHASE 30) =====
+function loadTechPerformance() {
+  const container = document.getElementById('tech-performance-content');
+  if (!container) return;
+  callApi({ action: 'getTechPerformance', days: 7 }).then(res => {
+    if (!res || !res.success || !res.techs || res.techs.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:12px;color:#9ca3af;font-size:12px">ไม่มีข้อมูลประสิทธิภาพช่าง</div>';
+      return;
+    }
+    const techs = res.techs; // [{ name, completed, avgDays, rating }, ...]
+    container.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(180px,1fr));gap:12px;margin-top:8px">
+        ${techs.map(t => {
+          const avgMinutes = (t.avgDays || 0) * 24 * 60; // แปลงวันเป็นนาที
+          const avgHours = (t.avgDays || 0) * 24; // แปลงวันเป็นชั่วโมง
+          const timeLabel = avgHours >= 1 ? `${avgHours.toFixed(1)} ชม.` : `${avgMinutes.toFixed(0)} นาที`;
+          const satisfaction = t.rating || 4.5; // คะแนนความพึงพอใจ (0-5)
+          return `
+          <div style="background:#f9fafb;border-radius:12px;padding:14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.05)">
+            <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#1d4ed8);display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:20px;margin:0 auto 10px">
+              ${(t.name || '?')[0]}
+            </div>
+            <div style="font-size:15px;font-weight:800;color:#111827;margin-bottom:4px">${t.name || '-'}</div>
+            <div style="font-size:13px;color:#059669;font-weight:600;margin-bottom:6px">${t.completed || 0} งานที่ปิดได้</div>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:6px">⏱ เฉลี่ย: ${timeLabel}</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:6px">
+              <span style="color:#fbbf24;font-size:14px">${'★'.repeat(Math.min(5, Math.round(satisfaction)))}</span>
+              <span style="font-size:12px;color:#374151;font-weight:600">${satisfaction}/5</span>
+            </div>
+          </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }).catch(() => {
+    container.innerHTML = '<div style="text-align:center;padding:12px;color:#9ca3af;font-size:12px">ไม่สามารถโหลดข้อมูลได้</div>';
+  });
+}
+
+// ===== RETAIL SALES (PHASE 30) =====
+function loadRetailSales() {
+  const container = document.getElementById('retail-sales-content');
+  if (!container) return;
+  callApi({ action: 'getRetailSales', days: 7 }).then(res => {
+    if (!res || !res.success || !res.sales || res.sales.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:12px;color:#9ca3af;font-size:12px">ไม่มีข้อมูลยอดขายปลีก</div>';
+      return;
+    }
+    const sales = res.sales; // สมมติรูปแบบ [{ date, amount }, ...]
+    container.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:8px">
+        ${sales.map(s => `
+          <div style="text-align:center">
+            <div style="font-size:10px;color:#9ca3af;margin-bottom:4px">${s.date || '-'}</div>
+            <div style="background:linear-gradient(180deg,#10b981,#059669);border-radius:6px;height:${Math.max(20, Math.min(80, (s.amount||0)/100))}px;margin-bottom:4px"></div>
+            <div style="font-size:10px;font-weight:700;color:#111827">฿${(s.amount||0).toLocaleString()}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }).catch(() => {
+    container.innerHTML = '<div style="text-align:center;padding:12px;color:#9ca3af;font-size:12px">ไม่สามารถโหลดข้อมูลได้</div>';
+  });
+}
+
+// ===== REFRESH =====
+function refreshDashboard() {
+  DASHBOARD_DATA = null;
+  loadDashboardPage();
+}
+
+// ===== QUICK ACTION =====
+function viewDashboard() {
+  const navBtn = document.getElementById('nav-more');
+  goPage('dashboard', navBtn);
+}

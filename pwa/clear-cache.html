@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COMPHONE — รีเซ็ตแอป</title>
+<style>
+  body { font-family: -apple-system, sans-serif; background: #0f172a; color: #fff;
+         display: flex; align-items: center; justify-content: center;
+         min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+  .card { background: #1e293b; border-radius: 16px; padding: 32px 24px;
+          max-width: 360px; width: 100%; text-align: center; }
+  h1 { font-size: 20px; margin: 0 0 8px; }
+  .sub { color: #94a3b8; font-size: 13px; margin-bottom: 24px; line-height: 1.5; }
+  .status { font-size: 14px; min-height: 22px; margin-bottom: 20px;
+            color: #60a5fa; transition: color 0.3s; }
+  .status.done { color: #4ade80; }
+  .status.error { color: #f87171; }
+  .btn { display: block; width: 100%; padding: 14px; border: none; border-radius: 10px;
+         font-size: 15px; font-weight: 600; cursor: pointer;
+         background: #3b82f6; color: #fff; margin-top: 8px; }
+  .btn:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+  .btn.secondary { background: #334155; color: #e2e8f0; }
+  .step { text-align: left; font-size: 12px; color: #64748b;
+          background: #0f172a; border-radius: 8px; padding: 12px 14px;
+          margin-bottom: 16px; line-height: 1.8; }
+  .step b { color: #94a3b8; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div style="font-size:40px;margin-bottom:12px">🔄</div>
+  <h1>รีเซ็ต Cache แอป</h1>
+  <p class="sub">ล้าง Service Worker และ Cache เก่าทั้งหมด<br>แล้วโหลดแอปใหม่สะอาด</p>
+
+  <div class="step">
+    <b>วิธีใช้:</b><br>
+    1. แตะปุ่ม "ล้าง Cache ทันที"<br>
+    2. รอจนข้อความเปลี่ยนเป็น สีเขียว<br>
+    3. แอปจะเปิดใหม่อัตโนมัติ
+  </div>
+
+  <div id="status" class="status">รอการสั่งงาน…</div>
+  <button id="clearBtn" class="btn" onclick="runClear()">🗑️ ล้าง Cache ทันที</button>
+  <button class="btn secondary" style="margin-top:10px"
+          onclick="window.location.href='./index.html'">กลับหน้าแอป</button>
+</div>
+
+<script>
+async function runClear() {
+  const btn = document.getElementById('clearBtn');
+  const status = document.getElementById('status');
+  btn.disabled = true;
+
+  try {
+    status.textContent = '⏳ กำลังยกเลิก Service Worker…';
+
+    // Unregister all SWs
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+      status.textContent = '⏳ ลบ Cache ทั้งหมด…';
+    }
+
+    // Delete all caches
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+
+    // Clear relevant localStorage keys
+    try {
+      ['cpa_visit_count','cpa_banner_dismissed_until','cpa_installed',
+       '_cpb_','_cvb_','_cpr_'].forEach(k => localStorage.removeItem(k));
+    } catch(e) {}
+
+    status.className = 'status done';
+    status.textContent = '✅ ล้างสำเร็จ! กำลังโหลดแอปใหม่…';
+
+    setTimeout(() => {
+      window.location.replace('./index.html?_nocache=' + Date.now());
+    }, 1500);
+
+  } catch (err) {
+    status.className = 'status error';
+    status.textContent = '❌ เกิดข้อผิดพลาด: ' + (err.message || err);
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>

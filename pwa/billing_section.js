@@ -1,0 +1,573 @@
+/* ============================================================
+   COMPHONE SUPER APP — Billing Section UI
+   File: pwa/billing_section.js
+   ============================================================ */
+
+// ---------- global state ----------
+let _billingData = [];
+let _billingSearchText = '';
+let _billingStatusFilter = 'ALL';
+
+function _normalizeBilling(billing) {
+  const b = billing || {};
+  const out = Object.assign({}, b);
+  const pairs = {
+    Billing_ID: 'billing_id',
+    Job_ID: 'job_id',
+    Customer_Name: 'customer_name',
+    Phone: 'phone',
+    Parts_Description: 'parts_description',
+    Parts_Cost: 'parts_cost',
+    Labor_Cost: 'labor_cost',
+    Subtotal: 'subtotal',
+    Discount: 'discount',
+    Total_Amount: 'total_amount',
+    Amount_Paid: 'amount_paid',
+    Balance_Due: 'balance_due',
+    Payment_Status: 'payment_status',
+    PromptPay_Biller_ID: 'promptpay_biller_id',
+    PromptPay_Payload: 'promptpay_payload',
+    PromptPay_QR_URL: 'promptpay_qr_url',
+    Receipt_No: 'receipt_no',
+    Receipt_URL: 'receipt_url',
+    Invoice_Date: 'invoice_date',
+    Paid_At: 'paid_at',
+    Notes: 'notes'
+  };
+  Object.keys(pairs).forEach(upper => {
+    const lower = pairs[upper];
+    if (out[upper] == null && out[lower] != null) out[upper] = out[lower];
+    if (out[lower] == null && out[upper] != null) out[lower] = out[upper];
+  });
+  return out;
+}
+
+// ===========================================================
+// 1. renderBillingSection(data) — main entry
+// ===========================================================
+function renderBillingSection(data) {
+  setActiveNav('billing');
+  const titleEl = document.getElementById('topbar-title') || document.querySelector('#page-billing .page-header h5');
+  if (titleEl) titleEl.innerHTML = '💰 ใบแจ้งหนี้ / Billing';
+  const mount = document.getElementById('billing-content') || document.getElementById('main-content');
+  if (!mount) return;
+
+  mount.innerHTML = `
+    <!-- KPI Row -->
+    <div id="billing-kpi" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;">
+      <div style="background:#f0f9ff;border-radius:12px;padding:16px;text-align:center">
+        <div style="font-size:13px;color:#6b7280;">บิลทั้งหมด</div>
+        <div id="kpi-total" style="font-size:28px;font-weight:700;color:#3b82f6;">—</div>
+      </div>
+      <div style="background:#f0f9ff;border-radius:12px;padding:16px;text-align:center">
+        <div style="font-size:13px;color:#6b7280;">รอชำระ</div>
+        <div id="kpi-unpaid" style="font-size:28px;font-weight:700;color:#ef4444;">—</div>
+      </div>
+      <div style="background:#f0f9ff;border-radius:12px;padding:16px;text-align:center">
+        <div style="font-size:13px;color:#6b7280;">ชำระแล้ว</div>
+        <div id="kpi-paid" style="font-size:28px;font-weight:700;color:#059669;">—</div>
+      </div>
+      <div style="background:#f0f9ff;border-radius:12px;padding:16px;text-align:center">
+        <div style="font-size:13px;color:#6b7280;">ยอดค้าง</div>
+        <div id="kpi-balance" style="font-size:28px;font-weight:700;color:#d97706;">—</div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="card-box" style="margin-bottom:20px;">
+      <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+        <input id="billing-search" type="text" placeholder="🔍 ค้นหา Job ID / ชื่อลูกค้า..."
+          style="flex:1;min-width:200px;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;"
+          oninput="_billingSearchText=this.value;_filterBillingTable();" />
+        <select id="billing-status-filter"
+          style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;"
+          onchange="_billingStatusFilter=this.value;_filterBillingTable();">
+          <option value="ALL">ทุกสถานะ</option>
+          <option value="UNPAID">UNPAID</option>
+          <option value="PARTIAL">PARTIAL</option>
+          <option value="PAID">PAID</option>
+        </select>
+        <button onclick="_showCreateBilling()"
+          style="background:#3b82f6;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;">
+          ➕ สร้างบิลใหม่
+        </button>
+        <button onclick="_exportBillingCSV()"
+          style="background:#6b7280;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;">
+          📥 Export CSV
+        </button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card-box">
+      <div class="card-title">📋 รายการ Billing</div>
+      <div style="overflow-x:auto;">
+        <table class="job-table" id="billing-table">
+          <thead>
+            <tr>
+              <th>Billing ID</th>
+              <th>Job ID</th>
+              <th>ลูกค้า</th>
+              <th>เบอร์โทร</th>
+              <th>อะไหล่</th>
+              <th>ค่าอะไหล่</th>
+              <th>ค่าแรง</th>
+              <th>ส่วนลด</th>
+              <th>ยอดรวม</th>
+              <th>ชำระแล้ว</th>
+              <th>ค้างชำระ</th>
+              <th>สถานะ</th>
+              <th>วันที่</th>
+              <th>จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="billing-tbody">
+            <tr><td colspan="14" style="text-align:center;padding:24px;color:#6b7280;">กำลังโหลด...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Modal Container -->
+    <div id="billing-modal"></div>
+  `;
+
+  _listBillings();
+}
+
+// ===========================================================
+// 2. _listBillings() — fetch & display
+// ===========================================================
+async function _listBillings() {
+  try {
+    const res = await callApi('listBillings', {});
+    const tbody = document.getElementById('billing-tbody');
+    if (!tbody) return; // section was replaced
+    if (!res || !res.success) {
+      tbody.innerHTML =
+        '<tr><td colspan="14" style="text-align:center;padding:24px;color:#ef4444;">ไม่สามารถโหลดข้อมูลได้</td></tr>';
+      return;
+    }
+    _billingData = (res.billings || []).map(_normalizeBilling);
+    _updateBillingKPI();
+    _renderBillingRows(_billingData);
+  } catch (e) {
+    console.error('listBillings error', e);
+    const tb = document.getElementById('billing-tbody');
+    if (tb) tb.innerHTML =
+      '<tr><td colspan="14" style="text-align:center;padding:24px;color:#ef4444;">เกิดข้อผิดพลาด</td></tr>';
+  }
+}
+
+// ===========================================================
+// 3. _showBillingDetail(jobId) — detail modal
+// ===========================================================
+async function _showBillingDetail(jobId) {
+  const modal = document.getElementById('billing-modal');
+  modal.innerHTML = '<div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;"><div style="background:#fff;border-radius:16px;padding:32px;max-width:600px;width:90%;max-height:85vh;overflow-y:auto;"><p style="text-align:center;color:#6b7280;">กำลังโหลด...</p></div></div>';
+
+  try {
+    const res = await callApi('getBilling', { job_id: jobId });
+    if (!res || !res.success) {
+      modal.innerHTML = '';
+      alert('ไม่พบข้อมูลบิล');
+      return;
+    }
+    const b = _normalizeBilling(res.billing);
+    const statusColor = b.Payment_Status === 'PAID' ? '#059669' : b.Payment_Status === 'PARTIAL' ? '#d97706' : '#ef4444';
+    const statusBg = b.Payment_Status === 'PAID' ? '#d1fae5' : b.Payment_Status === 'PARTIAL' ? '#fef3c7' : '#fee2e2';
+
+    modal.innerHTML = `
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;" onclick="if(event.target===this)document.getElementById('billing-modal').innerHTML='';">
+        <div style="background:#fff;border-radius:16px;padding:32px;max-width:640px;width:92%;max-height:85vh;overflow-y:auto;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <h2 style="margin:0;font-size:18px;">📄 รายละเอียดบิล #${b.Billing_ID || ''}</h2>
+            <button onclick="document.getElementById('billing-modal').innerHTML=''"
+              style="background:none;border:none;font-size:22px;cursor:pointer;color:#6b7280;">✕</button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+            <div><strong>Job ID:</strong> ${b.Job_ID || '—'}</div>
+            <div><strong>ลูกค้า:</strong> ${b.Customer_Name || '—'}</div>
+            <div><strong>เบอร์โทร:</strong> ${b.Phone || '—'}</div>
+            <div><strong>วันที่:</strong> ${b.Invoice_Date || '—'}</div>
+            <div><strong>ใบเสร็จ:</strong> ${b.Receipt_No || '—'}</div>
+            <div>
+              <strong>สถานะ:</strong>
+              <span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;color:${statusColor};background:${statusBg};">${b.Payment_Status || '—'}</span>
+            </div>
+          </div>
+
+          <div style="background:#f9fafb;border-radius:12px;padding:16px;margin-bottom:16px;">
+            <div style="margin-bottom:8px;"><strong>อะไหล่:</strong> ${b.Parts_Description || '—'}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div>ค่าอะไหล่: <strong>฿${Number(b.Parts_Cost || 0).toLocaleString()}</strong></div>
+              <div>ค่าแรง: <strong>฿${Number(b.Labor_Cost || 0).toLocaleString()}</strong></div>
+              <div>Subtotal: <strong>฿${Number(b.Subtotal || 0).toLocaleString()}</strong></div>
+              <div>ส่วนลด: <strong>฿${Number(b.Discount || 0).toLocaleString()}</strong></div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;text-align:center;">
+            <div style="background:#f0f9ff;border-radius:12px;padding:12px;">
+              <div style="font-size:12px;color:#6b7280;">ยอดรวม</div>
+              <div style="font-size:20px;font-weight:700;color:#3b82f6;">฿${Number(b.Total_Amount || 0).toLocaleString()}</div>
+            </div>
+            <div style="background:#d1fae5;border-radius:12px;padding:12px;">
+              <div style="font-size:12px;color:#6b7280;">ชำระแล้ว</div>
+              <div style="font-size:20px;font-weight:700;color:#059669;">฿${Number(b.Amount_Paid || 0).toLocaleString()}</div>
+            </div>
+            <div style="background:#fee2e2;border-radius:12px;padding:12px;">
+              <div style="font-size:12px;color:#6b7280;">ค้างชำระ</div>
+              <div style="font-size:20px;font-weight:700;color:#ef4444;">฿${Number(b.Balance_Due || 0).toLocaleString()}</div>
+            </div>
+          </div>
+
+          ${b.Notes ? '<div style="margin-bottom:16px;"><strong>หมายเหตุ:</strong> ' + b.Notes + '</div>' : ''}
+          ${b.Paid_At ? '<div style="margin-bottom:16px;color:#059669;"><strong>ชำระเมื่อ:</strong> ' + b.Paid_At + '</div>' : ''}
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+            ${b.Payment_Status !== 'PAID' ? `
+              <button onclick="_doMarkPaid('${b.Job_ID}')"
+                style="background:#059669;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;">✅ ชำระเงิน</button>
+              <button onclick="_showPromptPayQR('${b.Job_ID}')"
+                style="background:#3b82f6;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;">📱 PromptPay QR</button>
+            ` : ''}
+            <button onclick="document.getElementById('billing-modal').innerHTML=''"
+              style="background:#6b7280;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;">ปิด</button>
+          </div>
+        </div>
+      </div>
+    `;
+  } catch (e) {
+    console.error('getBilling error', e);
+    modal.innerHTML = '';
+    alert('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+  }
+}
+
+// ===========================================================
+// 4. _showCreateBilling() — create form modal
+// ===========================================================
+function _showCreateBilling() {
+  const modal = document.getElementById('billing-modal');
+  const clientRequestId = typeof createWriteRequestId === 'function'
+    ? createWriteRequestId('billing')
+    : ('billing_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10));
+  modal.innerHTML = `
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;" onclick="if(event.target===this)document.getElementById('billing-modal').innerHTML='';">
+      <div style="background:#fff;border-radius:16px;padding:32px;max-width:560px;width:92%;max-height:85vh;overflow-y:auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <h2 style="margin:0;font-size:18px;">➕ สร้างบิลใหม่</h2>
+          <button onclick="document.getElementById('billing-modal').innerHTML=''"
+            style="background:none;border:none;font-size:22px;cursor:pointer;color:#6b7280;">✕</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div>
+            <label style="font-size:13px;font-weight:600;color:#374151;">Job ID *</label>
+            <input id="cb-job-id" type="text" placeholder="เช่น JOB-001"
+              style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;margin-top:4px;" />
+          </div>
+          <div>
+            <label style="font-size:13px;font-weight:600;color:#374151;">รายละเอียดอะไหล่</label>
+            <textarea id="cb-parts-desc" rows="2" placeholder="เช่น หน้าจอ iPhone 14 x1, แบตเตอรี่ x1"
+              style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;margin-top:4px;resize:vertical;"></textarea>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <label style="font-size:13px;font-weight:600;color:#374151;">ค่าอะไหล่ (฿)</label>
+              <input id="cb-parts-cost" type="number" min="0" value="0"
+                style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;margin-top:4px;" />
+            </div>
+            <div>
+              <label style="font-size:13px;font-weight:600;color:#374151;">ค่าแรง (฿)</label>
+              <input id="cb-labor-cost" type="number" min="0" value="0"
+                style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;margin-top:4px;" />
+            </div>
+          </div>
+          <div>
+            <label style="font-size:13px;font-weight:600;color:#374151;">ส่วนลด (฿)</label>
+            <input id="cb-discount" type="number" min="0" value="0"
+              style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;margin-top:4px;" />
+          </div>
+          <div>
+            <label style="font-size:13px;font-weight:600;color:#374151;">หมายเหตุ</label>
+            <input id="cb-notes" type="text" placeholder="หมายเหตุเพิ่มเติม"
+              style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;margin-top:4px;" />
+          </div>
+
+          <div id="cb-preview" style="background:#f0f9ff;border-radius:12px;padding:16px;text-align:center;">
+            <div style="font-size:12px;color:#6b7280;">ยอดรวม</div>
+            <div style="font-size:24px;font-weight:700;color:#3b82f6;">฿0</div>
+          </div>
+
+          <button id="cb-submit-btn" data-client-request-id="${clientRequestId}" onclick="_doCreateBilling()"
+            style="background:#3b82f6;color:#fff;border:none;padding:10px 16px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600;">
+            💾 สร้างบิล
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // live preview
+  const updatePreview = () => {
+    const parts = parseFloat(document.getElementById('cb-parts-cost').value) || 0;
+    const labor = parseFloat(document.getElementById('cb-labor-cost').value) || 0;
+    const disc = parseFloat(document.getElementById('cb-discount').value) || 0;
+    const total = Math.max(0, parts + labor - disc);
+    document.getElementById('cb-preview').innerHTML =
+      '<div style="font-size:12px;color:#6b7280;">ยอดรวม</div><div style="font-size:24px;font-weight:700;color:#3b82f6;">฿' + total.toLocaleString() + '</div>';
+  };
+  ['cb-parts-cost', 'cb-labor-cost', 'cb-discount'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updatePreview);
+  });
+}
+
+async function _doCreateBilling() {
+  const jobId = document.getElementById('cb-job-id').value.trim();
+  if (!jobId) { alert('กรุณากรอก Job ID'); return; }
+
+  const partsDesc = document.getElementById('cb-parts-desc').value.trim();
+  const partsCost = parseFloat(document.getElementById('cb-parts-cost').value) || 0;
+  const laborCost = parseFloat(document.getElementById('cb-labor-cost').value) || 0;
+  const discount = parseFloat(document.getElementById('cb-discount').value) || 0;
+  const notes = document.getElementById('cb-notes').value.trim();
+
+  const btn = document.getElementById('cb-submit-btn');
+  if (btn && btn.dataset.submitting === '1') return;
+  if (btn) btn.dataset.submitting = '1';
+  btn.disabled = true;
+  btn.textContent = '⏳ กำลังสร้าง...';
+
+  try {
+    const res = await callApi('createBilling', {
+      client_request_id: (btn && btn.dataset.clientRequestId) || ('billing_' + Date.now()),
+      source: 'pwa_billing',
+      job_id: jobId,
+      parts: { description: partsDesc, cost: partsCost },
+      labor: { cost: laborCost, discount: discount, notes: notes }
+    });
+    if (res && res.success) {
+      document.getElementById('billing-modal').innerHTML = '';
+      _listBillings();
+    } else {
+      alert('สร้างบิลไม่สำเร็จ: ' + (res && res.message ? res.message : 'Unknown error'));
+      btn.disabled = false;
+      btn.dataset.submitting = '0';
+      btn.textContent = '💾 สร้างบิล';
+    }
+  } catch (e) {
+    console.error('createBilling error', e);
+    alert('เกิดข้อผิดพลาด');
+    btn.disabled = false;
+    btn.dataset.submitting = '0';
+    btn.textContent = '💾 สร้างบิล';
+  }
+}
+
+// ===========================================================
+// 5. _doMarkPaid(billingId)
+// ===========================================================
+async function _doMarkPaid(jobId) {
+  if (!confirm('ยืนยันการชำระเงินสำหรับ Job ' + jobId + '?')) return;
+
+  // find billing to get amount
+  const b = _billingData.find(x => String(x.Job_ID) === String(jobId) || String(x.job_id) === String(jobId));
+  const totalForPayment = b ? Number(b.Total_Amount || b.total_amount || b.Balance_Due || b.balance_due || 0) : 0;
+
+  try {
+    const res = await callApi('markBillingPaid', {
+      job_id: jobId,
+      amount_paid: totalForPayment,
+      payment_method: 'cash'
+    });
+    if (res && res.success) {
+      document.getElementById('billing-modal').innerHTML = '';
+      _listBillings();
+    } else {
+      alert('ชำระเงินไม่สำเร็จ');
+    }
+  } catch (e) {
+    console.error('markBillingPaid error', e);
+    alert('เกิดข้อผิดพลาด');
+  }
+}
+
+// ===========================================================
+// 6. _showPromptPayQR(jobId)
+// ===========================================================
+async function _showPromptPayQR(jobId) {
+  const modal = document.getElementById('billing-modal');
+
+  try {
+    const res = await callApi('generatePromptPayQR', { job_id: jobId });
+    if (!res || !res.success) {
+      alert('ไม่สามารถสร้าง QR ได้');
+      return;
+    }
+
+    const qrUrl = res.qr_url || res.qr_image_url || res.promptpay_qr_url || '';
+    const amount = res.amount || 0;
+
+    // close current modal content and show QR
+    modal.innerHTML = `
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;" onclick="if(event.target===this)document.getElementById('billing-modal').innerHTML='';">
+        <div style="background:#fff;border-radius:16px;padding:32px;max-width:400px;width:92%;text-align:center;">
+          <h2 style="margin:0 0 8px;font-size:18px;">📱 PromptPay QR</h2>
+          <p style="color:#6b7280;margin:0 0 16px;font-size:13px;">Job: ${jobId} | ยอด: ฿${Number(amount).toLocaleString()}</p>
+          <div style="margin-bottom:20px;">
+            ${qrUrl ? '<img src="' + qrUrl + '" alt="PromptPay QR" style="max-width:260px;width:100%;border-radius:12px;border:1px solid #e5e7eb;" />' :
+              '<div style="padding:40px;background:#f3f4f6;border-radius:12px;color:#6b7280;">QR Code ไม่พร้อมใช้งาน</div>'}
+          </div>
+          <p style="font-size:12px;color:#6b7280;margin-bottom:16px;">สแกน QR เพื่อชำระเงินผ่าน Mobile Banking</p>
+          <button onclick="document.getElementById('billing-modal').innerHTML=''"
+            style="background:#6b7280;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;">ปิด</button>
+        </div>
+      </div>
+    `;
+  } catch (e) {
+    console.error('generatePromptPayQR error', e);
+    alert('เกิดข้อผิดพลาดในการสร้าง QR');
+  }
+}
+
+// ===========================================================
+// Helper: update KPI cards
+// ===========================================================
+function _updateBillingKPI() {
+  const total = _billingData.length;
+  const unpaid = _billingData.filter(b => b.Payment_Status === 'UNPAID').length;
+  const paid = _billingData.filter(b => b.Payment_Status === 'PAID').length;
+  const balance = _billingData.reduce((sum, b) => sum + (Number(b.Balance_Due) || 0), 0);
+
+  document.getElementById('kpi-total').textContent = total;
+  document.getElementById('kpi-unpaid').textContent = unpaid;
+  document.getElementById('kpi-paid').textContent = paid;
+  document.getElementById('kpi-balance').textContent = '฿' + balance.toLocaleString();
+}
+
+// ===========================================================
+// Helper: render table rows
+// ===========================================================
+function _billingInlineArg(value) {
+  return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+function _renderBillingRows(list) {
+  const tbody = document.getElementById('billing-tbody');
+  if (!list || list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:24px;color:#6b7280;">ไม่พบรายการ</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = list.map(b => {
+    const status = b.Payment_Status || 'UNPAID';
+    const statusColor = status === 'PAID' ? '#059669' : status === 'PARTIAL' ? '#d97706' : '#ef4444';
+    const statusBg = status === 'PAID' ? '#d1fae5' : status === 'PARTIAL' ? '#fef3c7' : '#fee2e2';
+    const jobId = String(b.Job_ID || b.job_id || '').trim();
+    const safeJobId = _billingInlineArg(jobId);
+    const missingCoreFields = !jobId || !String(b.Billing_ID || b.billing_id || '').trim() || !String(b.Payment_Status || b.payment_status || '').trim();
+    const repairBadge = missingCoreFields
+      ? '<div class="billing-row-incomplete" style="margin-top:4px;color:#b45309;font-size:10px;font-weight:700;">Repair review</div>'
+      : '';
+    const detailButton = jobId
+      ? `<button onclick="_showBillingDetail('${safeJobId}')"
+            style="background:#3b82f6;color:#fff;border:none;padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer;" title="View billing detail">view</button>`
+      : `<button disabled
+            style="background:#cbd5e1;color:#64748b;border:none;padding:4px 8px;border-radius:6px;font-size:11px;cursor:not-allowed;" title="Missing Job_ID - open Data Repair Console">view</button>`;
+    const qrButton = status !== 'PAID' && jobId
+      ? `<button onclick="_showPromptPayQR('${safeJobId}')"
+              style="background:#3b82f6;color:#fff;border:none;padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer;" title="PromptPay QR">QR</button>`
+      : status !== 'PAID'
+        ? `<button disabled
+              style="background:#cbd5e1;color:#64748b;border:none;padding:4px 8px;border-radius:6px;font-size:11px;cursor:not-allowed;" title="Missing Job_ID - open Data Repair Console">QR</button>`
+        : '';
+
+    return `<tr>
+      <td>${b.Billing_ID || '—'}</td>
+      <td>${b.Job_ID || '—'}${repairBadge}</td>
+      <td>${b.Customer_Name || '—'}</td>
+      <td>${b.Phone || '—'}</td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${b.Parts_Description || ''}">${b.Parts_Description || '—'}</td>
+      <td style="text-align:right;">${Number(b.Parts_Cost || 0).toLocaleString()}</td>
+      <td style="text-align:right;">${Number(b.Labor_Cost || 0).toLocaleString()}</td>
+      <td style="text-align:right;">${Number(b.Discount || 0).toLocaleString()}</td>
+      <td style="text-align:right;font-weight:600;">${Number(b.Total_Amount || 0).toLocaleString()}</td>
+      <td style="text-align:right;color:#059669;">${Number(b.Amount_Paid || 0).toLocaleString()}</td>
+      <td style="text-align:right;color:${Number(b.Balance_Due) > 0 ? '#ef4444' : '#6b7280'};">${Number(b.Balance_Due || 0).toLocaleString()}</td>
+      <td><span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;color:${statusColor};background:${statusBg};">${status}</span></td>
+      <td style="font-size:12px;">${b.Invoice_Date || '—'}</td>
+      <td>
+        <div style="display:flex;gap:4px;">
+          ${detailButton}
+          ${qrButton}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ===========================================================
+// Helper: filter table
+// ===========================================================
+function _filterBillingTable() {
+  let filtered = _billingData;
+
+  // status filter
+  if (_billingStatusFilter !== 'ALL') {
+    filtered = filtered.filter(b => b.Payment_Status === _billingStatusFilter);
+  }
+
+  // search filter
+  if (_billingSearchText.trim()) {
+    const q = _billingSearchText.trim().toLowerCase();
+    filtered = filtered.filter(b =>
+      String(b.Job_ID || '').toLowerCase().includes(q) ||
+      String(b.Customer_Name || '').toLowerCase().includes(q) ||
+      String(b.Billing_ID || '').toLowerCase().includes(q) ||
+      String(b.Phone || '').toLowerCase().includes(q)
+    );
+  }
+
+  _renderBillingRows(filtered);
+}
+
+// ===========================================================
+// Export CSV
+// ===========================================================
+function _exportBillingCSV() {
+  if (!_billingData || _billingData.length === 0) {
+    alert('ไม่มีข้อมูลสำหรับ Export');
+    return;
+  }
+
+  const headers = [
+    'Billing_ID', 'Job_ID', 'Customer_Name', 'Phone', 'Parts_Description',
+    'Parts_Cost', 'Labor_Cost', 'Subtotal', 'Discount', 'Total_Amount',
+    'Amount_Paid', 'Balance_Due', 'Payment_Status', 'Receipt_No',
+    'Invoice_Date', 'Paid_At', 'Notes'
+  ];
+
+  const escape = v => {
+    const s = String(v == null ? '' : v);
+    return '"' + s.replace(/"/g, '""') + '"';
+  };
+
+  let csv = '\uFEFF' + headers.join(',') + '\n';
+  _billingData.forEach(b => {
+    csv += headers.map(h => escape(b[h])).join(',') + '\n';
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'billing_export_' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Mobile PWA alias — called by app.js goPage("billing")
+function loadBillingPage() { renderBillingSection(); }

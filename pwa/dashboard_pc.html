@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="th" class="cp-light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COMPHONE Dashboard — PC</title>
+<script src="version_config.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script>
+// Session contract: accept success/valid and handle offline
+if (typeof window.comphone_auth_session !== 'undefined') {
+  // Session valid or offline - preserve local session
+  var sessionData = localStorage.getItem('comphone_auth_session');
+  if (sessionData) {
+    try {
+      var res = JSON.parse(sessionData);
+      if (res._errorKind === 'offline' || res.valid || res.success) {
+        // Session valid or offline - preserve local session
+        if (res.valid || res.success) {
+          localStorage.setItem('comphone_auth_session', JSON.stringify(res));
+        }
+      }
+    } catch(e) {
+      console.warn('[Session] Error parsing session data:', e);
+    }
+  }
+}
+</script>
+<script src="gas_config.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="api_contract.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="api_client.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="dashboard.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="section_jobs.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="section_po.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="section_inventory.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="section_revenue.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="section_tax.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="section_crm.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="section_backup.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="section_performance.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="section_vision.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="section_line_center.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="section_settings.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="menu_health.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="runtime_self_test.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script>
+// ── XSS Sanitizer (PHMP v1 — 2026-04-24) ──
+// Lightweight HTML sanitizer for API data rendered via innerHTML.
+// Strips script tags, event handlers, and dangerous protocols.
+window.sanitizeHTML = function(str) {
+if (typeof str !== 'string') return str;
+return str
+.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
+.replace(/on\w+\s*=\s*[^\s>]*/gi, '')
+.replace(/javascript\s*:/gi, '')
+.replace(/data\s*:\s*text\/html/gi, '');
+};
+// PHASE 25.3 — GLOBAL VERSION LOCK
+window.__APP_VERSION = window.__APP_VERSION || ('v' + (window.COMPHONE_VERSION || '5.13.0-phase36'));
+// Cache invalidation on version mismatch
+if (localStorage.__APP_VERSION !== window.__APP_VERSION) {
+console.warn('[VERSION] Dashboard version mismatch - clearing runtime caches only...');
+if ('caches' in window) {
+caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+}
+localStorage.__APP_VERSION = window.__APP_VERSION;
+}
+// PHASE 26.6 FIX: Minimal APP stub for error_boundary.js
+window.APP = window.APP || { currentPage: 'dashboard_pc', user: null };
+</script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="dashboard_shared.css?v=5.18.47-sprint221&t=20260721_1622">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+:root {
+--sidebar-w: 240px;
+--header-h: 60px;
+/* Local tokens bridged to shared design system (dashboard_shared.css) */
+--blue: var(--cp-blue);
+--green: var(--cp-green);
+--amber: var(--cp-orange);
+--red: var(--cp-red);
+--gray: var(--cp-text2);
+--bg: var(--cp-bg);
+--card: var(--cp-card-bg);
+--border: var(--cp-border);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI','Sarabun',sans-serif; background: var(--bg); color: #111827; }
+/* PHASE 25.5 — VERSION BADGE */
+#version_badge {
+position: fixed;
+bottom: 12px;
+right: 12px;
+z-index: 9999;
+background: rgba(15, 23, 42, 0.9);
+color: #e2e8f0;
+padding: 6px 12px;
+border-radius: 6px;
+font-size: 11px;
+font-family: 'Segoe UI', monospace;
+letter-spacing: 0.3px;
+box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+backdrop-filter: blur(4px);
+border: 1px solid rgba(255,255,255,0.08);
+pointer-events: none;
+transition: opacity 0.3s;
+}
+#version_badge .ok { color: #34d399; }
+#version_badge .warn { color: #fbbf24; }
+#version_badge .err { color: #f87171; }
+/* ===== SIDEBAR ===== */
+.sidebar {
+position: fixed; left: 0; top: 0; bottom: 0;
+width: var(--sidebar-w);
+background:
+  radial-gradient(circle at 20% 10%, rgba(59, 130, 246, 0.18) 0%, transparent 50%),
+  linear-gradient(180deg, #0b1220 0%, #0f172a 100%);
+color: #fff; z-index: 100; display: flex; flex-direction: column;
+transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+box-shadow: 4px 0 24px rgba(15, 23, 42, 0.12);
+border-right: 1px solid rgba(255, 255, 255, 0.06);
+overflow-y: auto;
+overscroll-behavior: contain;
+scroll-behavior: smooth;
+}
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.16); border-radius: 999px; }
+.sidebar-logo {
+padding: 18px 20px 14px;
+border-bottom: 1px solid rgba(255,255,255,0.08);
+display: flex; align-items: center; gap: 12px;
+}
+.sidebar-logo .logo-icon {
+width: 40px; height: 40px; border-radius: 10px;
+background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+display: flex; align-items: center; justify-content: center;
+font-size: 20px; flex-shrink: 0;
+}
+.sidebar-logo .logo-text { font-size: 15px; font-weight: 800; line-height: 1.2; }
+.sidebar-logo .logo-sub { font-size: 10px; opacity: 0.5; font-weight: 400; }
+.nav-section { padding: 12px 12px 4px; font-size: 10px; font-weight: 700; opacity: 0.4; text-transform: uppercase; letter-spacing: 1px; }
+.nav-item {
+display: flex; align-items: center; gap: 12px;
+padding: 9px 14px; margin: 2px 8px; border-radius: 10px;
+cursor: pointer; font-size: 14px; font-weight: 500;
+color: rgba(255,255,255,0.65);
+transition: var(--cp-transition-smooth, all 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+text-decoration: none;
+}
+.nav-item:hover {
+background: rgba(255,255,255,0.08); color: #fff;
+transform: translateX(2px);
+}
+.nav-item.active {
+background: linear-gradient(135deg, #2563eb, #0ea5e9);
+color: #fff; font-weight: 700;
+box-shadow: 0 10px 26px rgba(37, 99, 235, 0.28);
+}
+.nav-item i { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+.nav-badge { margin-left: auto; background: #ef4444; color: #fff; border-radius: 20px; padding: 1px 7px; font-size: 10px; font-weight: 700; }
+.sidebar-footer {
+margin-top: auto; padding: 14px;
+border-top: 1px solid rgba(255,255,255,0.08);
+flex-shrink: 0;
+}
+.user-chip {
+display: flex; align-items: center; gap: 10px;
+background: rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 12px;
+}
+.user-avatar-sm {
+width: 34px; height: 34px; border-radius: 50%;
+background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+display: flex; align-items: center; justify-content: center;
+font-weight: 800; font-size: 14px; color: #fff; flex-shrink: 0;
+}
+.user-name-sm { font-size: 13px; font-weight: 700; color: #fff; }
+.user-role-sm { font-size: 10px; opacity: 0.5; }
+/* ===== MAIN AREA ===== */
+.main-area {
+margin-left: var(--sidebar-w);
+min-height: 100vh;
+display: flex; flex-direction: column;
+}
+/* ===== TOPBAR ===== */
+.topbar {
+height: var(--header-h);
+background: var(--cp-glass-bg, rgba(255, 255, 255, 0.85));
+border-bottom: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
+display: flex; align-items: center; gap: 16px;
+padding: 0 24px; position: sticky; top: 0; z-index: 50;
+backdrop-filter: var(--cp-glass-blur, blur(16px));
+-webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
+box-shadow: var(--cp-spatial-depth-1, 0 2px 8px rgba(0, 0, 0, 0.04));
+}
+.topbar-title { font-size: 18px; font-weight: 800; color: #111827; flex: 1; }
+.topbar-date { font-size: 12px; color: var(--gray); }
+.btn-refresh {
+background: var(--cp-glass-bg, rgba(255, 255, 255, 0.65));
+backdrop-filter: var(--cp-glass-blur, blur(16px));
+-webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
+border: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
+border-radius: 8px; padding: 7px 14px; font-size: 13px;
+color: #374151; cursor: pointer; display: flex; align-items: center; gap: 6px;
+transition: var(--cp-transition-smooth, all 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+position: relative; overflow: hidden;
+}
+.btn-refresh:hover {
+background: #e2e8f0;
+box-shadow: var(--cp-spatial-depth-2, 0 4px 16px rgba(0, 0, 0, 0.08));
+transform: translateY(-1px);
+}
+.btn-pwa {
+background: var(--cp-gradient-border, linear-gradient(135deg, #00d4ff, #a855f7));
+color: #fff; border: none;
+border-radius: 8px; padding: 7px 14px; font-size: 13px;
+cursor: pointer; display: flex; align-items: center; gap: 6px;
+text-decoration: none;
+transition: var(--cp-transition-smooth, all 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+position: relative; overflow: hidden;
+}
+.btn-pwa:hover {
+transform: translateY(-1px);
+box-shadow: var(--cp-spatial-depth-2, 0 4px 16px rgba(0, 0, 0, 0.08));
+filter: brightness(1.1);
+}
+/* ===== CONTENT ===== */
+.content { padding: 24px; flex: 1; }
+/* ===== KPI ROW ===== */
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+.kpi-box {
+background: var(--cp-glass-bg, rgba(255, 255, 255, 0.65));
+backdrop-filter: var(--cp-glass-blur, blur(16px));
+-webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
+border: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
+border-radius: 16px; padding: 20px;
+display: flex; align-items: center; gap: 16px;
+box-shadow: var(--cp-glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.08));
+transition: var(--cp-transition-smooth, all 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+position: relative; overflow: hidden;
+}
+.kpi-box::before {
+content: ''; position: absolute; top: 0; left: 0; right: 0;
+height: 3px; background: var(--cp-gradient-border, linear-gradient(135deg, #00d4ff, #a855f7));
+opacity: 0; transition: opacity 0.2s;
+}
+.kpi-box:hover { transform: translateY(-4px); box-shadow: var(--cp-spatial-depth-3, 0 8px 32px rgba(0, 0, 0, 0.12)); border-color: #bfdbfe; }
+.kpi-box:hover::before { opacity: 1; }
+.kpi-icon-box {
+width: 52px; height: 52px; border-radius: 14px;
+display: flex; align-items: center; justify-content: center;
+font-size: 22px; flex-shrink: 0;
+}
+.kpi-num { font-size: 28px; font-weight: 900; line-height: 1; }
+.kpi-lbl { font-size: 12px; color: var(--gray); margin-top: 3px; font-weight: 600; }
+.kpi-sub { font-size: 11px; color: var(--gray); margin-top: 2px; }
+.kpi-alert-pulse { animation: kpi-pulse 1.5s ease-in-out infinite; border: 2px solid #fca5a5; }
+@keyframes kpi-pulse {
+0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.3); }
+50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+}
+/* ===== GRID 2 COL ===== */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.grid-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+/* ===== CARD ===== */
+.card-box {
+background: var(--cp-glass-bg, rgba(255, 255, 255, 0.65));
+backdrop-filter: var(--cp-glass-blur, blur(16px));
+-webkit-backdrop-filter: var(--cp-glass-blur, blur(16px));
+border: 1px solid var(--cp-glass-border, rgba(255, 255, 255, 0.3));
+border-radius: 14px; padding: 20px;
+box-shadow: var(--cp-glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.08));
+transition: var(--cp-transition-smooth, all 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+}
+.card-box:hover {
+box-shadow: var(--cp-spatial-depth-3, 0 8px 32px rgba(0, 0, 0, 0.12));
+transform: translateY(-2px);
+}
+.card-title {
+font-size: 14px; font-weight: 800; color: #111827;
+margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+.card-title .badge-count {
+background: #f1f5f9; color: var(--gray);
+border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700;
+}
+/* ===== JOB TABLE ===== */
+.job-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.job-table th {
+text-align: left; padding: 8px 12px;
+font-size: 11px; font-weight: 700; color: var(--gray);
+border-bottom: 2px solid var(--border);
+background: #f8fafc;
+}
+.job-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.job-table tr:last-child td { border-bottom: none; }
+.job-table tr:hover td { background: #f8fafc; }
+.job-table .job-id { font-weight: 700; color: var(--blue); font-size: 12px; }
+.job-table .customer { font-weight: 600; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.job-table .symptom { color: var(--gray); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.status-badge {
+display: inline-block; padding: 3px 10px; border-radius: 20px;
+font-size: 11px; font-weight: 700; white-space: nowrap;
+}
+.days-badge {
+display: inline-block; padding: 2px 8px; border-radius: 6px;
+font-size: 11px; font-weight: 700;
+}
+/* ===== STATUS DIST ===== */
+.status-dist { display: flex; flex-direction: column; gap: 10px; }
+.status-row { display: flex; align-items: center; gap: 10px; }
+.status-label { font-size: 12px; font-weight: 600; width: 120px; flex-shrink: 0; }
+.status-bar-wrap { flex: 1; background: #f1f5f9; border-radius: 6px; height: 8px; overflow: hidden; }
+.status-bar { height: 100%; border-radius: 6px; transition: width 0.5s; }
+.status-count { font-size: 12px; font-weight: 700; width: 30px; text-align: right; flex-shrink: 0; }
+/* ===== ALERTS ===== */
+.alert-row {
+display: flex; align-items: flex-start; gap: 12px;
+padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.alert-row:last-child { border-bottom: none; }
+.alert-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.alert-msg { font-size: 13px; font-weight: 700; }
+.alert-sub { font-size: 11px; color: var(--gray); margin-top: 2px; }
+/* ===== CHART ===== */
+.chart-wrap { position: relative; height: 220px; }
+/* ===== LOADING ===== */
+.loading-state { text-align: center; padding: 60px 20px; color: var(--gray); }
+.spinner-pc {
+width: 40px; height: 40px; border: 3px solid #e2e8f0;
+border-top-color: #3b82f6; border-radius: 50%;
+animation: spin 0.8s linear infinite; margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1200px) {
+.kpi-row { grid-template-columns: repeat(2, 1fr); }
+.grid-3 { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 900px) {
+.sidebar { width: 64px; }
+.sidebar-logo .logo-text, .sidebar-logo .logo-sub,
+.nav-item span, .nav-section, .user-name-sm, .user-role-sm { display: none; }
+.nav-item { justify-content: center; padding: 12px; }
+.nav-item i { width: auto; }
+.main-area { margin-left: 64px; }
+.grid-2, .grid-3 { grid-template-columns: 1fr; }
+.kpi-row { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+.kpi-row { grid-template-columns: 1fr 1fr; }
+.content { padding: 12px; }
+}
+/* ===== LOGIN OVERLAY ===== */
+#login-overlay {
+position: fixed; inset: 0; z-index: 99999;
+background:
+radial-gradient(circle at 14% 12%, rgba(34, 211, 238, .22), transparent 30%),
+radial-gradient(circle at 88% 18%, rgba(124, 58, 237, .26), transparent 34%),
+linear-gradient(145deg, #07111f 0%, #0f172a 52%, #111827 100%);
+display: flex; align-items: center; justify-content: center;
+font-family: 'Inter', sans-serif;
+padding: 24px;
+}
+#login-overlay .login-card {
+background: rgba(15, 23, 42, .72);
+backdrop-filter: blur(24px);
+-webkit-backdrop-filter: blur(24px);
+border: 1px solid rgba(255, 255, 255, .16);
+border-radius: 28px; padding: 34px 32px;
+width: 100%; max-width: 420px;
+box-shadow: 0 30px 95px rgba(2, 6, 23, .5), inset 0 1px 0 rgba(255, 255, 255, .16);
+text-align: center;
+}
+#login-overlay .login-logo {
+width: 76px; height: 76px; margin: 0 auto 16px;
+border-radius: 24px;
+background: linear-gradient(135deg, #22d3ee, #3b82f6 52%, #8b5cf6);
+display: flex; align-items: center; justify-content: center;
+color: #fff; font-size: 34px;
+box-shadow: 0 20px 58px rgba(59, 130, 246, .42), inset 0 1px 0 rgba(255, 255, 255, .36);
+}
+#login-overlay .login-title { font-size: 24px; font-weight: 900; color: #f8fafc; margin-bottom: 6px; letter-spacing: 0; }
+#login-overlay .login-sub { font-size: 13px; color: #cbd5e1; margin-bottom: 26px; line-height: 1.5; }
+#login-overlay .login-field {
+width: 100%; min-height: 52px; padding: 13px 16px; border: 1px solid rgba(255,255,255,.15); border-radius: 16px;
+font-size: 14px; margin-bottom: 12px; outline: none; transition: border 0.2s, box-shadow .2s;
+box-sizing: border-box;
+background: rgba(255,255,255,.08);
+color: #fff;
+}
+#login-overlay .login-field::placeholder { color: #94a3b8; }
+#login-overlay .login-field:focus { border-color: #38bdf8; box-shadow: 0 0 0 4px rgba(56,189,248,.14); }
+#login-overlay .login-btn {
+width: 100%; min-height: 54px; padding: 14px; background: linear-gradient(135deg,#06b6d4,#3b82f6 48%,#7c3aed); color: #fff; border: none;
+border-radius: 18px; font-size: 15px; font-weight: 800; cursor: pointer;
+transition: transform .18s ease, box-shadow .18s ease; margin-top: 4px;
+box-shadow: 0 18px 46px rgba(37,99,235,.34);
+}
+#login-overlay .login-btn:hover { transform: translateY(-1px); box-shadow: 0 22px 56px rgba(37,99,235,.45); }
+#login-overlay .login-btn:disabled { background: #94a3b8; cursor: wait; }
+#login-overlay .login-error {
+color: #fecaca; font-size: 13px; margin-top: 10px; min-height: 20px;
+}
+/* ===== SMART SEARCH BAR ===== */
+.topbar-search {
+  position: relative;
+  flex: 1;
+  max-width: 400px;
+  margin: 0 16px;
+}
+.topbar-search input {
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  font-size: 13px;
+  background: #f8fafc;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 48px;
+}
+.topbar-search input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+.topbar-search i.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 14px;
+}
+#search-suggestions {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-top: 4px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  z-index: 1000;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.search-suggestion-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 13px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+}
+.search-suggestion-item:hover {
+  background: #f8fafc;
+}
+.search-suggestion-item:last-child {
+  border-bottom: none;
+}
+.search-suggestion-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.search-suggestion-text {
+  flex: 1;
+}
+.search-suggestion-title {
+  font-weight: 600;
+  color: #111827;
+}
+.search-suggestion-sub {
+  font-size: 11px;
+  color: #6b7280;
+}
+/* ===== PAGE TRANSITION ===== */
+.main-area {
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.main-area.fade-out {
+  opacity: 0;
+}
+.main-area.fade-in {
+  opacity: 1;
+}
+/* ===== BUTTON TOUCH TARGET ===== */
+.btn-refresh, .btn-pwa, .nav-item, button {
+  min-height: 48px;
+  min-width: 48px;
+}
+.nav-item {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+}
+</style>
+</head>
+<body>
+<div id="version_badge"></div>
+<div id="approval-panel" style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: white; border: 1px solid #ccc; padding: 10px; max-width: 300px; max-height: 400px; overflow-y: auto;"></div>
+<!-- ===== LOGIN OVERLAY ===== -->
+<div id="login-overlay">
+<div class="login-card">
+<div class="login-logo"><i class="bi bi-phone-fill"></i></div>
+<div class="login-title" data-i18n="COMPHONE Dashboard">COMPHONE Dashboard</div>
+<div class="login-sub" data-i18n="Please login to continue">ศูนย์ควบคุมระบบหลังบ้าน งานบริการ ลูกค้า สต็อก และรายงาน</div>
+<form id="login-form" onsubmit="_doLogin(event)">
+<input class="login-field" type="text" id="login-user" data-i18n-placeholder="Username" placeholder="Username" autocomplete="username" required>
+<input class="login-field" type="password" id="login-pass" data-i18n-placeholder="Password" placeholder="Password" autocomplete="current-password" required>
+<button class="login-btn" type="submit" id="login-btn">
+<span data-i18n="Login">เข้าสู่ระบบ</span>
+</button>
+</form>
+<div class="login-error" id="login-error"></div>
+</div>
+</div>
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-logo">
+<div class="logo-icon">📱</div>
+<div>
+<div class="logo-text">COMPHONE</div>
+<div class="logo-sub" id="pc-logo-version">SUPER APP</div>
+</div>
+</div>
+<div class="nav-section" data-i18n="Main">หลัก</div>
+<a class="nav-item active" href="#" onclick="loadSection('dashboard')">
+<i class="bi bi-bar-chart-line-fill"></i><span data-i18n="Dashboard">Dashboard</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('jobs')">
+<i class="bi bi-tools"></i><span data-i18n="Jobs">งานบริการ</span>
+<span class="nav-badge" id="nav-jobs-badge" style="display:none">0</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('crm')">
+<i class="bi bi-people-fill"></i><span data-i18n="Customers">ลูกค้า</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('attendance')">
+<i class="bi bi-clock-history"></i><span data-i18n="Attendance">ลงเวลาทำงาน</span>
+</a>
+<div class="nav-section">งานและคลัง</div>
+<a class="nav-item" href="#" onclick="loadSection('po')">
+<i class="bi bi-cart-fill"></i><span data-i18n="Purchase Orders">สั่งซื้อ</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('inventory')">
+<i class="bi bi-box-seam-fill"></i><span data-i18n="Inventory">สต็อก</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('billing')">
+<i class="bi bi-receipt"></i><span data-i18n="Billing">ใบเสร็จ/วางบิล</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('warranty')">
+<i class="bi bi-shield-check"></i><span data-i18n="Warranty">รับประกัน</span>
+</a>
+<div class="nav-section">การเงิน</div>
+<a class="nav-item" href="#" onclick="loadSection('revenue')">
+<i class="bi bi-currency-exchange"></i><span data-i18n="Revenue">รายรับ</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('tax')">
+<i class="bi bi-receipt-cutoff"></i><span data-i18n="Tax (VAT/WHT)">ภาษี (VAT/WHT)</span>
+</a>
+<div class="nav-section" data-i18n="Reports">รายงาน</div>
+<a class="nav-item" href="#" onclick="loadSection('reports')">
+<i class="bi bi-file-earmark-text-fill"></i><span data-i18n="Reports">รายงาน</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('analytics')">
+<i class="bi bi-graph-up"></i><span>Analytics</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('performance')">
+<i class="bi bi-speedometer2"></i><span data-i18n="Performance">Performance</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('vision')">
+<i class="bi bi-stars"></i><span>AI Vision</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('line-center')">
+<i class="bi bi-broadcast-pin"></i><span>LINE Center</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('backup')">
+<i class="bi bi-cloud-arrow-up"></i><span data-i18n="Backup & Recovery">สำรองข้อมูล</span>
+</a>
+<div class="nav-section" data-i18n="System">ระบบ</div>
+<a class="nav-item" href="index.html" target="_blank" rel="noopener">
+<i class="bi bi-phone-fill"></i><span data-i18n="Open Mobile App">เปิด Mobile App</span>
+</a>
+<a class="nav-item" href="#" onclick="loadSection('settings')">
+<i class="bi bi-gear-fill"></i><span>ตั้งค่า</span>
+</a>
+<div class="sidebar-footer">
+<div class="user-chip">
+<div class="user-avatar-sm" id="pc-avatar">A</div>
+<div>
+<div class="user-name-sm" id="pc-name">Admin</div>
+<div class="user-role-sm" id="pc-role">Admin</div>
+</div>
+<div style="margin-left:auto;cursor:pointer;opacity:0.5;font-size:14px" onclick="_doLogout()" title="ออกจากระบบ">⏻</div>
+</div>
+<!-- Language Toggle -->
+<div class="user-chip" style="margin-top:8px;cursor:pointer" onclick="LanguageManager.switchLanguage(LanguageManager.getCurrentLanguage() === 'th' ? 'en' : 'th')">
+<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg, #10b981, #059669);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;flex-shrink:0;">
+<i class="bi bi-translate"></i>
+</div>
+<div style="flex:1">
+<div style="font-size:12px;font-weight:600;color:#fff;">ภาษา / Language</div>
+<div id="pc-lang-label" style="font-size:10px;opacity:0.5;">ไทย</div>
+</div>
+<i class="bi bi-chevron-right" style="opacity:0.5;"></i>
+</div>
+</div>
+</aside>
+<!-- ===== MAIN ===== -->
+<div class="main-area">
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-title" id="topbar-title">
+    <i class="bi bi-bar-chart-line-fill" style="color:#d97706;margin-right:8px"></i>Executive Dashboard
+  </div>
+  <div class="topbar-date" id="topbar-date">—</div>
+  <!-- Smart Search Bar -->
+  <div class="topbar-search">
+    <i class="bi bi-search search-icon"></i>
+    <input type="text" id="global-search" placeholder="ค้นหางาน, ลูกค้า, สต็อก..." onkeyup="handleSearchInput(event)" onfocus="showSearchSuggestions('')">
+    <div id="search-suggestions"></div>
+  </div>
+  <button class="btn-refresh" onclick="loadDashboard()">
+    <i class="bi bi-arrow-clockwise"></i> รีเฟรช
+  </button>
+  <a class="btn-pwa" href="index.html" target="_blank" rel="noopener">
+    <i class="bi bi-phone-fill"></i> Mobile App
+  </a>
+</div>
+<!-- CONTENT -->
+<div class="content cp-animate-in" id="main-content">
+<div class="loading-state">
+<div class="spinner-pc"></div>
+<p>กำลังโหลดข้อมูล...</p>
+</div>
+
+  <!-- ===== DASHBOARD SECTION ===== -->
+  <div id="section-dashboard" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-bar-chart-line-fill"></i> Dashboard</h2>
+    </div>
+    <div id="dashboard-content"></div>
+  </div>
+  
+  <!-- ===== JOBS SECTION ===== -->
+  <div id="section-jobs" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-tools"></i> งานบริการ</h2>
+    </div>
+    <div id="jobs-content"></div>
+  </div>
+  
+  <!-- ===== PURCHASE ORDERS SECTION ===== -->
+  <div id="section-po" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-cart-fill"></i> สั่งซื้อ</h2>
+    </div>
+    <div id="po-content"></div>
+  </div>
+  
+  <!-- ===== INVENTORY SECTION ===== -->
+  <div id="section-inventory" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-box-seam-fill"></i> สต็อก</h2>
+    </div>
+    <div id="inventory-content"></div>
+  </div>
+  
+  <!-- ===== BILLING SECTION ===== -->
+  <div id="section-billing" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-receipt"></i> ใบเสร็จ/วางบิล</h2>
+    </div>
+    <div id="billing-content"></div>
+  </div>
+  
+  <!-- ===== WARRANTY SECTION ===== -->
+  <div id="section-warranty" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-shield-check"></i> รับประกัน</h2>
+    </div>
+    <div id="warranty-content"></div>
+  </div>
+  
+  <!-- ===== REVENUE SECTION ===== -->
+  <div id="section-revenue" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-currency-exchange"></i> รายรับ</h2>
+    </div>
+    <div id="revenue-content"></div>
+  </div>
+  
+  <!-- ===== TAX SECTION ===== -->
+  <div id="section-tax" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-receipt-cutoff"></i> ภาษี (VAT/WHT)</h2>
+    </div>
+    <div id="tax-content"></div>
+  </div>
+  
+  <!-- ===== REPORTS SECTION ===== -->
+  <div id="section-reports" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-file-earmark-text-fill"></i> รายงาน</h2>
+    </div>
+    <div id="reports-content"></div>
+  </div>
+  
+  <!-- ===== ANALYTICS SECTION ===== -->
+  <div id="section-analytics" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-graph-up"></i> Analytics</h2>
+    </div>
+    <div id="analytics-content"></div>
+  </div>
+  
+  <!-- ===== PERFORMANCE SECTION ===== -->
+  <div id="section-performance" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-speedometer2"></i> Performance</h2>
+    </div>
+    <div id="performance-content"></div>
+  </div>
+
+  <!-- ===== AI VISION SECTION ===== -->
+  <div id="section-vision" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-stars"></i> AI Vision</h2>
+    </div>
+    <div id="vision-content"></div>
+  </div>
+
+  <!-- ===== LINE COMMAND CENTER SECTION ===== -->
+  <div id="section-line-center" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-broadcast-pin"></i> LINE Center</h2>
+    </div>
+    <div id="line-center-content"></div>
+  </div>
+
+  <!-- ===== BACKUP SECTION ===== -->
+  <div id="section-backup" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-cloud-arrow-down-fill"></i> สำรองข้อมูล</h2>
+    </div>
+    <div id="backup-content"></div>
+  </div>
+  
+  <!-- ===== CRM / CUSTOMERS SECTION ===== -->
+  <div id="section-crm" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-people-fill"></i> ลูกค้า</h2>
+    </div>
+    <div id="crm-content"></div>
+  </div>
+  
+  <!-- ===== ATTENDANCE SECTION ===== -->
+  <div id="section-attendance" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-clock-fill"></i> ลงเวลาทำงาน</h2>
+    </div>
+    <div id="attendance-content"></div>
+  </div>
+  
+  <!-- ===== SETTINGS SECTION ===== -->
+  <div id="section-settings" class="dashboard-section" style="display:none;">
+    <div class="section-header">
+      <h2><i class="bi bi-gear-fill"></i> ตั้งค่า</h2>
+    </div>
+    <div id="settings-content"></div>
+  </div>
+
+</div>
+</div>
+<script src="billing_section.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="section_warranty.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="reports.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="section_reports.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="section_analytics.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="section_attendance.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="dashboard_helpers.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="dashboard_pc_core.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<script src="search.js?v=5.18.47-sprint221&t=20260721_1622"></script>
+<!-- PC dashboard runtime lives in dashboard_pc_core.js. -->
