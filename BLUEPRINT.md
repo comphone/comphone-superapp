@@ -257,6 +257,15 @@ This section is the latest handoff for any human or AI agent continuing COMPHONE
 > current upstream miniflare/sharp advisories remain confined to Wrangler's
 > development tooling and are not bundled into the deployed Worker.
 
+> Sprint 224 CI closure: commit `52f4ce5` passed Worker workflow run
+> `29889359668` end to end. Node 22 setup, clean install, production dependency
+> audit, syntax checks, credential preflight, Cloudflare deploy, production
+> verifier, and evidence artifact upload all succeeded. Live Worker version
+> `1.0.6-sprint221` runs Cloudflare version
+> `cfd019d0-5770-49a4-a69d-cf91bab3e022`; the artifact is named
+> `line-worker-production-evidence`. Any API token ever visible in a screenshot
+> or chat must still be revoked and replaced even when CI passes.
+
 > Cowork review on or after 2026-06-12 should begin with
 > `COWORK_SYSTEM_HANDOFF.md`. It separates current verified state, live-proof
 > gaps, safety gates, and the recommended review order from the historical
